@@ -33,6 +33,95 @@ def _digest(value: object) -> str:
     return hashlib.sha256(encoded).hexdigest()
 
 
+def _safe_response_envelope(raw: object) -> dict[str, object]:
+    """Describe response channels without persisting generated or reasoning text."""
+    result: dict[str, object] = {
+        "finish_reason": "missing",
+        "content_type": "missing",
+        "final_text_channel": "missing",
+        "final_text_characters": 0,
+        "final_text_present": False,
+        "reasoning_type": "missing",
+        "reasoning_characters": 0,
+        "reasoning_present": False,
+    }
+    if not isinstance(raw, dict):
+        return result
+    choices = raw.get("choices")
+    if not isinstance(choices, list) or not choices or not isinstance(choices[0], dict):
+        return result
+    choice = choices[0]
+    finish_reason = choice.get("finish_reason")
+    if isinstance(finish_reason, str):
+        result["finish_reason"] = (
+            finish_reason
+            if finish_reason in {"stop", "length", "tool_calls", "content_filter", "function_call"}
+            else "unknown"
+        )
+    message = choice.get("message")
+    if not isinstance(message, dict):
+        return result
+    content = message.get("content")
+    result["content_type"] = type(content).__name__
+    if isinstance(content, str):
+        result["final_text_channel"] = "message.content"
+        result["final_text_characters"] = len(content)
+        result["final_text_present"] = bool(content.strip())
+    elif isinstance(content, dict):
+        for key in ("text", "value", "content"):
+            value = content.get(key)
+            if isinstance(value, dict):
+                value = value.get("value")
+            if isinstance(value, str) and value.strip():
+                result["final_text_channel"] = f"message.content.{key}"
+                result["final_text_characters"] = len(value)
+                result["final_text_present"] = True
+                break
+    elif isinstance(content, list):
+        lengths: list[int] = []
+        for item in content:
+            if not isinstance(item, dict):
+                continue
+            if str(item.get("type") or "").strip().lower() not in {"text", "output_text", "message"}:
+                continue
+            value = item.get("text")
+            if isinstance(value, dict):
+                value = value.get("value")
+            if not isinstance(value, str) or not value.strip():
+                value = item.get("value")
+            if isinstance(value, str) and value.strip():
+                lengths.append(len(value))
+        if lengths:
+            result["final_text_channel"] = "message.content[]"
+            result["final_text_characters"] = sum(lengths)
+            result["final_text_present"] = True
+    if result["final_text_channel"] == "missing":
+        choice_text = choice.get("text")
+        if isinstance(choice_text, str) and choice_text.strip():
+            result["final_text_channel"] = "choice.text"
+            result["final_text_characters"] = len(choice_text)
+            result["final_text_present"] = True
+    reasoning = message.get("reasoning_content")
+    result["reasoning_type"] = type(reasoning).__name__
+    if isinstance(reasoning, str):
+        result["reasoning_characters"] = len(reasoning)
+        result["reasoning_present"] = bool(reasoning.strip())
+    return result
+
+
+def _safe_failure_code(exc: Exception) -> str:
+    detail = str(exc)
+    if detail in {
+        "tavern_actor_transport_payload_invalid",
+        "tavern_actor_invalid_payload",
+        "tavern_repair_output_truncated",
+        "tavern_repair_non_final_candidate",
+        "tavern_repair_transport_finish_reason_invalid",
+    }:
+        return detail
+    return type(exc).__name__
+
+
 def _reply_from_message(message: dict[str, object]) -> TavernActorReply:
     return TavernActorReply(
         text=str(message["content"]),
@@ -169,19 +258,32 @@ def run_sample(context, case, variant):
             call_kind="repair",
             fake_response=fake_response,
         )
+        evidence["wire_envelope"] = _safe_response_envelope(raw)
+        finish_reason = evidence["wire_envelope"]["finish_reason"]
+        if finish_reason == "length":
+            raise RuntimeError("tavern_repair_output_truncated")
+        if finish_reason in {"tool_calls", "content_filter", "function_call"}:
+            raise RuntimeError("tavern_repair_non_final_candidate")
+        if finish_reason != "stop":
+            raise RuntimeError("tavern_repair_transport_finish_reason_invalid")
         repaired = _parse_tavern_actor_reply(raw)
         final_checks = _checks(spec, repaired)
     except (KeyError, TypeError, ValueError, RuntimeError, json.JSONDecodeError) as exc:
         evidence.update(
             failure_stage="repair_decode",
             error_class=type(exc).__name__,
+            error_code=_safe_failure_code(exc),
             strict_candidate=False,
             exact_checks_passed=False,
         )
         atomic_json(context.storage / "tavern-exact-repair-evidence.json", evidence)
+        transport_failure = str(exc) in {
+            "tavern_actor_transport_payload_invalid",
+            "tavern_repair_transport_finish_reason_invalid",
+        }
         return {
-            "status": "candidate_failed",
-            "failure_owner": "candidate",
+            "status": "infrastructure_failed" if transport_failure else "candidate_failed",
+            "failure_owner": "infrastructure" if transport_failure else "candidate",
             "metrics": {"strict_candidate": False, "exact_checks_passed": False},
             "evidence": [{
                 "path": "tavern-exact-repair-evidence.json",

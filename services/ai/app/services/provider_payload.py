@@ -98,7 +98,11 @@ def _escape_invalid_backslashes_in_json_strings(raw: str) -> str:
 
 
 
-def _extract_choice_content(payload: dict[str, Any]) -> str:
+def _extract_choice_content(
+    payload: dict[str, Any],
+    *,
+    allow_reasoning_fallback: bool = True,
+) -> str:
     choices = payload.get("choices")
     if not isinstance(choices, list) or not choices:
         raise RuntimeError("chat_model_invalid_payload")
@@ -149,7 +153,11 @@ def _extract_choice_content(payload: dict[str, Any]) -> str:
         return alt_text
 
     reasoning_content = message.get("reasoning_content")
-    if isinstance(reasoning_content, str) and reasoning_content.strip():
+    if (
+        allow_reasoning_fallback
+        and isinstance(reasoning_content, str)
+        and reasoning_content.strip()
+    ):
         logger.warning("model.chat.extract_content fallback=reasoning_content")
         return reasoning_content
 
@@ -176,4 +184,3 @@ def _extract_choice_diagnostics(payload: dict[str, Any]) -> tuple[str, int, int]
         if isinstance(details, dict):
             reasoning_tokens = _coerce_int(details.get("reasoning_tokens"), default=0)
     return finish_reason, reasoning_tokens, completion_tokens
-

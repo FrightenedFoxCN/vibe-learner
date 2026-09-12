@@ -144,7 +144,13 @@ class RemoteTavernProvider(TavernModelCapability):
 
 def _parse_tavern_actor_reply(raw_payload: dict[str, Any]) -> TavernActorReply:
     try:
-        content = _extract_choice_content(raw_payload)
+        # TavernActorReply is the final, user-visible structured answer.  A
+        # provider's private reasoning channel is not a compatible substitute
+        # for a missing final message.
+        content = _extract_choice_content(
+            raw_payload,
+            allow_reasoning_fallback=False,
+        )
     except Exception as exc:
         if isinstance(exc, ModelRequestError):
             raise

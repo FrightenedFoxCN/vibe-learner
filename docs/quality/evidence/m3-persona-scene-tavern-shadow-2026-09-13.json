@@ -42,7 +42,17 @@
     "remaining_model_failures": [
       "adaptive: both 4096 and 6144 attempts exhausted output with finish_reason=length",
       "disabled: both strict attempts failed scene_selected_path_invalid"
-    ]
+    ],
+    "followup_502_audit": {
+      "confirmation_chain": "6/6 completed with no HTTP 502",
+      "conditional_tavern_repair_wires": "5/5 HTTP 200; one additional case reused the frozen reply without a wire",
+      "repair_failures": [
+        "auditor-false-clearance-platform: HTTP 200, finish_reason=length, max/completion tokens 2048/2048",
+        "three-cell-seed-vault: HTTP 200, finish_reason=stop, strict Tavern repair decode failed"
+      ],
+      "adjacent_classification_gap": "Tavern final output extraction could fall back to a separate reasoning channel when message.content was unavailable; this did not explain the original Scene 502 but could blur Tavern candidate versus provider-envelope ownership.",
+      "historical_limit": "Raw response envelopes were intentionally not persisted, so a historical fallback log cannot be authoritatively assigned to one sample from retained artifacts alone."
+    }
   },
   "independent_manual_review": {
     "axes": [

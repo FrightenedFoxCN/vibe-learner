@@ -13,6 +13,8 @@
 
 修复后 adaptive 批次中 Persona 4/4、Scene 3/4、Tavern 4/4 完成生产边界。剩余 Scene 失败在首次 4096 和 repair 6144 都耗尽输出预算，均为 HTTP 200 + `finish_reason=length`，属于真实模型修复耗尽，不再是 adapter 配置或 repair 位置错误。
 
+后续 confirmation 复查再次确认：6/6 production-shaped chain 没有 502；conditional Tavern exact-repair 的 5 条真实 wire 也全部是 HTTP 200。其两个失败分别是 `auditor-false-clearance-platform` 的 2048-token 输出耗尽，以及 `three-cell-seed-vault` 的 stop 后 strict decode 失败，均不是该 Scene 502 的复发。复查同时发现共享 content extractor 会在 Tavern 最终 `message.content` 不可用时回退到独立的 reasoning channel。该通道不是用户可见的 `TavernActorReply`，现已让 Tavern final-content 解析 fail closed；research adapter 也只记录 finish reason、通道类型/字符数和 allowlisted error code，不保存 reasoning 或生成文本。历史 raw envelope 按设计未落盘，因此不能把当时的一条 fallback 日志无证据地绑定到具体样本。
+
 ## Harness 策略对照
 
 本轮保留三层结果：

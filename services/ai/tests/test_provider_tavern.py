@@ -62,6 +62,20 @@ class TavernProviderTests(unittest.TestCase):
             self.generate(request)
         self.assertEqual(request.call_count, 1)
 
+    def test_reasoning_channel_is_not_accepted_as_final_actor_reply(self):
+        request = Mock(return_value=({
+            "choices": [{
+                "message": {
+                    "content": None,
+                    "reasoning_content": actor_payload()["choices"][0]["message"]["content"],
+                },
+                "finish_reason": "stop",
+            }],
+        }, 1))
+        with self.assertRaisesRegex(RuntimeError, "tavern_actor_transport_payload_invalid"):
+            self.generate(request)
+        self.assertEqual(request.call_count, 1)
+
     def test_cancellation_fences_initial_call_fallback_and_semantic_repair(self):
         cases = [([], [False], 0),
                  ([ModelRequestError("unsupported", status_code="400")], [True, False], 1),
