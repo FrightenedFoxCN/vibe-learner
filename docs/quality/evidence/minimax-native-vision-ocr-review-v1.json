@@ -1,0 +1,53 @@
+{
+  "scope": "macOS Vision OCR diagnostic; no production adoption",
+  "environment": {
+    "macos": "26.6.2",
+    "request_revision": 3,
+    "recognition_level": "accurate",
+    "configured_languages": [
+      "zh-Hans",
+      "en-US"
+    ],
+    "chinese_supported": true,
+    "render_scale": 2
+  },
+  "runs": {
+    "sandbox": "failed nilError, no OCR result",
+    "framework_ms": [
+      995,
+      729
+    ],
+    "recognized_lines": [
+      56,
+      56
+    ],
+    "same_line_texts": true
+  },
+  "source_review": {
+    "source": "Babel After, PDF physical21, printed20–21",
+    "chinese_characters": 642,
+    "anchors": {
+      "时期性": true,
+      "1930": true,
+      "1992": true,
+      "20世纪40年代晚期": true,
+      "微粒": true,
+      "dreadfully": true,
+      "毋庸置疑": true
+    },
+    "column_transitions": 1,
+    "errors": [
+      "恶毒 rendered 忍毒",
+      "Footnote1 number lost and 译注 split into separate line",
+      "Elyot once rendered Elyor; passé loses accent",
+      "Printed footers remain"
+    ]
+  },
+  "limits": [
+    "Configured languages are not detected-language evidence.",
+    "One bilingual spread, two repetitions, not a general accuracy benchmark.",
+    "Timing excludes Swift compilation/startup and is not cold-start or end-to-end.",
+    "macOS-only framework needs packaging/runtime access design before production use.",
+    "No M3 Planning with this OCR yet. Raw text, image and coordinates stay in tmp."
+  ]
+}
