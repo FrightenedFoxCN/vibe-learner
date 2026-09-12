@@ -234,6 +234,13 @@ def run(root, repetitions, budget_candidate=False, selected_case=None, detail_pa
     revision = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
     app = create_app(settings=settings)
     with patch.object(PlanToolRuntime, "execute_tool_call", observe_tool), patch.object(ToolExecutionBudgetTracker, "admit", admit_candidate), patch("app.services.provider_transport._normalize_completed_tool_indexes", side_effect=observe_indexes), patch.object(ProviderRequestAdapter, "request_chat_completion", observe), TestClient(app) as client:
+        # Prepared snapshots carry database-authoritative runtime settings.
+        # Apply the requested capability to this isolated copy, then record
+        # the effective value instead of mistaking base settings for runtime.
+        app.state.container.update_runtime_settings({"openai_plan_model_multimodal": multimodal})
+        effective_multimodal = app.state.container.model_provider.multimodal_enabled
+        if effective_multimodal != multimodal:
+            raise RuntimeError("planning_probe_multimodal_configuration_mismatch")
         persona_payload = create_request("顾言").model_dump(mode="json")
         if persona_variant != "default":
             rigorous = persona_variant == "rigorous"
@@ -333,7 +340,8 @@ def run(root, repetitions, budget_candidate=False, selected_case=None, detail_pa
                     elif tool_recovery_hint_candidate:
                         row["tool_error_variant"] = "page-range-recovery-hint-candidate-v1"
                     row["admitted_study_unit_count"] = admitted_unit_count
-                    row["multimodal_enabled"] = multimodal
+                    row["multimodal_enabled"] = effective_multimodal
+                    row["requested_multimodal_enabled"] = multimodal
                     row["persona_variant"] = persona_variant
                     row["persona_domain"] = persona_domain
                     row["persona_method_only"] = persona_method

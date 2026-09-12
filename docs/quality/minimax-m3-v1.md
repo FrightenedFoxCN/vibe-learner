@@ -987,3 +987,13 @@ default首例最终JSON合法，但保存前因schedule_chapters.4.anchor_page_s
 [真实M3核验](evidence/minimax-text-budget-live-v2.jsonl)6次调用后提交，无工具拒绝；模型实际两次请求max_chars=500，PDF1返回500字符、PDF2返回264字符。首次观测脚本因错误访问page_start发生KeyError，属于观测基础设施失败，未计为候选失败或成功；修正后重跑。
 
 结果focus按10+10+10分配30分钟且使用人格的比较/解释/边界方法，但仍省略年龄I think限定并安排抄录OCR噪声；today_tasks未单独明确全部时长，不能认定整个计划质量合格。此次只采用确定性字符上限修复，不声称截断无损、语义压缩改善或调用量下降。Study使用相同函数，本轮没有新增独立Study实测。
+
+## 轮次 94：修正准备快照覆盖多模态实验开关
+
+确认轮次92图片工具缺席的原因：法文准备快照持久化openai_plan_model_multimodal=false，运行设置优先于新传入Settings；Macbeth快照则为true。旧探针的multimodal_enabled只写了请求值，不能据此证明provider实际能力。历史记录保留原样，应结合offered_tools与image_parts_sent解释；例如轮次93请求false但仍提供图片工具，没有实际图片输入，不是严格禁用图像工具的对照。
+
+探针现在在隔离副本启动后显式更新该运行设置，并核验重建provider的实际值；输出分别保留requested_multimodal_enabled与实际multimodal_enabled。[确定性核验](evidence/minimax-probe-multimodal-config-review-v1.json)通过数据库重启复现旧值覆盖新默认值，再按true/false切换，图片工具可用性与实际值一致。首次检查脚本误把public_specs当provider schema，修正后通过；没有把检查脚本错误计入模型质量。编译与diff检查通过，无生产设置优先级变更。
+
+已启动修正后的法文文字/图片可用两组真实Planning，统一来源、人格和两周目标，指定核对PDF11目录及PDF31–33正文。结果尚待完成和来源审查，不提前宣称图片收益。
+
+本轮阅读[Anthropic上下文工程文章](https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents)：其建议压缩先保证召回，再减少冗余，并讨论旧工具结果清理与结构化笔记。这是工程经验而非M3上的效果证据。后续候选应实测定义限定、物理/印刷页码、时间预算、人格方法的保留与来源重取成本；本轮未采用压缩改动，也未改变现有授权工件或恢复边界。

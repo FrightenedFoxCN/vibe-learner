@@ -1,0 +1,22 @@
+{
+  "persisted_false_overrides_new_base_true": true,
+  "after_explicit_update": [
+    {
+      "requested": true,
+      "effective": true,
+      "image_tool_offered": true
+    },
+    {
+      "requested": false,
+      "effective": false,
+      "image_tool_offered": false
+    }
+  ],
+  "scope": "Probe configuration correction, not production capability change",
+  "source_snapshot_effective_values": {
+    "french": false,
+    "macbeth": true
+  },
+  "historical_limitation": "Before this fix multimodal_enabled reports the requested base flag, not the database-effective flag. Use actual offered_tools/image_parts_sent to interpret historical runs.",
+  "validation": "Isolated database restart reproduced false overriding new true base. Explicit runtime updates true then false matched public image tool availability. No provider request in this deterministic check."
+}
