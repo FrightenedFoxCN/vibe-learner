@@ -131,7 +131,7 @@ class DesktopDiagnosticTests(unittest.TestCase):
             partial = spool.root / "desktop-b.pending"
             partial.write_bytes(b'{"schema_version":')
             spool.step()
-            self.assertFalse(complete.exists())
+            self.assertFalse(complete.exists(), store._startup_failure)
             self.assertFalse(partial.exists())
             self.assertEqual(spool.rejected, 1)
             self.assertEqual(len(store.query(0, 100, {"source": "desktop"})), 1)

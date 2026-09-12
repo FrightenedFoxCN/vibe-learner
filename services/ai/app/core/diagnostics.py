@@ -44,6 +44,9 @@ def set_diagnostic_execution(execution):
 
 active_store: ContextVar["DiagnosticStore | None"] = ContextVar("active_diagnostic_store", default=None)
 
+DIAGNOSTIC_STARTUP_MAX_ATTEMPTS = 5
+DIAGNOSTIC_STARTUP_RETRY_SECONDS = 1.0
+
 
 def reference_harness(binding, trace=None):
     """Called only with admitted server bindings and canonical runtime traces."""
@@ -181,6 +184,7 @@ class DiagnosticStore:
         self._started = False
         self._stop = threading.Event()
         self._thread: threading.Thread | None = None
+        self._startup_failure: str | None = None
 
     def start(self):
         with self._admission:
@@ -341,6 +345,7 @@ class DiagnosticStore:
         try:
             self.path.parent.mkdir(parents=True, exist_ok=True)
             with closing(sqlite3.connect(self.path, timeout=0.1)) as db:
+                startup_attempt = 0
                 while True:
                     try:
                         self._configure_database(db)
@@ -348,13 +353,21 @@ class DiagnosticStore:
                         # setup releases its quota lock. Retry both as one startup
                         # unit so a transient refusal cannot permanently kill logging.
                         self._initialize_schema(db)
+                        self._startup_failure = None
                         break
-                    except Exception:
+                    except Exception as error:
                         db.rollback()
                         self.write_failures += 1
+                        startup_attempt += 1
+                        self._startup_failure = f"{type(error).__name__}: {error}"[:500]
                         if self._stop.is_set():
                             return
-                        self._stop.wait(1)
+                        # Diagnostics are best effort. A permanently unavailable
+                        # SQLite/lock boundary must release queue.join callers and
+                        # fence later producers instead of retrying forever.
+                        if startup_attempt >= DIAGNOSTIC_STARTUP_MAX_ATTEMPTS:
+                            return
+                        self._stop.wait(DIAGNOSTIC_STARTUP_RETRY_SECONDS)
                 # Successful initialization drains accepted events even if close
                 # raced startup; stop only prevents further retry attempts.
                 self.disk_maintenance.maintain(db)

@@ -62,6 +62,25 @@ class DiagnosticFailureIsolationTests(unittest.TestCase):
             store.close()
             self.assertFalse(store.enqueue(event))
 
+    def test_persistent_schema_failure_has_bounded_retries_and_releases_queue_waiters(self):
+        with TemporaryDirectory() as directory:
+            store = DiagnosticStore(Path(directory) / "events.db")
+            event = DiagnosticEventV1(event_id="queued", name="request_started", source="server", timestamp="2026-09-10T00:00:00Z")
+            self.assertTrue(store.enqueue(event))
+            with (
+                patch("app.core.diagnostics.DIAGNOSTIC_STARTUP_RETRY_SECONDS", 0.001),
+                patch.object(store, "_initialize_schema", side_effect=OSError("test_schema_unavailable")),
+            ):
+                store.start()
+                store._thread.join(timeout=2)
+            self.assertFalse(store._thread.is_alive())
+            self.assertEqual(store.write_failures, 5)
+            self.assertEqual(store._startup_failure, "OSError: test_schema_unavailable")
+            self.assertEqual(store.queue.unfinished_tasks, 0)
+            self.assertEqual(store.dropped, 1)
+            self.assertFalse(store.enqueue(event))
+            store.close()
+
     def test_repeated_start_has_one_writer_and_close_fences_producers(self):
         with TemporaryDirectory() as directory:
             store = DiagnosticStore(Path(directory) / "events.db")
