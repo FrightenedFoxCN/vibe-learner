@@ -29,6 +29,8 @@
 
 ## 发布与验收
 
+- [0.3.4 发布记录](releases/0.3.4.md)：模型运行时质量修复、采用范围与研究接手入口。
+
 - [0.3.3 发布记录](releases/0.3.3.md)：完成事项、证据入口与保留限制。
 - [启动性能协议](performance/backend-startup-v1.md)、[房间分页 HTTP](performance/tavern-room-http-v1.md)、[React 渲染](performance/tavern-room-react-v1.md)：可重放测量与原始样本。
 - [尚未完成的 PostgreSQL / 制品重放验收](plans/postgres-replay-independent-acceptance-2026-09-11.md)。
