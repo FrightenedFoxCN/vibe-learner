@@ -27,6 +27,10 @@ class PlanTextPageBudgetTests(unittest.TestCase):
                                          page_start=1, page_end=1, max_chars=1000)
         self.assertEqual(result['content'], 'a' * 800 + '\n\n' + 'b' * 198)
         self.assertEqual(result['chunk_count'], 2)
+        self.assertTrue(result['truncated'])
+        self.assertEqual(result['content_page_start'], 1)
+        self.assertEqual(result['content_page_end'], 1)
+        self.assertEqual(result['next_page_start'], 1)
 
     def test_exact_fit_and_short_tail_policy(self):
         result = read_page_range_content(debug_report=report(['a' * 250, 'b' * 248]),
@@ -41,3 +45,7 @@ class PlanTextPageBudgetTests(unittest.TestCase):
             result = read_page_range_content(debug_report=debug, page_start=2, page_end=2, max_chars=500)
             self.assertEqual(result['content'], '')
             self.assertEqual(result['chunk_count'], 0)
+            self.assertFalse(result['truncated'])
+            self.assertIsNone(result['content_page_start'])
+            self.assertIsNone(result['content_page_end'])
+            self.assertIsNone(result['next_page_start'])

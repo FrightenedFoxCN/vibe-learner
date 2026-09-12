@@ -39,6 +39,8 @@ class HarnessEvalPilotTests(unittest.TestCase):
         current = _current_planning_cases(historical)
         replacement = next(case for case in current if case.case_id == "planning-tool-detail-round-limit-002")
         self.assertEqual((replacement.split, replacement.repeat_count), ("regression", 4))
+        page_read = next(case for case in current if case.case_id == "planning-tool-page-read-round-limit-003")
+        self.assertEqual((page_read.split, page_read.repeat_count), ("regression", 4))
         self.assertEqual([case for case in current if case.split == "held_out"],
             [case for case in historical.planning_cases if case.split == "held_out"])
 

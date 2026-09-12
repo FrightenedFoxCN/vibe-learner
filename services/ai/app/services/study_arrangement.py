@@ -378,8 +378,14 @@ class StudyArrangementService:
     def _normalize_title(self, text: str) -> str:
         normalized = re.sub(r"\s+", " ", text).strip(" |-_:.")
         normalized = re.sub(r"^\d{1,4}\s+[—-]\s+", "", normalized)
-        normalized = re.sub(r"\s+\d{1,4}$", "", normalized)
-        normalized = re.sub(r"\s+[ivxlcdmIVXLCDM]+$", "", normalized)
+        structural = re.fullmatch(
+            r"(?:chapter|section|part|appendix)\s+(?:\d{1,4}|[ivxlcdmIVXLCDM]+)[A-Za-z]?",
+            normalized,
+            re.IGNORECASE,
+        )
+        if structural is None:
+            normalized = re.sub(r"\s+\d{1,4}$", "", normalized)
+            normalized = re.sub(r"\s+[ivxlcdmIVXLCDM]+$", "", normalized)
         normalized = re.sub(
             r"^\d+\s+(Preface|Preliminaries|References|Index)\b",
             r"\1",
@@ -483,7 +489,14 @@ class StudyArrangementService:
         lowered = title.casefold()
         return any(
             token in lowered
-            for token in ("solutions", "references", "bibliography", "index")
+            for token in (
+                "solutions",
+                "references",
+                "bibliography",
+                "index",
+                "glossary",
+                "characters in the story",
+            )
         )
 
     def _classify_unit_kind(self, title: str) -> str:
@@ -492,7 +505,7 @@ class StudyArrangementService:
             return "front_matter"
         if "solutions" in lowered:
             return "solutions"
-        if any(token in lowered for token in ("references", "bibliography", "index")):
+        if self._is_backmatter_title(title):
             return "back_matter"
         return "chapter"
 

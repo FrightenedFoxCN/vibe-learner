@@ -4,6 +4,7 @@ import re
 from collections import Counter
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from difflib import SequenceMatcher
 from pathlib import Path
 from typing import Callable, Iterable
 
@@ -219,7 +220,14 @@ class DocumentParser:
                 )
 
         with measure_parser_stage("section_detection", count_attempt=False):
-            sections = toc_sections or self._build_sections(
+            textual_toc_sections = [] if toc_sections else self._build_sections_from_textual_toc(
+                document_id=document_id,
+                fallback_title=title,
+                page_count=len(pages),
+                parsed_pages=parsed_pages,
+            )
+            section_source = "toc" if toc_sections else "textual_toc" if textual_toc_sections else "heuristic"
+            sections = toc_sections or textual_toc_sections or self._build_sections(
                 document_id=document_id,
                 fallback_title=title,
                 page_count=len(pages),
@@ -231,7 +239,7 @@ class DocumentParser:
             "sections_built",
             {
                 "section_count": len(sections),
-                "section_source": "toc" if toc_sections else "heuristic",
+                "section_source": section_source,
             },
         )
         with measure_parser_stage("chunk_building"):
@@ -303,7 +311,7 @@ class DocumentParser:
             ocr_status,
             ocr_applied_page_count,
             len(warnings),
-            "toc" if toc_sections else "heuristic",
+            section_source,
         )
 
         return DocumentDebugRecord(
@@ -519,6 +527,13 @@ class DocumentParser:
         dominant_font_size: float,
     ) -> list[HeadingCandidate]:
         candidates: list[HeadingCandidate] = []
+        structural = self._extract_structural_heading_candidate(
+            page_number=page_number,
+            line_entries=line_entries[:12],
+            dominant_font_size=dominant_font_size,
+        )
+        if structural is not None:
+            candidates.append(structural)
         for text, font_size in line_entries[:12]:
             normalized = self._normalize_heading_text(text)
             if not normalized or self._looks_like_noisy_heading(normalized):
@@ -544,6 +559,66 @@ class DocumentParser:
                 )
             )
         return candidates[:3]
+
+    def _extract_structural_heading_candidate(
+        self,
+        *,
+        page_number: int,
+        line_entries: list[tuple[str, float]],
+        dominant_font_size: float,
+    ) -> HeadingCandidate | None:
+        """Join a chapter marker and its nearby display title without OCR guessing."""
+        marker_index: int | None = None
+        marker = ""
+        marker_size = 0.0
+        for index, (text, font_size) in enumerate(line_entries[:4]):
+            normalized = _clean_text(text).strip(" ,.:;|_-")
+            if re.fullmatch(
+                r"(?:chapter|section|part|appendix)\s+\d{1,3}[A-Za-z]?",
+                normalized,
+                re.IGNORECASE,
+            ):
+                marker_index, marker, marker_size = index, normalized, font_size
+                break
+            if re.fullmatch(r"(?:chapter|section|part|appendix)", normalized, re.IGNORECASE):
+                for suffix_index in range(index + 1, min(index + 3, len(line_entries))):
+                    suffix = _clean_text(line_entries[suffix_index][0]).strip(" ,.:;|_-")
+                    if re.fullmatch(r"[0-9IO]{1,3}", suffix, re.IGNORECASE) and "O" in suffix.upper():
+                        suffix = suffix.upper().replace("I", "1").replace("O", "0")
+                    if re.fullmatch(r"\d{1,3}[A-Za-z]?", suffix):
+                        marker_index = suffix_index
+                        marker = f"{normalized} {suffix}"
+                        marker_size = max(font_size, line_entries[suffix_index][1])
+                        break
+                if marker:
+                    break
+        if marker_index is None:
+            return None
+
+        title_parts: list[str] = []
+        title_sizes: list[float] = []
+        minimum_title_size = max(dominant_font_size + 1.2, marker_size + 1.2)
+        for text, font_size in line_entries[marker_index + 1 : 10]:
+            normalized = self._normalize_heading_text(text)
+            alpha_words = re.findall(r"[A-Za-z][A-Za-z'’\-]*", normalized)
+            if font_size < minimum_title_size:
+                if title_parts:
+                    break
+                continue
+            if len(alpha_words) < 2 or self._looks_like_noisy_heading(normalized):
+                continue
+            title_parts.append(normalized)
+            title_sizes.append(font_size)
+            if len(" ".join(title_parts)) >= 80:
+                break
+
+        combined = f"{marker} {' '.join(title_parts)}".strip()
+        return HeadingCandidate(
+            page_number=page_number,
+            text=combined[:120],
+            font_size=round(max([marker_size, *title_sizes]), 2),
+            confidence=0.9 if title_parts else 0.78,
+        )
 
     def _extract_ocr_heading_candidates(
         self,
@@ -666,6 +741,146 @@ class DocumentParser:
             )
         finally:
             pdf.close()
+
+    def _build_sections_from_textual_toc(
+        self,
+        *,
+        document_id: str,
+        fallback_title: str,
+        page_count: int,
+        parsed_pages: list[ParsedPage],
+    ) -> list[DocumentSection]:
+        """Recover a chapter outline from a visible contents page without inventing page offsets."""
+        scan_limit = min(page_count, max(12, min(40, page_count // 4)))
+        for toc_page in parsed_pages[:scan_limit]:
+            lines = [_clean_text(text) for text, _font_size in toc_page.line_entries if _clean_text(text)]
+            marker_index = next(
+                (
+                    index
+                    for index, line in enumerate(lines)
+                    if line.casefold().strip(" .:-") in {"contents", "table of contents"}
+                ),
+                None,
+            )
+            if marker_index is None:
+                continue
+            titles = self._extract_textual_toc_titles(lines[marker_index + 1 :])
+            if len(titles) < MIN_GOOD_TOC_ENTRIES:
+                continue
+            entries: list[tuple[int, str, int]] = []
+            last_page = toc_page.page_number
+            for title in titles:
+                match = self._match_textual_toc_title(
+                    title=title,
+                    parsed_pages=parsed_pages,
+                    page_start=last_page + 1,
+                )
+                if match is None:
+                    continue
+                entries.append((match, title, 1))
+                last_page = match
+            if len(entries) < MIN_GOOD_TOC_ENTRIES or len(entries) * 4 < len(titles) * 3:
+                continue
+            return self._materialize_sections(
+                document_id=document_id,
+                page_count=page_count,
+                entries=entries,
+                fallback_title=fallback_title,
+            )
+        return []
+
+    def _extract_textual_toc_titles(self, lines: list[str]) -> list[str]:
+        numbered: list[tuple[int, str, int]] = []
+        for index, line in enumerate(lines[:80]):
+            direct = re.fullmatch(r"(\d{1,3})[.)]?\s+(.{3,100})", line)
+            if direct:
+                numbered.append((int(direct.group(1)), direct.group(2).strip(), index))
+                continue
+            if re.fullmatch(r"\d{1,3}", line) and index + 1 < len(lines):
+                title = lines[index + 1].strip()
+                if not re.match(r"^\d", title):
+                    numbered.append((int(line), title, index + 1))
+        if not numbered:
+            return []
+        numbered.sort(key=lambda item: item[2])
+        if numbered[0][0] == 2:
+            first_index = numbered[0][2]
+            first_title = next(
+                (
+                    candidate.strip()
+                    for candidate in lines[:first_index]
+                    if self._textual_toc_title_is_usable(candidate.strip())
+                ),
+                "",
+            )
+            if first_title:
+                numbered.insert(0, (1, first_title, 0))
+        expected = 1
+        titles: list[str] = []
+        final_index = -1
+        for number, title, index in numbered:
+            if number != expected or not self._textual_toc_title_is_usable(title):
+                break
+            titles.append(f"Chapter {number}: {title}")
+            final_index = max(final_index, index)
+            expected += 1
+        if len(titles) < MIN_GOOD_TOC_ENTRIES:
+            return []
+        for line in lines[final_index + 1 : final_index + 8]:
+            cleaned = line.strip()
+            if cleaned.casefold() in {
+                "glossary",
+                "characters in the story",
+                "references",
+                "bibliography",
+                "index",
+            }:
+                titles.append(cleaned)
+        return titles
+
+    def _textual_toc_title_is_usable(self, title: str) -> bool:
+        return bool(
+            3 <= len(title) <= 100
+            and not re.fullmatch(r"\d+", title)
+            and not self._looks_like_noisy_heading(title)
+        )
+
+    def _match_textual_toc_title(
+        self,
+        *,
+        title: str,
+        parsed_pages: list[ParsedPage],
+        page_start: int,
+    ) -> int | None:
+        target = self._textual_toc_match_key(title)
+        if not target:
+            return None
+        best: tuple[float, int] | None = None
+        for page in parsed_pages[max(0, page_start - 1) :]:
+            lines = [_clean_text(text) for text, _font_size in page.line_entries[:12] if _clean_text(text)]
+            candidates: list[str] = []
+            for index in range(len(lines)):
+                for width in range(1, min(4, len(lines) - index) + 1):
+                    candidates.append(" ".join(lines[index : index + width]))
+            for candidate in candidates:
+                key = self._textual_toc_match_key(candidate)
+                if not key:
+                    continue
+                if target == key or target in key:
+                    return page.page_number
+                score = SequenceMatcher(None, target, key).ratio()
+                if best is None or score > best[0]:
+                    best = (score, page.page_number)
+        return best[1] if best is not None and best[0] >= 0.86 else None
+
+    def _textual_toc_match_key(self, value: str) -> str:
+        normalized = re.sub(
+            r"^(?:chapter\s+)?\d{1,3}[.):\-]?\s+",
+            "",
+            value.strip(),
+            flags=re.IGNORECASE,
+        )
+        return "".join(character.casefold() for character in normalized if character.isalnum())
 
     def _fallback_sections(self, *, fallback_title: str, page_count: int) -> list[tuple[int, str]]:
         if page_count <= 1:
@@ -860,8 +1075,14 @@ class DocumentParser:
         normalized = _clean_text(text)
         normalized = re.sub(r"\s+", " ", normalized)
         normalized = re.sub(r"^\d{1,4}\s+[—-]\s+", "", normalized)
-        normalized = re.sub(r"\s+\d{1,4}$", "", normalized)
-        normalized = re.sub(r"\s+[ivxlcdmIVXLCDM]+$", "", normalized)
+        structural = re.fullmatch(
+            r"(?:chapter|section|part|appendix)\s+(?:\d{1,4}|[ivxlcdmIVXLCDM]+)[A-Za-z]?",
+            normalized,
+            re.IGNORECASE,
+        )
+        if structural is None:
+            normalized = re.sub(r"\s+\d{1,4}$", "", normalized)
+            normalized = re.sub(r"\s+[ivxlcdmIVXLCDM]+$", "", normalized)
         return normalized.strip(" -_:|")
 
     def _normalize_margin_text(self, text: str) -> str:
@@ -887,6 +1108,12 @@ class DocumentParser:
     def _looks_like_margin_candidate(self, text: str) -> bool:
         normalized = _clean_text(text)
         if not normalized:
+            return False
+        if re.fullmatch(
+            r"(?:chapter|section|part|appendix)\s*[,.:;-]?\s*\d{1,4}[A-Za-z]?",
+            normalized,
+            re.IGNORECASE,
+        ):
             return False
         if self._is_page_marker(normalized):
             return True
@@ -917,6 +1144,12 @@ class DocumentParser:
     def _looks_like_running_header(self, text: str) -> bool:
         normalized = _clean_text(text)
         if not normalized:
+            return False
+        if re.fullmatch(
+            r"(?:chapter|section|part|appendix)\s*[,.:;-]?\s*\d{1,4}[A-Za-z]?",
+            normalized,
+            re.IGNORECASE,
+        ):
             return False
         return bool(
             re.match(r"^\d{1,4}\s+\d+(?:\.\d+)*\.?\s+\S+", normalized)

@@ -55,11 +55,13 @@ class OpenAIPlanRunner:
             rounds=[],
         )
         max_rounds = 24
+        max_tool_rounds = 1
         max_content_filter_retries = 2
         max_empty_response_retries = 1
         empty_response_retries = 0
         max_tool_probe_retries = 3
         tool_probe_retries = 0
+        unoffered_tool_retries = 0
         round_index = 0
         content_filter_retries = 0
         pending_recoveries: list[dict[str, object]] = []
@@ -78,14 +80,17 @@ class OpenAIPlanRunner:
             payload: dict[str, Any] = {
                 "model": self.model,
                 "messages": current_messages,
-                "temperature": 0.2,
+                "temperature": 0.1,
+                "response_format": {"type": "json_object"},
             }
-            if tool_runtime.has_tools():
+            tools_offered = (
+                tool_runtime.has_tools()
+                and _tool_round_count(trace) < max_tool_rounds
+            )
+            if tools_offered:
                 payload["tools"] = tool_runtime.openai_tools()
                 payload["tool_choice"] = "auto"
                 payload["parallel_tool_calls"] = False
-            else:
-                payload["response_format"] = {"type": "json_object"}
             raw_payload, elapsed_ms = self.request_chat_completion(payload)
             _call_interrupt(interrupt_check)
             choice = raw_payload["choices"][0]
@@ -96,6 +101,33 @@ class OpenAIPlanRunner:
                 message=message,
             )
             tool_calls = message.get("tool_calls") or []
+            if tool_calls and not tools_offered:
+                _emit_progress(
+                    progress_callback,
+                    "model_round_failed",
+                    {
+                        "round_index": round_index,
+                        "elapsed_ms": elapsed_ms,
+                        "finish_reason": str(choice.get("finish_reason") or ""),
+                        "error": "plan_model_unoffered_tool_call",
+                    },
+                )
+                if unoffered_tool_retries >= 1:
+                    raise RuntimeError("plan_model_unoffered_tool_call")
+                unoffered_tool_retries += 1
+                pending_recoveries.append(
+                    {
+                        "category": "schema_retry",
+                        "reason": "plan_model_unoffered_tool_call",
+                        "strategy": "finalize_without_tools",
+                        "attempts": unoffered_tool_retries + 1,
+                    }
+                )
+                current_messages.append(
+                    {"role": "user", "content": prompt_template.require("finalize_after_tool_round")}
+                )
+                round_index += 1
+                continue
             if tool_calls:
                 tool_runtime.begin_round()
                 round_recoveries = _resolve_pending_plan_recoveries(
@@ -159,6 +191,13 @@ class OpenAIPlanRunner:
                 current_messages.extend(follow_up_messages)
                 tool_messages.extend(current_messages[batch_start:])
                 trace.rounds.append(trace_round)
+                if _tool_round_count(trace) >= max_tool_rounds:
+                    finalization_message = {
+                        "role": "user",
+                        "content": prompt_template.require("finalize_after_tool_round"),
+                    }
+                    current_messages.append(finalization_message)
+                    tool_messages.append(finalization_message)
                 _emit_progress(
                     progress_callback,
                     "model_round_completed",
@@ -383,6 +422,10 @@ def _trace_has_tool_calls(trace: PlanGenerationTraceRecord) -> bool:
 
 def _tool_call_count(trace: PlanGenerationTraceRecord) -> int:
     return sum(len(round_record.tool_calls) for round_record in trace.rounds)
+
+
+def _tool_round_count(trace: PlanGenerationTraceRecord) -> int:
+    return sum(bool(round_record.tool_calls) for round_record in trace.rounds)
 
 
 def _should_continue_tool_refinement(

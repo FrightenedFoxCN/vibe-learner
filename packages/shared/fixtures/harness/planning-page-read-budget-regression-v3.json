@@ -1,0 +1,11 @@
+{
+  "case_id": "planning-tool-page-read-round-limit-003",
+  "split": "regression",
+  "tags": ["budget", "duplicate_call", "page_read"],
+  "tool_name": "read_page_range_content",
+  "arguments_json": "{\"page_start\":1,\"page_end\":4,\"max_chars\":500}",
+  "disabled_tools": [],
+  "repeat_count": 4,
+  "expected_ok": false,
+  "expected_error": "tool_round_budget_exceeded"
+}

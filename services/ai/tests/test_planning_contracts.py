@@ -32,6 +32,17 @@ from app.services.study_arrangement import StudyArrangementService
 
 class PlanningContractTests(unittest.TestCase):
 
+    def test_local_json_repair_still_requires_strict_proposal_validation(self) -> None:
+        malformed = json.dumps(_valid_proposal_payload(), ensure_ascii=False)[:-1] + ",}"
+        with self.assertRaises(PlanningProposalDecodeError):
+            _decode_learning_plan_proposal(malformed)
+        repaired = _decode_learning_plan_proposal(malformed, allow_json_repair=True)
+        self.assertEqual(repaired.course_title, "离散数学基础")
+
+        invalid_contract = malformed.replace('"activity_type": "learn"', '"activity_type": "invent"')
+        with self.assertRaises(PlanningProposalDecodeError):
+            _decode_learning_plan_proposal(invalid_contract, allow_json_repair=True)
+
     def test_duplicate_unit_repair_receives_specific_safe_invariant(self) -> None:
         payload = _valid_proposal_payload()
         payload["schedule"].append(dict(payload["schedule"][0]))

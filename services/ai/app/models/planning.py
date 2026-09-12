@@ -215,6 +215,10 @@ class ReadPageRangeContentResultV1(PlanningToolResultBaseV1):
     page_end: int = Field(ge=1)
     chunk_count: int = Field(ge=0)
     content: str
+    content_page_start: int | None = Field(default=None, ge=1)
+    content_page_end: int | None = Field(default=None, ge=1)
+    truncated: bool = False
+    next_page_start: int | None = Field(default=None, ge=1)
 
 
 class ReadPageRangeImagesResultV1(PlanningToolResultBaseV1):

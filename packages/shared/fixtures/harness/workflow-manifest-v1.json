@@ -843,7 +843,7 @@
             "status": "registered",
             "contract": {
               "name": "planning_prompt",
-              "version": "planning-prompt-v2"
+              "version": "planning-prompt-v3"
             }
           }
         },
@@ -853,7 +853,7 @@
             "status": "registered",
             "contract": {
               "name": "planning_toolset",
-              "version": "planning-toolset-v1"
+          "version": "planning-toolset-v2"
             }
           }
         }
@@ -862,7 +862,7 @@
         "status": "registered",
         "contract": {
           "name": "LearningPlanPrompt",
-          "version": "planning-prompt-v2"
+          "version": "planning-prompt-v3"
         }
       },
       "policy_contract": {
@@ -1120,7 +1120,7 @@
             "status": "registered",
             "contract": {
               "name": "planning_toolset",
-              "version": "planning-toolset-v1"
+          "version": "planning-toolset-v2"
             }
           }
         }

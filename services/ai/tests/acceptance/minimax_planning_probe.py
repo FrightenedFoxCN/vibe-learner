@@ -48,6 +48,33 @@ def planning_outcomes(readback_equal, operation_status, traces, execution_count)
     }
 
 
+def _request_shape(payload):
+    """Return content-safe request size diagnostics for experiment comparison."""
+    messages = payload.get("messages") or []
+    text_chars = 0
+    image_parts = 0
+    for message in messages:
+        content = message.get("content") if isinstance(message, dict) else None
+        if isinstance(content, str):
+            text_chars += len(content)
+        elif isinstance(content, list):
+            for part in content:
+                if not isinstance(part, dict):
+                    continue
+                if isinstance(part.get("text"), str):
+                    text_chars += len(part["text"])
+                if part.get("type") == "image_url":
+                    image_parts += 1
+    tools = payload.get("tools") or []
+    return {
+        "message_count": len(messages),
+        "message_text_chars": text_chars,
+        "tool_count": len(tools),
+        "tool_schema_chars": len(json.dumps(tools, ensure_ascii=False, separators=(",", ":"))),
+        "image_parts_sent": image_parts,
+    }
+
+
 PLANNING_BUDGET_CANDIDATE = (
     "\n工具调用预算：同名工具在同一轮最多调用一次、整个计划生成过程最多调用四次。"
     "多个独立单元需要同名详情工具时，分轮核查；同轮可以调用不同名称的工具。"
@@ -62,6 +89,14 @@ PLANNING_GROUNDING_CANDIDATE = (
     "不能直接使用目录上的印刷页码；先对照实际章节页确认偏移，章起始页也不能替代小节起始页。"
 )
 
+PLANNING_STRUCTURE_FIDELITY_CANDIDATE = (
+    "\n来源结构忠实约束：不得把模型推断的情节段落伪装成教材子章节。"
+    "当一个学习单元的subsection_titles为空时，schedule_chapters只输出一个覆盖父单元完整页范围的章节锚点，"
+    "标题沿用父单元标题；只有输入或成功工具结果明确给出子标题及边界时才允许细分。"
+    "没有读取某单元正文时，focus只安排由标题可支持的阅读、复述、词语记录和回顾，"
+    "不得声称具体事件、人物动机、引文或页内分段。"
+)
+
 
 def run(root, repetitions, budget_candidate=False, selected_case=None, detail_parallel_candidate=False,
         pdf_path=None, objective_override=None, ocr_engine="disabled", multimodal=False, persona_variant="default",
@@ -70,7 +105,7 @@ def run(root, repetitions, budget_candidate=False, selected_case=None, detail_pa
         prepared_source_root=None, transcription_file=None, redact_tool_error_evidence=False,
         tool_recovery_hint_candidate=False, page_evidence_dpi=100, persona_method=None, prepared_document_id=None,
         finalize_after_tool_rounds=None, finalization_tool_policy='omit',
-        transcription_source='experimental_model_transcription'):
+        transcription_source='experimental_model_transcription', structure_fidelity_candidate=False):
     if transcription_source not in {'experimental_model_transcription', 'experimental_native_vision_ocr'}:
         raise ValueError('Unknown supplementary transcription source')
     if finalization_tool_policy not in {'omit', 'none'}:
@@ -138,13 +173,24 @@ def run(root, repetitions, budget_candidate=False, selected_case=None, detail_pa
         openai_setting_web_search_enabled=False, openai_timeout_seconds=90)
     calls = []
     detail_reads = []
+    page_content_reads = []
     tool_constraint_errors = []
     original = ProviderRequestAdapter.request_chat_completion
     original_admit = ToolExecutionBudgetTracker.admit
     original_execute_tool = PlanToolRuntime.execute_tool_call
-
     def observe_tool(runtime, tool_call):
         execution = original_execute_tool(runtime, tool_call)
+        if execution.tool_name == "read_page_range_content":
+            try:
+                arguments = json.loads(tool_call.get("function", {}).get("arguments", "{}"))
+            except (AttributeError, json.JSONDecodeError, TypeError):
+                arguments = {}
+            page_content_reads.append({
+                "page_start": arguments.get("page_start") if type(arguments.get("page_start")) is int else None,
+                "page_end": arguments.get("page_end") if type(arguments.get("page_end")) is int else None,
+                "ok": execution.provider_result.get("ok") is True,
+                "error": execution.provider_result.get("error") if execution.provider_result.get("ok") is False else None,
+            })
         detail = execution.result.get("detail") if execution.result.get("ok") is False else execution.provider_result.get("detail")
         if execution.provider_result.get("ok") is False:
             safe_detail = detail if isinstance(detail, str) and re.fullmatch(
@@ -195,6 +241,9 @@ def run(root, repetitions, budget_candidate=False, selected_case=None, detail_pa
         if grounding_candidate:
             payload = {**payload, "messages": [{**m, "content": m["content"] + PLANNING_GROUNDING_CANDIDATE}
                 if m.get("role") == "system" else m for m in payload.get("messages", [])]}
+        if structure_fidelity_candidate:
+            payload = {**payload, "messages": [{**m, "content": m["content"] + PLANNING_STRUCTURE_FIDELITY_CANDIDATE}
+                if m.get("role") == "system" else m for m in payload.get("messages", [])]}
         if evidence_message:
             # The same intervention is present on every request, including repair.
             messages = payload.get("messages", [])
@@ -219,16 +268,14 @@ def run(root, repetitions, budget_candidate=False, selected_case=None, detail_pa
                 'messages': [*payload.get('messages', []), {'role': 'user', 'content':
                     '本轮请依据已取得的资料输出最终计划JSON。未核验的资料须明确标记需回查，'
                     '不要为完成计划补造事实；继续满足原任务的来源、时间与教学方法要求。'}]}
-        call = {"kind": request_kind, "model": model, "max_tokens": payload.get("max_tokens")}
+        call = {"kind": request_kind, "model": model, "max_tokens": payload.get("max_tokens"),
+            **_request_shape(payload)}
         if finalize_after_tool_rounds is not None:
             call['finalization_experiment'] = {'after_tool_rounds': finalize_after_tool_rounds,
                 'completed_tool_rounds': completed_tool_rounds, 'applied': finalization_applied,
                 'response_format': payload.get('response_format'), 'tool_policy': finalization_tool_policy}
         call["tool_choice"] = payload.get("tool_choice")
         call["offered_tools"] = [tool.get("function", {}).get("name") for tool in payload.get("tools", [])]
-        call["image_parts_sent"] = sum(part.get("type") == "image_url"
-            for message in payload.get("messages", []) if isinstance(message.get("content"), list)
-            for part in message["content"] if isinstance(part, dict))
         calls.append(call)
         start = time.perf_counter()
         try:
@@ -346,6 +393,7 @@ def run(root, repetitions, budget_candidate=False, selected_case=None, detail_pa
                     objective = objective_override or objective
                     calls.clear()
                     detail_reads.clear()
+                    page_content_reads.clear()
                     tool_constraint_errors.clear()
                     request_id = f"quality-plan-{case_id}-{repetition}"
                     if prepared_row is not None:
@@ -363,6 +411,7 @@ def run(root, repetitions, budget_candidate=False, selected_case=None, detail_pa
                         "model": "MiniMax-M3", "objective": objective, "calls": calls, "boundary_success": False}
                     row["source_document"] = source_report
                     row["detail_evidence_reads"] = detail_reads
+                    row["page_content_reads"] = page_content_reads
                     row["tool_constraint_errors"] = tool_constraint_errors
                     if redact_tool_error_evidence:
                         row["tool_error_variant"] = "provider-repair-evidence-removed-v1"
@@ -396,6 +445,9 @@ def run(root, repetitions, budget_candidate=False, selected_case=None, detail_pa
                         row["grounding_variant"] = "evidence-granularity-and-physical-pages-v1"
                         row["experimental_grounding_suffix"] = PLANNING_GROUNDING_CANDIDATE
                         row["trace_limitation"] = "Experimental prompt and optional page evidence interventions; traces prove lifecycle only, not production prompt or artifact replay adoption."
+                    if structure_fidelity_candidate:
+                        row["structure_fidelity_variant"] = "source-structure-and-budget-v1" if budget_candidate else "source-structure-v1"
+                        row["experimental_structure_suffix"] = PLANNING_STRUCTURE_FIDELITY_CANDIDATE
                     if detail_parallel_candidate:
                         row["budget_variant"] = "planning-detail-round-three-experiment-v1"
                         row["budget_override"] = {"tool": "get_study_unit_detail", "max_calls_per_round": 3,
@@ -468,8 +520,15 @@ if __name__ == "__main__":
     parser.add_argument("--transcription-file", type=Path)
     parser.add_argument("--redact-tool-error-evidence", action="store_true")
     parser.add_argument("--tool-recovery-hint-candidate", action="store_true")
+    parser.add_argument("--prepared-document-id")
+    parser.add_argument("--finalize-after-tool-rounds", type=int)
+    parser.add_argument("--finalization-tool-policy", choices=("omit", "none"), default="omit")
+    parser.add_argument("--structure-fidelity-candidate", action="store_true")
     args = parser.parse_args()
     if not 1 <= args.repetitions <= 20:
         parser.error("repetitions must be between 1 and 20")
     run(args.root.resolve(), args.repetitions, args.budget_candidate, args.case, args.detail_parallel_candidate,
-        args.pdf, args.objective, args.ocr_engine, args.multimodal, args.persona_variant, args.initial_evidence_tool, args.page_evidence, args.grounding_candidate, args.page_evidence_page, args.persona_domain, args.controlled_page_evidence, args.prepared_source_root, args.transcription_file, args.redact_tool_error_evidence, args.tool_recovery_hint_candidate, args.page_evidence_dpi)
+        args.pdf, args.objective, args.ocr_engine, args.multimodal, args.persona_variant, args.initial_evidence_tool, args.page_evidence, args.grounding_candidate, args.page_evidence_page, args.persona_domain, args.controlled_page_evidence, args.prepared_source_root, args.transcription_file, args.redact_tool_error_evidence, args.tool_recovery_hint_candidate, args.page_evidence_dpi, prepared_document_id=args.prepared_document_id,
+        finalize_after_tool_rounds=args.finalize_after_tool_rounds,
+        finalization_tool_policy=args.finalization_tool_policy,
+        structure_fidelity_candidate=args.structure_fidelity_candidate)

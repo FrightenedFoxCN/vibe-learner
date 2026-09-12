@@ -29,24 +29,27 @@ GOLDEN_PATH = REPO_ROOT / "packages/shared/fixtures/harness/tool-manifest-v1.jso
 
 
 class ToolManifestTests(unittest.TestCase):
-    def test_detail_batch_budget_preserves_total_ceiling_and_other_tool_limits(self):
+    def test_planning_read_batch_budgets_preserve_total_ceiling_and_other_tool_limits(self):
         from app.services.tool_provider_projection import ToolExecutionBudgetTracker, ToolContractViolation
-        detail = next(entry for entry in TOOL_MANIFEST_ENTRIES.values()
-            if entry.workflow == HarnessWorkflow.PLANNING and entry.canonical_name == "get_study_unit_detail")
-        self.assertEqual(detail.budget.max_calls_per_round, 3)
-        self.assertEqual(detail.budget.max_calls_per_operation, 4)
-        self.assertEqual(detail.parallel.runtime_mode, "serial")
-        tracker = ToolExecutionBudgetTracker()
-        for _ in range(3):
-            tracker.admit(detail)
-        with self.assertRaisesRegex(ToolContractViolation, "tool_round_budget_exceeded"):
-            tracker.admit(detail)
-        tracker.begin_round()
-        tracker.admit(detail)
-        with self.assertRaisesRegex(ToolContractViolation, "tool_operation_budget_exceeded"):
-            tracker.admit(detail)
+        batched_names = {"get_study_unit_detail", "read_page_range_content"}
+        batched = [entry for entry in TOOL_MANIFEST_ENTRIES.values()
+            if entry.workflow == HarnessWorkflow.PLANNING and entry.canonical_name in batched_names]
+        self.assertEqual({entry.canonical_name for entry in batched}, batched_names)
+        for entry in batched:
+            self.assertEqual(entry.budget.max_calls_per_round, 3)
+            self.assertEqual(entry.budget.max_calls_per_operation, 4)
+            self.assertEqual(entry.parallel.runtime_mode, "serial")
+            tracker = ToolExecutionBudgetTracker()
+            for _ in range(3):
+                tracker.admit(entry)
+            with self.assertRaisesRegex(ToolContractViolation, "tool_round_budget_exceeded"):
+                tracker.admit(entry)
+            tracker.begin_round()
+            tracker.admit(entry)
+            with self.assertRaisesRegex(ToolContractViolation, "tool_operation_budget_exceeded"):
+                tracker.admit(entry)
         for entry in TOOL_MANIFEST_ENTRIES.values():
-            if entry.key != detail.key:
+            if entry not in batched:
                 self.assertEqual(entry.budget.max_calls_per_round, 1)
 
     def test_production_chat_projection_assembles_all_registered_tools(self) -> None:

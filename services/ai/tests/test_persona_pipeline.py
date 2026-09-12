@@ -2934,6 +2934,96 @@ class PersonaPipelineTests(ContainerTestCase):
             "Solutions to Exercises",
         )
 
+    def test_parser_preserves_structural_heading_number_and_joins_display_title(self) -> None:
+        parser = DocumentParser()
+
+        candidates = parser._extract_heading_candidates(
+            page_number=17,
+            line_entries=[
+                ("CHAPTER 3", 12.9),
+                ("ornament", 7.0),
+                ("Thoughts of Murder", 18.2),
+                ("Body text starts here.", 10.5),
+            ],
+            dominant_font_size=10.5,
+        )
+
+        self.assertEqual(parser._normalize_heading_text("Chapter 3"), "Chapter 3")
+        self.assertEqual(candidates[0].text, "CHAPTER 3 Thoughts of Murder")
+        self.assertEqual(candidates[0].confidence, 0.9)
+
+    def test_parser_joins_split_structural_heading_number(self) -> None:
+        parser = DocumentParser()
+
+        candidates = parser._extract_heading_candidates(
+            page_number=9,
+            line_entries=[
+                ("CHAPTER,", 10.4),
+                ("1", 7.4),
+                ("decoration", 9.4),
+                ("A Bloody", 18.8),
+                ("Battle and a", 15.7),
+                ("Dangerous Prophecy", 13.2),
+                ("Body text starts here.", 10.4),
+            ],
+            dominant_font_size=10.4,
+        )
+
+        self.assertEqual(
+            candidates[0].text,
+            "CHAPTER 1 A Bloody Battle and a Dangerous Prophecy",
+        )
+        self.assertFalse(parser._looks_like_margin_candidate("CHAPTER 3"))
+
+    def test_parser_recovers_visible_textual_toc_without_embedded_outline(self) -> None:
+        parser = DocumentParser(ocr_engine_name="disabled")
+
+        def parsed(page_number, *lines):
+            return ParsedPage(
+                page_number=page_number,
+                line_entries=[(line, 12.0) for line in lines],
+                dominant_font_size=12.0,
+                extraction_source="text",
+                warnings=[],
+                used_ocr=False,
+            )
+
+        titles = [
+            "Alpha Topic",
+            "Beta Topic",
+            "Gamma Topic",
+            "Delta Topic",
+            "Epsilon Topic",
+            "Zeta Topic",
+        ]
+        pages = [
+            parsed(
+                1,
+                "CONTENTS",
+                *[f"{index} {title}" for index, title in enumerate(titles, start=1)],
+                "Glossary",
+            ),
+            *[
+                parsed(index + 1, title, "Body text for this chapter.")
+                for index, title in enumerate(titles, start=1)
+            ],
+            parsed(8, "Glossary", "Terms used in this book."),
+        ]
+
+        sections = parser._build_sections_from_textual_toc(
+            document_id="doc-visible-toc",
+            fallback_title="Visible TOC",
+            page_count=len(pages),
+            parsed_pages=pages,
+        )
+
+        self.assertEqual(
+            [section.title for section in sections[1:7]],
+            [f"Chapter {index}: {title}" for index, title in enumerate(titles, start=1)],
+        )
+        self.assertEqual([section.page_start for section in sections[1:7]], list(range(2, 8)))
+        self.assertEqual(sections[-1].title, "Glossary")
+
     def test_parser_detects_and_strips_recurrent_headers_and_footers(self) -> None:
         parser = DocumentParser()
         pages = [
@@ -3178,7 +3268,7 @@ class PersonaPipelineTests(ContainerTestCase):
         self.assertEqual(messages[0]["role"], "system")
         self.assertIn("必须严格输出单个 JSON 对象", messages[0]["content"])
         self.assertIn('"course_title": string', messages[0]["content"])
-        self.assertNotIn("course_outline", messages[0]["content"])
+        self.assertIn("只有 `subsection_titles`、`course_outline`", messages[0]["content"])
         self.assertIn("Chapter 1 Foundations", messages[1]["content"])
         self.assertIn('"detail_tool_target_id": "unit-1"', messages[1]["content"])
         self.assertIn('"study_units"', messages[1]["content"])

@@ -618,7 +618,9 @@ _PLANNING_ENTRIES = (
     _planning_entry("ask_planning_question", effects=PLANNING_PARENT_EFFECT, dependencies=_sorted_dependencies(ToolDependency.PLANNING_CONTEXT)),
     _planning_entry("estimate_plan_completion", dependencies=_sorted_dependencies(ToolDependency.PLANNING_CONTEXT)),
     _planning_entry("revise_study_units", effects=PLANNING_PARENT_EFFECT, sensitivity=PROTECTED_SENSITIVITY, dependencies=_sorted_dependencies(ToolDependency.DOCUMENT_DEBUG, ToolDependency.PLANNING_CONTEXT)),
-    _planning_entry("read_page_range_content", sensitivity=PROTECTED_SENSITIVITY, dependencies=_sorted_dependencies(ToolDependency.DOCUMENT_DEBUG)),
+    _planning_entry("read_page_range_content", sensitivity=PROTECTED_SENSITIVITY,
+        dependencies=_sorted_dependencies(ToolDependency.DOCUMENT_DEBUG),
+        budget=DEFAULT_BUDGET.model_copy(update={"max_calls_per_round": 3})),
     _planning_entry("read_page_range_images", sensitivity=PROTECTED_SENSITIVITY, dependencies=_sorted_dependencies(ToolDependency.DOCUMENT_FILE), capabilities=_sorted_capabilities(ToolProviderCapability.FUNCTION_CALLING, ToolProviderCapability.MULTIMODAL_INPUT), budget=IMAGE_BUDGET),
 )
 

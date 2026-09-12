@@ -98,7 +98,7 @@ Required semantic rules:
 
 This wording policy does not transfer application-owned identity, revisions, timestamps, progress, or effects into the model proposal. Existing strict decode, invariant validation, tool authorization, and commit boundaries remain authoritative.
 
-The reviewed Planning behavior is registered as `LearningPlanPrompt@planning-prompt-v2`; the corresponding Study Chat behavior is registered as `StudyChatPrompt@study-chat-prompt-v2`. Historical v1 traces and archived experiment evidence remain unchanged.
+The reviewed Planning behavior is registered as `LearningPlanPrompt@planning-prompt-v3`; the corresponding Study Chat behavior is registered as `StudyChatPrompt@study-chat-prompt-v2`. Planning v3 adds one bounded representative excerpt per Study Unit, source-structure fidelity rules, honest page-read truncation metadata, and a one-round tool finalization policy. Historical v1/v2 traces and archived experiment evidence remain unchanged.
 
 The same strategy is separately adopted for Study Chat, including the rule that a tool effect may be described as completed only after successful execution. This document does not otherwise define the Study Chat contract. The adoption does not change Tavern, Persona/Scene generation, Harness schemas, or multimodal defaults.
 

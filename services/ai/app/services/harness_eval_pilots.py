@@ -13,7 +13,12 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from app.models.domain import PersonaProfile, StudyUnitRecord
+from app.models.domain import (
+    DocumentChunkRecord,
+    DocumentDebugRecord,
+    PersonaProfile,
+    StudyUnitRecord,
+)
 from app.models.harness import HarnessContractRef, HarnessStage, HarnessWorkflow, canonical_harness_digest
 from app.models.harness_eval import (
     HARNESS_EVAL_FAILURE_TAXONOMY_CONTRACT,
@@ -605,9 +610,34 @@ def _execute_planning(*, payload, run, **_):
         source_section_ids=["section-1"],
         summary="Basis, span, and linear independence.",
     )
+    debug_report = DocumentDebugRecord(
+        document_id="document-1",
+        parser_name="deterministic-pilot",
+        processed_at="2026-09-03T00:00:00Z",
+        page_count=4,
+        total_characters=26,
+        extraction_method="native",
+        pages=[],
+        sections=[],
+        chunks=[
+            DocumentChunkRecord(
+                id="chunk-1",
+                document_id="document-1",
+                section_id="section-1",
+                page_start=1,
+                page_end=4,
+                char_count=26,
+                text_preview="Basis, span, independence.",
+                content="Basis, span, independence.",
+            )
+        ],
+        warnings=[],
+        dominant_language_hint="en",
+    )
     runtime = build_plan_tool_runtime(
         study_units=[unit],
         detail_map=build_study_unit_detail_map(study_units=[unit]),
+        debug_report=debug_report,
         disabled_tools=set(case.disabled_tools),
     )
     runtime.begin_round()
@@ -901,7 +931,7 @@ def _system_config(*, suite: HarnessContractRef) -> HarnessEvalSystemConfigV1:
                 ),
                 HarnessContractRef(
                     name="planning_toolset",
-                    version="planning-toolset-v1",
+                    version="planning-toolset-v2",
                 ),
             ],
             "max_tool_calls": 3,
@@ -1101,8 +1131,17 @@ def _current_planning_cases(fixture: HarnessPilotEvalCasesV1) -> list[PlanningPi
     )
     if replacement.split != "regression":
         raise ValueError("planning_budget_replacement_must_be_regression")
-    return [replacement if item.case_id == "planning-tool-duplicate-call-001" else item
-        for item in fixture.planning_cases]
+    page_read_budget = PlanningPilotCase.model_validate_json(
+        FIXTURE_PATH.with_name("planning-page-read-budget-regression-v3.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    if page_read_budget.split != "regression":
+        raise ValueError("planning_page_read_budget_must_be_regression")
+    return [
+        replacement if item.case_id == "planning-tool-duplicate-call-001" else item
+        for item in fixture.planning_cases
+    ] + [page_read_budget]
 
 
 def build_harness_pilot_runner() -> HarnessEvalRunner:
@@ -1338,8 +1377,10 @@ def execute_harness_pilot_bundle(
         if refresh_baselines:
             baseline = build_harness_eval_baseline(
                 baseline_version=(
-                    f"{suite.version}-baseline-v2"
-                    if suite in (PLANNING_TOOL_EVAL_SUITE, STUDY_CHAT_EVAL_SUITE)
+                    f"{suite.version}-baseline-v3"
+                    if suite == PLANNING_TOOL_EVAL_SUITE
+                    else f"{suite.version}-baseline-v2"
+                    if suite == STUDY_CHAT_EVAL_SUITE
                     else f"{suite.version}-baseline-v1"
                 ),
                 run=runs[key],
@@ -1350,15 +1391,23 @@ def execute_harness_pilot_bundle(
                     key=lambda item: (item.metric.name, item.metric.version),
                 ),
                 review_contract=(
-                    HarnessContractRef(name="PlanningDetailBudgetMaintainerReview", version="planning-detail-budget-review-v2")
+                    HarnessContractRef(name="PlanningToolsetBudgetMaintainerReview", version="planning-toolset-budget-review-v3")
                     if suite == PLANNING_TOOL_EVAL_SUITE else
                     study_fixture.review_contract
                     if suite == STUDY_CHAT_EVAL_SUITE
                     else fixture.review_contract
                 ),
                 review_attestation_digest=(
-                    canonical_harness_digest({"case_id": "planning-tool-detail-round-limit-002",
-                        "same_round_limit": 3, "operation_limit": 4, "review_kind": "developer_reviewed"})
+                    canonical_harness_digest({
+                        "case_ids": [
+                            "planning-tool-detail-round-limit-002",
+                            "planning-tool-page-read-round-limit-003",
+                        ],
+                        "same_round_limit": 3,
+                        "operation_limit": 4,
+                        "runtime_mode": "serial",
+                        "review_kind": "developer_reviewed",
+                    })
                     if suite == PLANNING_TOOL_EVAL_SUITE else
                     study_fixture.review_attestation_digest
                     if suite == STUDY_CHAT_EVAL_SUITE
@@ -1388,7 +1437,7 @@ def execute_harness_pilot_bundle(
 
 def _baseline_directory_name(suite_name: str) -> str:
     if suite_name == PLANNING_TOOL_EVAL_SUITE.name:
-        return "planning_tool_eval_detail_budget_v2"
+        return "planning_tool_eval_toolset_v2"
     if suite_name == STUDY_CHAT_EVAL_SUITE.name:
         # Keep the prompt-v1 baseline immutable; the directory name binds this
         # deterministic evidence set to the reviewed prompt-v2 system identity.

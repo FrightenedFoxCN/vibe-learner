@@ -70,6 +70,15 @@ def build_learning_plan_messages(
         study_units=study_units,
         debug_report=debug_report,
     )
+    # One bounded excerpt per unit gives the planner a content cue for every
+    # admitted boundary.  This is deliberately much smaller than page-range
+    # tool output; tools remain available for targeted verification.
+    unit_by_id = {unit.id: unit for unit in study_units}
+    for unit_payload in planning_context["study_units"]:
+        unit_payload["source_evidence_excerpts"] = _representative_unit_excerpts(
+            unit=unit_by_id[unit_payload["unit_id"]],
+            debug_report=debug_report,
+        )
     segmentation_hints = _build_segmentation_hints(
         study_units=study_units,
         detail_map=planning_context["detail_map"],
@@ -252,8 +261,12 @@ def read_page_range_content(
             "page_end": page_end,
             "chunk_count": 0,
             "content": "",
+            "content_page_start": None,
+            "content_page_end": None,
+            "truncated": False,
+            "next_page_start": None,
         }
-    matched_chunks = [
+    matched_chunks = sorted([
         chunk
         for chunk in debug_report.chunks
         if _ranges_overlap(
@@ -262,31 +275,75 @@ def read_page_range_content(
             start_b=chunk.page_start,
             end_b=chunk.page_end,
         )
-    ]
+    ], key=lambda chunk: (chunk.page_start, chunk.page_end, chunk.id))
     parts: list[str] = []
     total = 0
-    for chunk in matched_chunks:
+    content_page_start: int | None = None
+    content_page_end: int | None = None
+    truncated = False
+    next_page_start: int | None = None
+    nonempty_chunks = [
+        chunk for chunk in matched_chunks
+        if (chunk.content or chunk.text_preview).strip()
+    ]
+    for chunk_index, chunk in enumerate(nonempty_chunks):
         text = (chunk.content or chunk.text_preview).strip()
-        if not text:
-            continue
         separator_chars = 2 if parts else 0
         remaining = max_chars - total - separator_chars
         if remaining <= 0:
+            truncated = True
+            next_page_start = chunk.page_start
             break
+        if content_page_start is None:
+            content_page_start = chunk.page_start
         if len(text) > remaining:
             if not parts or remaining > 120:
                 parts.append(text[:remaining])
+                content_page_end = chunk.page_start
+            truncated = True
+            next_page_start = chunk.page_start
             break
         parts.append(text)
         total += separator_chars + len(text)
+        content_page_end = chunk.page_end
         if total >= max_chars:
+            if chunk_index + 1 < len(nonempty_chunks):
+                truncated = True
+                next_page_start = nonempty_chunks[chunk_index + 1].page_start
             break
     return {
         "page_start": page_start,
         "page_end": page_end,
         "chunk_count": len(matched_chunks),
         "content": "\n\n".join(parts),
+        "content_page_start": content_page_start,
+        "content_page_end": content_page_end,
+        "truncated": truncated,
+        "next_page_start": next_page_start,
     }
+
+
+def _representative_unit_excerpts(
+    *, unit: StudyUnitRecord, debug_report: DocumentDebugRecord | None,
+) -> list[dict[str, object]]:
+    if debug_report is None:
+        return []
+    chunks = _related_chunks_for_unit(
+        unit=unit,
+        chunks=debug_report.chunks,
+        related_section_ids=list(unit.source_section_ids),
+    )
+    if not chunks:
+        return []
+    candidate = chunks[len(chunks) // 2]
+    content = (candidate.content or candidate.text_preview).strip()
+    if not content:
+        return []
+    return [{
+        "page_start": candidate.page_start,
+        "page_end": candidate.page_end,
+        "excerpt": content[:240],
+    }]
 
 
 def read_page_range_images(

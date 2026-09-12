@@ -5,6 +5,7 @@ import json
 from dataclasses import dataclass
 from typing import Any, Callable
 
+from json_repair import repair_json
 from pydantic import ValidationError
 
 from app.core.logging import get_logger
@@ -16,7 +17,7 @@ from app.models.planning import LearningPlanProposalV1
 from app.services.model_recovery import record_model_recovery
 from app.services.model_tool_config import PLAN_STAGE, TOOL_CATALOG
 from app.services.openai_plan_runner import OpenAIPlanRunner
-from app.services.plan_prompt import build_learning_plan_context, build_learning_plan_messages
+from app.services.plan_prompt import PLAN_JSON_SCHEMA, build_learning_plan_context, build_learning_plan_messages
 from app.services.plan_tool_runtime import build_plan_tool_runtime
 from app.services.provider_callbacks import _call_interrupt, _emit_progress
 from app.services.provider_capabilities import PlanningModelCapability, PlanModelReply, PlanScheduleItem
@@ -168,72 +169,77 @@ class RemotePlanningProvider(PlanningModelCapability):
             proposal = _decode_learning_plan_proposal(run_result.content)
             _validate_learning_plan_proposal_refs(proposal, active_tool_runtime.current_study_units() or study_units)
         except PlanningProposalDecodeError as first_error:
-            recovery = record_model_recovery(
-                category="schema_retry",
-                reason="plan_proposal_schema_invalid",
-                strategy="strict_contract_repair",
-                attempts=2,
-                note=first_error.path,
-            )
-            _emit_progress(
-                progress_callback,
-                "model_recovery_attempt",
-                {
-                    "attempt": 1,
-                    "reason": "plan_proposal_schema_invalid",
-                    "strategy": "strict_contract_repair",
-                    "path": first_error.path,
-                },
-            )
             repair_units = active_tool_runtime.current_study_units() or study_units
-            repair_messages = [
-                *build_learning_plan_messages(
-                    persona=persona, document_title=document_title, goal=goal,
-                    study_units=repair_units, debug_report=debug_report,
-                    planning_questions=active_tool_runtime.current_planning_questions(),
-                    existing_plan=existing_plan,
-                ),
-                *run_result.tool_messages,
-                {"role": "assistant", "content": run_result.content},
-                {
-                    "role": "user",
-                    "content": (
-                        "上一次最终计划未通过 learning-plan-proposal-v1 严格校验，"
-                        f"首个错误路径为 {first_error.path or '$'}，错误类型为 {first_error.reason}。请只重新输出完整 JSON；"
-                        "不得输出 plan/schedule/chapter ID、revision、应用管理的状态或创建/更新时间戳；活动时长不属于时间戳，应按学习目标要求明确填写，不得遗漏或丢弃章节。"
-                    ),
-                },
-            ]
-            repaired_result = self._run_plan_model(
-                model=active_model,
-                document_id=goal.document_id,
-                messages=repair_messages,
-                tool_runtime=self._build_plan_tool_runtime(
-                    study_units=repair_units,
-                    detail_map=build_learning_plan_context(study_units=repair_units, debug_report=debug_report)["detail_map"],
-                    debug_report=debug_report, document_path=document_path, tools_enabled=False,
-                    planning_questions=active_tool_runtime.current_planning_questions(),
-                    progress_callback=progress_callback,
-                ),
-                progress_callback=progress_callback,
-                interrupt_check=interrupt_check,
-                allow_fallback=False,
-            )
-            if repaired_result is None:
-                raise RuntimeError("plan_proposal_repair_empty_response") from first_error
             try:
-                proposal = _decode_learning_plan_proposal(repaired_result.content)
+                proposal = _decode_learning_plan_proposal(run_result.content, allow_json_repair=True)
                 _validate_learning_plan_proposal_refs(proposal, repair_units)
-            except PlanningProposalDecodeError as repair_error:
-                raise RuntimeError(
-                    f"plan_proposal_schema_invalid:{repair_error.path or '$'}:{repair_error.reason}"
-                ) from repair_error
-            if repaired_result.trace.rounds:
-                repaired_result.trace.rounds[0].recoveries.insert(0, recovery)
-            final_trace = _merge_plan_generation_traces(
-                first=run_result.trace,
-                second=repaired_result.trace,
-            )
+            except PlanningProposalDecodeError:
+                recovery = record_model_recovery(
+                    category="schema_retry", reason="plan_proposal_schema_invalid",
+                    strategy="strict_contract_repair", attempts=2, note=first_error.path,
+                )
+                _emit_progress(progress_callback, "model_recovery_attempt", {
+                    "attempt": 1, "reason": "plan_proposal_schema_invalid",
+                    "strategy": "strict_contract_repair", "path": first_error.path,
+                })
+                allowed_units = [
+                    {"unit_id": unit.id, "title": unit.title, "page_start": unit.page_start,
+                     "page_end": unit.page_end, "source_section_ids": list(unit.source_section_ids)}
+                    for unit in repair_units
+                ]
+                repair_messages = [
+                    {"role": "system", "content": (
+                        "你是 JSON 语法与严格契约修复器，不重新制定学习计划。"
+                        "保留候选计划的语义和顺序，只修复 JSON 转义、缺失/多余字段、类型、引用和页范围。"
+                        "不得增加候选中没有的教材事实，不得输出 markdown 或解释。"
+                        "英文双引号若出现在字符串内容中必须转义，或替换为中文引号/单引号。"
+                        f"输出必须符合：{PLAN_JSON_SCHEMA}"
+                    )},
+                    {"role": "user", "content": json.dumps({
+                        "first_error_path": first_error.path or "$",
+                        "first_error_reason": first_error.reason,
+                        "allowed_units": allowed_units,
+                        "candidate_output": run_result.content,
+                    }, ensure_ascii=False)},
+                ]
+                repaired_result = self._run_plan_model(
+                    model=active_model, document_id=goal.document_id, messages=repair_messages,
+                    tool_runtime=self._build_plan_tool_runtime(
+                        study_units=repair_units,
+                        detail_map=build_learning_plan_context(
+                            study_units=repair_units, debug_report=debug_report,
+                        )["detail_map"],
+                        debug_report=debug_report, document_path=document_path, tools_enabled=False,
+                        planning_questions=active_tool_runtime.current_planning_questions(),
+                        progress_callback=progress_callback,
+                    ),
+                    progress_callback=progress_callback, interrupt_check=interrupt_check,
+                    allow_fallback=False,
+                )
+                if repaired_result is None:
+                    raise RuntimeError("plan_proposal_repair_empty_response") from first_error
+                try:
+                    proposal = _decode_learning_plan_proposal(repaired_result.content)
+                    _validate_learning_plan_proposal_refs(proposal, repair_units)
+                except PlanningProposalDecodeError as repair_error:
+                    raise RuntimeError(
+                        f"plan_proposal_schema_invalid:{repair_error.path or '$'}:{repair_error.reason}"
+                    ) from repair_error
+                if repaired_result.trace.rounds:
+                    repaired_result.trace.rounds[0].recoveries.insert(0, recovery)
+                final_trace = _merge_plan_generation_traces(
+                    first=run_result.trace, second=repaired_result.trace,
+                )
+            else:
+                recovery = record_model_recovery(
+                    category="schema_retry", reason="plan_model_invalid_json",
+                    strategy="local_json_repair", attempts=1, note=first_error.path,
+                )
+                if final_trace.rounds:
+                    last_round = final_trace.rounds[-1]
+                    final_trace.rounds[-1] = last_round.model_copy(update={
+                        "recoveries": [*last_round.recoveries, recovery],
+                    })
         schedule_items = [
             PlanScheduleItem(
                 unit_id=item.unit_id,
@@ -352,11 +358,28 @@ def _validate_learning_plan_proposal_refs(
 
 
 
-def _decode_learning_plan_proposal(content: str) -> LearningPlanProposalV1:
+def _decode_learning_plan_proposal(
+    content: str, *, allow_json_repair: bool = False,
+) -> LearningPlanProposalV1:
     try:
         payload = _extract_json_payload(content)
     except RuntimeError as exc:
-        raise PlanningProposalDecodeError(path="$", reason=str(exc)) from exc
+        if not allow_json_repair:
+            raise PlanningProposalDecodeError(path="$", reason=str(exc)) from exc
+        try:
+            payload = repair_json(
+                content,
+                return_objects=True,
+                skip_json_loads=True,
+            )
+        except (ValueError, TypeError) as repair_exc:
+            raise PlanningProposalDecodeError(
+                path="$", reason="plan_model_json_repair_failed",
+            ) from repair_exc
+        if not isinstance(payload, dict):
+            raise PlanningProposalDecodeError(
+                path="$", reason="plan_model_json_repair_not_object",
+            )
     try:
         return LearningPlanProposalV1.model_validate(payload)
     except ValidationError as exc:

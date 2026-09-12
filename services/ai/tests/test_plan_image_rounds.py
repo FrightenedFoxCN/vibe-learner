@@ -26,9 +26,10 @@ class PlanImageRoundTests(unittest.TestCase):
             if len(requests) == 1:
                 return {"choices": [{"finish_reason": "tool_calls", "message": {"content": "", "tool_calls": tools}}]}, 1
             messages = payload["messages"]
-            self.assertEqual([m["role"] for m in messages], ["system", "assistant", "tool", "tool", "tool", "user", "user"])
+            self.assertEqual([m["role"] for m in messages], ["system", "assistant", "tool", "tool", "tool", "user", "user", "user"])
             self.assertEqual([m["tool_call_id"] for m in messages[2:5]], ["image-a", "text", "image-b"])
-            self.assertEqual(messages[5:], [images["image-a"], images["image-b"]])
+            self.assertEqual(messages[5:7], [images["image-a"], images["image-b"]])
+            self.assertIn("工具核查轮已经结束", messages[7]["content"])
             return {"choices": [{"finish_reason": "stop", "message": {"content": '{"course_title":"fixture"}'}}]}, 1
 
         runtime = SimpleNamespace(has_tools=lambda: True, openai_tools=lambda: [], begin_round=lambda: None,
@@ -39,3 +40,32 @@ class PlanImageRoundTests(unittest.TestCase):
         self.assertEqual(result.tool_messages, requests[-1]["messages"][1:])
         self.assertNotIn("tool_messages", result.trace.model_dump())
         self.assertEqual(len(result.trace.rounds[0].tool_calls), 3)
+
+    def test_only_one_tool_round_executes_and_unoffered_calls_are_retried_as_json(self):
+        tool_call = {"id": "detail", "type": "function", "function": {"name": "get_study_unit_detail", "arguments": "{}"}}
+        requests = []
+        executions = []
+
+        def request(payload):
+            requests.append(payload)
+            if len(requests) < 3:
+                return {"choices": [{"finish_reason": "tool_calls", "message": {"content": "", "tool_calls": [tool_call]}}]}, 1
+            return {"choices": [{"finish_reason": "stop", "message": {"content": '{"course_title":"fixture"}'}}]}, 1
+
+        def execute(call):
+            executions.append(call)
+            return SimpleNamespace(tool_call_id="detail", tool_name="get_study_unit_detail", arguments_json="{}",
+                argument_contract_version="planning-tool-arguments-v1", result_contract_version="planning-tool-result-v1",
+                trace_summary="fixture", trace_result={"ok": True}, provider_result={"ok": True},
+                follow_up_messages=[])
+
+        runtime = SimpleNamespace(has_tools=lambda: True, openai_tools=lambda: [{"type": "function"}],
+            begin_round=lambda: None, execute_tool_call=execute, current_study_units=lambda: [])
+        result = OpenAIPlanRunner(model="fixture", timeout_seconds=1, request_chat_completion=request).run(
+            document_id="fixture", messages=[{"role": "system", "content": "fixture"}], tool_runtime=runtime)
+
+        self.assertEqual(result.content, '{"course_title":"fixture"}')
+        self.assertEqual(len(executions), 1)
+        self.assertIn("tools", requests[0])
+        self.assertNotIn("tools", requests[1])
+        self.assertNotIn("tools", requests[2])
