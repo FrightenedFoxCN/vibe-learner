@@ -22,7 +22,7 @@ class DiagnosticWriterCoverage:
             retired_unclosed INTEGER NOT NULL, observed_dropped INTEGER NOT NULL,
             observed_write_failures INTEGER NOT NULL, observed_read_failures INTEGER NOT NULL)""")
         db.execute("INSERT OR IGNORE INTO diagnostic_writer_totals VALUES (1,0,0,0,0,0)")
-        db.execute("INSERT OR IGNORE INTO diagnostic_writers(epoch_id,started_at,observed_at,closed_at,observed_dropped,observed_write_failures,observed_read_failures) VALUES (?,unixepoch('now'),unixepoch('now'),NULL,0,0,0)", (self.epoch_id,))
+        db.execute("INSERT OR IGNORE INTO diagnostic_writers(epoch_id,started_at,observed_at,closed_at,observed_dropped,observed_write_failures,observed_read_failures) VALUES (?,CAST(strftime('%s','now') AS INTEGER),CAST(strftime('%s','now') AS INTEGER),NULL,0,0,0)", (self.epoch_id,))
         overflow = db.execute("SELECT count(*) FROM diagnostic_writers").fetchone()[0] - self.max_epochs
         if overflow > 0:
             retired = db.execute("SELECT sequence,closed_at,observed_dropped,observed_write_failures,observed_read_failures FROM diagnostic_writers ORDER BY sequence LIMIT ?", (overflow,)).fetchall()
@@ -34,8 +34,8 @@ class DiagnosticWriterCoverage:
         # Counters are lower bounds observed at this checkpoint, not final global
         # totals. Events rejected after closure and pre-checkpoint process loss
         # cannot be reconstructed from a diagnostic database.
-        db.execute("""UPDATE diagnostic_writers SET observed_at=unixepoch('now'),
-            closed_at=CASE WHEN ? THEN unixepoch('now') ELSE closed_at END,
+        db.execute("""UPDATE diagnostic_writers SET observed_at=CAST(strftime('%s','now') AS INTEGER),
+            closed_at=CASE WHEN ? THEN CAST(strftime('%s','now') AS INTEGER) ELSE closed_at END,
             observed_dropped=max(observed_dropped,?),
             observed_write_failures=max(observed_write_failures,?),
             observed_read_failures=max(observed_read_failures,?) WHERE epoch_id=?""",

@@ -57,7 +57,7 @@ class DiagnosticRetentionTests(unittest.TestCase):
                 self.assertEqual(coverage["retained_events"], 1)
                 self.assertEqual(coverage["retained_payload_bytes"], 6)
                 self.assertEqual(coverage["removed_events"], 2)
-                db.execute("UPDATE events SET ingested_at=unixepoch('now')-604801")
+                db.execute("UPDATE events SET ingested_at=CAST(strftime('%s','now') AS INTEGER)-604801")
                 policy.prune(db)
                 self.assertEqual(policy.coverage(db, 0)["retained_events"], 0)
                 self.assertEqual(policy.coverage(db, 0)["removed_events"], 3)

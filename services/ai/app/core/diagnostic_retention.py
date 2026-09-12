@@ -21,14 +21,14 @@ class DiagnosticEventRetention:
         if "ingested_at" not in columns:
             db.execute("ALTER TABLE events ADD COLUMN ingested_at INTEGER NOT NULL DEFAULT 0")
         legacy = db.execute("SELECT count(*) FROM events WHERE ingested_at=0").fetchone()[0]
-        db.execute("UPDATE events SET ingested_at=unixepoch('now') WHERE ingested_at=0")
+        db.execute("UPDATE events SET ingested_at=CAST(strftime('%s','now') AS INTEGER) WHERE ingested_at=0")
         db.execute("CREATE INDEX IF NOT EXISTS events_ingested_at ON events(ingested_at,sequence)")
         db.execute("CREATE TABLE IF NOT EXISTS event_retention (singleton INTEGER PRIMARY KEY CHECK(singleton=1), retained_events INTEGER NOT NULL, retained_payload_bytes INTEGER NOT NULL, removed_events INTEGER NOT NULL, removed_through_sequence INTEGER NOT NULL, legacy_timestamp_rows INTEGER NOT NULL)")
         inserted = db.execute("INSERT OR IGNORE INTO event_retention SELECT 1,count(*),coalesce(sum(length(cast(payload AS BLOB))),0),0,0,? FROM events", (legacy,)).rowcount
         if not inserted and legacy:
             db.execute("UPDATE event_retention SET legacy_timestamp_rows=legacy_timestamp_rows+? WHERE singleton=1", (legacy,))
         db.execute("""CREATE TRIGGER IF NOT EXISTS diagnostic_event_insert AFTER INSERT ON events BEGIN
-            UPDATE events SET ingested_at=unixepoch('now') WHERE sequence=NEW.sequence AND ingested_at=0;
+            UPDATE events SET ingested_at=CAST(strftime('%s','now') AS INTEGER) WHERE sequence=NEW.sequence AND ingested_at=0;
             UPDATE event_retention SET retained_events=retained_events+1,
                 retained_payload_bytes=retained_payload_bytes+length(cast(NEW.payload AS BLOB)) WHERE singleton=1;
         END""")
@@ -45,7 +45,7 @@ class DiagnosticEventRetention:
         self.prune(db)
 
     def prune(self, db: sqlite3.Connection):
-        db.execute("DELETE FROM events WHERE ingested_at < unixepoch('now')-?", (self.max_age_seconds,))
+        db.execute("DELETE FROM events WHERE ingested_at < CAST(strftime('%s','now') AS INTEGER)-?", (self.max_age_seconds,))
         count, size = db.execute("SELECT retained_events,retained_payload_bytes FROM event_retention WHERE singleton=1").fetchone()
         if count > self.max_rows:
             db.execute("DELETE FROM events WHERE sequence IN (SELECT sequence FROM events ORDER BY sequence LIMIT ?)", (count - self.max_rows,))

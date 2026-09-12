@@ -92,7 +92,7 @@ class DiagnosticRecordRetentionTests(unittest.TestCase):
             with patch("app.services.diagnostic_index.project_execution", return_value=projection):
                 index.step()
                 with index._connect() as db:
-                    db.execute("UPDATE projections SET retained_at=unixepoch('now')-20")
+                    db.execute("UPDATE projections SET retained_at=CAST(strftime('%s','now') AS INTEGER)-20")
                     expected = db.execute("SELECT retained_at FROM projections").fetchone()[0]
                     db.commit()
                 index.step()

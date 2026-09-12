@@ -124,7 +124,7 @@ class DiagnosticHarnessIndex:
                 for value in projections:
                     value = DiagnosticHarnessIndexV1.model_validate(value).model_dump(mode="json")
                     retained_at = self.retention.source_time(db, value.get("source_updated_at"))
-                    if retained_at is not None and db.execute("SELECT ? < unixepoch('now')-?", (retained_at, self.retention.max_age_seconds)).fetchone()[0]:
+                    if retained_at is not None and db.execute("SELECT ? < CAST(strftime('%s','now') AS INTEGER)-?", (retained_at, self.retention.max_age_seconds)).fetchone()[0]:
                         db.execute("DELETE FROM projections WHERE trace_id=?", (value["trace_id"],))
                         continue
                     db.execute("INSERT INTO projections(trace_id,operation_id,workflow,stage,payload,last_seen_sweep,retained_at) VALUES (?,?,?,?,?,?,?) ON CONFLICT(trace_id) DO UPDATE SET operation_id=excluded.operation_id,workflow=excluded.workflow,stage=excluded.stage,payload=excluded.payload,last_seen_sweep=excluded.last_seen_sweep,retained_at=CASE WHEN ? IS NOT NULL AND projections.payload != excluded.payload THEN excluded.retained_at ELSE projections.retained_at END WHERE projections.payload != excluded.payload OR projections.last_seen_sweep != excluded.last_seen_sweep",

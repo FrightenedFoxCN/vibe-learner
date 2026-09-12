@@ -20,14 +20,14 @@ class DiagnosticRecordRetention:
         if "retained_at" not in {row[1] for row in db.execute(f"PRAGMA table_info({table})")}:
             db.execute(f"ALTER TABLE {table} ADD COLUMN retained_at INTEGER NOT NULL DEFAULT 0")
         legacy = db.execute(f"SELECT count(*) FROM {table} WHERE retained_at=0").fetchone()[0]
-        db.execute(f"UPDATE {table} SET retained_at=unixepoch('now') WHERE retained_at=0")
+        db.execute(f"UPDATE {table} SET retained_at=CAST(strftime('%s','now') AS INTEGER) WHERE retained_at=0")
         db.execute(f"CREATE INDEX IF NOT EXISTS {table}_retention_age ON {table}(retained_at)")
         db.execute("CREATE TABLE IF NOT EXISTS diagnostic_record_retention (table_name TEXT PRIMARY KEY, retained_rows INTEGER NOT NULL, retained_payload_bytes INTEGER NOT NULL, removed_rows INTEGER NOT NULL, legacy_timestamp_rows INTEGER NOT NULL)")
         inserted = db.execute(f"INSERT OR IGNORE INTO diagnostic_record_retention SELECT ?,count(*),coalesce(sum(length(cast(payload AS BLOB))),0),0,? FROM {table}", (table, legacy)).rowcount
         if not inserted and legacy:
             db.execute("UPDATE diagnostic_record_retention SET legacy_timestamp_rows=legacy_timestamp_rows+? WHERE table_name=?", (legacy, table))
         db.execute(f"""CREATE TRIGGER IF NOT EXISTS {table}_retention_insert AFTER INSERT ON {table} BEGIN
-            UPDATE {table} SET retained_at=unixepoch('now') WHERE rowid=NEW.rowid AND retained_at=0;
+            UPDATE {table} SET retained_at=CAST(strftime('%s','now') AS INTEGER) WHERE rowid=NEW.rowid AND retained_at=0;
             UPDATE diagnostic_record_retention SET retained_rows=retained_rows+1,
                 retained_payload_bytes=retained_payload_bytes+length(cast(NEW.payload AS BLOB)) WHERE table_name='{table}';
         END""")
@@ -44,7 +44,7 @@ class DiagnosticRecordRetention:
 
     def prune(self, db):
         table = self.table
-        db.execute(f"DELETE FROM {table} WHERE retained_at < unixepoch('now')-?", (self.max_age_seconds,))
+        db.execute(f"DELETE FROM {table} WHERE retained_at < CAST(strftime('%s','now') AS INTEGER)-?", (self.max_age_seconds,))
         count, size = db.execute("SELECT retained_rows,retained_payload_bytes FROM diagnostic_record_retention WHERE table_name=?", (table,)).fetchone()
         if count > self.max_rows:
             db.execute(f"DELETE FROM {table} WHERE rowid IN (SELECT rowid FROM {table} ORDER BY retained_at,rowid LIMIT ?)", (count - self.max_rows,))
@@ -59,7 +59,7 @@ class DiagnosticRecordRetention:
         Missing/invalid source time uses bounded local observation age. Future
         timestamps clamp to the first DB observation time for unchanged records.
         """
-        now = db.execute("SELECT unixepoch('now')").fetchone()[0]
+        now = db.execute("SELECT CAST(strftime('%s','now') AS INTEGER)").fetchone()[0]
         try:
             value = datetime.fromisoformat(timestamp)
             if value.utcoffset() is None:
