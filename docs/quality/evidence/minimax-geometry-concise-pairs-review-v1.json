@@ -1,0 +1,168 @@
+{
+  "scope": "Maintainer concise sorting-feedback fault-injection study",
+  "rows": [
+    {
+      "cell": 0,
+      "kind": "chapter_order",
+      "candidate": false,
+      "committed": true,
+      "stage_minutes": null,
+      "source_page_coverage": [
+        1,
+        2
+      ],
+      "same_initial_proposal_within_kind": true,
+      "real_calls": 1
+    },
+    {
+      "cell": 1,
+      "kind": "chapter_order",
+      "candidate": true,
+      "committed": true,
+      "stage_minutes": null,
+      "source_page_coverage": [
+        1,
+        2
+      ],
+      "same_initial_proposal_within_kind": true,
+      "real_calls": 1
+    },
+    {
+      "cell": 2,
+      "kind": "chapter_order",
+      "candidate": true,
+      "committed": true,
+      "stage_minutes": [
+        5,
+        7,
+        6,
+        6,
+        6
+      ],
+      "source_page_coverage": [
+        1,
+        2
+      ],
+      "same_initial_proposal_within_kind": true,
+      "real_calls": 1
+    },
+    {
+      "cell": 3,
+      "kind": "chapter_order",
+      "candidate": false,
+      "committed": true,
+      "stage_minutes": [
+        5,
+        10,
+        10,
+        5
+      ],
+      "source_page_coverage": [
+        1,
+        2
+      ],
+      "same_initial_proposal_within_kind": true,
+      "real_calls": 1
+    },
+    {
+      "cell": 4,
+      "kind": "slice_order",
+      "candidate": false,
+      "committed": true,
+      "stage_minutes": [
+        5,
+        5,
+        8,
+        5,
+        4,
+        3
+      ],
+      "source_page_coverage": [
+        1,
+        2
+      ],
+      "same_initial_proposal_within_kind": true,
+      "real_calls": 1
+    },
+    {
+      "cell": 5,
+      "kind": "slice_order",
+      "candidate": true,
+      "committed": true,
+      "stage_minutes": [
+        5,
+        10,
+        10,
+        5
+      ],
+      "source_page_coverage": [
+        1,
+        2
+      ],
+      "same_initial_proposal_within_kind": true,
+      "real_calls": 1
+    },
+    {
+      "cell": 6,
+      "kind": "slice_order",
+      "candidate": true,
+      "committed": true,
+      "stage_minutes": [
+        5,
+        10,
+        10,
+        5
+      ],
+      "source_page_coverage": [
+        1,
+        2
+      ],
+      "same_initial_proposal_within_kind": true,
+      "real_calls": 1
+    },
+    {
+      "cell": 7,
+      "kind": "slice_order",
+      "candidate": false,
+      "committed": true,
+      "stage_minutes": [
+        10,
+        10,
+        10
+      ],
+      "source_page_coverage": [
+        1,
+        2
+      ],
+      "same_initial_proposal_within_kind": true,
+      "real_calls": 1
+    }
+  ],
+  "summary": {
+    "runs_per_group": 4,
+    "baseline_committed": 4,
+    "candidate_committed": 4,
+    "baseline_explicit_30min": 3,
+    "candidate_explicit_30min": 3,
+    "real_calls": 8
+  },
+  "findings": [
+    "All eight retain both source pages in slices and pass existing geometry. No observed submission or timing advantage in this batch.",
+    "Candidate cell1 and baseline cell0 retain generic activities without complete stage timing.",
+    "Candidate cell2 unqualified eighth-page wording is ambiguous between printed page8 and PDF page2; do not claim proven page identity error.",
+    "Baseline cell3 misclassifies p1 as Front Matter and prioritizes title/author/page metadata instead of actual narrative body.",
+    "Baseline cell4 says six stages each correspond to a schedule chapter but supplies three chapters; activity-to-chapter explanation inconsistent.",
+    "Candidate cell6 classifies a flag among weapons and paraphrases the narrator glass qualification as an either/or alternative; source/visual semantics still require review.",
+    "Concise wording permits chapter restructuring and does not freeze titles; this was intentional after prior overconstraint results."
+  ],
+  "decision": "No production adoption on these nondiscriminating simplified samples. Capture a naturally invalid complete model proposal and replay against precise feedback with the matching post-tool snapshot.",
+  "limitations": [
+    "Synthetic initial generation and only real repair; not natural model-success rate",
+    "Only two examples per fault per group",
+    "Source imagery injected experimentally, no independent certification",
+    "No reason inferred for natural ordering failure from these synthetic outcomes"
+  ],
+  "validation": [
+    "Compile and diff checks; production unchanged"
+  ]
+}

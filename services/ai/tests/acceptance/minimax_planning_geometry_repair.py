@@ -38,7 +38,10 @@ GEOMETRY_REPAIR_HINT = (
 )
 
 
-def compare(source, pdf, output, timing_pairs=False, duration_transfer=False, geometry_pairs=False):
+def compare(source, pdf, output, timing_pairs=False, duration_transfer=False, geometry_pairs=False, concise_geometry=False):
+    if concise_geometry and not geometry_pairs:
+        raise ValueError('Concise geometry requires geometry pairs')
+    geometry_hint = GEOMETRY_REPAIR_HINT.split('保留原有章节')[0] if concise_geometry else GEOMETRY_REPAIR_HINT
     if geometry_pairs and timing_pairs:
         raise ValueError('Geometry and timing comparisons are separate experiments')
     if duration_transfer and not timing_pairs:
@@ -87,7 +90,7 @@ def compare(source, pdf, output, timing_pairs=False, duration_transfer=False, ge
                 kwargs = {**kwargs, 'messages': [*kwargs['messages'][:-1], {**message, 'content': content}]}
             if geometry_pairs and candidate:
                 message = kwargs['messages'][-1]
-                kwargs = {**kwargs, 'messages': [*kwargs['messages'][:-1], {**message, 'content': message['content'] + GEOMETRY_REPAIR_HINT}]}
+                kwargs = {**kwargs, 'messages': [*kwargs['messages'][:-1], {**message, 'content': message['content'] + geometry_hint}]}
             return original(provider, **kwargs)
         cell = output/f"{index}-{kind}"
         with patch.object(RemotePlanningProvider, '_run_plan_model', injected):
@@ -99,7 +102,8 @@ def compare(source, pdf, output, timing_pairs=False, duration_transfer=False, ge
         row['fault_injection'] = {'kind':kind, 'synthetic_initial_proposal':True,
                                  'timing_clarification_candidate':candidate if timing_pairs else False,
                                  'geometry_hint_candidate':candidate if geometry_pairs else False,
-                                 'geometry_hint':GEOMETRY_REPAIR_HINT if geometry_pairs and candidate else None, 'learning_budget_minutes':minutes, **injected_state,
+                                 'geometry_hint':geometry_hint if geometry_pairs and candidate else None,
+                                 'geometry_hint_variant':'concise' if concise_geometry else 'preservation', 'learning_budget_minutes':minutes, **injected_state,
                                  'runner_invocations':invocations, 'real_provider_calls':len(row['calls'])}
         row['trace_limitation'] = ('Fault-injected schema-valid initial proposal, not natural M3 generation. '
             'Only repair calls are real; production domain admission/validation/commit/readback remain exercised. '
@@ -115,5 +119,6 @@ if __name__ == '__main__':
     p.add_argument('--output',type=Path,required=True)
     p.add_argument('--timing-pairs',action='store_true')
     p.add_argument('--duration-transfer',action='store_true')
-    p.add_argument('--geometry-pairs',action='store_true');a=p.parse_args()
-    compare(a.source.resolve(),a.pdf.resolve(),a.output.resolve(),a.timing_pairs,a.duration_transfer,a.geometry_pairs)
+    p.add_argument('--geometry-pairs',action='store_true')
+    p.add_argument('--concise-geometry',action='store_true');a=p.parse_args()
+    compare(a.source.resolve(),a.pdf.resolve(),a.output.resolve(),a.timing_pairs,a.duration_transfer,a.geometry_pairs,a.concise_geometry)
