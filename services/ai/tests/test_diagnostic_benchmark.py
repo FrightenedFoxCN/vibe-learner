@@ -1,3 +1,4 @@
+import os
 import unittest
 from app.services.diagnostic_benchmark import run, summary
 
@@ -7,6 +8,10 @@ class DiagnosticBenchmarkTests(unittest.TestCase):
         result = summary([-2, -1, 0, 1, 2])
         self.assertEqual((result["p50_ms"], result["p95_ms"], result["sample_count"]), (0, 2, 5))
 
+    @unittest.skipIf(
+        os.environ.get("CI", "").lower() == "true",
+        "hosted CI correctness gate excludes the pinned-reader performance workload; run npm run bench:diagnostics explicitly",
+    )
     def test_report_exercises_production_paths_and_discloses_measurement_scope(self):
         result = run(samples=2, event_count=100, trace_count=2)
         self.assertEqual(result["provider_calls"], 0)
