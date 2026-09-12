@@ -1,0 +1,1844 @@
+{
+  "scope": "same-task development exact-field rubric, no independent teaching quality certification",
+  "campaigns": [
+    {
+      "id": "m3-role-exploration-20260912-v1",
+      "directory": "tools/model-quality/runs/m3-role-exploration-20260912-v1",
+      "samples": 12,
+      "states": {
+        "infrastructure_failed": 12
+      },
+      "wire_count": 12,
+      "reported_tokens": 0,
+      "charged_or_reserved": 1249152,
+      "unknown_usage": 12,
+      "arms": {
+        "baseline": {
+          "samples": 4,
+          "states": {
+            "infrastructure_failed": 4
+          },
+          "wires": 4,
+          "reported_tokens": 0,
+          "sample_latency_ms": {
+            "p50": 6142,
+            "p95": 9097
+          }
+        },
+        "review-revise": {
+          "samples": 4,
+          "states": {
+            "infrastructure_failed": 4
+          },
+          "wires": 4,
+          "reported_tokens": 0,
+          "sample_latency_ms": {
+            "p50": 818,
+            "p95": 6469
+          }
+        },
+        "self-revise": {
+          "samples": 4,
+          "states": {
+            "infrastructure_failed": 4
+          },
+          "wires": 4,
+          "reported_tokens": 0,
+          "sample_latency_ms": {
+            "p50": 805,
+            "p95": 6294
+          }
+        }
+      }
+    },
+    {
+      "id": "m3-role-exploration-20260912-v2",
+      "directory": "tools/model-quality/runs/m3-role-exploration-20260912-v2",
+      "samples": 12,
+      "states": {
+        "candidate_failed": 12
+      },
+      "wire_count": 13,
+      "reported_tokens": 15127,
+      "charged_or_reserved": 15127,
+      "unknown_usage": 0,
+      "arms": {
+        "baseline": {
+          "samples": 4,
+          "states": {
+            "candidate_failed": 4
+          },
+          "wires": 4,
+          "reported_tokens": 4790,
+          "sample_latency_ms": {
+            "p50": 10139,
+            "p95": 11628
+          }
+        },
+        "review-revise": {
+          "samples": 4,
+          "states": {
+            "candidate_failed": 4
+          },
+          "wires": 5,
+          "reported_tokens": 6816,
+          "sample_latency_ms": {
+            "p50": 11547,
+            "p95": 30563
+          }
+        },
+        "self-revise": {
+          "samples": 4,
+          "states": {
+            "candidate_failed": 4
+          },
+          "wires": 4,
+          "reported_tokens": 3521,
+          "sample_latency_ms": {
+            "p50": 6110,
+            "p95": 23147
+          }
+        }
+      }
+    },
+    {
+      "id": "m3-role-exploration-20260912-v4",
+      "directory": "tools/model-quality/runs/m3-role-exploration-20260912-v4",
+      "samples": 12,
+      "states": {
+        "candidate_failed": 9,
+        "completed": 3
+      },
+      "wire_count": 23,
+      "reported_tokens": 25716,
+      "charged_or_reserved": 25716,
+      "unknown_usage": 0,
+      "arms": {
+        "baseline": {
+          "samples": 4,
+          "states": {
+            "candidate_failed": 3,
+            "completed": 1
+          },
+          "wires": 4,
+          "reported_tokens": 3586,
+          "sample_latency_ms": {
+            "p50": 6054,
+            "p95": 8700
+          }
+        },
+        "review-revise": {
+          "samples": 4,
+          "states": {
+            "candidate_failed": 2,
+            "completed": 2
+          },
+          "wires": 12,
+          "reported_tokens": 15203,
+          "sample_latency_ms": {
+            "p50": 20817,
+            "p95": 71100
+          }
+        },
+        "self-revise": {
+          "samples": 4,
+          "states": {
+            "candidate_failed": 4
+          },
+          "wires": 7,
+          "reported_tokens": 6927,
+          "sample_latency_ms": {
+            "p50": 10634,
+            "p95": 14174
+          }
+        }
+      }
+    },
+    {
+      "id": "m3-role-exploration-20260912-v5",
+      "directory": "tools/model-quality/runs/m3-role-exploration-20260912-v5",
+      "samples": 12,
+      "states": {
+        "completed": 12
+      },
+      "wire_count": 28,
+      "reported_tokens": 31622,
+      "charged_or_reserved": 31622,
+      "unknown_usage": 0,
+      "arms": {
+        "baseline": {
+          "samples": 4,
+          "states": {
+            "completed": 4
+          },
+          "wires": 4,
+          "reported_tokens": 3919,
+          "sample_latency_ms": {
+            "p50": 3610,
+            "p95": 7692
+          }
+        },
+        "review-revise": {
+          "samples": 4,
+          "states": {
+            "completed": 4
+          },
+          "wires": 12,
+          "reported_tokens": 14621,
+          "sample_latency_ms": {
+            "p50": 19007,
+            "p95": 28079
+          }
+        },
+        "self-revise": {
+          "samples": 4,
+          "states": {
+            "completed": 4
+          },
+          "wires": 12,
+          "reported_tokens": 13082,
+          "sample_latency_ms": {
+            "p50": 13086,
+            "p95": 20063
+          }
+        }
+      }
+    },
+    {
+      "id": "m3-role-format-diagnostic-20260912-v3",
+      "directory": "tools/model-quality/runs/m3-role-format-diagnostic-20260912-v3",
+      "samples": 1,
+      "states": {
+        "candidate_failed": 1
+      },
+      "wire_count": 1,
+      "reported_tokens": 869,
+      "charged_or_reserved": 869,
+      "unknown_usage": 0,
+      "arms": {
+        "baseline": {
+          "samples": 1,
+          "states": {
+            "candidate_failed": 1
+          },
+          "wires": 1,
+          "reported_tokens": 869,
+          "sample_latency_ms": {
+            "p50": 5722,
+            "p95": 5722
+          }
+        }
+      }
+    }
+  ],
+  "samples": [
+    {
+      "campaign": "m3-role-exploration-20260912-v2",
+      "version": "role-exploration-v1",
+      "case": "media-chart",
+      "variant": "baseline",
+      "scope": "proposal-only; no application admission or commit; same-model reviewer, not independent quality certification",
+      "source": "Chart data, synthetic: labels A,B,C correspond to values 4,9,6. The bars are positioned left, center, right. Color is decorative and not a category. Available time 11 minutes.",
+      "request": "Create 2 activities totaling 11 minutes and a chart-reading learner prompt. facts keys: maximum_label (letter), maximum_position (left/center/right), maximum_value (number), C_minus_A (number).",
+      "drafts": [],
+      "review": null,
+      "status": "candidate_failed",
+      "failure_stage": "generate",
+      "error_code": "invalid_role_payload"
+    },
+    {
+      "campaign": "m3-role-exploration-20260912-v2",
+      "version": "role-exploration-v1",
+      "case": "media-chart",
+      "variant": "review-revise",
+      "scope": "proposal-only; no application admission or commit; same-model reviewer, not independent quality certification",
+      "source": "Chart data, synthetic: labels A,B,C correspond to values 4,9,6. The bars are positioned left, center, right. Color is decorative and not a category. Available time 11 minutes.",
+      "request": "Create 2 activities totaling 11 minutes and a chart-reading learner prompt. facts keys: maximum_label (letter), maximum_position (left/center/right), maximum_value (number), C_minus_A (number).",
+      "drafts": [],
+      "review": null,
+      "status": "candidate_failed",
+      "failure_stage": "generate",
+      "error_code": "invalid_role_payload"
+    },
+    {
+      "campaign": "m3-role-exploration-20260912-v2",
+      "version": "role-exploration-v1",
+      "case": "media-chart",
+      "variant": "self-revise",
+      "scope": "proposal-only; no application admission or commit; same-model reviewer, not independent quality certification",
+      "source": "Chart data, synthetic: labels A,B,C correspond to values 4,9,6. The bars are positioned left, center, right. Color is decorative and not a category. Available time 11 minutes.",
+      "request": "Create 2 activities totaling 11 minutes and a chart-reading learner prompt. facts keys: maximum_label (letter), maximum_position (left/center/right), maximum_value (number), C_minus_A (number).",
+      "drafts": [],
+      "review": null,
+      "status": "candidate_failed",
+      "failure_stage": "generate",
+      "error_code": "invalid_role_payload"
+    },
+    {
+      "campaign": "m3-role-exploration-20260912-v2",
+      "version": "role-exploration-v1",
+      "case": "media-question",
+      "variant": "baseline",
+      "scope": "proposal-only; no application admission or commit; same-model reviewer, not independent quality certification",
+      "source": "Teacher-only specification: assess 6×7; correct answer 42. Before submission, do not reveal the answer, an answer key, a worked solution or the words forty-two. Give one practice activity for 5 minutes.",
+      "request": "Produce exactly one 5-minute activity. facts is server-side in this experiment: keys answer (number), kind (exactly fill_blank). learner_prompt is the public pre-submission fill-in question; never include the answer.",
+      "drafts": [],
+      "review": null,
+      "status": "candidate_failed",
+      "failure_stage": "generate",
+      "error_code": "invalid_role_payload"
+    },
+    {
+      "campaign": "m3-role-exploration-20260912-v2",
+      "version": "role-exploration-v1",
+      "case": "media-question",
+      "variant": "review-revise",
+      "scope": "proposal-only; no application admission or commit; same-model reviewer, not independent quality certification",
+      "source": "Teacher-only specification: assess 6×7; correct answer 42. Before submission, do not reveal the answer, an answer key, a worked solution or the words forty-two. Give one practice activity for 5 minutes.",
+      "request": "Produce exactly one 5-minute activity. facts is server-side in this experiment: keys answer (number), kind (exactly fill_blank). learner_prompt is the public pre-submission fill-in question; never include the answer.",
+      "drafts": [],
+      "review": null,
+      "status": "candidate_failed",
+      "failure_stage": "generate",
+      "error_code": "invalid_role_payload"
+    },
+    {
+      "campaign": "m3-role-exploration-20260912-v2",
+      "version": "role-exploration-v1",
+      "case": "media-question",
+      "variant": "self-revise",
+      "scope": "proposal-only; no application admission or commit; same-model reviewer, not independent quality certification",
+      "source": "Teacher-only specification: assess 6×7; correct answer 42. Before submission, do not reveal the answer, an answer key, a worked solution or the words forty-two. Give one practice activity for 5 minutes.",
+      "request": "Produce exactly one 5-minute activity. facts is server-side in this experiment: keys answer (number), kind (exactly fill_blank). learner_prompt is the public pre-submission fill-in question; never include the answer.",
+      "drafts": [],
+      "review": null,
+      "status": "candidate_failed",
+      "failure_stage": "generate",
+      "error_code": "invalid_role_payload"
+    },
+    {
+      "campaign": "m3-role-exploration-20260912-v2",
+      "version": "role-exploration-v1",
+      "case": "plan-pages",
+      "variant": "baseline",
+      "scope": "proposal-only; no application admission or commit; same-model reviewer, not independent quality certification",
+      "source": "Physical PDF page 1 is the cover marked roman i. Physical page 2 is printed page 17: solve 3x+5=20 by subtracting 5 then dividing by 3. Physical page 3 is printed page 18: verify by substitution. Available time: 18 minutes.",
+      "request": "Plan exactly 3 activities totaling 18 minutes. facts keys: solution (number alone), equation_physical_page, equation_printed_page (page numbers alone). learner_prompt asks a new practice question without giving its answer.",
+      "drafts": [],
+      "review": null,
+      "status": "candidate_failed",
+      "failure_stage": "generate",
+      "error_code": "invalid_role_payload"
+    },
+    {
+      "campaign": "m3-role-exploration-20260912-v2",
+      "version": "role-exploration-v1",
+      "case": "plan-pages",
+      "variant": "review-revise",
+      "scope": "proposal-only; no application admission or commit; same-model reviewer, not independent quality certification",
+      "source": "Physical PDF page 1 is the cover marked roman i. Physical page 2 is printed page 17: solve 3x+5=20 by subtracting 5 then dividing by 3. Physical page 3 is printed page 18: verify by substitution. Available time: 18 minutes.",
+      "request": "Plan exactly 3 activities totaling 18 minutes. facts keys: solution (number alone), equation_physical_page, equation_printed_page (page numbers alone). learner_prompt asks a new practice question without giving its answer.",
+      "drafts": [],
+      "review": null,
+      "status": "candidate_failed",
+      "failure_stage": "generate",
+      "error_code": "invalid_role_payload"
+    },
+    {
+      "campaign": "m3-role-exploration-20260912-v2",
+      "version": "role-exploration-v1",
+      "case": "plan-pages",
+      "variant": "self-revise",
+      "scope": "proposal-only; no application admission or commit; same-model reviewer, not independent quality certification",
+      "source": "Physical PDF page 1 is the cover marked roman i. Physical page 2 is printed page 17: solve 3x+5=20 by subtracting 5 then dividing by 3. Physical page 3 is printed page 18: verify by substitution. Available time: 18 minutes.",
+      "request": "Plan exactly 3 activities totaling 18 minutes. facts keys: solution (number alone), equation_physical_page, equation_printed_page (page numbers alone). learner_prompt asks a new practice question without giving its answer.",
+      "drafts": [],
+      "review": null,
+      "status": "candidate_failed",
+      "failure_stage": "generate",
+      "error_code": "invalid_role_payload"
+    },
+    {
+      "campaign": "m3-role-exploration-20260912-v2",
+      "version": "role-exploration-v1",
+      "case": "plan-scope",
+      "variant": "baseline",
+      "scope": "proposal-only; no application admission or commit; same-model reviewer, not independent quality certification",
+      "source": "Lesson source: a bag contains 3 red and 2 blue balls, one draw. P(red)=3/5. Replacement is outside this lesson. The learner has 17 minutes; reading must not consume the whole session.",
+      "request": "Plan exactly 3 positive-duration activities totaling 17 minutes. facts keys: red_probability (fraction), ball_total (number), replacement_scope (exactly outside). Ask the learner to justify a probability.",
+      "drafts": [],
+      "review": null,
+      "status": "candidate_failed",
+      "failure_stage": "generate",
+      "error_code": "invalid_role_payload"
+    },
+    {
+      "campaign": "m3-role-exploration-20260912-v2",
+      "version": "role-exploration-v1",
+      "case": "plan-scope",
+      "variant": "review-revise",
+      "scope": "proposal-only; no application admission or commit; same-model reviewer, not independent quality certification",
+      "source": "Lesson source: a bag contains 3 red and 2 blue balls, one draw. P(red)=3/5. Replacement is outside this lesson. The learner has 17 minutes; reading must not consume the whole session.",
+      "request": "Plan exactly 3 positive-duration activities totaling 17 minutes. facts keys: red_probability (fraction), ball_total (number), replacement_scope (exactly outside). Ask the learner to justify a probability.",
+      "drafts": [
+        {
+          "facts": {
+            "red_probability": "3/5",
+            "ball_total": "5",
+            "replacement_scope": "outside"
+          },
+          "activities": [
+            5,
+            7,
+            5
+          ],
+          "learner_prompt": "A bag contains 3 red balls and 2 blue balls, and one ball is drawn at random. Why is the probability of drawing a red ball equal to 3/5? In your response, justify this probability by explicitly referencing the number of red balls (favorable outcomes) and the total number of balls in the bag (total outcomes)."
+        }
+      ],
+      "review": null,
+      "status": "candidate_failed",
+      "failure_stage": "critic",
+      "error_code": "invalid_role_payload"
+    },
+    {
+      "campaign": "m3-role-exploration-20260912-v2",
+      "version": "role-exploration-v1",
+      "case": "plan-scope",
+      "variant": "self-revise",
+      "scope": "proposal-only; no application admission or commit; same-model reviewer, not independent quality certification",
+      "source": "Lesson source: a bag contains 3 red and 2 blue balls, one draw. P(red)=3/5. Replacement is outside this lesson. The learner has 17 minutes; reading must not consume the whole session.",
+      "request": "Plan exactly 3 positive-duration activities totaling 17 minutes. facts keys: red_probability (fraction), ball_total (number), replacement_scope (exactly outside). Ask the learner to justify a probability.",
+      "drafts": [],
+      "review": null,
+      "status": "candidate_failed",
+      "failure_stage": "generate",
+      "error_code": "invalid_role_payload"
+    },
+    {
+      "campaign": "m3-role-exploration-20260912-v4",
+      "version": "role-exploration-v1",
+      "case": "media-chart",
+      "variant": "baseline",
+      "scope": "proposal-only; no application admission or commit; same-model reviewer, not independent quality certification",
+      "source": "Chart data, synthetic: labels A,B,C correspond to values 4,9,6. The bars are positioned left, center, right. Color is decorative and not a category. Available time 11 minutes.",
+      "request": "Create 2 activities totaling 11 minutes and a chart-reading learner prompt. facts keys: maximum_label (letter), maximum_position (left/center/right), maximum_value (number), C_minus_A (number).",
+      "drafts": [],
+      "review": null,
+      "response_formats": [
+        {
+          "call_kind": "generation",
+          "fenced": true
+        }
+      ],
+      "invalid_public_proposal": "```json\n{\n  \"facts\": {\n    \"maximum_label\": \"B\",\n    \"maximum_position\": \"center\",\n    \"maximum_value\": 9,\n    \"C_minus_A\": 2\n  },\n  \"activities\": [5, 6],\n  \"learner_prompt\": \"Study the bar chart showing three bars labeled A, B, and C positioned at the left, center, and right respectively. Note that bar color is purely decorative. (1) Identify which labeled bar is the tallest and state its position on the chart. (2) Compute the value of bar C minus the value of bar A. Be prepared to justify your reading by referring to bar height.\"\n}\n```",
+      "parse_error_type": "ValidationError",
+      "validation_errors": [
+        {
+          "type": "string_type",
+          "loc": [
+            "facts",
+            "maximum_value"
+          ]
+        },
+        {
+          "type": "string_type",
+          "loc": [
+            "facts",
+            "C_minus_A"
+          ]
+        }
+      ],
+      "status": "candidate_failed",
+      "failure_stage": "generate",
+      "error_code": "invalid_role_payload"
+    },
+    {
+      "campaign": "m3-role-exploration-20260912-v4",
+      "version": "role-exploration-v1",
+      "case": "media-chart",
+      "variant": "review-revise",
+      "scope": "proposal-only; no application admission or commit; same-model reviewer, not independent quality certification",
+      "source": "Chart data, synthetic: labels A,B,C correspond to values 4,9,6. The bars are positioned left, center, right. Color is decorative and not a category. Available time 11 minutes.",
+      "request": "Create 2 activities totaling 11 minutes and a chart-reading learner prompt. facts keys: maximum_label (letter), maximum_position (left/center/right), maximum_value (number), C_minus_A (number).",
+      "drafts": [
+        {
+          "facts": {
+            "maximum_label": "B",
+            "maximum_position": "center",
+            "maximum_value": "9",
+            "C_minus_A": "2"
+          },
+          "activities": [
+            5,
+            6
+          ],
+          "learner_prompt": "Look at the bar chart: bar A is on the left with value 4, bar B is in the center with value 9, and bar C is on the right with value 6. Ignore the bar colors—they are decorative only and do not represent categories. (1) Identify the label, position (left, center, or right), and numerical value of the tallest bar. (2) Compute the difference between the value of C and the value of A."
+        },
+        {
+          "facts": {
+            "maximum_label": "B",
+            "maximum_position": "center",
+            "maximum_value": "9",
+            "C_minus_A": "2"
+          },
+          "activities": [
+            5,
+            6
+          ],
+          "learner_prompt": "A bar chart has three bars labeled A, B, and C, positioned left, center, and right respectively. The bar colors are decorative only and do not represent categories. (1) Read the chart to identify the label, position (left, center, or right), and numerical value of the tallest bar. (2) Compute the difference between the value of C and the value of A."
+        }
+      ],
+      "review": {
+        "issues": [
+          "Answer leakage in learner_prompt: the prompt explicitly states all three bar values ('bar A is on the left with value 4, bar B is in the center with value 9, and bar C is on the right with value 6'). These are precisely the values the learner is supposed to extract by reading the chart, so the prompt pre-answers both task questions (1) and (2).",
+          "The learner_prompt also pre-reveals which bar is tallest (B with value 9) and its position (center), removing the chart-reading task entirely for question (1).",
+          "A safe version would describe the chart's structure (three labeled bars A, B, C positioned left/center/right, colors decorative) without disclosing the numerical values, e.g., 'A bar chart has three bars labeled A (left), B (center), C (right). Determine the tallest bar's label, position, and value, then compute C minus A.'"
+        ],
+        "recommendation": "Reject due to answer leakage in learner_prompt. The facts object and activity timing are correct, but the prompt must be rewritten so the learner must read the chart to find the values rather than being handed them. Rewrite learner_prompt to omit all three values (4, 9, 6) and resubmit."
+      },
+      "response_formats": [
+        {
+          "call_kind": "generation",
+          "fenced": true
+        },
+        {
+          "call_kind": "critic",
+          "fenced": true
+        },
+        {
+          "call_kind": "repair",
+          "fenced": false
+        }
+      ],
+      "metrics": {
+        "schema_valid": true,
+        "facts_exact": true,
+        "minutes_valid": true,
+        "prompt_present": true,
+        "forbidden_answer_strings_absent": true
+      },
+      "status": "completed"
+    },
+    {
+      "campaign": "m3-role-exploration-20260912-v4",
+      "version": "role-exploration-v1",
+      "case": "media-chart",
+      "variant": "self-revise",
+      "scope": "proposal-only; no application admission or commit; same-model reviewer, not independent quality certification",
+      "source": "Chart data, synthetic: labels A,B,C correspond to values 4,9,6. The bars are positioned left, center, right. Color is decorative and not a category. Available time 11 minutes.",
+      "request": "Create 2 activities totaling 11 minutes and a chart-reading learner prompt. facts keys: maximum_label (letter), maximum_position (left/center/right), maximum_value (number), C_minus_A (number).",
+      "drafts": [
+        {
+          "facts": {
+            "maximum_label": "B",
+            "maximum_position": "center",
+            "maximum_value": "9",
+            "C_minus_A": "2"
+          },
+          "activities": [
+            5,
+            6
+          ],
+          "learner_prompt": "Look at the bar chart with three bars: A on the left, B in the center, and C on the right. Identify which bar is tallest and report its label and value. Then state how much greater bar C is than bar A."
+        }
+      ],
+      "review": null,
+      "response_formats": [
+        {
+          "call_kind": "generation",
+          "fenced": true
+        },
+        {
+          "call_kind": "repair",
+          "fenced": false
+        }
+      ],
+      "invalid_public_proposal": "{\"additionalProperties\": false, \"properties\": {\"facts\": {\"additionalProperties\": {\"type\": \"string\"}, \"title\": \"Facts\", \"type\": \"object\"}, \"activities\": {\"items\": {\"type\": \"integer\"}, \"title\": \"Activities\", \"type\": \"array\"}, \"learner_prompt\": {\"title\": \"Learner Prompt\", \"type\": \"string\"}}, \"title\": \"Draft\", \"type\": \"object\"}",
+      "parse_error_type": "ValidationError",
+      "validation_errors": [
+        {
+          "type": "missing",
+          "loc": [
+            "facts"
+          ]
+        },
+        {
+          "type": "missing",
+          "loc": [
+            "activities"
+          ]
+        },
+        {
+          "type": "missing",
+          "loc": [
+            "learner_prompt"
+          ]
+        },
+        {
+          "type": "extra_forbidden",
+          "loc": [
+            "additionalProperties"
+          ]
+        },
+        {
+          "type": "extra_forbidden",
+          "loc": [
+            "properties"
+          ]
+        },
+        {
+          "type": "extra_forbidden",
+          "loc": [
+            "title"
+          ]
+        },
+        {
+          "type": "extra_forbidden",
+          "loc": [
+            "type"
+          ]
+        }
+      ],
+      "status": "candidate_failed",
+      "failure_stage": "repair",
+      "error_code": "invalid_role_payload"
+    },
+    {
+      "campaign": "m3-role-exploration-20260912-v4",
+      "version": "role-exploration-v1",
+      "case": "media-question",
+      "variant": "baseline",
+      "scope": "proposal-only; no application admission or commit; same-model reviewer, not independent quality certification",
+      "source": "Teacher-only specification: assess 6×7; correct answer 42. Before submission, do not reveal the answer, an answer key, a worked solution or the words forty-two. Give one practice activity for 5 minutes.",
+      "request": "Produce exactly one 5-minute activity. facts is server-side in this experiment: keys answer (number), kind (exactly fill_blank). learner_prompt is the public pre-submission fill-in question; never include the answer.",
+      "drafts": [],
+      "review": null,
+      "response_formats": [
+        {
+          "call_kind": "generation",
+          "fenced": false
+        }
+      ],
+      "invalid_public_proposal": "{\n  \"facts\": {\n    \"answer\": 42,\n    \"kind\": \"fill_blank\"\n  },\n  \"activities\": [\n    5\n  ],\n  \"learner_prompt\": \"Fill in the blank: 6 × 7 = ____\"\n}",
+      "parse_error_type": "ValidationError",
+      "validation_errors": [
+        {
+          "type": "string_type",
+          "loc": [
+            "facts",
+            "answer"
+          ]
+        }
+      ],
+      "status": "candidate_failed",
+      "failure_stage": "generate",
+      "error_code": "invalid_role_payload"
+    },
+    {
+      "campaign": "m3-role-exploration-20260912-v4",
+      "version": "role-exploration-v1",
+      "case": "media-question",
+      "variant": "review-revise",
+      "scope": "proposal-only; no application admission or commit; same-model reviewer, not independent quality certification",
+      "source": "Teacher-only specification: assess 6×7; correct answer 42. Before submission, do not reveal the answer, an answer key, a worked solution or the words forty-two. Give one practice activity for 5 minutes.",
+      "request": "Produce exactly one 5-minute activity. facts is server-side in this experiment: keys answer (number), kind (exactly fill_blank). learner_prompt is the public pre-submission fill-in question; never include the answer.",
+      "drafts": [
+        {
+          "facts": {
+            "answer": "42",
+            "kind": "fill_blank"
+          },
+          "activities": [
+            5
+          ],
+          "learner_prompt": "Fill in the blank: 6 × 7 = ___"
+        }
+      ],
+      "review": {
+        "issues": [],
+        "recommendation": "Approve. The draft correctly keeps the answer '42' server-side in `facts`, uses `kind: fill_blank`, provides exactly one 5-minute activity (`activities: [5]`), and the `learner_prompt` does not leak the answer, the word 'forty-two', or any worked solution. Arithmetic 6×7=42 is correct."
+      },
+      "response_formats": [
+        {
+          "call_kind": "generation",
+          "fenced": true
+        },
+        {
+          "call_kind": "critic",
+          "fenced": false
+        },
+        {
+          "call_kind": "repair",
+          "fenced": false
+        }
+      ],
+      "invalid_public_proposal": "{\"facts\":{\"answer\":42,\"kind\":\"fill_blank\"},\"activities\":[5],\"learner_prompt\":\"Fill in the blank: 6 × 7 = ___\"}",
+      "parse_error_type": "ValidationError",
+      "validation_errors": [
+        {
+          "type": "string_type",
+          "loc": [
+            "facts",
+            "answer"
+          ]
+        }
+      ],
+      "status": "candidate_failed",
+      "failure_stage": "repair",
+      "error_code": "invalid_role_payload"
+    },
+    {
+      "campaign": "m3-role-exploration-20260912-v4",
+      "version": "role-exploration-v1",
+      "case": "media-question",
+      "variant": "self-revise",
+      "scope": "proposal-only; no application admission or commit; same-model reviewer, not independent quality certification",
+      "source": "Teacher-only specification: assess 6×7; correct answer 42. Before submission, do not reveal the answer, an answer key, a worked solution or the words forty-two. Give one practice activity for 5 minutes.",
+      "request": "Produce exactly one 5-minute activity. facts is server-side in this experiment: keys answer (number), kind (exactly fill_blank). learner_prompt is the public pre-submission fill-in question; never include the answer.",
+      "drafts": [],
+      "review": null,
+      "response_formats": [
+        {
+          "call_kind": "generation",
+          "fenced": true
+        }
+      ],
+      "invalid_public_proposal": "```json\n{\n  \"facts\": {\n    \"answer\": 42,\n    \"kind\": \"fill_blank\"\n  },\n  \"activities\": [5],\n  \"learner_prompt\": \"Solve: 6 × 7 = ⬜. Write the product in the box.\"\n}\n```",
+      "parse_error_type": "ValidationError",
+      "validation_errors": [
+        {
+          "type": "string_type",
+          "loc": [
+            "facts",
+            "answer"
+          ]
+        }
+      ],
+      "status": "candidate_failed",
+      "failure_stage": "generate",
+      "error_code": "invalid_role_payload"
+    },
+    {
+      "campaign": "m3-role-exploration-20260912-v4",
+      "version": "role-exploration-v1",
+      "case": "plan-pages",
+      "variant": "baseline",
+      "scope": "proposal-only; no application admission or commit; same-model reviewer, not independent quality certification",
+      "source": "Physical PDF page 1 is the cover marked roman i. Physical page 2 is printed page 17: solve 3x+5=20 by subtracting 5 then dividing by 3. Physical page 3 is printed page 18: verify by substitution. Available time: 18 minutes.",
+      "request": "Plan exactly 3 activities totaling 18 minutes. facts keys: solution (number alone), equation_physical_page, equation_printed_page (page numbers alone). learner_prompt asks a new practice question without giving its answer.",
+      "drafts": [
+        {
+          "facts": {
+            "solution": "5",
+            "equation_physical_page": "2",
+            "equation_printed_page": "17"
+          },
+          "activities": [
+            6,
+            6,
+            6
+          ],
+          "learner_prompt": "Now try this new problem on your own: solve 4x + 7 = 31 by subtracting 7 then dividing by 4, and then verify your solution by substitution. Show each step of your work and check that your answer makes the original equation true."
+        }
+      ],
+      "review": null,
+      "response_formats": [
+        {
+          "call_kind": "generation",
+          "fenced": true
+        }
+      ],
+      "metrics": {
+        "schema_valid": true,
+        "facts_exact": true,
+        "minutes_valid": true,
+        "prompt_present": true,
+        "forbidden_answer_strings_absent": true
+      },
+      "status": "completed"
+    },
+    {
+      "campaign": "m3-role-exploration-20260912-v4",
+      "version": "role-exploration-v1",
+      "case": "plan-pages",
+      "variant": "review-revise",
+      "scope": "proposal-only; no application admission or commit; same-model reviewer, not independent quality certification",
+      "source": "Physical PDF page 1 is the cover marked roman i. Physical page 2 is printed page 17: solve 3x+5=20 by subtracting 5 then dividing by 3. Physical page 3 is printed page 18: verify by substitution. Available time: 18 minutes.",
+      "request": "Plan exactly 3 activities totaling 18 minutes. facts keys: solution (number alone), equation_physical_page, equation_printed_page (page numbers alone). learner_prompt asks a new practice question without giving its answer.",
+      "drafts": [
+        {
+          "facts": {
+            "solution": "5",
+            "equation_physical_page": "2",
+            "equation_printed_page": "17"
+          },
+          "activities": [
+            8,
+            5,
+            5
+          ],
+          "learner_prompt": "Now try this new practice problem on your own: solve 4x+7=31 by subtracting the constant term first and then dividing by the coefficient. Once you find your answer, verify it by substituting the value back into the original equation."
+        }
+      ],
+      "review": {
+        "issues": [],
+        "recommendation": "approve"
+      },
+      "response_formats": [
+        {
+          "call_kind": "generation",
+          "fenced": true
+        },
+        {
+          "call_kind": "critic",
+          "fenced": false
+        },
+        {
+          "call_kind": "repair",
+          "fenced": false
+        }
+      ],
+      "invalid_public_proposal": "{\"additionalProperties\": false, \"properties\": {\"facts\": {\"additionalProperties\": {\"type\": \"string\"}, \"title\": \"Facts\", \"type\": \"object\"}, \"activities\": {\"items\": {\"type\": \"integer\"}, \"title\": \"Activities\", \"type\": \"array\"}, \"learner_prompt\": {\"title\": \"Learner Prompt\", \"type\": \"string\"}}, \"required\": [\"facts\", \"activities\", \"learner_prompt\"], \"title\": \"Draft\", \"type\": \"object\"}",
+      "parse_error_type": "ValidationError",
+      "validation_errors": [
+        {
+          "type": "missing",
+          "loc": [
+            "facts"
+          ]
+        },
+        {
+          "type": "missing",
+          "loc": [
+            "activities"
+          ]
+        },
+        {
+          "type": "missing",
+          "loc": [
+            "learner_prompt"
+          ]
+        },
+        {
+          "type": "extra_forbidden",
+          "loc": [
+            "additionalProperties"
+          ]
+        },
+        {
+          "type": "extra_forbidden",
+          "loc": [
+            "properties"
+          ]
+        },
+        {
+          "type": "extra_forbidden",
+          "loc": [
+            "required"
+          ]
+        },
+        {
+          "type": "extra_forbidden",
+          "loc": [
+            "title"
+          ]
+        },
+        {
+          "type": "extra_forbidden",
+          "loc": [
+            "type"
+          ]
+        }
+      ],
+      "status": "candidate_failed",
+      "failure_stage": "repair",
+      "error_code": "invalid_role_payload"
+    },
+    {
+      "campaign": "m3-role-exploration-20260912-v4",
+      "version": "role-exploration-v1",
+      "case": "plan-pages",
+      "variant": "self-revise",
+      "scope": "proposal-only; no application admission or commit; same-model reviewer, not independent quality certification",
+      "source": "Physical PDF page 1 is the cover marked roman i. Physical page 2 is printed page 17: solve 3x+5=20 by subtracting 5 then dividing by 3. Physical page 3 is printed page 18: verify by substitution. Available time: 18 minutes.",
+      "request": "Plan exactly 3 activities totaling 18 minutes. facts keys: solution (number alone), equation_physical_page, equation_printed_page (page numbers alone). learner_prompt asks a new practice question without giving its answer.",
+      "drafts": [
+        {
+          "facts": {
+            "solution": "5",
+            "equation_physical_page": "2",
+            "equation_printed_page": "17"
+          },
+          "activities": [
+            5,
+            8,
+            5
+          ],
+          "learner_prompt": "Now try this one on your own: solve 4x + 7 = 31. Show the two steps you would use, and state the value of x."
+        }
+      ],
+      "review": null,
+      "response_formats": [
+        {
+          "call_kind": "generation",
+          "fenced": true
+        },
+        {
+          "call_kind": "repair",
+          "fenced": false
+        }
+      ],
+      "invalid_public_proposal": "{\"additionalProperties\": false, \"properties\": {\"facts\": {\"additionalProperties\": {\"type\": \"string\"}, \"title\": \"Facts\", \"type\": \"object\"}, \"activities\": {\"items\": {\"type\": \"integer\"}, \"title\": \"Activities\", \"type\": \"array\"}, \"learner_prompt\": {\"title\": \"Learner Prompt\", \"type\": \"string\"}}, \"required\": [\"facts\", \"activities\", \"learner_prompt\"], \"title\": \"Draft\", \"type\": \"object\"}",
+      "parse_error_type": "ValidationError",
+      "validation_errors": [
+        {
+          "type": "missing",
+          "loc": [
+            "facts"
+          ]
+        },
+        {
+          "type": "missing",
+          "loc": [
+            "activities"
+          ]
+        },
+        {
+          "type": "missing",
+          "loc": [
+            "learner_prompt"
+          ]
+        },
+        {
+          "type": "extra_forbidden",
+          "loc": [
+            "additionalProperties"
+          ]
+        },
+        {
+          "type": "extra_forbidden",
+          "loc": [
+            "properties"
+          ]
+        },
+        {
+          "type": "extra_forbidden",
+          "loc": [
+            "required"
+          ]
+        },
+        {
+          "type": "extra_forbidden",
+          "loc": [
+            "title"
+          ]
+        },
+        {
+          "type": "extra_forbidden",
+          "loc": [
+            "type"
+          ]
+        }
+      ],
+      "status": "candidate_failed",
+      "failure_stage": "repair",
+      "error_code": "invalid_role_payload"
+    },
+    {
+      "campaign": "m3-role-exploration-20260912-v4",
+      "version": "role-exploration-v1",
+      "case": "plan-scope",
+      "variant": "baseline",
+      "scope": "proposal-only; no application admission or commit; same-model reviewer, not independent quality certification",
+      "source": "Lesson source: a bag contains 3 red and 2 blue balls, one draw. P(red)=3/5. Replacement is outside this lesson. The learner has 17 minutes; reading must not consume the whole session.",
+      "request": "Plan exactly 3 positive-duration activities totaling 17 minutes. facts keys: red_probability (fraction), ball_total (number), replacement_scope (exactly outside). Ask the learner to justify a probability.",
+      "drafts": [],
+      "review": null,
+      "response_formats": [
+        {
+          "call_kind": "generation",
+          "fenced": true
+        }
+      ],
+      "invalid_public_proposal": "```json\n{\n  \"facts\": {\n    \"red_probability\": \"3/5\",\n    \"ball_total\": 5,\n    \"replacement_scope\": \"outside\"\n  },\n  \"activities\": [4, 8, 5],\n  \"learner_prompt\": \"A bag contains 3 red balls and 2 blue balls (5 balls total). One ball is drawn at random. Justify why the probability of drawing a red ball equals 3/5. Explain your reasoning step by step, and clarify why the concept of replacement is not part of this scenario.\"\n}\n```",
+      "parse_error_type": "ValidationError",
+      "validation_errors": [
+        {
+          "type": "string_type",
+          "loc": [
+            "facts",
+            "ball_total"
+          ]
+        }
+      ],
+      "status": "candidate_failed",
+      "failure_stage": "generate",
+      "error_code": "invalid_role_payload"
+    },
+    {
+      "campaign": "m3-role-exploration-20260912-v4",
+      "version": "role-exploration-v1",
+      "case": "plan-scope",
+      "variant": "review-revise",
+      "scope": "proposal-only; no application admission or commit; same-model reviewer, not independent quality certification",
+      "source": "Lesson source: a bag contains 3 red and 2 blue balls, one draw. P(red)=3/5. Replacement is outside this lesson. The learner has 17 minutes; reading must not consume the whole session.",
+      "request": "Plan exactly 3 positive-duration activities totaling 17 minutes. facts keys: red_probability (fraction), ball_total (number), replacement_scope (exactly outside). Ask the learner to justify a probability.",
+      "drafts": [
+        {
+          "facts": {
+            "red_probability": "3/5",
+            "ball_total": "5",
+            "replacement_scope": "outside this lesson"
+          },
+          "activities": [
+            5,
+            7,
+            5
+          ],
+          "learner_prompt": "A bag holds 3 red balls and 2 blue balls. You reach in once and draw a single ball at random. What is the probability that the ball you draw is red? Justify your answer in one or two sentences, explaining why your numerical result represents the chance of drawing red in this single-draw scenario."
+        },
+        {
+          "facts": {
+            "red_probability": "3/5",
+            "ball_total": "5",
+            "replacement_scope": "outside"
+          },
+          "activities": [
+            5,
+            7,
+            5
+          ],
+          "learner_prompt": "A bag holds 3 red balls and 2 blue balls. You reach in once and draw a single ball at random. What is the probability that the ball you draw is red? Justify your answer in one or two sentences, explaining why your numerical result represents the chance of drawing red in this single-draw scenario."
+        }
+      ],
+      "review": {
+        "issues": [
+          "Minor: replacement_scope is given as 'outside this lesson' rather than the literal 'outside' indicated by the '(exactly outside)' qualifier. The intent is preserved, but the wording is not a strict match to the specification.",
+          "Minor: the learner_prompt describes a single-draw scenario and requests justification, which is appropriate; however, the activities array [5,7,5] does not indicate what each timed block is for (e.g., reading vs. problem-solving vs. discussion), which makes it harder to verify that 'reading must not consume the whole session' is honored structurally."
+        ],
+        "recommendation": "APPROVE WITH MINOR REVISIONS"
+      },
+      "response_formats": [
+        {
+          "call_kind": "generation",
+          "fenced": true
+        },
+        {
+          "call_kind": "critic",
+          "fenced": true
+        },
+        {
+          "call_kind": "repair",
+          "fenced": false
+        }
+      ],
+      "metrics": {
+        "schema_valid": true,
+        "facts_exact": true,
+        "minutes_valid": true,
+        "prompt_present": true,
+        "forbidden_answer_strings_absent": true
+      },
+      "status": "completed"
+    },
+    {
+      "campaign": "m3-role-exploration-20260912-v4",
+      "version": "role-exploration-v1",
+      "case": "plan-scope",
+      "variant": "self-revise",
+      "scope": "proposal-only; no application admission or commit; same-model reviewer, not independent quality certification",
+      "source": "Lesson source: a bag contains 3 red and 2 blue balls, one draw. P(red)=3/5. Replacement is outside this lesson. The learner has 17 minutes; reading must not consume the whole session.",
+      "request": "Plan exactly 3 positive-duration activities totaling 17 minutes. facts keys: red_probability (fraction), ball_total (number), replacement_scope (exactly outside). Ask the learner to justify a probability.",
+      "drafts": [
+        {
+          "facts": {
+            "red_probability": "3/5",
+            "ball_total": "5",
+            "replacement_scope": "outside"
+          },
+          "activities": [
+            5,
+            7,
+            5
+          ],
+          "learner_prompt": "A bag holds 3 red balls and 2 blue balls. In your own words, justify why the probability of drawing a red ball on a single draw is 3/5. Identify the favorable outcomes and the total outcomes from the source material, then explain how these give the fraction 3/5."
+        }
+      ],
+      "review": null,
+      "response_formats": [
+        {
+          "call_kind": "generation",
+          "fenced": false
+        },
+        {
+          "call_kind": "repair",
+          "fenced": false
+        }
+      ],
+      "invalid_public_proposal": "{\"additionalProperties\": false, \"properties\": {\"facts\": {\"additionalProperties\": {\"type\": \"string\"}, \"title\": \"Facts\", \"type\": \"object\"}, \"activities\": {\"items\": {\"type\": \"integer\"}, \"title\": \"Activities\", \"type\": \"array\"}, \"learner_prompt\": {\"title\": \"Learner Prompt\", \"type\": \"string\"}}, \"required\": [\"facts\", \"activities\", \"learner_prompt\"], \"title\": \"Draft\", \"type\": \"object\"}",
+      "parse_error_type": "ValidationError",
+      "validation_errors": [
+        {
+          "type": "missing",
+          "loc": [
+            "facts"
+          ]
+        },
+        {
+          "type": "missing",
+          "loc": [
+            "activities"
+          ]
+        },
+        {
+          "type": "missing",
+          "loc": [
+            "learner_prompt"
+          ]
+        },
+        {
+          "type": "extra_forbidden",
+          "loc": [
+            "additionalProperties"
+          ]
+        },
+        {
+          "type": "extra_forbidden",
+          "loc": [
+            "properties"
+          ]
+        },
+        {
+          "type": "extra_forbidden",
+          "loc": [
+            "required"
+          ]
+        },
+        {
+          "type": "extra_forbidden",
+          "loc": [
+            "title"
+          ]
+        },
+        {
+          "type": "extra_forbidden",
+          "loc": [
+            "type"
+          ]
+        }
+      ],
+      "status": "candidate_failed",
+      "failure_stage": "repair",
+      "error_code": "invalid_role_payload"
+    },
+    {
+      "campaign": "m3-role-exploration-20260912-v5",
+      "version": "role-exploration-v1",
+      "case": "media-chart",
+      "variant": "baseline",
+      "scope": "proposal-only; no application admission or commit; same-model reviewer, not independent quality certification",
+      "source": "Chart data, synthetic: labels A,B,C correspond to values 4,9,6. The bars are positioned left, center, right. Color is decorative and not a category. Available time 11 minutes.",
+      "request": "Create 2 activities totaling 11 minutes and a chart-reading learner prompt. facts keys: maximum_label (letter), maximum_position (left/center/right), maximum_value (number), C_minus_A (number). In the facts object, put every value in JSON double quotes, including numeric values. Return a data instance, not a JSON Schema definition.",
+      "drafts": [
+        {
+          "facts": {
+            "maximum_label": "B",
+            "maximum_position": "center",
+            "maximum_value": "9",
+            "C_minus_A": "2"
+          },
+          "activities": [
+            5,
+            6
+          ],
+          "learner_prompt": "Look at the bar chart showing three categories (A on the left, B in the center, C on the right) with values 4, 9, and 6 respectively. First, identify which bar is the tallest, note its label and its position on the chart, and record its value. Then, subtract the value of bar A from the value of bar C. Report: the label of the maximum bar, its position (left, center, or right), its value, and the result of C minus A."
+        }
+      ],
+      "review": null,
+      "response_formats": [
+        {
+          "call_kind": "generation",
+          "fenced": false
+        }
+      ],
+      "metrics": {
+        "schema_valid": true,
+        "facts_exact": true,
+        "minutes_valid": true,
+        "prompt_present": true,
+        "forbidden_answer_strings_absent": true
+      },
+      "status": "completed"
+    },
+    {
+      "campaign": "m3-role-exploration-20260912-v5",
+      "version": "role-exploration-v1",
+      "case": "media-chart",
+      "variant": "review-revise",
+      "scope": "proposal-only; no application admission or commit; same-model reviewer, not independent quality certification",
+      "source": "Chart data, synthetic: labels A,B,C correspond to values 4,9,6. The bars are positioned left, center, right. Color is decorative and not a category. Available time 11 minutes.",
+      "request": "Create 2 activities totaling 11 minutes and a chart-reading learner prompt. facts keys: maximum_label (letter), maximum_position (left/center/right), maximum_value (number), C_minus_A (number). In the facts object, put every value in JSON double quotes, including numeric values. Return a data instance, not a JSON Schema definition.",
+      "drafts": [
+        {
+          "facts": {
+            "maximum_label": "B",
+            "maximum_position": "center",
+            "maximum_value": "9",
+            "C_minus_A": "2"
+          },
+          "activities": [
+            5,
+            6
+          ],
+          "learner_prompt": "Look at the bar chart with three bars labeled A (left), B (center), and C (right), with values 4, 9, and 6 respectively. Identify the bar with the maximum value, then compute the difference between C and A. Record: (1) the label letter of the maximum bar, (2) its position (left, center, or right), (3) its numeric value, and (4) the result of C minus A."
+        },
+        {
+          "facts": {
+            "maximum_label": "B",
+            "maximum_position": "center",
+            "maximum_value": "9",
+            "C_minus_A": "2"
+          },
+          "activities": [
+            5,
+            6
+          ],
+          "learner_prompt": "Examine the bar chart showing three bars labeled A (left), B (center), and C (right). Read each bar's value directly from the chart. Then (1) identify which bar is tallest and explain in a sentence why that bar represents the maximum, (2) state the position (left, center, or right) and the numeric value of that tallest bar, and (3) compute the difference between bar C and bar A. Justify your reasoning rather than just listing answers."
+        }
+      ],
+      "review": {
+        "issues": [
+          "The learner prompt explicitly states the values 4, 9, and 6 in text, which reduces the chart-reading requirement; ideally values should be read from the chart rather than given in the prompt description.",
+          "The learner prompt lists the four required outputs in the same order as the facts keys, making the task feel like form-filling rather than genuine chart interpretation; consider asking for a short justification of why B is the maximum.",
+          "No arithmetic or label/position errors found: maximum_label=B (value 9) at center is correct, and C_minus_A=6-4=2 is correct.",
+          "Activities [5,6] sum to 11 and are JSON integers as required."
+        ],
+        "recommendation": "Revise the learner prompt to remove the inline value list (let the student read them off the chart) and rephrase the instructions so the student explains rather than just fills in blanks; facts and activities are otherwise correct."
+      },
+      "response_formats": [
+        {
+          "call_kind": "generation",
+          "fenced": false
+        },
+        {
+          "call_kind": "critic",
+          "fenced": false
+        },
+        {
+          "call_kind": "repair",
+          "fenced": false
+        }
+      ],
+      "metrics": {
+        "schema_valid": true,
+        "facts_exact": true,
+        "minutes_valid": true,
+        "prompt_present": true,
+        "forbidden_answer_strings_absent": true
+      },
+      "status": "completed"
+    },
+    {
+      "campaign": "m3-role-exploration-20260912-v5",
+      "version": "role-exploration-v1",
+      "case": "media-chart",
+      "variant": "self-revise",
+      "scope": "proposal-only; no application admission or commit; same-model reviewer, not independent quality certification",
+      "source": "Chart data, synthetic: labels A,B,C correspond to values 4,9,6. The bars are positioned left, center, right. Color is decorative and not a category. Available time 11 minutes.",
+      "request": "Create 2 activities totaling 11 minutes and a chart-reading learner prompt. facts keys: maximum_label (letter), maximum_position (left/center/right), maximum_value (number), C_minus_A (number). In the facts object, put every value in JSON double quotes, including numeric values. Return a data instance, not a JSON Schema definition.",
+      "drafts": [
+        {
+          "facts": {
+            "maximum_label": "B",
+            "maximum_position": "center",
+            "maximum_value": "9",
+            "C_minus_A": "2"
+          },
+          "activities": [
+            5,
+            6
+          ],
+          "learner_prompt": "Look at the bar chart with three bars labeled A, B, and C. Bar A (left) has value 4, Bar B (center) has value 9, and Bar C (right) has value 6. Identify the bar with the maximum value, state its label and position, and calculate the difference between C and A."
+        },
+        {
+          "facts": {
+            "maximum_label": "B",
+            "maximum_position": "center",
+            "maximum_value": "9",
+            "C_minus_A": "2"
+          },
+          "activities": [
+            5,
+            6
+          ],
+          "learner_prompt": "Look at the bar chart with three bars labeled A, B, and C. Bar A (left) has value 4, Bar B (center) has value 9, and Bar C (right) has value 6. Identify the bar with the maximum value, state its label and position, and calculate the difference between C and A."
+        },
+        {
+          "facts": {
+            "maximum_label": "B",
+            "maximum_position": "center",
+            "maximum_value": "9",
+            "C_minus_A": "2"
+          },
+          "activities": [
+            5,
+            6
+          ],
+          "learner_prompt": "Examine the bar chart showing three bars labeled A, B, and C, positioned left, center, and right. Read the height of each bar to determine its value. Then identify which bar represents the maximum value and state where it is positioned. Finally, calculate the difference between the value of bar C and the value of bar A."
+        }
+      ],
+      "review": null,
+      "response_formats": [
+        {
+          "call_kind": "generation",
+          "fenced": false
+        },
+        {
+          "call_kind": "repair",
+          "fenced": false
+        },
+        {
+          "call_kind": "repair",
+          "fenced": false
+        }
+      ],
+      "metrics": {
+        "schema_valid": true,
+        "facts_exact": true,
+        "minutes_valid": true,
+        "prompt_present": true,
+        "forbidden_answer_strings_absent": true
+      },
+      "status": "completed"
+    },
+    {
+      "campaign": "m3-role-exploration-20260912-v5",
+      "version": "role-exploration-v1",
+      "case": "media-question",
+      "variant": "baseline",
+      "scope": "proposal-only; no application admission or commit; same-model reviewer, not independent quality certification",
+      "source": "Teacher-only specification: assess 6×7; correct answer 42. Before submission, do not reveal the answer, an answer key, a worked solution or the words forty-two. Give one practice activity for 5 minutes.",
+      "request": "Produce exactly one 5-minute activity. facts is server-side in this experiment: keys answer (number), kind (exactly fill_blank). learner_prompt is the public pre-submission fill-in question; never include the answer. In the facts object, put every value in JSON double quotes, including numeric values. Return a data instance, not a JSON Schema definition.",
+      "drafts": [
+        {
+          "facts": {
+            "answer": "42",
+            "kind": "fill_blank"
+          },
+          "activities": [
+            5
+          ],
+          "learner_prompt": "What is the result of multiplying 6 by 7? Fill in the blank: 6 × 7 = _____"
+        }
+      ],
+      "review": null,
+      "response_formats": [
+        {
+          "call_kind": "generation",
+          "fenced": false
+        }
+      ],
+      "metrics": {
+        "schema_valid": true,
+        "facts_exact": true,
+        "minutes_valid": true,
+        "prompt_present": true,
+        "forbidden_answer_strings_absent": true
+      },
+      "status": "completed"
+    },
+    {
+      "campaign": "m3-role-exploration-20260912-v5",
+      "version": "role-exploration-v1",
+      "case": "media-question",
+      "variant": "review-revise",
+      "scope": "proposal-only; no application admission or commit; same-model reviewer, not independent quality certification",
+      "source": "Teacher-only specification: assess 6×7; correct answer 42. Before submission, do not reveal the answer, an answer key, a worked solution or the words forty-two. Give one practice activity for 5 minutes.",
+      "request": "Produce exactly one 5-minute activity. facts is server-side in this experiment: keys answer (number), kind (exactly fill_blank). learner_prompt is the public pre-submission fill-in question; never include the answer. In the facts object, put every value in JSON double quotes, including numeric values. Return a data instance, not a JSON Schema definition.",
+      "drafts": [
+        {
+          "facts": {
+            "answer": "42",
+            "kind": "fill_blank"
+          },
+          "activities": [
+            5
+          ],
+          "learner_prompt": "What is the product of 6 and 7? Fill in the blank: 6 × 7 = ____"
+        },
+        {
+          "facts": {
+            "answer": "42",
+            "kind": "fill_blank"
+          },
+          "activities": [
+            5
+          ],
+          "learner_prompt": "What is the product of 6 and 7? Fill in the blank: 6 × 7 = ____"
+        }
+      ],
+      "review": {
+        "issues": [
+          "The draft correctly computes 6×7=42 and stores it in facts.answer, which is server-side and not exposed to the learner.",
+          "The learner_prompt contains only the blank ('____') and does not include the answer, the word 'forty-two,' or any worked solution, satisfying the no-leakage constraint.",
+          "activities is [5], consistent with the requirement of exactly one 5-minute activity; the integer 5 satisfies the JSON integer constraint for activity minutes.",
+          "All values in the facts object are JSON strings, including the numeric answer '42', as required.",
+          "The response is a data instance, not a schema definition, matching the output requirement."
+        ],
+        "recommendation": "Approve. The draft is source-faithful, arithmetically correct, contains no accidental answer leakage, and conforms to the schema constraints. No revisions needed."
+      },
+      "response_formats": [
+        {
+          "call_kind": "generation",
+          "fenced": false
+        },
+        {
+          "call_kind": "critic",
+          "fenced": false
+        },
+        {
+          "call_kind": "repair",
+          "fenced": false
+        }
+      ],
+      "metrics": {
+        "schema_valid": true,
+        "facts_exact": true,
+        "minutes_valid": true,
+        "prompt_present": true,
+        "forbidden_answer_strings_absent": true
+      },
+      "status": "completed"
+    },
+    {
+      "campaign": "m3-role-exploration-20260912-v5",
+      "version": "role-exploration-v1",
+      "case": "media-question",
+      "variant": "self-revise",
+      "scope": "proposal-only; no application admission or commit; same-model reviewer, not independent quality certification",
+      "source": "Teacher-only specification: assess 6×7; correct answer 42. Before submission, do not reveal the answer, an answer key, a worked solution or the words forty-two. Give one practice activity for 5 minutes.",
+      "request": "Produce exactly one 5-minute activity. facts is server-side in this experiment: keys answer (number), kind (exactly fill_blank). learner_prompt is the public pre-submission fill-in question; never include the answer. In the facts object, put every value in JSON double quotes, including numeric values. Return a data instance, not a JSON Schema definition.",
+      "drafts": [
+        {
+          "facts": {
+            "answer": "42",
+            "kind": "fill_blank"
+          },
+          "activities": [
+            5
+          ],
+          "learner_prompt": "What is the product of 6 × 7? Fill in the blank: ____"
+        },
+        {
+          "facts": {
+            "answer": "42",
+            "kind": "fill_blank"
+          },
+          "activities": [
+            5
+          ],
+          "learner_prompt": "What is the product of 6 × 7? Fill in the blank: ____"
+        },
+        {
+          "facts": {
+            "answer": "42",
+            "kind": "fill_blank"
+          },
+          "activities": [
+            5
+          ],
+          "learner_prompt": "What is the product of 6 × 7? Fill in the blank: ____"
+        }
+      ],
+      "review": null,
+      "response_formats": [
+        {
+          "call_kind": "generation",
+          "fenced": false
+        },
+        {
+          "call_kind": "repair",
+          "fenced": false
+        },
+        {
+          "call_kind": "repair",
+          "fenced": false
+        }
+      ],
+      "metrics": {
+        "schema_valid": true,
+        "facts_exact": true,
+        "minutes_valid": true,
+        "prompt_present": true,
+        "forbidden_answer_strings_absent": true
+      },
+      "status": "completed"
+    },
+    {
+      "campaign": "m3-role-exploration-20260912-v5",
+      "version": "role-exploration-v1",
+      "case": "plan-pages",
+      "variant": "baseline",
+      "scope": "proposal-only; no application admission or commit; same-model reviewer, not independent quality certification",
+      "source": "Physical PDF page 1 is the cover marked roman i. Physical page 2 is printed page 17: solve 3x+5=20 by subtracting 5 then dividing by 3. Physical page 3 is printed page 18: verify by substitution. Available time: 18 minutes.",
+      "request": "Plan exactly 3 activities totaling 18 minutes. facts keys: solution (number alone), equation_physical_page, equation_printed_page (page numbers alone). learner_prompt asks a new practice question without giving its answer. In the facts object, put every value in JSON double quotes, including numeric values. Return a data instance, not a JSON Schema definition.",
+      "drafts": [
+        {
+          "facts": {
+            "solution": "5",
+            "equation_physical_page": "2",
+            "equation_printed_page": "17"
+          },
+          "activities": [
+            5,
+            8,
+            5
+          ],
+          "learner_prompt": "Solve 2x+7=19 by first subtracting 7, then dividing by 2. Show each step and then verify your solution by substitution."
+        }
+      ],
+      "review": null,
+      "response_formats": [
+        {
+          "call_kind": "generation",
+          "fenced": false
+        }
+      ],
+      "metrics": {
+        "schema_valid": true,
+        "facts_exact": true,
+        "minutes_valid": true,
+        "prompt_present": true,
+        "forbidden_answer_strings_absent": true
+      },
+      "status": "completed"
+    },
+    {
+      "campaign": "m3-role-exploration-20260912-v5",
+      "version": "role-exploration-v1",
+      "case": "plan-pages",
+      "variant": "review-revise",
+      "scope": "proposal-only; no application admission or commit; same-model reviewer, not independent quality certification",
+      "source": "Physical PDF page 1 is the cover marked roman i. Physical page 2 is printed page 17: solve 3x+5=20 by subtracting 5 then dividing by 3. Physical page 3 is printed page 18: verify by substitution. Available time: 18 minutes.",
+      "request": "Plan exactly 3 activities totaling 18 minutes. facts keys: solution (number alone), equation_physical_page, equation_printed_page (page numbers alone). learner_prompt asks a new practice question without giving its answer. In the facts object, put every value in JSON double quotes, including numeric values. Return a data instance, not a JSON Schema definition.",
+      "drafts": [
+        {
+          "facts": {
+            "solution": "5",
+            "equation_physical_page": "2",
+            "equation_printed_page": "17"
+          },
+          "activities": [
+            6,
+            6,
+            6
+          ],
+          "learner_prompt": "Now try a new problem on your own: Solve 4x + 7 = 31 for x. Show each step clearly, and then verify your solution by substituting it back into the original equation."
+        },
+        {
+          "facts": {
+            "solution": "5",
+            "equation_physical_page": "2",
+            "equation_printed_page": "17"
+          },
+          "activities": [
+            6,
+            6,
+            6
+          ],
+          "learner_prompt": "Now try a new problem on your own: Solve 4x + 7 = 31 for x. Show each step clearly, and then verify your solution by substituting it back into the original equation."
+        }
+      ],
+      "review": {
+        "issues": [],
+        "recommendation": "approve"
+      },
+      "response_formats": [
+        {
+          "call_kind": "generation",
+          "fenced": false
+        },
+        {
+          "call_kind": "critic",
+          "fenced": false
+        },
+        {
+          "call_kind": "repair",
+          "fenced": false
+        }
+      ],
+      "metrics": {
+        "schema_valid": true,
+        "facts_exact": true,
+        "minutes_valid": true,
+        "prompt_present": true,
+        "forbidden_answer_strings_absent": true
+      },
+      "status": "completed"
+    },
+    {
+      "campaign": "m3-role-exploration-20260912-v5",
+      "version": "role-exploration-v1",
+      "case": "plan-pages",
+      "variant": "self-revise",
+      "scope": "proposal-only; no application admission or commit; same-model reviewer, not independent quality certification",
+      "source": "Physical PDF page 1 is the cover marked roman i. Physical page 2 is printed page 17: solve 3x+5=20 by subtracting 5 then dividing by 3. Physical page 3 is printed page 18: verify by substitution. Available time: 18 minutes.",
+      "request": "Plan exactly 3 activities totaling 18 minutes. facts keys: solution (number alone), equation_physical_page, equation_printed_page (page numbers alone). learner_prompt asks a new practice question without giving its answer. In the facts object, put every value in JSON double quotes, including numeric values. Return a data instance, not a JSON Schema definition.",
+      "drafts": [
+        {
+          "facts": {
+            "solution": "5",
+            "equation_physical_page": "2",
+            "equation_printed_page": "17"
+          },
+          "activities": [
+            5,
+            8,
+            5
+          ],
+          "learner_prompt": "Solve the equation 2x+7=19 by first subtracting 7 from both sides, then dividing both sides by 2. Write each step clearly and show your final value for x."
+        },
+        {
+          "facts": {
+            "solution": "5",
+            "equation_physical_page": "2",
+            "equation_printed_page": "17"
+          },
+          "activities": [
+            5,
+            8,
+            5
+          ],
+          "learner_prompt": "Solve the equation 2x+7=19 by first subtracting 7 from both sides, then dividing both sides by 2. Write each step clearly and show your final value for x."
+        },
+        {
+          "facts": {
+            "solution": "5",
+            "equation_physical_page": "2",
+            "equation_printed_page": "17"
+          },
+          "activities": [
+            5,
+            8,
+            5
+          ],
+          "learner_prompt": "Solve the equation 2x+7=19 by first subtracting 7 from both sides, then dividing both sides by 2. Write each step clearly and show your final value for x."
+        }
+      ],
+      "review": null,
+      "response_formats": [
+        {
+          "call_kind": "generation",
+          "fenced": false
+        },
+        {
+          "call_kind": "repair",
+          "fenced": false
+        },
+        {
+          "call_kind": "repair",
+          "fenced": false
+        }
+      ],
+      "metrics": {
+        "schema_valid": true,
+        "facts_exact": true,
+        "minutes_valid": true,
+        "prompt_present": true,
+        "forbidden_answer_strings_absent": true
+      },
+      "status": "completed"
+    },
+    {
+      "campaign": "m3-role-exploration-20260912-v5",
+      "version": "role-exploration-v1",
+      "case": "plan-scope",
+      "variant": "baseline",
+      "scope": "proposal-only; no application admission or commit; same-model reviewer, not independent quality certification",
+      "source": "Lesson source: a bag contains 3 red and 2 blue balls, one draw. P(red)=3/5. Replacement is outside this lesson. The learner has 17 minutes; reading must not consume the whole session.",
+      "request": "Plan exactly 3 positive-duration activities totaling 17 minutes. facts keys: red_probability (fraction), ball_total (number), replacement_scope (exactly outside). Ask the learner to justify a probability. In the facts object, put every value in JSON double quotes, including numeric values. Return a data instance, not a JSON Schema definition.",
+      "drafts": [
+        {
+          "facts": {
+            "red_probability": "3/5",
+            "ball_total": "5",
+            "replacement_scope": "outside"
+          },
+          "activities": [
+            5,
+            6,
+            6
+          ],
+          "learner_prompt": "A bag holds 3 red and 2 blue balls. You draw one ball at random. State the probability of drawing red and justify your answer by explaining what each part of your reasoning (the favorable count, the total count, and the assumed model) contributes to the fraction 3/5."
+        }
+      ],
+      "review": null,
+      "response_formats": [
+        {
+          "call_kind": "generation",
+          "fenced": false
+        }
+      ],
+      "metrics": {
+        "schema_valid": true,
+        "facts_exact": true,
+        "minutes_valid": true,
+        "prompt_present": true,
+        "forbidden_answer_strings_absent": true
+      },
+      "status": "completed"
+    },
+    {
+      "campaign": "m3-role-exploration-20260912-v5",
+      "version": "role-exploration-v1",
+      "case": "plan-scope",
+      "variant": "review-revise",
+      "scope": "proposal-only; no application admission or commit; same-model reviewer, not independent quality certification",
+      "source": "Lesson source: a bag contains 3 red and 2 blue balls, one draw. P(red)=3/5. Replacement is outside this lesson. The learner has 17 minutes; reading must not consume the whole session.",
+      "request": "Plan exactly 3 positive-duration activities totaling 17 minutes. facts keys: red_probability (fraction), ball_total (number), replacement_scope (exactly outside). Ask the learner to justify a probability. In the facts object, put every value in JSON double quotes, including numeric values. Return a data instance, not a JSON Schema definition.",
+      "drafts": [
+        {
+          "facts": {
+            "red_probability": "3/5",
+            "ball_total": "5",
+            "replacement_scope": "outside"
+          },
+          "activities": [
+            5,
+            7,
+            5
+          ],
+          "learner_prompt": "A bag contains 3 red balls and 2 blue balls. One ball is drawn at random. Justify why the probability of drawing a red ball is 3/5. In your response, identify the total number of equally likely outcomes and the number of favorable outcomes, and explain how the ratio of favorable to total outcomes gives the probability."
+        },
+        {
+          "facts": {
+            "red_probability": "3/5",
+            "ball_total": "5",
+            "replacement_scope": "outside"
+          },
+          "activities": [
+            5,
+            7,
+            5
+          ],
+          "learner_prompt": "A bag contains 3 red balls and 2 blue balls. One ball is drawn at random. Justify why the probability of drawing a red ball is 3/5. In your response, identify the total number of equally likely outcomes and the number of favorable outcomes, and explain how the ratio of favorable to total outcomes gives the probability."
+        }
+      ],
+      "review": {
+        "issues": [],
+        "recommendation": "approve"
+      },
+      "response_formats": [
+        {
+          "call_kind": "generation",
+          "fenced": false
+        },
+        {
+          "call_kind": "critic",
+          "fenced": false
+        },
+        {
+          "call_kind": "repair",
+          "fenced": false
+        }
+      ],
+      "metrics": {
+        "schema_valid": true,
+        "facts_exact": true,
+        "minutes_valid": true,
+        "prompt_present": true,
+        "forbidden_answer_strings_absent": true
+      },
+      "status": "completed"
+    },
+    {
+      "campaign": "m3-role-exploration-20260912-v5",
+      "version": "role-exploration-v1",
+      "case": "plan-scope",
+      "variant": "self-revise",
+      "scope": "proposal-only; no application admission or commit; same-model reviewer, not independent quality certification",
+      "source": "Lesson source: a bag contains 3 red and 2 blue balls, one draw. P(red)=3/5. Replacement is outside this lesson. The learner has 17 minutes; reading must not consume the whole session.",
+      "request": "Plan exactly 3 positive-duration activities totaling 17 minutes. facts keys: red_probability (fraction), ball_total (number), replacement_scope (exactly outside). Ask the learner to justify a probability. In the facts object, put every value in JSON double quotes, including numeric values. Return a data instance, not a JSON Schema definition.",
+      "drafts": [
+        {
+          "facts": {
+            "red_probability": "3/5",
+            "ball_total": "5",
+            "replacement_scope": "outside"
+          },
+          "activities": [
+            5,
+            6,
+            6
+          ],
+          "learner_prompt": "A bag contains 3 red balls and 2 blue balls. You draw one ball at random from the bag. What is the probability of drawing a red ball? Justify your answer by referencing the number of favorable outcomes and the total number of equally likely outcomes."
+        },
+        {
+          "facts": {
+            "red_probability": "3/5",
+            "ball_total": "5",
+            "replacement_scope": "outside"
+          },
+          "activities": [
+            5,
+            6,
+            6
+          ],
+          "learner_prompt": "A bag contains 3 red balls and 2 blue balls. You draw one ball at random from the bag. What is the probability of drawing a red ball? Justify your answer by referencing the number of favorable outcomes and the total number of equally likely outcomes."
+        },
+        {
+          "facts": {
+            "red_probability": "3/5",
+            "ball_total": "5",
+            "replacement_scope": "outside"
+          },
+          "activities": [
+            5,
+            6,
+            6
+          ],
+          "learner_prompt": "A bag contains 3 red balls and 2 blue balls. You draw one ball at random from the bag. What is the probability of drawing a red ball? Justify your answer by referencing the number of favorable outcomes and the total number of equally likely outcomes."
+        }
+      ],
+      "review": null,
+      "response_formats": [
+        {
+          "call_kind": "generation",
+          "fenced": false
+        },
+        {
+          "call_kind": "repair",
+          "fenced": false
+        },
+        {
+          "call_kind": "repair",
+          "fenced": false
+        }
+      ],
+      "metrics": {
+        "schema_valid": true,
+        "facts_exact": true,
+        "minutes_valid": true,
+        "prompt_present": true,
+        "forbidden_answer_strings_absent": true
+      },
+      "status": "completed"
+    },
+    {
+      "campaign": "m3-role-format-diagnostic-20260912-v3",
+      "version": "role-exploration-v1",
+      "case": "plan-pages",
+      "variant": "baseline",
+      "scope": "proposal-only; no application admission or commit; same-model reviewer, not independent quality certification",
+      "source": "Physical PDF page 1 is the cover marked roman i. Physical page 2 is printed page 17: solve 3x+5=20 by subtracting 5 then dividing by 3. Physical page 3 is printed page 18: verify by substitution. Available time: 18 minutes.",
+      "request": "Plan exactly 3 activities totaling 18 minutes. facts keys: solution (number alone), equation_physical_page, equation_printed_page (page numbers alone). learner_prompt asks a new practice question without giving its answer.",
+      "drafts": [],
+      "review": null,
+      "invalid_public_proposal": "```json\n{\n  \"facts\": {\n    \"solution\": \"5\",\n    \"equation_physical_page\": \"2\",\n    \"equation_printed_page\": \"17\"\n  },\n  \"activities\": [6, 6, 6],\n  \"learner_prompt\": \"Solve the equation 2x + 7 = 19 using the same two-step method you just learned. Show your work by first applying an inverse operation to isolate the term with x, then applying the second inverse operation. Once you have your solution, verify it by substituting the value back into the original equation to check that both sides are equal.\"\n}\n```",
+      "parse_error_type": "JSONDecodeError",
+      "status": "candidate_failed",
+      "failure_stage": "generate",
+      "error_code": "invalid_role_payload"
+    }
+  ]
+}

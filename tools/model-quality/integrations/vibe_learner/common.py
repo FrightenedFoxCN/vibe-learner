@@ -12,6 +12,7 @@ from app.core.settings import Settings
 from app.models.api import CreatePersonaRequest
 from app.persistence.harness_runtime_repository import HarnessRuntimeRepository
 from app.services.provider_sdk import ProviderRequestAdapter
+from app.services.provider_transport import _normalize_completed_tool_indexes
 
 from model_quality.ledger import GateClosed
 from model_quality.runner import atomic_json
@@ -42,6 +43,7 @@ class Bridge:
         self.calls = 0
         self.failure = None
         self.call_kind = 'generation'
+        self.normalized_tool_indexes = 0
 
     def request(self, adapter, payload, *, request_kind, model):
         started = time.monotonic()
@@ -51,7 +53,24 @@ class Bridge:
         try:
             simulated = self.fake(payload) if self.context.transport.campaign.transport == 'fake' else None
             raw = self.context.transport.request(payload, call_kind=self.call_kind, fake_response=simulated)
-            return raw, round((time.monotonic()-started)*1000)
+            # Native wire telemetry is recorded before projection. Reuse the
+            # exact production response projection; do not relax domain decode
+            # or duplicate its index/type/unknown-field rules in the lab.
+            normalized = _normalize_completed_tool_indexes(raw)
+            original_choices, projected_choices = raw.get('choices'), normalized.get('choices')
+            paired_choices = zip(original_choices, projected_choices) if isinstance(original_choices, list) and isinstance(projected_choices, list) else ()
+            for original_choice, projected_choice in paired_choices:
+                if not isinstance(original_choice, dict) or not isinstance(projected_choice, dict):
+                    continue
+                original_message, projected_message = original_choice.get('message'), projected_choice.get('message')
+                if not isinstance(original_message, dict) or not isinstance(projected_message, dict):
+                    continue
+                original_calls, projected_calls = original_message.get('tool_calls'), projected_message.get('tool_calls')
+                if not isinstance(original_calls, list) or not isinstance(projected_calls, list):
+                    continue
+                self.normalized_tool_indexes += sum(isinstance(a, dict) and isinstance(b, dict) and 'index' in a and 'index' not in b
+                                                    for a, b in zip(original_calls, projected_calls))
+            return normalized, round((time.monotonic()-started)*1000)
         except Exception as exc:
             self.failure = exc
             raise

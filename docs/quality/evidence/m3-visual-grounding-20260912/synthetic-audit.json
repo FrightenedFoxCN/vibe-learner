@@ -1,0 +1,850 @@
+{
+  "scope": "development-only, 12 synthetic families; 4 preliminary samples are same material not independent increment",
+  "cost": {
+    "som": {
+      "wires": 12,
+      "tokens": 12131,
+      "p50_ms": 2167,
+      "p95_ms": 5980
+    },
+    "direct": {
+      "wires": 12,
+      "tokens": 9958,
+      "p50_ms": 5200,
+      "p95_ms": 12352
+    }
+  },
+  "rows": [
+    {
+      "case": "blue-circle",
+      "variant": "direct",
+      "object_class": "geometry",
+      "status": "completed",
+      "metrics": {
+        "task_pass": true,
+        "iou": 0.6297045696775915,
+        "coverage": 1.0,
+        "abstain_correct": null,
+        "proposal_recall_at_threshold": true,
+        "best_proposal_iou": 1.0,
+        "schema_valid": true
+      },
+      "box_px": [
+        65.28,
+        69.84,
+        220.15999999999997,
+        219.96
+      ],
+      "gold": {
+        "expected": "found",
+        "target_px": [
+          70,
+          75,
+          191,
+          196
+        ],
+        "width": 640,
+        "height": 360,
+        "object_class": "geometry",
+        "minimum_iou": 0.5,
+        "minimum_coverage": 0.8
+      },
+      "detector_seconds": 0.055680207966361195,
+      "evidence": "tools/model-quality/runs/m3-visual-grounding-20260912/matrix-run/blue-circle/direct/0/storage/visual-evidence.json"
+    },
+    {
+      "case": "blue-circle",
+      "variant": "som",
+      "object_class": "geometry",
+      "status": "completed",
+      "metrics": {
+        "task_pass": true,
+        "iou": 1.0,
+        "coverage": 1.0,
+        "abstain_correct": null,
+        "proposal_recall_at_threshold": true,
+        "best_proposal_iou": 1.0,
+        "schema_valid": true
+      },
+      "box_px": [
+        70,
+        75,
+        191,
+        196
+      ],
+      "gold": {
+        "expected": "found",
+        "target_px": [
+          70,
+          75,
+          191,
+          196
+        ],
+        "width": 640,
+        "height": 360,
+        "object_class": "geometry",
+        "minimum_iou": 0.5,
+        "minimum_coverage": 0.8
+      },
+      "detector_seconds": 0.057314333971589804,
+      "evidence": "tools/model-quality/runs/m3-visual-grounding-20260912/matrix-run/blue-circle/som/0/storage/visual-evidence.json"
+    },
+    {
+      "case": "duplicate-equation",
+      "variant": "direct",
+      "object_class": "ambiguous",
+      "status": "completed",
+      "metrics": {
+        "task_pass": true,
+        "iou": 0.0,
+        "coverage": 0.0,
+        "abstain_correct": true,
+        "proposal_recall_at_threshold": null,
+        "best_proposal_iou": null,
+        "schema_valid": true
+      },
+      "box_px": null,
+      "gold": {
+        "expected": "ambiguous",
+        "target_px": null,
+        "width": 640,
+        "height": 360,
+        "object_class": "ambiguous",
+        "minimum_iou": 0.5,
+        "minimum_coverage": 0.8
+      },
+      "detector_seconds": 0.05626250000204891,
+      "evidence": "tools/model-quality/runs/m3-visual-grounding-20260912/matrix-run/duplicate-equation/direct/0/storage/visual-evidence.json"
+    },
+    {
+      "case": "duplicate-equation",
+      "variant": "som",
+      "object_class": "ambiguous",
+      "status": "completed",
+      "metrics": {
+        "task_pass": true,
+        "iou": 0.0,
+        "coverage": 0.0,
+        "abstain_correct": true,
+        "proposal_recall_at_threshold": null,
+        "best_proposal_iou": null,
+        "schema_valid": true
+      },
+      "box_px": null,
+      "gold": {
+        "expected": "ambiguous",
+        "target_px": null,
+        "width": 640,
+        "height": 360,
+        "object_class": "ambiguous",
+        "minimum_iou": 0.5,
+        "minimum_coverage": 0.8
+      },
+      "detector_seconds": 0.0568803750211373,
+      "evidence": "tools/model-quality/runs/m3-visual-grounding-20260912/matrix-run/duplicate-equation/som/0/storage/visual-evidence.json"
+    },
+    {
+      "case": "equation-lower",
+      "variant": "direct",
+      "object_class": "text",
+      "status": "candidate_failed",
+      "metrics": {
+        "task_pass": false,
+        "iou": 0.06691182348708972,
+        "coverage": 0.13834710743801737,
+        "abstain_correct": null,
+        "proposal_recall_at_threshold": true,
+        "best_proposal_iou": 0.9834710743801653,
+        "schema_valid": true
+      },
+      "box_px": [
+        320.0,
+        244.8,
+        441.59999999999997,
+        273.6
+      ],
+      "gold": {
+        "expected": "found",
+        "target_px": [
+          330,
+          270,
+          451,
+          294
+        ],
+        "width": 640,
+        "height": 360,
+        "object_class": "text",
+        "minimum_iou": 0.5,
+        "minimum_coverage": 0.8
+      },
+      "detector_seconds": 0.05621249997057021,
+      "evidence": "tools/model-quality/runs/m3-visual-grounding-20260912/matrix-run/equation-lower/direct/0/storage/visual-evidence.json"
+    },
+    {
+      "case": "equation-lower",
+      "variant": "som",
+      "object_class": "text",
+      "status": "completed",
+      "metrics": {
+        "task_pass": true,
+        "iou": 0.9834710743801653,
+        "coverage": 0.9834710743801653,
+        "abstain_correct": null,
+        "proposal_recall_at_threshold": true,
+        "best_proposal_iou": 0.9834710743801653,
+        "schema_valid": true
+      },
+      "box_px": [
+        331,
+        270,
+        450,
+        294
+      ],
+      "gold": {
+        "expected": "found",
+        "target_px": [
+          330,
+          270,
+          451,
+          294
+        ],
+        "width": 640,
+        "height": 360,
+        "object_class": "text",
+        "minimum_iou": 0.5,
+        "minimum_coverage": 0.8
+      },
+      "detector_seconds": 0.06123541702982038,
+      "evidence": "tools/model-quality/runs/m3-visual-grounding-20260912/matrix-run/equation-lower/som/0/storage/visual-evidence.json"
+    },
+    {
+      "case": "equation-small",
+      "variant": "direct",
+      "object_class": "text",
+      "status": "candidate_failed",
+      "metrics": {
+        "task_pass": false,
+        "iou": 0.2706129958488787,
+        "coverage": 0.5260337552742617,
+        "abstain_correct": null,
+        "proposal_recall_at_threshold": true,
+        "best_proposal_iou": 0.9746835443037974,
+        "schema_valid": true
+      },
+      "box_px": [
+        277.76,
+        164.88,
+        369.91999999999996,
+        180.0
+      ],
+      "gold": {
+        "expected": "found",
+        "target_px": [
+          270,
+          173,
+          349,
+          185
+        ],
+        "width": 640,
+        "height": 360,
+        "object_class": "text",
+        "minimum_iou": 0.5,
+        "minimum_coverage": 0.8
+      },
+      "detector_seconds": 0.06445362494559959,
+      "evidence": "tools/model-quality/runs/m3-visual-grounding-20260912/matrix-run/equation-small/direct/0/storage/visual-evidence.json"
+    },
+    {
+      "case": "equation-small",
+      "variant": "som",
+      "object_class": "text",
+      "status": "completed",
+      "metrics": {
+        "task_pass": true,
+        "iou": 0.9746835443037974,
+        "coverage": 0.9746835443037974,
+        "abstain_correct": null,
+        "proposal_recall_at_threshold": true,
+        "best_proposal_iou": 0.9746835443037974,
+        "schema_valid": true
+      },
+      "box_px": [
+        271,
+        173,
+        348,
+        185
+      ],
+      "gold": {
+        "expected": "found",
+        "target_px": [
+          270,
+          173,
+          349,
+          185
+        ],
+        "width": 640,
+        "height": 360,
+        "object_class": "text",
+        "minimum_iou": 0.5,
+        "minimum_coverage": 0.8
+      },
+      "detector_seconds": 0.06251508300192654,
+      "evidence": "tools/model-quality/runs/m3-visual-grounding-20260912/matrix-run/equation-small/som/0/storage/visual-evidence.json"
+    },
+    {
+      "case": "equation-upper",
+      "variant": "direct",
+      "object_class": "text",
+      "status": "completed",
+      "metrics": {
+        "task_pass": true,
+        "iou": 0.8149338873689729,
+        "coverage": 0.8202816901408454,
+        "abstain_correct": null,
+        "proposal_recall_at_threshold": true,
+        "best_proposal_iou": 0.9788732394366197,
+        "schema_valid": true
+      },
+      "box_px": [
+        58.239999999999995,
+        47.88,
+        174.72000000000003,
+        68.04
+      ],
+      "gold": {
+        "expected": "found",
+        "target_px": [
+          55,
+          48,
+          197,
+          68
+        ],
+        "width": 640,
+        "height": 360,
+        "object_class": "text",
+        "minimum_iou": 0.5,
+        "minimum_coverage": 0.8
+      },
+      "detector_seconds": 0.058037666021846235,
+      "evidence": "tools/model-quality/runs/m3-visual-grounding-20260912/matrix-run/equation-upper/direct/0/storage/visual-evidence.json"
+    },
+    {
+      "case": "equation-upper",
+      "variant": "som",
+      "object_class": "text",
+      "status": "completed",
+      "metrics": {
+        "task_pass": true,
+        "iou": 0.9788732394366197,
+        "coverage": 0.9788732394366197,
+        "abstain_correct": null,
+        "proposal_recall_at_threshold": true,
+        "best_proposal_iou": 0.9788732394366197,
+        "schema_valid": true
+      },
+      "box_px": [
+        56,
+        48,
+        195,
+        68
+      ],
+      "gold": {
+        "expected": "found",
+        "target_px": [
+          55,
+          48,
+          197,
+          68
+        ],
+        "width": 640,
+        "height": 360,
+        "object_class": "text",
+        "minimum_iou": 0.5,
+        "minimum_coverage": 0.8
+      },
+      "detector_seconds": 0.05943370901513845,
+      "evidence": "tools/model-quality/runs/m3-visual-grounding-20260912/matrix-run/equation-upper/som/0/storage/visual-evidence.json"
+    },
+    {
+      "case": "green-triangle",
+      "variant": "direct",
+      "object_class": "geometry",
+      "status": "completed",
+      "metrics": {
+        "task_pass": true,
+        "iou": 0.693273769386379,
+        "coverage": 0.9451933701657458,
+        "abstain_correct": null,
+        "proposal_recall_at_threshold": true,
+        "best_proposal_iou": 1.0,
+        "schema_valid": true
+      },
+      "box_px": [
+        314.88,
+        79.92,
+        540.16,
+        264.96
+      ],
+      "gold": {
+        "expected": "found",
+        "target_px": [
+          330,
+          70,
+          506,
+          251
+        ],
+        "width": 640,
+        "height": 360,
+        "object_class": "geometry",
+        "minimum_iou": 0.5,
+        "minimum_coverage": 0.8
+      },
+      "detector_seconds": 0.05870154203148559,
+      "evidence": "tools/model-quality/runs/m3-visual-grounding-20260912/matrix-run/green-triangle/direct/0/storage/visual-evidence.json"
+    },
+    {
+      "case": "green-triangle",
+      "variant": "som",
+      "object_class": "geometry",
+      "status": "completed",
+      "metrics": {
+        "task_pass": true,
+        "iou": 1.0,
+        "coverage": 1.0,
+        "abstain_correct": null,
+        "proposal_recall_at_threshold": true,
+        "best_proposal_iou": 1.0,
+        "schema_valid": true
+      },
+      "box_px": [
+        330,
+        70,
+        506,
+        251
+      ],
+      "gold": {
+        "expected": "found",
+        "target_px": [
+          330,
+          70,
+          506,
+          251
+        ],
+        "width": 640,
+        "height": 360,
+        "object_class": "geometry",
+        "minimum_iou": 0.5,
+        "minimum_coverage": 0.8
+      },
+      "detector_seconds": 0.05846012500114739,
+      "evidence": "tools/model-quality/runs/m3-visual-grounding-20260912/matrix-run/green-triangle/som/0/storage/visual-evidence.json"
+    },
+    {
+      "case": "highest-bar",
+      "variant": "direct",
+      "object_class": "chart",
+      "status": "candidate_failed",
+      "metrics": {
+        "task_pass": false,
+        "iou": 0.37266132927380297,
+        "coverage": 0.5544786317507628,
+        "abstain_correct": null,
+        "proposal_recall_at_threshold": true,
+        "best_proposal_iou": 1.0,
+        "schema_valid": true
+      },
+      "box_px": [
+        279.68,
+        60.120000000000005,
+        344.96000000000004,
+        285.12
+      ],
+      "gold": {
+        "expected": "found",
+        "target_px": [
+          255,
+          70,
+          316,
+          301
+        ],
+        "width": 640,
+        "height": 360,
+        "object_class": "chart",
+        "minimum_iou": 0.5,
+        "minimum_coverage": 0.8
+      },
+      "detector_seconds": 0.0589843750349246,
+      "evidence": "tools/model-quality/runs/m3-visual-grounding-20260912/matrix-run/highest-bar/direct/0/storage/visual-evidence.json"
+    },
+    {
+      "case": "highest-bar",
+      "variant": "som",
+      "object_class": "chart",
+      "status": "completed",
+      "metrics": {
+        "task_pass": true,
+        "iou": 1.0,
+        "coverage": 1.0,
+        "abstain_correct": null,
+        "proposal_recall_at_threshold": true,
+        "best_proposal_iou": 1.0,
+        "schema_valid": true
+      },
+      "box_px": [
+        255,
+        70,
+        316,
+        301
+      ],
+      "gold": {
+        "expected": "found",
+        "target_px": [
+          255,
+          70,
+          316,
+          301
+        ],
+        "width": 640,
+        "height": 360,
+        "object_class": "chart",
+        "minimum_iou": 0.5,
+        "minimum_coverage": 0.8
+      },
+      "detector_seconds": 0.059578958025667816,
+      "evidence": "tools/model-quality/runs/m3-visual-grounding-20260912/matrix-run/highest-bar/som/0/storage/visual-evidence.json"
+    },
+    {
+      "case": "missing-equation",
+      "variant": "direct",
+      "object_class": "negative",
+      "status": "completed",
+      "metrics": {
+        "task_pass": true,
+        "iou": 0.0,
+        "coverage": 0.0,
+        "abstain_correct": true,
+        "proposal_recall_at_threshold": null,
+        "best_proposal_iou": null,
+        "schema_valid": true
+      },
+      "box_px": null,
+      "gold": {
+        "expected": "absent",
+        "target_px": null,
+        "width": 640,
+        "height": 360,
+        "object_class": "negative",
+        "minimum_iou": 0.5,
+        "minimum_coverage": 0.8
+      },
+      "detector_seconds": 0.06782745802775025,
+      "evidence": "tools/model-quality/runs/m3-visual-grounding-20260912/matrix-run/missing-equation/direct/0/storage/visual-evidence.json"
+    },
+    {
+      "case": "missing-equation",
+      "variant": "som",
+      "object_class": "negative",
+      "status": "completed",
+      "metrics": {
+        "task_pass": true,
+        "iou": 0.0,
+        "coverage": 0.0,
+        "abstain_correct": true,
+        "proposal_recall_at_threshold": null,
+        "best_proposal_iou": null,
+        "schema_valid": true
+      },
+      "box_px": null,
+      "gold": {
+        "expected": "absent",
+        "target_px": null,
+        "width": 640,
+        "height": 360,
+        "object_class": "negative",
+        "minimum_iou": 0.5,
+        "minimum_coverage": 0.8
+      },
+      "detector_seconds": 0.06386374996509403,
+      "evidence": "tools/model-quality/runs/m3-visual-grounding-20260912/matrix-run/missing-equation/som/0/storage/visual-evidence.json"
+    },
+    {
+      "case": "missing-shape",
+      "variant": "direct",
+      "object_class": "negative",
+      "status": "completed",
+      "metrics": {
+        "task_pass": true,
+        "iou": 0.0,
+        "coverage": 0.0,
+        "abstain_correct": true,
+        "proposal_recall_at_threshold": null,
+        "best_proposal_iou": null,
+        "schema_valid": true
+      },
+      "box_px": null,
+      "gold": {
+        "expected": "absent",
+        "target_px": null,
+        "width": 640,
+        "height": 360,
+        "object_class": "negative",
+        "minimum_iou": 0.5,
+        "minimum_coverage": 0.8
+      },
+      "detector_seconds": 0.0602812499855645,
+      "evidence": "tools/model-quality/runs/m3-visual-grounding-20260912/matrix-run/missing-shape/direct/0/storage/visual-evidence.json"
+    },
+    {
+      "case": "missing-shape",
+      "variant": "som",
+      "object_class": "negative",
+      "status": "completed",
+      "metrics": {
+        "task_pass": true,
+        "iou": 0.0,
+        "coverage": 0.0,
+        "abstain_correct": true,
+        "proposal_recall_at_threshold": null,
+        "best_proposal_iou": null,
+        "schema_valid": true
+      },
+      "box_px": null,
+      "gold": {
+        "expected": "absent",
+        "target_px": null,
+        "width": 640,
+        "height": 360,
+        "object_class": "negative",
+        "minimum_iou": 0.5,
+        "minimum_coverage": 0.8
+      },
+      "detector_seconds": 0.0571418339968659,
+      "evidence": "tools/model-quality/runs/m3-visual-grounding-20260912/matrix-run/missing-shape/som/0/storage/visual-evidence.json"
+    },
+    {
+      "case": "right-column",
+      "variant": "direct",
+      "object_class": "text",
+      "status": "candidate_failed",
+      "metrics": {
+        "task_pass": false,
+        "iou": 0.1556799987286399,
+        "coverage": 0.32069156010230127,
+        "abstain_correct": null,
+        "proposal_recall_at_threshold": true,
+        "best_proposal_iou": 0.9826086956521739,
+        "schema_valid": true
+      },
+      "box_px": [
+        374.4,
+        145.08,
+        510.72,
+        164.88
+      ],
+      "gold": {
+        "expected": "found",
+        "target_px": [
+          350,
+          135,
+          465,
+          152
+        ],
+        "width": 640,
+        "height": 360,
+        "object_class": "text",
+        "minimum_iou": 0.5,
+        "minimum_coverage": 0.8
+      },
+      "detector_seconds": 0.06075662502553314,
+      "evidence": "tools/model-quality/runs/m3-visual-grounding-20260912/matrix-run/right-column/direct/0/storage/visual-evidence.json"
+    },
+    {
+      "case": "right-column",
+      "variant": "som",
+      "object_class": "text",
+      "status": "completed",
+      "metrics": {
+        "task_pass": true,
+        "iou": 0.9826086956521739,
+        "coverage": 0.9826086956521739,
+        "abstain_correct": null,
+        "proposal_recall_at_threshold": true,
+        "best_proposal_iou": 0.9826086956521739,
+        "schema_valid": true
+      },
+      "box_px": [
+        351,
+        135,
+        464,
+        152
+      ],
+      "gold": {
+        "expected": "found",
+        "target_px": [
+          350,
+          135,
+          465,
+          152
+        ],
+        "width": 640,
+        "height": 360,
+        "object_class": "text",
+        "minimum_iou": 0.5,
+        "minimum_coverage": 0.8
+      },
+      "detector_seconds": 0.05729291605530307,
+      "evidence": "tools/model-quality/runs/m3-visual-grounding-20260912/matrix-run/right-column/som/0/storage/visual-evidence.json"
+    },
+    {
+      "case": "similar-rows",
+      "variant": "direct",
+      "object_class": "text",
+      "status": "candidate_failed",
+      "metrics": {
+        "task_pass": false,
+        "iou": 0.29958005423766937,
+        "coverage": 0.5435733333333336,
+        "abstain_correct": null,
+        "proposal_recall_at_threshold": true,
+        "best_proposal_iou": 0.9855072463768116,
+        "schema_valid": true
+      },
+      "box_px": [
+        74.88000000000001,
+        158.04,
+        200.32,
+        187.92000000000002
+      ],
+      "gold": {
+        "expected": "found",
+        "target_px": [
+          70,
+          150,
+          208,
+          170
+        ],
+        "width": 640,
+        "height": 360,
+        "object_class": "text",
+        "minimum_iou": 0.5,
+        "minimum_coverage": 0.8
+      },
+      "detector_seconds": 0.06481908302521333,
+      "evidence": "tools/model-quality/runs/m3-visual-grounding-20260912/matrix-run/similar-rows/direct/0/storage/visual-evidence.json"
+    },
+    {
+      "case": "similar-rows",
+      "variant": "som",
+      "object_class": "text",
+      "status": "completed",
+      "metrics": {
+        "task_pass": true,
+        "iou": 0.9855072463768116,
+        "coverage": 0.9855072463768116,
+        "abstain_correct": null,
+        "proposal_recall_at_threshold": true,
+        "best_proposal_iou": 0.9855072463768116,
+        "schema_valid": true
+      },
+      "box_px": [
+        71,
+        150,
+        207,
+        170
+      ],
+      "gold": {
+        "expected": "found",
+        "target_px": [
+          70,
+          150,
+          208,
+          170
+        ],
+        "width": 640,
+        "height": 360,
+        "object_class": "text",
+        "minimum_iou": 0.5,
+        "minimum_coverage": 0.8
+      },
+      "detector_seconds": 0.061028166965115815,
+      "evidence": "tools/model-quality/runs/m3-visual-grounding-20260912/matrix-run/similar-rows/som/0/storage/visual-evidence.json"
+    },
+    {
+      "case": "wide-orange",
+      "variant": "direct",
+      "object_class": "geometry",
+      "status": "completed",
+      "metrics": {
+        "task_pass": true,
+        "iou": 0.8035916900047384,
+        "coverage": 0.9488017429193898,
+        "abstain_correct": null,
+        "proposal_recall_at_threshold": true,
+        "best_proposal_iou": 1.0,
+        "schema_valid": true
+      },
+      "box_px": [
+        220.15999999999997,
+        150.12,
+        524.8,
+        225.0
+      ],
+      "gold": {
+        "expected": "found",
+        "target_px": [
+          230,
+          160,
+          536,
+          226
+        ],
+        "width": 640,
+        "height": 360,
+        "object_class": "geometry",
+        "minimum_iou": 0.5,
+        "minimum_coverage": 0.8
+      },
+      "detector_seconds": 0.052320333023089916,
+      "evidence": "tools/model-quality/runs/m3-visual-grounding-20260912/matrix-run/wide-orange/direct/0/storage/visual-evidence.json"
+    },
+    {
+      "case": "wide-orange",
+      "variant": "som",
+      "object_class": "geometry",
+      "status": "completed",
+      "metrics": {
+        "task_pass": true,
+        "iou": 1.0,
+        "coverage": 1.0,
+        "abstain_correct": null,
+        "proposal_recall_at_threshold": true,
+        "best_proposal_iou": 1.0,
+        "schema_valid": true
+      },
+      "box_px": [
+        230,
+        160,
+        536,
+        226
+      ],
+      "gold": {
+        "expected": "found",
+        "target_px": [
+          230,
+          160,
+          536,
+          226
+        ],
+        "width": 640,
+        "height": 360,
+        "object_class": "geometry",
+        "minimum_iou": 0.5,
+        "minimum_coverage": 0.8
+      },
+      "detector_seconds": 0.05306174996076152,
+      "evidence": "tools/model-quality/runs/m3-visual-grounding-20260912/matrix-run/wide-orange/som/0/storage/visual-evidence.json"
+    }
+  ],
+  "matrix_resume": "accepted_terminal_zero_new_wire",
+  "smoke_resume": "accepted_terminal_zero_new_wire",
+  "percentile_method": "nearest-rank"
+}

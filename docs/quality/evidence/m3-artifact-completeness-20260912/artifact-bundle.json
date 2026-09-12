@@ -1,0 +1,88 @@
+{
+  "version": "role-chart-artifact-bundle-v1",
+  "requirement": {
+    "kind": "bar-chart-delivery-v1",
+    "source_sha256": "f89b4587f4372f0cfb6d9b000b086e45e87353b944d0717a9dfec41be72025ff",
+    "source": {
+      "kind": "bar-chart-source-v1",
+      "labels": [
+        "A",
+        "B",
+        "C"
+      ],
+      "values": [
+        4,
+        9,
+        6
+      ]
+    },
+    "required_questions": [
+      {
+        "operation": "maximum",
+        "labels": [
+          "A",
+          "B",
+          "C"
+        ]
+      },
+      {
+        "operation": "difference",
+        "labels": [
+          "C",
+          "A"
+        ]
+      }
+    ]
+  },
+  "delivery": {
+    "version": "role-chart-delivery-v1",
+    "source_sha256": "f89b4587f4372f0cfb6d9b000b086e45e87353b944d0717a9dfec41be72025ff",
+    "prompt": "Using the attached chart, which category has the largest value?\nUsing the attached chart, calculate the value of C minus A.",
+    "questions": [
+      {
+        "operation": "maximum",
+        "labels": [
+          "A",
+          "B",
+          "C"
+        ]
+      },
+      {
+        "operation": "difference",
+        "labels": [
+          "C",
+          "A"
+        ]
+      }
+    ],
+    "chart_path": "chart.svg",
+    "chart_sha256": "78c263b3cbf1933199619c6925c98f6700826ceaed45625e5dd903885640865d",
+    "data_path": "chart-data.json",
+    "data_sha256": "9c4c3c71ae111a69238812277b1922b9309a510bd77407066c756c7ae5f90c74",
+    "page_path": "learner.html",
+    "page_sha256": "cd4a98760720cd003a2c5abb2069ea46d70b64bf610259bae338ca0523b04dbc"
+  },
+  "files": [
+    {
+      "path": "chart.svg",
+      "mime_type": "image/svg+xml",
+      "encoding": "utf-8",
+      "sha256": "78c263b3cbf1933199619c6925c98f6700826ceaed45625e5dd903885640865d",
+      "content": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"310\" height=\"310\" viewBox=\"0 0 310 310\"><rect width=\"100%\" height=\"100%\" fill=\"white\"/><g font-family=\"sans-serif\" font-size=\"16\" fill=\"#182333\"><text x=\"20\" y=\"25\">Chart reading</text><path d=\"M50 40V250H300\" stroke=\"#182333\" fill=\"none\"/><text x=\"35\" y=\"255\">0</text><rect x=\"70\" y=\"161.111\" width=\"42\" height=\"88.8889\" fill=\"#315b9a\"/><text x=\"91\" y=\"151.111\" text-anchor=\"middle\">4</text><text x=\"91\" y=\"275\" text-anchor=\"middle\">A</text><rect x=\"140\" y=\"50\" width=\"42\" height=\"200\" fill=\"#315b9a\"/><text x=\"161\" y=\"40\" text-anchor=\"middle\">9</text><text x=\"161\" y=\"275\" text-anchor=\"middle\">B</text><rect x=\"210\" y=\"116.667\" width=\"42\" height=\"133.333\" fill=\"#315b9a\"/><text x=\"231\" y=\"106.667\" text-anchor=\"middle\">6</text><text x=\"231\" y=\"275\" text-anchor=\"middle\">C</text></g></svg>"
+    },
+    {
+      "path": "chart-data.json",
+      "mime_type": "application/json",
+      "encoding": "utf-8",
+      "sha256": "9c4c3c71ae111a69238812277b1922b9309a510bd77407066c756c7ae5f90c74",
+      "content": "{\"kind\":\"bar-chart-source-v1\",\"labels\":[\"A\",\"B\",\"C\"],\"values\":[4,9,6]}\n"
+    },
+    {
+      "path": "learner.html",
+      "mime_type": "text/html",
+      "encoding": "utf-8",
+      "sha256": "cd4a98760720cd003a2c5abb2069ea46d70b64bf610259bae338ca0523b04dbc",
+      "content": "<!doctype html><html lang=\"en\"><meta charset=\"utf-8\"><title>Chart reading activity</title><main><h1>Chart reading activity</h1><img src=\"chart.svg\" alt=\"Bar chart with category labels and numeric values\"><p>Using the attached chart, which category has the largest value?</p><p>Using the attached chart, calculate the value of C minus A.</p></main></html>"
+    }
+  ]
+}

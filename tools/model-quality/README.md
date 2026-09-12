@@ -29,7 +29,7 @@ CLI exit code：全部 `completed` 为 0；候选失败、未完成、不确定�
 
 ## 协议与隔离
 
-Manifest 冻结案例、关联 family、split、合成来源、source/request、gold/rubric、variant、随机种子、调用上限和有效模型配置。按 case/repetition 分块随机 AB/BA，重复不计为新的独立 family。`reserved` 案例禁止派发，不提供未经独立审查的 held-out 标签。首个适配器只支持合成纯文本、精确比较；模板中的两条语言控制用于基础设施预检，不是模型泛化质量样本。
+Manifest 冻结案例、关联 family、split、来源类别、source/request、gold/rubric、variant、随机种子、调用上限和有效模型配置。按 case/repetition 分块随机 AB/BA，重复不计为新的独立 family。`reserved` 案例禁止派发，不提供未经独立审查的 held-out 标签。首个适配器只支持合成纯文本、精确比较；模板中的两条语言控制用于基础设施预检，不是模型泛化质量样本。
 
 `seed` 只控制调度交错顺序，不代表供应商支持采样 seed。
 
@@ -41,7 +41,7 @@ Manifest 记录 Git HEAD、tracked dirty digest、运行器及适配器源码摘
 
 - SQLite `BEGIN IMMEDIATE` 在 wire 之前原子检查全窗口 token、wire、RPM/TPM、在途并发、样本调用次数和到期缓冲。RPM/TPM 使用保守的滑动 60 秒窗口，不是自适应 token bucket。
 - 每次预留输入配置上限 + 最大输出；文本请求体字节数超过输入预留则不发请求。只有完整且自洽的 prompt/completion/total usage 才校正预留。缓存、reasoning、计费 token 缺失保留 null；无 usage、超时或崩溃均不释放预留。实际 usage 超过预留立即停止新请求。
-- **这是操作性预算控制，尚非供应商计费硬上限证明。** M3 额度权重、reasoning/缓存口径和绝对单次 token 上界未核验；不得仅凭账本宣称 2G 绝不超额。当前不支持图片输入，也不提供货币额度执行器。
+- **这是操作性预算控制，尚非供应商计费硬上限证明。** M3 额度权重、reasoning/缓存口径和绝对单次 token 上界未核验；不得仅凭账本宣称 2G 绝不超额。图片仅支持显式开启的有界内联 PNG；不提供货币额度执行器。
 - 一个 transport 调用就是一个已预留的 HTTP 尝试，无 SDK 隐藏重试。禁止跟随重定向。401/403 停止全窗口新请求；固定并发模式下 429/529 也停发，自动模式下则立即降档和冷却，记录数值 Retry-After；已经发出的请求可能继续到超时。恢复不会自动解除停止闸或回收未知额度。
 - 样本结果逐个事务提交。`report.json` 从 checkpoint 重建并原子替换，包含预期分母、所有失败、case 配对、family 数、wire 账本、P50/P95 和跨 campaign 总计；崩溃不依赖 JSONL 最后一行是否完整。
 - campaign 文件锁禁止双调度器，样本文件锁阻止在原 worker 尚存活时恢复。恢复发现 `running` 则标记 `uncertain`，不重新发模型请求；已完成、失败、不确定样本都不自动重跑，只启动尚未派发的 pending 样本。需要确认或领域 query-only read-back 时由领域适配器和人工处理，不能将 uncertain 改成 pending。
@@ -53,7 +53,7 @@ Manifest 记录 Git HEAD、tracked dirty digest、运行器及适配器源码摘
 
 在相同 Python 环境中提供可导入函数，把 manifest 的 `adapter` 设为 `your_package.experiments:run_sample`。签名是 `run_sample(context, case, variant) -> dict`，参考 [adapters.py](model_quality/adapters.py)。
 
-`context.transport.complete(messages, call_kind=...)` 接收简单文本，`context.transport.request(payload, call_kind=...)` 接收生产 JSON Schema/function-tool 请求。两者共享预算闸；后者允许 assistant/tool 消息及文本分块，仍拒绝图片。seed、critic、selector 和修复分别计量，`sample_wire_limit` 限制总调用。`context.database` / `context.storage` 是专属路径，适配器负责将它们绑定到项目设置，并在有状态步骤后按领域规范 read-back。调度器不会自动让旧项目 bootstrap 采用这些路径。
+`context.transport.complete(messages, call_kind=...)` 接收简单文本，`context.transport.request(payload, call_kind=...)` 接收生产 JSON Schema/function-tool 请求。两者共享预算闸；后者允许 assistant/tool 消息及文本分块；用户消息中的内联 PNG 须显式设置 `max_inline_images`，拒绝远程图片 URL。seed、critic、selector 和修复分别计量，`sample_wire_limit` 限制总调用。`context.database` / `context.storage` 是专属路径，适配器负责将它们绑定到项目设置，并在有状态步骤后按领域规范 read-back。调度器不会自动让旧项目 bootstrap 采用这些路径。
 
 结果须通过 `AdapterResult`：`completed`、`candidate_failed`、`data_failed`、`grader_failed`、`metric_failed`、`infrastructure_failed`、`uncertain` 与相应 `failure_owner`；metrics 只接受有限数值、布尔值或 null。异常默认归 infrastructure，评分器/数据异常需适配器明确归属。领域结果使用 `domain-primary-output-readback` 范围及 `evidence` 文件引用，运行器校验文件存在且是 JSON，领域适配器负责验证实际 receipt、提交图和重启读回。Harness 身份来自真实 admission；不能把基础设施成功当成领域成功。
 
@@ -197,3 +197,26 @@ uv run --project ../../services/ai python examples/audit_citation_selection.py -
 `mixed-audit` 保留原指标；旧批中未提交却空引用的记录须以 `citation-replay` 的 unavailable 分类解读。离线重放是 selector 算法证据，不是新 domain commit。JSON 事实 exact 也不等于自然语言语义正确率；总记录保留独立于格式的辅助复核及其非独立限制。
 
 最终本地验证：36 项通用测试、15 项领域测试。数据入口检查合成 PDF 文本抽取；seed 失败回归证明保留首个失败 receipt、不会继续派发 query。没有触发应用发布门或修改生产默认值。
+
+## Planning、多媒体与角色协作实验（2026-09-12）
+
+新增隔离适配器 `vibe_learner.planning`、`vibe_learner.multimedia` 和提案实验 `vibe_learner.role_exploration`。前两者保留领域 admission、commit、receipt 和重启读回；后者仅比较单次生成、三次自我修订及生成→独立请求审核→修订，使用同一 M3 模型，不是独立质量认证或生产多智能体采用。
+
+`Campaign.max_inline_images` 默认 0，可显式设为最多 4。`request` 接受 user content 内的 `image_url`，只允许 PNG data URL（每图解码后最多 32 KiB、IHDR 宽高各最多 1024）。不接受远程图片 URL、其他 MIME 或非 user 图片。当前只检查 PNG 头和尺寸，实际内容由合成 fixture 的渲染与视觉核对确认。整个请求含 base64 的字节数仍须在 input reservation 内；图片摘要、字节数和尺寸进入 wire 遥测。视觉 token 与供应商计费上界仍未核实，未知 usage 保留全部预留。先前“只接受文本”的说明适用于默认关闭图片的配置。
+
+两条领域线和角色线使用不同 campaign ID、同一历史 ledger、同一 budget 和固定 concurrency=4；共享在途硬闸不会因多个调度器而增加。新增准备器为 `vibe_learner.prepare_planning`、`vibe_learner.prepare_multimedia`、`examples/prepare_role_exploration.py`，均需显式传入当前累计预算。运行前完成源码冻结，运行后先捕获执行源码再做任何代码调整。旧 campaign 不因本次改进而重跑。
+
+实验的结构、事实、有限禁词与坐标检查各自有范围，不能将 `completed` 合并成通用教学质量分。配对重复和同方程不同操作不算新来源；角色线的三次调用对照也不意味着相同 token 或时延。生产模型配置、图像生成及音视频支持不由实验适配器改变。
+
+
+## Bridge、教学制品与书页定位实验
+
+实验 Bridge 复用生产完整 tool index 规范化并保留投影前 wire 形状；未知字段仍严格拒绝。受控图表任务交付实际 SVG、数据、HTML 与包含实际文件字节的 JSON bundle，并检查源数据和题目要求；这些不是所有生产多媒体能力的质量认证。
+
+视觉对照保留原图、真实 OCR/检测候选、编号图、模型选择、确定性坐标映射及独立人工框评分。合成组件方案、固定权重 GroundingDINO/SAM2 照片对照与书页混排实验分别统计，不互称论文复现或留出认证。自然物体检测器不是专门的数学图版面模型。
+
+PNG 默认单张最多 32768 字节、边长 1024；书页实验可显式提高 `max_inline_image_bytes`（硬上限 524288）与 `max_inline_image_dimension`（硬上限 2048）。`max_inline_images` 仍默认 0、最多 4；完整 base64 请求体必须满足 `input_reservation_tokens`，所有调用仍走共享 ledger。为了满足图片包络而预留的输入额度不是供应商实际视觉 token 计费证明。
+
+来源区分 `synthetic-authored`、适配器核验许可和摘要的 `public-licensed`、私有的 `user-provided`。公开可下载不等于有再分发许可；书页原图/识别文本与证据留在本地 runs。通用 public evidence export 拒绝含私有或未审查来源的 campaign，不能将其混入公开许可素材包。
+
+定位结果与限制见 [本轮报告](../../docs/quality/m3-grounding-repair-results-2026-09-12.md)。外部视觉模型可复现下载/锁定环境说明见 `integrations/vibe_learner/prepare_visual_grounding_runtime.py --help`，权重无需放入生产依赖。

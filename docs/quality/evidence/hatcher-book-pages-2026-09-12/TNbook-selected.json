@@ -1,0 +1,72 @@
+{
+  "version": "hatcher-compatible-selection-v1",
+  "book": "Topology of Numbers",
+  "pdf_path": "/tmp/m3-hatcher/TNbook.pdf",
+  "pdf_sha256": "9b7c71120f96dea27a2a1560f59e0e156e915241088336bd130941dc78cfe105",
+  "official_source_url": "https://pi.math.cornell.edu/~hatcher/TN/TNbook.pdf",
+  "official_download_page": "https://pi.math.cornell.edu/~hatcher/TN/TNpage.html",
+  "annotation_method": "Single independent annotating Codex agent using visual inspection, not human expert/dual-annotator consensus. Association descriptions are task references, not measured candidate results.",
+  "gold_source_manifest_sha256": "c7dc4bd36e0e8dea71ba855859ca884d7824443f8043e6c3778881bbac24e202",
+  "candidates": [
+    {
+      "physical_page": 30,
+      "printed_page": "22",
+      "path": "/tmp/m3-hatcher/TNbook-p30.png",
+      "png_sha256": "f33ee5c36cde0b262d4582ce863f8854c01f133b2dbb5a09ef1b61a2245870e6",
+      "image_size": [
+        928,
+        1200
+      ],
+      "tasks": [
+        {
+          "id": "hatcher-tn-farey-lower",
+          "request": "Locate the lower illustration that connects the circular Farey diagram to the straight-boundary version with dashed projection lines. Include both linked representations and fraction labels; exclude the upper half-plane-only diagram.",
+          "target_px": [
+            118,
+            845,
+            804,
+            1150
+          ],
+          "tolerance_px": 6,
+          "associated_text_px": [
+            109,
+            678,
+            818,
+            834
+          ],
+          "association_reference": "The paragraph immediately above explains labeling rational points on the circle via corresponding rational points on the x-axis, then filling in triangles by the mediant rule."
+        }
+      ]
+    },
+    {
+      "physical_page": 99,
+      "printed_page": "91",
+      "path": "/tmp/m3-hatcher/TNbook-p99.png",
+      "png_sha256": "df29cc370ffe2595d1cf62a3c022d3390a0a5e76827ab6ec05fb50dac0e5b0b0",
+      "image_size": [
+        928,
+        1200
+      ],
+      "tasks": [
+        {
+          "id": "hatcher-tn-local-edge",
+          "request": "Locate only the small local tree-edge illustration whose four surrounding regions are labeled p,q,r,s. Exclude the large circular topograph above.",
+          "target_px": [
+            649,
+            881,
+            809,
+            963
+          ],
+          "tolerance_px": 6,
+          "associated_text_px": [
+            108,
+            850,
+            646,
+            978
+          ],
+          "association_reference": "The adjacent paragraph states that values p,q,r,s around an edge produce the arithmetic progression p, q+r, s."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,2245 @@
+{
+  "scope": "3 famous public licensed photos, 6 tasks, same-task independent coarse bbox; no mask ground truth or heldout certification",
+  "runs": {
+    "live-run": {
+      "states": {
+        "completed": 15,
+        "candidate_failed": 3
+      },
+      "cost": {
+        "direct": {
+          "wires": 6,
+          "tokens": 3880,
+          "wire_p50_ms": 3641,
+          "wire_p95_ms": 7552,
+          "loading_median_s": 0.3982427294831723,
+          "detection_median_s": 4.484508104505949,
+          "segmentation_median_s": 1.6090780204976909
+        },
+        "dino": {
+          "wires": 6,
+          "tokens": 3974,
+          "wire_p50_ms": 3638,
+          "wire_p95_ms": 5464,
+          "loading_median_s": 0.4367812289856374,
+          "detection_median_s": 4.694210916495649,
+          "segmentation_median_s": 1.3126308755017817
+        },
+        "sam": {
+          "wires": 6,
+          "tokens": 4474,
+          "wire_p50_ms": 2612,
+          "wire_p95_ms": 6696,
+          "loading_median_s": 0.482285750011215,
+          "detection_median_s": 3.582429125002818,
+          "segmentation_median_s": 1.0002612495154608
+        }
+      },
+      "resume": "accepted terminal zero new wire",
+      "rows": [
+        {
+          "case": "natural-cat",
+          "variant": "dino",
+          "status": "completed",
+          "metrics": {
+            "task_pass": true,
+            "iou": 0.9593680907563159,
+            "coverage": 0.9593680907563159,
+            "abstain_correct": null,
+            "proposal_recall_at_threshold": true,
+            "best_proposal_iou": 0.9593680907563159,
+            "schema_valid": true,
+            "honest_unlocalized": false
+          },
+          "prediction": {
+            "status": "found",
+            "proposal_id": 1
+          },
+          "box_px": [
+            0.18095970153808594,
+            0.0,
+            288.0374755859375,
+            212.9658966064453
+          ],
+          "gold": {
+            "expected": "found",
+            "target_px": [
+              0,
+              0,
+              300,
+              213
+            ],
+            "width": 320,
+            "height": 213,
+            "object_class": "visible cat overall",
+            "minimum_iou": 0.5,
+            "minimum_coverage": 0.8,
+            "tolerance_px": 15,
+            "annotation_ambiguity": "Cat extends beyond frame; right cheek/whiskers blend into background. Coarse whole visible cat box, not face-only.",
+            "review_scope": "coarse same-task independent visual bbox; no mask GT; famous demo images not held-out"
+          },
+          "error_code": null,
+          "source_provenance": {
+            "name": "chelsea",
+            "path": "/Users/ffox/vibe-learner/tools/model-quality/runs/m3-natural-grounding-20260912/live-fixtures-v2/chelsea.png",
+            "source_sha256": "596aa1e7cb875eb79f437e310381d26b338a81c2da23439704a73c4651e8c4bb",
+            "input_sha256": "c286d331292518d42a03aa238068a13f9b00ecb912bda88a458540f4acc81f99",
+            "bytes": 26858,
+            "original_size": [
+              451,
+              300
+            ],
+            "input_size": [
+              320,
+              213
+            ],
+            "max_dimension": 320,
+            "quantize_colors": 32,
+            "dither": "NONE",
+            "source_url": "https://raw.githubusercontent.com/scikit-image/scikit-image/v0.25.2/skimage/data/chelsea.png",
+            "license": "CC0",
+            "sha256": "c286d331292518d42a03aa238068a13f9b00ecb912bda88a458540f4acc81f99",
+            "license_evidence": "https://github.com/scikit-image/scikit-image/blob/v0.25.2/skimage/data/_fetchers.py",
+            "transforms": {
+              "original_size": [
+                451,
+                300
+              ],
+              "input_size": [
+                320,
+                213
+              ],
+              "max_dimension": 320,
+              "quantize_colors": 32,
+              "dither": "NONE"
+            },
+            "detector": "grounded",
+            "query": "a cat."
+          },
+          "evidence": "tools/model-quality/runs/m3-natural-grounding-20260912/live-run/natural-cat/dino/0/storage/visual-evidence.json",
+          "detector": {
+            "method": "grounding-dino-tiny+sam2-hiera-tiny-v1",
+            "loading_info": {
+              "dino": {
+                "missing_keys": [],
+                "unexpected_keys": [],
+                "mismatched_keys": [],
+                "error_msgs": []
+              },
+              "sam2": {
+                "missing_keys": [],
+                "unexpected_keys": [],
+                "mismatched_keys": [],
+                "error_msgs": []
+              }
+            },
+            "device": "cpu",
+            "threads": 2,
+            "loading_seconds": 0.36662983300630003,
+            "detection_seconds": 7.619810374977533,
+            "segmentation_seconds": 1.4824751670239493
+          }
+        },
+        {
+          "case": "natural-cat",
+          "variant": "direct",
+          "status": "completed",
+          "metrics": {
+            "task_pass": true,
+            "iou": 0.9375,
+            "coverage": 1.0,
+            "abstain_correct": null,
+            "proposal_recall_at_threshold": true,
+            "best_proposal_iou": 0.9593680907563159,
+            "schema_valid": true,
+            "honest_unlocalized": false
+          },
+          "prediction": {
+            "status": "found",
+            "box": [
+              0.0,
+              0.0,
+              1.0,
+              1.0
+            ]
+          },
+          "box_px": [
+            0.0,
+            0.0,
+            320.0,
+            213.0
+          ],
+          "gold": {
+            "expected": "found",
+            "target_px": [
+              0,
+              0,
+              300,
+              213
+            ],
+            "width": 320,
+            "height": 213,
+            "object_class": "visible cat overall",
+            "minimum_iou": 0.5,
+            "minimum_coverage": 0.8,
+            "tolerance_px": 15,
+            "annotation_ambiguity": "Cat extends beyond frame; right cheek/whiskers blend into background. Coarse whole visible cat box, not face-only.",
+            "review_scope": "coarse same-task independent visual bbox; no mask GT; famous demo images not held-out"
+          },
+          "error_code": null,
+          "source_provenance": {
+            "name": "chelsea",
+            "path": "/Users/ffox/vibe-learner/tools/model-quality/runs/m3-natural-grounding-20260912/live-fixtures-v2/chelsea.png",
+            "source_sha256": "596aa1e7cb875eb79f437e310381d26b338a81c2da23439704a73c4651e8c4bb",
+            "input_sha256": "c286d331292518d42a03aa238068a13f9b00ecb912bda88a458540f4acc81f99",
+            "bytes": 26858,
+            "original_size": [
+              451,
+              300
+            ],
+            "input_size": [
+              320,
+              213
+            ],
+            "max_dimension": 320,
+            "quantize_colors": 32,
+            "dither": "NONE",
+            "source_url": "https://raw.githubusercontent.com/scikit-image/scikit-image/v0.25.2/skimage/data/chelsea.png",
+            "license": "CC0",
+            "sha256": "c286d331292518d42a03aa238068a13f9b00ecb912bda88a458540f4acc81f99",
+            "license_evidence": "https://github.com/scikit-image/scikit-image/blob/v0.25.2/skimage/data/_fetchers.py",
+            "transforms": {
+              "original_size": [
+                451,
+                300
+              ],
+              "input_size": [
+                320,
+                213
+              ],
+              "max_dimension": 320,
+              "quantize_colors": 32,
+              "dither": "NONE"
+            },
+            "detector": "grounded",
+            "query": "a cat."
+          },
+          "evidence": "tools/model-quality/runs/m3-natural-grounding-20260912/live-run/natural-cat/direct/0/storage/visual-evidence.json",
+          "detector": {
+            "method": "grounding-dino-tiny+sam2-hiera-tiny-v1",
+            "loading_info": {
+              "dino": {
+                "missing_keys": [],
+                "unexpected_keys": [],
+                "mismatched_keys": [],
+                "error_msgs": []
+              },
+              "sam2": {
+                "missing_keys": [],
+                "unexpected_keys": [],
+                "mismatched_keys": [],
+                "error_msgs": []
+              }
+            },
+            "device": "cpu",
+            "threads": 2,
+            "loading_seconds": 0.367092166969087,
+            "detection_seconds": 7.85009204200469,
+            "segmentation_seconds": 1.4911790830083191
+          }
+        },
+        {
+          "case": "natural-cat",
+          "variant": "sam",
+          "status": "completed",
+          "metrics": {
+            "task_pass": true,
+            "iou": 0.9466666666666667,
+            "coverage": 0.9466666666666667,
+            "abstain_correct": null,
+            "proposal_recall_at_threshold": true,
+            "best_proposal_iou": 0.9466666666666667,
+            "schema_valid": true,
+            "honest_unlocalized": false
+          },
+          "prediction": {
+            "status": "found",
+            "proposal_id": 1
+          },
+          "box_px": [
+            0,
+            0,
+            284,
+            213
+          ],
+          "gold": {
+            "expected": "found",
+            "target_px": [
+              0,
+              0,
+              300,
+              213
+            ],
+            "width": 320,
+            "height": 213,
+            "object_class": "visible cat overall",
+            "minimum_iou": 0.5,
+            "minimum_coverage": 0.8,
+            "tolerance_px": 15,
+            "annotation_ambiguity": "Cat extends beyond frame; right cheek/whiskers blend into background. Coarse whole visible cat box, not face-only.",
+            "review_scope": "coarse same-task independent visual bbox; no mask GT; famous demo images not held-out"
+          },
+          "error_code": null,
+          "source_provenance": {
+            "name": "chelsea",
+            "path": "/Users/ffox/vibe-learner/tools/model-quality/runs/m3-natural-grounding-20260912/live-fixtures-v2/chelsea.png",
+            "source_sha256": "596aa1e7cb875eb79f437e310381d26b338a81c2da23439704a73c4651e8c4bb",
+            "input_sha256": "c286d331292518d42a03aa238068a13f9b00ecb912bda88a458540f4acc81f99",
+            "bytes": 26858,
+            "original_size": [
+              451,
+              300
+            ],
+            "input_size": [
+              320,
+              213
+            ],
+            "max_dimension": 320,
+            "quantize_colors": 32,
+            "dither": "NONE",
+            "source_url": "https://raw.githubusercontent.com/scikit-image/scikit-image/v0.25.2/skimage/data/chelsea.png",
+            "license": "CC0",
+            "sha256": "c286d331292518d42a03aa238068a13f9b00ecb912bda88a458540f4acc81f99",
+            "license_evidence": "https://github.com/scikit-image/scikit-image/blob/v0.25.2/skimage/data/_fetchers.py",
+            "transforms": {
+              "original_size": [
+                451,
+                300
+              ],
+              "input_size": [
+                320,
+                213
+              ],
+              "max_dimension": 320,
+              "quantize_colors": 32,
+              "dither": "NONE"
+            },
+            "detector": "grounded",
+            "query": "a cat."
+          },
+          "evidence": "tools/model-quality/runs/m3-natural-grounding-20260912/live-run/natural-cat/sam/0/storage/visual-evidence.json",
+          "detector": {
+            "method": "grounding-dino-tiny+sam2-hiera-tiny-v1",
+            "loading_info": {
+              "dino": {
+                "missing_keys": [],
+                "unexpected_keys": [],
+                "mismatched_keys": [],
+                "error_msgs": []
+              },
+              "sam2": {
+                "missing_keys": [],
+                "unexpected_keys": [],
+                "mismatched_keys": [],
+                "error_msgs": []
+              }
+            },
+            "device": "cpu",
+            "threads": 2,
+            "loading_seconds": 0.3658729169983417,
+            "detection_seconds": 7.971478083985858,
+            "segmentation_seconds": 1.42650624999078
+          }
+        },
+        {
+          "case": "natural-cup",
+          "variant": "dino",
+          "status": "candidate_failed",
+          "metrics": {
+            "task_pass": false,
+            "iou": 0.2884587655710829,
+            "coverage": 0.29478231606605054,
+            "abstain_correct": null,
+            "proposal_recall_at_threshold": true,
+            "best_proposal_iou": 0.9824320909505814,
+            "schema_valid": true,
+            "honest_unlocalized": false
+          },
+          "prediction": {
+            "status": "found",
+            "proposal_id": 3
+          },
+          "box_px": [
+            170.16387939453125,
+            54.8901252746582,
+            228.43658447265625,
+            175.511474609375
+          ],
+          "gold": {
+            "expected": "found",
+            "target_px": [
+              90,
+              8,
+              227,
+              170
+            ],
+            "width": 320,
+            "height": 213,
+            "object_class": "coffee cup including handle, excluding saucer and spoon",
+            "minimum_iou": 0.5,
+            "minimum_coverage": 0.8,
+            "tolerance_px": 7,
+            "annotation_ambiguity": "Dark handle lower-left overlaps similarly colored saucer; cup body rim is clear, handle outer boundary approximate.",
+            "review_scope": "coarse same-task independent visual bbox; no mask GT; famous demo images not held-out"
+          },
+          "error_code": null,
+          "source_provenance": {
+            "name": "coffee",
+            "path": "/Users/ffox/vibe-learner/tools/model-quality/runs/m3-natural-grounding-20260912/live-fixtures-v2/coffee.png",
+            "source_sha256": "cc02f8ca188b167c775a7101b5d767d1e71792cf762c33d6fa15a4599b5a8de7",
+            "input_sha256": "b3869fda631a7f94718f8c9109c3d46f5244d61a9595dd2a6ea1c7bc38562157",
+            "bytes": 21530,
+            "original_size": [
+              600,
+              400
+            ],
+            "input_size": [
+              320,
+              213
+            ],
+            "max_dimension": 320,
+            "quantize_colors": 32,
+            "dither": "NONE",
+            "source_url": "https://raw.githubusercontent.com/scikit-image/scikit-image/v0.25.2/skimage/data/coffee.png",
+            "license": "CC0",
+            "sha256": "b3869fda631a7f94718f8c9109c3d46f5244d61a9595dd2a6ea1c7bc38562157",
+            "license_evidence": "https://github.com/scikit-image/scikit-image/blob/v0.25.2/skimage/data/_fetchers.py",
+            "transforms": {
+              "original_size": [
+                600,
+                400
+              ],
+              "input_size": [
+                320,
+                213
+              ],
+              "max_dimension": 320,
+              "quantize_colors": 32,
+              "dither": "NONE"
+            },
+            "detector": "grounded",
+            "query": "a coffee cup. a saucer. a spoon."
+          },
+          "evidence": "tools/model-quality/runs/m3-natural-grounding-20260912/live-run/natural-cup/dino/0/storage/visual-evidence.json",
+          "detector": {
+            "method": "grounding-dino-tiny+sam2-hiera-tiny-v1",
+            "loading_info": {
+              "dino": {
+                "missing_keys": [],
+                "unexpected_keys": [],
+                "mismatched_keys": [],
+                "error_msgs": []
+              },
+              "sam2": {
+                "missing_keys": [],
+                "unexpected_keys": [],
+                "mismatched_keys": [],
+                "error_msgs": []
+              }
+            },
+            "device": "cpu",
+            "threads": 2,
+            "loading_seconds": 0.5624886660370976,
+            "detection_seconds": 4.785354166000616,
+            "segmentation_seconds": 1.4923481660080142
+          }
+        },
+        {
+          "case": "natural-cup",
+          "variant": "direct",
+          "status": "candidate_failed",
+          "metrics": {
+            "task_pass": false,
+            "iou": 0.47799045659924355,
+            "coverage": 0.514102189781022,
+            "abstain_correct": null,
+            "proposal_recall_at_threshold": true,
+            "best_proposal_iou": 0.9824320909505814,
+            "schema_valid": true,
+            "honest_unlocalized": false
+          },
+          "prediction": {
+            "status": "found",
+            "box": [
+              0.23,
+              0.08,
+              0.63,
+              0.56
+            ]
+          },
+          "box_px": [
+            73.60000000000001,
+            17.04,
+            201.6,
+            119.28000000000002
+          ],
+          "gold": {
+            "expected": "found",
+            "target_px": [
+              90,
+              8,
+              227,
+              170
+            ],
+            "width": 320,
+            "height": 213,
+            "object_class": "coffee cup including handle, excluding saucer and spoon",
+            "minimum_iou": 0.5,
+            "minimum_coverage": 0.8,
+            "tolerance_px": 7,
+            "annotation_ambiguity": "Dark handle lower-left overlaps similarly colored saucer; cup body rim is clear, handle outer boundary approximate.",
+            "review_scope": "coarse same-task independent visual bbox; no mask GT; famous demo images not held-out"
+          },
+          "error_code": null,
+          "source_provenance": {
+            "name": "coffee",
+            "path": "/Users/ffox/vibe-learner/tools/model-quality/runs/m3-natural-grounding-20260912/live-fixtures-v2/coffee.png",
+            "source_sha256": "cc02f8ca188b167c775a7101b5d767d1e71792cf762c33d6fa15a4599b5a8de7",
+            "input_sha256": "b3869fda631a7f94718f8c9109c3d46f5244d61a9595dd2a6ea1c7bc38562157",
+            "bytes": 21530,
+            "original_size": [
+              600,
+              400
+            ],
+            "input_size": [
+              320,
+              213
+            ],
+            "max_dimension": 320,
+            "quantize_colors": 32,
+            "dither": "NONE",
+            "source_url": "https://raw.githubusercontent.com/scikit-image/scikit-image/v0.25.2/skimage/data/coffee.png",
+            "license": "CC0",
+            "sha256": "b3869fda631a7f94718f8c9109c3d46f5244d61a9595dd2a6ea1c7bc38562157",
+            "license_evidence": "https://github.com/scikit-image/scikit-image/blob/v0.25.2/skimage/data/_fetchers.py",
+            "transforms": {
+              "original_size": [
+                600,
+                400
+              ],
+              "input_size": [
+                320,
+                213
+              ],
+              "max_dimension": 320,
+              "quantize_colors": 32,
+              "dither": "NONE"
+            },
+            "detector": "grounded",
+            "query": "a coffee cup. a saucer. a spoon."
+          },
+          "evidence": "tools/model-quality/runs/m3-natural-grounding-20260912/live-run/natural-cup/direct/0/storage/visual-evidence.json",
+          "detector": {
+            "method": "grounding-dino-tiny+sam2-hiera-tiny-v1",
+            "loading_info": {
+              "dino": {
+                "missing_keys": [],
+                "unexpected_keys": [],
+                "mismatched_keys": [],
+                "error_msgs": []
+              },
+              "sam2": {
+                "missing_keys": [],
+                "unexpected_keys": [],
+                "mismatched_keys": [],
+                "error_msgs": []
+              }
+            },
+            "device": "cpu",
+            "threads": 2,
+            "loading_seconds": 0.5869266669615172,
+            "detection_seconds": 4.445650541980285,
+            "segmentation_seconds": 2.1156112080207095
+          }
+        },
+        {
+          "case": "natural-cup",
+          "variant": "sam",
+          "status": "candidate_failed",
+          "metrics": {
+            "task_pass": false,
+            "iou": 0.2674698795180723,
+            "coverage": 0.27007299270072993,
+            "abstain_correct": null,
+            "proposal_recall_at_threshold": true,
+            "best_proposal_iou": 0.966026854104713,
+            "schema_valid": true,
+            "honest_unlocalized": false
+          },
+          "prediction": {
+            "status": "found",
+            "proposal_id": 3
+          },
+          "box_px": [
+            169,
+            59,
+            223,
+            174
+          ],
+          "gold": {
+            "expected": "found",
+            "target_px": [
+              90,
+              8,
+              227,
+              170
+            ],
+            "width": 320,
+            "height": 213,
+            "object_class": "coffee cup including handle, excluding saucer and spoon",
+            "minimum_iou": 0.5,
+            "minimum_coverage": 0.8,
+            "tolerance_px": 7,
+            "annotation_ambiguity": "Dark handle lower-left overlaps similarly colored saucer; cup body rim is clear, handle outer boundary approximate.",
+            "review_scope": "coarse same-task independent visual bbox; no mask GT; famous demo images not held-out"
+          },
+          "error_code": null,
+          "source_provenance": {
+            "name": "coffee",
+            "path": "/Users/ffox/vibe-learner/tools/model-quality/runs/m3-natural-grounding-20260912/live-fixtures-v2/coffee.png",
+            "source_sha256": "cc02f8ca188b167c775a7101b5d767d1e71792cf762c33d6fa15a4599b5a8de7",
+            "input_sha256": "b3869fda631a7f94718f8c9109c3d46f5244d61a9595dd2a6ea1c7bc38562157",
+            "bytes": 21530,
+            "original_size": [
+              600,
+              400
+            ],
+            "input_size": [
+              320,
+              213
+            ],
+            "max_dimension": 320,
+            "quantize_colors": 32,
+            "dither": "NONE",
+            "source_url": "https://raw.githubusercontent.com/scikit-image/scikit-image/v0.25.2/skimage/data/coffee.png",
+            "license": "CC0",
+            "sha256": "b3869fda631a7f94718f8c9109c3d46f5244d61a9595dd2a6ea1c7bc38562157",
+            "license_evidence": "https://github.com/scikit-image/scikit-image/blob/v0.25.2/skimage/data/_fetchers.py",
+            "transforms": {
+              "original_size": [
+                600,
+                400
+              ],
+              "input_size": [
+                320,
+                213
+              ],
+              "max_dimension": 320,
+              "quantize_colors": 32,
+              "dither": "NONE"
+            },
+            "detector": "grounded",
+            "query": "a coffee cup. a saucer. a spoon."
+          },
+          "evidence": "tools/model-quality/runs/m3-natural-grounding-20260912/live-run/natural-cup/sam/0/storage/visual-evidence.json",
+          "detector": {
+            "method": "grounding-dino-tiny+sam2-hiera-tiny-v1",
+            "loading_info": {
+              "dino": {
+                "missing_keys": [],
+                "unexpected_keys": [],
+                "mismatched_keys": [],
+                "error_msgs": []
+              },
+              "sam2": {
+                "missing_keys": [],
+                "unexpected_keys": [],
+                "mismatched_keys": [],
+                "error_msgs": []
+              }
+            },
+            "device": "cpu",
+            "threads": 2,
+            "loading_seconds": 0.7120069170487113,
+            "detection_seconds": 3.9800270830164663,
+            "segmentation_seconds": 1.094439207983669
+          }
+        },
+        {
+          "case": "natural-dog-absent",
+          "variant": "dino",
+          "status": "completed",
+          "metrics": {
+            "task_pass": true,
+            "iou": 0.0,
+            "coverage": 0.0,
+            "abstain_correct": true,
+            "proposal_recall_at_threshold": null,
+            "best_proposal_iou": null,
+            "schema_valid": true,
+            "honest_unlocalized": false
+          },
+          "prediction": {
+            "status": "absent",
+            "proposal_id": null
+          },
+          "box_px": null,
+          "gold": {
+            "expected": "absent",
+            "target_px": null,
+            "width": 320,
+            "height": 213,
+            "object_class": "dog",
+            "minimum_iou": 0.5,
+            "minimum_coverage": 0.8,
+            "tolerance_px": null,
+            "annotation_ambiguity": "No dog visible.",
+            "review_scope": "coarse same-task independent visual bbox; no mask GT; famous demo images not held-out"
+          },
+          "error_code": null,
+          "source_provenance": {
+            "name": "coffee",
+            "path": "/Users/ffox/vibe-learner/tools/model-quality/runs/m3-natural-grounding-20260912/live-fixtures-v2/coffee.png",
+            "source_sha256": "cc02f8ca188b167c775a7101b5d767d1e71792cf762c33d6fa15a4599b5a8de7",
+            "input_sha256": "b3869fda631a7f94718f8c9109c3d46f5244d61a9595dd2a6ea1c7bc38562157",
+            "bytes": 21530,
+            "original_size": [
+              600,
+              400
+            ],
+            "input_size": [
+              320,
+              213
+            ],
+            "max_dimension": 320,
+            "quantize_colors": 32,
+            "dither": "NONE",
+            "source_url": "https://raw.githubusercontent.com/scikit-image/scikit-image/v0.25.2/skimage/data/coffee.png",
+            "license": "CC0",
+            "sha256": "b3869fda631a7f94718f8c9109c3d46f5244d61a9595dd2a6ea1c7bc38562157",
+            "license_evidence": "https://github.com/scikit-image/scikit-image/blob/v0.25.2/skimage/data/_fetchers.py",
+            "transforms": {
+              "original_size": [
+                600,
+                400
+              ],
+              "input_size": [
+                320,
+                213
+              ],
+              "max_dimension": 320,
+              "quantize_colors": 32,
+              "dither": "NONE"
+            },
+            "detector": "grounded",
+            "query": "a dog."
+          },
+          "evidence": "tools/model-quality/runs/m3-natural-grounding-20260912/live-run/natural-dog-absent/dino/0/storage/visual-evidence.json",
+          "detector": {
+            "method": "grounding-dino-tiny+sam2-hiera-tiny-v1",
+            "loading_info": {
+              "dino": {
+                "missing_keys": [],
+                "unexpected_keys": [],
+                "mismatched_keys": [],
+                "error_msgs": []
+              },
+              "sam2": {
+                "missing_keys": [],
+                "unexpected_keys": [],
+                "mismatched_keys": [],
+                "error_msgs": []
+              }
+            },
+            "device": "cpu",
+            "threads": 2,
+            "loading_seconds": 0.3657489169854671,
+            "detection_seconds": 5.168227207963355,
+            "segmentation_seconds": 0.0
+          }
+        },
+        {
+          "case": "natural-dog-absent",
+          "variant": "direct",
+          "status": "completed",
+          "metrics": {
+            "task_pass": true,
+            "iou": 0.0,
+            "coverage": 0.0,
+            "abstain_correct": true,
+            "proposal_recall_at_threshold": null,
+            "best_proposal_iou": null,
+            "schema_valid": true,
+            "honest_unlocalized": false
+          },
+          "prediction": {
+            "status": "absent",
+            "box": null
+          },
+          "box_px": null,
+          "gold": {
+            "expected": "absent",
+            "target_px": null,
+            "width": 320,
+            "height": 213,
+            "object_class": "dog",
+            "minimum_iou": 0.5,
+            "minimum_coverage": 0.8,
+            "tolerance_px": null,
+            "annotation_ambiguity": "No dog visible.",
+            "review_scope": "coarse same-task independent visual bbox; no mask GT; famous demo images not held-out"
+          },
+          "error_code": null,
+          "source_provenance": {
+            "name": "coffee",
+            "path": "/Users/ffox/vibe-learner/tools/model-quality/runs/m3-natural-grounding-20260912/live-fixtures-v2/coffee.png",
+            "source_sha256": "cc02f8ca188b167c775a7101b5d767d1e71792cf762c33d6fa15a4599b5a8de7",
+            "input_sha256": "b3869fda631a7f94718f8c9109c3d46f5244d61a9595dd2a6ea1c7bc38562157",
+            "bytes": 21530,
+            "original_size": [
+              600,
+              400
+            ],
+            "input_size": [
+              320,
+              213
+            ],
+            "max_dimension": 320,
+            "quantize_colors": 32,
+            "dither": "NONE",
+            "source_url": "https://raw.githubusercontent.com/scikit-image/scikit-image/v0.25.2/skimage/data/coffee.png",
+            "license": "CC0",
+            "sha256": "b3869fda631a7f94718f8c9109c3d46f5244d61a9595dd2a6ea1c7bc38562157",
+            "license_evidence": "https://github.com/scikit-image/scikit-image/blob/v0.25.2/skimage/data/_fetchers.py",
+            "transforms": {
+              "original_size": [
+                600,
+                400
+              ],
+              "input_size": [
+                320,
+                213
+              ],
+              "max_dimension": 320,
+              "quantize_colors": 32,
+              "dither": "NONE"
+            },
+            "detector": "grounded",
+            "query": "a dog."
+          },
+          "evidence": "tools/model-quality/runs/m3-natural-grounding-20260912/live-run/natural-dog-absent/direct/0/storage/visual-evidence.json",
+          "detector": {
+            "method": "grounding-dino-tiny+sam2-hiera-tiny-v1",
+            "loading_info": {
+              "dino": {
+                "missing_keys": [],
+                "unexpected_keys": [],
+                "mismatched_keys": [],
+                "error_msgs": []
+              },
+              "sam2": {
+                "missing_keys": [],
+                "unexpected_keys": [],
+                "mismatched_keys": [],
+                "error_msgs": []
+              }
+            },
+            "device": "cpu",
+            "threads": 2,
+            "loading_seconds": 0.36682516598375514,
+            "detection_seconds": 7.549038124969229,
+            "segmentation_seconds": 0.0
+          }
+        },
+        {
+          "case": "natural-dog-absent",
+          "variant": "sam",
+          "status": "completed",
+          "metrics": {
+            "task_pass": true,
+            "iou": 0.0,
+            "coverage": 0.0,
+            "abstain_correct": true,
+            "proposal_recall_at_threshold": null,
+            "best_proposal_iou": null,
+            "schema_valid": true,
+            "honest_unlocalized": false
+          },
+          "prediction": {
+            "status": "absent",
+            "proposal_id": null
+          },
+          "box_px": null,
+          "gold": {
+            "expected": "absent",
+            "target_px": null,
+            "width": 320,
+            "height": 213,
+            "object_class": "dog",
+            "minimum_iou": 0.5,
+            "minimum_coverage": 0.8,
+            "tolerance_px": null,
+            "annotation_ambiguity": "No dog visible.",
+            "review_scope": "coarse same-task independent visual bbox; no mask GT; famous demo images not held-out"
+          },
+          "error_code": null,
+          "source_provenance": {
+            "name": "coffee",
+            "path": "/Users/ffox/vibe-learner/tools/model-quality/runs/m3-natural-grounding-20260912/live-fixtures-v2/coffee.png",
+            "source_sha256": "cc02f8ca188b167c775a7101b5d767d1e71792cf762c33d6fa15a4599b5a8de7",
+            "input_sha256": "b3869fda631a7f94718f8c9109c3d46f5244d61a9595dd2a6ea1c7bc38562157",
+            "bytes": 21530,
+            "original_size": [
+              600,
+              400
+            ],
+            "input_size": [
+              320,
+              213
+            ],
+            "max_dimension": 320,
+            "quantize_colors": 32,
+            "dither": "NONE",
+            "source_url": "https://raw.githubusercontent.com/scikit-image/scikit-image/v0.25.2/skimage/data/coffee.png",
+            "license": "CC0",
+            "sha256": "b3869fda631a7f94718f8c9109c3d46f5244d61a9595dd2a6ea1c7bc38562157",
+            "license_evidence": "https://github.com/scikit-image/scikit-image/blob/v0.25.2/skimage/data/_fetchers.py",
+            "transforms": {
+              "original_size": [
+                600,
+                400
+              ],
+              "input_size": [
+                320,
+                213
+              ],
+              "max_dimension": 320,
+              "quantize_colors": 32,
+              "dither": "NONE"
+            },
+            "detector": "grounded",
+            "query": "a dog."
+          },
+          "evidence": "tools/model-quality/runs/m3-natural-grounding-20260912/live-run/natural-dog-absent/sam/0/storage/visual-evidence.json",
+          "detector": {
+            "method": "grounding-dino-tiny+sam2-hiera-tiny-v1",
+            "loading_info": {
+              "dino": {
+                "missing_keys": [],
+                "unexpected_keys": [],
+                "mismatched_keys": [],
+                "error_msgs": []
+              },
+              "sam2": {
+                "missing_keys": [],
+                "unexpected_keys": [],
+                "mismatched_keys": [],
+                "error_msgs": []
+              }
+            },
+            "device": "cpu",
+            "threads": 2,
+            "loading_seconds": 0.482803207996767,
+            "detection_seconds": 5.521233584033325,
+            "segmentation_seconds": 0.0
+          }
+        },
+        {
+          "case": "natural-helmet",
+          "variant": "dino",
+          "status": "completed",
+          "metrics": {
+            "task_pass": true,
+            "iou": 0.9905089436272689,
+            "coverage": 0.9961417061941964,
+            "abstain_correct": null,
+            "proposal_recall_at_threshold": true,
+            "best_proposal_iou": 0.9905089436272689,
+            "schema_valid": true,
+            "honest_unlocalized": false
+          },
+          "prediction": {
+            "status": "found",
+            "proposal_id": 1
+          },
+          "box_px": [
+            137.26602172851562,
+            170.51475524902344,
+            255.806884765625,
+            256.0
+          ],
+          "gold": {
+            "expected": "found",
+            "target_px": [
+              137,
+              171,
+              256,
+              256
+            ],
+            "width": 256,
+            "height": 256,
+            "object_class": "handheld helmet only, excluding person",
+            "minimum_iou": 0.5,
+            "minimum_coverage": 0.8,
+            "tolerance_px": 5,
+            "annotation_ambiguity": "Helmet cut off at right/bottom image edges; lower-left equipment overlaps helmet boundary. Includes white helmet rim and black visor.",
+            "review_scope": "coarse same-task independent visual bbox; no mask GT; famous demo images not held-out"
+          },
+          "error_code": null,
+          "source_provenance": {
+            "name": "astronaut",
+            "path": "/Users/ffox/vibe-learner/tools/model-quality/runs/m3-natural-grounding-20260912/live-fixtures-v2/astronaut.png",
+            "source_sha256": "88431cd9653ccd539741b555fb0a46b61558b301d4110412b5bc28b5e3ea6cb5",
+            "input_sha256": "ab53afb59abdba357b9494664a76fb8b66d1241e8aa216c88cb898157ad39898",
+            "bytes": 22389,
+            "original_size": [
+              512,
+              512
+            ],
+            "input_size": [
+              256,
+              256
+            ],
+            "max_dimension": 256,
+            "quantize_colors": 32,
+            "dither": "NONE",
+            "source_url": "https://raw.githubusercontent.com/scikit-image/scikit-image/v0.25.2/skimage/data/astronaut.png",
+            "license": "NASA public domain",
+            "sha256": "ab53afb59abdba357b9494664a76fb8b66d1241e8aa216c88cb898157ad39898",
+            "license_evidence": "https://github.com/scikit-image/scikit-image/blob/v0.25.2/skimage/data/_fetchers.py",
+            "transforms": {
+              "original_size": [
+                512,
+                512
+              ],
+              "input_size": [
+                256,
+                256
+              ],
+              "max_dimension": 256,
+              "quantize_colors": 32,
+              "dither": "NONE"
+            },
+            "detector": "grounded",
+            "query": "a person. a helmet."
+          },
+          "evidence": "tools/model-quality/runs/m3-natural-grounding-20260912/live-run/natural-helmet/dino/0/storage/visual-evidence.json",
+          "detector": {
+            "method": "grounding-dino-tiny+sam2-hiera-tiny-v1",
+            "loading_info": {
+              "dino": {
+                "missing_keys": [],
+                "unexpected_keys": [],
+                "mismatched_keys": [],
+                "error_msgs": []
+              },
+              "sam2": {
+                "missing_keys": [],
+                "unexpected_keys": [],
+                "mismatched_keys": [],
+                "error_msgs": []
+              }
+            },
+            "device": "cpu",
+            "threads": 2,
+            "loading_seconds": 0.48197166598401964,
+            "detection_seconds": 4.227051708032377,
+            "segmentation_seconds": 1.142786583979614
+          }
+        },
+        {
+          "case": "natural-helmet",
+          "variant": "direct",
+          "status": "completed",
+          "metrics": {
+            "task_pass": true,
+            "iou": 0.6383434278957029,
+            "coverage": 0.8238294809688581,
+            "abstain_correct": null,
+            "proposal_recall_at_threshold": true,
+            "best_proposal_iou": 0.9905089436272689,
+            "schema_valid": true,
+            "honest_unlocalized": false
+          },
+          "prediction": {
+            "status": "found",
+            "box": [
+              0.5,
+              0.59,
+              0.93,
+              0.99
+            ]
+          },
+          "box_px": [
+            128.0,
+            151.04,
+            238.08,
+            253.44
+          ],
+          "gold": {
+            "expected": "found",
+            "target_px": [
+              137,
+              171,
+              256,
+              256
+            ],
+            "width": 256,
+            "height": 256,
+            "object_class": "handheld helmet only, excluding person",
+            "minimum_iou": 0.5,
+            "minimum_coverage": 0.8,
+            "tolerance_px": 5,
+            "annotation_ambiguity": "Helmet cut off at right/bottom image edges; lower-left equipment overlaps helmet boundary. Includes white helmet rim and black visor.",
+            "review_scope": "coarse same-task independent visual bbox; no mask GT; famous demo images not held-out"
+          },
+          "error_code": null,
+          "source_provenance": {
+            "name": "astronaut",
+            "path": "/Users/ffox/vibe-learner/tools/model-quality/runs/m3-natural-grounding-20260912/live-fixtures-v2/astronaut.png",
+            "source_sha256": "88431cd9653ccd539741b555fb0a46b61558b301d4110412b5bc28b5e3ea6cb5",
+            "input_sha256": "ab53afb59abdba357b9494664a76fb8b66d1241e8aa216c88cb898157ad39898",
+            "bytes": 22389,
+            "original_size": [
+              512,
+              512
+            ],
+            "input_size": [
+              256,
+              256
+            ],
+            "max_dimension": 256,
+            "quantize_colors": 32,
+            "dither": "NONE",
+            "source_url": "https://raw.githubusercontent.com/scikit-image/scikit-image/v0.25.2/skimage/data/astronaut.png",
+            "license": "NASA public domain",
+            "sha256": "ab53afb59abdba357b9494664a76fb8b66d1241e8aa216c88cb898157ad39898",
+            "license_evidence": "https://github.com/scikit-image/scikit-image/blob/v0.25.2/skimage/data/_fetchers.py",
+            "transforms": {
+              "original_size": [
+                512,
+                512
+              ],
+              "input_size": [
+                256,
+                256
+              ],
+              "max_dimension": 256,
+              "quantize_colors": 32,
+              "dither": "NONE"
+            },
+            "detector": "grounded",
+            "query": "a person. a helmet."
+          },
+          "evidence": "tools/model-quality/runs/m3-natural-grounding-20260912/live-run/natural-helmet/direct/0/storage/visual-evidence.json",
+          "detector": {
+            "method": "grounding-dino-tiny+sam2-hiera-tiny-v1",
+            "loading_info": {
+              "dino": {
+                "missing_keys": [],
+                "unexpected_keys": [],
+                "mismatched_keys": [],
+                "error_msgs": []
+              },
+              "sam2": {
+                "missing_keys": [],
+                "unexpected_keys": [],
+                "mismatched_keys": [],
+                "error_msgs": []
+              }
+            },
+            "device": "cpu",
+            "threads": 2,
+            "loading_seconds": 0.3502782920259051,
+            "detection_seconds": 2.143263916950673,
+            "segmentation_seconds": 1.0527384169981815
+          }
+        },
+        {
+          "case": "natural-helmet",
+          "variant": "sam",
+          "status": "completed",
+          "metrics": {
+            "task_pass": true,
+            "iou": 0.9716262975778547,
+            "coverage": 0.9716262975778547,
+            "abstain_correct": null,
+            "proposal_recall_at_threshold": true,
+            "best_proposal_iou": 0.9716262975778547,
+            "schema_valid": true,
+            "honest_unlocalized": false
+          },
+          "prediction": {
+            "status": "found",
+            "proposal_id": 1
+          },
+          "box_px": [
+            139,
+            172,
+            256,
+            256
+          ],
+          "gold": {
+            "expected": "found",
+            "target_px": [
+              137,
+              171,
+              256,
+              256
+            ],
+            "width": 256,
+            "height": 256,
+            "object_class": "handheld helmet only, excluding person",
+            "minimum_iou": 0.5,
+            "minimum_coverage": 0.8,
+            "tolerance_px": 5,
+            "annotation_ambiguity": "Helmet cut off at right/bottom image edges; lower-left equipment overlaps helmet boundary. Includes white helmet rim and black visor.",
+            "review_scope": "coarse same-task independent visual bbox; no mask GT; famous demo images not held-out"
+          },
+          "error_code": null,
+          "source_provenance": {
+            "name": "astronaut",
+            "path": "/Users/ffox/vibe-learner/tools/model-quality/runs/m3-natural-grounding-20260912/live-fixtures-v2/astronaut.png",
+            "source_sha256": "88431cd9653ccd539741b555fb0a46b61558b301d4110412b5bc28b5e3ea6cb5",
+            "input_sha256": "ab53afb59abdba357b9494664a76fb8b66d1241e8aa216c88cb898157ad39898",
+            "bytes": 22389,
+            "original_size": [
+              512,
+              512
+            ],
+            "input_size": [
+              256,
+              256
+            ],
+            "max_dimension": 256,
+            "quantize_colors": 32,
+            "dither": "NONE",
+            "source_url": "https://raw.githubusercontent.com/scikit-image/scikit-image/v0.25.2/skimage/data/astronaut.png",
+            "license": "NASA public domain",
+            "sha256": "ab53afb59abdba357b9494664a76fb8b66d1241e8aa216c88cb898157ad39898",
+            "license_evidence": "https://github.com/scikit-image/scikit-image/blob/v0.25.2/skimage/data/_fetchers.py",
+            "transforms": {
+              "original_size": [
+                512,
+                512
+              ],
+              "input_size": [
+                256,
+                256
+              ],
+              "max_dimension": 256,
+              "quantize_colors": 32,
+              "dither": "NONE"
+            },
+            "detector": "grounded",
+            "query": "a person. a helmet."
+          },
+          "evidence": "tools/model-quality/runs/m3-natural-grounding-20260912/live-run/natural-helmet/sam/0/storage/visual-evidence.json",
+          "detector": {
+            "method": "grounding-dino-tiny+sam2-hiera-tiny-v1",
+            "loading_info": {
+              "dino": {
+                "missing_keys": [],
+                "unexpected_keys": [],
+                "mismatched_keys": [],
+                "error_msgs": []
+              },
+              "sam2": {
+                "missing_keys": [],
+                "unexpected_keys": [],
+                "mismatched_keys": [],
+                "error_msgs": []
+              }
+            },
+            "device": "cpu",
+            "threads": 2,
+            "loading_seconds": 0.5354642909951508,
+            "detection_seconds": 3.18483116698917,
+            "segmentation_seconds": 0.7669258749810979
+          }
+        },
+        {
+          "case": "natural-person",
+          "variant": "dino",
+          "status": "completed",
+          "metrics": {
+            "task_pass": true,
+            "iou": 0.9946418272024448,
+            "coverage": 0.996590333005239,
+            "abstain_correct": null,
+            "proposal_recall_at_threshold": true,
+            "best_proposal_iou": 0.9946418272024448,
+            "schema_valid": true,
+            "honest_unlocalized": false
+          },
+          "prediction": {
+            "status": "found",
+            "proposal_id": 2
+          },
+          "box_px": [
+            8.483940124511719,
+            6.790855407714844,
+            184.19732666015625,
+            255.835205078125
+          ],
+          "gold": {
+            "expected": "found",
+            "target_px": [
+              8,
+              7,
+              184,
+              256
+            ],
+            "width": 256,
+            "height": 256,
+            "object_class": "visible person excluding separate held helmet",
+            "minimum_iou": 0.5,
+            "minimum_coverage": 0.8,
+            "tolerance_px": 8,
+            "annotation_ambiguity": "Right sleeve overlaps helmet and is partly occluded; excluding separate helmet is the stipulated annotation convention.",
+            "review_scope": "coarse same-task independent visual bbox; no mask GT; famous demo images not held-out"
+          },
+          "error_code": null,
+          "source_provenance": {
+            "name": "astronaut",
+            "path": "/Users/ffox/vibe-learner/tools/model-quality/runs/m3-natural-grounding-20260912/live-fixtures-v2/astronaut.png",
+            "source_sha256": "88431cd9653ccd539741b555fb0a46b61558b301d4110412b5bc28b5e3ea6cb5",
+            "input_sha256": "ab53afb59abdba357b9494664a76fb8b66d1241e8aa216c88cb898157ad39898",
+            "bytes": 22389,
+            "original_size": [
+              512,
+              512
+            ],
+            "input_size": [
+              256,
+              256
+            ],
+            "max_dimension": 256,
+            "quantize_colors": 32,
+            "dither": "NONE",
+            "source_url": "https://raw.githubusercontent.com/scikit-image/scikit-image/v0.25.2/skimage/data/astronaut.png",
+            "license": "NASA public domain",
+            "sha256": "ab53afb59abdba357b9494664a76fb8b66d1241e8aa216c88cb898157ad39898",
+            "license_evidence": "https://github.com/scikit-image/scikit-image/blob/v0.25.2/skimage/data/_fetchers.py",
+            "transforms": {
+              "original_size": [
+                512,
+                512
+              ],
+              "input_size": [
+                256,
+                256
+              ],
+              "max_dimension": 256,
+              "quantize_colors": 32,
+              "dither": "NONE"
+            },
+            "detector": "grounded",
+            "query": "a person. a helmet."
+          },
+          "evidence": "tools/model-quality/runs/m3-natural-grounding-20260912/live-run/natural-person/dino/0/storage/visual-evidence.json",
+          "detector": {
+            "method": "grounding-dino-tiny+sam2-hiera-tiny-v1",
+            "loading_info": {
+              "dino": {
+                "missing_keys": [],
+                "unexpected_keys": [],
+                "mismatched_keys": [],
+                "error_msgs": []
+              },
+              "sam2": {
+                "missing_keys": [],
+                "unexpected_keys": [],
+                "mismatched_keys": [],
+                "error_msgs": []
+              }
+            },
+            "device": "cpu",
+            "threads": 2,
+            "loading_seconds": 0.3915907919872552,
+            "detection_seconds": 2.2655331669957377,
+            "segmentation_seconds": 0.9603249169886112
+          }
+        },
+        {
+          "case": "natural-person",
+          "variant": "direct",
+          "status": "completed",
+          "metrics": {
+            "task_pass": true,
+            "iou": 0.7555251024887638,
+            "coverage": 0.9500693683826213,
+            "abstain_correct": null,
+            "proposal_recall_at_threshold": true,
+            "best_proposal_iou": 0.9946418272024448,
+            "schema_valid": true,
+            "honest_unlocalized": false
+          },
+          "prediction": {
+            "status": "found",
+            "box": [
+              0.05,
+              0.05,
+              0.9,
+              1.0
+            ]
+          },
+          "box_px": [
+            12.8,
+            12.8,
+            230.4,
+            256.0
+          ],
+          "gold": {
+            "expected": "found",
+            "target_px": [
+              8,
+              7,
+              184,
+              256
+            ],
+            "width": 256,
+            "height": 256,
+            "object_class": "visible person excluding separate held helmet",
+            "minimum_iou": 0.5,
+            "minimum_coverage": 0.8,
+            "tolerance_px": 8,
+            "annotation_ambiguity": "Right sleeve overlaps helmet and is partly occluded; excluding separate helmet is the stipulated annotation convention.",
+            "review_scope": "coarse same-task independent visual bbox; no mask GT; famous demo images not held-out"
+          },
+          "error_code": null,
+          "source_provenance": {
+            "name": "astronaut",
+            "path": "/Users/ffox/vibe-learner/tools/model-quality/runs/m3-natural-grounding-20260912/live-fixtures-v2/astronaut.png",
+            "source_sha256": "88431cd9653ccd539741b555fb0a46b61558b301d4110412b5bc28b5e3ea6cb5",
+            "input_sha256": "ab53afb59abdba357b9494664a76fb8b66d1241e8aa216c88cb898157ad39898",
+            "bytes": 22389,
+            "original_size": [
+              512,
+              512
+            ],
+            "input_size": [
+              256,
+              256
+            ],
+            "max_dimension": 256,
+            "quantize_colors": 32,
+            "dither": "NONE",
+            "source_url": "https://raw.githubusercontent.com/scikit-image/scikit-image/v0.25.2/skimage/data/astronaut.png",
+            "license": "NASA public domain",
+            "sha256": "ab53afb59abdba357b9494664a76fb8b66d1241e8aa216c88cb898157ad39898",
+            "license_evidence": "https://github.com/scikit-image/scikit-image/blob/v0.25.2/skimage/data/_fetchers.py",
+            "transforms": {
+              "original_size": [
+                512,
+                512
+              ],
+              "input_size": [
+                256,
+                256
+              ],
+              "max_dimension": 256,
+              "quantize_colors": 32,
+              "dither": "NONE"
+            },
+            "detector": "grounded",
+            "query": "a person. a helmet."
+          },
+          "evidence": "tools/model-quality/runs/m3-natural-grounding-20260912/live-run/natural-person/direct/0/storage/visual-evidence.json",
+          "detector": {
+            "method": "grounding-dino-tiny+sam2-hiera-tiny-v1",
+            "loading_info": {
+              "dino": {
+                "missing_keys": [],
+                "unexpected_keys": [],
+                "mismatched_keys": [],
+                "error_msgs": []
+              },
+              "sam2": {
+                "missing_keys": [],
+                "unexpected_keys": [],
+                "mismatched_keys": [],
+                "error_msgs": []
+              }
+            },
+            "device": "cpu",
+            "threads": 2,
+            "loading_seconds": 0.4293932919972576,
+            "detection_seconds": 2.3574251660029404,
+            "segmentation_seconds": 1.7269769579870626
+          }
+        },
+        {
+          "case": "natural-person",
+          "variant": "sam",
+          "status": "completed",
+          "metrics": {
+            "task_pass": true,
+            "iou": 0.9676889375684556,
+            "coverage": 0.9676889375684556,
+            "abstain_correct": null,
+            "proposal_recall_at_threshold": true,
+            "best_proposal_iou": 0.9676889375684556,
+            "schema_valid": true,
+            "honest_unlocalized": false
+          },
+          "prediction": {
+            "status": "found",
+            "proposal_id": 2
+          },
+          "box_px": [
+            10,
+            8,
+            181,
+            256
+          ],
+          "gold": {
+            "expected": "found",
+            "target_px": [
+              8,
+              7,
+              184,
+              256
+            ],
+            "width": 256,
+            "height": 256,
+            "object_class": "visible person excluding separate held helmet",
+            "minimum_iou": 0.5,
+            "minimum_coverage": 0.8,
+            "tolerance_px": 8,
+            "annotation_ambiguity": "Right sleeve overlaps helmet and is partly occluded; excluding separate helmet is the stipulated annotation convention.",
+            "review_scope": "coarse same-task independent visual bbox; no mask GT; famous demo images not held-out"
+          },
+          "error_code": null,
+          "source_provenance": {
+            "name": "astronaut",
+            "path": "/Users/ffox/vibe-learner/tools/model-quality/runs/m3-natural-grounding-20260912/live-fixtures-v2/astronaut.png",
+            "source_sha256": "88431cd9653ccd539741b555fb0a46b61558b301d4110412b5bc28b5e3ea6cb5",
+            "input_sha256": "ab53afb59abdba357b9494664a76fb8b66d1241e8aa216c88cb898157ad39898",
+            "bytes": 22389,
+            "original_size": [
+              512,
+              512
+            ],
+            "input_size": [
+              256,
+              256
+            ],
+            "max_dimension": 256,
+            "quantize_colors": 32,
+            "dither": "NONE",
+            "source_url": "https://raw.githubusercontent.com/scikit-image/scikit-image/v0.25.2/skimage/data/astronaut.png",
+            "license": "NASA public domain",
+            "sha256": "ab53afb59abdba357b9494664a76fb8b66d1241e8aa216c88cb898157ad39898",
+            "license_evidence": "https://github.com/scikit-image/scikit-image/blob/v0.25.2/skimage/data/_fetchers.py",
+            "transforms": {
+              "original_size": [
+                512,
+                512
+              ],
+              "input_size": [
+                256,
+                256
+              ],
+              "max_dimension": 256,
+              "quantize_colors": 32,
+              "dither": "NONE"
+            },
+            "detector": "grounded",
+            "query": "a person. a helmet."
+          },
+          "evidence": "tools/model-quality/runs/m3-natural-grounding-20260912/live-run/natural-person/sam/0/storage/visual-evidence.json",
+          "detector": {
+            "method": "grounding-dino-tiny+sam2-hiera-tiny-v1",
+            "loading_info": {
+              "dino": {
+                "missing_keys": [],
+                "unexpected_keys": [],
+                "mismatched_keys": [],
+                "error_msgs": []
+              },
+              "sam2": {
+                "missing_keys": [],
+                "unexpected_keys": [],
+                "mismatched_keys": [],
+                "error_msgs": []
+              }
+            },
+            "device": "cpu",
+            "threads": 2,
+            "loading_seconds": 0.3331572500173934,
+            "detection_seconds": 1.747951707977336,
+            "segmentation_seconds": 0.9060832910472527
+          }
+        },
+        {
+          "case": "natural-saucer",
+          "variant": "dino",
+          "status": "completed",
+          "metrics": {
+            "task_pass": true,
+            "iou": 0.9554344236256914,
+            "coverage": 0.9979696052772874,
+            "abstain_correct": null,
+            "proposal_recall_at_threshold": true,
+            "best_proposal_iou": 0.9554344236256914,
+            "schema_valid": true,
+            "honest_unlocalized": false
+          },
+          "prediction": {
+            "status": "found",
+            "proposal_id": 1
+          },
+          "box_px": [
+            39.57693099975586,
+            34.93427276611328,
+            257.6524658203125,
+            207.92747497558594
+          ],
+          "gold": {
+            "expected": "found",
+            "target_px": [
+              40,
+              42,
+              258,
+              208
+            ],
+            "width": 320,
+            "height": 213,
+            "object_class": "visible saucer outer extents, not cup or spoon",
+            "minimum_iou": 0.5,
+            "minimum_coverage": 0.8,
+            "tolerance_px": 7,
+            "annotation_ambiguity": "Cup occludes upper-inner saucer; bbox necessarily contains cup/spoon pixels but extents derive from visible saucer rim, not inferred hidden circle. This is bbox gold, not exclusion mask.",
+            "review_scope": "coarse same-task independent visual bbox; no mask GT; famous demo images not held-out"
+          },
+          "error_code": null,
+          "source_provenance": {
+            "name": "coffee",
+            "path": "/Users/ffox/vibe-learner/tools/model-quality/runs/m3-natural-grounding-20260912/live-fixtures-v2/coffee.png",
+            "source_sha256": "cc02f8ca188b167c775a7101b5d767d1e71792cf762c33d6fa15a4599b5a8de7",
+            "input_sha256": "b3869fda631a7f94718f8c9109c3d46f5244d61a9595dd2a6ea1c7bc38562157",
+            "bytes": 21530,
+            "original_size": [
+              600,
+              400
+            ],
+            "input_size": [
+              320,
+              213
+            ],
+            "max_dimension": 320,
+            "quantize_colors": 32,
+            "dither": "NONE",
+            "source_url": "https://raw.githubusercontent.com/scikit-image/scikit-image/v0.25.2/skimage/data/coffee.png",
+            "license": "CC0",
+            "sha256": "b3869fda631a7f94718f8c9109c3d46f5244d61a9595dd2a6ea1c7bc38562157",
+            "license_evidence": "https://github.com/scikit-image/scikit-image/blob/v0.25.2/skimage/data/_fetchers.py",
+            "transforms": {
+              "original_size": [
+                600,
+                400
+              ],
+              "input_size": [
+                320,
+                213
+              ],
+              "max_dimension": 320,
+              "quantize_colors": 32,
+              "dither": "NONE"
+            },
+            "detector": "grounded",
+            "query": "a coffee cup. a saucer. a spoon."
+          },
+          "evidence": "tools/model-quality/runs/m3-natural-grounding-20260912/live-run/natural-saucer/dino/0/storage/visual-evidence.json",
+          "detector": {
+            "method": "grounding-dino-tiny+sam2-hiera-tiny-v1",
+            "loading_info": {
+              "dino": {
+                "missing_keys": [],
+                "unexpected_keys": [],
+                "mismatched_keys": [],
+                "error_msgs": []
+              },
+              "sam2": {
+                "missing_keys": [],
+                "unexpected_keys": [],
+                "mismatched_keys": [],
+                "error_msgs": []
+              }
+            },
+            "device": "cpu",
+            "threads": 2,
+            "loading_seconds": 0.5924743749783374,
+            "detection_seconds": 4.6030676669906825,
+            "segmentation_seconds": 1.6688462080201134
+          }
+        },
+        {
+          "case": "natural-saucer",
+          "variant": "direct",
+          "status": "completed",
+          "metrics": {
+            "task_pass": true,
+            "iou": 0.6995495789514995,
+            "coverage": 0.9210542168674699,
+            "abstain_correct": null,
+            "proposal_recall_at_threshold": true,
+            "best_proposal_iou": 0.9554344236256914,
+            "schema_valid": true,
+            "honest_unlocalized": false
+          },
+          "prediction": {
+            "status": "found",
+            "box": [
+              0.047,
+              0.164,
+              0.922,
+              0.915
+            ]
+          },
+          "box_px": [
+            15.04,
+            34.932,
+            295.04,
+            194.895
+          ],
+          "gold": {
+            "expected": "found",
+            "target_px": [
+              40,
+              42,
+              258,
+              208
+            ],
+            "width": 320,
+            "height": 213,
+            "object_class": "visible saucer outer extents, not cup or spoon",
+            "minimum_iou": 0.5,
+            "minimum_coverage": 0.8,
+            "tolerance_px": 7,
+            "annotation_ambiguity": "Cup occludes upper-inner saucer; bbox necessarily contains cup/spoon pixels but extents derive from visible saucer rim, not inferred hidden circle. This is bbox gold, not exclusion mask.",
+            "review_scope": "coarse same-task independent visual bbox; no mask GT; famous demo images not held-out"
+          },
+          "error_code": null,
+          "source_provenance": {
+            "name": "coffee",
+            "path": "/Users/ffox/vibe-learner/tools/model-quality/runs/m3-natural-grounding-20260912/live-fixtures-v2/coffee.png",
+            "source_sha256": "cc02f8ca188b167c775a7101b5d767d1e71792cf762c33d6fa15a4599b5a8de7",
+            "input_sha256": "b3869fda631a7f94718f8c9109c3d46f5244d61a9595dd2a6ea1c7bc38562157",
+            "bytes": 21530,
+            "original_size": [
+              600,
+              400
+            ],
+            "input_size": [
+              320,
+              213
+            ],
+            "max_dimension": 320,
+            "quantize_colors": 32,
+            "dither": "NONE",
+            "source_url": "https://raw.githubusercontent.com/scikit-image/scikit-image/v0.25.2/skimage/data/coffee.png",
+            "license": "CC0",
+            "sha256": "b3869fda631a7f94718f8c9109c3d46f5244d61a9595dd2a6ea1c7bc38562157",
+            "license_evidence": "https://github.com/scikit-image/scikit-image/blob/v0.25.2/skimage/data/_fetchers.py",
+            "transforms": {
+              "original_size": [
+                600,
+                400
+              ],
+              "input_size": [
+                320,
+                213
+              ],
+              "max_dimension": 320,
+              "quantize_colors": 32,
+              "dither": "NONE"
+            },
+            "detector": "grounded",
+            "query": "a coffee cup. a saucer. a spoon."
+          },
+          "evidence": "tools/model-quality/runs/m3-natural-grounding-20260912/live-run/natural-saucer/direct/0/storage/visual-evidence.json",
+          "detector": {
+            "method": "grounding-dino-tiny+sam2-hiera-tiny-v1",
+            "loading_info": {
+              "dino": {
+                "missing_keys": [],
+                "unexpected_keys": [],
+                "mismatched_keys": [],
+                "error_msgs": []
+              },
+              "sam2": {
+                "missing_keys": [],
+                "unexpected_keys": [],
+                "mismatched_keys": [],
+                "error_msgs": []
+              }
+            },
+            "device": "cpu",
+            "threads": 2,
+            "loading_seconds": 0.6737872079829685,
+            "detection_seconds": 4.523365667031612,
+            "segmentation_seconds": 1.7751673749880865
+          }
+        },
+        {
+          "case": "natural-saucer",
+          "variant": "sam",
+          "status": "completed",
+          "metrics": {
+            "task_pass": true,
+            "iou": 0.957541567695962,
+            "coverage": 0.9802973361335249,
+            "abstain_correct": null,
+            "proposal_recall_at_threshold": true,
+            "best_proposal_iou": 0.957541567695962,
+            "schema_valid": true,
+            "honest_unlocalized": false
+          },
+          "prediction": {
+            "status": "found",
+            "proposal_id": 1
+          },
+          "box_px": [
+            41,
+            38,
+            256,
+            207
+          ],
+          "gold": {
+            "expected": "found",
+            "target_px": [
+              40,
+              42,
+              258,
+              208
+            ],
+            "width": 320,
+            "height": 213,
+            "object_class": "visible saucer outer extents, not cup or spoon",
+            "minimum_iou": 0.5,
+            "minimum_coverage": 0.8,
+            "tolerance_px": 7,
+            "annotation_ambiguity": "Cup occludes upper-inner saucer; bbox necessarily contains cup/spoon pixels but extents derive from visible saucer rim, not inferred hidden circle. This is bbox gold, not exclusion mask.",
+            "review_scope": "coarse same-task independent visual bbox; no mask GT; famous demo images not held-out"
+          },
+          "error_code": null,
+          "source_provenance": {
+            "name": "coffee",
+            "path": "/Users/ffox/vibe-learner/tools/model-quality/runs/m3-natural-grounding-20260912/live-fixtures-v2/coffee.png",
+            "source_sha256": "cc02f8ca188b167c775a7101b5d767d1e71792cf762c33d6fa15a4599b5a8de7",
+            "input_sha256": "b3869fda631a7f94718f8c9109c3d46f5244d61a9595dd2a6ea1c7bc38562157",
+            "bytes": 21530,
+            "original_size": [
+              600,
+              400
+            ],
+            "input_size": [
+              320,
+              213
+            ],
+            "max_dimension": 320,
+            "quantize_colors": 32,
+            "dither": "NONE",
+            "source_url": "https://raw.githubusercontent.com/scikit-image/scikit-image/v0.25.2/skimage/data/coffee.png",
+            "license": "CC0",
+            "sha256": "b3869fda631a7f94718f8c9109c3d46f5244d61a9595dd2a6ea1c7bc38562157",
+            "license_evidence": "https://github.com/scikit-image/scikit-image/blob/v0.25.2/skimage/data/_fetchers.py",
+            "transforms": {
+              "original_size": [
+                600,
+                400
+              ],
+              "input_size": [
+                320,
+                213
+              ],
+              "max_dimension": 320,
+              "quantize_colors": 32,
+              "dither": "NONE"
+            },
+            "detector": "grounded",
+            "query": "a coffee cup. a saucer. a spoon."
+          },
+          "evidence": "tools/model-quality/runs/m3-natural-grounding-20260912/live-run/natural-saucer/sam/0/storage/visual-evidence.json",
+          "detector": {
+            "method": "grounding-dino-tiny+sam2-hiera-tiny-v1",
+            "loading_info": {
+              "dino": {
+                "missing_keys": [],
+                "unexpected_keys": [],
+                "mismatched_keys": [],
+                "error_msgs": []
+              },
+              "sam2": {
+                "missing_keys": [],
+                "unexpected_keys": [],
+                "mismatched_keys": [],
+                "error_msgs": []
+              }
+            },
+            "device": "cpu",
+            "threads": 2,
+            "loading_seconds": 0.48176829202566296,
+            "detection_seconds": 3.1359781670034863,
+            "segmentation_seconds": 1.3582896249718033
+          }
+        }
+      ],
+      "scope_correction": "live-run original evidence scope string mistakenly says synthetic/OCR; frozen Case provenance public-licensed, source URLs/license and pinned GroundingDINO/SAM2 outputs are authoritative. Original evidence not rewritten."
+    },
+    "gray-run": {
+      "states": {
+        "candidate_failed": 1,
+        "completed": 1
+      },
+      "cost": {
+        "direct": {
+          "wires": 1,
+          "tokens": 812,
+          "wire_p50_ms": 6585,
+          "wire_p95_ms": 6585,
+          "loading_median_s": null,
+          "detection_median_s": null,
+          "segmentation_median_s": null
+        },
+        "som": {
+          "wires": 1,
+          "tokens": 1042,
+          "wire_p50_ms": 4847,
+          "wire_p95_ms": 4847,
+          "loading_median_s": null,
+          "detection_median_s": null,
+          "segmentation_median_s": null
+        }
+      },
+      "resume": "accepted terminal zero new wire",
+      "rows": [
+        {
+          "case": "gray-circle",
+          "variant": "direct",
+          "status": "completed",
+          "metrics": {
+            "task_pass": true,
+            "iou": 0.7332924677664456,
+            "coverage": 0.9763975155279502,
+            "abstain_correct": null,
+            "proposal_recall_at_threshold": false,
+            "best_proposal_iou": 0.0,
+            "schema_valid": true,
+            "honest_unlocalized": false
+          },
+          "prediction": {
+            "status": "found",
+            "box": [
+              0.332,
+              0.233,
+              0.605,
+              0.772
+            ]
+          },
+          "box_px": [
+            212.48000000000002,
+            83.88000000000001,
+            387.2,
+            277.92
+          ],
+          "gold": {
+            "expected": "found",
+            "target_px": [
+              230,
+              85,
+              391,
+              246
+            ],
+            "width": 640,
+            "height": 360,
+            "object_class": "geometry",
+            "minimum_iou": 0.5,
+            "minimum_coverage": 0.8
+          },
+          "error_code": null,
+          "source_provenance": {
+            "path": "/Users/ffox/vibe-learner/tools/model-quality/runs/m3-natural-grounding-20260912/gray-fixtures/gray-circle.png",
+            "sha256": "dd866b06096617d74c12075a7e77cbebcde07c628d7834719fd38a66b980f71b"
+          },
+          "evidence": "tools/model-quality/runs/m3-natural-grounding-20260912/gray-run/gray-circle/direct/0/storage/visual-evidence.json",
+          "detector": {
+            "method": "tesseract-psm11-lines+opencv-saturation-components-v1",
+            "loading_info": null,
+            "device": null,
+            "threads": null,
+            "loading_seconds": null,
+            "detection_seconds": null,
+            "segmentation_seconds": null
+          }
+        },
+        {
+          "case": "gray-circle",
+          "variant": "som",
+          "status": "candidate_failed",
+          "metrics": {
+            "schema_valid": false
+          },
+          "prediction": null,
+          "box_px": null,
+          "gold": null,
+          "error_code": "invalid_grounding_output",
+          "source_provenance": {
+            "path": "/Users/ffox/vibe-learner/tools/model-quality/runs/m3-natural-grounding-20260912/gray-fixtures/gray-circle.png",
+            "sha256": "dd866b06096617d74c12075a7e77cbebcde07c628d7834719fd38a66b980f71b"
+          },
+          "evidence": "tools/model-quality/runs/m3-natural-grounding-20260912/gray-run/gray-circle/som/0/storage/visual-evidence.json",
+          "detector": {
+            "method": "tesseract-psm11-lines+opencv-saturation-components-v1",
+            "loading_info": null,
+            "device": null,
+            "threads": null,
+            "loading_seconds": null,
+            "detection_seconds": null,
+            "segmentation_seconds": null
+          }
+        }
+      ],
+      "scope_correction": null
+    },
+    "table-run": {
+      "states": {
+        "completed": 2
+      },
+      "cost": {
+        "dino": {
+          "wires": 1,
+          "tokens": 1016,
+          "wire_p50_ms": 3147,
+          "wire_p95_ms": 3147,
+          "loading_median_s": 0.3435925000230782,
+          "detection_median_s": 3.873492041020654,
+          "segmentation_median_s": 1.0889987080008723
+        },
+        "sam": {
+          "wires": 1,
+          "tokens": 976,
+          "wire_p50_ms": 3981,
+          "wire_p95_ms": 3981,
+          "loading_median_s": 0.3439016669872217,
+          "detection_median_s": 3.898747375002131,
+          "segmentation_median_s": 1.0866971249924973
+        }
+      },
+      "resume": "accepted terminal zero new wire",
+      "rows": [
+        {
+          "case": "natural-cup",
+          "variant": "dino",
+          "status": "completed",
+          "metrics": {
+            "task_pass": true,
+            "iou": 0.9824320909505814,
+            "coverage": 0.9931200757438754,
+            "abstain_correct": null,
+            "proposal_recall_at_threshold": true,
+            "best_proposal_iou": 0.9824320909505814,
+            "schema_valid": true,
+            "honest_unlocalized": false
+          },
+          "prediction": {
+            "status": "found",
+            "proposal_id": 2
+          },
+          "box_px": [
+            89.24134826660156,
+            7.648083209991455,
+            227.4398193359375,
+            168.8854522705078
+          ],
+          "gold": {
+            "expected": "found",
+            "target_px": [
+              90,
+              8,
+              227,
+              170
+            ],
+            "width": 320,
+            "height": 213,
+            "object_class": "coffee cup including handle, excluding saucer and spoon",
+            "minimum_iou": 0.5,
+            "minimum_coverage": 0.8,
+            "tolerance_px": 7,
+            "annotation_ambiguity": "Dark handle lower-left overlaps similarly colored saucer; cup body rim is clear, handle outer boundary approximate.",
+            "review_scope": "coarse same-task independent visual bbox; no mask GT; famous demo images not held-out"
+          },
+          "error_code": null,
+          "source_provenance": {
+            "name": "coffee",
+            "path": "/Users/ffox/vibe-learner/tools/model-quality/runs/m3-natural-grounding-20260912/live-fixtures-v2/coffee.png",
+            "source_sha256": "cc02f8ca188b167c775a7101b5d767d1e71792cf762c33d6fa15a4599b5a8de7",
+            "input_sha256": "b3869fda631a7f94718f8c9109c3d46f5244d61a9595dd2a6ea1c7bc38562157",
+            "bytes": 21530,
+            "original_size": [
+              600,
+              400
+            ],
+            "input_size": [
+              320,
+              213
+            ],
+            "max_dimension": 320,
+            "quantize_colors": 32,
+            "dither": "NONE",
+            "source_url": "https://raw.githubusercontent.com/scikit-image/scikit-image/v0.25.2/skimage/data/coffee.png",
+            "license": "CC0",
+            "sha256": "b3869fda631a7f94718f8c9109c3d46f5244d61a9595dd2a6ea1c7bc38562157",
+            "license_evidence": "https://github.com/scikit-image/scikit-image/blob/v0.25.2/skimage/data/_fetchers.py",
+            "transforms": {
+              "original_size": [
+                600,
+                400
+              ],
+              "input_size": [
+                320,
+                213
+              ],
+              "max_dimension": 320,
+              "quantize_colors": 32,
+              "dither": "NONE"
+            },
+            "detector": "grounded",
+            "query": "a coffee cup. a saucer. a spoon.",
+            "include_proposal_table": true
+          },
+          "evidence": "tools/model-quality/runs/m3-natural-grounding-20260912/table-run/natural-cup/dino/0/storage/visual-evidence.json",
+          "detector": {
+            "method": "grounding-dino-tiny+sam2-hiera-tiny-v1",
+            "loading_info": {
+              "dino": {
+                "missing_keys": [],
+                "unexpected_keys": [],
+                "mismatched_keys": [],
+                "error_msgs": []
+              },
+              "sam2": {
+                "missing_keys": [],
+                "unexpected_keys": [],
+                "mismatched_keys": [],
+                "error_msgs": []
+              }
+            },
+            "device": "cpu",
+            "threads": 2,
+            "loading_seconds": 0.3435925000230782,
+            "detection_seconds": 3.873492041020654,
+            "segmentation_seconds": 1.0889987080008723
+          }
+        },
+        {
+          "case": "natural-cup",
+          "variant": "sam",
+          "status": "completed",
+          "metrics": {
+            "task_pass": true,
+            "iou": 0.966026854104713,
+            "coverage": 0.966026854104713,
+            "abstain_correct": null,
+            "proposal_recall_at_threshold": true,
+            "best_proposal_iou": 0.966026854104713,
+            "schema_valid": true,
+            "honest_unlocalized": false
+          },
+          "prediction": {
+            "status": "found",
+            "proposal_id": 2
+          },
+          "box_px": [
+            92,
+            10,
+            226,
+            170
+          ],
+          "gold": {
+            "expected": "found",
+            "target_px": [
+              90,
+              8,
+              227,
+              170
+            ],
+            "width": 320,
+            "height": 213,
+            "object_class": "coffee cup including handle, excluding saucer and spoon",
+            "minimum_iou": 0.5,
+            "minimum_coverage": 0.8,
+            "tolerance_px": 7,
+            "annotation_ambiguity": "Dark handle lower-left overlaps similarly colored saucer; cup body rim is clear, handle outer boundary approximate.",
+            "review_scope": "coarse same-task independent visual bbox; no mask GT; famous demo images not held-out"
+          },
+          "error_code": null,
+          "source_provenance": {
+            "name": "coffee",
+            "path": "/Users/ffox/vibe-learner/tools/model-quality/runs/m3-natural-grounding-20260912/live-fixtures-v2/coffee.png",
+            "source_sha256": "cc02f8ca188b167c775a7101b5d767d1e71792cf762c33d6fa15a4599b5a8de7",
+            "input_sha256": "b3869fda631a7f94718f8c9109c3d46f5244d61a9595dd2a6ea1c7bc38562157",
+            "bytes": 21530,
+            "original_size": [
+              600,
+              400
+            ],
+            "input_size": [
+              320,
+              213
+            ],
+            "max_dimension": 320,
+            "quantize_colors": 32,
+            "dither": "NONE",
+            "source_url": "https://raw.githubusercontent.com/scikit-image/scikit-image/v0.25.2/skimage/data/coffee.png",
+            "license": "CC0",
+            "sha256": "b3869fda631a7f94718f8c9109c3d46f5244d61a9595dd2a6ea1c7bc38562157",
+            "license_evidence": "https://github.com/scikit-image/scikit-image/blob/v0.25.2/skimage/data/_fetchers.py",
+            "transforms": {
+              "original_size": [
+                600,
+                400
+              ],
+              "input_size": [
+                320,
+                213
+              ],
+              "max_dimension": 320,
+              "quantize_colors": 32,
+              "dither": "NONE"
+            },
+            "detector": "grounded",
+            "query": "a coffee cup. a saucer. a spoon.",
+            "include_proposal_table": true
+          },
+          "evidence": "tools/model-quality/runs/m3-natural-grounding-20260912/table-run/natural-cup/sam/0/storage/visual-evidence.json",
+          "detector": {
+            "method": "grounding-dino-tiny+sam2-hiera-tiny-v1",
+            "loading_info": {
+              "dino": {
+                "missing_keys": [],
+                "unexpected_keys": [],
+                "mismatched_keys": [],
+                "error_msgs": []
+              },
+              "sam2": {
+                "missing_keys": [],
+                "unexpected_keys": [],
+                "mismatched_keys": [],
+                "error_msgs": []
+              }
+            },
+            "device": "cpu",
+            "threads": 2,
+            "loading_seconds": 0.3439016669872217,
+            "detection_seconds": 3.898747375002131,
+            "segmentation_seconds": 1.0866971249924973
+          }
+        }
+      ],
+      "scope_correction": null
+    }
+  }
+}

@@ -1,0 +1,72 @@
+{
+  "version": "hatcher-compatible-selection-v1",
+  "book": "Algebraic Topology",
+  "pdf_path": "/tmp/m3-hatcher/AT.pdf",
+  "pdf_sha256": "bebb3032bf9021b956da3bd070eb6c67dc662cf849be9cdf6679f677560e5618",
+  "official_source_url": "https://pi.math.cornell.edu/~hatcher/AT/AT.pdf",
+  "official_download_page": "https://pi.math.cornell.edu/~hatcher/AT/ATpage.html",
+  "annotation_method": "Single independent annotating Codex agent using visual inspection, not human expert/dual-annotator consensus. Association descriptions are task references, not measured candidate results.",
+  "gold_source_manifest_sha256": "c7dc4bd36e0e8dea71ba855859ca884d7824443f8043e6c3778881bbac24e202",
+  "candidates": [
+    {
+      "physical_page": 14,
+      "printed_page": "5",
+      "path": "/tmp/m3-hatcher/AT-p14.png",
+      "png_sha256": "378529b27fb6d2e77d74ccd9378c178e317ae37740d02fdca5d32d3b966d8f02",
+      "image_size": [
+        928,
+        1200
+      ],
+      "tasks": [
+        {
+          "id": "hatcher-at-genus2-polygon",
+          "request": "Locate only the octagonal edge-identification polygon corresponding to the genus-2 surface. Include its arrow/edge labels; exclude the square, dodecagon, and surface pictures.",
+          "target_px": [
+            644,
+            308,
+            785,
+            448
+          ],
+          "tolerance_px": 6,
+          "associated_text_px": [
+            109,
+            151,
+            818,
+            203
+          ],
+          "association_reference": "The middle row pairs a double torus with an octagon; the adjacent text states that an orientable surface of genus g is constructed from a polygon with 4g sides."
+        }
+      ]
+    },
+    {
+      "physical_page": 31,
+      "printed_page": "22",
+      "path": "/tmp/m3-hatcher/AT-p31.png",
+      "png_sha256": "0bbb48bdbe4899d419a4689e1bd9a545c46b7e1fd4582c71a18c387ba3b1ba67",
+      "image_size": [
+        928,
+        1200
+      ],
+      "tasks": [
+        {
+          "id": "hatcher-at-negative-link",
+          "request": "Locate only the linked-circle illustration labeled B_{-3}, including circle A and the B_{-3} label. Exclude B_2 above and the addition diagrams below.",
+          "target_px": [
+            634,
+            457,
+            813,
+            562
+          ],
+          "tolerance_px": 6,
+          "associated_text_px": [
+            108,
+            328,
+            612,
+            590
+          ],
+          "association_reference": "The paragraph explains positive or negative linking numbers according to the forward/backward orientation through A; this is the lower member of the two stacked oriented-link examples."
+        }
+      ]
+    }
+  ]
+}

@@ -1,4 +1,4 @@
-"""Export immutable synthetic experiment evidence and its reproducible lab source."""
+"""Export synthetic or reviewed public-licensed evidence and reproducible lab source."""
 import argparse
 import hashlib
 import json
@@ -40,6 +40,9 @@ def export(campaigns, ledger_path, output, supplements=None):
         for root in sorted(p.resolve() for p in campaigns):
             stack.enter_context(exclusive(root/'campaign.lock'))
             manifest = json.loads((root/'manifest.json').read_text())
+            if any(case.get('provenance') not in ('synthetic-authored','public-licensed')
+                   for case in manifest['config']['cases']):
+                raise ValueError('private or unreviewed fixtures cannot enter public evidence export')
             if manifest['ledger_path'] != str(ledger_path.resolve()):
                 raise ValueError('campaign ledger mismatch')
             report = json.loads((root/'report.json').read_text())
@@ -83,7 +86,7 @@ def export(campaigns, ledger_path, output, supplements=None):
             add(name,path)
         index = {name: {'sha256':hashlib.sha256(data).hexdigest(),'bytes':len(data)} for name,data in sorted(entries.items())}
         entries['index.json']=json.dumps({'version':'model-quality-export-v1','files':index,
-            'scope':'Synthetic public receipts and allowlisted telemetry. No database, diagnostics, provider reasoning or credentials. Source is export-time; frozen execution hashes are in each manifest.'},indent=2).encode()
+            'scope':'Synthetic and adapter-reviewed public-licensed fixture evidence with allowlisted telemetry. User-provided private fixtures are excluded. No database, private diagnostics, provider reasoning or credentials. Source is export-time; frozen execution hashes are in each manifest.'},indent=2).encode()
         key=os.environ.get('K3_API_KEY','').encode()
         if key and any(key in data for data in entries.values()):
             raise ValueError('credential found in export')

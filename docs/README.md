@@ -50,3 +50,8 @@
 - [M3 候选生产实现与验收（2026-09-12）](quality/m3-production-grounding-2026-09-12.md)
 
 - [M3 智能体交接（2026-09-12）](quality/m3-agent-handoff-2026-09-12.md)
+
+## 仓库资料整理
+
+- [2026-09-12 已完成实验与修复归档](quality/completed-work-2026-09-12.md)：完成范围、原始证据和仍未关闭的质量门。
+- [仓库占用与清理记录](repository-inventory-2026-09-12.md)：源码、运行数据、实验资料与构建缓存的区分。

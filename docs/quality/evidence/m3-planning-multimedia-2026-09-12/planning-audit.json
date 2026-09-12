@@ -1,0 +1,444 @@
+{
+  "version": "planning-auxiliary-review-v1",
+  "sample_denominator": 12,
+  "families": 3,
+  "repetitions_are_not_independent_families": true,
+  "campaign_usage": {
+    "stopped": null,
+    "wire_count": 33,
+    "charged_or_reserved_tokens": 175250,
+    "unknown_usage_requests": 0
+  },
+  "wire_latency_ms": {
+    "50": 6992,
+    "95": 22883
+  },
+  "resume": {
+    "status": "refused_source_identity_changed",
+    "changed_source_field": "tracked_dirty_digest",
+    "additional_campaign_wires": 0,
+    "execution_source_files_unchanged_at_attempt": true
+  },
+  "rows": [
+    {
+      "sample": "equations/baseline/0",
+      "content_review": "no_material_issue_observed",
+      "note": "求解、回代与 a=0 时比较 b/c 均保留。",
+      "review_independence": "same-author auxiliary review, not held-out or independently certified",
+      "evidence_sha256": "0a692695a807aef622a6154ca28bf127af3f7197b5a2aa05e83e0936295cd430",
+      "committed": true,
+      "wire_calls": 3,
+      "elapsed_minutes": 0.9327749715167253,
+      "tools": [
+        {
+          "name": "read_page_range_content",
+          "ok": true,
+          "error": null
+        },
+        {
+          "name": "read_page_range_content",
+          "ok": false,
+          "error": "tool_round_budget_exceeded"
+        },
+        {
+          "name": "get_study_unit_detail",
+          "ok": true,
+          "error": null
+        },
+        {
+          "name": "get_study_unit_detail",
+          "ok": true,
+          "error": null
+        },
+        {
+          "name": "revise_study_units",
+          "ok": false,
+          "error": "invalid_study_unit_revision"
+        },
+        {
+          "name": "estimate_plan_completion",
+          "ok": true,
+          "error": null
+        }
+      ]
+    },
+    {
+      "sample": "equations/baseline/1",
+      "content_review": "no_material_issue_observed",
+      "note": "边界条件保留；口头分钟预算不属 typed 时间契约。",
+      "review_independence": "same-author auxiliary review, not held-out or independently certified",
+      "evidence_sha256": "de9e4f78531f7e694438f9772430344248279a01d2d1192c7bac7a8dcc1b8282",
+      "committed": true,
+      "wire_calls": 4,
+      "elapsed_minutes": 0.8089721687497028,
+      "tools": [
+        {
+          "name": "get_study_unit_detail",
+          "ok": true,
+          "error": null
+        },
+        {
+          "name": "get_study_unit_detail",
+          "ok": true,
+          "error": null
+        },
+        {
+          "name": "estimate_plan_completion",
+          "ok": true,
+          "error": null
+        }
+      ]
+    },
+    {
+      "sample": "equations/evidence-first/0",
+      "content_review": "material_issue",
+      "note": "全部6工具失败仍提交；将 a=0 写成不构成方程/非方程，未准确保留 b=c 与 b≠c 的判断。",
+      "review_independence": "same-author auxiliary review, not held-out or independently certified",
+      "evidence_sha256": "e6ef4ee6e73ca74a4a994d35f58deef4b4155818f709a26e3f8298e6f937e761",
+      "committed": true,
+      "wire_calls": 4,
+      "elapsed_minutes": 0.4045351548498729,
+      "tools": [
+        {
+          "name": "get_study_unit_detail",
+          "ok": false,
+          "error": "provider_tool_call_shape_invalid"
+        },
+        {
+          "name": "get_study_unit_detail",
+          "ok": false,
+          "error": "provider_tool_call_shape_invalid"
+        },
+        {
+          "name": "read_page_range_content",
+          "ok": false,
+          "error": "provider_tool_call_shape_invalid"
+        },
+        {
+          "name": "get_study_unit_detail",
+          "ok": false,
+          "error": "provider_tool_call_shape_invalid"
+        },
+        {
+          "name": "get_study_unit_detail",
+          "ok": false,
+          "error": "provider_tool_call_shape_invalid"
+        },
+        {
+          "name": "get_study_unit_detail",
+          "ok": false,
+          "error": "provider_tool_call_shape_invalid"
+        }
+      ]
+    },
+    {
+      "sample": "equations/evidence-first/1",
+      "content_review": "no_material_issue_observed",
+      "note": "教材示例与 a=0 判断保留。",
+      "review_independence": "same-author auxiliary review, not held-out or independently certified",
+      "evidence_sha256": "80d778c386f37b50841ba16d425a4e98610b71df3ddaace548c8aa16f2b40e85",
+      "committed": true,
+      "wire_calls": 2,
+      "elapsed_minutes": 0.2846050868004871,
+      "tools": [
+        {
+          "name": "read_page_range_content",
+          "ok": true,
+          "error": null
+        },
+        {
+          "name": "get_study_unit_detail",
+          "ok": true,
+          "error": null
+        },
+        {
+          "name": "get_study_unit_detail",
+          "ok": true,
+          "error": null
+        }
+      ]
+    },
+    {
+      "sample": "probability/baseline/0",
+      "content_review": "local_ambiguity",
+      "note": "overview/单条任务省略首抽红球条件，但后续任务和focus明确恢复条件。",
+      "review_independence": "same-author auxiliary review, not held-out or independently certified",
+      "evidence_sha256": "231205ea5fb0b4bdc4b8e19825d00ef46f6de7650814496b046b3e0d100af7ba",
+      "committed": true,
+      "wire_calls": 2,
+      "elapsed_minutes": 0.15484979166649282,
+      "tools": [
+        {
+          "name": "read_page_range_content",
+          "ok": true,
+          "error": null
+        },
+        {
+          "name": "get_study_unit_detail",
+          "ok": true,
+          "error": null
+        },
+        {
+          "name": "get_study_unit_detail",
+          "ok": true,
+          "error": null
+        }
+      ]
+    },
+    {
+      "sample": "probability/baseline/1",
+      "content_review": "material_issue",
+      "note": "不放回=1/4 未保留首抽红球前提。",
+      "review_independence": "same-author auxiliary review, not held-out or independently certified",
+      "evidence_sha256": "6e85380792fc47cf0b09634c00bb3503d1f298c3b962291521ab913e7f29d47a",
+      "committed": true,
+      "wire_calls": 3,
+      "elapsed_minutes": 0.5176120909668195,
+      "tools": [
+        {
+          "name": "read_page_range_content",
+          "ok": true,
+          "error": null
+        },
+        {
+          "name": "read_page_range_content",
+          "ok": false,
+          "error": "tool_round_budget_exceeded"
+        },
+        {
+          "name": "get_study_unit_detail",
+          "ok": true,
+          "error": null
+        },
+        {
+          "name": "get_study_unit_detail",
+          "ok": true,
+          "error": null
+        },
+        {
+          "name": "revise_study_units",
+          "ok": false,
+          "error": "invalid_study_unit_revision"
+        }
+      ]
+    },
+    {
+      "sample": "probability/evidence-first/0",
+      "content_review": "material_issue",
+      "note": "1/(1+3)=1/4 未明确首抽红球条件，强化不放回=1/4概括。",
+      "review_independence": "same-author auxiliary review, not held-out or independently certified",
+      "evidence_sha256": "073648a2562b65ff2368ec6edb9a3f07e70948a6df8e86bea05f012dd1012299",
+      "committed": true,
+      "wire_calls": 3,
+      "elapsed_minutes": 0.31875587291724516,
+      "tools": [
+        {
+          "name": "read_page_range_content",
+          "ok": true,
+          "error": null
+        },
+        {
+          "name": "get_study_unit_detail",
+          "ok": true,
+          "error": null
+        },
+        {
+          "name": "get_study_unit_detail",
+          "ok": true,
+          "error": null
+        },
+        {
+          "name": "estimate_plan_completion",
+          "ok": true,
+          "error": null
+        }
+      ]
+    },
+    {
+      "sample": "probability/evidence-first/1",
+      "content_review": "local_ambiguity",
+      "note": "focus列出更新后1红3蓝暗示首抽红球，任务仍无条件写不放回1/4。",
+      "review_independence": "same-author auxiliary review, not held-out or independently certified",
+      "evidence_sha256": "3d08264043952d79de15593192bf8aba19fdd0da651fb74ffc05aa8b37bfb014",
+      "committed": true,
+      "wire_calls": 2,
+      "elapsed_minutes": 0.1177416923494699,
+      "tools": [
+        {
+          "name": "get_study_unit_detail",
+          "ok": true,
+          "error": null
+        },
+        {
+          "name": "get_study_unit_detail",
+          "ok": true,
+          "error": null
+        },
+        {
+          "name": "read_page_range_content",
+          "ok": true,
+          "error": null
+        }
+      ]
+    },
+    {
+      "sample": "python/baseline/0",
+      "content_review": "material_issue",
+      "note": "声称循环留到教材后续章节，来源只有两页，违反不要编造后续章节要求。",
+      "review_independence": "same-author auxiliary review, not held-out or independently certified",
+      "evidence_sha256": "1fc5806799bc93148bc8d78b44ab7e5fcdfd3c04d868c2eee9f53ff27a400c50",
+      "committed": true,
+      "wire_calls": 3,
+      "elapsed_minutes": 0.7497372757003177,
+      "tools": [
+        {
+          "name": "read_page_range_content",
+          "ok": true,
+          "error": null
+        },
+        {
+          "name": "read_page_range_content",
+          "ok": false,
+          "error": "tool_round_budget_exceeded"
+        },
+        {
+          "name": "get_study_unit_detail",
+          "ok": true,
+          "error": null
+        },
+        {
+          "name": "get_study_unit_detail",
+          "ok": true,
+          "error": null
+        },
+        {
+          "name": "estimate_plan_completion",
+          "ok": true,
+          "error": null
+        }
+      ]
+    },
+    {
+      "sample": "python/baseline/1",
+      "content_review": "no_material_issue_observed",
+      "note": "列表顺序/零基索引与字典键的比较清晰。",
+      "review_independence": "same-author auxiliary review, not held-out or independently certified",
+      "evidence_sha256": "6925ec6dbd1ae452059a13196bcca93e32f8eb0d9d21b0e6ef23695246e1aeeb",
+      "committed": true,
+      "wire_calls": 2,
+      "elapsed_minutes": 0.27307339721592144,
+      "tools": [
+        {
+          "name": "get_study_unit_detail",
+          "ok": true,
+          "error": null
+        },
+        {
+          "name": "get_study_unit_detail",
+          "ok": true,
+          "error": null
+        }
+      ]
+    },
+    {
+      "sample": "python/evidence-first/0",
+      "content_review": "local_ambiguity",
+      "note": "新增names[1]是可推导练习，但逐字核对/按位置访问会出错措辞需要收窄到当前字典实例。",
+      "review_independence": "same-author auxiliary review, not held-out or independently certified",
+      "evidence_sha256": "0a5a0e7bff0a45909b05945f6af3f0ef2b1edc3b603b0bc4dd75a0fa14649c30",
+      "committed": true,
+      "wire_calls": 2,
+      "elapsed_minutes": 0.20882660554974183,
+      "tools": [
+        {
+          "name": "get_study_unit_detail",
+          "ok": true,
+          "error": null
+        },
+        {
+          "name": "get_study_unit_detail",
+          "ok": true,
+          "error": null
+        },
+        {
+          "name": "read_page_range_content",
+          "ok": true,
+          "error": null
+        },
+        {
+          "name": "read_page_range_content",
+          "ok": false,
+          "error": "tool_round_budget_exceeded"
+        }
+      ]
+    },
+    {
+      "sample": "python/evidence-first/1",
+      "content_review": "material_issue",
+      "note": "按教材引入原文未给出的负索引names[-1]与缺键报错，超出仅根据教材范围。",
+      "review_independence": "same-author auxiliary review, not held-out or independently certified",
+      "evidence_sha256": "8c819e0c9bb4a121d20722dc1bf6660f0d688d93a57a72f4d03f6cd998b9f09d",
+      "committed": true,
+      "wire_calls": 3,
+      "elapsed_minutes": 0.42210038888345786,
+      "tools": [
+        {
+          "name": "read_page_range_content",
+          "ok": true,
+          "error": null
+        },
+        {
+          "name": "get_study_unit_detail",
+          "ok": true,
+          "error": null
+        },
+        {
+          "name": "get_study_unit_detail",
+          "ok": true,
+          "error": null
+        },
+        {
+          "name": "estimate_plan_completion",
+          "ok": true,
+          "error": null
+        }
+      ]
+    }
+  ],
+  "arms": {
+    "baseline": {
+      "samples": 6,
+      "committed": 6,
+      "wire_calls": 17,
+      "mean_elapsed_minutes": 0.5728366159693299,
+      "tool_attempts": 24,
+      "tool_successes": 19,
+      "tool_errors": {
+        "tool_round_budget_exceeded": 3,
+        "invalid_study_unit_revision": 2
+      },
+      "auxiliary_review_counts": {
+        "no_material_issue_observed": 3,
+        "local_ambiguity": 1,
+        "material_issue": 2
+      }
+    },
+    "evidence-first": {
+      "samples": 6,
+      "committed": 6,
+      "wire_calls": 16,
+      "mean_elapsed_minutes": 0.2927608002250458,
+      "tool_attempts": 24,
+      "tool_successes": 17,
+      "tool_errors": {
+        "provider_tool_call_shape_invalid": 6,
+        "tool_round_budget_exceeded": 1
+      },
+      "auxiliary_review_counts": {
+        "material_issue": 3,
+        "no_material_issue_observed": 1,
+        "local_ambiguity": 2
+      }
+    }
+  }
+}

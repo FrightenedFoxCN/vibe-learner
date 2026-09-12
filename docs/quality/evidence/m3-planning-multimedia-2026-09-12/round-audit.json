@@ -1,0 +1,366 @@
+{
+  "campaigns": [
+    {
+      "id": "m3-planning-evidence-20260912",
+      "directory": "tools/model-quality/runs/planning-multimedia-20260912/planning-run",
+      "samples": 12,
+      "states": {
+        "completed": 12
+      },
+      "wire_count": 33,
+      "reported_tokens": 175250,
+      "charged_or_reserved": 175250,
+      "unknown_usage": 0,
+      "arms": {
+        "baseline": {
+          "samples": 6,
+          "states": {
+            "completed": 6
+          },
+          "wires": 17,
+          "reported_tokens": 94169,
+          "sample_latency_ms": {
+            "p50": 31650,
+            "p95": 56564
+          }
+        },
+        "evidence-first": {
+          "samples": 6,
+          "states": {
+            "completed": 6
+          },
+          "wires": 16,
+          "reported_tokens": 81081,
+          "sample_latency_ms": {
+            "p50": 17677,
+            "p95": 26067
+          }
+        }
+      }
+    },
+    {
+      "id": "m3-multimedia-pairs-20260912",
+      "directory": "tools/model-quality/runs/planning-multimedia-20260912/multimedia-run",
+      "samples": 12,
+      "states": {
+        "uncertain": 2,
+        "completed": 6,
+        "candidate_failed": 4
+      },
+      "wire_count": 35,
+      "reported_tokens": 212455,
+      "charged_or_reserved": 212455,
+      "unknown_usage": 0,
+      "arms": {
+        "baseline": {
+          "samples": 6,
+          "states": {
+            "completed": 3,
+            "candidate_failed": 2,
+            "uncertain": 1
+          },
+          "wires": 17,
+          "reported_tokens": 101380,
+          "sample_latency_ms": {
+            "p50": 11450,
+            "p95": 26026
+          }
+        },
+        "evidence-first": {
+          "samples": 6,
+          "states": {
+            "uncertain": 1,
+            "candidate_failed": 2,
+            "completed": 3
+          },
+          "wires": 18,
+          "reported_tokens": 111075,
+          "sample_latency_ms": {
+            "p50": 14847,
+            "p95": 22894
+          }
+        }
+      }
+    },
+    {
+      "id": "m3-image-coordinate-frame-20260912",
+      "directory": "tools/model-quality/runs/planning-multimedia-20260912/image-coordinate-run",
+      "samples": 4,
+      "states": {
+        "candidate_failed": 4
+      },
+      "wire_count": 9,
+      "reported_tokens": 58949,
+      "charged_or_reserved": 58949,
+      "unknown_usage": 0,
+      "arms": {
+        "baseline": {
+          "samples": 2,
+          "states": {
+            "candidate_failed": 2
+          },
+          "wires": 5,
+          "reported_tokens": 32192,
+          "sample_latency_ms": {
+            "p50": 16805,
+            "p95": 24285
+          }
+        },
+        "coordinate-frame": {
+          "samples": 2,
+          "states": {
+            "candidate_failed": 2
+          },
+          "wires": 4,
+          "reported_tokens": 26757,
+          "sample_latency_ms": {
+            "p50": 28584,
+            "p95": 41827
+          }
+        }
+      }
+    },
+    {
+      "id": "m3-role-exploration-20260912-v1",
+      "directory": "tools/model-quality/runs/m3-role-exploration-20260912-v1",
+      "samples": 12,
+      "states": {
+        "infrastructure_failed": 12
+      },
+      "wire_count": 12,
+      "reported_tokens": 0,
+      "charged_or_reserved": 1249152,
+      "unknown_usage": 12,
+      "arms": {
+        "baseline": {
+          "samples": 4,
+          "states": {
+            "infrastructure_failed": 4
+          },
+          "wires": 4,
+          "reported_tokens": 0,
+          "sample_latency_ms": {
+            "p50": 6142,
+            "p95": 9097
+          }
+        },
+        "review-revise": {
+          "samples": 4,
+          "states": {
+            "infrastructure_failed": 4
+          },
+          "wires": 4,
+          "reported_tokens": 0,
+          "sample_latency_ms": {
+            "p50": 818,
+            "p95": 6469
+          }
+        },
+        "self-revise": {
+          "samples": 4,
+          "states": {
+            "infrastructure_failed": 4
+          },
+          "wires": 4,
+          "reported_tokens": 0,
+          "sample_latency_ms": {
+            "p50": 805,
+            "p95": 6294
+          }
+        }
+      }
+    },
+    {
+      "id": "m3-role-exploration-20260912-v2",
+      "directory": "tools/model-quality/runs/m3-role-exploration-20260912-v2",
+      "samples": 12,
+      "states": {
+        "candidate_failed": 12
+      },
+      "wire_count": 13,
+      "reported_tokens": 15127,
+      "charged_or_reserved": 15127,
+      "unknown_usage": 0,
+      "arms": {
+        "baseline": {
+          "samples": 4,
+          "states": {
+            "candidate_failed": 4
+          },
+          "wires": 4,
+          "reported_tokens": 4790,
+          "sample_latency_ms": {
+            "p50": 10139,
+            "p95": 11628
+          }
+        },
+        "review-revise": {
+          "samples": 4,
+          "states": {
+            "candidate_failed": 4
+          },
+          "wires": 5,
+          "reported_tokens": 6816,
+          "sample_latency_ms": {
+            "p50": 11547,
+            "p95": 30563
+          }
+        },
+        "self-revise": {
+          "samples": 4,
+          "states": {
+            "candidate_failed": 4
+          },
+          "wires": 4,
+          "reported_tokens": 3521,
+          "sample_latency_ms": {
+            "p50": 6110,
+            "p95": 23147
+          }
+        }
+      }
+    },
+    {
+      "id": "m3-role-exploration-20260912-v4",
+      "directory": "tools/model-quality/runs/m3-role-exploration-20260912-v4",
+      "samples": 12,
+      "states": {
+        "candidate_failed": 9,
+        "completed": 3
+      },
+      "wire_count": 23,
+      "reported_tokens": 25716,
+      "charged_or_reserved": 25716,
+      "unknown_usage": 0,
+      "arms": {
+        "baseline": {
+          "samples": 4,
+          "states": {
+            "candidate_failed": 3,
+            "completed": 1
+          },
+          "wires": 4,
+          "reported_tokens": 3586,
+          "sample_latency_ms": {
+            "p50": 6054,
+            "p95": 8700
+          }
+        },
+        "review-revise": {
+          "samples": 4,
+          "states": {
+            "candidate_failed": 2,
+            "completed": 2
+          },
+          "wires": 12,
+          "reported_tokens": 15203,
+          "sample_latency_ms": {
+            "p50": 20817,
+            "p95": 71100
+          }
+        },
+        "self-revise": {
+          "samples": 4,
+          "states": {
+            "candidate_failed": 4
+          },
+          "wires": 7,
+          "reported_tokens": 6927,
+          "sample_latency_ms": {
+            "p50": 10634,
+            "p95": 14174
+          }
+        }
+      }
+    },
+    {
+      "id": "m3-role-exploration-20260912-v5",
+      "directory": "tools/model-quality/runs/m3-role-exploration-20260912-v5",
+      "samples": 12,
+      "states": {
+        "completed": 12
+      },
+      "wire_count": 28,
+      "reported_tokens": 31622,
+      "charged_or_reserved": 31622,
+      "unknown_usage": 0,
+      "arms": {
+        "baseline": {
+          "samples": 4,
+          "states": {
+            "completed": 4
+          },
+          "wires": 4,
+          "reported_tokens": 3919,
+          "sample_latency_ms": {
+            "p50": 3610,
+            "p95": 7692
+          }
+        },
+        "review-revise": {
+          "samples": 4,
+          "states": {
+            "completed": 4
+          },
+          "wires": 12,
+          "reported_tokens": 14621,
+          "sample_latency_ms": {
+            "p50": 19007,
+            "p95": 28079
+          }
+        },
+        "self-revise": {
+          "samples": 4,
+          "states": {
+            "completed": 4
+          },
+          "wires": 12,
+          "reported_tokens": 13082,
+          "sample_latency_ms": {
+            "p50": 13086,
+            "p95": 20063
+          }
+        }
+      }
+    },
+    {
+      "id": "m3-role-format-diagnostic-20260912-v3",
+      "directory": "tools/model-quality/runs/m3-role-format-diagnostic-20260912-v3",
+      "samples": 1,
+      "states": {
+        "candidate_failed": 1
+      },
+      "wire_count": 1,
+      "reported_tokens": 869,
+      "charged_or_reserved": 869,
+      "unknown_usage": 0,
+      "arms": {
+        "baseline": {
+          "samples": 1,
+          "states": {
+            "candidate_failed": 1
+          },
+          "wires": 1,
+          "reported_tokens": 869,
+          "sample_latency_ms": {
+            "p50": 5722,
+            "p95": 5722
+          }
+        }
+      }
+    }
+  ],
+  "total_samples": 77,
+  "new_wire_attempts": 154,
+  "http_statuses": {
+    "200": 142,
+    "400": 12
+  },
+  "reported_tokens": 519988,
+  "charged_or_reserved": 1769140,
+  "actual_peak_inflight": 4,
+  "ending_inflight": 0,
+  "lifetime_wire_count": 1396,
+  "lifetime_charged_or_reserved": 9661321,
+  "lifetime_unknown_usage": 45
+}

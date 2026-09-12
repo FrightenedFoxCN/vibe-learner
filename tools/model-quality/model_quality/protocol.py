@@ -1,4 +1,4 @@
-"""Frozen, synthetic-only campaign protocol. No credentials or user artifacts."""
+"""Frozen controlled research fixtures. No credentials or private user artifacts."""
 from __future__ import annotations
 
 import hashlib
@@ -28,7 +28,7 @@ class Case(Strict):
     family: Identifier
     lane: Identifier
     split: Literal['development', 'confirmation', 'reserved'] = 'development'
-    provenance: Literal['synthetic-authored']
+    provenance: Literal['synthetic-authored', 'public-licensed', 'user-provided']
     source: Annotated[str, Field(min_length=1, max_length=20000)]
     request: Annotated[str, Field(min_length=1, max_length=4000)]
     gold: Annotated[str, Field(min_length=1, max_length=20000)]
@@ -100,6 +100,9 @@ class Campaign(Strict):
     sample_deadline_seconds: Annotated[int, Field(strict=True, gt=0, le=3600)] = 180
     sample_wire_limit: Positive = 1
     max_output_tokens: Positive = 256
+    max_inline_images: Annotated[int, Field(strict=True, ge=0, le=4)] = 0
+    max_inline_image_bytes: Annotated[int, Field(strict=True, ge=1, le=524288)] = 32768
+    max_inline_image_dimension: Annotated[int, Field(strict=True, ge=1, le=2048)] = 1024
     # Operational reservation, NOT an unverified provider billing guarantee.
     input_reservation_tokens: Positive = 4096
     temperature: Annotated[float, Field(ge=0, le=1, allow_inf_nan=False)] = 0.1

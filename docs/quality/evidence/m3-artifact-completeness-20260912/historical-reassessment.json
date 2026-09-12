@@ -1,0 +1,84 @@
+{
+  "version": "role-artifact-reassessment-v1",
+  "rows": [
+    {
+      "historical_evidence": "tools/model-quality/runs/m3-role-exploration-20260912-v5/media-chart/baseline/0/storage/role-evidence.json",
+      "historical_sha256": "ca7532cb880cbb4bde3929c4ddcac4fa69431588488ec891063da2da4e66279b",
+      "historical_status": "completed",
+      "variant": "baseline",
+      "final_proposal": {
+        "facts": {
+          "maximum_label": "B",
+          "maximum_position": "center",
+          "maximum_value": "9",
+          "C_minus_A": "2"
+        },
+        "activities": [
+          5,
+          6
+        ],
+        "learner_prompt": "Look at the bar chart showing three categories (A on the left, B in the center, C on the right) with values 4, 9, and 6 respectively. First, identify which bar is the tallest, note its label and its position on the chart, and record its value. Then, subtract the value of bar A from the value of bar C. Report: the label of the maximum bar, its position (left, center, or right), its value, and the result of C minus A."
+      },
+      "delivery_check": {
+        "valid": false,
+        "error": "[Errno 2] No such file or directory: 'tools/model-quality/runs/m3-role-exploration-20260912-v5/media-chart/baseline/0/storage/delivery.json'"
+      },
+      "reassessed_status": "artifact_delivery_unproven",
+      "scope": "Original evidence unchanged; no new model calls. Historical files have no delivery manifest or actual chart. New typed-question proposal not fabricated."
+    },
+    {
+      "historical_evidence": "tools/model-quality/runs/m3-role-exploration-20260912-v5/media-chart/review-revise/0/storage/role-evidence.json",
+      "historical_sha256": "af220c52a8ff49b3e7d4b69e586c6fd948f7e5bc767cb5f91f6797820d582b87",
+      "historical_status": "completed",
+      "variant": "review-revise",
+      "final_proposal": {
+        "facts": {
+          "maximum_label": "B",
+          "maximum_position": "center",
+          "maximum_value": "9",
+          "C_minus_A": "2"
+        },
+        "activities": [
+          5,
+          6
+        ],
+        "learner_prompt": "Examine the bar chart showing three bars labeled A (left), B (center), and C (right). Read each bar's value directly from the chart. Then (1) identify which bar is tallest and explain in a sentence why that bar represents the maximum, (2) state the position (left, center, or right) and the numeric value of that tallest bar, and (3) compute the difference between bar C and bar A. Justify your reasoning rather than just listing answers."
+      },
+      "delivery_check": {
+        "valid": false,
+        "error": "[Errno 2] No such file or directory: 'tools/model-quality/runs/m3-role-exploration-20260912-v5/media-chart/review-revise/0/storage/delivery.json'"
+      },
+      "reassessed_status": "artifact_delivery_unproven",
+      "scope": "Original evidence unchanged; no new model calls. Historical files have no delivery manifest or actual chart. New typed-question proposal not fabricated."
+    },
+    {
+      "historical_evidence": "tools/model-quality/runs/m3-role-exploration-20260912-v5/media-chart/self-revise/0/storage/role-evidence.json",
+      "historical_sha256": "df1804a78ca8d15663d3cd4ceae5377ba86cb037996669ef261b1e7a7234c87b",
+      "historical_status": "completed",
+      "variant": "self-revise",
+      "final_proposal": {
+        "facts": {
+          "maximum_label": "B",
+          "maximum_position": "center",
+          "maximum_value": "9",
+          "C_minus_A": "2"
+        },
+        "activities": [
+          5,
+          6
+        ],
+        "learner_prompt": "Examine the bar chart showing three bars labeled A, B, and C, positioned left, center, and right. Read the height of each bar to determine its value. Then identify which bar represents the maximum value and state where it is positioned. Finally, calculate the difference between the value of bar C and the value of bar A."
+      },
+      "delivery_check": {
+        "valid": false,
+        "error": "[Errno 2] No such file or directory: 'tools/model-quality/runs/m3-role-exploration-20260912-v5/media-chart/self-revise/0/storage/delivery.json'"
+      },
+      "reassessed_status": "artifact_delivery_unproven",
+      "scope": "Original evidence unchanged; no new model calls. Historical files have no delivery manifest or actual chart. New typed-question proposal not fabricated."
+    }
+  ],
+  "local_fixture_delivery_check": {
+    "valid": true,
+    "error": null
+  }
+}

@@ -2,6 +2,9 @@
 from __future__ import annotations
 
 import json
+import base64
+import hashlib
+import struct
 import os
 import ssl
 import time
@@ -84,7 +87,7 @@ class MeteredTransport:
         """Meter a production JSON/tool payload without invoking SDK retries.
 
         Domain adapters may provide a deterministic response only in fake mode.
-        Models, token ceilings and text-only restrictions remain runner-owned.
+        Models, token ceilings and bounded inline-image policy remain runner-owned.
         """
         c = self.campaign
         if fake_response is not None and c.transport != 'fake':
@@ -101,16 +104,43 @@ class MeteredTransport:
         messages = payload.get('messages')
         if not isinstance(messages, list) or not messages or len(messages) > 100:
             raise GateClosed('invalid_messages')
+        images = []
         for message in messages:
             if not isinstance(message, dict) or set(message) - {'role', 'content', 'name', 'tool_call_id', 'tool_calls'} or message.get('role') not in ('system', 'user', 'assistant', 'tool'):
                 raise GateClosed('unsupported_message')
             content = message.get('content')
-            if not (isinstance(content, str) or content is None or isinstance(content, list) and all(
-                    isinstance(part, dict) and set(part) == {'type', 'text'} and part['type'] == 'text' and isinstance(part['text'], str) for part in content)):
+            if isinstance(content, list):
+                for part in content:
+                    if isinstance(part, dict) and set(part) == {'type', 'text'} and part['type'] == 'text' and isinstance(part['text'], str):
+                        continue
+                    if (message['role'] != 'user' or not isinstance(part, dict) or
+                        set(part) != {'type', 'image_url'} or part['type'] != 'image_url' or
+                        not isinstance(part['image_url'], dict) or set(part['image_url']) != {'url'}):
+                        raise GateClosed('unsupported_image_part')
+                    url = part['image_url']['url']
+                    prefix = 'data:image/png;base64,'
+                    encoded_limit = len(prefix) + 4 * ((c.max_inline_image_bytes + 2) // 3)
+                    if not isinstance(url, str) or not url.startswith(prefix) or len(url) > encoded_limit:
+                        raise GateClosed('only_bounded_inline_png_supported')
+                    try:
+                        raw_image = base64.b64decode(url[len(prefix):], validate=True)
+                    except (ValueError, base64.binascii.Error):
+                        raise GateClosed('invalid_inline_png') from None
+                    if (len(raw_image) > c.max_inline_image_bytes or len(raw_image) < 33 or
+                        raw_image[:8] != b'\x89PNG\r\n\x1a\n' or raw_image[8:16] != b'\x00\x00\x00\rIHDR'):
+                        raise GateClosed('invalid_inline_png')
+                    width, height = struct.unpack('>II', raw_image[16:24])
+                    if not 0 < width <= c.max_inline_image_dimension or not 0 < height <= c.max_inline_image_dimension:
+                        raise GateClosed('inline_png_dimensions_exceeded')
+                    images.append({'sha256': hashlib.sha256(raw_image).hexdigest(), 'bytes': len(raw_image),
+                                   'width': width, 'height': height})
+                    if len(images) > c.max_inline_images:
+                        raise GateClosed('inline_image_limit_exceeded')
+            elif not (isinstance(content, str) or content is None):
                 raise GateClosed('only_text_and_tool_messages_supported')
         payload = {**payload, 'thinking': {'type': c.thinking}, 'reasoning_split': True, 'stream': False}
         data = json.dumps(payload, ensure_ascii=False).encode()
-        # Text-only envelope guard; this is not a vendor token/billing bound.
+        # Includes base64 bytes. This is not a vendor image token/billing bound.
         if len(data) > c.input_reservation_tokens:
             raise GateClosed('input_envelope_exceeds_reservation')
         if c.transport == 'minimax' and not os.environ.get('K3_API_KEY', '').strip():
@@ -124,7 +154,7 @@ class MeteredTransport:
             except WaitForCapacity:
                 time.sleep(0.1)
         start = time.monotonic()
-        meta = {'call_kind': call_kind, 'image_count': 0, 'tool_count': len(payload.get('tools', [])),
+        meta = {'call_kind': call_kind, 'image_count': len(images), 'images': images, 'tool_count': len(payload.get('tools', [])),
                 'offered_tools': [t['function']['name'] for t in payload.get('tools', []) if isinstance(t, dict) and isinstance(t.get('function'), dict) and isinstance(t['function'].get('name'), str)],
                 'request_bytes': len(data), 'max_tokens': payload['max_tokens'], 'temperature': payload.get('temperature'),
                 'thinking': c.thinking, 'http_status': None,

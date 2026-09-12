@@ -1,0 +1,32 @@
+{
+  "version": "m3-planning-multimedia-delivery-v1",
+  "evidence_export": {
+    "path": "/Users/ffox/vibe-learner/docs/quality/evidence/m3-planning-multimedia-2026-09-12/evidence.zip",
+    "sha256": "75549ccfb2139f5dfd6ff25a7cbdf1b7b2f36650fb158d204a7f69918d4ca69c",
+    "files": 162
+  },
+  "summary": {
+    "total_samples": 77,
+    "new_wire_attempts": 154,
+    "http_statuses": {
+      "200": 142,
+      "400": 12
+    },
+    "reported_tokens": 519988,
+    "charged_or_reserved": 1769140,
+    "actual_peak_inflight": 4,
+    "ending_inflight": 0,
+    "lifetime_wire_count": 1396,
+    "lifetime_charged_or_reserved": 9661321,
+    "lifetime_unknown_usage": 45
+  },
+  "checks": {
+    "lab_tests": 38,
+    "domain_integration_tests": 18,
+    "tool_manifest_image_tests": 14,
+    "production_release_gate": "not_run; experiment-only changes",
+    "independent_revalidation": "same-task separate Codex agent, not external blind review"
+  },
+  "production_changed": false,
+  "default_model_changed": false
+}

@@ -1,0 +1,199 @@
+{
+  "version": "bridge-artifact-repair-audit-v1",
+  "scope": "9 new same-source acceptance samples; preserve historic/current raw failures, no before-after causal quality claim",
+  "samples": [
+    {
+      "lane": "planning",
+      "case": "equations",
+      "variant": "baseline",
+      "raw_state": "completed",
+      "metrics": {
+        "committed": true,
+        "page_ranges_valid": true,
+        "readback_equal": true,
+        "recovery_no_provider_calls": true,
+        "restart_equal": true,
+        "v3_generation_committed": true
+      },
+      "wire_normalization": {
+        "contract": "production-completed-tool-index-normalization",
+        "normalized_tool_indexes": 0
+      }
+    },
+    {
+      "lane": "planning",
+      "case": "equations",
+      "variant": "evidence-first",
+      "raw_state": "completed",
+      "metrics": {
+        "committed": true,
+        "page_ranges_valid": true,
+        "readback_equal": true,
+        "recovery_no_provider_calls": true,
+        "restart_equal": true,
+        "v3_generation_committed": true
+      },
+      "wire_normalization": {
+        "contract": "production-completed-tool-index-normalization",
+        "normalized_tool_indexes": 0
+      }
+    },
+    {
+      "lane": "multimedia",
+      "case": "image-box",
+      "variant": "evidence-first",
+      "raw_state": "completed",
+      "metrics": {
+        "attachment_committed": true,
+        "box_localization_pass": true,
+        "committed": true,
+        "overlay_persisted": true,
+        "projection_effect_committed": true,
+        "projection_present": true,
+        "readback_equal": true,
+        "recovery_no_provider_calls": true,
+        "required_tools_succeeded": true,
+        "restart_equal": true,
+        "typed_effect_batch": true,
+        "v3_committed": true
+      },
+      "wire_normalization": {
+        "contract": "production-completed-tool-index-normalization",
+        "normalized_tool_indexes": 2
+      }
+    },
+    {
+      "lane": "multimedia",
+      "case": "multiple-choice",
+      "variant": "baseline",
+      "raw_state": "uncertain",
+      "metrics": {
+        "answer_attempt_correctly_graded": false,
+        "answer_restart_equal": false,
+        "committed": false,
+        "grading_gold_correct": false,
+        "no_explicit_answer_leak": false,
+        "public_grading_fields_absent": false,
+        "question_present": false,
+        "readback_equal": false,
+        "recovery_no_provider_calls": true,
+        "required_tools_succeeded": false,
+        "restart_equal": false,
+        "typed_effect_batch": false,
+        "v3_committed": false
+      },
+      "wire_normalization": {
+        "contract": "production-completed-tool-index-normalization",
+        "normalized_tool_indexes": 1
+      }
+    },
+    {
+      "lane": "multimedia",
+      "case": "multiple-choice",
+      "variant": "evidence-first",
+      "raw_state": "candidate_failed",
+      "metrics": {
+        "answer_attempt_correctly_graded": true,
+        "answer_restart_equal": true,
+        "committed": true,
+        "grading_gold_correct": false,
+        "no_explicit_answer_leak": true,
+        "public_grading_fields_absent": true,
+        "question_present": true,
+        "readback_equal": true,
+        "recovery_no_provider_calls": true,
+        "required_tools_succeeded": true,
+        "restart_equal": true,
+        "typed_effect_batch": true,
+        "v3_committed": true
+      },
+      "wire_normalization": {
+        "contract": "production-completed-tool-index-normalization",
+        "normalized_tool_indexes": 1
+      },
+      "assisted_review": {
+        "correct_option_A_contains_x_equals_4": true,
+        "raw_grading_gold_correct_false_due_to_exact_regex_rejecting_explanatory_option_text": true,
+        "successful_answer_A_and_restart_verified": true,
+        "independent_quality_certification": false
+      }
+    },
+    {
+      "lane": "multimedia",
+      "case": "image-box",
+      "variant": "baseline",
+      "raw_state": "candidate_failed",
+      "metrics": {
+        "attachment_committed": true,
+        "box_localization_pass": false,
+        "committed": true,
+        "overlay_persisted": true,
+        "projection_effect_committed": true,
+        "projection_present": true,
+        "readback_equal": true,
+        "recovery_no_provider_calls": true,
+        "required_tools_succeeded": true,
+        "restart_equal": true,
+        "typed_effect_batch": true,
+        "v3_committed": true
+      },
+      "wire_normalization": {
+        "contract": "production-completed-tool-index-normalization",
+        "normalized_tool_indexes": 2
+      }
+    },
+    {
+      "lane": "role-artifacts",
+      "case": "media-chart",
+      "variant": "baseline",
+      "raw_state": "completed",
+      "metrics": {
+        "artifact_delivery_valid": true,
+        "facts_exact": true,
+        "forbidden_answer_strings_absent": true,
+        "minutes_valid": true,
+        "prompt_present": true,
+        "schema_valid": true
+      },
+      "wire_normalization": null
+    },
+    {
+      "lane": "role-artifacts",
+      "case": "media-chart",
+      "variant": "self-revise",
+      "raw_state": "completed",
+      "metrics": {
+        "artifact_delivery_valid": true,
+        "facts_exact": true,
+        "forbidden_answer_strings_absent": true,
+        "minutes_valid": true,
+        "prompt_present": true,
+        "schema_valid": true
+      },
+      "wire_normalization": null
+    },
+    {
+      "lane": "role-artifacts",
+      "case": "media-chart",
+      "variant": "review-revise",
+      "raw_state": "completed",
+      "metrics": {
+        "artifact_delivery_valid": true,
+        "facts_exact": true,
+        "forbidden_answer_strings_absent": true,
+        "minutes_valid": true,
+        "prompt_present": true,
+        "schema_valid": true
+      },
+      "wire_normalization": null
+    }
+  ],
+  "wire_count": 22,
+  "reported_tokens": 98724,
+  "live_normalized_tool_indexes": 6,
+  "unresolved": [
+    "one multiple-choice final payload uncertain",
+    "baseline image bounding box failed localization"
+  ],
+  "grade_correction": "One successful multiple-choice sample was raw candidate_failed because explanatory correct option text does not match the numeric-only regex; source and answer receipt show correct x=4."
+}

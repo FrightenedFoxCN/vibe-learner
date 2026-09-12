@@ -1,8 +1,6 @@
 # 模型质量待办
 
-归属根 [TODO](../../TODO.md) 的 `QG-MODEL-QUALITY-001`；旧 `QG-002` / `web-strict-decode-adversarial-v1` 不变。历史真实模型实测已在第 121 轮后停止；2026-09-12 新增[ACL 2025/2026 与 agentic design 研究](agentic-design-research-2026-09-12.md)、[首日 2000M tokens 高并行计划](m3-parallel-exploration-2026-09-12.md)与[当前版本本地诊断](evidence/agentic-preflight-local-2026-09-12.json)，随后已新增[独立可复用运行器](../../tools/model-quality/README.md)及[4 请求 M3 基础设施预检](evidence/m3-parallel-infrastructure-preflight-2026-09-12.json)；随后[自动扩容和 Study/Tavern 领域接入验收](evidence/m3-autoscale-domain-adapters-2026-09-12.json)已完成，Study 发现未写记忆却声称已保存的失败；本次重新授权后已完成[三条优先 lane 并行实验与交接](m3-parallel-results-2026-09-12.md)：284 个真实样本、698 次 M3 请求，原文绑定候选 24/24；独立质量确认仍未完成，也没有持续自动化。首日优先 MQ-01/02/03，MQ-10 贯穿；额度是上限，按足以决策的小批执行。生产已采用项见[正式文档](../model-runtime-quality.md)，接手方法见[研究摘要](research-summary.md)。
-
-本次[真实请求容量测量](evidence/m3-live-concurrency-capacity-2026-09-12.json)使用生产 Tavern prompt/schema 与重复合成短样本：4 并发两个有效窗口共 201 请求，全部 HTTP 200，约 96 请求/分钟，窗口 P95 为 3.69–4.03 秒；8 并发约 47 秒内 147 请求出现 1 次 HTTP 429，已停发，未测 16/32/64。供应商硬限制仍未知，429 不能区分并发、RPM 或 TPM；该结果不外推到长 Study/Planning 或图片。前两次仪器修正前的 156 请求窗口不足，保留成本与失败分母，不计为有效容量证据。该轮结束时保留 provider_overload；本次经审计恢复并降低到固定 4 并发/60 RPM，最终累计账本 1,242 次、7,892,181 charged-or-reserved、0 在途。历史限流/未知预留保留，质量门不变。
+归属根 [TODO](../../TODO.md) 的 `QG-MODEL-QUALITY-001`；旧 `QG-002` / `web-strict-decode-adversarial-v1` 不变。已完成的实验、容量测量及修复记录见[阶段归档](completed-work-2026-09-12.md)。生产已采用项见[正式文档](../model-runtime-quality.md)，接手方法见[研究摘要](research-summary.md)。当前没有持续自动化，不自动继续真实模型调用。
 
 每项关闭都需保留失败分母、生产实际配置和 commit/read-back 证据；schema、提交、语义、人格、渲染、成本分别评分。独立复核前不关闭总质量门。
 
@@ -21,4 +19,10 @@
 
 所有历史上下文见[保留研究证据](evidence/research-notes.md)。其中旧版问题已修复的部分用于解释混合实验，不能重复挂为新工程缺陷；若需处理，应先在当前版本复现。
 
-2026-09-12 生产候选实现：独立引用分词与显式原文来源绑定已落地工作区，见 [实现与验收](m3-production-grounding-2026-09-12.md)。发布门禁与 3 例真实 SDK smoke 通过；不据此关闭独立质量/正式留出/平台验收票。
+## 当前修复边界与剩余验收
+
+- MQ-04/05：Planning 强制取证未证明稳定内容收益；历史工具形状失败混入 Bridge 投影差异，不能直接归因于生产模型。Bridge 修复与有限实测已完成，仍需来源、时长与独立内容复核。
+- MQ-07/09：实验级图表完整交付、双题约束和浏览器显示检查已完成；图片定位仍有失败，生产 Study UI、通用附件和 OCR 接入未因此通过。
+- MQ-10：保留历史失败分母和派生重审；同任务代码复核与小批实测不替代独立留出验收。图表旧样本缺交付的口径已修正，不再将其列为尚未补齐的实验基础设施。
+
+对应证据与已完成范围见[阶段归档](completed-work-2026-09-12.md)。

@@ -1,0 +1,494 @@
+{
+  "version": "m3-multimedia-audit-v1",
+  "source_families": 1,
+  "scope": "Synthetic same-source development diagnostics, not independent heldout quality or native UI acceptance",
+  "campaigns": [
+    {
+      "campaign": "m3-multimedia-pairs-20260912",
+      "states": {
+        "uncertain": 2,
+        "completed": 6,
+        "candidate_failed": 4
+      },
+      "wire_count": 35,
+      "tokens": 212455,
+      "unknown_usage_requests": 0,
+      "wire_image_requests": 14,
+      "wire_latency_ms": {
+        "50": 2903,
+        "95": 11475
+      },
+      "samples": [
+        {
+          "case": "multiple-choice",
+          "variant": "evidence-first",
+          "repetition": 0,
+          "state": "uncertain",
+          "metrics": {
+            "committed": false,
+            "readback_equal": false,
+            "typed_effect_batch": false,
+            "v3_committed": false,
+            "required_tools_succeeded": false,
+            "question_present": false,
+            "public_grading_fields_absent": false,
+            "no_explicit_answer_leak": false,
+            "grading_gold_correct": false,
+            "restart_equal": false,
+            "answer_attempt_correctly_graded": false,
+            "answer_restart_equal": false,
+            "recovery_no_provider_calls": true
+          },
+          "localization": null,
+          "tool_errors": [],
+          "receipt_status": "uncertain",
+          "error_code": "study_chat_uncertain_chat_model_invalid_payload"
+        },
+        {
+          "case": "pdf-highlight",
+          "variant": "baseline",
+          "repetition": 0,
+          "state": "completed",
+          "metrics": {
+            "committed": true,
+            "readback_equal": true,
+            "typed_effect_batch": true,
+            "v3_committed": true,
+            "required_tools_succeeded": true,
+            "projection_present": true,
+            "projection_effect_committed": true,
+            "overlay_persisted": true,
+            "attachment_committed": true,
+            "restart_equal": true,
+            "recovery_no_provider_calls": true
+          },
+          "localization": null,
+          "tool_errors": [],
+          "receipt_status": "committed",
+          "error_code": ""
+        },
+        {
+          "case": "image-box",
+          "variant": "evidence-first",
+          "repetition": 0,
+          "state": "candidate_failed",
+          "metrics": {
+            "committed": true,
+            "readback_equal": true,
+            "typed_effect_batch": true,
+            "v3_committed": true,
+            "required_tools_succeeded": true,
+            "projection_present": true,
+            "projection_effect_committed": true,
+            "overlay_persisted": true,
+            "box_localization_pass": false,
+            "attachment_committed": true,
+            "restart_equal": true,
+            "recovery_no_provider_calls": true
+          },
+          "localization": {
+            "target_coverage": 0.0,
+            "iou": 0.0,
+            "minimum_coverage": 0.8,
+            "minimum_iou": 0.45
+          },
+          "tool_errors": [],
+          "receipt_status": "committed",
+          "error_code": ""
+        },
+        {
+          "case": "image-box",
+          "variant": "baseline",
+          "repetition": 0,
+          "state": "candidate_failed",
+          "metrics": {
+            "committed": true,
+            "readback_equal": true,
+            "typed_effect_batch": true,
+            "v3_committed": true,
+            "required_tools_succeeded": true,
+            "projection_present": true,
+            "projection_effect_committed": true,
+            "overlay_persisted": true,
+            "box_localization_pass": false,
+            "attachment_committed": true,
+            "restart_equal": true,
+            "recovery_no_provider_calls": true
+          },
+          "localization": {
+            "target_coverage": 0.0,
+            "iou": 0.0,
+            "minimum_coverage": 0.8,
+            "minimum_iou": 0.45
+          },
+          "tool_errors": [],
+          "receipt_status": "committed",
+          "error_code": ""
+        },
+        {
+          "case": "pdf-read",
+          "variant": "baseline",
+          "repetition": 0,
+          "state": "candidate_failed",
+          "metrics": {
+            "committed": true,
+            "readback_equal": true,
+            "typed_effect_batch": true,
+            "v3_committed": true,
+            "required_tools_succeeded": false,
+            "projection_present": true,
+            "projection_effect_committed": true,
+            "attachment_committed": true,
+            "restart_equal": true,
+            "recovery_no_provider_calls": true
+          },
+          "localization": null,
+          "tool_errors": [],
+          "receipt_status": "committed",
+          "error_code": ""
+        },
+        {
+          "case": "image-clear",
+          "variant": "evidence-first",
+          "repetition": 0,
+          "state": "candidate_failed",
+          "metrics": {
+            "committed": true,
+            "readback_equal": true,
+            "typed_effect_batch": true,
+            "v3_committed": true,
+            "required_tools_succeeded": false,
+            "projection_present": false,
+            "projection_effect_committed": false,
+            "overlays_cleared": true,
+            "attachment_committed": true,
+            "restart_equal": true,
+            "recovery_no_provider_calls": true
+          },
+          "localization": null,
+          "tool_errors": [
+            {
+              "tool": "project_uploaded_image",
+              "error": "provider_tool_call_shape_invalid"
+            },
+            {
+              "tool": "project_uploaded_image",
+              "error": "provider_tool_call_shape_invalid"
+            },
+            {
+              "tool": "annotate_projected_image_region",
+              "error": "provider_tool_call_shape_invalid"
+            },
+            {
+              "tool": "clear_projected_image_overlays",
+              "error": "provider_tool_call_shape_invalid"
+            }
+          ],
+          "receipt_status": "committed",
+          "error_code": ""
+        },
+        {
+          "case": "image-clear",
+          "variant": "baseline",
+          "repetition": 0,
+          "state": "completed",
+          "metrics": {
+            "committed": true,
+            "readback_equal": true,
+            "typed_effect_batch": true,
+            "v3_committed": true,
+            "required_tools_succeeded": true,
+            "projection_present": true,
+            "projection_effect_committed": true,
+            "overlays_cleared": true,
+            "attachment_committed": true,
+            "restart_equal": true,
+            "recovery_no_provider_calls": true
+          },
+          "localization": null,
+          "tool_errors": [],
+          "receipt_status": "committed",
+          "error_code": ""
+        },
+        {
+          "case": "fill-blank",
+          "variant": "evidence-first",
+          "repetition": 0,
+          "state": "completed",
+          "metrics": {
+            "committed": true,
+            "readback_equal": true,
+            "typed_effect_batch": true,
+            "v3_committed": true,
+            "required_tools_succeeded": true,
+            "question_present": true,
+            "public_grading_fields_absent": true,
+            "no_explicit_answer_leak": true,
+            "grading_gold_correct": true,
+            "restart_equal": true,
+            "answer_attempt_correctly_graded": true,
+            "answer_restart_equal": true,
+            "recovery_no_provider_calls": true
+          },
+          "localization": null,
+          "tool_errors": [],
+          "receipt_status": "committed",
+          "error_code": ""
+        },
+        {
+          "case": "pdf-read",
+          "variant": "evidence-first",
+          "repetition": 0,
+          "state": "completed",
+          "metrics": {
+            "committed": true,
+            "readback_equal": true,
+            "typed_effect_batch": true,
+            "v3_committed": true,
+            "required_tools_succeeded": true,
+            "projection_present": true,
+            "projection_effect_committed": true,
+            "attachment_committed": true,
+            "restart_equal": true,
+            "recovery_no_provider_calls": true
+          },
+          "localization": null,
+          "tool_errors": [],
+          "receipt_status": "committed",
+          "error_code": ""
+        },
+        {
+          "case": "fill-blank",
+          "variant": "baseline",
+          "repetition": 0,
+          "state": "completed",
+          "metrics": {
+            "committed": true,
+            "readback_equal": true,
+            "typed_effect_batch": true,
+            "v3_committed": true,
+            "required_tools_succeeded": true,
+            "question_present": true,
+            "public_grading_fields_absent": true,
+            "no_explicit_answer_leak": true,
+            "grading_gold_correct": true,
+            "restart_equal": true,
+            "answer_attempt_correctly_graded": true,
+            "answer_restart_equal": true,
+            "recovery_no_provider_calls": true
+          },
+          "localization": null,
+          "tool_errors": [],
+          "receipt_status": "committed",
+          "error_code": ""
+        },
+        {
+          "case": "multiple-choice",
+          "variant": "baseline",
+          "repetition": 0,
+          "state": "uncertain",
+          "metrics": {
+            "committed": false,
+            "readback_equal": false,
+            "typed_effect_batch": false,
+            "v3_committed": false,
+            "required_tools_succeeded": false,
+            "question_present": false,
+            "public_grading_fields_absent": false,
+            "no_explicit_answer_leak": false,
+            "grading_gold_correct": false,
+            "restart_equal": false,
+            "answer_attempt_correctly_graded": false,
+            "answer_restart_equal": false,
+            "recovery_no_provider_calls": true
+          },
+          "localization": null,
+          "tool_errors": [],
+          "receipt_status": "uncertain",
+          "error_code": "study_chat_uncertain_chat_model_invalid_payload"
+        },
+        {
+          "case": "pdf-highlight",
+          "variant": "evidence-first",
+          "repetition": 0,
+          "state": "completed",
+          "metrics": {
+            "committed": true,
+            "readback_equal": true,
+            "typed_effect_batch": true,
+            "v3_committed": true,
+            "required_tools_succeeded": true,
+            "projection_present": true,
+            "projection_effect_committed": true,
+            "overlay_persisted": true,
+            "attachment_committed": true,
+            "restart_equal": true,
+            "recovery_no_provider_calls": true
+          },
+          "localization": null,
+          "tool_errors": [],
+          "receipt_status": "committed",
+          "error_code": ""
+        }
+      ]
+    },
+    {
+      "campaign": "m3-image-coordinate-frame-20260912",
+      "states": {
+        "candidate_failed": 4
+      },
+      "wire_count": 9,
+      "tokens": 58949,
+      "unknown_usage_requests": 0,
+      "wire_image_requests": 9,
+      "wire_latency_ms": {
+        "50": 4192,
+        "95": 13169
+      },
+      "samples": [
+        {
+          "case": "image-box",
+          "variant": "coordinate-frame",
+          "repetition": 1,
+          "state": "candidate_failed",
+          "metrics": {
+            "committed": true,
+            "readback_equal": true,
+            "typed_effect_batch": true,
+            "v3_committed": true,
+            "required_tools_succeeded": true,
+            "projection_present": true,
+            "projection_effect_committed": true,
+            "overlay_persisted": true,
+            "box_localization_pass": false,
+            "attachment_committed": true,
+            "restart_equal": true,
+            "recovery_no_provider_calls": true
+          },
+          "localization": {
+            "target_coverage": 0.6118388859827251,
+            "iou": 0.2562121837302349,
+            "minimum_coverage": 0.8,
+            "minimum_iou": 0.45
+          },
+          "tool_errors": [],
+          "receipt_status": "committed",
+          "error_code": ""
+        },
+        {
+          "case": "image-box",
+          "variant": "baseline",
+          "repetition": 1,
+          "state": "candidate_failed",
+          "metrics": {
+            "committed": true,
+            "readback_equal": true,
+            "typed_effect_batch": true,
+            "v3_committed": true,
+            "required_tools_succeeded": false,
+            "projection_present": false,
+            "projection_effect_committed": false,
+            "overlay_persisted": false,
+            "box_localization_pass": false,
+            "attachment_committed": true,
+            "restart_equal": true,
+            "recovery_no_provider_calls": true
+          },
+          "localization": {
+            "target_coverage": 0,
+            "iou": 0,
+            "minimum_coverage": 0.8,
+            "minimum_iou": 0.45
+          },
+          "tool_errors": [
+            {
+              "tool": "project_uploaded_image",
+              "error": "provider_tool_call_shape_invalid"
+            },
+            {
+              "tool": "annotate_projected_image_region",
+              "error": "provider_tool_call_shape_invalid"
+            },
+            {
+              "tool": "project_uploaded_image",
+              "error": "provider_tool_call_shape_invalid"
+            }
+          ],
+          "receipt_status": "committed",
+          "error_code": ""
+        },
+        {
+          "case": "image-box",
+          "variant": "baseline",
+          "repetition": 0,
+          "state": "candidate_failed",
+          "metrics": {
+            "committed": true,
+            "readback_equal": true,
+            "typed_effect_batch": true,
+            "v3_committed": true,
+            "required_tools_succeeded": true,
+            "projection_present": true,
+            "projection_effect_committed": true,
+            "overlay_persisted": true,
+            "box_localization_pass": false,
+            "attachment_committed": true,
+            "restart_equal": true,
+            "recovery_no_provider_calls": true
+          },
+          "localization": {
+            "target_coverage": 0.0,
+            "iou": 0.0,
+            "minimum_coverage": 0.8,
+            "minimum_iou": 0.45
+          },
+          "tool_errors": [],
+          "receipt_status": "committed",
+          "error_code": ""
+        },
+        {
+          "case": "image-box",
+          "variant": "coordinate-frame",
+          "repetition": 0,
+          "state": "candidate_failed",
+          "metrics": {
+            "committed": true,
+            "readback_equal": true,
+            "typed_effect_batch": true,
+            "v3_committed": true,
+            "required_tools_succeeded": false,
+            "projection_present": false,
+            "projection_effect_committed": false,
+            "overlay_persisted": false,
+            "box_localization_pass": false,
+            "attachment_committed": true,
+            "restart_equal": true,
+            "recovery_no_provider_calls": true
+          },
+          "localization": {
+            "target_coverage": 0,
+            "iou": 0,
+            "minimum_coverage": 0.8,
+            "minimum_iou": 0.45
+          },
+          "tool_errors": [
+            {
+              "tool": "project_uploaded_image",
+              "error": "provider_tool_call_shape_invalid"
+            },
+            {
+              "tool": "annotate_projected_image_region",
+              "error": "provider_tool_call_shape_invalid"
+            }
+          ],
+          "receipt_status": "committed",
+          "error_code": ""
+        }
+      ]
+    }
+  ],
+  "resume": {
+    "multimedia": "rejected_source_change_zero_new_wire",
+    "image_coordinate": "accepted_terminal_states_unchanged_zero_new_wire"
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "version": "role-chart-delivery-v1",
+  "source_sha256": "7f22176638c1a04c1f9432afffeab985e0e514041bc75c27beaf1c8b601e7ac7",
+  "prompt": "Using the attached chart, which category has the largest value?\nUsing the attached chart, calculate the value of C minus A.",
+  "questions": [
+    {
+      "operation": "maximum",
+      "labels": [
+        "A",
+        "B",
+        "C"
+      ]
+    },
+    {
+      "operation": "difference",
+      "labels": [
+        "C",
+        "A"
+      ]
+    }
+  ],
+  "chart_path": "chart.svg",
+  "chart_sha256": "78c263b3cbf1933199619c6925c98f6700826ceaed45625e5dd903885640865d",
+  "data_path": "chart-data.json",
+  "data_sha256": "9c4c3c71ae111a69238812277b1922b9309a510bd77407066c756c7ae5f90c74",
+  "page_path": "learner.html",
+  "page_sha256": "cd4a98760720cd003a2c5abb2069ea46d70b64bf610259bae338ca0523b04dbc"
+}

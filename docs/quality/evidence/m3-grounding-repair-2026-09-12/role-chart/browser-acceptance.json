@@ -1,0 +1,62 @@
+{
+  "version": "role-chart-browser-acceptance-v1",
+  "scope": "Actual Chromium rendering of exported local delivery HTML; not production Study UI acceptance",
+  "source": "/Users/ffox/vibe-learner/tools/model-quality/runs/m3-grounding-repair-20260912/role-artifacts-run/media-chart/baseline/0/storage",
+  "browser": "153.0.8010.12",
+  "dom": {
+    "title": "Chart reading activity",
+    "paragraphs": [
+      "Using the attached chart, which category has the largest value?",
+      "Using the attached chart, calculate the value of C minus A."
+    ],
+    "image": [
+      {
+        "src": "chart.svg",
+        "complete": true,
+        "naturalWidth": 310,
+        "naturalHeight": 310
+      }
+    ],
+    "bodyText": "Chart reading activity\n\nUsing the attached chart, which category has the largest value?\n\nUsing the attached chart, calculate the value of C minus A.",
+    "hiddenFields": 0
+  },
+  "requests": [
+    {
+      "url": "/learner.html",
+      "status": 200
+    },
+    {
+      "url": "/chart.svg",
+      "status": 200
+    }
+  ],
+  "checks": {
+    "image_loaded": true,
+    "two_expected_questions_visible": true,
+    "no_grading_fields": true,
+    "no_hidden_grading_fields": true,
+    "no_page_errors": true
+  },
+  "passed": true,
+  "files": [
+    {
+      "name": "learner.html",
+      "sha256": "cd4a98760720cd003a2c5abb2069ea46d70b64bf610259bae338ca0523b04dbc"
+    },
+    {
+      "name": "chart.svg",
+      "sha256": "78c263b3cbf1933199619c6925c98f6700826ceaed45625e5dd903885640865d"
+    }
+  ],
+  "screenshot": "browser.png",
+  "visual_review": {
+    "performed": true,
+    "observation": "Actual HTML screenshot shows A/B/C bars labelled 4/9/6 and both complete questions, legible without overlaps; no answer key or grading fields visible. Numeric chart data is the intended public input, not an answer-key leak."
+  },
+  "cleanup": {
+    "temporary_server_bind": "127.0.0.1",
+    "browser_closed": true,
+    "server_closed": true,
+    "verification": "Script awaited browser.close and server.close, then exited 0."
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "kind": "bar-chart-delivery-v1",
+  "source_sha256": "f89b4587f4372f0cfb6d9b000b086e45e87353b944d0717a9dfec41be72025ff",
+  "source": {
+    "kind": "bar-chart-source-v1",
+    "labels": [
+      "A",
+      "B",
+      "C"
+    ],
+    "values": [
+      4,
+      9,
+      6
+    ]
+  },
+  "required_questions": [
+    {
+      "operation": "maximum",
+      "labels": [
+        "A",
+        "B",
+        "C"
+      ]
+    },
+    {
+      "operation": "difference",
+      "labels": [
+        "C",
+        "A"
+      ]
+    }
+  ]
+}
