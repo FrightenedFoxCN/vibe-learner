@@ -1,0 +1,110 @@
+[
+  {
+    "case": "unpunctuated_chinese",
+    "variant": "baseline",
+    "input_chars": 2422,
+    "excerpt_chars": 800,
+    "expected_fragment": "南门",
+    "retained": false,
+    "excerpt": "复习地点青石暗号晴鸟整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材..."
+  },
+  {
+    "case": "unpunctuated_chinese",
+    "variant": "candidate",
+    "input_chars": 2422,
+    "excerpt_chars": 800,
+    "expected_fragment": "南门",
+    "retained": false,
+    "excerpt": "复习地点青石暗号晴鸟整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材..."
+  },
+  {
+    "case": "oversized_preceding_sentence",
+    "variant": "baseline",
+    "input_chars": 2427,
+    "excerpt_chars": 800,
+    "expected_fragment": "南门",
+    "retained": false,
+    "excerpt": "复习地点青石，暗号晴鸟。整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整..."
+  },
+  {
+    "case": "oversized_preceding_sentence",
+    "variant": "candidate",
+    "input_chars": 2427,
+    "excerpt_chars": 74,
+    "expected_fragment": "南门",
+    "retained": true,
+    "excerpt": "原文节选（位置为规范化文本字符，未覆盖全文）：\n[字符0:12] 复习地点青石，暗号晴鸟。\n[字符2413:2427] 地点改为南门，暗号全部撤销。"
+  },
+  {
+    "case": "cross_language_query",
+    "variant": "baseline",
+    "input_chars": 4156,
+    "excerpt_chars": 800,
+    "expected_fragment": "Bouleau",
+    "retained": false,
+    "excerpt": "Le lieu est la salle Pierre-Verte. Le mot de passe est Oiseau. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de ca..."
+  },
+  {
+    "case": "cross_language_query",
+    "variant": "candidate",
+    "input_chars": 4156,
+    "excerpt_chars": 800,
+    "expected_fragment": "Bouleau",
+    "retained": false,
+    "excerpt": "Le lieu est la salle Pierre-Verte. Le mot de passe est Oiseau. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de ca..."
+  },
+  {
+    "case": "same_language_control",
+    "variant": "baseline",
+    "input_chars": 4156,
+    "excerpt_chars": 785,
+    "expected_fragment": "Bouleau",
+    "retained": true,
+    "excerpt": "原文节选（位置为规范化文本字符，未覆盖全文）：\n[字符0:622] Le lieu est la salle Pierre-Verte. Le mot de passe est Oiseau. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul.\n[字符4042:4156]  Exercice de calcul.Correction : le lieu devient la salle Bouleau. Le mot de passe est révoqué, sans remplacement."
+  },
+  {
+    "case": "same_language_control",
+    "variant": "candidate",
+    "input_chars": 4156,
+    "excerpt_chars": 785,
+    "expected_fragment": "Bouleau",
+    "retained": true,
+    "excerpt": "原文节选（位置为规范化文本字符，未覆盖全文）：\n[字符0:622] Le lieu est la salle Pierre-Verte. Le mot de passe est Oiseau. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul.\n[字符4042:4156]  Exercice de calcul.Correction : le lieu devient la salle Bouleau. Le mot de passe est révoqué, sans remplacement."
+  },
+  {
+    "case": "nearby_archive_qualification",
+    "variant": "baseline",
+    "input_chars": 2444,
+    "excerpt_chars": 800,
+    "expected_fragment": "不恢复约定",
+    "retained": false,
+    "excerpt": "地点白桦，暗号已撤销。整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理..."
+  },
+  {
+    "case": "nearby_archive_qualification",
+    "variant": "candidate",
+    "input_chars": 2444,
+    "excerpt_chars": 91,
+    "expected_fragment": "不恢复约定",
+    "retained": true,
+    "excerpt": "原文节选（位置为规范化文本字符，未覆盖全文）：\n[字符0:11] 地点白桦，暗号已撤销。\n[字符2412:2444] 以下只引用旧记录，不恢复约定。地点青石，暗号晴鸟。归档引用完毕。"
+  },
+  {
+    "case": "long_qualifier_before_quote",
+    "variant": "baseline",
+    "input_chars": 2436,
+    "excerpt_chars": 800,
+    "expected_fragment": "不是真实约定",
+    "retained": true,
+    "excerpt": "地点白桦，暗号已撤销。以下只是小说，不是真实约定，整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料..."
+  },
+  {
+    "case": "long_qualifier_before_quote",
+    "variant": "candidate",
+    "input_chars": 2436,
+    "excerpt_chars": 69,
+    "expected_fragment": "不是真实约定",
+    "retained": false,
+    "excerpt": "原文节选（位置为规范化文本字符，未覆盖全文）：\n[字符0:11] 地点白桦，暗号已撤销。\n[字符2426:2436] 地点青石，暗号晴鸟。"
+  }
+]
