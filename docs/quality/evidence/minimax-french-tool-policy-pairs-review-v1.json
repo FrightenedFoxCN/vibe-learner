@@ -1,0 +1,57 @@
+{
+  "scope": "Maintainer review, omit versus retained tools with none after three tool-response rounds",
+  "cells": [
+    {
+      "policy": "omit",
+      "committed": true,
+      "calls": 5,
+      "time": "20+20+20=60",
+      "errors": [
+        "Uses sheaf map f# on topological open sets instead of underlying-map inverse images.",
+        "Reverses quotient induced stalk map.",
+        "Incorrectly suggests arbitrary fiber products should not be treated as existing despite source Remark1.8 asserting small projective limits."
+      ]
+    },
+    {
+      "policy": "none",
+      "committed": true,
+      "calls": 4,
+      "time": "No individual phase durations.",
+      "errors": [
+        "Calls sheaf 拟层 rather than clearly specifying a sheaf of rings.",
+        "Composes a function with f# rather than underlying continuous map."
+      ]
+    },
+    {
+      "policy": "none",
+      "committed": true,
+      "calls": 4,
+      "time": "A–F sum54; G6 is explicitly called embedded in those stages, leaving total allocation ambiguous.",
+      "errors": [
+        "Uses f_x(m_x)⊂m_x instead of source ideal m_y."
+      ]
+    },
+    {
+      "policy": "omit",
+      "committed": true,
+      "calls": 4,
+      "time": "Only first20minutes allocated.",
+      "errors": [
+        "Schedule places1.7–1.8 onp2, though they appear onp3."
+      ]
+    }
+  ],
+  "wire_validation": "All17 SDK calls have corresponding HTTP observations. none final requests retain six tools and send tool_choice none; omit final requests contain no tools. No tool calls returned after finalization in this batch.",
+  "final_cached_tokens": [
+    128,
+    947,
+    947,
+    128
+  ],
+  "decision": "No production adoption: no full quality passes, small sample, independent trajectories, no controlled cache comparison.",
+  "limits": [
+    "none retained HTTP catalog but provider input treatment is not established.",
+    "Availability does not guarantee same image exposure: image paths differ by trajectory.",
+    "Runtime authorization remains unchanged; SDK policy is not a hard runtime disable."
+  ]
+}
