@@ -1,0 +1,213 @@
+{
+  "scope": "Maintainer Tavern open-ended/feasible/conflicting budget sweep",
+  "configured_initial_max_tokens": 800,
+  "configured_repair_minimum_max_tokens": 900,
+  "summary": {
+    "runs": 12,
+    "fully_completed_runs": 6,
+    "committed_actor_messages": 10,
+    "scheduled_actor_slots": 18,
+    "sdk_chat_calls": 25,
+    "length_finishes": 15
+  },
+  "open_ended_findings": [
+    "Specific clock times described as ideal side light despite unknown city/season.",
+    "Additional drinks/film consumption not numerically budgeted; no verified vendor prices, so do not claim a proven overspend.",
+    "No repeated explicit 140-minute open-ended route from the older fixture observed this time."
+  ],
+  "limitations": [
+    "Arithmetic cases explicitly ask for totals and are easier to grade than open-ended advice.",
+    "A failed facilitated run may retain an already-committed actor message; failed-run room readbacks collected afterward without retry.",
+    "Truncated attempts have no committed reply to score for arithmetic.",
+    "No independent persona/quality certification."
+  ],
+  "rows": [
+    {
+      "case": "open_ended",
+      "mode": "direct",
+      "repetition": 0,
+      "run_boundary_success": true,
+      "committed_actor_messages": 1,
+      "sdk_calls": 1,
+      "length_finishes": 0,
+      "actor_reviews": [
+        {
+          "persona": "顾言",
+          "exact_two_flat_bullets": true,
+          "arithmetic_correct": null,
+          "reply": "- 选一处步行可达的旧街区或滨水步道，单程控制在两公里以内，零门票，自带水即可控预算\n- 沿路找一家评分稳定的独立咖啡馆歇脚，一杯饮品二十元内，剩余时间继续慢走回起点"
+        }
+      ]
+    },
+    {
+      "case": "open_ended",
+      "mode": "facilitated",
+      "repetition": 0,
+      "run_boundary_success": true,
+      "committed_actor_messages": 2,
+      "sdk_calls": 2,
+      "length_finishes": 0,
+      "actor_reviews": [
+        {
+          "persona": "顾言",
+          "exact_two_flat_bullets": true,
+          "arithmetic_correct": null,
+          "reply": "- 两小时建议走一段约三到四公里的环线，沿途设一个休息点，节奏放慢比较省力。\n- 五十元可以留十到十五元买杯饮品当休息补给，其余留作弹性支出，避免临时决策。"
+        },
+        {
+          "persona": "林岚",
+          "exact_two_flat_bullets": true,
+          "arithmetic_correct": null,
+          "reply": "- 出发时间可以定在下午四点前后，走两小时刚好接住傍晚的光线，老城区的巷子和沿河步道在这个时段最有层次。\n- 路上随手拍几张细节特写就行——光影、墙皮纹理、招牌字体，用手机就够了，不额外花钱买门票或道具。"
+        }
+      ]
+    },
+    {
+      "case": "open_ended",
+      "mode": "direct",
+      "repetition": 1,
+      "run_boundary_success": true,
+      "committed_actor_messages": 1,
+      "sdk_calls": 1,
+      "length_finishes": 0,
+      "actor_reviews": [
+        {
+          "persona": "林岚",
+          "exact_two_flat_bullets": true,
+          "arithmetic_correct": null,
+          "reply": "- 把两小时拆成两段：先在清晨或傍晚出门，那时的侧光最舒服，街面也不晒\n- 找一条老巷子慢慢走，两小时刚好够看几面旧墙和有意思的店招，累了随便拐进一家小店坐坐"
+        }
+      ]
+    },
+    {
+      "case": "open_ended",
+      "mode": "facilitated",
+      "repetition": 1,
+      "run_boundary_success": true,
+      "committed_actor_messages": 2,
+      "sdk_calls": 2,
+      "length_finishes": 0,
+      "actor_reviews": [
+        {
+          "persona": "顾言",
+          "exact_two_flat_bullets": true,
+          "arithmetic_correct": null,
+          "reply": "- 先把两小时换算成步行距离：按 4 km/h 算，约 8 公里，建议选一条 4 公里左右的环线步道（公园或河滨），走到中点折返也能从容收尾\n- 50 元控制在路边轻食和饮品即可，比如一杯奶茶加一份小点心，剩下的预算留着应对突发需要，不用刻意规划更多消费点"
+        },
+        {
+          "persona": "林岚",
+          "exact_two_flat_bullets": true,
+          "arithmetic_correct": null,
+          "reply": "- 顾言说的环线很合适，河边步道或者老街区都行，上午十点前后侧光最舒服，专挑有树荫、光斑和旧墙的地方慢慢走\n- 50块在中途找一家带露台的小店歇脚就行，一杯咖啡或者鲜榨果汁正好当休息节点，剩下的零钱留着买瓶水或拍立得备用胶片"
+        }
+      ]
+    },
+    {
+      "case": "budget_conflict",
+      "mode": "direct",
+      "repetition": 0,
+      "run_boundary_success": false,
+      "committed_actor_messages": 0,
+      "sdk_calls": 2,
+      "length_finishes": 2,
+      "actor_reviews": []
+    },
+    {
+      "case": "budget_conflict",
+      "mode": "facilitated",
+      "repetition": 0,
+      "run_boundary_success": false,
+      "committed_actor_messages": 0,
+      "sdk_calls": 2,
+      "length_finishes": 2,
+      "actor_reviews": []
+    },
+    {
+      "case": "budget_conflict",
+      "mode": "direct",
+      "repetition": 1,
+      "run_boundary_success": false,
+      "committed_actor_messages": 0,
+      "sdk_calls": 2,
+      "length_finishes": 2,
+      "actor_reviews": []
+    },
+    {
+      "case": "budget_conflict",
+      "mode": "facilitated",
+      "repetition": 1,
+      "run_boundary_success": false,
+      "committed_actor_messages": 0,
+      "sdk_calls": 2,
+      "length_finishes": 2,
+      "actor_reviews": []
+    },
+    {
+      "case": "budget_feasible",
+      "mode": "direct",
+      "repetition": 0,
+      "run_boundary_success": true,
+      "committed_actor_messages": 1,
+      "sdk_calls": 1,
+      "length_finishes": 0,
+      "actor_reviews": [
+        {
+          "persona": "顾言",
+          "exact_two_flat_bullets": true,
+          "arithmetic_correct": true,
+          "reply": "- 先核条件：总时间上限 120 分钟，总预算上限 50 元。\n- 核算结果：单程 35 + 返程 35 + 休息 30 = **100 分钟**；饮料 20 + 往返交通 20 = **40 元**。两项均在限额内，这份安排可行，剩余时间 20 分钟、余额 10 元。"
+        }
+      ]
+    },
+    {
+      "case": "budget_feasible",
+      "mode": "facilitated",
+      "repetition": 0,
+      "run_boundary_success": false,
+      "committed_actor_messages": 1,
+      "sdk_calls": 4,
+      "length_finishes": 3,
+      "actor_reviews": [
+        {
+          "persona": "顾言",
+          "exact_two_flat_bullets": true,
+          "arithmetic_correct": true,
+          "reply": "- 单程 35 分钟×2 加休息 30 分钟，总用时 100 分钟，未超 120 分钟上限。\n- 饮料 20 元加往返交通各 10 元共 20 元，合计 40 元，未超 50 元预算；这份安排两项都未超限，可行，无需调整。"
+        }
+      ]
+    },
+    {
+      "case": "budget_feasible",
+      "mode": "direct",
+      "repetition": 1,
+      "run_boundary_success": false,
+      "committed_actor_messages": 0,
+      "sdk_calls": 2,
+      "length_finishes": 2,
+      "actor_reviews": []
+    },
+    {
+      "case": "budget_feasible",
+      "mode": "facilitated",
+      "repetition": 1,
+      "run_boundary_success": true,
+      "committed_actor_messages": 2,
+      "sdk_calls": 4,
+      "length_finishes": 2,
+      "actor_reviews": [
+        {
+          "persona": "顾言",
+          "exact_two_flat_bullets": true,
+          "arithmetic_correct": true,
+          "reply": "- 单程35分钟含步行与乘车，原路返回再加35分钟，合计交通70分钟；加休息30分钟，总用时100分钟，未超过120分钟上限。\n- 饮料20元加去程10元、回程10元交通费，总花费40元，未超过50元上限；两项限制均满足，这份安排可行。"
+        },
+        {
+          "persona": "林岚",
+          "exact_two_flat_bullets": true,
+          "arithmetic_correct": true,
+          "reply": "- 总时间：单程35分钟，往返70分钟，加休息30分钟，合计100分钟，不超过120分钟上限。\n- 总费用：饮料20元，去程交通10元，回程交通10元，合计40元，不超过50元上限；时间和费用都满足，这份安排可行，不用再调整。"
+        }
+      ]
+    }
+  ]
+}

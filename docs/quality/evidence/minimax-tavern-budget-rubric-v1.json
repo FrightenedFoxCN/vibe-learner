@@ -1,0 +1,42 @@
+{
+  "scope": "Predeclared Tavern route-budget quality checks",
+  "constraints": {
+    "minutes_max": 120,
+    "currency_units_max": 50,
+    "city_known": false,
+    "prior_shared_experience": false
+  },
+  "cases": {
+    "budget_conflict": {
+      "single_leg_minutes": 60,
+      "rest_minutes": 20,
+      "fare_each_leg": 20,
+      "drink_cost": 20,
+      "expected_total_minutes": 140,
+      "expected_total_cost": 60,
+      "feasible": false
+    },
+    "budget_feasible": {
+      "single_leg_minutes": 35,
+      "rest_minutes": 30,
+      "fare_each_leg": 10,
+      "drink_cost": 20,
+      "expected_total_minutes": 100,
+      "expected_total_cost": 40,
+      "feasible": true
+    }
+  },
+  "review": [
+    "Keep both return leg and rest in arithmetic.",
+    "Explicitly judge supplied proposal before revising it.",
+    "Any adjustment must satisfy both caps; numeric spending envelopes are not verified real-world prices.",
+    "Two flat Markdown bullets per actor, without outside greeting or conclusion.",
+    "No invented city-specific location, quoted vendor price, shared past, or speech for another actor.",
+    "Facilitated actors independently check arithmetic instead of treating preceding actor as authoritative.",
+    "Persona differences judged in wording/activity emphasis, not as permission to violate hard constraints."
+  ],
+  "limitations": [
+    "Synthetic explicit arithmetic task is easier than open-ended route generation; compare separately with original open-ended case.",
+    "Maintainer review, not independent certification."
+  ]
+}
