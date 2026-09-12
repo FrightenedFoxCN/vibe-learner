@@ -1,0 +1,21 @@
+{
+  "scope": "Application-side removal of unsupported fallback citations; not semantic entailment certification",
+  "before": "Four deterministic regressions failed: absent document, unrelated query, empty chunks, zero-match neighbor. Real prior memory answers cited linear-equations textbook.",
+  "change": "No citation without a document or positive chunk match; retain existing matched-chunk ranking and deduplication.",
+  "tests": {
+    "targeted": 116,
+    "backend_full": 850,
+    "full_seconds": 66.759
+  },
+  "live": {
+    "boundary_success": true,
+    "citations": [],
+    "unexpected_memory_sessions": []
+  },
+  "tested_worktree": "Report git_revision is the base revision; pedagogy citation fix and the changed no-document expectation were present as uncommitted worktree edits.",
+  "limitations": [
+    "Positive lexical overlap is not proof the answer is supported.",
+    "No fabricated page fallback; context-dependent short queries may have no citation.",
+    "Maintainer checks and live sample are not independent UI certification."
+  ]
+}

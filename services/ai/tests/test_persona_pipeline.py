@@ -695,7 +695,7 @@ class PersonaPipelineTests(ContainerTestCase):
             study_unit_id="chapter-1",
         )
         self.assertTrue(result.reply)
-        self.assertEqual(result.citations[0].section_id, "chapter-1")
+        self.assertEqual(result.citations, [])
         self.assertEqual(result.character_events[0].line_segment_id, "session-1:chat:0")
 
     def test_mock_chat_public_text_never_echoes_internal_contexts(self) -> None:

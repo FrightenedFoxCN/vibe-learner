@@ -330,14 +330,7 @@ def _build_grounded_citations(
     message: str,
 ) -> list[Citation]:
     if debug_report is None:
-        return [
-            Citation(
-                section_id=study_unit_id,
-                title=study_unit_title or study_unit_id,
-                page_start=1,
-                page_end=1,
-            )
-        ]
+        return []
 
     title = study_unit_id
     page_start = 1
@@ -374,7 +367,8 @@ def _build_grounded_citations(
     for chunk in candidate_chunks:
         chunk_text = f"{chunk.text_preview}\n{chunk.content}".lower()
         score = sum(1 for token in tokens if token in chunk_text)
-        scored_chunks.append((score, chunk.page_start, chunk.page_end, chunk.section_id))
+        if score > 0:
+            scored_chunks.append((score, chunk.page_start, chunk.page_end, chunk.section_id))
 
     scored_chunks.sort(key=lambda item: (item[0], -(item[2] - item[1])), reverse=True)
 
@@ -394,17 +388,7 @@ def _build_grounded_citations(
             )
         )
 
-    if citations:
-        return citations
-
-    return [
-        Citation(
-            section_id=next(iter(related_ids - {study_unit_id}), study_unit_id),
-            title=title,
-            page_start=page_start,
-            page_end=page_end,
-        )
-    ]
+    return citations
 
 
 def _tokenize(text: str) -> list[str]:

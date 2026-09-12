@@ -1181,3 +1181,13 @@ none输入token为213，auto为446；这说明改变tool_choice后服务端输�
 [法文首例](evidence/minimax-study-event-time-fr-v1.jsonl)提交并实际检索，时间关系正确，但三条列表前多了“已核对…”，违反禁止开场。第二次在记忆种子阶段[失败](evidence/minimax-study-event-time-fr-failed-seeds-v1.json)：两次provider调用后返回uncertain/study_chat_uncertain_chat_model_invalid_payload，没有执行最终检索题，不丢弃这一失败。
 
 同时审查种子回复发现，明示第三方的林舟仍被叫作用户，出现“你与阿岚的见面”；最终时间回答没有复述这个身份错误，也不能据此忽略记忆中的污染。三个最终回复均附无关的一元一次方程教材引用，初查由Pedagogy的应用侧引用选择产生：零匹配也选chunk，无材料也造第1页默认引用。下一步先将样本放入独立数据库复核，另外针对无证据引用建立确定性反例。新增探针编译/diff通过，不修改生产行为或认定总体通过。
+
+## 轮次 116：移除没有材料匹配依据的自动教材引用
+
+[修复依据](evidence/minimax-study-citation-review-v1.json)：应用侧_build_grounded_citations在没有DocumentDebug时生成第1页引用、有文档却零匹配时仍返回chunk、没有chunk时又返回单元页范围。这与轮次115的记忆回复引用数学教材一致，不是M3自行选择了这些引用。
+
+新增4个反例在旧实现全部失败：无文档、无相关词、无chunk、相关chunk夹带零匹配邻页。修正后没有文档或正匹配chunk则返回空引用，保留原有匹配排序与去重；更新旧测试中“无教材仍应有chapter-1引用”的不当预期。116项定向与完整850项后端测试通过（66.759秒）。没有更改模型/公共schema；场景提示已有空引用overview路径。
+
+[独立数据库真实Study样本](evidence/minimax-study-citation-live-v1.jsonl)提交/读回通过、时间与三条列表正确、citations为空，检索无外部样本会话。报告git_revision为基线，引用修正当时在工作树，见审查说明。该样本属于后续隔离四组的第一组，不再重复计为额外调用。
+
+采用范围仅为删除没有匹配依据的兜底引用；正词语匹配仍不证明答案受该来源支持，短承接问题也可能不再附引用。未声称完成语义引用校验或独立UI认证，身份与格式问题继续跟进。
