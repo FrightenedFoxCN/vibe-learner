@@ -10,7 +10,7 @@ from pathlib import Path
 import subprocess
 import time
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, ValidationError
 
 from app.services.provider_sdk import ProviderSDK, ProviderRequestAdapter
 from app.services.provider_transport import ProviderTransport
@@ -63,7 +63,7 @@ def cases():
     ]
 
 
-def run(output):
+def run(output, replay_source=None):
     sdk = ProviderSDK.load()
     key = os.environ['K3_API_KEY']
     endpoint = 'https://api.minimax.cn/v1'
@@ -80,6 +80,7 @@ def run(output):
             row = {'scope': 'synthetic_event_time_pairs', 'git_revision': revision,
                    'case_id': case_id, 'variant': variant, 'repetition': repetition,
                    'stage': stage, 'max_tokens': 4096,
+                   'replay_source': replay_source.name if replay_source else None,
                    'limitation': 'Two synthetic fixtures; maintainer-designed comparison, not independent certification.'}
             start = time.perf_counter()
             decoded = None
@@ -94,11 +95,21 @@ def run(output):
                 row['content_envelope'] = {'characters': len(content), 'starts_with_fence': content.lstrip().startswith('```')}
                 obj = json.loads(content)
                 row['strict_json_valid'] = True
+                row['echoes_json_schema'] = obj == contract.model_json_schema()
                 decoded = contract.model_validate(obj)
                 row['reply'] = decoded.model_dump()
                 row['contract_valid'] = True
                 if stage == 'answer':
                     row['fields_correct'] = {k: row['reply'][k] == v for k, v in expected.items()}
+            except ValidationError as exc:
+                row['error_class'] = 'ValidationError'
+                row['validation_errors'] = [{'path': list(e['loc']), 'type': e['type']}
+                    for e in exc.errors(include_input=False, include_url=False)]
+                row['contract_valid'] = False
+            except json.JSONDecodeError as exc:
+                row['error_class'] = 'JSONDecodeError'
+                row['json_error_offset'] = exc.pos
+                row['contract_valid'] = False
             except Exception as exc:
                 row['error_class'] = type(exc).__name__
                 row['contract_valid'] = False
@@ -107,6 +118,18 @@ def run(output):
             stream.flush()
             print(json.dumps({k: row.get(k) for k in ('case_id', 'variant', 'repetition', 'stage', 'contract_valid', 'fields_correct')}), flush=True)
             return decoded
+
+        if replay_source:
+            definitions = {name: (question, expected) for name, _, question, expected in cases()}
+            rows = [json.loads(line) for line in replay_source.read_text().splitlines()]
+            for row in rows:
+                if row['stage'] != 'compress' or not row.get('contract_valid'):
+                    continue
+                memory = Memory.model_validate(row['reply'])
+                question, expected = definitions[row['case_id']]
+                call([{'role': 'user', 'content': memory.memory}], question, EventAnswer,
+                     row['case_id'], row['variant'], row['repetition'], 'answer', expected)
+            return
 
         for case_id, history, question, expected in cases():
             for repetition in range(2):
@@ -123,4 +146,6 @@ def run(output):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output', type=Path, required=True)
-    run(parser.parse_args().output.resolve())
+    parser.add_argument('--replay-source', type=Path)
+    args = parser.parse_args()
+    run(args.output.resolve(), args.replay_source.resolve() if args.replay_source else None)
