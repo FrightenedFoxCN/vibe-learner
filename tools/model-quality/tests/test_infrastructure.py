@@ -188,6 +188,14 @@ class InfrastructureTests(unittest.TestCase):
         self.assertEqual(result['states'], {'metric_failed': 4})
         self.assertEqual(result['campaign_usage']['wire_count'], 0)
 
+    def test_evidence_digest_mismatch_is_metric_failure(self):
+        c = self.c.model_copy(update={
+            'adapter': 'tests.fault_adapters:mismatched_evidence_digest'
+        })
+        result = run(c, self.root/'bad-evidence-digest', self.ledger.path)
+        self.assertEqual(result['states'], {'metric_failed': 4})
+        self.assertEqual(result['campaign_usage']['wire_count'], 0)
+
     def test_sample_deadline_terminates_hung_worker(self):
         c = self.c.model_copy(update={'adapter': 'tests.fault_adapters:hang',
                                      'sample_deadline_seconds': 2, 'timeout_seconds': 1})

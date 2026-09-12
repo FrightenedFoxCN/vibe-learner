@@ -64,6 +64,7 @@ class Autoscale(Strict):
 class EvidenceReference(Strict):
     path: Annotated[str, Field(pattern=r'^[a-zA-Z0-9_-]+\.json$')]
     contract: Identifier
+    sha256: Annotated[str, Field(pattern=r'^[0-9a-f]{64}$')] | None = None
     # Adapter-owned evidence reference, never a fabricated Harness identity.
 
 
@@ -72,13 +73,17 @@ class AdapterResult(Strict):
     failure_owner: Literal['candidate', 'data', 'grader', 'metric', 'infrastructure'] | None = None
     error_code: Identifier | None = None
     metrics: dict[Identifier, bool | int | float | None] = Field(default_factory=dict)
-    scope: Literal['provider-proposal-only; no domain admission, commit or read-back', 'domain-primary-output-readback'] = 'provider-proposal-only; no domain admission, commit or read-back'
+    scope: Literal[
+        'provider-proposal-only; no domain admission, commit or read-back',
+        'domain-admitted-proposal; no product projection commit or read-back',
+        'domain-primary-output-readback',
+    ] = 'provider-proposal-only; no domain admission, commit or read-back'
     evidence: list[EvidenceReference] = Field(default_factory=list)
 
     @model_validator(mode='after')
     def owner_matches(self):
         owner = None if self.status == 'completed' else 'infrastructure' if self.status == 'uncertain' else self.status.removesuffix('_failed')
-        if self.scope == 'domain-primary-output-readback' and not self.evidence:
+        if self.scope != 'provider-proposal-only; no domain admission, commit or read-back' and not self.evidence:
             raise ValueError('domain evidence reference required')
         if self.failure_owner != owner:
             raise ValueError('failure ownership mismatch')

@@ -129,7 +129,11 @@ def worker(config, ledger_path, output_path, sample_id):
                 result = AdapterResult.model_validate(result).model_dump()
                 canonical(result)
                 for ref in result['evidence']:
-                    json.loads((context.storage / ref['path']).read_text())
+                    evidence_path = context.storage / ref['path']
+                    evidence_bytes = evidence_path.read_bytes()
+                    json.loads(evidence_bytes)
+                    if ref['sha256'] is not None and hashlib.sha256(evidence_bytes).hexdigest() != ref['sha256']:
+                        raise ValueError('adapter evidence digest mismatch')
             except (ValueError, OSError):
                 result = {'status': 'metric_failed', 'failure_owner': 'metric', 'error_code': 'invalid_adapter_result'}
         except GateClosed as exc:

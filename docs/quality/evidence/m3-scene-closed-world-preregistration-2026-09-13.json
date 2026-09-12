@@ -19,14 +19,15 @@
     "scope_limit": "The structured entrance check only covers registered SceneLayer.entrance values; it does not classify free-text path claims or certify semantic quality."
   },
   "baseline": {
-    "split": "held-out-scene-closed-world-v1",
+    "split": "confirmation",
     "transport": "minimax",
     "thinking": "adaptive",
     "production_shaped_scene_proposal": true,
     "max_provider_wires_per_case": 2,
     "reason_for_two_wire_ceiling": "The production Scene provider owns one bounded strict JSON/schema repair.",
     "fallback_counts_as_scene_success": false,
-    "freeze_before_repair": true
+    "freeze_before_repair": true,
+    "repair_requires_matching_transport_and_frozen_config_sample_evidence_digests": true
   },
   "conditional_repair": {
     "trigger": "A strict frozen baseline SceneTreeProposalV1 has at least one typed SceneClosedWorldIssueV1.",
@@ -64,6 +65,10 @@
   "harness_boundaries": {
     "research_only": true,
     "production_registry_change": false,
+    "production_baseline_harness_operation_admitted": true,
+    "production_baseline_protected_snapshot_resolved": true,
+    "production_baseline_product_projection_commit_or_readback": false,
+    "conditional_repair_domain_admission": false,
     "persona_scene_commit_evidence": "not_applicable",
     "tavern_message_or_trace_write": false,
     "critic_or_manual_grade_is_commit_evidence": false

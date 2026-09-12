@@ -1,5 +1,6 @@
 """Only used by provider-free process recovery regressions."""
 import os
+import json
 import time
 
 
@@ -21,3 +22,17 @@ def raise_after_reserve(context, case, variant):
     transport = context.transport
     transport.ledger.reserve(transport.campaign.id, transport.sample, 100)
     raise RuntimeError('synthetic adapter failure')
+
+
+def mismatched_evidence_digest(context, case, variant):
+    path = context.storage / 'evidence.json'
+    path.write_text(json.dumps({'valid': True}), encoding='utf-8')
+    return {
+        'status': 'completed',
+        'scope': 'domain-admitted-proposal; no product projection commit or read-back',
+        'evidence': [{
+            'path': 'evidence.json',
+            'contract': 'test-evidence-v1',
+            'sha256': '0' * 64,
+        }],
+    }

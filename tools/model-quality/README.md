@@ -55,7 +55,7 @@ Manifest 记录 Git HEAD、tracked dirty digest、运行器及适配器源码摘
 
 `context.transport.complete(messages, call_kind=...)` 接收简单文本，`context.transport.request(payload, call_kind=...)` 接收生产 JSON Schema/function-tool 请求。两者共享预算闸；后者允许 assistant/tool 消息及文本分块；用户消息中的内联 PNG 须显式设置 `max_inline_images`，拒绝远程图片 URL。seed、critic、selector 和修复分别计量，`sample_wire_limit` 限制总调用。`context.database` / `context.storage` 是专属路径，适配器负责将它们绑定到项目设置，并在有状态步骤后按领域规范 read-back。调度器不会自动让旧项目 bootstrap 采用这些路径。
 
-结果须通过 `AdapterResult`：`completed`、`candidate_failed`、`data_failed`、`grader_failed`、`metric_failed`、`infrastructure_failed`、`uncertain` 与相应 `failure_owner`；metrics 只接受有限数值、布尔值或 null。异常默认归 infrastructure，评分器/数据异常需适配器明确归属。领域结果使用 `domain-primary-output-readback` 范围及 `evidence` 文件引用，运行器校验文件存在且是 JSON，领域适配器负责验证实际 receipt、提交图和重启读回。Harness 身份来自真实 admission；不能把基础设施成功当成领域成功。
+结果须通过 `AdapterResult`：`completed`、`candidate_failed`、`data_failed`、`grader_failed`、`metric_failed`、`infrastructure_failed`、`uncertain` 与相应 `failure_owner`；metrics 只接受有限数值、布尔值或 null。异常默认归 infrastructure，评分器/数据异常需适配器明确归属。纯 provider proposal、已 admission 但不提交产品 projection 的 proposal、以及具备领域主输出读回的结果，必须分别使用准确的 scope；后两者必须提供 `evidence` 引用。运行器校验 evidence 存在、是 JSON，且在引用提供 SHA-256 时验证字节摘要；领域适配器仍负责验证实际 receipt、提交图和重启读回。Harness 身份来自真实 admission；不能把基础设施成功当成领域成功。
 
 当前版本没有阶段子池、加权 lane 公平调度、跨主机分片合并、独立 grader 校准或统计显著性推断。这些可以按实际研究需求增加，基础运行器不自动启动质量研究或修改生产策略。
 
