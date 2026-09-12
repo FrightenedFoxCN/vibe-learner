@@ -70,7 +70,7 @@ jobs:
         timeout-minutes: 25
         env:
           PYTHONFAULTHANDLER: "1"
-        run: npm run test:ai
+        run: cd services/ai && UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python tests/run_ci_suite.py
 
       - name: Build Web production bundle
         timeout-minutes: 15
