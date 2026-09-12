@@ -1,0 +1,90 @@
+[
+  {
+    "scope": "Direct HTTP capability probe, no Harness admission or commit",
+    "tool_choice": "auto",
+    "http_status": 200,
+    "usage": {
+      "total_tokens": 491,
+      "total_characters": 0,
+      "prompt_tokens": 446,
+      "completion_tokens": 45,
+      "completion_tokens_details": {
+        "reasoning_tokens": 17
+      },
+      "prompt_tokens_details": {
+        "cached_tokens": 128
+      }
+    },
+    "finish_reason": "tool_calls",
+    "tool_names": [
+      "lookup_page"
+    ],
+    "strict_needs_verification": false,
+    "elapsed_ms": 1164
+  },
+  {
+    "scope": "Direct HTTP capability probe, no Harness admission or commit",
+    "tool_choice": "none",
+    "http_status": 200,
+    "usage": {
+      "total_tokens": 477,
+      "total_characters": 0,
+      "prompt_tokens": 213,
+      "completion_tokens": 264,
+      "completion_tokens_details": {
+        "reasoning_tokens": 115
+      },
+      "prompt_tokens_details": {
+        "cached_tokens": 128
+      }
+    },
+    "finish_reason": "stop",
+    "tool_names": [],
+    "strict_needs_verification": false,
+    "elapsed_ms": 1681
+  },
+  {
+    "scope": "Direct HTTP capability probe, no Harness admission or commit",
+    "tool_choice": "none",
+    "http_status": 200,
+    "usage": {
+      "total_tokens": 342,
+      "total_characters": 0,
+      "prompt_tokens": 213,
+      "completion_tokens": 129,
+      "completion_tokens_details": {
+        "reasoning_tokens": 119
+      },
+      "prompt_tokens_details": {
+        "cached_tokens": 212
+      }
+    },
+    "finish_reason": "stop",
+    "tool_names": [],
+    "strict_needs_verification": true,
+    "elapsed_ms": 1536
+  },
+  {
+    "scope": "Direct HTTP capability probe, no Harness admission or commit",
+    "tool_choice": "auto",
+    "http_status": 200,
+    "usage": {
+      "total_tokens": 491,
+      "total_characters": 0,
+      "prompt_tokens": 446,
+      "completion_tokens": 45,
+      "completion_tokens_details": {
+        "reasoning_tokens": 17
+      },
+      "prompt_tokens_details": {
+        "cached_tokens": 445
+      }
+    },
+    "finish_reason": "tool_calls",
+    "tool_names": [
+      "lookup_page"
+    ],
+    "strict_needs_verification": false,
+    "elapsed_ms": 916
+  }
+]

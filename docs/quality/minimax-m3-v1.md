@@ -1031,3 +1031,11 @@ default首例最终JSON合法，但保存前因schedule_chapters.4.anchor_page_s
 [六例基线/候选诊断](evidence/minimax-memory-neighborhood-backoff-v1.json)中，超长前句后的南门更新由遗漏变为保留；短归档否定相邻于旧引文时，候选也保留“不恢复约定”。但把“以下只是小说，不是真实约定”放在超长前句开头后，候选返回旧地点/暗号，却丢掉这个限定；原前缀策略反而保留了限定。无标点长句和跨语言无词法重合仍未解决，同语言法文对照不变。
 
 因此拒绝采用这个简单回退。关键词命中改善不是事实保留改善，不能用检索命中率掩盖否定丢失。新增可复现诊断模块，所有输出≤800字符，现有13项记忆摘录测试通过；这是无provider选择器实验，没有把它当成M3回复质量或完整Study Harness验证。后续需要让远处限定与引文一同保留，或明确拒绝给出脱离限定的摘录，再做真实读取阶段对照。
+
+## 轮次 99：tool_choice=none被接受，但不等于缓存保留或格式合格
+
+为检验保留工具目录的成稿策略，运行[四次直接HTTP探测](evidence/minimax-tool-choice-none-v1.json)，顺序auto—none—none—auto，目录与消息相同。auto两次都返回lookup_page调用；none两次HTTP200且无工具调用，仅其中一次严格返回指定needs_verification JSON。没有执行该合成工具，没有Harness准入/提交，不把这项能力探测当作领域质量通过。
+
+none输入token为213，auto为446；这说明改变tool_choice后服务端输入计数也变化，不能只因HTTP仍带相同tools就假设模型前缀或缓存完全保留。四次cached_tokens为128/128/212/445，小请求且没有冷暖控制，不据此比较总体性能。只记录字段、usage、严格结果布尔值，不保存思考正文。
+
+重新核对[官方OpenAI兼容文档](https://platform.minimaxi.com/docs/api-reference/text-openai-api)和[M3工具调用指南](https://platform.minimaxi.com/docs/guides/text-m3-function-call.md)：所读说明未明确列出tool_choice=none，因此这里的接受结论仅限本次实测；其完整assistant回传建议此前已在轮次41做Study探索，未重复宣称新发现。探针编译/diff通过。下一步需要在实际多轮Planning上下文里比较策略，不能把最小请求的行为直接推广。
