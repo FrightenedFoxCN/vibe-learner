@@ -453,7 +453,7 @@ HARNESS_COMPONENT_REGISTRATIONS = MappingProxyType(
         ),
         HarnessComponentName.STUDY_CHAT_PROMPT: HarnessComponentRegistration(
             HarnessComponentName.STUDY_CHAT_PROMPT,
-            "app.services.study_session_prompt",
+            "app.services.provider_study",
             HarnessRegisteredContract(
                 name="study_chat_prompt", version=STUDY_CHAT_PROMPT_CONTRACT_VERSION
             ),
@@ -522,7 +522,7 @@ HARNESS_COMPONENT_OWNERS = MappingProxyType(
         HarnessComponentName.PLANNING_TOOL_RUNTIME: "app.services.plan_tool_runtime",
         HarnessComponentName.PERSONA_COMPILER: "app.services.persona_cards",
         HarnessComponentName.SCENE_COMPILER: "app.services.scene_setup",
-        HarnessComponentName.STUDY_CHAT_PROMPT: "app.services.study_session_prompt",
+        HarnessComponentName.STUDY_CHAT_PROMPT: "app.services.provider_study",
         HarnessComponentName.STUDY_GROUNDING: "app.services.study_grounding",
         HarnessComponentName.STUDY_CHAT_TOOLSET: "app.services.study_session_chat_runtime",
         HarnessComponentName.STUDY_VISUAL_GROUNDING: "app.services.document_layout",

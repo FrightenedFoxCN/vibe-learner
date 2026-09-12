@@ -1,11 +1,37 @@
 from __future__ import annotations
 
+import json
+from pathlib import Path
 import unittest
 
 from app.services.harness_eval_pilots import execute_harness_pilot_bundle, _load_fixtures, _current_planning_cases
 
 
 class HarnessEvalPilotTests(unittest.TestCase):
+    def test_prompt_v1_study_baseline_remains_archived_separately(self):
+        root = (
+            Path(__file__).parents[3]
+            / "packages"
+            / "shared"
+            / "fixtures"
+            / "harness"
+            / "eval-pilots"
+        )
+        legacy = json.loads(
+            (root / "study_chat_eval" / "baseline.json").read_text(encoding="utf-8")
+        )
+        current = json.loads(
+            (root / "study_chat_eval_prompt_v2" / "baseline.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        self.assertEqual(legacy["baseline_version"], "study-chat-eval-v1-baseline-v1")
+        self.assertEqual(current["baseline_version"], "study-chat-eval-v1-baseline-v2")
+        self.assertNotEqual(
+            legacy["tested_system_config_digest"],
+            current["tested_system_config_digest"],
+        )
+
     def test_budget_revision_preserves_reviewed_book_and_held_out_cases(self):
         historical = _load_fixtures()
         original = next(case for case in historical.planning_cases if case.case_id == "planning-tool-duplicate-call-001")

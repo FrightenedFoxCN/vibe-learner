@@ -625,7 +625,7 @@ _STUDY_ENTRY = HarnessWorkflowManifestEntryV1(
     proposal_contract=_registered_contract("StudyChatReplyProposal", "study-chat-reply-proposal-v1"),
     output_contract=_registered_contract("StudySessionTurnCommittedProjection", "study-chat-turn-committed-projection-v1"),
     component_contracts=_component_contracts(HarnessWorkflow.STUDY_CHAT, HarnessStage.STUDY_CHAT_REPLY),
-    prompt_contract=_registered_contract("StudyChatPrompt", "study-chat-prompt-v1"),
+    prompt_contract=_registered_contract("StudyChatPrompt", "study-chat-prompt-v2"),
     policy_contract=_registered_contract("StudyChatHarnessPolicy", "study-chat-harness-v1"),
     toolset_contract=_registered_contract("ToolManifestRegistry", TOOL_MANIFEST_SCHEMA_VERSION),
     attempt_ceiling=HarnessManifestAttemptCeilingV1(max_attempts=3, max_repair_attempts=2),
@@ -765,7 +765,7 @@ _ENTRIES = (
             HarnessArtifactType.STUDY_UNIT_INPUT,
         ),
         decoder_route="app.services.harness_broad_adoption.LearningPlanWorkflowAdapter",
-        prompt=("LearningPlanPrompt", "planning-prompt-v1"),
+        prompt=("LearningPlanPrompt", "planning-prompt-v2"),
         policy=("LearningPlanHarnessPolicy", "learning-plan-harness-v1"),
         toolset=_TOOL_MANIFEST_SLOT,
         commit_policy=HarnessManifestRegisteredCommitPolicySlotV1(

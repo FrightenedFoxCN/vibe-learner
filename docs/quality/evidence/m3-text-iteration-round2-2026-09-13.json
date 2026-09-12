@@ -1,0 +1,78 @@
+{
+  "version": "m3-text-iteration-manual-review-v1",
+  "date": "2026-09-13",
+  "campaign": "m3-text-iteration-20260913-round2",
+  "scope": "Second synthetic pure-text development round; proposal-only; manual semantic review of every output; no multimodal input, domain commit, independent external reviewer, or production adoption.",
+  "source_manifest_sha256": "54270466aa114c909da637ad64c2070b81a0f291bcca6d348c157dd80b2723eb",
+  "raw_report_sha256": "b07349ecd8a8e7ae801c6add09fa1c04e5a10e9bbfc958178ac17185dec30c2d",
+  "raw_report_local_path": "tools/model-quality/runs/m3-text-iteration-20260913/round2/run/report.json",
+  "samples": 24,
+  "independent_families": 12,
+  "wire": {
+    "attempts": 24,
+    "http_200": 24,
+    "reported_tokens": 31201,
+    "unknown_usage_requests": 0,
+    "p50_ms": 6142,
+    "p95_ms": 13746,
+    "concurrency": 2,
+    "rpm_limit": 60
+  },
+  "automated_triage": {
+    "baseline": {"structured_pass": 12, "requests": 12, "reported_tokens": 15816},
+    "constraint_checklist": {"structured_pass": 12, "requests": 12, "reported_tokens": 15385},
+    "warning": "Structured completion is not a semantic-quality result. learner_prompt semantics were not automatically graded."
+  },
+  "manual_review_policy": {
+    "method": "Read every source, task, structured proposal and learner_prompt; judge source fidelity, conditions and exceptions, identities, temporal relations, unknown information, task scope, unsupported additions and prompt usability.",
+    "keyword_rules_used": false,
+    "answer_visibility_assumption": "No leakage finding was assigned when a prompt repeated source facts because the cases did not define hidden-answer visibility.",
+    "ratings": ["pass", "minor", "major"]
+  },
+  "manual_summary": {
+    "baseline": {"pass": 10, "minor": 2, "major": 0},
+    "constraint_checklist": {"pass": 8, "minor": 4, "major": 0},
+    "structured_fact_errors": 0,
+    "major_semantic_errors": 0
+  },
+  "manual_findings": [
+    {"case": "appointment-room-only-correction", "baseline": "pass", "constraint_checklist": "pass", "finding": "Both applied only the room correction, retained 08:20 and kept clinician unknown."},
+    {"case": "cold-chain-replica-exception", "baseline": "pass", "constraint_checklist": "pass", "finding": "Both kept the training-replica exception scoped away from the broken-seal research specimen."},
+    {"case": "dispatcher-relayed-report", "baseline": "pass", "constraint_checklist": "minor", "finding": "Checklist kept identities correct but changed signed acknowledgement to received acknowledgement and added an unsupported reliability-analysis task."},
+    {"case": "ferry-authority-waiver", "baseline": "pass", "constraint_checklist": "pass", "finding": "Both correctly applied the authority-cancellation waiver despite three-hour notice."},
+    {"case": "license-entry-suspension", "baseline": "minor", "constraint_checklist": "minor", "finding": "Both got timing and active status right; baseline invented a regulator affiliation, while checklist invented that the inspection was of a site and weakened active to valid."},
+    {"case": "pallet-mass-amendment", "baseline": "pass", "constraint_checklist": "pass", "finding": "Both changed only mass, retained destination and kept departure date unknown."},
+    {"case": "quarantine-bin-unknown", "baseline": "minor", "constraint_checklist": "pass", "finding": "Baseline described unknown values as inferred from absence; checklist correctly described them as unestablished."},
+    {"case": "refurbished-pack-exclusion", "baseline": "pass", "constraint_checklist": "pass", "finding": "Both preserved the refurbished exclusion over the installation-date threshold."},
+    {"case": "roof-endorsement-scope", "baseline": "pass", "constraint_checklist": "minor", "finding": "Checklist changed the unspecified register into a staff register; access reasoning remained correct."},
+    {"case": "single-salinity-no-chart", "baseline": "pass", "constraint_checklist": "pass", "finding": "Both kept the single measurement textual and did not invent trends, comparisons or chart questions."},
+    {"case": "supplier-delay-attribution", "baseline": "pass", "constraint_checklist": "pass", "finding": "Both kept speaker, organization, recorder and auditor roles distinct."},
+    {"case": "tariff-recorded-effective", "baseline": "pass", "constraint_checklist": "minor", "finding": "Checklist changed recorded timestamp into submission timestamp and invented an activity-timer submission mechanism; price and temporal facts remained correct."}
+  ],
+  "paired_cluster_audit": {
+    "critical_condition_or_fact_clusters_with_two_baseline_failures": 0,
+    "shared_minor_cluster": "Free-form contextual embellishment in license-entry-suspension",
+    "constraint_only_pattern": "Explanatory expansion introduced unsupported context or workflow semantics in dispatcher, roof and tariff prompts.",
+    "baseline_only_pattern": "One epistemic wording issue in quarantine-bin-unknown."
+  },
+  "resource_window_after": {
+    "wire_attempts": 1619,
+    "charged_or_reserved_tokens": 11540604,
+    "unknown_usage_requests": 46,
+    "inflight": 0
+  },
+  "decision": {
+    "constraint_checklist": "do_not_advance",
+    "review_revise": "not_run_no_eligible_error_cluster",
+    "self_revise": "not_run_no_eligible_error_cluster",
+    "multimodal": "paused",
+    "domain_small_model": "not_justified",
+    "production_default": "unchanged"
+  },
+  "limitations": [
+    "The cases are synthetic development cases and the semantic review was performed inside the same engineering effort, not by an external blind reviewer.",
+    "Prompt answer visibility was not specified, so this round cannot evaluate answer leakage.",
+    "No full Study, Planning or Tavern admission/commit/read-back path was executed.",
+    "Absence of major errors in 12 families is not a general model-quality estimate."
+  ]
+}

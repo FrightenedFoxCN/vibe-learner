@@ -87,6 +87,23 @@ Required semantic rules:
 - `schedule[].schedule_chapters[].content_slices[]` may be discontinuous, but must remain within the parent study unit.
 - model output never owns plan, schedule, or chapter IDs, revision, status, timestamps, or persisted progress; the application assigns and validates committed identities after decode.
 
+## Source-minimal-v3 production default
+
+`source-minimal-v3` is the user-authorized production-default text strategy for learner-facing Learning Plan fields, specifically `focus`, `today_tasks`, and learning activities. It requires the smallest useful rewrite that remains faithful to the source:
+
+- preserve complete source spans when dropping a noun-phrase prefix or other qualifier would change the referent;
+- preserve source-time epistemic and workflow status such as planned, proposed, scheduled, recorded, reported, observed, listed, or acknowledged instead of strengthening it into an established fact;
+- keep study-time estimates separate from the real-world duration of an event described by the source;
+- do not invent unsupported operations, submissions, approvals, or workflow mechanisms.
+
+This wording policy does not transfer application-owned identity, revisions, timestamps, progress, or effects into the model proposal. Existing strict decode, invariant validation, tool authorization, and commit boundaries remain authoritative.
+
+The reviewed Planning behavior is registered as `LearningPlanPrompt@planning-prompt-v2`; the corresponding Study Chat behavior is registered as `StudyChatPrompt@study-chat-prompt-v2`. Historical v1 traces and archived experiment evidence remain unchanged.
+
+The same strategy is separately adopted for Study Chat, including the rule that a tool effect may be described as completed only after successful execution. This document does not otherwise define the Study Chat contract. The adoption does not change Tavern, Persona/Scene generation, Harness schemas, or multimodal defaults.
+
+The supporting evidence consists of development synthetic cases reviewed manually for semantic fidelity. It is not a keyword-based pass check and has not independently certified learning outcomes, production traffic quality, or generalization to the excluded workflows.
+
 ## Tool-Loop Expectations
 
 The planner may call:

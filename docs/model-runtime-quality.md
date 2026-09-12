@@ -4,6 +4,7 @@
 
 ## Planning
 
+- `source-minimal-v3` 已经用户明确授权，作为 Learning Plan 的生产默认文本策略，并登记为 `LearningPlanPrompt@planning-prompt-v2`。`focus`、`today_tasks` 与学习活动应采用最小忠实改写：保留完整来源跨度及来源当时的计划/拟议/预定状态，区分“记录/报告/观察/列出/承认”与已经证实的事实，并将学习用时与来源事件的现实持续时间分开。不得补造来源未支持的操作、提交动作或工作流机制。
 - `get_study_unit_detail` 每个模型轮次最多 3 次，每次操作总上限仍为 4；工具仍按 provider 调用顺序串行执行。其他工具的限制不变。Python Tool Manifest、TypeScript 与 golden fixture 保持一致，历史 v1 pilot 不改写，当前预算回归使用 v2。
 - 详情摘录先限定到修订后 Study Unit 的页范围，再优先匹配来源 Section；没有本地页证据时返回空，不以父 Section 的开头冒充当前单元内容。跨页 chunk 保留真实范围。
 - Planning 与 Study 共用的页文本工具严格计算字符预算，包含首个超长 chunk 和段落分隔符。图片工具在分配页码列表前验证并限制页范围。
@@ -16,6 +17,7 @@
 
 ## Study、记忆与引用
 
+- `source-minimal-v3` 同时作为 Study Chat 的生产默认文本策略，并登记为 `StudyChatPrompt@study-chat-prompt-v2`。回答应在不改变来源限定、认识状态和时间含义的前提下做最小必要改写；用户明确请求且已成功执行的工具效果可以如实陈述，但不得把未执行、失败或不确定的工具结果写成已完成事实。
 - 互动题回复清理保留 Markdown 所需空白。模型显式返回 `interactive_question=null` 时，不再回填工具草稿；缺省字段的兼容路径仍存在，出题和判分语义需另外验收。
 - 多模态启用时，PDF 图片工具的本地渲染结果实际加入模型消息，不能仅传图片数量。公开 trace 保留元数据，不包含原图。
 - 场景工具返回后续操作所需的应用场景/物品 ID，并保留父子和所属关系。场景与物品列表分别最多 128 项，截断显式标记，provider 字节预算继续执行；公开 trace 仍脱敏，模型不能生成应用身份。
@@ -62,6 +64,8 @@ VIBE_LEARNER_DOCUMENT_LAYOUT_TIMEOUT_SECONDS=90
 
 提交可用 `git show <commit>` 查看；过程日志不是当前行为真源。
 
+2026-09-13，用户在开发实验完成后明确授权将 `source-minimal-v3` 设为 Learning Plan 与 Study Chat 的生产默认。该授权发生在实验结论之后，不能倒写为实验当时已经采用；本段以其所在提交作为采用记录，不预填自指提交哈希。采用仅改变这两个学习者文本路径的提示策略，不扩展到 Tavern、Persona/Scene 生成、Harness schema 或多模态默认值。
+
 | 提交 | 已采用范围 |
 | --- | --- |
 | `276783c` | Planning 同轮 3 次详情、总计 4 次及共享预算契约 |
@@ -99,5 +103,7 @@ VIBE_LEARNER_DOCUMENT_LAYOUT_TIMEOUT_SECONDS=90
 ## 验证范围
 
 `0.3.5` 工作树的本地发布门通过：867 项完整后端测试、共享契约、Web reliability、Harness pilots、十个 stage regressions、plan revision eval 与生产 Web 构建均成功。DocLayout-YOLO 路径另有 68 项后端定向测试通过；真实书页 8 任务的 M3 母框内局部框结果为 6/8，详细限制见[书页定位报告](quality/m3-book-grounding-results-2026-09-12.md)。
+
+`source-minimal-v3` 的采用证据来自开发合成样本和内部人工逐条语义审查，而不是关键词判定。新增的 Study Chat prompt-v2 provider-free deterministic baseline 只验证 tested-system 身份、结构与既有固定案例门禁，并不执行真实模型，也不是文本语义或学习效果认证。该策略尚未经过独立专家复核、真实学习成效研究或生产流量认证，因此不能据此宣称学习效果提升，也不能把该证据外推为 Tavern、Persona/Scene、Harness schema、多模态或其他模型路径的质量结论。
 
 需要代码回归时使用仓库规定的 `npm run test:ai`、`npm run test:contracts`；发布门使用 `npm run check:release`。本轮没有新的独立专家、浏览器或跨平台安装认证。

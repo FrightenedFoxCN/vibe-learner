@@ -1,0 +1,165 @@
+{
+  "version": "m3-role-repair-replay-manual-review-v1",
+  "date": "2026-09-13",
+  "campaign": "m3-role-repair-replay-20260913",
+  "scope": "Development-only replay of two previously exposed and manually confirmed major drafts; proposal-only, not a held-out estimate or production adoption test.",
+  "parent_round3": {
+    "campaign": "m3-text-iteration-20260913-round3",
+    "selected_cases": ["planned-rill-count", "recorded-umber-signal"],
+    "selection_rule": "Only the two baseline drafts already manually classified as the same unsupported-real-world-action major cluster were frozen; no new baseline generation occurred.",
+    "source_manifest_sha256": "9c1b758327ae9c6cafe4a8e0cf5a861d12ed21c972bb0a31f5adef01b365d2eb",
+    "run_manifest_sha256": "472fff3ab788e55a25685fbe74fcca4683741ba780734a8997b5cffe871e68ea",
+    "raw_report_sha256": "55d8e8dbf999384221c242009e04979e9122097bc88add72624a3b3cbbec9fe3"
+  },
+  "replay_artifacts": {
+    "prepared_manifest_sha256": "5c451e19e66fc6c6e109d881a1d2c95f0834206d5cb6143a54f61aa88d5b3887",
+    "run_manifest_sha256": "9751a6359153e1da1c98fe039472684a0d03a2d47128fd5f284458c00e7b93d4",
+    "raw_report_sha256": "657c3b7fa12192b61e207cc0b02b5dc62766f80ba76f44f87ebb77e96718e653",
+    "raw_report_local_path": "tools/model-quality/runs/m3-role-repair-replay-20260913/run/report.json",
+    "git_revision": "5354958fb798cd83296f3475028c56f949928eb9"
+  },
+  "design": {
+    "arms": {
+      "self_revise_twice": "draft0 -> same-model revision -> same-model revision",
+      "specialist_review_revise": "draft0 -> fresh-context same-model specialist review -> same-model repair"
+    },
+    "matched_wire_ceiling": 2,
+    "equal_token_or_compute_claim": false,
+    "defect_ontology_aligned_before_run": true,
+    "critic_independent_model": false,
+    "critic_is_formal_judge": false,
+    "scheduler_seed": 913,
+    "provider_seed_sent": false,
+    "order": "The runner randomized paired blocks and variant order with scheduler seed 913; concurrency two caused the two recorded-umber arms to begin together, followed by planned-rill self then specialist. This is not a fully balanced temporal crossover.",
+    "manual_major_labels_or_answers_in_prompt": false
+  },
+  "effective_config": {
+    "endpoint": "https://api.minimax.cn/v1/chat/completions",
+    "requested_model": "MiniMax-M3",
+    "response_models": ["MiniMax-M3"],
+    "temperature": 0.1,
+    "thinking": "adaptive",
+    "response_format": "json_object",
+    "max_output_tokens_per_wire": 4096,
+    "timeout_seconds": 60,
+    "sample_deadline_seconds": 600,
+    "concurrency": 2,
+    "rpm": 60,
+    "hidden_retry": false,
+    "prompt_hash_location": "Each role-repair-evidence.json records the exact schema-augmented message SHA-256 for both wires."
+  },
+  "wire_summary": {
+    "attempts": 8,
+    "http_200": 8,
+    "reported_tokens": 13016,
+    "unknown_usage_requests": 0,
+    "p50_ms": 5123,
+    "p95_ms": 13228,
+    "self_revise_twice": {
+      "wires": 4,
+      "prompt_tokens": 3078,
+      "completion_tokens": 2919,
+      "reported_tokens": 5997,
+      "wire_p50_ms": 3971,
+      "wire_p95_ms": 5502
+    },
+    "specialist_review_revise": {
+      "wires": 4,
+      "prompt_tokens": 3054,
+      "completion_tokens": 3965,
+      "reported_tokens": 7019,
+      "wire_p50_ms": 7041,
+      "wire_p95_ms": 13228
+    },
+    "cost_interpretation": "The specialist workflow used 17.0% more reported tokens. One reasoning-token field and one cached-token field were absent, so no complete arm-level reasoning or cache comparison is claimed. Billing-token telemetry was unavailable."
+  },
+  "automated_triage": {
+    "self_revise_twice": {"structured_pass": 2, "requests": 2},
+    "specialist_review_revise": {"structured_pass": 2, "requests": 2},
+    "warning": "Automated completion checked only exact facts, positive durations and total minutes, and empty chart_questions. It did not grade learner_prompt semantics."
+  },
+  "manual_review_policy": {
+    "keyword_rules_used": false,
+    "method": "Read source, task, frozen draft, intermediate review/revisions and final Draft clause by clause. A second agent received source/task and de-identified A/B final text without architecture labels.",
+    "ratings": ["pass", "minor", "major"],
+    "reviewer_independence_limit": "The second review was a separate model agent, not an external human or independent model certification."
+  },
+  "manual_findings": [
+    {
+      "case": "planned-rill-count",
+      "self_revise_twice": "major",
+      "specialist_review_revise": "major",
+      "self_contribution": "Both revisions were semantically and canonically unchanged; neither removed the request for unsupported real-world transect procedure during the study window.",
+      "critic_contribution": "The critic correctly located the unsupported request for how the method is carried out, but its guidance retained an unsupported claim that the walking transect is conducted within the 15-minute study window.",
+      "final_change": "The specialist final removed the word how but still stated that the walking transect method will be used during the study window. This is a partial wording change with no severity reduction.",
+      "new_major": false,
+      "supported_fact_loss": false
+    },
+    {
+      "case": "recorded-umber-signal",
+      "self_revise_twice": "major",
+      "specialist_review_revise": "major",
+      "self_contribution": "Both revisions were semantically and canonically unchanged; the final still asks the learner to infer an action required by waiting.",
+      "critic_contribution": "The critic returned no issues and incorrectly said the draft stayed within the source. This is a false-negative omission of the frozen major error.",
+      "final_change": "The specialist final was canonically identical to the frozen draft.",
+      "new_major": false,
+      "supported_fact_loss": false,
+      "secondary_observation": "The prompt contains review, compare and decide despite a two-activity duration vector; this semantic schedule mismatch was invisible to the structural metric."
+    }
+  ],
+  "manual_summary": {
+    "self_revise_twice": {"pass": 0, "minor": 0, "major": 2, "original_major_fixed": 0},
+    "specialist_review_revise": {"pass": 0, "minor": 0, "major": 2, "original_major_fixed": 0},
+    "specialist_unique_net_fixes": 0,
+    "structured_fact_errors": 0
+  },
+  "paper_rationale": {
+    "sources": [
+      {
+        "title": "RAG-Critic",
+        "url": "https://aclanthology.org/2025.acl-long.179/",
+        "use": "Inspired error classification followed by targeted recovery.",
+        "non_reproduction": "This replay had no trained critic, retrieval, seven-dataset evaluation or paper recovery policy."
+      },
+      {
+        "title": "Building effective agents",
+        "url": "https://www.anthropic.com/research/building-effective-agents",
+        "use": "Supplied the evaluator-optimizer workflow vocabulary.",
+        "non_reproduction": "This is a vendor engineering article, and the replay had no orchestrator-workers decomposition."
+      },
+      {
+        "title": "AgentDropout",
+        "url": "https://aclanthology.org/2025.acl-long.1170/",
+        "use": "Inspired recording marginal contribution and pruning a critic with no net contribution.",
+        "non_reproduction": "No learned or dynamic agent elimination was implemented; paper token-savings figures are not applied here."
+      },
+      {
+        "title": "Beyond Frameworks",
+        "url": "https://aclanthology.org/2025.acl-long.1037/",
+        "use": "Motivated separating roles, order, context visibility and governance in the audit.",
+        "non_reproduction": "This replay changed a role-separated prompt/context bundle and cannot isolate a general multi-agent architecture effect."
+      }
+    ],
+    "reading_limit": "The ACL sources were used from verified metadata and abstracts already archived in the repository; their PDFs, tables and budgets were not deeply reproduced for this replay."
+  },
+  "decision": {
+    "specialist_workflow": "stop_and_do_not_expand",
+    "reason": "It fixed neither frozen major, produced no unique net repair, cost more reported tokens and had materially higher latency. The two-case development replay does not prove that multi-agent architectures are generally ineffective.",
+    "production_default": "unchanged",
+    "multimodal": "paused",
+    "domain_small_model": "not_tested_or_justified_from_two_exposed_failures",
+    "next_strategy_if_new_evidence_appears": "First separate study-task wording from real-world source events with an error-specific deterministic or prompt-level transform. Consider a small-model factor only on a new entity/source-disjoint confirmation set and never change model and architecture in the same comparison."
+  },
+  "resource_window_after": {
+    "wire_attempts": 1651,
+    "charged_or_reserved_tokens": 11588064,
+    "unknown_usage_requests": 46,
+    "inflight": 0
+  },
+  "limitations": [
+    "Both cases were selected from exposed development failures, so the result estimates neither routing accuracy nor held-out repair quality.",
+    "The specialist is a fresh-context role using the same MiniMax-M3 backbone and provider, not an independent model or human judge.",
+    "Matched wire count is not matched token, reasoning compute, cache behavior or latency.",
+    "No domain admission, effect, commit, read-back, frontend or platform behavior was tested."
+  ]
+}

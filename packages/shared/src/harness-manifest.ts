@@ -245,7 +245,7 @@ const STAGE_VOCABULARY: StageVocabulary[] = [
     stage: "plan_generation",
     ownerModule: "app.services.model_provider",
     components: [
-      { name: "planning_prompt", contract: { name: "planning_prompt", version: "planning-prompt-v1" } },
+      { name: "planning_prompt", contract: { name: "planning_prompt", version: "planning-prompt-v2" } },
       {
         name: "planning_toolset",
         contract: { name: "planning_toolset", version: "planning-toolset-v1" },
@@ -291,7 +291,7 @@ const STAGE_VOCABULARY: StageVocabulary[] = [
     stage: "study_chat_reply",
     ownerModule: "app.services.study_sessions",
     components: [
-      { name: "study_chat_prompt", contract: { name: "study_chat_prompt", version: "study-chat-prompt-v1" } },
+      { name: "study_chat_prompt", contract: { name: "study_chat_prompt", version: "study-chat-prompt-v2" } },
       { name: "study_chat_toolset", contract: { name: "study_chat_toolset", version: "study-chat-toolset-v2" } },
       { name: "study_grounding", contract: { name: "study_grounding", version: "study-grounding-v1" } },
       { name: "study_visual_grounding", contract: { name: "study_visual_grounding", version: "study-visual-grounding-v1" } },
@@ -525,7 +525,7 @@ const STUDY_ENTRY: HarnessWorkflowManifestEntryV1 = {
   proposal_contract: registeredContract("StudyChatReplyProposal", "study-chat-reply-proposal-v1"),
   output_contract: registeredContract("StudySessionTurnCommittedProjection", "study-chat-turn-committed-projection-v1"),
   component_contracts: componentContracts("study_chat", "study_chat_reply"),
-  prompt_contract: registeredContract("StudyChatPrompt", "study-chat-prompt-v1"),
+  prompt_contract: registeredContract("StudyChatPrompt", "study-chat-prompt-v2"),
   policy_contract: registeredContract("StudyChatHarnessPolicy", "study-chat-harness-v1"),
   toolset_contract: registeredContract("ToolManifestRegistry", HARNESS_WORKFLOW_MANIFEST_TOOL_MANIFEST_VERSION),
   attempt_ceiling: { max_attempts: 3, max_repair_attempts: 2 },
@@ -671,7 +671,7 @@ const entries: HarnessWorkflowManifestEntryV1[] = [
     output: contract("LearningPlanCommittedProjection", "learning-plan-committed-projection-v1"),
     artifacts: ["document_debug", "persona_snapshot", "planning_context", "scene_snapshot", "study_unit_input"],
     decoder: "app.services.harness_broad_adoption.LearningPlanWorkflowAdapter",
-    prompt: contract("LearningPlanPrompt", "planning-prompt-v1"),
+    prompt: contract("LearningPlanPrompt", "planning-prompt-v2"),
     policy: contract("LearningPlanHarnessPolicy", "learning-plan-harness-v1"),
     toolset: TOOL_MANIFEST_SLOT,
     commit: { status: "registered", key: { workflow: "planning", stage: "plan_generation", trace_contract: contract("LearningPlanRuntimeOutput", "learning-plan-runtime-output-v1"), payload_contract: contract("LearningPlanCommittedProjection", "learning-plan-committed-projection-v1") } },

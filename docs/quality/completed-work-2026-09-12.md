@@ -31,3 +31,13 @@
 
 
 2026-09-12 Planning/多媒体后续授权实验已完成，见[本轮总报告](m3-planning-multimedia-results-2026-09-12.md)：77个实验记录、154请求尝试（142 HTTP200、12实验请求HTTP400），519,988已知tokens，峰值4。MQ-04/05：Plan 12/12生命周期通过，但强制取证无稳定内容收益；需区分条件遗漏、来源外扩展与无依据教材结构断言，并修正概率目标的诱导口径。MQ-07/09：填空错误作答和PDF高亮通过，单选2例uncertain，图片框选/坐标提示未过定位门。MQ-10：同模型角色校准三臂各4/4有限字段通过、首稿已经正确，额外审核未证收益；图表交付完整性尚未纳入rubric。同任务另一子agent重算图像与复核来源，不等同外部独立留出。候选均未晋级、默认配置不变、无持续实测；未来只读专项审核与OCR坐标映射仍为研究建议。
+
+2026-09-13 按用户更正暂缓 multimodal，新增[纯文本迭代与多智能体早停记录](m3-text-iteration-results-2026-09-13.md)：8 个全新开发 family、三个单请求臂共 24 次 M3 请求、36,294 reported tokens、无 unknown usage。约束清单在一个无依据 `chart_questions` 错误上形成净修复；另四个原始失败经审计属于时间格式或否定语境 rubric 问题。因真实 baseline 错误仅一例，按早停规则未运行 reviewer/self-revise，未改生产默认、未引入小模型。
+
+同日第二轮使用另外 12 个 entity/source-disjoint family，对 baseline 与约束清单共发 24 次请求、31,201 reported tokens、无 unknown usage。自动结构检查两臂均 12/12；逐份人工语义审查为 baseline 10 pass/2 minor、约束清单 8 pass/4 minor，后者的解释性扩写反而引入更多无依据上下文。无双例错误簇，故未启动多智能体 reviewer；约束清单淘汰，默认不变。逐例证据仍见[同一报告](m3-text-iteration-results-2026-09-13.md)。
+
+同日第三轮在另外 12 个新 family 上比较 baseline 与 source-minimal，共 24 次请求、34,444 reported tokens。逐句人工审查为 baseline 4 pass/6 minor/2 major、候选 9 pass/2 minor/1 major；候选虽修复两个 baseline major，却新增把计划记录变成真实滤芯作业的 major，故不直接晋级。随后仅冻结回放两个 baseline major：等两 wire 的 self-revision 与 same-model specialist→repair 共 8 次 HTTP 200、13,016 tokens。自动结构 4/4，但人工去标签复核两臂均 0/2 修复；specialist 多 17.0% tokens、无独有净贡献，已早停。论文只提供 evaluator-optimizer、错误分类恢复与边际裁剪的研究路径，不作为复现或收益证据；multimodal 暂缓，生产默认与 Harness 边界均未变。完整证据见[同一报告](m3-text-iteration-results-2026-09-13.md)。
+
+按用户更正，第三轮的 source-minimal 没有因一例候选 major 而终止整条路线，而是保持“不直接晋级”并继续提示级改版。第四批 12 个新 family 中，v1 人工 6 pass/5 minor/1 major，v2 为 9 pass/3 minor/0 major，v2 同时少用 11.0% reported tokens。第五批再用 12 个新 family 比较 v2/v3：人工分别 8 pass/4 minor/0 major 与 9 pass/3 minor/0 major，v3 少用 12.6% tokens；自动 exact facts 中多项失败经逐稿复核是来源支持的角色前缀与 gold 规范化差异，未按关键字判错。v3 仍有完整 span 和台账认识状态 minor，仅保留为独立确认候选；不改生产默认、不重复相似开发测试、不引入小模型。证据见[同一报告](m3-text-iteration-results-2026-09-13.md)。
+
+2026-09-13 实验后采用记录：上述“生产默认不变”是第五批实验收尾时的历史决定；随后用户明确授权将 `source-minimal-v3` 设为生产默认，采用范围仅限 Learning Plan 与 Study Chat。该授权不把开发批次追溯改写成独立留出或生产采用测试，也不关闭 MQ-10：现有证据来自开发合成样本和内部人工语义审查，尚无独立学习效果认证。multimodal 继续暂缓；Tavern、Persona/Scene、Harness schema 及垂域小模型不在本次采用范围内。

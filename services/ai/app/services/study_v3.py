@@ -42,7 +42,7 @@ STUDY_INPUT_CONTRACT = HarnessContractRef(
     name="StudyChatInputManifest", version="study-chat-input-manifest-v1"
 )
 STUDY_PROMPT_CONTRACT = HarnessContractRef(
-    name="StudyChatPrompt", version="study-chat-prompt-v1"
+    name="StudyChatPrompt", version="study-chat-prompt-v2"
 )
 STUDY_POLICY_CONTRACT = HarnessContractRef(
     name="StudyChatHarnessPolicy", version="study-chat-harness-v1"

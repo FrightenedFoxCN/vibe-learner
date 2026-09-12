@@ -1883,6 +1883,10 @@ class PersonaPipelineTests(ContainerTestCase):
         system_content = captured_payloads[0]["messages"][0]["content"]
         self.assertIn("必须严格输出单个 JSON 对象", system_content)
         self.assertIn(CHAT_JSON_SCHEMA, system_content)
+        self.assertIn("source-minimal-v3，生产默认", system_content)
+        self.assertIn("只保留来源记录时点的该状态", system_content)
+        self.assertIn("学习时长只约束学习活动", system_content)
+        self.assertIn("只有工具成功后才能声称效果已经发生", system_content)
 
     def test_openai_chat_tool_round_appends_json_only_followup(self) -> None:
         provider = OpenAIModelProvider(
@@ -2247,6 +2251,10 @@ class PersonaPipelineTests(ContainerTestCase):
 
         self.assertIn("必须严格输出单个 JSON 对象", template.system_prompt)
         self.assertIn('"course_title": string', template.system_prompt)
+        self.assertIn("source-minimal-v3，生产默认", template.system_prompt)
+        self.assertIn("只保留来源记录时点的该状态", template.system_prompt)
+        self.assertIn("学习时长只约束学习活动", template.system_prompt)
+        self.assertIn("完整必要片段", template.system_prompt)
         self.assertGreaterEqual(len(template.user_instructions), 3)
         self.assertIn("study_units", template.user_instructions[0])
 

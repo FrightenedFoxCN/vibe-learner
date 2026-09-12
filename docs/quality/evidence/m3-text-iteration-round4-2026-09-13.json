@@ -1,0 +1,95 @@
+{
+  "version": "m3-text-iteration-round4-manual-review-v1",
+  "date": "2026-09-13",
+  "campaign": "m3-text-iteration-20260913-round4",
+  "scope": "Fourth synthetic pure-text development round on twelve new entity/source-disjoint families; source-minimal v1 versus targeted v2; proposal-only and not production adoption.",
+  "source_manifest_sha256": "4cdb6cb825d6272b1d3aaed4167def73d5a79695f6e9cc5e802cba451a220302",
+  "run_manifest_sha256": "ea68aa3c40936e7f8d7db943bd70085d133b7c3af63a6fe3ff4941999f8b0d59",
+  "raw_report_sha256": "3626ab4d9164cf29bd83742152b99ef5b98feaab76d1b97d8abefd5d0f22c899",
+  "raw_report_local_path": "tools/model-quality/runs/m3-text-iteration-20260913/round4/run/report.json",
+  "design": {
+    "families": 12,
+    "clusters": {
+      "study_time_vs_source_event_duration": 4,
+      "planned_scheduled_proposed_modality": 4,
+      "recorded_reported_listed_observed_boundary": 4
+    },
+    "variants": ["source-minimal", "source-minimal-v2"],
+    "wire_limit_per_sample": 1,
+    "concurrency": 2,
+    "scheduler_seed": 913,
+    "provider_seed_sent": false,
+    "task_leaks_target_prohibitions": false
+  },
+  "wire": {
+    "attempts": 24,
+    "http_200": 24,
+    "reported_tokens": 38229,
+    "unknown_usage_requests": 0,
+    "p50_ms": 5632,
+    "p95_ms": 10574,
+    "source_minimal": {
+      "prompt_tokens": 8926,
+      "completion_tokens": 11300,
+      "reported_tokens": 20226,
+      "p50_ms": 5693,
+      "p95_ms": 11046
+    },
+    "source_minimal_v2": {
+      "prompt_tokens": 9791,
+      "completion_tokens": 8212,
+      "reported_tokens": 18003,
+      "p50_ms": 5522,
+      "p95_ms": 7897
+    }
+  },
+  "automated_triage": {
+    "source_minimal": {"structured_pass": 9, "requests": 12},
+    "source_minimal_v2": {"structured_pass": 10, "requests": 12},
+    "warning": "The five candidate_failed samples were exact-fact mismatches, not automatic semantic verdicts. All learner prompts were read manually."
+  },
+  "manual_review_policy": {
+    "keyword_rules_used": false,
+    "method": "Read every source, task, structured fact, duration vector and complete learner_prompt. Ordinary reading, recall, comparison, writing and self-check were allowed. Real-world execution, unsupported later status, event renaming, causal strengthening and external delivery workflows were not.",
+    "parallel_review": "Two agents reviewed six cases each; two flagged evidence conflicts were explicitly re-opened and corrected against the raw Draft.",
+    "ratings": ["pass", "minor", "major"]
+  },
+  "manual_summary": {
+    "source_minimal": {"pass": 6, "minor": 5, "major": 1},
+    "source_minimal_v2": {"pass": 9, "minor": 3, "major": 0}
+  },
+  "manual_findings": [
+    {"case": "tram-dwell-nacre", "source_minimal": "minor", "source_minimal_v2": "minor", "finding": "Both kept the 8-minute study budget separate from the documented 29-minute dwell, but both shortened the requested platform value from Platform Moss to Moss."},
+    {"case": "batch-cooling-saffron", "source_minimal": "minor", "source_minimal_v2": "pass", "finding": "V1 learner guidance combined temperatures with their unit despite separate number-only fields; v2 requested the fields without changing the cooling duration or study time."},
+    {"case": "rehearsal-span-echo", "source_minimal": "pass", "source_minimal_v2": "pass", "finding": "Both kept the 85-minute rehearsal duration separate from the 11-minute learning budget; time-difference checking was a supported self-check."},
+    {"case": "barge-unloading-tern", "source_minimal": "minor", "source_minimal_v2": "pass", "finding": "V1 shortened Quay Amber to Amber in structured facts; neither arm asked the learner to unload the barge or confused 9 study minutes with the 44-minute event."},
+    {"case": "proposed-marsh-survey", "source_minimal": "pass", "source_minimal_v2": "pass", "finding": "Both retained proposed status and used reading/fill-in activities rather than performing the survey."},
+    {"case": "scheduled-mural-cleaning", "source_minimal": "pass", "source_minimal_v2": "pass", "finding": "Both retained scheduled status; v1's 10-minute session referred to the learning allocation, not mural cleaning duration."},
+    {"case": "planned-mesa-core", "source_minimal": "major", "source_minimal_v2": "minor", "finding": "V1 replaced content study with unrelated integer partitioning. V2 restored fact recall but added not yet performed, which a historical planning memo does not prove about the later real-world state."},
+    {"case": "proposed-case-relocation", "source_minimal": "pass", "source_minimal_v2": "pass", "finding": "Both retained proposal status and only asked for source facts; v2's non-performance instruction did not claim relocation occurred."},
+    {"case": "reported-solace-tones", "source_minimal": "pass", "source_minimal_v2": "pass", "finding": "Both preserved Niko's reported attribution. Submit your response was ordinary answer delivery, not a claim that the underlying event entered an external submission workflow."},
+    {"case": "listed-thistle-condition", "source_minimal": "pass", "source_minimal_v2": "pass", "finding": "Confirm the identifier meant exact learner restatement, not physical verification; both retained listed status."},
+    {"case": "observed-wren-sequence", "source_minimal": "minor", "source_minimal_v2": "pass", "finding": "V1 relocated recording of the observer card to Dock Juniper although the source only names it as the viewing point; v2 preserved sequence without causality."},
+    {"case": "recorded-aster-spike", "source_minimal": "minor", "source_minimal_v2": "minor", "finding": "Both shortened the requested instrument value gauge Aster-15 to Aster-15. The event remained recorded and no real-world device action was introduced."}
+  ],
+  "decision": {
+    "source_minimal_v2": "advance_to_new_material_refinement_not_production",
+    "reason": "V2 removed the only major, increased pass ratings from 6 to 9, reduced reported tokens by 11.0%, and lowered P95 in this targeted development batch. It still overstates not yet performed and drops supported type/location prefixes.",
+    "next_candidate": "source-minimal-v3 must preserve complete source spans and say only that the source described an item as planned, without inferring later performed or unperformed status.",
+    "specialist_multi_agent_branch": "remains_stopped_separately",
+    "multimodal": "paused",
+    "production_default": "unchanged"
+  },
+  "resource_window_after": {
+    "wire_attempts": 1675,
+    "charged_or_reserved_tokens": 11626293,
+    "unknown_usage_requests": 46,
+    "inflight": 0
+  },
+  "limitations": [
+    "Cases were deliberately targeted development examples, not a preregistered independent holdout.",
+    "The same M3 model generated both arms and participated in internal review; independent human quality confirmation remains open.",
+    "Learner answer visibility was not preregistered, so source restatement was not retroactively scored as answer leakage.",
+    "No domain admission, commit, read-back, frontend or platform behavior was tested."
+  ]
+}

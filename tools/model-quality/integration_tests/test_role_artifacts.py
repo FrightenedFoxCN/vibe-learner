@@ -75,7 +75,7 @@ class ArtifactTests(unittest.TestCase):
                 ctx=SimpleNamespace(storage=Path(directory),transport=SimpleNamespace(
                     campaign=SimpleNamespace(model='test',max_output_tokens=100,temperature=0),
                     request=lambda *a,**k: {'choices':[{'message':{'content':json.dumps(draft)}}]}))
-                case=SimpleNamespace(id='media-chart',source=SOURCE,request='Read chart.',
+                case=SimpleNamespace(id='media-chart',source=SOURCE,request='Read chart.',rubric='role-exact-v1',
                     gold=json.dumps({'facts':{'maximum_label':'B'},'minutes':11,'activity_count':2}))
                 result=run_sample(ctx,case,SimpleNamespace(id='baseline'))
                 self.assertEqual(result['status'],expected)

@@ -95,7 +95,7 @@
     },
     "PLAN_PROMPT_CONTRACT": {
       "name": "LearningPlanPrompt",
-      "version": "planning-prompt-v1"
+      "version": "planning-prompt-v2"
     },
     "PLAN_POLICY_CONTRACT": {
       "name": "LearningPlanHarnessPolicy",

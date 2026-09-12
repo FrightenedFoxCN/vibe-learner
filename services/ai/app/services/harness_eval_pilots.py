@@ -927,7 +927,7 @@ def _system_config(*, suite: HarnessContractRef) -> HarnessEvalSystemConfigV1:
             ),
             "prompt_contract": HarnessContractRef(
                 name="StudyChatPrompt",
-                version="study-chat-prompt-v1",
+                version="study-chat-prompt-v2",
             ),
             "policy_contract": HarnessContractRef(
                 name="StudyChatHarnessPolicy",
@@ -940,7 +940,7 @@ def _system_config(*, suite: HarnessContractRef) -> HarnessEvalSystemConfigV1:
             "component_contracts": [
                 HarnessContractRef(
                     name="study_chat_prompt",
-                    version="study-chat-prompt-v1",
+                    version="study-chat-prompt-v2",
                 ),
                 HarnessContractRef(
                     name="study_chat_toolset",
@@ -1337,7 +1337,11 @@ def execute_harness_pilot_bundle(
         ]
         if refresh_baselines:
             baseline = build_harness_eval_baseline(
-                baseline_version=f"{suite.version}-baseline-v2" if suite == PLANNING_TOOL_EVAL_SUITE else f"{suite.version}-baseline-v1",
+                baseline_version=(
+                    f"{suite.version}-baseline-v2"
+                    if suite in (PLANNING_TOOL_EVAL_SUITE, STUDY_CHAT_EVAL_SUITE)
+                    else f"{suite.version}-baseline-v1"
+                ),
                 run=runs[key],
                 report=execution.report,
                 minimum_sample_count=len(cases[key]),
@@ -1383,7 +1387,13 @@ def execute_harness_pilot_bundle(
 
 
 def _baseline_directory_name(suite_name: str) -> str:
-    return "planning_tool_eval_detail_budget_v2" if suite_name == PLANNING_TOOL_EVAL_SUITE.name else suite_name
+    if suite_name == PLANNING_TOOL_EVAL_SUITE.name:
+        return "planning_tool_eval_detail_budget_v2"
+    if suite_name == STUDY_CHAT_EVAL_SUITE.name:
+        # Keep the prompt-v1 baseline immutable; the directory name binds this
+        # deterministic evidence set to the reviewed prompt-v2 system identity.
+        return "study_chat_eval_prompt_v2"
+    return suite_name
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -1391,6 +1401,15 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--profile", choices=("pr",), default="pr")
     parser.add_argument("--output-dir", type=Path)
     parser.add_argument("--refresh-baselines", action="store_true")
+    parser.add_argument(
+        "--selected-suite",
+        choices=(
+            TAVERN_IDENTITY_EVAL_SUITE.name,
+            PLANNING_TOOL_EVAL_SUITE.name,
+            STUDY_CHAT_EVAL_SUITE.name,
+        ),
+        help="Write only one suite when refreshing checked-in deterministic evidence.",
+    )
     args = parser.parse_args(argv)
     bundle = execute_harness_pilot_bundle(
         refresh_baselines=args.refresh_baselines,
@@ -1400,6 +1419,8 @@ def main(argv: list[str] | None = None) -> int:
         output.mkdir(parents=True, exist_ok=True)
         for key in sorted(bundle.executions):
             name = key[0]
+            if args.selected_suite is not None and name != args.selected_suite:
+                continue
             suite_dir = output / (_baseline_directory_name(name) if args.refresh_baselines else name)
             suite_dir.mkdir(parents=True, exist_ok=True)
             (suite_dir / "raw-samples.json").write_text(

@@ -843,7 +843,7 @@
             "status": "registered",
             "contract": {
               "name": "planning_prompt",
-              "version": "planning-prompt-v1"
+              "version": "planning-prompt-v2"
             }
           }
         },
@@ -862,7 +862,7 @@
         "status": "registered",
         "contract": {
           "name": "LearningPlanPrompt",
-          "version": "planning-prompt-v1"
+          "version": "planning-prompt-v2"
         }
       },
       "policy_contract": {
@@ -1351,7 +1351,7 @@
             "status": "registered",
             "contract": {
               "name": "study_chat_prompt",
-              "version": "study-chat-prompt-v1"
+              "version": "study-chat-prompt-v2"
             }
           }
         },
@@ -1390,7 +1390,7 @@
         "status": "registered",
         "contract": {
           "name": "StudyChatPrompt",
-          "version": "study-chat-prompt-v1"
+          "version": "study-chat-prompt-v2"
         }
       },
       "policy_contract": {
