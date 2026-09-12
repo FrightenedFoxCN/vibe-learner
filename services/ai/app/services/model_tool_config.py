@@ -24,7 +24,7 @@ _TOOL_UI_CATALOG: dict[str, dict[str, dict[str, str]]] = {
             "category_label": "规划分析",
         },
         "estimate_plan_completion": {
-            "label": "计划完成度评估",
+            "label": "学习单元结构估分",
             "category": "planning",
             "category_label": "规划分析",
         },

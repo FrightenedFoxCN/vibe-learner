@@ -461,7 +461,7 @@ def _sorted_capabilities(*items: ToolProviderCapability) -> tuple[ToolProviderCa
 _PLANNING_META: dict[str, tuple[str, str, str, str]] = {
     "get_study_unit_detail": ("学习单元详情", "planning", "规划分析", "读取单个学习单元的细节结构与切块摘录，用于精细规划。"),
     "ask_planning_question": ("计划澄清提问", "planning", "规划分析", "在目标或边界不清时，向学习者提出一个具体确认问题，并保留保守假设。"),
-    "estimate_plan_completion": ("计划完成度评估", "planning", "规划分析", "根据当前学习单元与目录细度估计计划完成度，判断是否还需要继续打磨。"),
+    "estimate_plan_completion": ("学习单元结构估分", "planning", "规划分析", "根据学习单元页跨度、子标题数量与覆盖比例评估结构元数据；不读取计划活动，不评价目标覆盖、事实正确性或活动可执行性。"),
     "revise_study_units": ("学习单元重编排", "planning", "规划分析", "在章节切分明显错误时，允许模型重写完整学习单元列表。"),
     "read_page_range_content": ("页范围文本读取", "sensory", "感官工具", "读取教材页范围文本，补充计划生成需要的上下文细节。"),
     "read_page_range_images": ("页范围图像读取", "sensory", "感官工具", "渲染教材页图像，用于公式、图表、版式等视觉线索判断。"),

@@ -1,0 +1,17 @@
+[
+  {
+    "path": "/manifest/tools/1/display/provider_description",
+    "before": "根据当前学习单元与目录细度估计计划完成度，判断是否还需要继续打磨。",
+    "after": "根据学习单元页跨度、子标题数量与覆盖比例评估结构元数据；不读取计划活动，不评价目标覆盖、事实正确性或活动可执行性。"
+  },
+  {
+    "path": "/manifest/tools/1/display/label",
+    "before": "计划完成度评估",
+    "after": "学习单元结构估分"
+  },
+  {
+    "path": "/provider_functions/1/projection/function/description",
+    "before": "根据当前学习单元与目录细度估计计划完成度，判断是否还需要继续打磨。",
+    "after": "根据学习单元页跨度、子标题数量与覆盖比例评估结构元数据；不读取计划活动，不评价目标覆盖、事实正确性或活动可执行性。"
+  }
+]
