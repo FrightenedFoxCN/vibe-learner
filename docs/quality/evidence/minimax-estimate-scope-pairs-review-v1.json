@@ -1,0 +1,211 @@
+{
+  "scope": "Maintainer source-estimator scope disclosure comparison",
+  "rows": [
+    {
+      "cell": 0,
+      "candidate": false,
+      "committed": true,
+      "provider_calls": 3,
+      "estimate_calls": 1,
+      "estimates": [
+        {
+          "unit_ranges": [
+            [
+              1,
+              2
+            ]
+          ],
+          "score": 42,
+          "signals": {
+            "plannable_unit_count": 1,
+            "units_with_subsections": 0,
+            "total_subsections": 0,
+            "detail_coverage_ratio": 0.0,
+            "richness_ratio": 0.0
+          },
+          "missing_items": [
+            "subsection_detail",
+            "page_range_evidence"
+          ],
+          "scope_hint_sent": false
+        }
+      ],
+      "tool_errors": [],
+      "requested_tools": [
+        [
+          "get_study_unit_detail",
+          "read_page_range_content"
+        ],
+        [
+          "estimate_plan_completion"
+        ],
+        []
+      ]
+    },
+    {
+      "cell": 1,
+      "candidate": true,
+      "committed": true,
+      "provider_calls": 5,
+      "estimate_calls": 1,
+      "estimates": [
+        {
+          "unit_ranges": [
+            [
+              1,
+              2
+            ]
+          ],
+          "score": 42,
+          "signals": {
+            "plannable_unit_count": 1,
+            "units_with_subsections": 0,
+            "total_subsections": 0,
+            "detail_coverage_ratio": 0.0,
+            "richness_ratio": 0.0
+          },
+          "missing_items": [
+            "subsection_detail",
+            "page_range_evidence"
+          ],
+          "scope_hint_sent": true
+        }
+      ],
+      "tool_errors": [
+        {
+          "tool_name": "revise_study_units",
+          "error": "invalid_study_unit_revision",
+          "detail_code": "study_unit_2_overlaps_previous",
+          "provider_detail_sent": true
+        }
+      ],
+      "requested_tools": [
+        [
+          "get_study_unit_detail",
+          "read_page_range_content"
+        ],
+        [
+          "revise_study_units"
+        ],
+        [
+          "estimate_plan_completion"
+        ],
+        [],
+        []
+      ]
+    },
+    {
+      "cell": 2,
+      "candidate": true,
+      "committed": true,
+      "provider_calls": 4,
+      "estimate_calls": 1,
+      "estimates": [
+        {
+          "unit_ranges": [
+            [
+              1,
+              2
+            ]
+          ],
+          "score": 42,
+          "signals": {
+            "plannable_unit_count": 1,
+            "units_with_subsections": 0,
+            "total_subsections": 0,
+            "detail_coverage_ratio": 0.0,
+            "richness_ratio": 0.0
+          },
+          "missing_items": [
+            "subsection_detail",
+            "page_range_evidence"
+          ],
+          "scope_hint_sent": true
+        }
+      ],
+      "tool_errors": [],
+      "requested_tools": [
+        [
+          "read_page_range_content",
+          "get_study_unit_detail"
+        ],
+        [
+          "revise_study_units"
+        ],
+        [
+          "estimate_plan_completion"
+        ],
+        []
+      ]
+    },
+    {
+      "cell": 3,
+      "candidate": false,
+      "committed": true,
+      "provider_calls": 3,
+      "estimate_calls": 1,
+      "estimates": [
+        {
+          "unit_ranges": [
+            [
+              1,
+              2
+            ]
+          ],
+          "score": 42,
+          "signals": {
+            "plannable_unit_count": 1,
+            "units_with_subsections": 0,
+            "total_subsections": 0,
+            "detail_coverage_ratio": 0.0,
+            "richness_ratio": 0.0
+          },
+          "missing_items": [
+            "subsection_detail",
+            "page_range_evidence"
+          ],
+          "scope_hint_sent": false
+        }
+      ],
+      "tool_errors": [],
+      "requested_tools": [
+        [
+          "get_study_unit_detail",
+          "read_page_range_content"
+        ],
+        [
+          "revise_study_units",
+          "estimate_plan_completion"
+        ],
+        []
+      ]
+    }
+  ],
+  "summary": {
+    "runs_per_group": 2,
+    "baseline_committed": 2,
+    "candidate_committed": 2,
+    "baseline_provider_calls": 6,
+    "candidate_provider_calls": 9,
+    "baseline_estimate_calls": 2,
+    "candidate_estimate_calls": 2
+  },
+  "findings": [
+    "Every operation estimates exactly once; scope hint does not reduce estimate-call count in this batch.",
+    "Candidate first operation has one overlapping Study Unit revision refusal; second has none, baseline neither.",
+    "Baseline cell0 specifies2-minute initial scan and3-minute recap but no complete stage allocation.",
+    "Candidate cell1 task allocations2+4+8+4+8+3+1 total30; focus substitutes4+10 for initial2+4+8, reallocating introductory time into detailed reading. Internal mapping inconsistent.",
+    "Candidate cell2 tasks3+12+10+3 total28, while focus assigns5-minute recap. Neither reconcile this difference.",
+    "Baseline cell3 tasks2+6+6+6+6+4 total30; labels OCR noise as upper-page caption fragments, though noise belongs to illustration region.",
+    "Method-specific comparison/alternative-explanation activities remain present, but no complete source/persona quality certification."
+  ],
+  "decision": "Do not adopt this recommendation as an efficiency optimization. Scope description is factually grounded in code, but identical one-call estimates and small sample do not establish benefit.",
+  "limitations": [
+    "Same prepared two-page source and persona method configured; no new exact serialized context-equality observation in this batch",
+    "Scores/signals/missing items and tool ceilings unchanged, recommendation added before existing strict tool result adapter",
+    "Short snapshot has absent subsection metadata; cannot generalize to long richly structured or OCR-heavy sources",
+    "No latency/caching advantage inferred from total calls or usage",
+    "Compile and diff checks passed, no production change"
+  ],
+  "next_step": "Test a different source and consider whether source-scope clarification belongs in static tool description rather than repeated result recommendations; retain source-fidelity and timing gates."
+}
