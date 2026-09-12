@@ -1,5 +1,7 @@
 # MiniMax-M3 研究接手摘要
 
+2026-09-12 新增：[并行实验总记录与生产更新交接](m3-parallel-results-2026-09-12.md)。三条优先 lane 已执行，实验候选、数据校准、失败和源码快照完整保留；不代表独立质量门或生产采用。
+
 ## 当前状态与阅读顺序
 
 历史真实模型实测已在第 121 轮后停止；最后实验提交 `deed0ae`，没有待收尾的模型实验。2026-09-12 后续任务新增联网研究、首日 2000M tokens 的执行规划和 provider-free 本地复现；随后已完成[独立实验运行器](../../tools/model-quality/README.md)和[4 请求 M3 基础设施预检](evidence/m3-parallel-infrastructure-preflight-2026-09-12.json)，随后又完成[自动扩容与 Study/Tavern 领域接入验收](evidence/m3-autoscale-domain-adapters-2026-09-12.json)：4 个样本的持久化与重启读回均通过，但 Study 两例没有专门记忆写入却声明已保存。独立质量确认批次尚未启动，质量门仍开放。最新资源与调度口径见[高并行计划](m3-parallel-exploration-2026-09-12.md)，不以消耗额度或运行满一天为目标。

@@ -1,0 +1,57 @@
+[
+  {
+    "id": "3981c4d61f9d4c809733301c54ccd9d5",
+    "campaign": "production-grounding",
+    "sample": "verbatim-en",
+    "started": 1789203166.196574,
+    "finished": 1789203171.345029,
+    "state": "finished",
+    "reserved": 104096,
+    "charged": 4910,
+    "metadata": "{\"endpoint\":\"https://api.minimax.cn/v1/chat/completions\",\"model\":\"MiniMax-M3\",\"sample\":\"verbatim-en\",\"sdk\":\"litellm\",\"total_tokens\":4910}"
+  },
+  {
+    "id": "07e1ce405f3f41829f90025653d8ef31",
+    "campaign": "production-grounding",
+    "sample": "verbatim-en",
+    "started": 1789203171.3588018,
+    "finished": 1789203179.0626829,
+    "state": "finished",
+    "reserved": 104096,
+    "charged": 5476,
+    "metadata": "{\"endpoint\":\"https://api.minimax.cn/v1/chat/completions\",\"model\":\"MiniMax-M3\",\"sample\":\"verbatim-en\",\"sdk\":\"litellm\",\"total_tokens\":5476}"
+  },
+  {
+    "id": "ff83ba29b9b7495197985e36f56f27f0",
+    "campaign": "production-grounding",
+    "sample": "verbatim-zh",
+    "started": 1789203179.4776971,
+    "finished": 1789203184.098597,
+    "state": "finished",
+    "reserved": 104096,
+    "charged": 5413,
+    "metadata": "{\"endpoint\":\"https://api.minimax.cn/v1/chat/completions\",\"model\":\"MiniMax-M3\",\"sample\":\"verbatim-zh\",\"sdk\":\"litellm\",\"total_tokens\":5413}"
+  },
+  {
+    "id": "e0712e617c734dce8d50ca311a2d910d",
+    "campaign": "production-grounding",
+    "sample": "verbatim-zh",
+    "started": 1789203184.120718,
+    "finished": 1789203186.010766,
+    "state": "finished",
+    "reserved": 104096,
+    "charged": 5693,
+    "metadata": "{\"endpoint\":\"https://api.minimax.cn/v1/chat/completions\",\"model\":\"MiniMax-M3\",\"sample\":\"verbatim-zh\",\"sdk\":\"litellm\",\"total_tokens\":5693}"
+  },
+  {
+    "id": "e3a41f9983434d1db890307df3339fdd",
+    "campaign": "production-grounding",
+    "sample": "citation-fr",
+    "started": 1789203186.343436,
+    "finished": 1789203194.3318532,
+    "state": "finished",
+    "reserved": 104096,
+    "charged": 4954,
+    "metadata": "{\"endpoint\":\"https://api.minimax.cn/v1/chat/completions\",\"model\":\"MiniMax-M3\",\"sample\":\"citation-fr\",\"sdk\":\"litellm\",\"total_tokens\":4954}"
+  }
+]

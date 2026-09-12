@@ -165,6 +165,7 @@ class HarnessComponentName(StrEnum):
     SCENE_COMPILER = "scene_compiler"
     STUDY_CHAT_PROMPT = "study_chat_prompt"
     STUDY_CHAT_TOOLSET = "study_chat_toolset"
+    STUDY_GROUNDING = "study_grounding"
     TAVERN_PERSONA_COMPILER = "tavern_persona_compiler"
     TAVERN_ACTOR_PROMPT = "tavern_actor_prompt"
     TAVERN_SCHEDULER = "tavern_scheduler"
@@ -443,6 +444,11 @@ HARNESS_COMPONENT_REGISTRATIONS = MappingProxyType(
                 version=SCENE_COMPILER_CONTRACT_VERSION,
             ),
         ),
+        HarnessComponentName.STUDY_GROUNDING: HarnessComponentRegistration(
+            HarnessComponentName.STUDY_GROUNDING,
+            "app.services.study_grounding",
+            HarnessRegisteredContract(name="study_grounding", version="study-grounding-v1"),
+        ),
         HarnessComponentName.STUDY_CHAT_PROMPT: HarnessComponentRegistration(
             HarnessComponentName.STUDY_CHAT_PROMPT,
             "app.services.study_session_prompt",
@@ -507,6 +513,7 @@ HARNESS_COMPONENT_OWNERS = MappingProxyType(
         HarnessComponentName.PERSONA_COMPILER: "app.services.persona_cards",
         HarnessComponentName.SCENE_COMPILER: "app.services.scene_setup",
         HarnessComponentName.STUDY_CHAT_PROMPT: "app.services.study_session_prompt",
+        HarnessComponentName.STUDY_GROUNDING: "app.services.study_grounding",
         HarnessComponentName.STUDY_CHAT_TOOLSET: "app.services.study_session_chat_runtime",
         HarnessComponentName.TAVERN_PERSONA_COMPILER: "app.services.persona_runtime",
         HarnessComponentName.TAVERN_ACTOR_PROMPT: "app.services.tavern_prompt",
@@ -606,6 +613,7 @@ HARNESS_OPERATION_STAGE_REGISTRATIONS = MappingProxyType(
             (
                 HarnessComponentName.STUDY_CHAT_PROMPT,
                 HarnessComponentName.STUDY_CHAT_TOOLSET,
+                HarnessComponentName.STUDY_GROUNDING,
             ),
             "study_chat.reply",
         ),

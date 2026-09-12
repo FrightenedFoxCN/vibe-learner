@@ -119,6 +119,45 @@ class Ledger:
                        (time.time(), reason, row['config'], canonical(new)))
             db.execute('UPDATE settings SET config=? WHERE id=1', (canonical(new),))
 
+    def reopen_overload(self, *, concurrency: int, reason: str):
+        """Explicit operator restart for a drained overload stop, retaining all costs.
+
+        Other stops require their own diagnosis. Never retry historical samples.
+        New campaigns must bind the new fixed-concurrency policy.
+        """
+        if not reason.strip() or len(reason) > 500:
+            raise ValueError('restart reason required')
+        with self.transaction() as db:
+            row = db.execute('SELECT * FROM settings WHERE id=1').fetchone()
+            budget = json.loads(row['config'])['budget']
+            if row['stopped'] != 'provider_overload':
+                raise ValueError('only provider_overload may be reopened')
+            if type(concurrency) is not int or not 1 <= concurrency <= min(4, budget['max_inflight']):
+                raise ValueError('restart concurrency must be between one and four')
+            if db.execute("SELECT COUNT(*) FROM wires WHERE state='inflight'").fetchone()[0]:
+                raise ValueError('cannot reopen with requests in flight')
+            now = time.time()
+            if now >= budget['expires_at'] - budget['stop_buffer_seconds']:
+                raise ValueError('resource window expired; explicit budget amendment required')
+            for wire in db.execute('SELECT finished,metadata FROM wires WHERE metadata IS NOT NULL'):
+                metadata = json.loads(wire['metadata'])
+                if metadata.get('http_status') in (429, 529):
+                    if now < (wire['finished'] or now) + max(60, metadata.get('retry_after_seconds') or 0):
+                        raise ValueError('overload cooldown has not elapsed')
+            control = db.execute('SELECT * FROM scaling WHERE id=1').fetchone()
+            previous = dict(control) if control else None
+            if control and json.loads(control['state']).get('capacity_campaign'):
+                raise ValueError('capacity controller still owns the ledger')
+            policy = canonical({'initial': concurrency, 'autoscale': None})
+            state = {'current': concurrency, 'rate_factor': 1., 'cooldown_until': now,
+                     'window_started': now, 'healthy_windows': 0, 'bad_windows': 0, 'baseline_p95_ms': None}
+            db.execute('CREATE TABLE IF NOT EXISTS overload_restarts (id INTEGER PRIMARY KEY, time REAL NOT NULL, reason TEXT NOT NULL, previous TEXT NOT NULL, updated TEXT NOT NULL)')
+            db.execute('INSERT INTO overload_restarts(time,reason,previous,updated) VALUES(?,?,?,?)',
+                       (now, reason, canonical({'stopped': row['stopped'], 'control': previous}), canonical({'policy': policy, 'state': state})))
+            db.execute('INSERT OR REPLACE INTO scaling VALUES(1,?,?)', (policy, canonical(state)))
+            db.execute('INSERT INTO scaling_events(time,reason,state) VALUES(?,?,?)', (now, 'operator_overload_restart', canonical(state)))
+            db.execute('UPDATE settings SET stopped=NULL WHERE id=1')
+
     def reserve(self, campaign: str, sample: str, tokens: int, sample_wire_limit: int = 1) -> str:
         with self.transaction() as db:
             now = time.time()

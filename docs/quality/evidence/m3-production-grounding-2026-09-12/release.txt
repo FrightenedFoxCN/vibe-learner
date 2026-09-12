@@ -1,0 +1,1884 @@
+
+> vibe-learner@0.3.4 check:release
+> npm run check && npm run test:ai && npm run build:web
+
+
+> vibe-learner@0.3.4 check
+> npm run test:contracts && npm run check:web && npm run test:web:reliability && npm run eval:harness:pr
+
+
+> vibe-learner@0.3.4 test:contracts
+> tsc -p packages/shared/tsconfig.json && tsc -p packages/shared/tsconfig.contracts.json && node packages/shared/tests/harness-policy-registry.mjs && node packages/shared/tests/harness-artifact-access.mjs && node packages/shared/tests/harness-eval-contract.mjs && node packages/shared/tests/harness-manifest.mjs && node packages/shared/tests/tool-manifest.mjs
+
+harness artifact access contract tests passed
+harness workflow manifest contract tests passed
+tool manifest contract tests passed
+
+> vibe-learner@0.3.4 check:web
+> npm --workspace @vibe-learner/web run check
+
+
+> @vibe-learner/web@0.3.4 check
+> tsc --noEmit
+
+
+> vibe-learner@0.3.4 test:web:reliability
+> npm --workspace @vibe-learner/web run test:reliability
+
+
+> @vibe-learner/web@0.3.4 test:reliability
+> node --experimental-strip-types --test tests/diagnostics.test.ts tests/diagnostic-actions.test.ts tests/async-result-fence.test.ts tests/debug-overlay-accessibility.test.ts tests/desktop-startup.test.ts tests/document-decode.test.ts tests/navigation-study-accessibility.test.ts tests/planning-decode.test.ts tests/plan-revision-decode.test.ts tests/persona-draft.test.ts tests/scene-import-structure.test.ts tests/bounded-json-import.test.ts tests/persona-scene-decode.test.ts tests/rich-text-normalize.test.ts tests/shared-adversarial-fixtures.test.ts tests/stream-decode.test.ts tests/tavern-workspace-state.test.ts tests/tavern-copy.test.ts tests/tavern-real-response-decode.test.ts tests/study-dialog-empty-state.test.ts tests/study-session-decode.test.ts tests/study-chat-operation-decode.test.ts tests/study-chat-admission-error.test.ts tests/study-question-attempt.test.ts tests/study-real-response-decode.test.ts tests/minimax-live-study-fixtures.test.ts && npm run test:components
+
+✔ an async result applies only to its exact operation and captured scope (1.075167ms)
+✔ cross-operation and superseded results fail closed (0.100958ms)
+✔ a newer attempt for the same server operation supersedes the older request (0.069167ms)
+✔ subject, draft revision, and field target changes reject a late result (0.057ms)
+✔ invalid scopes and inactive tickets cannot be treated as current (0.211333ms)
+✔ Study rejects a response after the active Session or Plan changes (0.057375ms)
+✔ Persona rejects an assist result after the user edits the draft (0.048041ms)
+✔ Scene rejects a rewrite result after switching layer, object, or field (0.044792ms)
+✔ Study view keeps a newer projection for the same Session and Unit (1.2595ms)
+✔ a deferred Study refresh cannot restore a Session after switching Plan (0.186541ms)
+✔ deferred Persona and Scene imports do not apply after edit or subject switch (0.112334ms)
+✔ both editors accept exactly 8 MiB and reject one byte more before reading (54.8415ms)
+✔ file limits use UTF-8 bytes, not JavaScript string length (24.094ms)
+✔ Debug Overlay exposes a labelled modal and focuses its collapse control (0.554709ms)
+✔ Debug Overlay isolates main content and restores page state exactly (0.105875ms)
+✔ Debug Overlay traps focus and routes every close interaction through one path (0.130375ms)
+✔ desktop navigation remains locked until the first Vault is created (0.364708ms)
+✔ desktop vault gate blocks both app links and side navigation (0.095459ms)
+✔ desktop navigation preserves the root workspace provider during route changes (0.109ms)
+✔ JSON import records read completion and size/parse rejection without content (20.047209ms)
+✔ export cancellation and Vault failure preserve original result and exception (0.239125ms)
+✔ Settings draining keeps captured context while the current page changes (0.408625ms)
+✔ diagnostic ID allocation failure cannot block a local action (0.214625ms)
+✔ Settings and nested Vault spans share action but retain parentage (0.245666ms)
+✔ old page cleanup cannot erase the replacement view (4.968333ms)
+✔ headers and body completion remain separate and share diagnostic identity (38.636917ms)
+✔ offline uploads retain identities; buffers stay bounded and report losses (6.873708ms)
+✔ shared diagnostic classification stays aligned and distinguishes HTTP failure (1.366875ms)
+✔ page lifetimes retain captured ownership, route and request context across navigation (0.472458ms)
+✔ page paths are a closed vocabulary; private URL material never enters events (0.114125ms)
+✔ Document decoder accepts a coherent committed projection and list envelope (1.123958ms)
+✔ Document decoder rejects wrong identity, status, count, and scalar coercion (0.297875ms)
+✔ Document decoder rejects unordered, duplicate, reversed, and drifted projected sections (0.214417ms)
+✔ Document decoder rejects non-finite confidence (0.0785ms)
+✔ Document Debug decoder validates page order, ranges, chunk refs, and nullability (0.497333ms)
+✔ Document Debug decoder rejects duplicate and unordered chunks (0.108292ms)
+✔ strict frontend decoders accept twelve frozen real M3 Study receipts (6.22025ms)
+✔ M3 code examples remain real multiline rich blocks (0.231584ms)
+✔ Study question composer exposes an accessible name (0.45275ms)
+✔ Tavern mobile controls keep 44px touch targets and provider state is announced (0.164875ms)
+✔ Tavern sequence updates are announced without appearing in the transcript (0.143583ms)
+✔ model scope connection fields stay compact (0.207042ms)
+✔ Persona config export and import preserve every editable field (2.171125ms)
+✔ Persona config import accepts snake case aliases without coercing unsafe values (0.388084ms)
+✔ Persona draft fingerprints track edits and reset against committed snapshots (0.195875ms)
+✔ Whole-setting assist merges by slot identity and preserves locks (0.674167ms)
+✔ Destructive generated backfill clears exactly the fields named in the UI (0.074083ms)
+✔ maximum API-sized persona survives JSON reload and draft conversion without truncation (17.033375ms)
+✔ Persona decoder accepts custom slot vocabulary and duplicate sort orders (2.052917ms)
+✔ Persona decoder rejects coercion, illegal source, URL drift, and non-finite slots (2.504125ms)
+✔ Persona card envelopes reject duplicate IDs and illegal source values (0.2335ms)
+✔ Persona generation binds mode, generated source, booleans, and recovery schema (2.556208ms)
+✔ Persona assist decoders require typed slots and preserve assisted slot identity (0.931375ms)
+✔ Persona assets and delete projections bind the URL identity (0.209375ms)
+✔ Scene generation accepts a coherent committed projection (0.938791ms)
+✔ Scene generation rejects contract, mode, selection, depth, child, and identity attacks (1.224708ms)
+✔ Wave 4 decoders fail closed on malformed nested v3 Harness evidence (0.694291ms)
+✔ Scene Setup accepts only the exact empty initial state or a coherent committed state (1.073875ms)
+✔ Scene Profile binds title path, tags, focus objects, and committed tree (0.534625ms)
+✔ Scene Library binds config, URL, revision, profile, and list identity (0.664041ms)
+✔ Reusable Scene Node decoder enforces the discriminated node projection (0.412291ms)
+✔ revision admission binds base revision, instruction and rollback action (4.399084ms)
+✔ revision proposal preserves backend string and task bounds (0.68775ms)
+✔ revision decoder rejects identity, unknown targets and state effect tampering (0.499125ms)
+✔ accepted revision binds derived focus while rejecting stale or invented progress labels (0.175584ms)
+✔ Planning decoder accepts a coherent plan and list envelope (1.4105ms)
+✔ Planning decoder accepts the real goal-only synthetic Study Unit scope (0.163834ms)
+✔ Planning decoder rejects forged goal-only Study Unit scopes (0.269375ms)
+✔ Planning decoder rejects plan/document identity and illegal enums (2.672291ms)
+✔ Planning decoder rejects broken Study Unit, chapter, and slice references (0.176166ms)
+✔ Planning decoder rejects duplicate IDs, invalid numbers, and forged progress (0.212292ms)
+✔ Planning Context decoder validates identity, ordering, detail set, and references (0.584291ms)
+✔ Planning Trace decoder validates recovery versions, contracts, identity, and summary (0.329542ms)
+✔ Planning Trace decoder accepts a truthful no-trace projection only (0.088416ms)
+✔ repairs historic inline Markdown headings without exposing hash markers (2.061459ms)
+✔ preserves already-valid Markdown headings (0.234833ms)
+✔ scene import accepts exported trees and rejects unrelated valid JSON (1.137917ms)
+✔ scene import enforces depth, layer, object and text limits before mutation (2.291459ms)
+✔ scene import counts Unicode codepoints at exactly 60000 and leaves source untouched on rejection (5.733917ms)
+✔ QG-002 shared adversarial catalog has closed domain and attack coverage (1.90075ms)
+✔ QG002-DOCUMENT-IDENTITY-001 rejects document/identity (0.690041ms)
+✔ QG002-PLAN-IDENTITY-001 rejects plan/identity (0.523125ms)
+✔ QG002-PERSONA-TYPE-001 rejects persona/type (0.384958ms)
+✔ QG002-SCENE-TYPE-001 rejects scene/type (0.281083ms)
+✔ QG002-STUDY-IDENTITY-001 rejects study/identity (0.458625ms)
+✔ QG002-TAVERN-ENVELOPE-001 rejects tavern/envelope (0.189208ms)
+✔ QG002-STREAM-STATE-001 rejects stream/stream_state (1.334958ms)
+✔ document state machine accepts only the committed terminal and ignores an exact duplicate (2.872792ms)
+✔ same event identity with a different supplied digest fails closed (1.480583ms)
+✔ cross-operation, cross-subject, sequence gap, and unknown stage frames are rejected (0.194375ms)
+✔ illegal transitions and new frames after terminal are rejected while terminal replay is idempotent (0.185792ms)
+✔ EOF without a terminal is a typed failure, including a final line without newline (1.312375ms)
+✔ planning state machines bind document and goal-only request subjects (0.175334ms)
+✔ planning question tool progress remains inside the strict stream lifecycle (0.12025ms)
+✔ trimmed v1 reports remain decidable and legacy reports do not gain invented evidence (0.273292ms)
+✔ unknown versions and false committed terminals do not downgrade or succeed (0.129916ms)
+✔ only explicit pre-admission HTTP failures unlock the original operation identity (1.294792ms)
+✔ ambiguous transport and provider failures remain query-only (0.218042ms)
+✔ a missing operation GET is distinct from a missing Session POST (0.144125ms)
+✔ Study Chat operation decoder accepts every frozen status (2.342791ms)
+✔ Study Chat operation decoder requires every public field (0.717708ms)
+✔ Study Chat operation decoder rejects unregistered or coerced statuses (0.207834ms)
+✔ Study Chat operation decoder rejects empty or non-string identities (0.243084ms)
+✔ Study Chat operation decoder rejects unsafe revision and sequence evidence (0.41325ms)
+✔ committed requires complete result, Turn, revision, and terminal evidence (0.303375ms)
+✔ non-committed statuses reject fabricated result or commit evidence (0.512875ms)
+✔ safe_to_retry is true only for not_committed and never for running or uncertain (0.314958ms)
+✔ terminal timestamp nullability follows the operation state (0.230584ms)
+✔ operation timestamps reject impossible dates and reversed state time (0.3305ms)
+✔ nested committed result is delegated to the caller's existing decoder (0.836541ms)
+✔ outer receipt identity is fenced to the requested Session and request (0.187583ms)
+✔ committed result decoder is mandatory and cannot return nullish output (0.404833ms)
+✔ committed result is bound to the receipt Session, revision, and exact Turn (0.459958ms)
+✔ Study Chat operation decode errors are identifiable without trusting realms (0.089667ms)
+✔ Study Dialog replaces its disabled console with a focusable Plan CTA (0.469667ms)
+✔ attempt response decoder binds exact Session, Turn, identity, and revisions (0.528833ms)
+✔ attempt read-back accepts the exact committed result (0.269417ms)
+✔ attempt read-back rejects identity, answer, verdict, and result drift (0.101333ms)
+✔ a late lower-revision response cannot replace a newer committed snapshot (1.652959ms)
+✔ read-back applies only to the active Session and only when it advances state (2.698458ms)
+✔ an attempt read-back accepts a legitimate concurrently appended Turn (0.441125ms)
+✔ read-back rejects committed Turn prefix drift and invalid watermarks (0.079708ms)
+✔ a question with any prior committed result cannot be submitted again (0.073334ms)
+﹣ strict Study decoders accept one live committed operation read-back (0.955208ms) # SKIP
+✔ Study Session committed identity decoder accepts contiguous unique turns (0.787166ms)
+✔ Study Session committed identity decoder fails closed on missing watermarks (0.197959ms)
+✔ Study Session committed identity decoder rejects invalid numeric projections (0.107625ms)
+✔ Study Session committed identity decoder rejects duplicate, empty, or gapped turns (0.081209ms)
+✔ full Study Session decoder accepts the complete modern public projection (1.186958ms)
+✔ full Study Session decoder rejects missing, coerced, and fabricated aggregate state (0.280042ms)
+✔ attachment projection rejects private paths and broken citation references (0.342875ms)
+✔ Character Events and tool traces are closed and cross-referenced (0.18325ms)
+✔ interactive question decoder rejects grading leaks and partial result evidence (1.202166ms)
+✔ follow-up, affinity, and projected-state terminal invariants fail closed (1.394959ms)
+✔ Study Scene decoder preserves empty-tree and empty-reuse compatibility (0.924333ms)
+✔ committed Study Chat exchange must equal the exact committed last Turn (0.835791ms)
+✔ Study Session list and plan-confirmation read-back fence identities and terminal state (1.208792ms)
+✔ Study Session display ordering follows sequence rather than timestamps (0.08375ms)
+✔ Study Session decode failures use safe user notices and retain generic fallbacks (0.156125ms)
+✔ Study Session decode failures never expose a retryable chat failure (0.065209ms)
+✔ versioned Tavern run/step copy covers the complete product state vocabulary (0.720709ms)
+✔ recovery, archive and cancel copy describes retained results and honest provider limits (0.13725ms)
+✔ structured stale/archive/retry failures stay actionable and never expose unrecognized codes (0.121042ms)
+﹣ strict Tavern decoders accept live backend room aggregates (0.399917ms) # SKIP
+✔ mergeTavernMessages orders and deduplicates tail/prepend pages (0.774875ms)
+✔ Tavern Room pages append monotonically, deduplicate IDs, and retain at most 100 summaries (0.328375ms)
+✔ selected Tavern Room detail remains a visible authoritative button outside loaded summaries (0.420667ms)
+✔ Tavern creation drafts drop deleted personas and rotate request identity (0.086709ms)
+✔ mergeTavernMessages fails closed on message identity conflicts (0.111916ms)
+✔ a child retry suppresses retry on its parent (0.08075ms)
+✔ latest facilitated recovery exposes only unfinished actors (0.094708ms)
+✔ facilitated recovery hides ineligible and already retried runs (0.071292ms)
+✔ authoritative recovery follows the chain leaf instead of a recent run window (0.095792ms)
+✔ Tavern client recovery only accepts an explicit terminal replay directive (0.1055ms)
+✔ Tavern client strictly decodes the empty room update error envelope (0.076625ms)
+✔ stale room results cannot move revision or sequence backwards (0.050666ms)
+✔ late run polling cannot resurrect a terminal run (5.781083ms)
+✔ optimistic roster marks only the first eligible actor as generating (0.162292ms)
+✔ server speaker steps override optimistic roster state (0.080167ms)
+✔ an admitted run without visible steps stays truthful while starting (0.050333ms)
+✔ terminal roster states are explicitly scoped to the previous round (0.048083ms)
+✔ mobile Tavern DOM order matches its primary visual flow (0.256958ms)
+✔ Tavern Session pagination exposes pending, error, and duplicate-cursor fences (0.106958ms)
+✔ mobile Tavern buttons keep a 44px minimum touch target (0.172791ms)
+✔ Interaction Composer restores focus only after a confirmed user turn settles (0.177875ms)
+✔ Interaction Composer retains Enter, Shift+Enter, and IME composition fencing (0.106667ms)
+✔ strict Tavern decoders accept the current backend wire format (0.42275ms)
+✔ strict Tavern decoder accepts retry responses without replaying the user message (0.060916ms)
+✔ strict Tavern decoder enforces trigger and input-message semantics (0.1655ms)
+✔ strict Tavern decoder accepts a legacy persona with an empty system prompt (0.039417ms)
+✔ strict Tavern decoder mirrors backend-compatible empty persona and scene strings (0.110625ms)
+✔ strict Tavern decoders fail closed on invalid identity, enums, and counters (0.136625ms)
+✔ Tavern v1 Harness trace status is not coerced from an unknown enum (0.053791ms)
+✔ strict Tavern decoder distinguishes a missing nullable field from null (0.112417ms)
+✔ strict Tavern decoder rejects malformed nested persona and scene snapshots (0.07225ms)
+✔ strict Tavern list decoders reject a malformed envelope (0.2635ms)
+✔ strict Tavern recovery and error decoders enforce identity and action (0.155875ms)
+✔ strict Tavern decoders bind responses to the requested room (0.076708ms)
+✔ strict Tavern decoders reject aggregate ownership mismatches (0.112167ms)
+✔ strict Tavern decoder binds the run schedule to ordered speaker steps (0.348791ms)
+✔ strict Tavern decoder requires exact completed-step message projections (0.129042ms)
+✔ strict Tavern decoder rejects non-finite and out-of-range evidence (0.189042ms)
+✔ Tavern decoder accepts backend-compatible v2 and committed v3 traces (0.171333ms)
+✔ Tavern v3 trace decoder rejects forged identity, ordering, and commit evidence (0.068541ms)
+ℹ tests 184
+ℹ suites 0
+ℹ pass 182
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 2
+ℹ todo 0
+ℹ duration_ms 435.602542
+
+> @vibe-learner/web@0.3.4 test:components
+> npm run test:debug && npm run test:workspace && npm run test:settings:save && npm run test:scene && npm run test:persona && npm run test:diagnostics:vault && npm run test:diagnostics:collector && npm run test:diagnostics:decode && npm run test:diagnostics:query && npm run test:diagnostics:timeline && npm run test:diagnostics:imports
+
+
+> @vibe-learner/web@0.3.4 test:debug
+> TSX_TSCONFIG_PATH=tests/tsconfig.json node --import tsx --test tests/debug-provider.test.jsx
+
+✔ Debug can render without a learning provider or network initialization (41.804833ms)
+✔ Published snapshots update and are cleared when the learning owner leaves (7.507417ms)
+✔ learning snapshot ignores replaced owner's updates and cleanup under StrictMode (3.76225ms)
+✔ page snapshot ignores replaced owner's updates and cleanup under StrictMode (5.309708ms)
+✔ actual route lifecycle hides stale page snapshots and publishes the replacement page (3.573833ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 653.190625
+
+> @vibe-learner/web@0.3.4 test:workspace
+> npm run test:workspace:data && TSX_TSCONFIG_PATH=tests/tsconfig.json node --import tsx --test tests/learning-page-cache.test.jsx && npm run test:workspace:generation && npm run test:workspace:mutations && npm run test:workspace:recovery && npm run test:workspace:sessions && npm run test:workspace:messages && npm run test:workspace:commits && npm run test:workspace:continuation && npm run test:workspace:libraries
+
+
+> @vibe-learner/web@0.3.4 test:workspace:data
+> node --experimental-strip-types --test tests/workspace-snapshot-loader.test.ts
+
+✔ refresh supersedes delayed initial load and still initializes Personas (0.661292ms)
+✔ superseded failures do not replace the latest loading state (0.098208ms)
+✔ unmount blocks new queries and old responses after reactivation (0.093375ms)
+✔ failed initialization retries Persona loading and balances current notifications (0.083875ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 69.777209
+✔ file and text drafts survive leaving and re-entering the learning routes (53.27625ms)
+✔ selected identities seed the reducer before authoritative data is refreshed (0.365542ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 492.417834
+
+> @vibe-learner/web@0.3.4 test:workspace:generation
+> TSX_TSCONFIG_PATH=tests/tsconfig.json node --import tsx --test tests/plan-generation.test.jsx
+
+[vibe-learner] workflow:upload:start { filename: 'book.pdf', sizeBytes: 3, personaId: 'teacher' }
+[vibe-learner] workflow:upload:interrupted { mode: 'document' }
+[vibe-learner] workflow:goal_only:start { personaId: 'teacher', objectiveLength: 5 }
+[vibe-learner] workflow:plan_event { documentId: '', stage: 'working' }
+[vibe-learner] workflow:goal_only:start { personaId: 'teacher', objectiveLength: 5 }
+✔ cancelled upload cannot start parsing or apply a document (8.497958ms)
+[vibe-learner] workflow:upload:plan_ready { planId: 'new', taskCount: 0 }
+[vibe-learner] workflow:upload:session_ready { sessionId: 'session', studyUnitId: undefined }
+[vibe-learner] workflow:goal_only:start { personaId: 'teacher', objectiveLength: 5 }
+[vibe-learner] workflow:plan_event { documentId: '', stage: 'working' }
+[vibe-learner] workflow:upload:plan_ready { planId: 'plan', taskCount: 0 }
+✔ superseded stream events and finally cannot overwrite the active generation (1.992583ms)
+[vibe-learner] workflow:goal_only:start { personaId: 'teacher', objectiveLength: 5 }
+[vibe-learner] workflow:upload:plan_ready { planId: 'plan', taskCount: 0 }
+✔ unmount cancels the known operation and suppresses late committed session projection (0.954875ms)
+[vibe-learner] workflow:goal_only:start { personaId: 'teacher', objectiveLength: 5 }
+[vibe-learner] workflow:upload:plan_ready { planId: 'plan', taskCount: 0 }
+[vibe-learner] workflow:goal_only:start { personaId: 'teacher', objectiveLength: 5 }
+[vibe-learner] workflow:upload:plan_ready { planId: 'new', taskCount: 0 }
+[vibe-learner] workflow:upload:session_ready { sessionId: 'session', studyUnitId: undefined }
+✔ changing the selected view fences session success and failure (1.473417ms)
+[vibe-learner] workflow:upload:start { filename: 'book.pdf', sizeBytes: 3, personaId: 'teacher' }
+[vibe-learner] workflow:upload:document_uploaded { documentId: 'book', status: undefined }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 0 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 1 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 2 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 3 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 4 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 5 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 6 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 7 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 8 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 9 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 10 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 11 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 12 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 13 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 14 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 15 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 16 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 17 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 18 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 19 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 20 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 21 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 22 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 23 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 24 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 25 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 26 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 27 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 28 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 29 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 30 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 31 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 32 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 33 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 34 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 35 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 36 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 37 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 38 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 39 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 40 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 41 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 42 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 43 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 44 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 45 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 46 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 47 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 48 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 49 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 50 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 51 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 52 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 53 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 54 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 55 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 56 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 57 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 58 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 59 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 60 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 61 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 62 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 63 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 64 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 65 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 66 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 67 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 68 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 69 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 70 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 71 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 72 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 73 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 74 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 75 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 76 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 77 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 78 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 79 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 80 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 81 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 82 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 83 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 84 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 85 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 86 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 87 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 88 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'page_parsed', index: 89 }
+[vibe-learner] workflow:upload:process_event { documentId: 'book', stage: 'stream_completed' }
+[vibe-learner] workflow:upload:document_ready {
+  documentId: 'book',
+  pageCount: undefined,
+  chunkCount: undefined,
+  ocrStatus: undefined
+}
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 0 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 1 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 2 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 3 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 4 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 5 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 6 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 7 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 8 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 9 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 10 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 11 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 12 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 13 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 14 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 15 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 16 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 17 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 18 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 19 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 20 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 21 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 22 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 23 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 24 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 25 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 26 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 27 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 28 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 29 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 30 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 31 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 32 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 33 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 34 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 35 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 36 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 37 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 38 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 39 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 40 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 41 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 42 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 43 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 44 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 45 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 46 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 47 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 48 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 49 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 50 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 51 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 52 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 53 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 54 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 55 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 56 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 57 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 58 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 59 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 60 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 61 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 62 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 63 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 64 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 65 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 66 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 67 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 68 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 69 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 70 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 71 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 72 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 73 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 74 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 75 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 76 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 77 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 78 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 79 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 80 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 81 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 82 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 83 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 84 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 85 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 86 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 87 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 88 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 89 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 90 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 91 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 92 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 93 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 94 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 95 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 96 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 97 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 98 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 99 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 100 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 101 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 102 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 103 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 104 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 105 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 106 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 107 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 108 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 109 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 110 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 111 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 112 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 113 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 114 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 115 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 116 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 117 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 118 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 119 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 120 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 121 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 122 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 123 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 124 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 125 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 126 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 127 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 128 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'working', index: 129 }
+[vibe-learner] workflow:plan_event { documentId: 'book', stage: 'stream_completed' }
+[vibe-learner] workflow:upload:plan_ready { planId: 'document-plan', taskCount: 0 }
+[vibe-learner] workflow:upload:session_ready { sessionId: 'session', studyUnitId: undefined }
+✔ plan and initial session share the scene captured before generation (0.793416ms)
+[vibe-learner] workflow:upload:start { filename: 'private.pdf', sizeBytes: 7, personaId: 'teacher' }
+[vibe-learner] workflow:upload:document_uploaded { documentId: 'doc', status: undefined }
+✔ document generation carries the parsed revision and bounds stream history (2.283958ms)
+[vibe-learner] workflow:upload:document_ready {
+  documentId: 'doc',
+  pageCount: undefined,
+  chunkCount: undefined,
+  ocrStatus: undefined
+}
+[vibe-learner] workflow:upload:plan_ready { planId: 'planned', taskCount: 0 }
+[vibe-learner] workflow:upload:session_ready { sessionId: 'session', studyUnitId: undefined }
+[vibe-learner] workflow:goal_only:start { personaId: 'teacher', objectiveLength: 5 }
+[vibe-learner] workflow:plan_event { documentId: '', stage: 'working' }
+[vibe-learner] workflow:goal_only:start { personaId: 'teacher', objectiveLength: 5 }
+[vibe-learner] workflow:upload:plan_ready { planId: 'new', taskCount: 0 }
+[vibe-learner] workflow:upload:session_ready { sessionId: 'session', studyUnitId: undefined }
+✔ upload, parse, plan and session keep one action captured before page replacement (1.176209ms)
+✔ supersession cancellation retains old flow and page while the new run gets its own flow (0.768584ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 8
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 450.551
+
+> @vibe-learner/web@0.3.4 test:workspace:mutations
+> TSX_TSCONFIG_PATH=tests/tsconfig.json node --import tsx --test tests/plan-mutations.test.jsx
+
+✔ invalid edits never write and a plan write blocks conflicting writes until settled (8.067791ms)
+[vibe-learner] workflow:plan_title_update:error Error: late failure
+    at <anonymous> (/Users/ffox/vibe-learner/apps/web/tests/plan-mutations.test.jsx:51:45)
+    at /Users/ffox/vibe-learner/node_modules/@testing-library/react/dist/act-compat.js:47:24
+    at process.env.NODE_ENV.exports.act (/Users/ffox/vibe-learner/node_modules/react/cjs/react.development.js:814:22)
+    at /Users/ffox/vibe-learner/node_modules/@testing-library/react/dist/act-compat.js:46:25
+    at TestContext.<anonymous> (/Users/ffox/vibe-learner/apps/web/tests/plan-mutations.test.jsx:51:9)
+    at async Test.run (node:internal/test_runner/test:1409:7)
+    at async Test.processPendingSubtests (node:internal/test_runner/test:974:7)
+✔ different resources retain busy state until all finish and old errors cannot replace latest feedback (1.931709ms)
+✔ delete projects into the latest workspace callback after navigation (1.065458ms)
+✔ unmount suppresses abandoned projections and does not retry a committed write (0.633125ms)
+✔ unit updates apply document and plans together; progress and answers use authoritative plan responses (1.085333ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 444.177875
+
+> @vibe-learner/web@0.3.4 test:workspace:recovery
+> TSX_TSCONFIG_PATH=tests/tsconfig.json node --import tsx --test tests/study-operation-state.test.jsx tests/study-chat-recovery.test.jsx
+
+[vibe-learner] workflow:study_chat:stale_result_discarded { sessionId: 's', clientRequestId: 'r' }
+✔ refresh restores identity via query only and uncertain remains queryable without resend (8.188333ms)
+[vibe-learner] workflow:study_chat:stale_result_discarded { sessionId: 's', clientRequestId: 'r' }
+✔ late committed restore never overwrites another Session or clears a newer pending identity (1.942584ms)
+✔ unmount invalidates read-back while still clearing the exact confirmed pending request (1.158958ms)
+✔ safe not-committed can resend only a retained learner draft, never restored empty input (1.046ms)
+✔ missing operation requires explicit Session refresh and does not automatically resubmit (1.068458ms)
+✔ an older committed receipt cannot roll back a newer Session projection (0.4255ms)
+✔ terminal automatic-message receipts clear only their own pending identity (0.594833ms)
+✔ pending persistence contains identity only and stale receipt cannot erase a newer request (0.649792ms)
+✔ automatic identities are reused across a fresh page and only explicitly forgotten identities can be generated again (0.1485ms)
+✔ storage denial preserves in-memory automatic identity and malformed pending state cannot restore (0.149334ms)
+✔ retry eligibility requires explicit not-committed evidence (0.070167ms)
+ℹ tests 11
+ℹ suites 0
+ℹ pass 11
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 453.127709
+
+> @vibe-learner/web@0.3.4 test:workspace:sessions
+> TSX_TSCONFIG_PATH=tests/tsconfig.json node --import tsx --test tests/study-session-navigation.test.jsx
+
+✔ goal-only history restores the newest Session without creating one (9.826917ms)
+✔ explicit creation supersedes late history and duplicate create is suppressed (1.78275ms)
+✔ switching Plan discards old history and creation results (2.151208ms)
+✔ rapid A B A selection reuses the A write and suppresses obsolete queued B (1.330375ms)
+✔ Scene is captured before a history lookup and switching away stops follow-on creation (0.865292ms)
+✔ late history cannot lower a Session revision already visible in the same view (0.460791ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 449.603833
+
+> @vibe-learner/web@0.3.4 test:workspace:messages
+> TSX_TSCONFIG_PATH=tests/tsconfig.json node --import tsx --test tests/study-messages.test.jsx
+
+[vibe-learner] workflow:study_chat:start { sessionId: 's', messageLength: 8 }
+[vibe-learner] workflow:study_chat:done { sessionId: 's', citations: 0, characterEvents: 0 }
+[vibe-learner] workflow:study_chat:start { sessionId: 's', messageLength: 8 }
+✔ learner admission captures revision, attachments and deferred prefix, suppressing a duplicate during Session lookup (8.84025ms)
+[vibe-learner] workflow:study_chat:error Error: network lost
+    at <anonymous> (/Users/ffox/vibe-learner/apps/web/tests/study-messages.test.jsx:58:46)
+    at /Users/ffox/vibe-learner/node_modules/@testing-library/react/dist/act-compat.js:47:24
+    at process.env.NODE_ENV.exports.act (/Users/ffox/vibe-learner/node_modules/react/cjs/react.development.js:814:22)
+    at /Users/ffox/vibe-learner/node_modules/@testing-library/react/dist/act-compat.js:46:25
+    at TestContext.<anonymous> (/Users/ffox/vibe-learner/apps/web/tests/study-messages.test.jsx:58:9)
+    at async Test.run (node:internal/test_runner/test:1409:7)
+    at async Test.processPendingSubtests (node:internal/test_runner/test:974:7)
+[vibe-learner] workflow:study_chat:start { sessionId: 's', messageLength: 9 }
+✔ ambiguous POST failure blocks new writes and recovery queries the original request (2.580416ms)
+[vibe-learner] workflow:study_chat:pre_admission_rejected ApiHttpError: conflict
+    at <anonymous> (/Users/ffox/vibe-learner/apps/web/tests/study-messages.test.jsx:72:46)
+    at /Users/ffox/vibe-learner/node_modules/@testing-library/react/dist/act-compat.js:47:24
+    at process.env.NODE_ENV.exports.act (/Users/ffox/vibe-learner/node_modules/react/cjs/react.development.js:814:22)
+    at /Users/ffox/vibe-learner/node_modules/@testing-library/react/dist/act-compat.js:46:25
+    at TestContext.<anonymous> (/Users/ffox/vibe-learner/apps/web/tests/study-messages.test.jsx:72:9)
+    at async Test.run (node:internal/test_runner/test:1409:7)
+    at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+  status: 409,
+  code: 'study_chat_session_revision_conflict',
+  payload: {}
+}
+✔ definite pre-admission rejection requires Session refresh and retains the learner draft (1.384416ms)
+[vibe-learner] workflow:study_chat:start { sessionId: 's', messageLength: 8 }
+✔ leaving during Session lookup never starts a POST (0.72525ms)
+[vibe-learner] workflow:study_chat:stale_result_discarded {
+  sessionId: 's',
+  clientRequestId: 'study-learner-47733663-322a-4cc9-b869-2b5af17a62e2'
+}
+✔ late committed POST cannot update a different Session or clear its interruption (0.764958ms)
+✔ automatic retries query a retained identity and forget it only after safe not-committed evidence (0.754458ms)
+✔ callback diagnostic ancestry reaches sends and query retries without entering durable admission state (0.568708ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 461.434333
+
+> @vibe-learner/web@0.3.4 test:workspace:commits
+> TSX_TSCONFIG_PATH=tests/tsconfig.json node --import tsx --test tests/study-commit-actions.test.jsx
+
+[vibe-learner] workflow:study_attempt:error Error: study_question_attempt_read_back_mismatch
+    at Object.handleSubmitQuestionAttempt (/Users/ffox/vibe-learner/apps/web/hooks/use-study-commit-actions.ts:75:15)
+    at async <anonymous> (/Users/ffox/vibe-learner/apps/web/tests/study-commit-actions.test.jsx:53:72)
+✔ answer submission deduplicates a Turn and calls back only from matching persisted read-back (9.183042ms)
+✔ mismatched result never projects an answer or triggers a follow-up (1.854916ms)
+✔ a committed answer in a previous Session remains persisted without changing the new view (0.934875ms)
+✔ unmount suppresses answer callbacks and confirmation projection (0.813334ms)
+✔ confirmation deduplicates writes and a stale read-back cannot lower the current Session (0.79125ms)
+✔ current confirmation applies the Session and Plan returned by persistence (0.718542ms)
+✔ switching Study Unit within the same Session prevents the old answer from replacing navigation (0.530917ms)
+✔ diagnostic ID failure does not change a committed answer or suppress its callback (0.498625ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 8
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 501.638125
+
+> @vibe-learner/web@0.3.4 test:workspace:continuation
+> TSX_TSCONFIG_PATH=tests/tsconfig.json node --import tsx --test tests/study-continuation.test.jsx
+
+[vibe-learner] workflow:study_session:prelude_error Error: uncertain
+    at <anonymous> (/Users/ffox/vibe-learner/apps/web/tests/study-continuation.test.jsx:42:48)
+    at /Users/ffox/vibe-learner/node_modules/@testing-library/react/dist/act-compat.js:47:24
+    at process.env.NODE_ENV.exports.act (/Users/ffox/vibe-learner/node_modules/react/cjs/react.development.js:814:22)
+    at /Users/ffox/vibe-learner/node_modules/@testing-library/react/dist/act-compat.js:46:25
+    at TestContext.<anonymous> (/Users/ffox/vibe-learner/apps/web/tests/study-continuation.test.jsx:42:9)
+    at Test.runInAsyncScope (node:async_hooks:226:14)
+    at Test.run (node:internal/test_runner/test:1402:25)
+    at Test.start (node:internal/test_runner/test:1262:17)
+    at startSubtestAfterBootstrap (node:internal/test_runner/harness:387:17)
+[vibe-learner] workflow:study_session:prelude_error Error: still failed
+    at <anonymous> (/Users/ffox/vibe-learner/apps/web/tests/study-continuation.test.jsx:48:48)
+    at /Users/ffox/vibe-learner/node_modules/@testing-library/react/dist/act-compat.js:47:24
+    at process.env.NODE_ENV.exports.act (/Users/ffox/vibe-learner/node_modules/react/cjs/react.development.js:814:22)
+    at /Users/ffox/vibe-learner/node_modules/@testing-library/react/dist/act-compat.js:46:25
+    at TestContext.<anonymous> (/Users/ffox/vibe-learner/apps/web/tests/study-continuation.test.jsx:48:9)
+    at async Test.run (node:internal/test_runner/test:1409:7)
+    at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3)
+[vibe-learner] workflow:study_follow_up:error Error: uncertain
+    at <anonymous> (/Users/ffox/vibe-learner/apps/web/tests/study-continuation.test.jsx:64:48)
+    at /Users/ffox/vibe-learner/node_modules/@testing-library/react/dist/act-compat.js:47:24
+    at process.env.NODE_ENV.exports.act (/Users/ffox/vibe-learner/node_modules/react/cjs/react.development.js:814:22)
+    at /Users/ffox/vibe-learner/node_modules/@testing-library/react/dist/act-compat.js:46:25
+    at TestContext.<anonymous> (/Users/ffox/vibe-learner/apps/web/tests/study-continuation.test.jsx:64:9)
+    at Test.runInAsyncScope (node:async_hooks:226:14)
+    at Test.run (node:internal/test_runner/test:1402:25)
+    at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+    at Test.postRun (node:internal/test_runner/test:1542:19)
+    at Test.run (node:internal/test_runner/test:1467:12)
+✔ failed automatic prelude is not retried on busy changes; explicit retry uses its scoped operation (12.444583ms)
+✔ a pending operation prevents restored unprepared Session from starting another automatic message (0.857791ms)
+✔ follow-up timer uses the latest Session revision and is not rescheduled by its own failure feedback (1.212083ms)
+✔ changing Session clears old timers and unmount prevents their retained callbacks from sending (0.675792ms)
+[vibe-learner] workflow:study_attempt:callback_read_back_missing Error: study_question_attempt_callback_read_back_missing
+    at Object.triggerInteractiveQuestionCallback (/Users/ffox/vibe-learner/apps/web/hooks/use-study-continuation.ts:113:78)
+    at <anonymous> (/Users/ffox/vibe-learner/apps/web/tests/study-continuation.test.jsx:93:94)
+✔ interrupt clears timers before persistence and a late cancel result cannot pause a different Session (1.45475ms)
+✔ paused answer callbacks use only committed grading and are retained for the next learner message (1.485625ms)
+✔ active answer callback sends the committed result and never invents missing grading (1.246417ms)
+✔ a learner commit consumes only callbacks captured before its request, preserving answers queued in flight (0.937ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 8
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 461.764041
+
+> @vibe-learner/web@0.3.4 test:workspace:libraries
+> TSX_TSCONFIG_PATH=tests/tsconfig.json node --import tsx --test tests/workspace-libraries.test.jsx
+
+✔ newer Scene refresh wins and selection uses the latest user choice (7.521791ms)
+[vibe-learner] workflow:scene_library:refresh_error Error: offline
+    at <anonymous> (/Users/ffox/vibe-learner/apps/web/tests/workspace-libraries.test.jsx:35:46)
+    at /Users/ffox/vibe-learner/node_modules/@testing-library/react/dist/act-compat.js:47:24
+    at process.env.NODE_ENV.exports.act (/Users/ffox/vibe-learner/node_modules/react/cjs/react.development.js:814:22)
+    at /Users/ffox/vibe-learner/node_modules/@testing-library/react/dist/act-compat.js:46:25
+    at TestContext.<anonymous> (/Users/ffox/vibe-learner/apps/web/tests/workspace-libraries.test.jsx:35:9)
+    at async Test.run (node:internal/test_runner/test:1409:7)
+    at async Test.processPendingSubtests (node:internal/test_runner/test:974:7)
+✔ temporary Scene failure preserves known library and selection (1.617666ms)
+✔ Persona refresh suppresses stale results and applies through the current owner callback (1.03225ms)
+✔ library events belong to the mounted learning owner and unmount discards responses (0.733834ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 449.531125
+
+> @vibe-learner/web@0.3.4 test:settings:save
+> TSX_TSCONFIG_PATH=tests/tsconfig.json node --import tsx --test tests/settings-save-coordinator.test.jsx tests/settings-save-hook.test.jsx tests/settings-debug-snapshot.test.jsx
+
+✔ Settings debug only exposes reviewed state, never credentials, endpoints, drafts or provider/error text (0.828583ms)
+✔ unknown enum values and malformed numeric settings cannot echo input text (0.12625ms)
+✔ 900ms debounce survives identical snapshots and restarts only on changed edits (1.679583ms)
+✔ navigation drains latest edit after older success (2.133458ms)
+✔ navigation drains latest edit after older failure (0.775375ms)
+✔ reverting an unsent edit clears it; reverting an in-flight edit queues restoration (0.314708ms)
+✔ failed snapshot requires explicit retry and successful normalization avoids redundant writes (0.542917ms)
+✔ newer edits during normal save receive their own debounce without concurrent writes (0.4375ms)
+✔ real Hook rerenders preserve debounce and pagehide flushes the latest snapshot (7.543542ms)
+✔ unmount drains latest pending save and suppresses local status updates (2.531167ms)
+ℹ tests 10
+ℹ suites 0
+ℹ pass 10
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 446.223458
+
+> @vibe-learner/web@0.3.4 test:scene
+> npm run test:scene:generation && npm run test:scene:draft && npm run test:scene:rewrite && npm run test:scene:library && npm run test:scene:components
+
+
+> @vibe-learner/web@0.3.4 test:scene:generation
+> TSX_TSCONFIG_PATH=tests/tsconfig.json node --import tsx --test tests/scene-generation.test.jsx
+
+✔ slow file read cannot issue a request after a newer generation has started (9.0495ms)
+✔ outdated generation failure and finally do not overwrite newer state (1.252334ms)
+✔ draft edits or importing another scene prevent stale candidate application (1.342792ms)
+✔ unmount while reading a file suppresses the provider request (0.726792ms)
+✔ invalid generation inputs do not call the provider; valid input produces a candidate (0.992083ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 459.895584
+
+> @vibe-learner/web@0.3.4 test:scene:draft
+> TSX_TSCONFIG_PATH=tests/tsconfig.json node --import tsx --test tests/scene-draft.test.jsx
+
+✔ local hydration normalizes selection and does not overwrite the saved draft with defaults (7.66425ms)
+✔ rapid edit then unmount flushes the latest draft before debounce (1.043334ms)
+✔ pagehide flushes current selection and does not duplicate a successful write on unmount (0.895917ms)
+✔ edits and imports advance the async scope and imports replace its subject (0.690667ms)
+✔ invalid stored draft leaves the default editor usable with an explicit notice (0.616ms)
+✔ Scene generation/application/save preserve flow and imports start a fresh flow (4.047708ms)
+✔ diagnostic identity failure cannot break Scene editing or import (0.56ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 443.714708
+
+> @vibe-learner/web@0.3.4 test:scene:rewrite
+> TSX_TSCONFIG_PATH=tests/tsconfig.json node --import tsx --test tests/scene-rewrite.test.jsx
+
+✔ layer rewrite applies once and undo restores the exact previous field (9.135334ms)
+✔ object undo refuses to overwrite a subsequent manual field edit (1.53875ms)
+✔ a superseded failure does not clear a newer request or display its error (0.98775ms)
+✔ selection change, scene import and unmount fence late replies (2.02875ms)
+✔ current failure is visible and never retries the provider automatically (0.643375ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 470.241667
+
+> @vibe-learner/web@0.3.4 test:scene:library
+> TSX_TSCONFIG_PATH=tests/tsconfig.json node --import tsx --test tests/scene-library.test.jsx
+
+✔ late initial list retains committed updates and does not resurrect deleted rows (8.939458ms)
+✔ scene and reusable list failures are isolated (1.118917ms)
+✔ completed create does not take selection back from a later user choice (1.064916ms)
+✔ concurrent writes to the same scene are rejected without another backend call (0.839583ms)
+✔ older reusable action completion cannot clear the newer action feedback (0.902375ms)
+✔ unmount discards both late initial reads and committed mutation projections (0.657ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 455.359916
+
+> @vibe-learner/web@0.3.4 test:scene:components
+> TSX_TSCONFIG_PATH=tests/tsconfig.json node --import tsx --test tests/scene-tree-components.test.jsx
+
+✔ tree action controls do not bubble into selecting another editor (119.798667ms)
+✔ protected root deletion and pending reusable save remain disabled in the extracted view (61.098ms)
+✔ controlled tree disclosure hides descendants without selecting or deleting the node (53.366167ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 663.646458
+
+> @vibe-learner/web@0.3.4 test:persona
+> npm run test:persona:generation && npm run test:persona:draft && npm run test:persona:assist && npm run test:persona:library && npm run test:persona:persistence && npm run test:persona:components && npm run test:persona:diagnostics
+
+
+> @vibe-learner/web@0.3.4 test:persona:generation
+> TSX_TSCONFIG_PATH=tests/tsconfig.json node --import tsx --test tests/persona-card-generation.test.jsx
+
+✔ generation produces a candidate; explicit backfill preserves prompt and avoids duplicate slots (8.29525ms)
+✔ superseded file read cannot issue another generation request or clear the newer pending state (1.741875ms)
+✔ draft edits, persona selection and unmount all reject late candidates (1.9745ms)
+✔ late failure does not replace the newer candidate or its feedback (0.680333ms)
+✔ exact card count rejects invalid input before transport and preserves a valid limit (0.7205ms)
+✔ clearing before backfill requires the user confirmation and preserves persona identity fields (0.638917ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 450.657125
+
+> @vibe-learner/web@0.3.4 test:persona:draft
+> TSX_TSCONFIG_PATH=tests/tsconfig.json node --import tsx --test tests/persona-draft-hook.test.jsx
+
+✔ late initial library does not overwrite an edited or explicitly created draft (6.804584ms)
+✔ untouched draft initializes from authoritative library once (0.689333ms)
+✔ switching a dirty persona requires confirmation and rejected switch preserves its scope (1.013625ms)
+✔ a saved older snapshot advances the baseline without replacing later edits (0.652083ms)
+✔ dirty draft guards normal links and beforeunload, and removes listeners on unmount (4.713375ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 437.174917
+
+> @vibe-learner/web@0.3.4 test:persona:assist
+> TSX_TSCONFIG_PATH=tests/tsconfig.json node --import tsx --test tests/persona-assist.test.jsx
+
+✔ single slot rewrite changes only the target and captures rewrite strength (8.833292ms)
+✔ setting assist preserves locked slots and requires explicit acceptance of prompt suggestion (1.4135ms)
+✔ old slot failure cannot clear an active whole-persona request (0.990208ms)
+✔ draft edits, persona selection and unmount discard late assist replies (1.953834ms)
+✔ current assist failure is visible with no automatic provider replay (0.655667ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 452.070292
+
+> @vibe-learner/web@0.3.4 test:persona:library
+> TSX_TSCONFIG_PATH=tests/tsconfig.json node --import tsx --test tests/persona-library.test.jsx
+
+✔ late list reconciles mutations committed after the read started (8.396333ms)
+✔ newer authoritative refresh can supersede old local projections (1.116625ms)
+✔ superseded list response returns the current snapshot rather than an obsolete replacement (0.848292ms)
+✔ failed mutation does not broadcast or change records; duplicate pending writes never reach API (0.79575ms)
+✔ committed create after unmount still broadcasts but does not update the abandoned view (0.664417ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 449.379292
+
+> @vibe-learner/web@0.3.4 test:persona:persistence
+> TSX_TSCONFIG_PATH=tests/tsconfig.json node --import tsx --test tests/persona-persistence.test.jsx
+
+✔ create binds only continuing edits to the same new draft (8.948458ms)
+✔ late create cannot bind another new draft with an empty selected id (1.400167ms)
+✔ update preserves in-flight edits and sends the selected committed revision (1.246708ms)
+✔ repeated save while pending never starts a second write (1.077916ms)
+✔ reload cannot overwrite edits made while its read was pending (1.375083ms)
+✔ delete preserves a later selected draft and keeps edits to the removed persona as a new draft (1.541292ms)
+✔ unmounted create does not bind or project into the abandoned draft (0.616959ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 457.474875
+
+> @vibe-learner/web@0.3.4 test:persona:components
+> TSX_TSCONFIG_PATH=tests/tsconfig.json node --import tsx --test tests/persona-library-cards.test.jsx
+
+✔ card insertion and dragging report the selected card without deleting it (61.617916ms)
+✔ built-in profiles cannot be deleted and pending user deletion cannot repeat (10.46825ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 522.532417
+
+> @vibe-learner/web@0.3.4 test:persona:diagnostics
+> TSX_TSCONFIG_PATH=tests/tsconfig.json node --import tsx --test tests/persona-diagnostics.test.jsx
+
+✔ Persona generation/save/reload share flow; save refresh preserves action across page replacement (10.62225ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 442.414875
+
+> @vibe-learner/web@0.3.4 test:diagnostics:vault
+> TSX_TSCONFIG_PATH=tests/tsconfig.json node --import tsx --test tests/diagnostic-vault.test.jsx
+
+✔ all Vault entrypoints record locked/unavailable outcomes without passwords or credentials (1.602292ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 386.000708
+
+> @vibe-learner/web@0.3.4 test:diagnostics:collector
+> TSX_TSCONFIG_PATH=tests/tsconfig.json node --import tsx --test tests/diagnostic-collector.test.jsx
+
+✔ actual collector fences StrictMode cleanup and balances route lifetimes without Debug (6.708583ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 436.483833
+
+> @vibe-learner/web@0.3.4 test:diagnostics:decode
+> TSX_TSCONFIG_PATH=tests/tsconfig.json node --import tsx --test tests/diagnostic-api-decode.test.jsx
+
+✔ all domain API decoders log malformed scalar responses against the actual request (3.701084ms)
+✔ JSON syntax failures are separate from HTTP errors and body transport failures (0.634958ms)
+✔ response-owned decoding preserves error identity and captured context after navigation (0.239666ms)
+✔ Tavern terminal replay keeps exact request and attributes decoder rejection to replay response (0.822625ms)
+✔ Document and Planning stream decoder failures retain request identity and redact event text (0.450834ms)
+✔ Study diagnostic flows survive reload, separate Session scope and expire without storing content (2.593834ms)
+✔ Study JSON/attachment sends and operation query keep flow with fresh request actions and pages (1.539917ms)
+✔ question attempt and persisted Session read-back share context even when read-back decoding fails (0.472417ms)
+✔ inherited callback flows survive reload and cannot rebind a known request (0.109625ms)
+✔ callback ancestry is only diagnostic metadata and survives query-only recovery (0.504792ms)
+ℹ tests 10
+ℹ suites 0
+ℹ pass 10
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 399.323917
+
+> @vibe-learner/web@0.3.4 test:diagnostics:query
+> TSX_TSCONFIG_PATH=tests/tsconfig.json node --import tsx --test tests/diagnostic-query.test.jsx
+
+✔ Python-produced event/index/link pages pass strict browser decoding (1.23375ms)
+✔ nested content, classification drift and incoherent pagination fail closed (1.209667ms)
+✔ empty results retain cursors and distinguish unavailable index/link responses (0.085834ms)
+✔ queries stay nonrecursive, encode filters and cancel oversized responses (10.412125ms)
+✔ actual Python provider/tool/attempt/desktop DTOs retain reviewed nested metrics (0.779667ms)
+✔ caller abort cancels the combined timeout signal and remains distinguishable (0.188917ms)
+✔ retention coverage cannot falsify gaps or report fewer rows than its page (0.63ms)
+✔ writer coverage keeps lower-bound and unclosed semantics strict (0.285666ms)
+✔ export decodes Python snapshot and rejects nested secrets, drift and incomplete coverage (23.829208ms)
+✔ export POST uses bounded nonrecursive transport and caller abort (2.286625ms)
+✔ storage observations retain gaps and reject fake totals or admission claims (2.241334ms)
+✔ canonical resource roles retain nullable revisions and reject unreviewed fields (1.006709ms)
+✔ saved-resource events reject invented revisions and unscoped message sequences (0.8965ms)
+ℹ tests 13
+ℹ suites 0
+ℹ pass 13
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 109.387292
+
+> @vibe-learner/web@0.3.4 test:diagnostics:timeline
+> TSX_TSCONFIG_PATH=tests/tsconfig.json node --import tsx --test tests/diagnostic-timeline.test.jsx
+
+✔ timeline lazily reads only events, fences stale filter replies and aborts on unmount (88.790625ms)
+✔ pagination merges once and rejects duplicate event identity across pages (32.261208ms)
+✔ current-page requests bind to registered identity and index loads only when selected (19.252459ms)
+✔ valid next pages append and query failures remain visibly distinct from empty history (33.943667ms)
+✔ retention gaps are visible and cannot masquerade as complete history (7.603916ms)
+✔ writer coverage is lazy and explains unrecorded closure without claiming a crash (13.316708ms)
+✔ audit snapshot is explicit, reports statistics, and stale replies cannot survive filters or unmount (46.589708ms)
+✔ storage view loads lazily and fences responses after leaving the view (21.1705ms)
+✔ resource type, identity and role reach the index and role changes fence stale results (22.230791ms)
+✔ resource references drill into their request without retaining resource filters (24.28525ms)
+ℹ tests 10
+ℹ suites 0
+ℹ pass 10
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 746.498208
+
+> @vibe-learner/web@0.3.4 test:diagnostics:imports
+> TSX_TSCONFIG_PATH=tests/tsconfig.json node --import tsx --test tests/diagnostic-import.test.jsx
+
+✔ persona imports distinguish read success from domain validation and draft application (1.21675ms)
+✔ scene imports distinguish read success from domain validation and draft application (0.362208ms)
+✔ a superseded import is cancelled on its original page and does not apply its draft (0.202583ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 387.271916
+
+> vibe-learner@0.3.4 eval:harness:pr
+> cd services/ai && UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m app.services.harness_eval_pilots --profile pr && npm run eval:harness:stages && npm run eval:harness:plan-revision
+
+{"planning_tool_eval": {"gate": "passed", "report": "passed", "samples": 8}, "study_chat_eval": {"gate": "passed", "report": "passed", "samples": 8}, "tavern_identity_eval": {"gate": "passed", "report": "passed", "samples": 8}}
+
+> vibe-learner@0.3.4 eval:harness:stages
+> cd services/ai && LITELLM_LOCAL_MODEL_COST_MAP=True UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m app.services.harness_stage_evals
+
+parser.page.ocr_failed page=1 reason=unknown
+parser.page.ocr_attempted_no_gain page=1
+parser.page.ocr_unavailable page=1 reason=unknown
+model.setting.json_retry model=fixture reason=setting_model_invalid_payload
+model.setting.json_retry model=fixture reason=setting_model_invalid_payload
+{
+  "chunk_building_regression": {
+    "samples": 4,
+    "report": "passed",
+    "gate": "passed",
+    "failures": []
+  },
+  "document_process_regression": {
+    "samples": 6,
+    "report": "passed",
+    "gate": "passed",
+    "failures": []
+  },
+  "frontend_decode_regression": {
+    "samples": 11,
+    "report": "passed",
+    "gate": "passed",
+    "failures": []
+  },
+  "ocr_page_regression": {
+    "samples": 5,
+    "report": "passed",
+    "gate": "passed",
+    "failures": []
+  },
+  "page_extraction_regression": {
+    "samples": 2,
+    "report": "passed",
+    "gate": "passed",
+    "failures": []
+  },
+  "persona_generation_regression": {
+    "samples": 15,
+    "report": "passed",
+    "gate": "passed",
+    "failures": []
+  },
+  "plan_generation_regression": {
+    "samples": 8,
+    "report": "passed",
+    "gate": "passed",
+    "failures": []
+  },
+  "scene_generation_regression": {
+    "samples": 8,
+    "report": "passed",
+    "gate": "passed",
+    "failures": []
+  },
+  "section_detection_regression": {
+    "samples": 2,
+    "report": "passed",
+    "gate": "passed",
+    "failures": []
+  },
+  "study_unit_cleanup_regression": {
+    "samples": 3,
+    "report": "passed",
+    "gate": "passed",
+    "failures": []
+  }
+}
+
+> vibe-learner@0.3.4 eval:harness:plan-revision
+> cd services/ai && LITELLM_LOCAL_MODEL_COST_MAP=True UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m app.services.plan_revision_evals
+
+{"suite": "plan_revision_regression", "samples": 7, "gate": "passed", "report": "passed", "failures": []}
+
+> vibe-learner@0.3.4 test:ai
+> cd services/ai && UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m unittest discover -s tests
+
+.....{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:08.565091+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+.{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:08.677543+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:08.728315+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:08.732560+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:08.735888+00:00", "severity": "INFO", "event": "bootstrap.model_provider", "request_id": "d1385437ad33455d95cc876c08347c1a"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:08.736320+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:08.737263+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:08.738059+00:00", "severity": "INFO", "event": "log"}
+........{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:08.769207+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:08.769741+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:08.770144+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:08.770444+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:08.770712+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:08.770983+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:08.771225+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:08.771530+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:08.771810+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:08.772100+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:08.772360+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:08.772943+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:08.773259+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:08.773664+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:08.773984+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:08.774364+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:08.774666+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:08.774905+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:08.775154+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:08.775438+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:08.775711+00:00", "severity": "INFO", "event": "log"}
+...............{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:10.406446+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:10.436668+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:10.439845+00:00", "severity": "INFO", "event": "log"}
+.....{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:10.650332+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:10.654339+00:00", "severity": "INFO", "event": "log", "request_id": "64682657ebf847e3a59c3321fe2049f6", "flow_id": "document_fault_flow", "action_id": "upload"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:10.656195+00:00", "severity": "INFO", "event": "log", "request_id": "64682657ebf847e3a59c3321fe2049f6", "flow_id": "document_fault_flow", "action_id": "upload"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:10.656914+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:10.665576+00:00", "severity": "INFO", "event": "log", "request_id": "fd53288338164b99b1a15a0fda7cdc91", "flow_id": "document_fault_flow", "action_id": "process"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:10.682893+00:00", "severity": "ERROR", "event": "log", "request_id": "fd53288338164b99b1a15a0fda7cdc91", "flow_id": "document_fault_flow", "action_id": "process", "exception_type": "RuntimeError"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:10.684582+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:10.685754+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:10.770121+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:10.773514+00:00", "severity": "INFO", "event": "log", "request_id": "53fb4d3861a44b6fa8626d98f4d3e208", "flow_id": "document_fault_flow", "action_id": "upload"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:10.775698+00:00", "severity": "INFO", "event": "log", "request_id": "53fb4d3861a44b6fa8626d98f4d3e208", "flow_id": "document_fault_flow", "action_id": "upload"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:10.776195+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:10.783945+00:00", "severity": "INFO", "event": "log", "request_id": "74d6bfef78074d43a1a6bce358e45676", "flow_id": "document_fault_flow", "action_id": "process"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:10.801011+00:00", "severity": "WARNING", "event": "log", "request_id": "74d6bfef78074d43a1a6bce358e45676", "flow_id": "document_fault_flow", "action_id": "process"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:10.802412+00:00", "severity": "INFO", "event": "log", "request_id": "74d6bfef78074d43a1a6bce358e45676", "flow_id": "document_fault_flow", "action_id": "process"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:10.807103+00:00", "severity": "INFO", "event": "log", "request_id": "74d6bfef78074d43a1a6bce358e45676", "flow_id": "document_fault_flow", "action_id": "process"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:10.879328+00:00", "severity": "ERROR", "event": "log", "request_id": "74d6bfef78074d43a1a6bce358e45676", "flow_id": "document_fault_flow", "action_id": "process", "exception_type": "RuntimeError"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:10.881262+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:10.882334+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:10.890498+00:00", "severity": "INFO", "event": "log", "request_id": "79db2c573c4f4f8589feb9c7cf851fa6", "flow_id": "document_fault_flow", "action_id": "retry"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:10.901796+00:00", "severity": "INFO", "event": "log", "request_id": "79db2c573c4f4f8589feb9c7cf851fa6", "flow_id": "document_fault_flow", "action_id": "retry"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:10.905044+00:00", "severity": "INFO", "event": "log", "request_id": "79db2c573c4f4f8589feb9c7cf851fa6", "flow_id": "document_fault_flow", "action_id": "retry"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:10.976675+00:00", "severity": "INFO", "event": "log", "request_id": "79db2c573c4f4f8589feb9c7cf851fa6", "flow_id": "document_fault_flow", "action_id": "retry"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:10.980926+00:00", "severity": "INFO", "event": "log"}
+..{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:11.231782+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:11.236671+00:00", "severity": "INFO", "event": "log"}
+.{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:11.366958+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:11.369457+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:11.372679+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:11.375135+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:11.377370+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:11.379616+00:00", "severity": "INFO", "event": "log"}
+.{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:11.508137+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:11.511123+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:11.512083+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:11.512906+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:11.513635+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:11.514382+00:00", "severity": "INFO", "event": "log"}
+....{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:12.078437+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:12.081565+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:12.083297+00:00", "severity": "INFO", "event": "bootstrap.model_provider", "request_id": "961bbd9f0feb47928ca993ccaa9c9612"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:12.083591+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:12.104402+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:12.106061+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:12.106974+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:12.146797+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:12.150119+00:00", "severity": "INFO", "event": "log"}
+.....{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:12.475527+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:12.500728+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:12.510767+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:12.532814+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:12.537167+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:12.541509+00:00", "severity": "INFO", "event": "log"}
+.{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:12.545093+00:00", "severity": "WARNING", "event": "log", "request_id": "request", "flow_id": "flow"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:12.545175+00:00", "severity": "WARNING", "event": "log", "request_id": "request", "flow_id": "flow"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:12.545231+00:00", "severity": "ERROR", "event": "log", "request_id": "request", "flow_id": "flow", "exception_type": "TimeoutError"}
+..{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:12.546050+00:00", "severity": "WARNING", "event": "log", "request_id": "request", "flow_id": "flow"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:12.546124+00:00", "severity": "INFO", "event": "log", "request_id": "request", "flow_id": "flow"}
+.{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:12.594322+00:00", "severity": "INFO", "event": "bootstrap.model_provider", "request_id": "request", "flow_id": "flow"}
+..{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:12.628808+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:12.629707+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:12.630429+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:12.631187+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:12.631906+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:12.632732+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:12.633471+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:12.633815+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:12.634126+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:12.634505+00:00", "severity": "INFO", "event": "log"}
+.{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:12.643538+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:12.644385+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:12.645139+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:12.645946+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:12.646697+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:12.647344+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:12.647921+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:12.648341+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:12.648748+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:12.649101+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:12.649450+00:00", "severity": "INFO", "event": "log"}
+.{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:12.747706+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:12.860846+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:12.862918+00:00", "severity": "INFO", "event": "log"}
+.{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:12.957631+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:12.988626+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:12.995958+00:00", "severity": "INFO", "event": "log"}
+.................................{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:16.868062+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:16.870086+00:00", "severity": "INFO", "event": "log"}
+......{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:17.821510+00:00", "severity": "INFO", "event": "log"}
+.{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:17.911916+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:17.919940+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:17.952455+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:17.966347+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:17.969699+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:18.020439+00:00", "severity": "INFO", "event": "log"}
+.{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:18.168865+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:18.171191+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:18.173665+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:18.180432+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:18.248906+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:18.252375+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:18.329861+00:00", "severity": "INFO", "event": "log"}
+...........{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:18.571514+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:18.572027+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:18.576159+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:18.576986+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:18.577697+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:18.578066+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:18.578434+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:18.579188+00:00", "severity": "INFO", "event": "log"}
+..{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:18.894464+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:18.920759+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:18.924188+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:18.926959+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:18.927731+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:18.928444+00:00", "severity": "INFO", "event": "log"}
+.......{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:18.982979+00:00", "severity": "INFO", "event": "log"}
+.{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:19.030852+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:19.033906+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:19.050378+00:00", "severity": "ERROR", "event": "log", "exception_type": "RuntimeError"}
+.{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:19.096126+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:19.099901+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:19.181289+00:00", "severity": "INFO", "event": "log"}
+.{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:19.227720+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:19.230589+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:19.309269+00:00", "severity": "ERROR", "event": "log", "exception_type": "RuntimeError"}
+.{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:19.356017+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:19.360933+00:00", "severity": "INFO", "event": "log"}
+..{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:19.450949+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:19.453881+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:19.541546+00:00", "severity": "WARNING", "event": "log", "exception_type": "RuntimeError"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:19.541606+00:00", "severity": "INFO", "event": "log"}
+.{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:19.592191+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:19.595818+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:19.675603+00:00", "severity": "ERROR", "event": "log", "exception_type": "RuntimeError"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:19.677989+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:19.679407+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:19.751358+00:00", "severity": "ERROR", "event": "log", "exception_type": "RuntimeError"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:19.753161+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:19.754717+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:19.830670+00:00", "severity": "ERROR", "event": "log", "exception_type": "RuntimeError"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:19.832388+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:19.833780+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:19.969939+00:00", "severity": "ERROR", "event": "log", "exception_type": "RuntimeError"}
+.{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.016303+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.020887+00:00", "severity": "WARNING", "event": "log"}
+.{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.066028+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.069050+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.149592+00:00", "severity": "INFO", "event": "log"}
+.{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.196193+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.199825+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.278778+00:00", "severity": "INFO", "event": "log"}
+..{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.283892+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.284018+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.284584+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.285293+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.285403+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.285825+00:00", "severity": "INFO", "event": "log"}
+.{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.288559+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.288798+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.290438+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.290602+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.291046+00:00", "severity": "INFO", "event": "log"}
+..{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.291500+00:00", "severity": "WARNING", "event": "log"}
+.{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.292684+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.292710+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.295303+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.305452+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.310912+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.313692+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.317780+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.319940+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.321033+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.323398+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.325244+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.327289+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.329587+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.330856+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.331470+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.352350+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.365340+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.371529+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.375917+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.377107+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.384983+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.396561+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.399069+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.407038+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.407077+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.409772+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.410825+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.414924+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.428293+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.428335+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.430971+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.442517+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.445014+00:00", "severity": "INFO", "event": "log"}
+.{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.456063+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.456093+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.459053+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.470090+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.475015+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.477906+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.482174+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.483805+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.484909+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.487168+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.488754+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.490817+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.493159+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.494472+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.495096+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.515622+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.528314+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.534346+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.538145+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.539312+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.550003+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.550042+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.552518+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.565226+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.567628+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.585268+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.585304+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.587952+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.588774+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.593377+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.595049+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.595075+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.597504+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.608561+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.613135+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.615754+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.619828+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.621447+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.622532+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.625099+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.626716+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.628599+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.630864+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.632187+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.632836+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.652939+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.665584+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.671493+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.675666+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:20.676974+00:00", "severity": "INFO", "event": "log"}
+...................{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:21.328916+00:00", "severity": "INFO", "event": "log"}
+.{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:21.407740+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:21.427461+00:00", "severity": "INFO", "event": "log"}
+.{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:21.487183+00:00", "severity": "INFO", "event": "log"}
+..{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:21.607456+00:00", "severity": "INFO", "event": "log"}
+............................................./Users/ffox/.local/share/uv/python/cpython-3.12.13-macos-aarch64-none/lib/python3.12/tempfile.py:940: ResourceWarning: Implicitly cleaning up <TemporaryDirectory '/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/tmpxpglwu2h'>
+  _warnings.warn(warn_message, ResourceWarning)
+........................................................................................{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:24.636574+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:24.636885+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:24.651446+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:24.651699+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:24.665514+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:24.665780+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:24.679970+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:24.680231+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:24.694048+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:24.694304+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:24.707749+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:24.708014+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:24.722541+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:24.722774+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:24.736508+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:24.736753+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:24.750898+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:24.751145+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:24.765256+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:24.765518+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:24.787717+00:00", "severity": "WARNING", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:24.790978+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:24.798985+00:00", "severity": "WARNING", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:24.810364+00:00", "severity": "WARNING", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:24.823164+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:24.823467+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:24.835910+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:24.836180+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:24.849181+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:24.849449+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:24.882910+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:24.882994+00:00", "severity": "WARNING", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:24.883018+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:24.896072+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:24.900662+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:24.900709+00:00", "severity": "WARNING", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:24.900730+00:00", "severity": "INFO", "event": "log"}
+.{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:25.871487+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:25.871594+00:00", "severity": "WARNING", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:25.871618+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:25.884270+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:25.888497+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:25.888540+00:00", "severity": "WARNING", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:25.888560+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:25.925078+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:25.925394+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:26.001841+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:26.002084+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:26.016181+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:26.016447+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:26.030810+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:26.031066+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:26.044894+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:26.045130+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:26.058823+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:26.059099+00:00", "severity": "INFO", "event": "log"}
+.{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:26.073997+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:26.074262+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:26.088632+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:26.088933+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:26.103320+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:26.103573+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:26.117801+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:26.118044+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:26.132249+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:26.132500+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:26.146806+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:26.147059+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:26.161697+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:26.161970+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:26.176123+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:26.176395+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:26.190719+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:26.190991+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:26.205131+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:26.205363+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:26.227987+00:00", "severity": "WARNING", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:26.229878+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:26.237619+00:00", "severity": "WARNING", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:26.248310+00:00", "severity": "WARNING", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:26.259383+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:26.259644+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:26.270765+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:26.270988+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:26.282433+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:26.282681+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:26.311852+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:26.311926+00:00", "severity": "WARNING", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:26.311947+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:26.324845+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:26.329456+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:26.329510+00:00", "severity": "WARNING", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:26.329531+00:00", "severity": "INFO", "event": "log"}
+...................................{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:29.563964+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:29.564014+00:00", "severity": "INFO", "event": "log"}
+...{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:29.564196+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:29.564249+00:00", "severity": "WARNING", "event": "log"}
+.{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:29.564477+00:00", "severity": "WARNING", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:29.564614+00:00", "severity": "WARNING", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:29.564722+00:00", "severity": "WARNING", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:29.564884+00:00", "severity": "WARNING", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:29.564985+00:00", "severity": "WARNING", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:29.565081+00:00", "severity": "WARNING", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:29.565176+00:00", "severity": "WARNING", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:29.565270+00:00", "severity": "WARNING", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:29.565365+00:00", "severity": "WARNING", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:29.565458+00:00", "severity": "WARNING", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:29.565592+00:00", "severity": "WARNING", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:29.565688+00:00", "severity": "WARNING", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:29.565780+00:00", "severity": "WARNING", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:29.565871+00:00", "severity": "WARNING", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:29.565961+00:00", "severity": "WARNING", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:29.566140+00:00", "severity": "WARNING", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:29.566273+00:00", "severity": "WARNING", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:29.566381+00:00", "severity": "WARNING", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:29.566479+00:00", "severity": "WARNING", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:29.566572+00:00", "severity": "WARNING", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:29.566664+00:00", "severity": "WARNING", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:29.566755+00:00", "severity": "WARNING", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:29.566849+00:00", "severity": "WARNING", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:29.566980+00:00", "severity": "WARNING", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:29.567075+00:00", "severity": "WARNING", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:29.567166+00:00", "severity": "WARNING", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:29.567255+00:00", "severity": "WARNING", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:29.567345+00:00", "severity": "WARNING", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:29.567438+00:00", "severity": "WARNING", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:29.567529+00:00", "severity": "WARNING", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:29.567658+00:00", "severity": "WARNING", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:29.567751+00:00", "severity": "WARNING", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:29.567916+00:00", "severity": "WARNING", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:29.568005+00:00", "severity": "WARNING", "event": "log"}
+.{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:29.570075+00:00", "severity": "WARNING", "event": "log"}
+.{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:29.570207+00:00", "severity": "WARNING", "event": "log"}
+./Users/ffox/vibe-learner/services/ai/.venv/lib/python3.12/site-packages/defusedxml/__init__.py:30: DeprecationWarning: defusedxml.cElementTree is deprecated, import from defusedxml.ElementTree instead.
+  from . import cElementTree
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:29.995540+00:00", "severity": "WARNING", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:29.995631+00:00", "severity": "INFO", "event": "log"}
+.{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:29.995833+00:00", "severity": "WARNING", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:29.995860+00:00", "severity": "WARNING", "event": "log"}
+.........{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:30.429598+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:30.432872+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:30.446048+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:30.446170+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:30.518775+00:00", "severity": "INFO", "event": "log"}
+...............{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:31.491854+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:31.538659+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:31.545485+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:31.560751+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:31.564262+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:31.635780+00:00", "severity": "INFO", "event": "log"}
+.{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:31.786165+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+.{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:31.836380+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:31.842310+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:31.857122+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:31.860021+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:31.930705+00:00", "severity": "INFO", "event": "log"}
+.{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:31.979780+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:31.982784+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:31.998859+00:00", "severity": "INFO", "event": "log"}
+......{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:32.291855+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:32.294987+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:32.307264+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:32.307398+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:32.378588+00:00", "severity": "INFO", "event": "log"}
+...........{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:33.070536+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:33.072948+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:33.075503+00:00", "severity": "INFO", "event": "log"}
+.{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:33.121652+00:00", "severity": "INFO", "event": "log"}
+.{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:33.167756+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:33.168584+00:00", "severity": "INFO", "event": "log"}
+.{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:33.214932+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:33.216460+00:00", "severity": "INFO", "event": "log"}
+.{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:33.262502+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:33.263935+00:00", "severity": "INFO", "event": "log"}
+.{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:33.308448+00:00", "severity": "INFO", "event": "log"}
+.{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:33.353324+00:00", "severity": "WARNING", "event": "log"}
+.{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:33.424723+00:00", "severity": "INFO", "event": "log"}
+.{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:33.468145+00:00", "severity": "INFO", "event": "log"}
+.{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:33.513484+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:33.514409+00:00", "severity": "INFO", "event": "log"}
+.{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:33.559089+00:00", "severity": "INFO", "event": "log"}
+.{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:33.605573+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:33.607326+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:33.608589+00:00", "severity": "INFO", "event": "log"}
+..{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:33.708156+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:33.708531+00:00", "severity": "INFO", "event": "log"}
+...{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:33.846084+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:33.846256+00:00", "severity": "INFO", "event": "log"}
+.{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:33.891576+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:33.891673+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:33.891791+00:00", "severity": "INFO", "event": "log"}
+.{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:33.936859+00:00", "severity": "WARNING", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:33.936918+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:33.936967+00:00", "severity": "INFO", "event": "log"}
+...........{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:34.437795+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:34.442110+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:34.457627+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:34.457861+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:34.533881+00:00", "severity": "INFO", "event": "log"}
+................................................{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:37.382836+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:37.396960+00:00", "severity": "WARNING", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:37.412397+00:00", "severity": "WARNING", "event": "log"}
+....{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:37.421218+00:00", "severity": "WARNING", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:37.421358+00:00", "severity": "WARNING", "event": "log"}
+..................................{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:39.391087+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:39.391153+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:39.393908+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:39.404697+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:39.409844+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:39.413710+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:39.418234+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:39.419968+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:39.421055+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:39.423652+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:39.425484+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:39.427481+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:39.429765+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:39.431129+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:39.431777+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:39.452009+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:39.464635+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:39.470536+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:39.474811+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:39.476125+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:39.483332+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:39.512553+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:39.512596+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:39.515208+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:39.517660+00:00", "severity": "INFO", "event": "log"}
+..........{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:39.801983+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:39.802205+00:00", "severity": "INFO", "event": "log"}
+..................{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:40.136599+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:40.136884+00:00", "severity": "WARNING", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:40.136927+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:40.137152+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:40.137236+00:00", "severity": "ERROR", "event": "log", "exception_type": "AssertionError"}
+...............{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:40.618449+00:00", "severity": "WARNING", "event": "log"}
+.{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:40.618786+00:00", "severity": "WARNING", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:40.620065+00:00", "severity": "WARNING", "event": "log"}
+...{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:40.620513+00:00", "severity": "WARNING", "event": "log"}
+..{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:40.620873+00:00", "severity": "WARNING", "event": "log"}
+..{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:40.621369+00:00", "severity": "WARNING", "event": "log"}
+......{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:40.623846+00:00", "severity": "WARNING", "event": "log"}
+..{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:40.755079+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:40.755199+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:40.755364+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:40.755382+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:40.755441+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:40.755456+00:00", "severity": "INFO", "event": "log"}
+.{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:40.755544+00:00", "severity": "INFO", "event": "log"}
+.{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:40.755670+00:00", "severity": "INFO", "event": "log"}
+.{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:40.755766+00:00", "severity": "INFO", "event": "log"}
+....{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:40.763272+00:00", "severity": "WARNING", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:40.763311+00:00", "severity": "WARNING", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:40.763338+00:00", "severity": "WARNING", "event": "log"}
+.{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:40.763444+00:00", "severity": "WARNING", "event": "log"}
+.{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:40.764848+00:00", "severity": "WARNING", "event": "log"}
+..{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:40.766681+00:00", "severity": "WARNING", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:40.766714+00:00", "severity": "WARNING", "event": "log"}
+.{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:40.767324+00:00", "severity": "WARNING", "event": "log"}
+..........................................{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:41.247153+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:41.291990+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:41.299230+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:41.316982+00:00", "severity": "ERROR", "event": "log", "exception_type": "RuntimeError"}
+.{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:41.368019+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:41.371113+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:41.384506+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:41.384622+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:41.452133+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:41.497853+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+.{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:41.614237+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:41.616316+00:00", "severity": "INFO", "event": "log"}
+.{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:41.728017+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:41.730924+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:41.886128+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:41.886243+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:41.955738+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:42.002404+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+..{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:42.119905+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:42.134566+00:00", "severity": "ERROR", "event": "log", "exception_type": "RuntimeError"}
+.{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:42.227284+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:42.239219+00:00", "severity": "WARNING", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:42.242155+00:00", "severity": "ERROR", "event": "log", "exception_type": "RuntimeError"}
+.{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:42.333361+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:42.335208+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+...............................{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:44.043377+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+.{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:44.170821+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+.{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:44.296161+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:44.353984+00:00", "severity": "ERROR", "event": "log", "exception_type": "HarnessRuntimeError"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:44.356875+00:00", "severity": "ERROR", "event": "log", "exception_type": "StudyChatApplicationError"}
+.{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:44.459382+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:44.515643+00:00", "severity": "ERROR", "event": "log", "exception_type": "HarnessRuntimeError"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:44.517781+00:00", "severity": "ERROR", "event": "log", "exception_type": "StudyChatApplicationError"}
+........{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:44.524795+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:44.524842+00:00", "severity": "INFO", "event": "log"}
+.{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:44.524877+00:00", "severity": "INFO", "event": "log"}
+.{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:44.524914+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:44.524939+00:00", "severity": "INFO", "event": "log"}
+.................{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:44.608102+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:44.615113+00:00", "severity": "INFO", "event": "log", "request_id": "2ca96a381c37454b94d247efd3cc2222"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:44.618488+00:00", "severity": "INFO", "event": "log", "request_id": "2ca96a381c37454b94d247efd3cc2222"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:44.621255+00:00", "severity": "INFO", "event": "log", "request_id": "bb1d9595dffe4766872dff014f363239"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:44.626192+00:00", "severity": "INFO", "event": "log", "request_id": "bb1d9595dffe4766872dff014f363239"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:44.642077+00:00", "severity": "INFO", "event": "log", "request_id": "bb1d9595dffe4766872dff014f363239"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:44.645134+00:00", "severity": "INFO", "event": "log", "request_id": "bb1d9595dffe4766872dff014f363239"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:44.719140+00:00", "severity": "INFO", "event": "log", "request_id": "bb1d9595dffe4766872dff014f363239"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:44.725194+00:00", "severity": "INFO", "event": "log", "request_id": "e1b8de6f716340a7bc226e161d78ffb6"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:44.967520+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+.{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:45.060709+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:45.067739+00:00", "severity": "INFO", "event": "log", "request_id": "0f01b75b95a74fce98b552363ed9c835"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:45.069822+00:00", "severity": "INFO", "event": "log", "request_id": "0f01b75b95a74fce98b552363ed9c835"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:45.072685+00:00", "severity": "INFO", "event": "log", "request_id": "065dca18402f4f1db8b4b7969cb9cf7f"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:45.078003+00:00", "severity": "INFO", "event": "log", "request_id": "065dca18402f4f1db8b4b7969cb9cf7f"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:45.093518+00:00", "severity": "INFO", "event": "log", "request_id": "065dca18402f4f1db8b4b7969cb9cf7f"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:45.096486+00:00", "severity": "INFO", "event": "log", "request_id": "065dca18402f4f1db8b4b7969cb9cf7f"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:45.171805+00:00", "severity": "INFO", "event": "log", "request_id": "065dca18402f4f1db8b4b7969cb9cf7f"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:45.178277+00:00", "severity": "INFO", "event": "log", "request_id": "d82a9384c0a04bc6a6e74f9fb22bf82a"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:45.208646+00:00", "severity": "ERROR", "event": "log", "request_id": "aac0307a28c84158bcb70440bc7ae696", "exception_type": "HarnessRuntimeError"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:45.210837+00:00", "severity": "ERROR", "event": "log", "request_id": "aac0307a28c84158bcb70440bc7ae696", "exception_type": "StudyChatApplicationError"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:45.259087+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+.{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:45.351233+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:45.359038+00:00", "severity": "INFO", "event": "log", "request_id": "11e89503f7dd4db4b3a79ce203c0535f"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:45.361535+00:00", "severity": "INFO", "event": "log", "request_id": "11e89503f7dd4db4b3a79ce203c0535f"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:45.363838+00:00", "severity": "INFO", "event": "log", "request_id": "4cdd56c16f93494689803de01acc1903"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:45.368504+00:00", "severity": "INFO", "event": "log", "request_id": "4cdd56c16f93494689803de01acc1903"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:45.383530+00:00", "severity": "INFO", "event": "log", "request_id": "4cdd56c16f93494689803de01acc1903"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:45.386427+00:00", "severity": "INFO", "event": "log", "request_id": "4cdd56c16f93494689803de01acc1903"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:45.460654+00:00", "severity": "INFO", "event": "log", "request_id": "4cdd56c16f93494689803de01acc1903"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:45.465970+00:00", "severity": "INFO", "event": "log", "request_id": "947bda852e70411eb1c7c8f4ac0408cb"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:45.495717+00:00", "severity": "ERROR", "event": "log", "request_id": "b77fbbb478a1465d8329a44d02aad022", "exception_type": "HarnessRuntimeError"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:45.497778+00:00", "severity": "ERROR", "event": "log", "request_id": "b77fbbb478a1465d8329a44d02aad022", "exception_type": "StudyChatApplicationError"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:45.545870+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+.................................{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:46.787431+00:00", "severity": "WARNING", "event": "log"}
+.{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:46.880909+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:46.909946+00:00", "severity": "ERROR", "event": "log", "exception_type": "HarnessRuntimeError"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:46.912196+00:00", "severity": "ERROR", "event": "log", "exception_type": "StudyChatApplicationError"}
+.{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:47.004959+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+.{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:47.140942+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:47.178520+00:00", "severity": "ERROR", "event": "log", "exception_type": "RuntimeError"}
+...........{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:48.427097+00:00", "severity": "WARNING", "event": "log"}
+.{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:48.531249+00:00", "severity": "WARNING", "event": "log"}
+............{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:52.562199+00:00", "severity": "ERROR", "event": "log", "exception_type": "RuntimeError"}
+............{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:54.531642+00:00", "severity": "WARNING", "event": "log"}
+................................................................................................{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:59.321100+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:55:59.324779+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:56:00.285252+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:56:00.318958+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:56:00.536430+00:00", "severity": "INFO", "event": "log"}
+.......{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:56:01.631495+00:00", "severity": "WARNING", "event": "log"}
+...{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:56:07.033027+00:00", "severity": "WARNING", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:56:07.686030+00:00", "severity": "WARNING", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:56:08.330902+00:00", "severity": "WARNING", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:56:08.985182+00:00", "severity": "WARNING", "event": "log"}
+...
+----------------------------------------------------------------------
+Ran 858 tests in 68.362s
+
+OK
+sys:1: DeprecationWarning: builtin type swigvarlink has no __module__ attribute
+
+> vibe-learner@0.3.4 build:web
+> npm --workspace @vibe-learner/web run build
+
+
+> @vibe-learner/web@0.3.4 build
+> next build
+
+▲ Next.js 16.2.3 (Turbopack)
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 1910ms
+  Running TypeScript ...
+  Finished TypeScript in 3.0s ...
+  Collecting page data using 9 workers ...
+  Generating static pages using 9 workers (0/14) ...
+  Generating static pages using 9 workers (3/14) 
+  Generating static pages using 9 workers (6/14) 
+  Generating static pages using 9 workers (10/14) 
+✓ Generating static pages using 9 workers (14/14) in 217ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ○ /apple-icon
+├ ○ /icon
+├ ○ /manual
+├ ○ /model-usage
+├ ○ /persona-spectrum
+├ ○ /plan
+├ ○ /scene-setup
+├ ○ /sensory-tools
+├ ○ /settings
+├ ○ /study
+└ ○ /tavern
+
+
+○  (Static)  prerendered as static content
+

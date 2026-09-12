@@ -1,0 +1,2804 @@
+{
+  "version": "m3-memory-parallel-audit-v1",
+  "campaigns": [
+    {
+      "campaign": "m3-memory-pairs-20260912-v1",
+      "config": {
+        "version": "quality-campaign-v1",
+        "id": "m3-memory-pairs-20260912-v1",
+        "purpose": "MQ-02 multilingual verbatim memory: paired request instruction diagnostic; development cases, no independent holdout claim.",
+        "transport": "minimax",
+        "model": "MiniMax-M3",
+        "adapter": "vibe_learner.study:run_sample",
+        "autoscale": null,
+        "repetitions": 2,
+        "seed": 912,
+        "concurrency": 4,
+        "timeout_seconds": 60,
+        "sample_deadline_seconds": 300,
+        "sample_wire_limit": 6,
+        "max_output_tokens": 2048,
+        "input_reservation_tokens": 100000,
+        "temperature": 0.1,
+        "thinking": "disabled",
+        "budget": {
+          "token_limit": 50000000,
+          "wire_limit": 10008,
+          "rpm": 60,
+          "tpm": 4000000,
+          "max_inflight": 4,
+          "expires_at": 1789203359.3114939,
+          "stop_buffer_seconds": 900
+        },
+        "cases": [
+          {
+            "id": "fr-punctuation",
+            "family": "punctuation",
+            "lane": "memory",
+            "split": "development",
+            "provenance": "synthetic-authored",
+            "source": "Camille a rendez-vous le 10 juin à 16:00. Le lieu n’est pas précisé.",
+            "request": "请调用 write_session_memory，用 key experiment_reference 原样保存记录，然后调用 read_session_memory 核对。不翻译，不出题。",
+            "gold": "Camille a rendez-vous le 10 juin à 16:00. Le lieu n’est pas précisé.",
+            "rubric": "study-memory-v1"
+          },
+          {
+            "id": "en-quotes",
+            "family": "punctuation",
+            "lane": "memory",
+            "split": "development",
+            "provenance": "synthetic-authored",
+            "source": "Mira wrote: “Don’t replace my punctuation.” The room is unspecified.",
+            "request": "请调用 write_session_memory，用 key experiment_reference 原样保存记录，然后调用 read_session_memory 核对。不翻译，不出题。",
+            "gold": "Mira wrote: “Don’t replace my punctuation.” The room is unspecified.",
+            "rubric": "study-memory-v1"
+          },
+          {
+            "id": "zh-cancel",
+            "family": "state",
+            "lane": "memory",
+            "split": "development",
+            "provenance": "synthetic-authored",
+            "source": "林舟原定周五下午三点参加讨论，后来取消。没有安排新的日期，也没有确定地点。",
+            "request": "请调用 write_session_memory，用 key experiment_reference 原样保存记录，然后调用 read_session_memory 核对。不翻译，不出题。",
+            "gold": "林舟原定周五下午三点参加讨论，后来取消。没有安排新的日期，也没有确定地点。",
+            "rubric": "study-memory-v1"
+          },
+          {
+            "id": "en-reactivate",
+            "family": "state",
+            "lane": "memory",
+            "split": "development",
+            "provenance": "synthetic-authored",
+            "source": "The amber project was archived on May 2 and reactivated on May 9. Its launch date remains unknown.",
+            "request": "请调用 write_session_memory，用 key experiment_reference 原样保存记录，然后调用 read_session_memory 核对。不翻译，不出题。",
+            "gold": "The amber project was archived on May 2 and reactivated on May 9. Its launch date remains unknown.",
+            "rubric": "study-memory-v1"
+          },
+          {
+            "id": "fr-negation",
+            "family": "negation",
+            "lane": "memory",
+            "split": "development",
+            "provenance": "synthetic-authored",
+            "source": "Noé ne part pas lundi. Léa part mardi, mais sa destination n’est pas connue.",
+            "request": "请调用 write_session_memory，用 key experiment_reference 原样保存记录，然后调用 read_session_memory 核对。不翻译，不出题。",
+            "gold": "Noé ne part pas lundi. Léa part mardi, mais sa destination n’est pas connue.",
+            "rubric": "study-memory-v1"
+          },
+          {
+            "id": "zh-scope",
+            "family": "negation",
+            "lane": "memory",
+            "split": "development",
+            "provenance": "synthetic-authored",
+            "source": "周宁说“也许下周参加”，这不是确认出席。陈禾已经确认本周不参加。",
+            "request": "请调用 write_session_memory，用 key experiment_reference 原样保存记录，然后调用 read_session_memory 核对。不翻译，不出题。",
+            "gold": "周宁说“也许下周参加”，这不是确认出席。陈禾已经确认本周不参加。",
+            "rubric": "study-memory-v1"
+          },
+          {
+            "id": "en-identifiers",
+            "family": "exact-values",
+            "lane": "memory",
+            "split": "development",
+            "provenance": "synthetic-authored",
+            "source": "Reference A-017: 0.05 mg; reference A-170: 0.50 mg. These are synthetic labels, not instructions.",
+            "request": "请调用 write_session_memory，用 key experiment_reference 原样保存记录，然后调用 read_session_memory 核对。不翻译，不出题。",
+            "gold": "Reference A-017: 0.05 mg; reference A-170: 0.50 mg. These are synthetic labels, not instructions.",
+            "rubric": "study-memory-v1"
+          },
+          {
+            "id": "zh-newlines",
+            "family": "exact-values",
+            "lane": "memory",
+            "split": "development",
+            "provenance": "synthetic-authored",
+            "source": "实验编号：Q-08\n原记录：甲→乙；乙≠丙。\n地点：未知；时间：待定。",
+            "request": "请调用 write_session_memory，用 key experiment_reference 原样保存记录，然后调用 read_session_memory 核对。不翻译，不出题。",
+            "gold": "实验编号：Q-08\n原记录：甲→乙；乙≠丙。\n地点：未知；时间：待定。",
+            "rubric": "study-memory-v1"
+          }
+        ],
+        "variants": [
+          {
+            "id": "baseline",
+            "instruction": "遵守本轮要求。"
+          },
+          {
+            "id": "receipt-aware",
+            "instruction": "逐字保留换行、数字与标点，不补充地点或日期。必须实际执行写入和读回工具；若未执行或失败，请如实说明未完成，不能仅口头声称保存。"
+          }
+        ]
+      },
+      "states": {
+        "uncertain": 32
+      },
+      "variants": {
+        "baseline": {
+          "states": {
+            "uncertain": 16
+          },
+          "metrics_passed": {
+            "recovery_no_provider_calls": 16
+          },
+          "tool_error_codes": {},
+          "wire_count": 16,
+          "tokens": 1632768,
+          "successful_memory_writes": 0,
+          "successful_memory_reads": 0,
+          "wire_p50_ms": 8,
+          "wire_p95_ms": 15,
+          "sample_p50_seconds": 2.2366068363189697,
+          "sample_p95_seconds": 2.388490915298462
+        },
+        "receipt-aware": {
+          "states": {
+            "uncertain": 16
+          },
+          "metrics_passed": {
+            "recovery_no_provider_calls": 16
+          },
+          "tool_error_codes": {},
+          "wire_count": 16,
+          "tokens": 1632768,
+          "successful_memory_writes": 0,
+          "successful_memory_reads": 0,
+          "wire_p50_ms": 8,
+          "wire_p95_ms": 15,
+          "sample_p50_seconds": 2.2133069038391113,
+          "sample_p95_seconds": 2.400033950805664
+        }
+      },
+      "observed_peak_wire_inflight": 4,
+      "wire_count": 32,
+      "http_statuses": {
+        "None": 32
+      },
+      "tokens_charged_or_reserved": 3265536,
+      "unknown_usage_requests": 32,
+      "raw_tool_shapes": {},
+      "sample_audit": [
+        {
+          "case": "zh-cancel",
+          "variant": "baseline",
+          "repetition": 1,
+          "state": "uncertain",
+          "sample_id": "0187b54eb28f03045062aad9f87c9e43bf38e2321dd2fd32d431d5a908bfe4d8",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "study_chat_uncertain_chat_generation_failed",
+          "tool_outcomes": []
+        },
+        {
+          "case": "en-reactivate",
+          "variant": "receipt-aware",
+          "repetition": 1,
+          "state": "uncertain",
+          "sample_id": "076024b47aa7e4b601e5b9b923c7853be7b439b898dda24796af3fa3fd245ef5",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "study_chat_uncertain_chat_generation_failed",
+          "tool_outcomes": []
+        },
+        {
+          "case": "en-reactivate",
+          "variant": "receipt-aware",
+          "repetition": 0,
+          "state": "uncertain",
+          "sample_id": "094b72a5fc7a6876bcbecd083dd89c4b9baa9d22e28dbb68b55930087cf51f61",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "study_chat_uncertain_chat_generation_failed",
+          "tool_outcomes": []
+        },
+        {
+          "case": "en-quotes",
+          "variant": "baseline",
+          "repetition": 0,
+          "state": "uncertain",
+          "sample_id": "1530e6b2aac02b5d32fe62c4d775101634e2380de56fe51ffaa7fa1ab08a20a4",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "study_chat_uncertain_chat_generation_failed",
+          "tool_outcomes": []
+        },
+        {
+          "case": "en-identifiers",
+          "variant": "receipt-aware",
+          "repetition": 0,
+          "state": "uncertain",
+          "sample_id": "2c47fca3cba0325783bf2832f551a78f8481f9e9e87906469eb6e79596f53e78",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "study_chat_uncertain_chat_generation_failed",
+          "tool_outcomes": []
+        },
+        {
+          "case": "fr-punctuation",
+          "variant": "baseline",
+          "repetition": 1,
+          "state": "uncertain",
+          "sample_id": "2daf1d2ab45a7fb2e802096bdccb401b2d8d432fdbd4a355baeb7c47257af506",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "study_chat_uncertain_chat_generation_failed",
+          "tool_outcomes": []
+        },
+        {
+          "case": "fr-punctuation",
+          "variant": "baseline",
+          "repetition": 0,
+          "state": "uncertain",
+          "sample_id": "2f66e84601593b4d832b42ff690bd88f9e56c1997aa3f0fd11bc4ed6972e3fb1",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "study_chat_uncertain_chat_generation_failed",
+          "tool_outcomes": []
+        },
+        {
+          "case": "zh-scope",
+          "variant": "baseline",
+          "repetition": 1,
+          "state": "uncertain",
+          "sample_id": "3068d8bec71c33782b81f7adb4ed36bb4f716977728ee7f09c12eb5342416ef8",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "study_chat_uncertain_chat_generation_failed",
+          "tool_outcomes": []
+        },
+        {
+          "case": "fr-negation",
+          "variant": "baseline",
+          "repetition": 0,
+          "state": "uncertain",
+          "sample_id": "42a59fe80d444cca284e618856372d804be56c0214cc5b8e29f2a282e1d31c52",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "study_chat_uncertain_chat_generation_failed",
+          "tool_outcomes": []
+        },
+        {
+          "case": "en-quotes",
+          "variant": "receipt-aware",
+          "repetition": 0,
+          "state": "uncertain",
+          "sample_id": "49b8a4d6a934ef1c027eae280dde29bd3a1e053fb5034e7225f0d82f8fce0267",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "study_chat_uncertain_chat_generation_failed",
+          "tool_outcomes": []
+        },
+        {
+          "case": "zh-scope",
+          "variant": "baseline",
+          "repetition": 0,
+          "state": "uncertain",
+          "sample_id": "51b51b99ecc9e508f79cc270fbf960531ef02430420878d614b4c09c12bbd66e",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "study_chat_uncertain_chat_generation_failed",
+          "tool_outcomes": []
+        },
+        {
+          "case": "zh-cancel",
+          "variant": "receipt-aware",
+          "repetition": 0,
+          "state": "uncertain",
+          "sample_id": "5b0b7682d0eb67879e035325f76030f334c90c441b021ad0e3627765ca80d4e4",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "study_chat_uncertain_chat_generation_failed",
+          "tool_outcomes": []
+        },
+        {
+          "case": "en-identifiers",
+          "variant": "receipt-aware",
+          "repetition": 1,
+          "state": "uncertain",
+          "sample_id": "638862ac41d7ae3c0814a52a7f9cbcfd5c909f46799b78b0d1345e9b230a9afe",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "study_chat_uncertain_chat_generation_failed",
+          "tool_outcomes": []
+        },
+        {
+          "case": "fr-punctuation",
+          "variant": "receipt-aware",
+          "repetition": 1,
+          "state": "uncertain",
+          "sample_id": "6f5c1b0eb4a03f76ba992c3f083b91755b43a47be9389dc412ca027d91ca9c56",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "study_chat_uncertain_chat_generation_failed",
+          "tool_outcomes": []
+        },
+        {
+          "case": "zh-scope",
+          "variant": "receipt-aware",
+          "repetition": 0,
+          "state": "uncertain",
+          "sample_id": "772850c4fa877c266e6c54adf9205fb99df1b34a6434ebdcaa4a213346cbf82d",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "study_chat_uncertain_chat_generation_failed",
+          "tool_outcomes": []
+        },
+        {
+          "case": "zh-newlines",
+          "variant": "baseline",
+          "repetition": 1,
+          "state": "uncertain",
+          "sample_id": "781c275c566d9970482723c39028b530e6acd94423f50c54062a08cffa15c98d",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "study_chat_uncertain_chat_generation_failed",
+          "tool_outcomes": []
+        },
+        {
+          "case": "fr-negation",
+          "variant": "receipt-aware",
+          "repetition": 1,
+          "state": "uncertain",
+          "sample_id": "8e6a485c5c6e33c991f711a2c8a3391b5a1b8cc3842e5991a3b2ab57bc13aab8",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "study_chat_uncertain_chat_generation_failed",
+          "tool_outcomes": []
+        },
+        {
+          "case": "zh-newlines",
+          "variant": "baseline",
+          "repetition": 0,
+          "state": "uncertain",
+          "sample_id": "93c5639962f35133c7037a5c0061643eea95210495515d0e2b88f0f5ff715638",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "study_chat_uncertain_chat_generation_failed",
+          "tool_outcomes": []
+        },
+        {
+          "case": "zh-newlines",
+          "variant": "receipt-aware",
+          "repetition": 1,
+          "state": "uncertain",
+          "sample_id": "9450a9d425e0e7dfbae678b8fc560c430a9dda5cd6684f6281b8ee4edab2ab99",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "study_chat_uncertain_chat_generation_failed",
+          "tool_outcomes": []
+        },
+        {
+          "case": "en-quotes",
+          "variant": "receipt-aware",
+          "repetition": 1,
+          "state": "uncertain",
+          "sample_id": "94a58df7c21959120e06d85859507d86e0249eec0ec605c2fcd490a931c70dd0",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "study_chat_uncertain_chat_generation_failed",
+          "tool_outcomes": []
+        },
+        {
+          "case": "en-reactivate",
+          "variant": "baseline",
+          "repetition": 1,
+          "state": "uncertain",
+          "sample_id": "95f6fb84874d30a7ae9dfd64011980dd72d25ff492aaebe8709cf8cf288a3d83",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "study_chat_uncertain_chat_generation_failed",
+          "tool_outcomes": []
+        },
+        {
+          "case": "zh-scope",
+          "variant": "receipt-aware",
+          "repetition": 1,
+          "state": "uncertain",
+          "sample_id": "99ed28e671a1ca0a87a0925bebb45a9d211de0ba65fcaee7804dec39a08c1abd",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "study_chat_uncertain_chat_generation_failed",
+          "tool_outcomes": []
+        },
+        {
+          "case": "fr-punctuation",
+          "variant": "receipt-aware",
+          "repetition": 0,
+          "state": "uncertain",
+          "sample_id": "a1a20db23ba4ef9454c557eb6780f7acfefcfa76efd81e37f4d63f148506683b",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "study_chat_uncertain_chat_generation_failed",
+          "tool_outcomes": []
+        },
+        {
+          "case": "fr-negation",
+          "variant": "receipt-aware",
+          "repetition": 0,
+          "state": "uncertain",
+          "sample_id": "a1aecb50717a000c3116f0247321c4a8eb180e4b6486bba5bd091c0bfc5a3e24",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "study_chat_uncertain_chat_generation_failed",
+          "tool_outcomes": []
+        },
+        {
+          "case": "en-identifiers",
+          "variant": "baseline",
+          "repetition": 0,
+          "state": "uncertain",
+          "sample_id": "a2a8b3f354d73b66321a10525cdc82c01a0df2fb7d97157937515fe31be1b8e1",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "study_chat_uncertain_chat_generation_failed",
+          "tool_outcomes": []
+        },
+        {
+          "case": "en-quotes",
+          "variant": "baseline",
+          "repetition": 1,
+          "state": "uncertain",
+          "sample_id": "a30d3e248beee6aea02471da0ee19a741e4ab07163cabf52a948fedf2b1aa917",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "study_chat_uncertain_chat_generation_failed",
+          "tool_outcomes": []
+        },
+        {
+          "case": "zh-cancel",
+          "variant": "receipt-aware",
+          "repetition": 1,
+          "state": "uncertain",
+          "sample_id": "ae79e2be30858066345a51876edafb5f049425c2568096f60c4a29cdb444db94",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "study_chat_uncertain_chat_generation_failed",
+          "tool_outcomes": []
+        },
+        {
+          "case": "zh-newlines",
+          "variant": "receipt-aware",
+          "repetition": 0,
+          "state": "uncertain",
+          "sample_id": "bbb87759850f99ad0ffb2710e00e6301d535294c2ed18646c3a6d184bd1733e2",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "study_chat_uncertain_chat_generation_failed",
+          "tool_outcomes": []
+        },
+        {
+          "case": "fr-negation",
+          "variant": "baseline",
+          "repetition": 1,
+          "state": "uncertain",
+          "sample_id": "bc01bb4e5c367b23d93c945114b29b30c35a9a2a496d46e3e7576b7170f51953",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "study_chat_uncertain_chat_generation_failed",
+          "tool_outcomes": []
+        },
+        {
+          "case": "en-identifiers",
+          "variant": "baseline",
+          "repetition": 1,
+          "state": "uncertain",
+          "sample_id": "c94c0d4ec701843e39f28b041f96fe8a8413107375f07daa814f0c0a568e4e1a",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "study_chat_uncertain_chat_generation_failed",
+          "tool_outcomes": []
+        },
+        {
+          "case": "zh-cancel",
+          "variant": "baseline",
+          "repetition": 0,
+          "state": "uncertain",
+          "sample_id": "daef3e971f28b61f86fe70731b9574801bce2c204bda2e8f5fae7f70b0e8e3cb",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "study_chat_uncertain_chat_generation_failed",
+          "tool_outcomes": []
+        },
+        {
+          "case": "en-reactivate",
+          "variant": "baseline",
+          "repetition": 0,
+          "state": "uncertain",
+          "sample_id": "f8ea8552fec9451904ab828464993d9b1c3b869602968781a86f70a191be4a99",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "study_chat_uncertain_chat_generation_failed",
+          "tool_outcomes": []
+        }
+      ],
+      "scope": "Post-hoc deterministic regrade from persisted public receipts, not independent human or held-out model quality certification. Historical executed-tool metric means observed call; use successful_memory_reads/writes here."
+    },
+    {
+      "campaign": "m3-memory-pairs-20260912-v2",
+      "config": {
+        "version": "quality-campaign-v1",
+        "id": "m3-memory-pairs-20260912-v2",
+        "purpose": "MQ-02 multilingual verbatim memory: paired request instruction diagnostic; development cases, no independent holdout claim.",
+        "transport": "minimax",
+        "model": "MiniMax-M3",
+        "adapter": "vibe_learner.study:run_sample",
+        "autoscale": null,
+        "repetitions": 2,
+        "seed": 912,
+        "concurrency": 4,
+        "timeout_seconds": 60,
+        "sample_deadline_seconds": 300,
+        "sample_wire_limit": 6,
+        "max_output_tokens": 2048,
+        "input_reservation_tokens": 100000,
+        "temperature": 0.1,
+        "thinking": "disabled",
+        "budget": {
+          "token_limit": 50000000,
+          "wire_limit": 10008,
+          "rpm": 60,
+          "tpm": 4000000,
+          "max_inflight": 4,
+          "expires_at": 1789203359.3114939,
+          "stop_buffer_seconds": 900
+        },
+        "cases": [
+          {
+            "id": "fr-punctuation",
+            "family": "punctuation",
+            "lane": "memory",
+            "split": "development",
+            "provenance": "synthetic-authored",
+            "source": "Camille a rendez-vous le 10 juin à 16:00. Le lieu n’est pas précisé.",
+            "request": "请调用 write_session_memory，用 key experiment_reference 原样保存记录，然后调用 read_session_memory 核对。不翻译，不出题。",
+            "gold": "Camille a rendez-vous le 10 juin à 16:00. Le lieu n’est pas précisé.",
+            "rubric": "study-memory-v1"
+          },
+          {
+            "id": "en-quotes",
+            "family": "punctuation",
+            "lane": "memory",
+            "split": "development",
+            "provenance": "synthetic-authored",
+            "source": "Mira wrote: “Don’t replace my punctuation.” The room is unspecified.",
+            "request": "请调用 write_session_memory，用 key experiment_reference 原样保存记录，然后调用 read_session_memory 核对。不翻译，不出题。",
+            "gold": "Mira wrote: “Don’t replace my punctuation.” The room is unspecified.",
+            "rubric": "study-memory-v1"
+          },
+          {
+            "id": "zh-cancel",
+            "family": "state",
+            "lane": "memory",
+            "split": "development",
+            "provenance": "synthetic-authored",
+            "source": "林舟原定周五下午三点参加讨论，后来取消。没有安排新的日期，也没有确定地点。",
+            "request": "请调用 write_session_memory，用 key experiment_reference 原样保存记录，然后调用 read_session_memory 核对。不翻译，不出题。",
+            "gold": "林舟原定周五下午三点参加讨论，后来取消。没有安排新的日期，也没有确定地点。",
+            "rubric": "study-memory-v1"
+          },
+          {
+            "id": "en-reactivate",
+            "family": "state",
+            "lane": "memory",
+            "split": "development",
+            "provenance": "synthetic-authored",
+            "source": "The amber project was archived on May 2 and reactivated on May 9. Its launch date remains unknown.",
+            "request": "请调用 write_session_memory，用 key experiment_reference 原样保存记录，然后调用 read_session_memory 核对。不翻译，不出题。",
+            "gold": "The amber project was archived on May 2 and reactivated on May 9. Its launch date remains unknown.",
+            "rubric": "study-memory-v1"
+          },
+          {
+            "id": "fr-negation",
+            "family": "negation",
+            "lane": "memory",
+            "split": "development",
+            "provenance": "synthetic-authored",
+            "source": "Noé ne part pas lundi. Léa part mardi, mais sa destination n’est pas connue.",
+            "request": "请调用 write_session_memory，用 key experiment_reference 原样保存记录，然后调用 read_session_memory 核对。不翻译，不出题。",
+            "gold": "Noé ne part pas lundi. Léa part mardi, mais sa destination n’est pas connue.",
+            "rubric": "study-memory-v1"
+          },
+          {
+            "id": "zh-scope",
+            "family": "negation",
+            "lane": "memory",
+            "split": "development",
+            "provenance": "synthetic-authored",
+            "source": "周宁说“也许下周参加”，这不是确认出席。陈禾已经确认本周不参加。",
+            "request": "请调用 write_session_memory，用 key experiment_reference 原样保存记录，然后调用 read_session_memory 核对。不翻译，不出题。",
+            "gold": "周宁说“也许下周参加”，这不是确认出席。陈禾已经确认本周不参加。",
+            "rubric": "study-memory-v1"
+          },
+          {
+            "id": "en-identifiers",
+            "family": "exact-values",
+            "lane": "memory",
+            "split": "development",
+            "provenance": "synthetic-authored",
+            "source": "Reference A-017: 0.05 mg; reference A-170: 0.50 mg. These are synthetic labels, not instructions.",
+            "request": "请调用 write_session_memory，用 key experiment_reference 原样保存记录，然后调用 read_session_memory 核对。不翻译，不出题。",
+            "gold": "Reference A-017: 0.05 mg; reference A-170: 0.50 mg. These are synthetic labels, not instructions.",
+            "rubric": "study-memory-v1"
+          },
+          {
+            "id": "zh-newlines",
+            "family": "exact-values",
+            "lane": "memory",
+            "split": "development",
+            "provenance": "synthetic-authored",
+            "source": "实验编号：Q-08\n原记录：甲→乙；乙≠丙。\n地点：未知；时间：待定。",
+            "request": "请调用 write_session_memory，用 key experiment_reference 原样保存记录，然后调用 read_session_memory 核对。不翻译，不出题。",
+            "gold": "实验编号：Q-08\n原记录：甲→乙；乙≠丙。\n地点：未知；时间：待定。",
+            "rubric": "study-memory-v1"
+          }
+        ],
+        "variants": [
+          {
+            "id": "baseline",
+            "instruction": "遵守本轮要求。"
+          },
+          {
+            "id": "receipt-aware",
+            "instruction": "逐字保留换行、数字与标点，不补充地点或日期。必须实际执行写入和读回工具；若未执行或失败，请如实说明未完成，不能仅口头声称保存。"
+          }
+        ]
+      },
+      "states": {
+        "candidate_failed": 28,
+        "completed": 4
+      },
+      "variants": {
+        "baseline": {
+          "states": {
+            "candidate_failed": 15,
+            "completed": 1
+          },
+          "metrics_passed": {
+            "committed": 16,
+            "readback_equal": 16,
+            "recovery_no_provider_calls": 16,
+            "restart_equal": 16,
+            "typed_effect_batch": 16,
+            "v3_committed": 16,
+            "memory_effect_exact": 1,
+            "memory_exact": 1,
+            "read_memory_tool_executed": 1
+          },
+          "tool_error_codes": {},
+          "wire_count": 20,
+          "tokens": 102177,
+          "successful_memory_writes": 1,
+          "successful_memory_reads": 1,
+          "wire_p50_ms": 3013,
+          "wire_p95_ms": 5863,
+          "sample_p50_seconds": 5.7872538566589355,
+          "sample_p95_seconds": 17.00983190536499
+        },
+        "receipt-aware": {
+          "states": {
+            "candidate_failed": 13,
+            "completed": 3
+          },
+          "metrics_passed": {
+            "committed": 16,
+            "readback_equal": 16,
+            "recovery_no_provider_calls": 16,
+            "restart_equal": 16,
+            "typed_effect_batch": 16,
+            "v3_committed": 16,
+            "memory_effect_exact": 3,
+            "memory_exact": 3,
+            "read_memory_tool_executed": 3
+          },
+          "tool_error_codes": {},
+          "wire_count": 24,
+          "tokens": 132761,
+          "successful_memory_writes": 3,
+          "successful_memory_reads": 3,
+          "wire_p50_ms": 2787,
+          "wire_p95_ms": 5801,
+          "sample_p50_seconds": 5.2191321849823,
+          "sample_p95_seconds": 28.67331290245056
+        }
+      },
+      "observed_peak_wire_inflight": 4,
+      "wire_count": 44,
+      "http_statuses": {
+        "200": 44
+      },
+      "tokens_charged_or_reserved": 234938,
+      "unknown_usage_requests": 0,
+      "raw_tool_shapes": {},
+      "sample_audit": [
+        {
+          "case": "en-identifiers",
+          "variant": "baseline",
+          "repetition": 0,
+          "state": "candidate_failed",
+          "sample_id": "0501b7309fee9d5bd5717a96c3b48a82b38325b7fd5a68d685c22b7abfa45c78",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": []
+        },
+        {
+          "case": "en-quotes",
+          "variant": "receipt-aware",
+          "repetition": 0,
+          "state": "candidate_failed",
+          "sample_id": "07bd2244625f38c383eac2bcf34843ecc29971d76c755a6dc6b44087a87e6837",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": []
+        },
+        {
+          "case": "en-identifiers",
+          "variant": "baseline",
+          "repetition": 1,
+          "state": "candidate_failed",
+          "sample_id": "0a1197c2500e74c3da91dc27f6d438d2a57f2f880ae9221d33751c3ae2639d47",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": []
+        },
+        {
+          "case": "en-reactivate",
+          "variant": "receipt-aware",
+          "repetition": 1,
+          "state": "candidate_failed",
+          "sample_id": "15f2849b3814257652c6e01b390749dcd4125a2b5ff7fa8b13baea9d4f1265e2",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": []
+        },
+        {
+          "case": "zh-newlines",
+          "variant": "baseline",
+          "repetition": 0,
+          "state": "candidate_failed",
+          "sample_id": "1c14e6bdfe58e7dfc208119f62b4b5cba3afdd8b0cdeb4df1aeac68dd8a05d81",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": []
+        },
+        {
+          "case": "fr-negation",
+          "variant": "receipt-aware",
+          "repetition": 0,
+          "state": "candidate_failed",
+          "sample_id": "28e8ed0ca1efdcbde327a39b2f7be7e844e419bd618e9d66b69e74a5f76768b5",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": []
+        },
+        {
+          "case": "fr-negation",
+          "variant": "receipt-aware",
+          "repetition": 1,
+          "state": "completed",
+          "sample_id": "35c731b7eb95cbd5d347472d43147bfd21046051adc45062463b3b435306d607",
+          "memory_exact_recomputed": true,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": [
+            {
+              "name": "write_session_memory",
+              "ok": true,
+              "error": null
+            },
+            {
+              "name": "read_session_memory",
+              "ok": true,
+              "error": null
+            }
+          ]
+        },
+        {
+          "case": "fr-punctuation",
+          "variant": "baseline",
+          "repetition": 0,
+          "state": "candidate_failed",
+          "sample_id": "3ddc66cb7ecef6b8747974c188b4e7521edb632e6bd3d9f19967ae702cdb545b",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": []
+        },
+        {
+          "case": "zh-newlines",
+          "variant": "baseline",
+          "repetition": 1,
+          "state": "candidate_failed",
+          "sample_id": "40e18d741088c189f48746c2d3cabaa5ae8b3632f5b022ecdc003528100f9554",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": []
+        },
+        {
+          "case": "zh-cancel",
+          "variant": "receipt-aware",
+          "repetition": 1,
+          "state": "candidate_failed",
+          "sample_id": "410ac9449aaf7bc3d0854f581967b179e1a5747d0025fea2f47dabaade7b7b10",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": []
+        },
+        {
+          "case": "en-identifiers",
+          "variant": "receipt-aware",
+          "repetition": 1,
+          "state": "candidate_failed",
+          "sample_id": "4a80b446f99dc8e8591eb9a7b4f7496d88807ae2549d8e2c1418a76d5be12ba5",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": []
+        },
+        {
+          "case": "zh-cancel",
+          "variant": "baseline",
+          "repetition": 1,
+          "state": "candidate_failed",
+          "sample_id": "52bfd2ed1b40789ab6f2587b5f99bc5ad1712b0f5e8bf8db9a39a3cfeffdb781",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": []
+        },
+        {
+          "case": "zh-cancel",
+          "variant": "receipt-aware",
+          "repetition": 0,
+          "state": "candidate_failed",
+          "sample_id": "5548e1f8b70ed7d12d29b55f1bcea0a59c39b0f0eaa744d534a1d9b2b08aa5e9",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": []
+        },
+        {
+          "case": "zh-cancel",
+          "variant": "baseline",
+          "repetition": 0,
+          "state": "candidate_failed",
+          "sample_id": "55678b5005c2e174b9cf5f596edb8002fa74ef5e58338d17d1768010cd3a5c44",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": []
+        },
+        {
+          "case": "en-quotes",
+          "variant": "baseline",
+          "repetition": 0,
+          "state": "candidate_failed",
+          "sample_id": "6609ac6e85b2d45e59a0e6552baee70d391615df484796abbf6ff0562132cf1f",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": []
+        },
+        {
+          "case": "fr-punctuation",
+          "variant": "receipt-aware",
+          "repetition": 0,
+          "state": "candidate_failed",
+          "sample_id": "70dc924bf4b5511bf4cb265e868f1ad6a0cefccf8818215f3b06f920a4d43b41",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": []
+        },
+        {
+          "case": "en-reactivate",
+          "variant": "receipt-aware",
+          "repetition": 0,
+          "state": "completed",
+          "sample_id": "7b911d20ec9c9db33d804945e22049555ee6842b8d304880e8776ef6a613e330",
+          "memory_exact_recomputed": true,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": [
+            {
+              "name": "write_session_memory",
+              "ok": true,
+              "error": null
+            },
+            {
+              "name": "read_session_memory",
+              "ok": true,
+              "error": null
+            }
+          ]
+        },
+        {
+          "case": "zh-newlines",
+          "variant": "receipt-aware",
+          "repetition": 0,
+          "state": "candidate_failed",
+          "sample_id": "7e6ca67e595234560dedce7c3850c3177f802871d5278fd6cf5abf5d17ed2081",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": []
+        },
+        {
+          "case": "fr-punctuation",
+          "variant": "receipt-aware",
+          "repetition": 1,
+          "state": "candidate_failed",
+          "sample_id": "7fa6e6de63a2eba40ec31225676f85e5e97aeca7fe867494c08d9e64bd111878",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": []
+        },
+        {
+          "case": "zh-scope",
+          "variant": "receipt-aware",
+          "repetition": 1,
+          "state": "candidate_failed",
+          "sample_id": "83df9c5bff870e8b6bd8b5618af218e430881c18b039efe18730d0c01e0b1cb6",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": []
+        },
+        {
+          "case": "en-reactivate",
+          "variant": "baseline",
+          "repetition": 0,
+          "state": "candidate_failed",
+          "sample_id": "9298e2c59e97551d104028531e8d9e7787acd09e5f1bfae40263bdcb725d85a0",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": []
+        },
+        {
+          "case": "zh-scope",
+          "variant": "baseline",
+          "repetition": 1,
+          "state": "candidate_failed",
+          "sample_id": "93f5925ac0c212b4aaa3137703896636d793ffff6e1da0d866d19bc3a90a22db",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": []
+        },
+        {
+          "case": "zh-scope",
+          "variant": "baseline",
+          "repetition": 0,
+          "state": "candidate_failed",
+          "sample_id": "b86e6246e9c8bd65133f589c3c0b2870edbbd64bb598bc4e422638cdf425889d",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": []
+        },
+        {
+          "case": "en-reactivate",
+          "variant": "baseline",
+          "repetition": 1,
+          "state": "completed",
+          "sample_id": "c1eeb6796ed06ba2ec15c4f998c6411d169499748968b8476df465e0f2e2b4ad",
+          "memory_exact_recomputed": true,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": [
+            {
+              "name": "write_session_memory",
+              "ok": true,
+              "error": null
+            },
+            {
+              "name": "read_session_memory",
+              "ok": true,
+              "error": null
+            }
+          ]
+        },
+        {
+          "case": "zh-scope",
+          "variant": "receipt-aware",
+          "repetition": 0,
+          "state": "candidate_failed",
+          "sample_id": "c81cf281d9275e3ef5d5f3b6083e475d4578b42c602f96fdf66797eb533ebc4a",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": []
+        },
+        {
+          "case": "fr-punctuation",
+          "variant": "baseline",
+          "repetition": 1,
+          "state": "candidate_failed",
+          "sample_id": "cee7ee56b7e29c4c2b6699ac74b96a69573d8dfc93e53af5c9eb81b2915c7d93",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": []
+        },
+        {
+          "case": "en-quotes",
+          "variant": "baseline",
+          "repetition": 1,
+          "state": "candidate_failed",
+          "sample_id": "ecc32d8efc83bd20d054292be8b85ad9799eead7de95e67081898ad67cd2913b",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": []
+        },
+        {
+          "case": "en-identifiers",
+          "variant": "receipt-aware",
+          "repetition": 0,
+          "state": "completed",
+          "sample_id": "edc264c1663067c2e304a2eb21cd1ed69b5f8899adf720e65c988adec36fc8fa",
+          "memory_exact_recomputed": true,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": [
+            {
+              "name": "write_session_memory",
+              "ok": true,
+              "error": null
+            },
+            {
+              "name": "read_session_memory",
+              "ok": true,
+              "error": null
+            }
+          ]
+        },
+        {
+          "case": "zh-newlines",
+          "variant": "receipt-aware",
+          "repetition": 1,
+          "state": "candidate_failed",
+          "sample_id": "f3d4efad5bfafca4567d245a57567019cb4aec5caa8c3b0b25047721da1be0c7",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": []
+        },
+        {
+          "case": "en-quotes",
+          "variant": "receipt-aware",
+          "repetition": 1,
+          "state": "candidate_failed",
+          "sample_id": "f79ad6f88fc7fbf5084a394525fdc08c8e142d2e75d76d7498e50e593607b588",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": []
+        },
+        {
+          "case": "fr-negation",
+          "variant": "baseline",
+          "repetition": 0,
+          "state": "candidate_failed",
+          "sample_id": "f9dccf2532add28a3c54c91f4e4bbfe9ac2dce2af21fb01cb21c3ec31cfe45df",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": []
+        },
+        {
+          "case": "fr-negation",
+          "variant": "baseline",
+          "repetition": 1,
+          "state": "candidate_failed",
+          "sample_id": "ff6def11c28e18da99200154216ae95eed1213f644290b7785755c4a54241715",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": []
+        }
+      ],
+      "scope": "Post-hoc deterministic regrade from persisted public receipts, not independent human or held-out model quality certification. Historical executed-tool metric means observed call; use successful_memory_reads/writes here."
+    },
+    {
+      "campaign": "m3-memory-policy-20260912-v1",
+      "config": {
+        "version": "quality-campaign-v1",
+        "id": "m3-memory-policy-20260912-v1",
+        "purpose": "MQ-02 single-factor diagnostic: disabled auto tools versus adaptive thinking versus forced first write; 8 synthetic cases, 2 repetitions, development only.",
+        "transport": "minimax",
+        "model": "MiniMax-M3",
+        "adapter": "vibe_learner.study_policy:run_sample",
+        "autoscale": null,
+        "repetitions": 2,
+        "seed": 912,
+        "concurrency": 4,
+        "timeout_seconds": 60,
+        "sample_deadline_seconds": 300,
+        "sample_wire_limit": 6,
+        "max_output_tokens": 4096,
+        "input_reservation_tokens": 100000,
+        "temperature": 0.1,
+        "thinking": "disabled",
+        "budget": {
+          "token_limit": 50000000,
+          "wire_limit": 10008,
+          "rpm": 60,
+          "tpm": 4000000,
+          "max_inflight": 4,
+          "expires_at": 1789203359.3114939,
+          "stop_buffer_seconds": 900
+        },
+        "cases": [
+          {
+            "id": "fr-punctuation",
+            "family": "punctuation",
+            "lane": "memory",
+            "split": "development",
+            "provenance": "synthetic-authored",
+            "source": "Camille a rendez-vous le 10 juin à 16:00. Le lieu n’est pas précisé.",
+            "request": "请调用 write_session_memory，用 key experiment_reference 原样保存记录，然后调用 read_session_memory 核对。不翻译，不出题。",
+            "gold": "Camille a rendez-vous le 10 juin à 16:00. Le lieu n’est pas précisé.",
+            "rubric": "study-memory-v1"
+          },
+          {
+            "id": "en-quotes",
+            "family": "punctuation",
+            "lane": "memory",
+            "split": "development",
+            "provenance": "synthetic-authored",
+            "source": "Mira wrote: “Don’t replace my punctuation.” The room is unspecified.",
+            "request": "请调用 write_session_memory，用 key experiment_reference 原样保存记录，然后调用 read_session_memory 核对。不翻译，不出题。",
+            "gold": "Mira wrote: “Don’t replace my punctuation.” The room is unspecified.",
+            "rubric": "study-memory-v1"
+          },
+          {
+            "id": "zh-cancel",
+            "family": "state",
+            "lane": "memory",
+            "split": "development",
+            "provenance": "synthetic-authored",
+            "source": "林舟原定周五下午三点参加讨论，后来取消。没有安排新的日期，也没有确定地点。",
+            "request": "请调用 write_session_memory，用 key experiment_reference 原样保存记录，然后调用 read_session_memory 核对。不翻译，不出题。",
+            "gold": "林舟原定周五下午三点参加讨论，后来取消。没有安排新的日期，也没有确定地点。",
+            "rubric": "study-memory-v1"
+          },
+          {
+            "id": "en-reactivate",
+            "family": "state",
+            "lane": "memory",
+            "split": "development",
+            "provenance": "synthetic-authored",
+            "source": "The amber project was archived on May 2 and reactivated on May 9. Its launch date remains unknown.",
+            "request": "请调用 write_session_memory，用 key experiment_reference 原样保存记录，然后调用 read_session_memory 核对。不翻译，不出题。",
+            "gold": "The amber project was archived on May 2 and reactivated on May 9. Its launch date remains unknown.",
+            "rubric": "study-memory-v1"
+          },
+          {
+            "id": "fr-negation",
+            "family": "negation",
+            "lane": "memory",
+            "split": "development",
+            "provenance": "synthetic-authored",
+            "source": "Noé ne part pas lundi. Léa part mardi, mais sa destination n’est pas connue.",
+            "request": "请调用 write_session_memory，用 key experiment_reference 原样保存记录，然后调用 read_session_memory 核对。不翻译，不出题。",
+            "gold": "Noé ne part pas lundi. Léa part mardi, mais sa destination n’est pas connue.",
+            "rubric": "study-memory-v1"
+          },
+          {
+            "id": "zh-scope",
+            "family": "negation",
+            "lane": "memory",
+            "split": "development",
+            "provenance": "synthetic-authored",
+            "source": "周宁说“也许下周参加”，这不是确认出席。陈禾已经确认本周不参加。",
+            "request": "请调用 write_session_memory，用 key experiment_reference 原样保存记录，然后调用 read_session_memory 核对。不翻译，不出题。",
+            "gold": "周宁说“也许下周参加”，这不是确认出席。陈禾已经确认本周不参加。",
+            "rubric": "study-memory-v1"
+          },
+          {
+            "id": "en-identifiers",
+            "family": "exact-values",
+            "lane": "memory",
+            "split": "development",
+            "provenance": "synthetic-authored",
+            "source": "Reference A-017: 0.05 mg; reference A-170: 0.50 mg. These are synthetic labels, not instructions.",
+            "request": "请调用 write_session_memory，用 key experiment_reference 原样保存记录，然后调用 read_session_memory 核对。不翻译，不出题。",
+            "gold": "Reference A-017: 0.05 mg; reference A-170: 0.50 mg. These are synthetic labels, not instructions.",
+            "rubric": "study-memory-v1"
+          },
+          {
+            "id": "zh-newlines",
+            "family": "exact-values",
+            "lane": "memory",
+            "split": "development",
+            "provenance": "synthetic-authored",
+            "source": "实验编号：Q-08\n原记录：甲→乙；乙≠丙。\n地点：未知；时间：待定。",
+            "request": "请调用 write_session_memory，用 key experiment_reference 原样保存记录，然后调用 read_session_memory 核对。不翻译，不出题。",
+            "gold": "实验编号：Q-08\n原记录：甲→乙；乙≠丙。\n地点：未知；时间：待定。",
+            "rubric": "study-memory-v1"
+          }
+        ],
+        "variants": [
+          {
+            "id": "baseline",
+            "instruction": "逐字保留换行、数字与标点，不补充地点或日期。必须实际执行写入和读回工具；若未执行或失败，请如实说明未完成，不能仅口头声称保存。"
+          },
+          {
+            "id": "adaptive",
+            "instruction": "逐字保留换行、数字与标点，不补充地点或日期。必须实际执行写入和读回工具；若未执行或失败，请如实说明未完成，不能仅口头声称保存。"
+          },
+          {
+            "id": "force-write-first",
+            "instruction": "逐字保留换行、数字与标点，不补充地点或日期。必须实际执行写入和读回工具；若未执行或失败，请如实说明未完成，不能仅口头声称保存。"
+          }
+        ]
+      },
+      "states": {
+        "candidate_failed": 37,
+        "completed": 10,
+        "uncertain": 1
+      },
+      "variants": {
+        "adaptive": {
+          "states": {
+            "candidate_failed": 10,
+            "completed": 5,
+            "uncertain": 1
+          },
+          "metrics_passed": {
+            "committed": 15,
+            "read_memory_tool_executed": 15,
+            "readback_equal": 15,
+            "recovery_no_provider_calls": 16,
+            "restart_equal": 15,
+            "typed_effect_batch": 15,
+            "v3_committed": 15,
+            "memory_effect_exact": 5,
+            "memory_exact": 6
+          },
+          "tool_error_codes": {
+            "provider_tool_call_shape_invalid": 14
+          },
+          "wire_count": 46,
+          "tokens": 274555,
+          "successful_memory_writes": 10,
+          "successful_memory_reads": 10,
+          "wire_p50_ms": 4266,
+          "wire_p95_ms": 9502,
+          "sample_p50_seconds": 15.325324058532715,
+          "sample_p95_seconds": 35.130393981933594
+        },
+        "force-write-first": {
+          "states": {
+            "candidate_failed": 14,
+            "completed": 2
+          },
+          "metrics_passed": {
+            "committed": 16,
+            "readback_equal": 16,
+            "recovery_no_provider_calls": 16,
+            "restart_equal": 16,
+            "typed_effect_batch": 16,
+            "v3_committed": 16,
+            "memory_effect_exact": 2,
+            "memory_exact": 2,
+            "read_memory_tool_executed": 2
+          },
+          "tool_error_codes": {
+            "provider_tool_call_shape_invalid": 1
+          },
+          "wire_count": 23,
+          "tokens": 122824,
+          "successful_memory_writes": 2,
+          "successful_memory_reads": 2,
+          "wire_p50_ms": 3661,
+          "wire_p95_ms": 6975,
+          "sample_p50_seconds": 8.519186973571777,
+          "sample_p95_seconds": 19.25283408164978
+        },
+        "baseline": {
+          "states": {
+            "candidate_failed": 13,
+            "completed": 3
+          },
+          "metrics_passed": {
+            "committed": 16,
+            "readback_equal": 16,
+            "recovery_no_provider_calls": 16,
+            "restart_equal": 16,
+            "typed_effect_batch": 16,
+            "v3_committed": 16,
+            "memory_effect_exact": 3,
+            "memory_exact": 3,
+            "read_memory_tool_executed": 3
+          },
+          "tool_error_codes": {},
+          "wire_count": 23,
+          "tokens": 124590,
+          "successful_memory_writes": 3,
+          "successful_memory_reads": 3,
+          "wire_p50_ms": 3658,
+          "wire_p95_ms": 8749,
+          "sample_p50_seconds": 8.413107872009277,
+          "sample_p95_seconds": 21.78022813796997
+        }
+      },
+      "observed_peak_wire_inflight": 4,
+      "wire_count": 92,
+      "http_statuses": {
+        "200": 92
+      },
+      "tokens_charged_or_reserved": 521969,
+      "unknown_usage_requests": 0,
+      "raw_tool_shapes": {},
+      "sample_audit": [
+        {
+          "case": "zh-scope",
+          "variant": "adaptive",
+          "repetition": 0,
+          "state": "candidate_failed",
+          "sample_id": "00cc210a4efaf3df7a7da4f7d8f6ded6f3cf8389a6992a1127232d0421e53532",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": [
+            {
+              "name": "write_session_memory",
+              "ok": true,
+              "error": null
+            },
+            {
+              "name": "read_session_memory",
+              "ok": true,
+              "error": null
+            }
+          ],
+          "character_differences": [
+            {
+              "operation": "replace",
+              "expected": "“",
+              "actual": "\""
+            },
+            {
+              "operation": "replace",
+              "expected": "”",
+              "actual": "\""
+            }
+          ]
+        },
+        {
+          "case": "zh-scope",
+          "variant": "force-write-first",
+          "repetition": 1,
+          "state": "candidate_failed",
+          "sample_id": "026e7e2a4424736cf17ae46719c4711b96dc04af98c91ee4d8f10308a40d7461",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": []
+        },
+        {
+          "case": "en-reactivate",
+          "variant": "force-write-first",
+          "repetition": 1,
+          "state": "candidate_failed",
+          "sample_id": "04fee626c6581b1626f4a53b36a350dee445c2ba15152ecbf2ec1ad08cb83131",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": []
+        },
+        {
+          "case": "en-reactivate",
+          "variant": "adaptive",
+          "repetition": 0,
+          "state": "candidate_failed",
+          "sample_id": "09ca77bfb91b514e8b187781b0a838359ef0ca5c03c91d04636887e679ffaab1",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": [
+            {
+              "name": "write_session_memory",
+              "ok": false,
+              "error": "provider_tool_call_shape_invalid"
+            },
+            {
+              "name": "write_session_memory",
+              "ok": false,
+              "error": "provider_tool_call_shape_invalid"
+            },
+            {
+              "name": "read_session_memory",
+              "ok": false,
+              "error": "provider_tool_call_shape_invalid"
+            },
+            {
+              "name": "write_session_memory",
+              "ok": false,
+              "error": "provider_tool_call_shape_invalid"
+            }
+          ]
+        },
+        {
+          "case": "en-quotes",
+          "variant": "force-write-first",
+          "repetition": 1,
+          "state": "candidate_failed",
+          "sample_id": "0db524fe212fd90327ae0f5cc31ea74da65a2616f61146e784e21e2639731956",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": []
+        },
+        {
+          "case": "zh-scope",
+          "variant": "baseline",
+          "repetition": 0,
+          "state": "candidate_failed",
+          "sample_id": "10aedcb9f75316920a68b8809c02616131c47391e07ac7eee713428414195b82",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": []
+        },
+        {
+          "case": "fr-punctuation",
+          "variant": "adaptive",
+          "repetition": 0,
+          "state": "completed",
+          "sample_id": "14abc1f9e026690e7196c356a927c225f6bebb929aaca32016435f50520c71de",
+          "memory_exact_recomputed": true,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": [
+            {
+              "name": "write_session_memory",
+              "ok": true,
+              "error": null
+            },
+            {
+              "name": "read_session_memory",
+              "ok": true,
+              "error": null
+            }
+          ]
+        },
+        {
+          "case": "en-identifiers",
+          "variant": "baseline",
+          "repetition": 1,
+          "state": "candidate_failed",
+          "sample_id": "174aa790b091bb29c48180c8e61ca58527aab3c4655ac65390d86f9d0c2fc1f9",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": []
+        },
+        {
+          "case": "fr-negation",
+          "variant": "force-write-first",
+          "repetition": 0,
+          "state": "candidate_failed",
+          "sample_id": "189a9871bad5b79c8629f7996c36b150f2d5e08d79c70967f1ec4b589188bb10",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": []
+        },
+        {
+          "case": "fr-negation",
+          "variant": "baseline",
+          "repetition": 1,
+          "state": "candidate_failed",
+          "sample_id": "1d004309b1bc6b217af3040c18cfc4fcfb7ea34481f9dd576af83567b010d71b",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": []
+        },
+        {
+          "case": "zh-scope",
+          "variant": "force-write-first",
+          "repetition": 0,
+          "state": "candidate_failed",
+          "sample_id": "21ece1372ca64138f64c621a79f9b43ae7a09813995b9717886ac94bc013e2a9",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": []
+        },
+        {
+          "case": "zh-cancel",
+          "variant": "adaptive",
+          "repetition": 1,
+          "state": "candidate_failed",
+          "sample_id": "23bff6c34872b6389543c7c5f655d516fb19b866104e6745d93bb340a16b03fb",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": [
+            {
+              "name": "write_session_memory",
+              "ok": false,
+              "error": "provider_tool_call_shape_invalid"
+            },
+            {
+              "name": "read_session_memory",
+              "ok": false,
+              "error": "provider_tool_call_shape_invalid"
+            }
+          ]
+        },
+        {
+          "case": "fr-punctuation",
+          "variant": "force-write-first",
+          "repetition": 1,
+          "state": "candidate_failed",
+          "sample_id": "2b2c44cd300b182be23cdf2ea622f8f6fe8827a495d7e59471265ceb8c4837e6",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": []
+        },
+        {
+          "case": "en-quotes",
+          "variant": "baseline",
+          "repetition": 1,
+          "state": "completed",
+          "sample_id": "2fae0838dca96c890f52c1daf1bc8dbfa33cba5f278c0a320c1f2f8333a5cd55",
+          "memory_exact_recomputed": true,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": [
+            {
+              "name": "write_session_memory",
+              "ok": true,
+              "error": null
+            },
+            {
+              "name": "read_session_memory",
+              "ok": true,
+              "error": null
+            }
+          ]
+        },
+        {
+          "case": "fr-punctuation",
+          "variant": "adaptive",
+          "repetition": 1,
+          "state": "candidate_failed",
+          "sample_id": "3038ec81fc031a8a126e6bcc37470304058bfc14df4f687009cbb092a8223786",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": [
+            {
+              "name": "write_session_memory",
+              "ok": true,
+              "error": null
+            },
+            {
+              "name": "read_session_memory",
+              "ok": true,
+              "error": null
+            }
+          ],
+          "character_differences": [
+            {
+              "operation": "replace",
+              "expected": "’",
+              "actual": "'"
+            }
+          ]
+        },
+        {
+          "case": "fr-punctuation",
+          "variant": "force-write-first",
+          "repetition": 0,
+          "state": "candidate_failed",
+          "sample_id": "36dfc85df43eab68942906ac24af9e35290def59e053f7b0c93227e153435a26",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": [
+            {
+              "name": "write_session_memory",
+              "ok": false,
+              "error": "provider_tool_call_shape_invalid"
+            }
+          ]
+        },
+        {
+          "case": "en-reactivate",
+          "variant": "baseline",
+          "repetition": 1,
+          "state": "candidate_failed",
+          "sample_id": "3a1c550efe9dffe943367ecd143a2d75fcaacbd99c8ecdd04f40daea7e44d00d",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": []
+        },
+        {
+          "case": "zh-newlines",
+          "variant": "baseline",
+          "repetition": 0,
+          "state": "candidate_failed",
+          "sample_id": "3d579a9bde29da3e4bbfe2578a019b85777161939bd8d98f3bd74eb1174d9e0a",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": []
+        },
+        {
+          "case": "fr-punctuation",
+          "variant": "baseline",
+          "repetition": 1,
+          "state": "completed",
+          "sample_id": "3dd1668f718fa6b7e41f14c2a33507a77fbf91319e27d3d685ce7e4ede216714",
+          "memory_exact_recomputed": true,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": [
+            {
+              "name": "write_session_memory",
+              "ok": true,
+              "error": null
+            },
+            {
+              "name": "read_session_memory",
+              "ok": true,
+              "error": null
+            }
+          ]
+        },
+        {
+          "case": "fr-negation",
+          "variant": "force-write-first",
+          "repetition": 1,
+          "state": "candidate_failed",
+          "sample_id": "45b8d02c3e12e3da5c54f52fbd3fed928c019b0c8fad79d8210c9030e5000d4a",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": []
+        },
+        {
+          "case": "en-identifiers",
+          "variant": "force-write-first",
+          "repetition": 1,
+          "state": "candidate_failed",
+          "sample_id": "50c855ac18ba493dece1cfb0394e75930524ac240f7aa3fea29a22eafe093a46",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": []
+        },
+        {
+          "case": "fr-negation",
+          "variant": "baseline",
+          "repetition": 0,
+          "state": "candidate_failed",
+          "sample_id": "51bd590ed47f9fcef22ccbf9c2bf5c17f032cdaa07c551dc6a98ba7d4edd5a3e",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": []
+        },
+        {
+          "case": "zh-scope",
+          "variant": "adaptive",
+          "repetition": 1,
+          "state": "candidate_failed",
+          "sample_id": "564c0dbeebed96f0558979121cf551408b69cd74a620827228e656802b748799",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": [
+            {
+              "name": "write_session_memory",
+              "ok": false,
+              "error": "provider_tool_call_shape_invalid"
+            },
+            {
+              "name": "write_session_memory",
+              "ok": false,
+              "error": "provider_tool_call_shape_invalid"
+            },
+            {
+              "name": "write_session_memory",
+              "ok": false,
+              "error": "provider_tool_call_shape_invalid"
+            },
+            {
+              "name": "read_session_memory",
+              "ok": false,
+              "error": "provider_tool_call_shape_invalid"
+            }
+          ]
+        },
+        {
+          "case": "en-quotes",
+          "variant": "adaptive",
+          "repetition": 1,
+          "state": "uncertain",
+          "sample_id": "63e382c982cdff40161a603d953e8519bb345b7377a446d7021438f549f525f6",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "study_chat_uncertain_chat_model_invalid_payload",
+          "tool_outcomes": []
+        },
+        {
+          "case": "en-identifiers",
+          "variant": "adaptive",
+          "repetition": 0,
+          "state": "completed",
+          "sample_id": "7211db9683a021b283bdff03f542b94584a50c171e70a1ca8d32f71a3ce79383",
+          "memory_exact_recomputed": true,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": [
+            {
+              "name": "write_session_memory",
+              "ok": true,
+              "error": null
+            },
+            {
+              "name": "read_session_memory",
+              "ok": true,
+              "error": null
+            }
+          ]
+        },
+        {
+          "case": "zh-newlines",
+          "variant": "force-write-first",
+          "repetition": 0,
+          "state": "candidate_failed",
+          "sample_id": "735d99af4a9236942f0877ed56a81f9f9fea4a27ad703f019f21d304aba61e77",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": []
+        },
+        {
+          "case": "fr-punctuation",
+          "variant": "baseline",
+          "repetition": 0,
+          "state": "completed",
+          "sample_id": "749c97b69f3a47f0a3651ebd9550e86c7429d3ed615cd939a5695853e4d80473",
+          "memory_exact_recomputed": true,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": [
+            {
+              "name": "write_session_memory",
+              "ok": true,
+              "error": null
+            },
+            {
+              "name": "read_session_memory",
+              "ok": true,
+              "error": null
+            }
+          ]
+        },
+        {
+          "case": "en-reactivate",
+          "variant": "baseline",
+          "repetition": 0,
+          "state": "candidate_failed",
+          "sample_id": "7686b04b8d4425db423cb9c152a75987afecc265f5c532d1b91e6ea4351dbcee",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": []
+        },
+        {
+          "case": "zh-scope",
+          "variant": "baseline",
+          "repetition": 1,
+          "state": "candidate_failed",
+          "sample_id": "7a94bd634cf18fd2d41b934206ee437cd7aa3ce997d62f8ed77e0a3d8425c8a7",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": []
+        },
+        {
+          "case": "en-identifiers",
+          "variant": "baseline",
+          "repetition": 0,
+          "state": "candidate_failed",
+          "sample_id": "7b6ea6079d7370cf7ec2c0ad97215355f6a78242db5a817abca4b8ea6777b378",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": []
+        },
+        {
+          "case": "en-quotes",
+          "variant": "force-write-first",
+          "repetition": 0,
+          "state": "candidate_failed",
+          "sample_id": "9815c16c8eb91e422ff9696de2e7b069522b302baeb5357d9a0fa3e64434ebda",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": []
+        },
+        {
+          "case": "zh-cancel",
+          "variant": "adaptive",
+          "repetition": 0,
+          "state": "completed",
+          "sample_id": "9c25d1e2a565424af0f1fe9644b3264253000e1b2cfc6e45657e49ae12c20906",
+          "memory_exact_recomputed": true,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": [
+            {
+              "name": "write_session_memory",
+              "ok": true,
+              "error": null
+            },
+            {
+              "name": "read_session_memory",
+              "ok": true,
+              "error": null
+            }
+          ]
+        },
+        {
+          "case": "en-identifiers",
+          "variant": "adaptive",
+          "repetition": 1,
+          "state": "candidate_failed",
+          "sample_id": "9e2d8c395a135ad21f412052711961a113e45f2e151e3facd4c15da63ef6ff01",
+          "memory_exact_recomputed": true,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": [
+            {
+              "name": "write_session_memory",
+              "ok": true,
+              "error": null
+            },
+            {
+              "name": "read_session_memory",
+              "ok": true,
+              "error": null
+            },
+            {
+              "name": "write_session_memory",
+              "ok": true,
+              "error": null
+            },
+            {
+              "name": "read_session_memory",
+              "ok": true,
+              "error": null
+            }
+          ]
+        },
+        {
+          "case": "zh-cancel",
+          "variant": "force-write-first",
+          "repetition": 1,
+          "state": "completed",
+          "sample_id": "9f64bc25cc5057d47811b98457999eff78663c28f85f9dd83366ab4b02cbb09c",
+          "memory_exact_recomputed": true,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": [
+            {
+              "name": "write_session_memory",
+              "ok": true,
+              "error": null
+            },
+            {
+              "name": "read_session_memory",
+              "ok": true,
+              "error": null
+            }
+          ]
+        },
+        {
+          "case": "zh-cancel",
+          "variant": "force-write-first",
+          "repetition": 0,
+          "state": "candidate_failed",
+          "sample_id": "a44980d7491d6de411f227c3aab249fcd0ff7a3e4012d838540c075690b2d57f",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": []
+        },
+        {
+          "case": "zh-newlines",
+          "variant": "force-write-first",
+          "repetition": 1,
+          "state": "candidate_failed",
+          "sample_id": "a7e9db96e73c43533657462d1de94bbbff2c140dd85648abf7ba33824ea95473",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": []
+        },
+        {
+          "case": "zh-cancel",
+          "variant": "baseline",
+          "repetition": 1,
+          "state": "candidate_failed",
+          "sample_id": "aa1816f2e0bfb142ccd86f4a7967941a410f6b002996eae942e0e028fbed172e",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": []
+        },
+        {
+          "case": "en-quotes",
+          "variant": "baseline",
+          "repetition": 0,
+          "state": "candidate_failed",
+          "sample_id": "b266bc8e5652966077698dd8b406046b5a5159b088abc777544758f453f969cf",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": []
+        },
+        {
+          "case": "fr-negation",
+          "variant": "adaptive",
+          "repetition": 1,
+          "state": "candidate_failed",
+          "sample_id": "b2d5e76d86b5d9d608b1aa9989b524f43eb7533b793d59dcb22a44f659f36c4a",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": [
+            {
+              "name": "write_session_memory",
+              "ok": false,
+              "error": "provider_tool_call_shape_invalid"
+            },
+            {
+              "name": "read_session_memory",
+              "ok": false,
+              "error": "provider_tool_call_shape_invalid"
+            }
+          ]
+        },
+        {
+          "case": "zh-newlines",
+          "variant": "baseline",
+          "repetition": 1,
+          "state": "candidate_failed",
+          "sample_id": "b49cfc4f2e973854157dd852461e23b2d5334692bd48788cff3ef42bc8baf108",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": []
+        },
+        {
+          "case": "en-reactivate",
+          "variant": "adaptive",
+          "repetition": 1,
+          "state": "completed",
+          "sample_id": "bae2d017b559519fe473861280aebb50c764de70f7ed620c9aea535a49d3c750",
+          "memory_exact_recomputed": true,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": [
+            {
+              "name": "write_session_memory",
+              "ok": true,
+              "error": null
+            },
+            {
+              "name": "read_session_memory",
+              "ok": true,
+              "error": null
+            }
+          ]
+        },
+        {
+          "case": "zh-newlines",
+          "variant": "adaptive",
+          "repetition": 1,
+          "state": "completed",
+          "sample_id": "dbc6a96c97dda46b4ac14d470f8f1fba537d83f2608b4ad8402963d4c1053fd9",
+          "memory_exact_recomputed": true,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": [
+            {
+              "name": "write_session_memory",
+              "ok": true,
+              "error": null
+            },
+            {
+              "name": "read_session_memory",
+              "ok": true,
+              "error": null
+            }
+          ]
+        },
+        {
+          "case": "en-identifiers",
+          "variant": "force-write-first",
+          "repetition": 0,
+          "state": "completed",
+          "sample_id": "dece9320efc085a1fe24d50ce6f0033e1555d1c3e27cb9e8a7f9586043d8ad80",
+          "memory_exact_recomputed": true,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": [
+            {
+              "name": "write_session_memory",
+              "ok": true,
+              "error": null
+            },
+            {
+              "name": "read_session_memory",
+              "ok": true,
+              "error": null
+            }
+          ]
+        },
+        {
+          "case": "zh-cancel",
+          "variant": "baseline",
+          "repetition": 0,
+          "state": "candidate_failed",
+          "sample_id": "e3dfb9da058ccbc2c0c528a233828671c20a44892e1290f6e30cad47a05d3af1",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": []
+        },
+        {
+          "case": "fr-negation",
+          "variant": "adaptive",
+          "repetition": 0,
+          "state": "candidate_failed",
+          "sample_id": "edc09fd72e1c6bdd858983aee3dce5486d2e9ad4233c85f3d9f47977a9a4c8e9",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": [
+            {
+              "name": "write_session_memory",
+              "ok": true,
+              "error": null
+            },
+            {
+              "name": "read_session_memory",
+              "ok": true,
+              "error": null
+            }
+          ],
+          "character_differences": [
+            {
+              "operation": "replace",
+              "expected": "’",
+              "actual": "'"
+            }
+          ]
+        },
+        {
+          "case": "en-reactivate",
+          "variant": "force-write-first",
+          "repetition": 0,
+          "state": "candidate_failed",
+          "sample_id": "fb312362db1c4050239d4b40345e916e516ba168158be8af6bab3969ef225557",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": []
+        },
+        {
+          "case": "zh-newlines",
+          "variant": "adaptive",
+          "repetition": 0,
+          "state": "candidate_failed",
+          "sample_id": "fca161e41c7402e191ec44f6a4a2a94043868dff592e74e647eed21a644fc31f",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": [
+            {
+              "name": "write_session_memory",
+              "ok": false,
+              "error": "provider_tool_call_shape_invalid"
+            },
+            {
+              "name": "read_session_memory",
+              "ok": false,
+              "error": "provider_tool_call_shape_invalid"
+            }
+          ]
+        },
+        {
+          "case": "en-quotes",
+          "variant": "adaptive",
+          "repetition": 0,
+          "state": "candidate_failed",
+          "sample_id": "fe1951eb9c9a1294f8c841cae2c25d321a703d31b3f1e3bcc67a59db424fdf32",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": [
+            {
+              "name": "write_session_memory",
+              "ok": true,
+              "error": null
+            },
+            {
+              "name": "read_session_memory",
+              "ok": true,
+              "error": null
+            }
+          ],
+          "character_differences": [
+            {
+              "operation": "replace",
+              "expected": "“",
+              "actual": "\""
+            },
+            {
+              "operation": "replace",
+              "expected": "’",
+              "actual": "'"
+            },
+            {
+              "operation": "replace",
+              "expected": "”",
+              "actual": "\""
+            }
+          ]
+        }
+      ],
+      "scope": "Post-hoc deterministic regrade from persisted public receipts, not independent human or held-out model quality certification. Historical executed-tool metric means observed call; use successful_memory_reads/writes here."
+    },
+    {
+      "campaign": "m3-memory-shape-20260912-v1",
+      "config": {
+        "version": "quality-campaign-v1",
+        "id": "m3-memory-shape-20260912-v1",
+        "purpose": "Native tool-envelope diagnostic: retain raw shape telemetry; compare baseline with removal of nonnegative integer index only. Adaptive thinking, 8 development cases, no production adoption.",
+        "transport": "minimax",
+        "model": "MiniMax-M3",
+        "adapter": "vibe_learner.study_wire_shape:run_sample",
+        "autoscale": null,
+        "repetitions": 1,
+        "seed": 912,
+        "concurrency": 4,
+        "timeout_seconds": 60,
+        "sample_deadline_seconds": 300,
+        "sample_wire_limit": 6,
+        "max_output_tokens": 4096,
+        "input_reservation_tokens": 100000,
+        "temperature": 0.1,
+        "thinking": "adaptive",
+        "budget": {
+          "token_limit": 50000000,
+          "wire_limit": 10008,
+          "rpm": 60,
+          "tpm": 4000000,
+          "max_inflight": 4,
+          "expires_at": 1789203359.3114939,
+          "stop_buffer_seconds": 900
+        },
+        "cases": [
+          {
+            "id": "fr-punctuation",
+            "family": "punctuation",
+            "lane": "memory",
+            "split": "development",
+            "provenance": "synthetic-authored",
+            "source": "Camille a rendez-vous le 10 juin à 16:00. Le lieu n’est pas précisé.",
+            "request": "请调用 write_session_memory，用 key experiment_reference 原样保存记录，然后调用 read_session_memory 核对。不翻译，不出题。",
+            "gold": "Camille a rendez-vous le 10 juin à 16:00. Le lieu n’est pas précisé.",
+            "rubric": "study-memory-v1"
+          },
+          {
+            "id": "en-quotes",
+            "family": "punctuation",
+            "lane": "memory",
+            "split": "development",
+            "provenance": "synthetic-authored",
+            "source": "Mira wrote: “Don’t replace my punctuation.” The room is unspecified.",
+            "request": "请调用 write_session_memory，用 key experiment_reference 原样保存记录，然后调用 read_session_memory 核对。不翻译，不出题。",
+            "gold": "Mira wrote: “Don’t replace my punctuation.” The room is unspecified.",
+            "rubric": "study-memory-v1"
+          },
+          {
+            "id": "zh-cancel",
+            "family": "state",
+            "lane": "memory",
+            "split": "development",
+            "provenance": "synthetic-authored",
+            "source": "林舟原定周五下午三点参加讨论，后来取消。没有安排新的日期，也没有确定地点。",
+            "request": "请调用 write_session_memory，用 key experiment_reference 原样保存记录，然后调用 read_session_memory 核对。不翻译，不出题。",
+            "gold": "林舟原定周五下午三点参加讨论，后来取消。没有安排新的日期，也没有确定地点。",
+            "rubric": "study-memory-v1"
+          },
+          {
+            "id": "en-reactivate",
+            "family": "state",
+            "lane": "memory",
+            "split": "development",
+            "provenance": "synthetic-authored",
+            "source": "The amber project was archived on May 2 and reactivated on May 9. Its launch date remains unknown.",
+            "request": "请调用 write_session_memory，用 key experiment_reference 原样保存记录，然后调用 read_session_memory 核对。不翻译，不出题。",
+            "gold": "The amber project was archived on May 2 and reactivated on May 9. Its launch date remains unknown.",
+            "rubric": "study-memory-v1"
+          },
+          {
+            "id": "fr-negation",
+            "family": "negation",
+            "lane": "memory",
+            "split": "development",
+            "provenance": "synthetic-authored",
+            "source": "Noé ne part pas lundi. Léa part mardi, mais sa destination n’est pas connue.",
+            "request": "请调用 write_session_memory，用 key experiment_reference 原样保存记录，然后调用 read_session_memory 核对。不翻译，不出题。",
+            "gold": "Noé ne part pas lundi. Léa part mardi, mais sa destination n’est pas connue.",
+            "rubric": "study-memory-v1"
+          },
+          {
+            "id": "zh-scope",
+            "family": "negation",
+            "lane": "memory",
+            "split": "development",
+            "provenance": "synthetic-authored",
+            "source": "周宁说“也许下周参加”，这不是确认出席。陈禾已经确认本周不参加。",
+            "request": "请调用 write_session_memory，用 key experiment_reference 原样保存记录，然后调用 read_session_memory 核对。不翻译，不出题。",
+            "gold": "周宁说“也许下周参加”，这不是确认出席。陈禾已经确认本周不参加。",
+            "rubric": "study-memory-v1"
+          },
+          {
+            "id": "en-identifiers",
+            "family": "exact-values",
+            "lane": "memory",
+            "split": "development",
+            "provenance": "synthetic-authored",
+            "source": "Reference A-017: 0.05 mg; reference A-170: 0.50 mg. These are synthetic labels, not instructions.",
+            "request": "请调用 write_session_memory，用 key experiment_reference 原样保存记录，然后调用 read_session_memory 核对。不翻译，不出题。",
+            "gold": "Reference A-017: 0.05 mg; reference A-170: 0.50 mg. These are synthetic labels, not instructions.",
+            "rubric": "study-memory-v1"
+          },
+          {
+            "id": "zh-newlines",
+            "family": "exact-values",
+            "lane": "memory",
+            "split": "development",
+            "provenance": "synthetic-authored",
+            "source": "实验编号：Q-08\n原记录：甲→乙；乙≠丙。\n地点：未知；时间：待定。",
+            "request": "请调用 write_session_memory，用 key experiment_reference 原样保存记录，然后调用 read_session_memory 核对。不翻译，不出题。",
+            "gold": "实验编号：Q-08\n原记录：甲→乙；乙≠丙。\n地点：未知；时间：待定。",
+            "rubric": "study-memory-v1"
+          }
+        ],
+        "variants": [
+          {
+            "id": "baseline",
+            "instruction": "逐字保留换行、数字与标点，不补充地点或日期。必须实际执行写入和读回工具；若未执行或失败，请如实说明未完成，不能仅口头声称保存。"
+          },
+          {
+            "id": "strip-index",
+            "instruction": "逐字保留换行、数字与标点，不补充地点或日期。必须实际执行写入和读回工具；若未执行或失败，请如实说明未完成，不能仅口头声称保存。"
+          }
+        ]
+      },
+      "states": {
+        "completed": 10,
+        "candidate_failed": 5,
+        "uncertain": 1
+      },
+      "variants": {
+        "strip-index": {
+          "states": {
+            "completed": 5,
+            "candidate_failed": 3
+          },
+          "metrics_passed": {
+            "committed": 8,
+            "memory_effect_exact": 5,
+            "memory_exact": 6,
+            "read_memory_tool_succeeded": 8,
+            "readback_equal": 8,
+            "recovery_no_provider_calls": 8,
+            "restart_equal": 8,
+            "typed_effect_batch": 8,
+            "v3_committed": 8
+          },
+          "tool_error_codes": {},
+          "wire_count": 23,
+          "tokens": 136081,
+          "successful_memory_writes": 8,
+          "successful_memory_reads": 8,
+          "wire_p50_ms": 3840,
+          "wire_p95_ms": 7783,
+          "sample_p50_seconds": 12.223580837249756,
+          "sample_p95_seconds": 33.35337209701538
+        },
+        "baseline": {
+          "states": {
+            "completed": 5,
+            "candidate_failed": 2,
+            "uncertain": 1
+          },
+          "metrics_passed": {
+            "committed": 7,
+            "memory_effect_exact": 5,
+            "memory_exact": 5,
+            "read_memory_tool_succeeded": 5,
+            "readback_equal": 7,
+            "recovery_no_provider_calls": 8,
+            "restart_equal": 7,
+            "typed_effect_batch": 7,
+            "v3_committed": 7
+          },
+          "tool_error_codes": {
+            "provider_tool_call_shape_invalid": 8
+          },
+          "wire_count": 27,
+          "tokens": 160697,
+          "successful_memory_writes": 5,
+          "successful_memory_reads": 5,
+          "wire_p50_ms": 3796,
+          "wire_p95_ms": 8520,
+          "sample_p50_seconds": 17.07077407836914,
+          "sample_p95_seconds": 32.97456502914429
+        }
+      },
+      "observed_peak_wire_inflight": 4,
+      "wire_count": 50,
+      "http_statuses": {
+        "200": 50
+      },
+      "tokens_charged_or_reserved": 296778,
+      "unknown_usage_requests": 0,
+      "raw_tool_shapes": {
+        "{\"function_fields_valid\": true, \"index_is_nonnegative_integer\": false, \"is_object\": true, \"known_fields\": [\"function\", \"id\", \"type\"], \"unknown_field_count\": 0}": 23,
+        "{\"function_fields_valid\": true, \"index_is_nonnegative_integer\": true, \"is_object\": true, \"known_fields\": [\"function\", \"id\", \"index\", \"type\"], \"unknown_field_count\": 0}": 15
+      },
+      "sample_audit": [
+        {
+          "case": "zh-newlines",
+          "variant": "strip-index",
+          "repetition": 0,
+          "state": "completed",
+          "sample_id": "052b1651d35cec3c7dc3fa533d5e4e304ea4a5466a0a4210988dbfb6a328c8e6",
+          "memory_exact_recomputed": true,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": [
+            {
+              "name": "write_session_memory",
+              "ok": true,
+              "error": null
+            },
+            {
+              "name": "read_session_memory",
+              "ok": true,
+              "error": null
+            }
+          ]
+        },
+        {
+          "case": "en-reactivate",
+          "variant": "baseline",
+          "repetition": 0,
+          "state": "completed",
+          "sample_id": "10134a776007f97e3e47a350b648693526c2180f1fd848960493210bf9af23ed",
+          "memory_exact_recomputed": true,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": [
+            {
+              "name": "write_session_memory",
+              "ok": true,
+              "error": null
+            },
+            {
+              "name": "read_session_memory",
+              "ok": true,
+              "error": null
+            }
+          ]
+        },
+        {
+          "case": "zh-cancel",
+          "variant": "strip-index",
+          "repetition": 0,
+          "state": "completed",
+          "sample_id": "20126c3e08058f6490c0a21a0a1632ca295c6aa06dd582854db49b3f2de1a9e5",
+          "memory_exact_recomputed": true,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": [
+            {
+              "name": "write_session_memory",
+              "ok": true,
+              "error": null
+            },
+            {
+              "name": "read_session_memory",
+              "ok": true,
+              "error": null
+            }
+          ]
+        },
+        {
+          "case": "fr-negation",
+          "variant": "strip-index",
+          "repetition": 0,
+          "state": "completed",
+          "sample_id": "2658ea99c21a55b13bf123fcd1c3fc6be6708db15ff7d518dcc6a21a9df69329",
+          "memory_exact_recomputed": true,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": [
+            {
+              "name": "write_session_memory",
+              "ok": true,
+              "error": null
+            },
+            {
+              "name": "read_session_memory",
+              "ok": true,
+              "error": null
+            },
+            {
+              "name": "read_session_memory",
+              "ok": true,
+              "error": null
+            }
+          ]
+        },
+        {
+          "case": "en-quotes",
+          "variant": "baseline",
+          "repetition": 0,
+          "state": "candidate_failed",
+          "sample_id": "2c14d586fd225c2bb5220f1189ebc0ce0f086814fd2568385458edcddadf9b7f",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": [
+            {
+              "name": "write_session_memory",
+              "ok": false,
+              "error": "provider_tool_call_shape_invalid"
+            },
+            {
+              "name": "write_session_memory",
+              "ok": false,
+              "error": "provider_tool_call_shape_invalid"
+            },
+            {
+              "name": "write_session_memory",
+              "ok": false,
+              "error": "provider_tool_call_shape_invalid"
+            },
+            {
+              "name": "read_session_memory",
+              "ok": false,
+              "error": "provider_tool_call_shape_invalid"
+            }
+          ]
+        },
+        {
+          "case": "zh-scope",
+          "variant": "baseline",
+          "repetition": 0,
+          "state": "completed",
+          "sample_id": "3206aeef58f825d4a34fcff80fb5d1695096817884487f54e54ec88ace5d8e2c",
+          "memory_exact_recomputed": true,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": [
+            {
+              "name": "write_session_memory",
+              "ok": true,
+              "error": null
+            },
+            {
+              "name": "read_session_memory",
+              "ok": true,
+              "error": null
+            }
+          ]
+        },
+        {
+          "case": "fr-punctuation",
+          "variant": "baseline",
+          "repetition": 0,
+          "state": "completed",
+          "sample_id": "63311f3f92ad89ce99e26aad93436995d11af1edf765113b705e4226a4fe6c1b",
+          "memory_exact_recomputed": true,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": [
+            {
+              "name": "write_session_memory",
+              "ok": true,
+              "error": null
+            },
+            {
+              "name": "read_session_memory",
+              "ok": true,
+              "error": null
+            }
+          ]
+        },
+        {
+          "case": "en-identifiers",
+          "variant": "baseline",
+          "repetition": 0,
+          "state": "uncertain",
+          "sample_id": "652f1f39cb7c553e2c9d821d8df482368929cf0085cd2ad2130c7087cce342a1",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "study_chat_uncertain_chat_model_invalid_payload",
+          "tool_outcomes": []
+        },
+        {
+          "case": "en-quotes",
+          "variant": "strip-index",
+          "repetition": 0,
+          "state": "candidate_failed",
+          "sample_id": "6e6431355850b6a86ccbe2a4bea63d9841045321de8989c9e97a8b2998d4b042",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": [
+            {
+              "name": "write_session_memory",
+              "ok": true,
+              "error": null
+            },
+            {
+              "name": "read_session_memory",
+              "ok": true,
+              "error": null
+            }
+          ],
+          "character_differences": [
+            {
+              "operation": "replace",
+              "expected": "“",
+              "actual": "\""
+            },
+            {
+              "operation": "replace",
+              "expected": "’",
+              "actual": "'"
+            },
+            {
+              "operation": "replace",
+              "expected": "”",
+              "actual": "\""
+            }
+          ]
+        },
+        {
+          "case": "zh-newlines",
+          "variant": "baseline",
+          "repetition": 0,
+          "state": "candidate_failed",
+          "sample_id": "7fe66ddb62ad03a60baf3d5337db8f625a1764137d84bc00e42a6aa2c2a19a23",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": [
+            {
+              "name": "write_session_memory",
+              "ok": false,
+              "error": "provider_tool_call_shape_invalid"
+            },
+            {
+              "name": "write_session_memory",
+              "ok": false,
+              "error": "provider_tool_call_shape_invalid"
+            },
+            {
+              "name": "write_session_memory",
+              "ok": false,
+              "error": "provider_tool_call_shape_invalid"
+            },
+            {
+              "name": "read_session_memory",
+              "ok": false,
+              "error": "provider_tool_call_shape_invalid"
+            }
+          ]
+        },
+        {
+          "case": "fr-punctuation",
+          "variant": "strip-index",
+          "repetition": 0,
+          "state": "completed",
+          "sample_id": "845ff523812003e8ae60629454added1a7518fba564a01c0125fd37705c2130b",
+          "memory_exact_recomputed": true,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": [
+            {
+              "name": "write_session_memory",
+              "ok": true,
+              "error": null
+            },
+            {
+              "name": "read_session_memory",
+              "ok": true,
+              "error": null
+            }
+          ]
+        },
+        {
+          "case": "zh-scope",
+          "variant": "strip-index",
+          "repetition": 0,
+          "state": "candidate_failed",
+          "sample_id": "84bcfc828faaffae51ff8d39b31f3cc8ef7861084afdacc8cdc330d979539622",
+          "memory_exact_recomputed": false,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": [
+            {
+              "name": "write_session_memory",
+              "ok": true,
+              "error": null
+            },
+            {
+              "name": "read_session_memory",
+              "ok": true,
+              "error": null
+            }
+          ],
+          "character_differences": [
+            {
+              "operation": "replace",
+              "expected": "“",
+              "actual": "\""
+            },
+            {
+              "operation": "replace",
+              "expected": "”",
+              "actual": "\""
+            }
+          ]
+        },
+        {
+          "case": "en-reactivate",
+          "variant": "strip-index",
+          "repetition": 0,
+          "state": "candidate_failed",
+          "sample_id": "90a758c474200d9071353797c1f675dc30a1808f8928285a62bd9bf786d449c8",
+          "memory_exact_recomputed": true,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": [
+            {
+              "name": "write_session_memory",
+              "ok": true,
+              "error": null
+            },
+            {
+              "name": "read_session_memory",
+              "ok": true,
+              "error": null
+            },
+            {
+              "name": "write_session_memory",
+              "ok": true,
+              "error": null
+            }
+          ]
+        },
+        {
+          "case": "en-identifiers",
+          "variant": "strip-index",
+          "repetition": 0,
+          "state": "completed",
+          "sample_id": "a0369751bcadbf1f44b3f8a0284f8a976ef8b563238c836f45f1e6008b33971c",
+          "memory_exact_recomputed": true,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": [
+            {
+              "name": "write_session_memory",
+              "ok": true,
+              "error": null
+            },
+            {
+              "name": "read_session_memory",
+              "ok": true,
+              "error": null
+            }
+          ]
+        },
+        {
+          "case": "zh-cancel",
+          "variant": "baseline",
+          "repetition": 0,
+          "state": "completed",
+          "sample_id": "a6e9eb0541f141bc70a6ee4ccc8c005be4e7292a0ccfef5c13863107ab238eed",
+          "memory_exact_recomputed": true,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": [
+            {
+              "name": "write_session_memory",
+              "ok": true,
+              "error": null
+            },
+            {
+              "name": "read_session_memory",
+              "ok": true,
+              "error": null
+            }
+          ]
+        },
+        {
+          "case": "fr-negation",
+          "variant": "baseline",
+          "repetition": 0,
+          "state": "completed",
+          "sample_id": "f601a688293b173b6cebbde904e38930c65b1945d85c0945a8c41598e2ec51ae",
+          "memory_exact_recomputed": true,
+          "agrees_with_adapter_memory_metric": true,
+          "receipt_error_code": "",
+          "tool_outcomes": [
+            {
+              "name": "write_session_memory",
+              "ok": true,
+              "error": null
+            },
+            {
+              "name": "read_session_memory",
+              "ok": true,
+              "error": null
+            }
+          ]
+        }
+      ],
+      "scope": "Post-hoc deterministic regrade from persisted public receipts, not independent human or held-out model quality certification. Historical executed-tool metric means observed call; use successful_memory_reads/writes here."
+    }
+  ]
+}

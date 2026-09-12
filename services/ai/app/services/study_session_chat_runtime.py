@@ -25,6 +25,8 @@ from app.models.study_chat_effect import (
     StudyProjectionEffectProposalV1,
     StudyProjectionRectV1,
 )
+from app.services.study_grounding import StudyVerbatimMemorySourceV1
+from app.models.study_chat_tool_contracts import WriteSessionMemoryArgumentsV1
 from app.services.plans import LearningPlanService
 from app.services.plan_prompt import read_page_range_images
 from app.services.study_chat_attachments import extract_pdf_page_range_text, search_pdf_text_rects
@@ -79,6 +81,7 @@ class StudySessionChatToolRuntime:
         self._model_provider = model_provider
         self._effect_collector = effect_collector
         self._response_citations: list[Citation] = []
+        self.verbatim_memory_source: StudyVerbatimMemorySourceV1 | None = None
 
     def has_tool(self, tool_name: str) -> bool:
         if tool_name == "update_learning_plan" and not self.plan_id:
@@ -195,8 +198,13 @@ class StudySessionChatToolRuntime:
             }
 
         if tool_name == "write_session_memory":
-            key = str(arguments.get("key") or "").strip()
-            content = str(arguments.get("content") or "").strip()
+            validated = WriteSessionMemoryArgumentsV1.model_validate(arguments)
+            key = validated.key.strip()
+            content = validated.content.strip()
+            if self.verbatim_memory_source is not None:
+                if validated.key != self.verbatim_memory_source.key:
+                    raise HTTPException(status_code=422, detail="verbatim_memory_key_mismatch")
+                content = self.verbatim_memory_source.content
             if not key or not content:
                 raise HTTPException(status_code=422, detail="session_memory_invalid")
             if self._effect_collector is None:

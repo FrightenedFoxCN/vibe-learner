@@ -115,6 +115,14 @@
       }
     },
     {
+      "component_name": "study_grounding",
+      "owner_module": "app.services.study_grounding",
+      "contract": {
+        "name": "study_grounding",
+        "version": "study-grounding-v1"
+      }
+    },
+    {
       "component_name": "study_unit_cleaner",
       "owner_module": "app.services.study_arrangement",
       "contract": {
@@ -255,7 +263,8 @@
       "owner_module": "app.services.study_sessions",
       "component_names": [
         "study_chat_prompt",
-        "study_chat_toolset"
+        "study_chat_toolset",
+        "study_grounding"
       ],
       "eval_route": "study_chat.reply"
     },

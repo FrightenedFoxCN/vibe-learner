@@ -91,7 +91,7 @@ class StudyV3RuntimeTests(ContainerTestCase):
     def _protected_payload(self) -> dict[str, object]:
         return {
             "schema_name": "StudyChatProtectedSnapshot",
-            "schema_version": "study-chat-protected-snapshot-v1",
+            "schema_version": "study-chat-protected-snapshot-v2",
             "dependencies": {
                 "input": {},
                 "session": {},
@@ -103,6 +103,7 @@ class StudyV3RuntimeTests(ContainerTestCase):
                 "memory_sessions": [],
                 "session_prompt": "private prompt",
                 "model_message": "private learner message",
+                "learner_message": "private learner message",
                 "active_plan_context": "",
                 "attachment_context": "",
                 "learner_multimodal_parts": [],

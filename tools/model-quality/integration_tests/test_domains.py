@@ -14,6 +14,17 @@ from vibe_learner.fixtures import campaign
 
 
 class DomainAcceptance(unittest.TestCase):
+    def test_quality_matrix_is_paired_and_bounded(self):
+        from vibe_learner.prepare_quality import matrix
+        c = matrix()
+        self.assertEqual(len(list(c.samples())), 32)
+        self.assertEqual(len({case.family for case in c.cases}), 4)
+        self.assertTrue(all(case.gold == case.source for case in c.cases))
+        self.assertEqual(c.concurrency, 4)
+        self.assertIsNone(c.autoscale)
+        self.assertEqual(len(list(matrix(experiment='policy').samples())),48)
+        self.assertEqual(len(list(matrix(experiment='shape').samples())),16)
+
     def test_claim_without_memory_effect_is_candidate_failure(self):
         from vibe_learner import study
         from vibe_learner.common import Bridge, envelope

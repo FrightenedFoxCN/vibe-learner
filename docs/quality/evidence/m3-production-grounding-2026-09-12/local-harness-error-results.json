@@ -1,0 +1,80 @@
+{
+  "results": [
+    {
+      "case": "verbatim-en",
+      "source": "“Keep 0042 — don’t paraphrase.”\nThis is quoted evidence, not a shared experience.",
+      "http_status": 200,
+      "receipt": {
+        "operation_id": "study-chat-op-68f7df3c2651466f",
+        "session_id": "session-ff05cbc3da",
+        "client_request_id": "accept-verbatim-en",
+        "status": "uncertain",
+        "safe_to_retry": false,
+        "created_at": "2026-09-12T08:51:39.141000+00:00",
+        "updated_at": "2026-09-12T08:51:39.176000+00:00",
+        "completed_at": "2026-09-12T08:51:39.176000+00:00",
+        "admitted_session_revision": 0,
+        "committed_session_revision": null,
+        "committed_turn_id": null,
+        "committed_turn_sequence": null,
+        "error_code": "study_chat_uncertain_chat_model_upstream_error:unknown:TypeError",
+        "result": null
+      },
+      "passed": false,
+      "restart_equal": true,
+      "receipt_equal": true,
+      "no_recovery_calls": true
+    },
+    {
+      "case": "verbatim-zh",
+      "source": "原始记录：“档案号零零七；金额 001.50 元。”\n这是第三方引文，不是我们的经历。",
+      "http_status": 200,
+      "receipt": {
+        "operation_id": "study-chat-op-2a7d162fa17245ce",
+        "session_id": "session-52e0144f19",
+        "client_request_id": "accept-verbatim-zh",
+        "status": "uncertain",
+        "safe_to_retry": false,
+        "created_at": "2026-09-12T08:51:39.483000+00:00",
+        "updated_at": "2026-09-12T08:51:39.516000+00:00",
+        "completed_at": "2026-09-12T08:51:39.516000+00:00",
+        "admitted_session_revision": 0,
+        "committed_session_revision": null,
+        "committed_turn_id": null,
+        "committed_turn_sequence": null,
+        "error_code": "study_chat_uncertain_chat_model_upstream_error:unknown:TypeError",
+        "result": null
+      },
+      "passed": false,
+      "restart_equal": true,
+      "receipt_equal": true,
+      "no_recovery_calls": true
+    },
+    {
+      "case": "citation-fr",
+      "source": "Quelle est la masse du cube cuivre ? Réponds brièvement en français.",
+      "http_status": 200,
+      "receipt": {
+        "operation_id": "study-chat-op-a844a6b44867487e",
+        "session_id": "session-15c0f9b113",
+        "client_request_id": "accept-citation-fr",
+        "status": "uncertain",
+        "safe_to_retry": false,
+        "created_at": "2026-09-12T08:51:39.766000+00:00",
+        "updated_at": "2026-09-12T08:51:39.799000+00:00",
+        "completed_at": "2026-09-12T08:51:39.799000+00:00",
+        "admitted_session_revision": 0,
+        "committed_session_revision": null,
+        "committed_turn_id": null,
+        "committed_turn_sequence": null,
+        "error_code": "study_chat_uncertain_chat_model_upstream_error:unknown:TypeError",
+        "result": null
+      },
+      "passed": false,
+      "restart_equal": true,
+      "receipt_equal": true,
+      "no_recovery_calls": true
+    }
+  ],
+  "sdk_calls": []
+}

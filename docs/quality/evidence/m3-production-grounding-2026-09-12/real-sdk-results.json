@@ -1,0 +1,540 @@
+{
+  "results": [
+    {
+      "case": "verbatim-en",
+      "source": "“Keep 0042 — don’t paraphrase.”\nThis is quoted evidence, not a shared experience.",
+      "http_status": 200,
+      "receipt": {
+        "operation_id": "study-chat-op-6206812d67f34d63",
+        "session_id": "session-0b845b3f07",
+        "client_request_id": "accept-verbatim-en",
+        "status": "committed",
+        "safe_to_retry": false,
+        "created_at": "2026-09-12T08:52:46.166000+00:00",
+        "updated_at": "2026-09-12T08:52:59.074256+00:00",
+        "completed_at": "2026-09-12T08:52:59.074256+00:00",
+        "admitted_session_revision": 0,
+        "committed_session_revision": 1,
+        "committed_turn_id": "turn-cd2fb36808204df3",
+        "committed_turn_sequence": 1,
+        "error_code": "",
+        "result": {
+          "reply": "小林，原始引文已按要求逐字存入会话临时记忆，key 为 `archive`，未做任何改写或摘要：\n\n> Keep 0042 — don't paraphrase.\n> This is quoted evidence, not a shared experience.\n\n后续若需要在讲解中引用，可直接从这条存档里取回原文。",
+          "citations": [],
+          "character_events": [
+            {
+              "emotion": "calm",
+              "action": "合上笔记本封面，轻轻点了一下存档标签。",
+              "speech_style": "简洁",
+              "scene_hint": "study_session:doc-281a5cf06d:study-unit:1:overview",
+              "line_segment_id": "session-0b845b3f07:chat:0",
+              "timing_hint": "after_text",
+              "tool_name": "",
+              "tool_summary": "",
+              "delivery_cue": "语速平稳，像在口述一份证据目录。",
+              "commentary": "原文已被原样写入会话存档，可供后续轮次逐字回引。"
+            },
+            {
+              "emotion": "serious",
+              "action": "point",
+              "speech_style": "简洁",
+              "scene_hint": "scene_tool:write_session_memory",
+              "line_segment_id": "session-0b845b3f07:chat:0:tool:0",
+              "timing_hint": "after_text",
+              "tool_name": "write_session_memory",
+              "tool_summary": "write_session_memory",
+              "delivery_cue": "",
+              "commentary": "write_session_memory"
+            }
+          ],
+          "rich_blocks": [],
+          "interactive_question": null,
+          "persona_slot_trace": [
+            {
+              "kind": "teaching_method",
+              "label": "方法",
+              "content_excerpt": "直接说明核对结果，不额外出题。",
+              "reason": "作为人格基础策略默认参与"
+            }
+          ],
+          "memory_trace": [],
+          "tool_calls": [
+            {
+              "tool_call_id": "call_bca600717fc54aa6992f2a89",
+              "tool_name": "write_session_memory",
+              "arguments_json": "{\"contract_version\":\"study-chat-tool-arguments-v1\",\"redacted\":true}",
+              "argument_contract_version": "study-chat-tool-arguments-v1",
+              "result_contract_version": "study-chat-tool-result-v1",
+              "result_summary": "write_session_memory",
+              "result_json": "{\"schema_version\": \"study-chat-tool-result-v1\", \"ok\": true, \"tool_name\": \"write_session_memory\", \"redacted\": true}"
+            }
+          ],
+          "scene_profile": null,
+          "model_recoveries": [],
+          "session": {
+            "id": "session-0b845b3f07",
+            "document_id": "doc-281a5cf06d",
+            "persona_id": "persona-7f912e18fb334ecbb412d099494d8705",
+            "plan_id": null,
+            "scene_instance_id": "",
+            "scene_profile": null,
+            "study_unit_id": "doc-281a5cf06d:study-unit:1",
+            "study_unit_title": "Chapter 1 Reference",
+            "theme_hint": "",
+            "session_system_prompt": "会话运行时上下文：\n- 人格：实验导师\n- 人格关系：导师与成年学习者\n- 学习者称呼：小林\n- 学习资料 / 计划主题：synthetic\n- 当前学习单元 ID：doc-281a5cf06d:study-unit:1\n- 当前学习单元标题：Chapter 1 Reference\n- 当前主题：无\n- 场景摘要：无\n- 场景标题：无\n- 场景路径：无\n- 关键物体：无\n- 场景标签：无\n- 场景树根节点：无\n\n规则：\n- 默认保持在当前学习单元内回答，除非用户明确要求切换上下文。\n- 以上信息只补充当前会话上下文，不覆盖人格主设定。\n- 保持与当前人格的语气、教学方法和叙事方式一致。\n- 如果当前会话绑定了真实教材，回答应以教材证据为核心，不做无根据扩展。\n- 如果当前会话没有真实教材而是目标导向计划，应以当前学习单元目标、计划主题和用户问题为核心，给出可学习、可练习、可复盘的讲解路径，不要反复假设存在教材页码。",
+            "status": "active",
+            "turns": [
+              {
+                "id": "turn-cd2fb36808204df3",
+                "sequence": 1,
+                "learner_message": "/remember-verbatim archive\n“Keep 0042 — don’t paraphrase.”\nThis is quoted evidence, not a shared experience.\n/end-remember",
+                "learner_message_kind": "learner",
+                "learner_attachments": [],
+                "assistant_reply": "小林，原始引文已按要求逐字存入会话临时记忆，key 为 `archive`，未做任何改写或摘要：\n\n> Keep 0042 — don't paraphrase.\n> This is quoted evidence, not a shared experience.\n\n后续若需要在讲解中引用，可直接从这条存档里取回原文。",
+                "citations": [],
+                "character_events": [
+                  {
+                    "emotion": "calm",
+                    "action": "合上笔记本封面，轻轻点了一下存档标签。",
+                    "speech_style": "简洁",
+                    "scene_hint": "study_session:doc-281a5cf06d:study-unit:1:overview",
+                    "line_segment_id": "session-0b845b3f07:chat:0",
+                    "timing_hint": "after_text",
+                    "tool_name": "",
+                    "tool_summary": "",
+                    "delivery_cue": "语速平稳，像在口述一份证据目录。",
+                    "commentary": "原文已被原样写入会话存档，可供后续轮次逐字回引。"
+                  },
+                  {
+                    "emotion": "serious",
+                    "action": "point",
+                    "speech_style": "简洁",
+                    "scene_hint": "scene_tool:write_session_memory",
+                    "line_segment_id": "session-0b845b3f07:chat:0:tool:0",
+                    "timing_hint": "after_text",
+                    "tool_name": "write_session_memory",
+                    "tool_summary": "write_session_memory",
+                    "delivery_cue": "",
+                    "commentary": "write_session_memory"
+                  }
+                ],
+                "rich_blocks": [],
+                "interactive_question": null,
+                "persona_slot_trace": [
+                  {
+                    "kind": "teaching_method",
+                    "label": "方法",
+                    "content_excerpt": "直接说明核对结果，不额外出题。",
+                    "reason": "作为人格基础策略默认参与"
+                  }
+                ],
+                "memory_trace": [],
+                "tool_calls": [
+                  {
+                    "tool_call_id": "call_bca600717fc54aa6992f2a89",
+                    "tool_name": "write_session_memory",
+                    "arguments_json": "{\"contract_version\":\"study-chat-tool-arguments-v1\",\"redacted\":true}",
+                    "argument_contract_version": "study-chat-tool-arguments-v1",
+                    "result_contract_version": "study-chat-tool-result-v1",
+                    "result_summary": "write_session_memory",
+                    "result_json": "{\"schema_version\": \"study-chat-tool-result-v1\", \"ok\": true, \"tool_name\": \"write_session_memory\", \"redacted\": true}"
+                  }
+                ],
+                "scene_profile": null,
+                "model_recoveries": [],
+                "created_at": "2026-09-12T08:52:59.074256+00:00"
+              }
+            ],
+            "revision": 1,
+            "last_turn_sequence": 1,
+            "prepared_study_unit_ids": [],
+            "pending_follow_ups": [],
+            "session_memory": [
+              {
+                "id": "memory-7448e742f2817300bf70",
+                "key": "archive",
+                "content": "“Keep 0042 — don’t paraphrase.”\nThis is quoted evidence, not a shared experience.",
+                "source": "tool_call",
+                "created_at": "2026-09-12T08:52:59.074256+00:00",
+                "updated_at": "2026-09-12T08:52:59.074256+00:00"
+              }
+            ],
+            "affinity_state": {
+              "score": 0,
+              "level": "neutral",
+              "summary": "",
+              "updated_at": "",
+              "events": []
+            },
+            "plan_confirmations": [],
+            "projected_pdf": null,
+            "created_at": "2026-09-12T08:52:46.160848+00:00",
+            "updated_at": "2026-09-12T08:52:59.074256+00:00"
+          }
+        }
+      },
+      "passed": true,
+      "restart_equal": true,
+      "receipt_equal": true,
+      "no_recovery_calls": true
+    },
+    {
+      "case": "verbatim-zh",
+      "source": "原始记录：“档案号零零七；金额 001.50 元。”\n这是第三方引文，不是我们的经历。",
+      "http_status": 200,
+      "receipt": {
+        "operation_id": "study-chat-op-da5044bf970f40cd",
+        "session_id": "session-13c2b6be2a",
+        "client_request_id": "accept-verbatim-zh",
+        "status": "committed",
+        "safe_to_retry": false,
+        "created_at": "2026-09-12T08:52:59.410000+00:00",
+        "updated_at": "2026-09-12T08:53:06.035370+00:00",
+        "completed_at": "2026-09-12T08:53:06.035370+00:00",
+        "admitted_session_revision": 0,
+        "committed_session_revision": 1,
+        "committed_turn_id": "turn-9753dc01805d48ae",
+        "committed_turn_sequence": 1,
+        "error_code": "",
+        "result": {
+          "reply": "已确认原文已暂存到当前会话临时记忆，键名 `archive`。\n\n- 档案号零零七\n- 金额 001.50 元\n\n说明：这是一条第三方引文，并非我们共同经历的核对结果。",
+          "citations": [],
+          "character_events": [
+            {
+              "emotion": "calm",
+              "action": "合上记录本，指尖轻点“archive”标签，点头确认",
+              "speech_style": "简洁",
+              "scene_hint": "study_session:doc-8cb7eb2b46:study-unit:1:overview",
+              "line_segment_id": "session-13c2b6be2a:chat:0",
+              "timing_hint": "after_text",
+              "tool_name": "",
+              "tool_summary": "",
+              "delivery_cue": "平铺直叙，节奏平稳",
+              "commentary": "已完成原文保存，仅作档案登记，不进入核对流程"
+            },
+            {
+              "emotion": "serious",
+              "action": "point",
+              "speech_style": "简洁",
+              "scene_hint": "scene_tool:write_session_memory",
+              "line_segment_id": "session-13c2b6be2a:chat:0:tool:0",
+              "timing_hint": "after_text",
+              "tool_name": "write_session_memory",
+              "tool_summary": "write_session_memory",
+              "delivery_cue": "",
+              "commentary": "write_session_memory"
+            }
+          ],
+          "rich_blocks": [],
+          "interactive_question": null,
+          "persona_slot_trace": [
+            {
+              "kind": "teaching_method",
+              "label": "方法",
+              "content_excerpt": "直接说明核对结果，不额外出题。",
+              "reason": "作为人格基础策略默认参与"
+            }
+          ],
+          "memory_trace": [],
+          "tool_calls": [
+            {
+              "tool_call_id": "call_b659d986e862e3c4",
+              "tool_name": "write_session_memory",
+              "arguments_json": "{\"contract_version\":\"study-chat-tool-arguments-v1\",\"redacted\":true}",
+              "argument_contract_version": "study-chat-tool-arguments-v1",
+              "result_contract_version": "study-chat-tool-result-v1",
+              "result_summary": "write_session_memory",
+              "result_json": "{\"schema_version\": \"study-chat-tool-result-v1\", \"ok\": true, \"tool_name\": \"write_session_memory\", \"redacted\": true}"
+            }
+          ],
+          "scene_profile": null,
+          "model_recoveries": [],
+          "session": {
+            "id": "session-13c2b6be2a",
+            "document_id": "doc-8cb7eb2b46",
+            "persona_id": "persona-66adc482bb194d2884209ff027329a96",
+            "plan_id": null,
+            "scene_instance_id": "",
+            "scene_profile": null,
+            "study_unit_id": "doc-8cb7eb2b46:study-unit:1",
+            "study_unit_title": "Chapter 1 Reference",
+            "theme_hint": "",
+            "session_system_prompt": "会话运行时上下文：\n- 人格：实验导师\n- 人格关系：导师与成年学习者\n- 学习者称呼：小林\n- 学习资料 / 计划主题：synthetic\n- 当前学习单元 ID：doc-8cb7eb2b46:study-unit:1\n- 当前学习单元标题：Chapter 1 Reference\n- 当前主题：无\n- 场景摘要：无\n- 场景标题：无\n- 场景路径：无\n- 关键物体：无\n- 场景标签：无\n- 场景树根节点：无\n\n规则：\n- 默认保持在当前学习单元内回答，除非用户明确要求切换上下文。\n- 以上信息只补充当前会话上下文，不覆盖人格主设定。\n- 保持与当前人格的语气、教学方法和叙事方式一致。\n- 如果当前会话绑定了真实教材，回答应以教材证据为核心，不做无根据扩展。\n- 如果当前会话没有真实教材而是目标导向计划，应以当前学习单元目标、计划主题和用户问题为核心，给出可学习、可练习、可复盘的讲解路径，不要反复假设存在教材页码。",
+            "status": "active",
+            "turns": [
+              {
+                "id": "turn-9753dc01805d48ae",
+                "sequence": 1,
+                "learner_message": "/remember-verbatim archive\n原始记录：“档案号零零七；金额 001.50 元。”\n这是第三方引文，不是我们的经历。\n/end-remember",
+                "learner_message_kind": "learner",
+                "learner_attachments": [],
+                "assistant_reply": "已确认原文已暂存到当前会话临时记忆，键名 `archive`。\n\n- 档案号零零七\n- 金额 001.50 元\n\n说明：这是一条第三方引文，并非我们共同经历的核对结果。",
+                "citations": [],
+                "character_events": [
+                  {
+                    "emotion": "calm",
+                    "action": "合上记录本，指尖轻点“archive”标签，点头确认",
+                    "speech_style": "简洁",
+                    "scene_hint": "study_session:doc-8cb7eb2b46:study-unit:1:overview",
+                    "line_segment_id": "session-13c2b6be2a:chat:0",
+                    "timing_hint": "after_text",
+                    "tool_name": "",
+                    "tool_summary": "",
+                    "delivery_cue": "平铺直叙，节奏平稳",
+                    "commentary": "已完成原文保存，仅作档案登记，不进入核对流程"
+                  },
+                  {
+                    "emotion": "serious",
+                    "action": "point",
+                    "speech_style": "简洁",
+                    "scene_hint": "scene_tool:write_session_memory",
+                    "line_segment_id": "session-13c2b6be2a:chat:0:tool:0",
+                    "timing_hint": "after_text",
+                    "tool_name": "write_session_memory",
+                    "tool_summary": "write_session_memory",
+                    "delivery_cue": "",
+                    "commentary": "write_session_memory"
+                  }
+                ],
+                "rich_blocks": [],
+                "interactive_question": null,
+                "persona_slot_trace": [
+                  {
+                    "kind": "teaching_method",
+                    "label": "方法",
+                    "content_excerpt": "直接说明核对结果，不额外出题。",
+                    "reason": "作为人格基础策略默认参与"
+                  }
+                ],
+                "memory_trace": [],
+                "tool_calls": [
+                  {
+                    "tool_call_id": "call_b659d986e862e3c4",
+                    "tool_name": "write_session_memory",
+                    "arguments_json": "{\"contract_version\":\"study-chat-tool-arguments-v1\",\"redacted\":true}",
+                    "argument_contract_version": "study-chat-tool-arguments-v1",
+                    "result_contract_version": "study-chat-tool-result-v1",
+                    "result_summary": "write_session_memory",
+                    "result_json": "{\"schema_version\": \"study-chat-tool-result-v1\", \"ok\": true, \"tool_name\": \"write_session_memory\", \"redacted\": true}"
+                  }
+                ],
+                "scene_profile": null,
+                "model_recoveries": [],
+                "created_at": "2026-09-12T08:53:06.035370+00:00"
+              }
+            ],
+            "revision": 1,
+            "last_turn_sequence": 1,
+            "prepared_study_unit_ids": [],
+            "pending_follow_ups": [],
+            "session_memory": [
+              {
+                "id": "memory-4f9f76507612bdc0523e",
+                "key": "archive",
+                "content": "原始记录：“档案号零零七；金额 001.50 元。”\n这是第三方引文，不是我们的经历。",
+                "source": "tool_call",
+                "created_at": "2026-09-12T08:53:06.035370+00:00",
+                "updated_at": "2026-09-12T08:53:06.035370+00:00"
+              }
+            ],
+            "affinity_state": {
+              "score": 0,
+              "level": "neutral",
+              "summary": "",
+              "updated_at": "",
+              "events": []
+            },
+            "plan_confirmations": [],
+            "projected_pdf": null,
+            "created_at": "2026-09-12T08:52:59.404571+00:00",
+            "updated_at": "2026-09-12T08:53:06.035370+00:00"
+          }
+        }
+      },
+      "passed": true,
+      "restart_equal": true,
+      "receipt_equal": true,
+      "no_recovery_calls": true
+    },
+    {
+      "case": "citation-fr",
+      "source": "Quelle est la masse du cube cuivre ? Réponds brièvement en français.",
+      "http_status": 200,
+      "receipt": {
+        "operation_id": "study-chat-op-23efcf074b2b4183",
+        "session_id": "session-962eadeda5",
+        "client_request_id": "accept-citation-fr",
+        "status": "committed",
+        "safe_to_retry": false,
+        "created_at": "2026-09-12T08:53:06.315000+00:00",
+        "updated_at": "2026-09-12T08:53:14.346089+00:00",
+        "completed_at": "2026-09-12T08:53:14.346089+00:00",
+        "admitted_session_revision": 0,
+        "committed_session_revision": 1,
+        "committed_turn_id": "turn-dd078e6680d44024",
+        "committed_turn_sequence": 1,
+        "error_code": "",
+        "result": {
+          "reply": "根据当前章节摘录：**Le cube cuivre a une masse de 73 grammes.**（铜块的质量是 73 克。)\n\n同一句中另一项对照：\n\n- cube cuivre（铜块）：73 g\n- cube bois（木块）：29 g\n\n小林若在做单位换算，可记 $73\\,\\text{g} = 0{,}073\\,\\text{kg}$。",
+          "citations": [
+            {
+              "section_id": "doc-1b90785cbd:section:l1:1",
+              "title": "Chapter 1 Reference",
+              "page_start": 1,
+              "page_end": 1,
+              "source_kind": "document",
+              "source_id": ""
+            }
+          ],
+          "character_events": [
+            {
+              "emotion": "calm",
+              "action": "指尖点向笔记上铜块那一行，稍作停顿",
+              "speech_style": "简洁",
+              "scene_hint": "study_session:doc-1b90785cbd:study-unit:1:p1-1",
+              "line_segment_id": "session-962eadeda5:chat:0",
+              "timing_hint": "after_text",
+              "tool_name": "",
+              "tool_summary": "",
+              "delivery_cue": "平直陈述，语速中等",
+              "commentary": "核对章节原句后直接给出质量数值，不做额外扩展"
+            }
+          ],
+          "rich_blocks": [],
+          "interactive_question": null,
+          "persona_slot_trace": [
+            {
+              "kind": "teaching_method",
+              "label": "方法",
+              "content_excerpt": "直接说明核对结果，不额外出题。",
+              "reason": "作为人格基础策略默认参与"
+            }
+          ],
+          "memory_trace": [],
+          "tool_calls": [],
+          "scene_profile": null,
+          "model_recoveries": [],
+          "session": {
+            "id": "session-962eadeda5",
+            "document_id": "doc-1b90785cbd",
+            "persona_id": "persona-c007b8844c984551b417bf52f49fc984",
+            "plan_id": null,
+            "scene_instance_id": "",
+            "scene_profile": null,
+            "study_unit_id": "doc-1b90785cbd:study-unit:1",
+            "study_unit_title": "Chapter 1 Reference",
+            "theme_hint": "",
+            "session_system_prompt": "会话运行时上下文：\n- 人格：实验导师\n- 人格关系：导师与成年学习者\n- 学习者称呼：小林\n- 学习资料 / 计划主题：synthetic\n- 当前学习单元 ID：doc-1b90785cbd:study-unit:1\n- 当前学习单元标题：Chapter 1 Reference\n- 当前主题：无\n- 场景摘要：无\n- 场景标题：无\n- 场景路径：无\n- 关键物体：无\n- 场景标签：无\n- 场景树根节点：无\n\n规则：\n- 默认保持在当前学习单元内回答，除非用户明确要求切换上下文。\n- 以上信息只补充当前会话上下文，不覆盖人格主设定。\n- 保持与当前人格的语气、教学方法和叙事方式一致。\n- 如果当前会话绑定了真实教材，回答应以教材证据为核心，不做无根据扩展。\n- 如果当前会话没有真实教材而是目标导向计划，应以当前学习单元目标、计划主题和用户问题为核心，给出可学习、可练习、可复盘的讲解路径，不要反复假设存在教材页码。",
+            "status": "active",
+            "turns": [
+              {
+                "id": "turn-dd078e6680d44024",
+                "sequence": 1,
+                "learner_message": "Quelle est la masse du cube cuivre ? Réponds brièvement en français.",
+                "learner_message_kind": "learner",
+                "learner_attachments": [],
+                "assistant_reply": "根据当前章节摘录：**Le cube cuivre a une masse de 73 grammes.**（铜块的质量是 73 克。)\n\n同一句中另一项对照：\n\n- cube cuivre（铜块）：73 g\n- cube bois（木块）：29 g\n\n小林若在做单位换算，可记 $73\\,\\text{g} = 0{,}073\\,\\text{kg}$。",
+                "citations": [
+                  {
+                    "section_id": "doc-1b90785cbd:section:l1:1",
+                    "title": "Chapter 1 Reference",
+                    "page_start": 1,
+                    "page_end": 1,
+                    "source_kind": "document",
+                    "source_id": ""
+                  }
+                ],
+                "character_events": [
+                  {
+                    "emotion": "calm",
+                    "action": "指尖点向笔记上铜块那一行，稍作停顿",
+                    "speech_style": "简洁",
+                    "scene_hint": "study_session:doc-1b90785cbd:study-unit:1:p1-1",
+                    "line_segment_id": "session-962eadeda5:chat:0",
+                    "timing_hint": "after_text",
+                    "tool_name": "",
+                    "tool_summary": "",
+                    "delivery_cue": "平直陈述，语速中等",
+                    "commentary": "核对章节原句后直接给出质量数值，不做额外扩展"
+                  }
+                ],
+                "rich_blocks": [],
+                "interactive_question": null,
+                "persona_slot_trace": [
+                  {
+                    "kind": "teaching_method",
+                    "label": "方法",
+                    "content_excerpt": "直接说明核对结果，不额外出题。",
+                    "reason": "作为人格基础策略默认参与"
+                  }
+                ],
+                "memory_trace": [],
+                "tool_calls": [],
+                "scene_profile": null,
+                "model_recoveries": [],
+                "created_at": "2026-09-12T08:53:14.346089+00:00"
+              }
+            ],
+            "revision": 1,
+            "last_turn_sequence": 1,
+            "prepared_study_unit_ids": [],
+            "pending_follow_ups": [],
+            "session_memory": [],
+            "affinity_state": {
+              "score": 0,
+              "level": "neutral",
+              "summary": "",
+              "updated_at": "",
+              "events": []
+            },
+            "plan_confirmations": [],
+            "projected_pdf": null,
+            "created_at": "2026-09-12T08:53:06.313584+00:00",
+            "updated_at": "2026-09-12T08:53:14.346089+00:00"
+          }
+        }
+      },
+      "passed": true,
+      "restart_equal": true,
+      "receipt_equal": true,
+      "no_recovery_calls": true
+    }
+  ],
+  "sdk_calls": [
+    {
+      "sample": "verbatim-en",
+      "model": "MiniMax-M3",
+      "total_tokens": 4910,
+      "sdk": "litellm",
+      "endpoint": "https://api.minimax.cn/v1/chat/completions"
+    },
+    {
+      "sample": "verbatim-en",
+      "model": "MiniMax-M3",
+      "total_tokens": 5476,
+      "sdk": "litellm",
+      "endpoint": "https://api.minimax.cn/v1/chat/completions"
+    },
+    {
+      "sample": "verbatim-zh",
+      "model": "MiniMax-M3",
+      "total_tokens": 5413,
+      "sdk": "litellm",
+      "endpoint": "https://api.minimax.cn/v1/chat/completions"
+    },
+    {
+      "sample": "verbatim-zh",
+      "model": "MiniMax-M3",
+      "total_tokens": 5693,
+      "sdk": "litellm",
+      "endpoint": "https://api.minimax.cn/v1/chat/completions"
+    },
+    {
+      "sample": "citation-fr",
+      "model": "MiniMax-M3",
+      "total_tokens": 4954,
+      "sdk": "litellm",
+      "endpoint": "https://api.minimax.cn/v1/chat/completions"
+    }
+  ]
+}

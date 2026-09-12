@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import re
 
+from app.services.study_grounding import citation_tokens
+
 from app.models.domain import (
     Citation,
     DialogueTurnRecord,
@@ -350,7 +352,7 @@ def _build_grounded_citations(
         page_start = section.page_start
         page_end = section.page_end
 
-    tokens = set(_tokenize(message))
+    tokens = citation_tokens(message)
     candidate_chunks = [
         chunk
         for chunk in debug_report.chunks
@@ -365,8 +367,8 @@ def _build_grounded_citations(
 
     scored_chunks: list[tuple[int, int, int, str]] = []
     for chunk in candidate_chunks:
-        chunk_text = f"{chunk.text_preview}\n{chunk.content}".lower()
-        score = sum(1 for token in tokens if token in chunk_text)
+        chunk_tokens = citation_tokens(f"{chunk.text_preview}\n{chunk.content}")
+        score = len(tokens & chunk_tokens)
         if score > 0:
             scored_chunks.append((score, chunk.page_start, chunk.page_end, chunk.section_id))
 

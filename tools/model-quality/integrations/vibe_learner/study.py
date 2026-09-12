@@ -19,7 +19,7 @@ Dividing by zero is not allowed.
 
 
 def run_sample(context, case, variant):
-    if case.rubric != 'study-memory-v1':
+    if case.rubric not in ('study-memory-v1', 'study-memory-final-v2', 'study-memory-facts-v1'):
         return {'status': 'data_failed', 'failure_owner': 'data', 'error_code': 'wrong_study_rubric'}
     def fake(payload):
         tool_messages = [m for m in payload['messages'] if m['role'] == 'tool']
@@ -28,7 +28,7 @@ def run_sample(context, case, variant):
             name = 'write_session_memory' if index == 0 else 'read_session_memory'
             if name not in {t.get('function', {}).get('name') for t in payload.get('tools', [])}:
                 raise ValueError('fixture_tool_not_offered')
-            args = {'key': 'experiment_reference', 'content': case.source} if index == 0 else {'key': 'experiment_reference', 'limit': 6}
+            args = {'key': 'experiment_reference', 'content': case.gold if case.rubric == 'study-memory-facts-v1' else case.source} if index == 0 else {'key': 'experiment_reference', 'limit': 6}
             return envelope(tools=[{'id': 'fixture-call-' + str(index), 'type': 'function',
                                    'function': {'name': name, 'arguments': json.dumps(args, ensure_ascii=False)}}])
         return envelope(json.dumps({'text': '已完成本轮核对。', 'mood': 'calm', 'action': 'idle', 'interactive_question': None}))
@@ -86,11 +86,26 @@ def run_sample(context, case, variant):
             restart_equal = recovered.status_code == 200 and recovered.json() == recovery.json() and after.status_code == 200 and after.json() == public
         memory = [m for m in (public or {}).get('session_memory', []) if m['key'] == 'experiment_reference']
         memory_effects = [e for e in (batch.effects if batch else []) if e.effect_kind == 'memory_upsert' and e.key == 'experiment_reference']
-        metrics = {'committed': receipt.status == 'committed', 'readback_equal': readback_equal,
+        tool_names = [t['tool_name'] for turn in (public or {}).get('turns', []) for t in turn.get('tool_calls', [])]
+        successful_tools = [t['tool_name'] for turn in (public or {}).get('turns', []) for t in turn.get('tool_calls', []) if json.loads(t['result_json']).get('ok') is True]
+        evidence['observed_tool_names'] = tool_names
+        evidence['successful_tool_names'] = successful_tools
+        metrics = {'read_memory_tool_succeeded': 'read_session_memory' in successful_tools, 'committed': receipt.status == 'committed', 'readback_equal': readback_equal,
                    'restart_equal': restart_equal, 'recovery_no_provider_calls': bridge.calls == before,
                    'memory_exact': len(memory) == 1 and memory[0]['content'] == case.gold,
                    'typed_effect_batch': batch is not None and batch.operation_id == receipt.operation_id,
                    'memory_effect_exact': len(memory_effects) == 1 and memory_effects[0].session_id == sid and memory_effects[0].content == case.gold,
                    'v3_committed': bool(terminal) and all(t.status in ('passed', 'repaired') and t.commit_evidence.status == 'committed' for t in terminal)}
+        evidence['memory_effects'] = [{'session_id':effect.session_id,'key':effect.key,'content':effect.content} for effect in memory_effects]
+        if case.rubric == 'study-memory-final-v2':
+            del metrics['memory_effect_exact']
+            metrics['final_memory_effect_exact'] = bool(memory_effects) and memory_effects[-1].session_id == sid and memory_effects[-1].content == case.gold
+        if case.rubric == 'study-memory-facts-v1':
+            from .study_fixture import grade_json_answer
+            gold_facts = json.loads(case.gold)
+            del metrics['memory_exact']
+            del metrics['memory_effect_exact']
+            metrics['summary_facts_exact'] = len(memory) == 1 and grade_json_answer(memory[0]['content'], gold_facts)[1]
+            metrics['summary_effect_facts_exact'] = bool(memory_effects) and memory_effects[-1].session_id == sid and grade_json_answer(memory_effects[-1].content, gold_facts)[1]
         status = 'uncertain' if receipt.status == 'uncertain' else 'infrastructure_failed' if bridge.failure else None
         return outcome(context, metrics, evidence, status=status)

@@ -41,6 +41,7 @@ class Bridge:
         self.context, self.fake = context, fake
         self.calls = 0
         self.failure = None
+        self.call_kind = 'generation'
 
     def request(self, adapter, payload, *, request_kind, model):
         started = time.monotonic()
@@ -49,7 +50,7 @@ class Bridge:
         self.calls += 1
         try:
             simulated = self.fake(payload) if self.context.transport.campaign.transport == 'fake' else None
-            raw = self.context.transport.request(payload, fake_response=simulated)
+            raw = self.context.transport.request(payload, call_kind=self.call_kind, fake_response=simulated)
             return raw, round((time.monotonic()-started)*1000)
         except Exception as exc:
             self.failure = exc

@@ -1,0 +1,30 @@
+{
+  "sha256": "a000a7793810ecef99128f5e2a0dba10fe089e5457d154188114149ab512e2db",
+  "files": 176,
+  "version": "m3-memory-delivery-v1",
+  "archive": "evidence.zip",
+  "domain_evidence_files": 128,
+  "index_hashes_verified": true,
+  "validation": {
+    "generic_unit_tests": 35,
+    "domain_integration_tests": 7,
+    "result": "passed",
+    "log": "validation.txt"
+  },
+  "resume": {
+    "policy_wire_before": 92,
+    "policy_wire_after": 92,
+    "shape_wire_before": 50,
+    "shape_wire_after": 50,
+    "states_unchanged": true,
+    "cli_exit": 1,
+    "reason": "terminal candidate failures and uncertain retained"
+  },
+  "memory_metric_recomputed_from_public_receipt": true,
+  "production_code_modified": false,
+  "limits": [
+    "8 development sources in 4 related families; repeats and campaigns not independent cases",
+    "Historical effect check requires exactly one matching effect",
+    "No independently reviewed holdout, real frontend, platform or original SDK transport certification"
+  ]
+}

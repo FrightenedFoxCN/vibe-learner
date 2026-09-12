@@ -1,0 +1,35 @@
+[
+  {
+    "id": "fe12958cd5734e25aae748495a08e97d",
+    "campaign": "production-grounding",
+    "sample": "verbatim-en",
+    "started": 1789203099.171804,
+    "finished": 1789203099.172322,
+    "state": "uncertain",
+    "reserved": 104096,
+    "charged": 104096,
+    "metadata": "{\"error_type\":\"TypeError\"}"
+  },
+  {
+    "id": "4ad1f07f025f4b4b982fd590e312022e",
+    "campaign": "production-grounding",
+    "sample": "verbatim-zh",
+    "started": 1789203099.5118248,
+    "finished": 1789203099.5122309,
+    "state": "uncertain",
+    "reserved": 104096,
+    "charged": 104096,
+    "metadata": "{\"error_type\":\"TypeError\"}"
+  },
+  {
+    "id": "ebd95362a137416596f685106e5ff4b1",
+    "campaign": "production-grounding",
+    "sample": "citation-fr",
+    "started": 1789203099.79503,
+    "finished": 1789203099.7954712,
+    "state": "uncertain",
+    "reserved": 104096,
+    "charged": 104096,
+    "metadata": "{\"error_type\":\"TypeError\"}"
+  }
+]

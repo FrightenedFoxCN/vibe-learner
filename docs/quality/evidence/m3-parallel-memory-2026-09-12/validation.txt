@@ -1,0 +1,199 @@
+test_explicit_stages_fence_other_campaigns_and_restore_without_usage_reset (tests.test_capacity.CapacityTests.test_explicit_stages_fence_other_campaigns_and_restore_without_usage_reset) ... ok
+test_measures_actual_overlap_tail_and_failure (tests.test_capacity.CapacityTests.test_measures_actual_overlap_tail_and_failure) ... ok
+test_stage_cannot_clear_provider_stop (tests.test_capacity.CapacityTests.test_stage_cannot_clear_provider_stop) ... ok
+test_dns_failure_leaves_pending_without_wire_or_domain_admission (tests.test_dns_preflight.DNSPreflightTests.test_dns_failure_leaves_pending_without_wire_or_domain_admission) ... ok
+test_portable_evidence_hashes_and_secret_refusal (tests.test_export.ExportTests.test_portable_evidence_hashes_and_secret_refusal) ... {"campaign":"test","states":{"completed":4}}
+{"campaign":"test","states":{"completed":4}}
+{"campaign":"test","states":{"completed":4}}
+{"campaign":"test","states":{"completed":4}}
+ok
+test_tool_shape_telemetry_omits_content_and_unknown_keys (tests.test_export.ExportTests.test_tool_shape_telemetry_omits_content_and_unknown_keys) ... ok
+test_active_worker_lock_blocks_recovery_and_report_rebuild_is_offline (tests.test_infrastructure.InfrastructureTests.test_active_worker_lock_blocks_recovery_and_report_rebuild_is_offline) ... {"campaign":"test","states":{"completed":4}}
+{"campaign":"test","states":{"completed":4}}
+{"campaign":"test","states":{"completed":4}}
+{"campaign":"test","states":{"completed":4}}
+ok
+test_actual_usage_reconciles_and_underestimate_halts (tests.test_infrastructure.InfrastructureTests.test_actual_usage_reconciles_and_underestimate_halts) ... ok
+test_adapter_exception_cannot_leave_inflight_slot_or_claim_success (tests.test_infrastructure.InfrastructureTests.test_adapter_exception_cannot_leave_inflight_slot_or_claim_success) ... {"campaign":"test","states":{"uncertain":4}}
+{"campaign":"test","states":{"uncertain":4}}
+{"campaign":"test","states":{"uncertain":4}}
+{"campaign":"test","states":{"uncertain":4}}
+ok
+test_adapter_owns_rubric_and_rejects_unknown_before_network (tests.test_infrastructure.InfrastructureTests.test_adapter_owns_rubric_and_rejects_unknown_before_network) ... ok
+test_cumulative_ledger_is_immutable_across_batches (tests.test_infrastructure.InfrastructureTests.test_cumulative_ledger_is_immutable_across_batches) ... ok
+test_http_200_provider_error_is_infrastructure_and_stops (tests.test_infrastructure.InfrastructureTests.test_http_200_provider_error_is_infrastructure_and_stops) ... ok
+test_http_auth_and_overload_stop_without_retry_or_secret_log (tests.test_infrastructure.InfrastructureTests.test_http_auth_and_overload_stop_without_retry_or_secret_log) ... ok
+test_invalid_metrics_are_not_candidate_failures_or_success (tests.test_infrastructure.InfrastructureTests.test_invalid_metrics_are_not_candidate_failures_or_success) ... {"campaign":"test","states":{"metric_failed":4}}
+{"campaign":"test","states":{"metric_failed":4}}
+{"campaign":"test","states":{"metric_failed":4}}
+{"campaign":"test","states":{"metric_failed":4}}
+ok
+test_isolated_spawn_checkpoint_resume_and_changed_config (tests.test_infrastructure.InfrastructureTests.test_isolated_spawn_checkpoint_resume_and_changed_config) ... {"campaign":"test","states":{"completed":4}}
+{"campaign":"test","states":{"completed":4}}
+{"campaign":"test","states":{"completed":4}}
+{"campaign":"test","states":{"completed":4}}
+ok
+test_no_redirect_or_reserved_split_and_strict_result_ownership (tests.test_infrastructure.InfrastructureTests.test_no_redirect_or_reserved_split_and_strict_result_ownership) ... ok
+test_rate_concurrency_expiry_and_wire_gates (tests.test_infrastructure.InfrastructureTests.test_rate_concurrency_expiry_and_wire_gates) ... ok
+test_real_worker_crash_retains_inflight_and_is_never_replayed (tests.test_infrastructure.InfrastructureTests.test_real_worker_crash_retains_inflight_and_is_never_replayed) ... {"campaign":"test","states":{"running":3,"uncertain":1}}
+{"campaign":"test","states":{"running":2,"uncertain":2}}
+{"campaign":"test","states":{"running":1,"uncertain":3}}
+{"campaign":"test","states":{"uncertain":4}}
+ok
+test_resume_marks_interrupted_sample_uncertain_without_replay (tests.test_infrastructure.InfrastructureTests.test_resume_marks_interrupted_sample_uncertain_without_replay) ... {"campaign":"test","states":{"completed":4}}
+{"campaign":"test","states":{"completed":4}}
+{"campaign":"test","states":{"completed":4}}
+{"campaign":"test","states":{"completed":4}}
+ok
+test_sample_deadline_terminates_hung_worker (tests.test_infrastructure.InfrastructureTests.test_sample_deadline_terminates_hung_worker) ... {"campaign":"test","states":{"running":3,"uncertain":1}}
+{"campaign":"test","states":{"running":2,"uncertain":2}}
+{"campaign":"test","states":{"running":1,"uncertain":3}}
+{"campaign":"test","states":{"uncertain":4}}
+ok
+test_second_campaign_cannot_reset_resource_wire_limit (tests.test_infrastructure.InfrastructureTests.test_second_campaign_cannot_reset_resource_wire_limit) ... {"campaign":"test","states":{"completed":4}}
+{"campaign":"test","states":{"completed":4}}
+{"campaign":"test","states":{"completed":4}}
+{"campaign":"test","states":{"completed":4}}
+{"campaign":"second","states":{"stopped":4}}
+{"campaign":"second","states":{"stopped":4}}
+{"campaign":"second","states":{"stopped":4}}
+{"campaign":"second","states":{"stopped":4}}
+ok
+test_spawn_processes_cannot_overspend (tests.test_infrastructure.InfrastructureTests.test_spawn_processes_cannot_overspend) ... ok
+test_unknown_usage_and_recovered_crash_keep_reservations (tests.test_infrastructure.InfrastructureTests.test_unknown_usage_and_recovered_crash_keep_reservations) ... ok
+test_unsupported_images_are_rejected_before_wire_admission (tests.test_infrastructure.InfrastructureTests.test_unsupported_images_are_rejected_before_wire_admission) ... ok
+test_usage_missing_details_and_inconsistent_total_remain_unknown (tests.test_infrastructure.InfrastructureTests.test_usage_missing_details_and_inconsistent_total_remain_unknown) ... ok
+test_cooldown_audit_and_unknown_charge_retained (tests.test_reopen.ReopenTests.test_cooldown_audit_and_unknown_charge_retained) ... ok
+test_expiry_and_unsafe_concurrency_refused (tests.test_reopen.ReopenTests.test_expiry_and_unsafe_concurrency_refused) ... ok
+test_inflight_and_other_stop_cannot_be_cleared (tests.test_reopen.ReopenTests.test_inflight_and_other_stop_cannot_be_cleared) ... ok
+test_budget_extension_preserves_existing_usage (tests.test_scaling.AutoscaleTests.test_budget_extension_preserves_existing_usage) ... ok
+test_live_shortened_windows_rejected (tests.test_scaling.AutoscaleTests.test_live_shortened_windows_rejected) ... ok
+test_no_scale_without_samples_time_backlog_or_known_usage (tests.test_scaling.AutoscaleTests.test_no_scale_without_samples_time_backlog_or_known_usage) ... ok
+test_overload_is_immediate_durable_and_reservation_checks_cooldown (tests.test_scaling.AutoscaleTests.test_overload_is_immediate_durable_and_reservation_checks_cooldown) ... ok
+test_spawn_scheduler_scales_real_workers_under_fake_load (tests.test_scaling.AutoscaleTests.test_spawn_scheduler_scales_real_workers_under_fake_load) ... {"campaign":"test","states":{"completed":1,"pending":31}}
+{"campaign":"test","states":{"completed":2,"pending":30}}
+{"campaign":"test","states":{"completed":3,"pending":29}}
+{"campaign":"test","states":{"completed":4,"pending":27,"running":1}}
+{"campaign":"test","states":{"completed":6,"pending":26}}
+{"campaign":"test","states":{"completed":6,"pending":25,"running":1}}
+{"campaign":"test","states":{"completed":8,"pending":22,"running":2}}
+{"campaign":"test","states":{"completed":8,"pending":21,"running":3}}
+{"campaign":"test","states":{"completed":10,"pending":20,"running":2}}
+{"campaign":"test","states":{"completed":11,"pending":19,"running":2}}
+{"campaign":"test","states":{"completed":11,"pending":19,"running":2}}
+{"campaign":"test","states":{"completed":12,"pending":17,"running":3}}
+{"campaign":"test","states":{"completed":13,"pending":16,"running":3}}
+{"campaign":"test","states":{"completed":16,"pending":15,"running":1}}
+{"campaign":"test","states":{"completed":16,"pending":15,"running":1}}
+{"campaign":"test","states":{"completed":16,"pending":15,"running":1}}
+{"campaign":"test","states":{"completed":17,"pending":12,"running":3}}
+{"campaign":"test","states":{"completed":20,"pending":11,"running":1}}
+{"campaign":"test","states":{"completed":20,"pending":11,"running":1}}
+{"campaign":"test","states":{"completed":20,"pending":11,"running":1}}
+{"campaign":"test","states":{"completed":21,"pending":8,"running":3}}
+{"campaign":"test","states":{"completed":25,"pending":7}}
+{"campaign":"test","states":{"completed":25,"pending":7}}
+{"campaign":"test","states":{"completed":25,"pending":7}}
+{"campaign":"test","states":{"completed":25,"pending":4,"running":3}}
+{"campaign":"test","states":{"completed":28,"pending":3,"running":1}}
+{"campaign":"test","states":{"completed":28,"pending":3,"running":1}}
+{"campaign":"test","states":{"completed":29,"pending":3}}
+{"campaign":"test","states":{"completed":29,"running":3}}
+{"campaign":"test","states":{"completed":32}}
+{"campaign":"test","states":{"completed":32}}
+{"campaign":"test","states":{"completed":32}}
+ok
+test_two_bad_windows_pause_infrastructure (tests.test_scaling.AutoscaleTests.test_two_bad_windows_pause_infrastructure) ... ok
+test_two_full_windows_then_increase_and_latency_decrease (tests.test_scaling.AutoscaleTests.test_two_full_windows_then_increase_and_latency_decrease) ... ok
+
+----------------------------------------------------------------------
+Ran 35 tests in 12.214s
+
+OK
+
+DOMAIN INTEGRATION
+test_invalid_proposal_does_not_stop_load_or_issue_repair_wire (test_capacity_sample.CapacitySampleTests.test_invalid_proposal_does_not_stop_load_or_issue_repair_wire) ... model.tavern.recovery reason=tavern_actor_invalid_payload
+ok
+test_invalid_proposals_keep_a_full_load_window_running (test_capacity_sample.CapacitySampleTests.test_invalid_proposals_keep_a_full_load_window_running) ... model.tavern.recovery reason=tavern_actor_invalid_payload
+model.tavern.recovery reason=tavern_actor_invalid_payload
+model.tavern.recovery reason=tavern_actor_invalid_payload
+model.tavern.recovery reason=tavern_actor_invalid_payload
+model.tavern.recovery reason=tavern_actor_invalid_payload
+model.tavern.recovery reason=tavern_actor_invalid_payload
+model.tavern.recovery reason=tavern_actor_invalid_payload
+model.tavern.recovery reason=tavern_actor_invalid_payload
+model.tavern.recovery reason=tavern_actor_invalid_payload
+model.tavern.recovery reason=tavern_actor_invalid_payload
+model.tavern.recovery reason=tavern_actor_invalid_payload
+model.tavern.recovery reason=tavern_actor_invalid_payload
+model.tavern.recovery reason=tavern_actor_invalid_payload
+model.tavern.recovery reason=tavern_actor_invalid_payload
+model.tavern.recovery reason=tavern_actor_invalid_payload
+model.tavern.recovery reason=tavern_actor_invalid_payload
+{"window_result":{"charged_or_reserved_tokens":336,"completed_samples":16,"dispatch_seconds":0.31873607635498047,"elapsed_seconds":0.3188619613647461,"http_statuses":{"None":16},"infrastructure_error_rate":1.0,"level":2,"observed_peak_inflight":2,"offered_seconds":0.3,"p50_ms":35,"p95_ms":36,"proposal_successes":0,"requests":16,"requests_per_second":50.178453182434026,"unknown_usage_requests":0,"window":0,"window_qualified":true}}
+ok
+test_claim_without_memory_effect_is_candidate_failure (test_domains.DomainAcceptance.test_claim_without_memory_effect_is_candidate_failure) ... {"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T07:09:08.115646+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T07:09:08.122868+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T07:09:08.127417+00:00", "severity": "INFO", "event": "log", "request_id": "ce2f1cd6460448118280ad96ffe59b8c"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T07:09:08.131945+00:00", "severity": "INFO", "event": "log", "request_id": "ce2f1cd6460448118280ad96ffe59b8c"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T07:09:08.133078+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T07:09:08.137859+00:00", "severity": "INFO", "event": "log", "request_id": "b78dba6dee1e46d1ba28ba2a7a406720"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T07:09:08.144349+00:00", "severity": "INFO", "event": "log", "request_id": "b78dba6dee1e46d1ba28ba2a7a406720"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T07:09:08.166186+00:00", "severity": "INFO", "event": "log", "request_id": "b78dba6dee1e46d1ba28ba2a7a406720"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T07:09:08.169920+00:00", "severity": "INFO", "event": "log", "request_id": "b78dba6dee1e46d1ba28ba2a7a406720"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T07:09:08.254170+00:00", "severity": "INFO", "event": "log", "request_id": "b78dba6dee1e46d1ba28ba2a7a406720"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T07:09:08.260660+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T07:09:08.261689+00:00", "severity": "INFO", "event": "log", "request_id": "db3d0b01064d44ec8c77ab2ada1a13d8"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T07:09:08.264115+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T07:09:09.207917+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+ok
+test_quality_matrix_is_paired_and_bounded (test_domains.DomainAcceptance.test_quality_matrix_is_paired_and_bounded) ... ok
+test_study_and_tavern_isolated_commits_and_restart_readback (test_domains.DomainAcceptance.test_study_and_tavern_isolated_commits_and_restart_readback) ... {"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T07:09:10.093912+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T07:09:10.094022+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T07:09:10.102789+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T07:09:10.102885+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T07:09:10.105777+00:00", "severity": "INFO", "event": "log", "request_id": "2b113219f6664427ac5e24d4678f3f44"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T07:09:10.106406+00:00", "severity": "INFO", "event": "log", "request_id": "53d37141680645bb9410b22d304222dd"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T07:09:10.109072+00:00", "severity": "INFO", "event": "log", "request_id": "53d37141680645bb9410b22d304222dd"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T07:09:10.109611+00:00", "severity": "INFO", "event": "log", "request_id": "2b113219f6664427ac5e24d4678f3f44"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T07:09:10.109858+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T07:09:10.110154+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T07:09:10.113037+00:00", "severity": "INFO", "event": "log", "request_id": "971939d3d5ed4d61b442db46b63971ac"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T07:09:10.113269+00:00", "severity": "INFO", "event": "log", "request_id": "829bf102643c4d98bd0652439ae7dc1b"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T07:09:10.118377+00:00", "severity": "INFO", "event": "log", "request_id": "971939d3d5ed4d61b442db46b63971ac"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T07:09:10.118461+00:00", "severity": "INFO", "event": "log", "request_id": "829bf102643c4d98bd0652439ae7dc1b"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T07:09:10.141023+00:00", "severity": "INFO", "event": "log", "request_id": "971939d3d5ed4d61b442db46b63971ac"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T07:09:10.141033+00:00", "severity": "INFO", "event": "log", "request_id": "829bf102643c4d98bd0652439ae7dc1b"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T07:09:10.146012+00:00", "severity": "INFO", "event": "log", "request_id": "971939d3d5ed4d61b442db46b63971ac"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T07:09:10.146066+00:00", "severity": "INFO", "event": "log", "request_id": "829bf102643c4d98bd0652439ae7dc1b"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T07:09:10.233342+00:00", "severity": "INFO", "event": "log", "request_id": "829bf102643c4d98bd0652439ae7dc1b"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T07:09:10.234401+00:00", "severity": "INFO", "event": "log", "request_id": "971939d3d5ed4d61b442db46b63971ac"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T07:09:10.239635+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T07:09:10.240469+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T07:09:10.240695+00:00", "severity": "INFO", "event": "log", "request_id": "c04109544ec74c528f21ee30c3ec06fa"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T07:09:10.241689+00:00", "severity": "INFO", "event": "log", "request_id": "7053bd086de649ab80a60aae55467b4f"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T07:09:10.244064+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T07:09:10.244899+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T07:09:11.392196+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T07:09:11.394388+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"campaign":"domain-study","states":{"completed":2}}
+{"campaign":"domain-study","states":{"completed":2}}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T07:09:12.701802+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T07:09:12.702165+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T07:09:12.710351+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T07:09:12.710770+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T07:09:12.719794+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T07:09:12.720300+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T07:09:13.578794+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T07:09:13.580607+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"campaign":"domain-tavern","states":{"completed":2}}
+{"campaign":"domain-tavern","states":{"completed":2}}
+ok
+test_only_reviewed_index_metadata_removed_without_mutating_original (test_policy.EnvelopeTests.test_only_reviewed_index_metadata_removed_without_mutating_original) ... ok
+test_only_selected_wire_factor_changes_and_config_restores (test_policy.PolicyTests.test_only_selected_wire_factor_changes_and_config_restores) ... ok
+
+----------------------------------------------------------------------
+Ran 7 tests in 6.407s
+
+OK
+sys:1: DeprecationWarning: builtin type swigvarlink has no __module__ attribute

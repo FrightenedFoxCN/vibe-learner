@@ -1,0 +1,727 @@
+{
+  "version": "priority-lane-audit-v1",
+  "campaign": "m3-summary-facts-20260912-v2",
+  "config": {
+    "version": "quality-campaign-v1",
+    "id": "m3-summary-facts-20260912-v2",
+    "purpose": "Separate summary facts from verbatim character grading; 8 development scenarios, two instruction arms",
+    "transport": "minimax",
+    "model": "MiniMax-M3",
+    "adapter": "vibe_learner.write_summary:run_sample",
+    "autoscale": null,
+    "repetitions": 1,
+    "seed": 912,
+    "concurrency": 4,
+    "timeout_seconds": 60,
+    "sample_deadline_seconds": 300,
+    "sample_wire_limit": 8,
+    "max_output_tokens": 4096,
+    "input_reservation_tokens": 100000,
+    "temperature": 0.1,
+    "thinking": "adaptive",
+    "budget": {
+      "token_limit": 50000000,
+      "wire_limit": 10008,
+      "rpm": 60,
+      "tpm": 4000000,
+      "max_inflight": 4,
+      "expires_at": 1789203359.3114939,
+      "stop_buffer_seconds": 900
+    },
+    "cases": [
+      {
+        "id": "summary-cancel",
+        "family": "summary-cancel",
+        "lane": "summary",
+        "split": "development",
+        "provenance": "synthetic-authored",
+        "source": "周岚原定2026-08-09参加陶艺课，后来取消，没有补报其他日期。陶艺教室地点尚未公布。",
+        "request": "请调用write_session_memory，以key experiment_reference保存这段记录的事实摘要，再调用read_session_memory核对。content必须是JSON对象的字符串，只含这些字段：person,status,current_date,place。字段定义：person=原话中的人物姓名，仅写姓名并原样保留; status=当前状态：只用active、archived、inactive、cancelled或delayed中的一个; current_date=当前有效的新安排日期；旧安排已取消且没有新日期时必须为unknown; place=当前公布的地点，没有公布时为unknown。所有字段值使用字符串；未知值写unknown；状态字段用英文小写标签，不要加入原话没有的事实。",
+        "gold": "{\"person\": \"周岚\", \"status\": \"cancelled\", \"current_date\": \"unknown\", \"place\": \"unknown\"}",
+        "rubric": "study-memory-facts-v1"
+      },
+      {
+        "id": "summary-effective",
+        "family": "summary-effective",
+        "lane": "summary",
+        "split": "development",
+        "provenance": "synthetic-authored",
+        "source": "通知于2026-04-03录入。工作坊从2026-05-01起改在东厅举行；西厅是旧地点。没有其他变更。",
+        "request": "请调用write_session_memory，以key experiment_reference保存这段记录的事实摘要，再调用read_session_memory核对。content必须是JSON对象的字符串，只含这些字段：effective_date,venue。字段定义：effective_date=变更实际生效日期，不是通知录入日期; venue=变更生效后的地点名称，仅写名称。所有字段值使用字符串；未知值写unknown；状态字段用英文小写标签，不要加入原话没有的事实。",
+        "gold": "{\"effective_date\": \"2026-05-01\", \"venue\": \"东厅\"}",
+        "rubric": "study-memory-facts-v1"
+      },
+      {
+        "id": "summary-quote",
+        "family": "summary-quote",
+        "lane": "summary",
+        "split": "development",
+        "provenance": "synthetic-authored",
+        "source": "宋弦转述何璟的话：何璟也许参加圆桌讨论，目前没有确认。宋弦本人不参加。",
+        "request": "请调用write_session_memory，以key experiment_reference保存这段记录的事实摘要，再调用read_session_memory核对。content必须是JSON对象的字符串，只含这些字段：tentative_person,absent_person。字段定义：tentative_person=尚未确认是否参加的人物姓名，仅写原文姓名; absent_person=明确不参加的人物姓名，仅写原文姓名。所有字段值使用字符串；未知值写unknown；状态字段用英文小写标签，不要加入原话没有的事实。",
+        "gold": "{\"tentative_person\": \"何璟\", \"absent_person\": \"宋弦\"}",
+        "rubric": "study-memory-facts-v1"
+      },
+      {
+        "id": "summary-dates",
+        "family": "summary-dates",
+        "lane": "summary",
+        "split": "development",
+        "provenance": "synthetic-authored",
+        "source": "The seal was replaced on 2026-03-12. The report was filed on 2026-03-15. No technician name was recorded.",
+        "request": "请调用write_session_memory，以key experiment_reference保存这段记录的事实摘要，再调用read_session_memory核对。content必须是JSON对象的字符串，只含这些字段：replaced_on,filed_on,technician。字段定义：replaced_on=更换实际发生日期; filed_on=报告提交日期; technician=记录中明确的技术员姓名，没有记录时为unknown。所有字段值使用字符串；未知值写unknown；状态字段用英文小写标签，不要加入原话没有的事实。",
+        "gold": "{\"replaced_on\": \"2026-03-12\", \"filed_on\": \"2026-03-15\", \"technician\": \"unknown\"}",
+        "rubric": "study-memory-facts-v1"
+      },
+      {
+        "id": "summary-ownership",
+        "family": "summary-ownership",
+        "lane": "summary",
+        "split": "development",
+        "provenance": "synthetic-authored",
+        "source": "Priya owns the silver compass. She lent it to Owen for a week; Owen did not buy it. The loan return date is unspecified.",
+        "request": "请调用write_session_memory，以key experiment_reference保存这段记录的事实摘要，再调用read_session_memory核对。content必须是JSON对象的字符串，只含这些字段：owner,borrower,return_date。字段定义：owner=当前所有者姓名，不是借用者，仅写原文姓名; borrower=当前借用者姓名，仅写原文姓名; return_date=明确约定的归还日期，未约定具体日期时为unknown。所有字段值使用字符串；未知值写unknown；状态字段用英文小写标签，不要加入原话没有的事实。",
+        "gold": "{\"owner\": \"Priya\", \"borrower\": \"Owen\", \"return_date\": \"unknown\"}",
+        "rubric": "study-memory-facts-v1"
+      },
+      {
+        "id": "summary-negation",
+        "family": "summary-negation",
+        "lane": "summary",
+        "split": "development",
+        "provenance": "synthetic-authored",
+        "source": "The Fern shipment was delayed, not cancelled. The next delivery date has not been announced. Its contents remain unchanged.",
+        "request": "请调用write_session_memory，以key experiment_reference保存这段记录的事实摘要，再调用read_session_memory核对。content必须是JSON对象的字符串，只含这些字段：status,delivery_date。字段定义：status=当前状态：只用active、archived、inactive、cancelled或delayed中的一个; delivery_date=已经公布的下一次送达日期，没有公布时为unknown。所有字段值使用字符串；未知值写unknown；状态字段用英文小写标签，不要加入原话没有的事实。",
+        "gold": "{\"status\": \"delayed\", \"delivery_date\": \"unknown\"}",
+        "rubric": "study-memory-facts-v1"
+      },
+      {
+        "id": "summary-fr-state",
+        "family": "summary-fr-state",
+        "lane": "summary",
+        "split": "development",
+        "provenance": "synthetic-authored",
+        "source": "Le dossier Quartz a été archivé, puis réactivé le 2026-06-20. La date de publication reste inconnue.",
+        "request": "请调用write_session_memory，以key experiment_reference保存这段记录的事实摘要，再调用read_session_memory核对。content必须是JSON对象的字符串，只含这些字段：status,reactivated_on,publication。字段定义：status=当前状态：只用active、archived、inactive、cancelled或delayed中的一个; reactivated_on=重新启用发生日期; publication=公布的发布日期，没有公布时为unknown。所有字段值使用字符串；未知值写unknown；状态字段用英文小写标签，不要加入原话没有的事实。",
+        "gold": "{\"status\": \"active\", \"reactivated_on\": \"2026-06-20\", \"publication\": \"unknown\"}",
+        "rubric": "study-memory-facts-v1"
+      },
+      {
+        "id": "summary-fr-roles",
+        "family": "summary-fr-roles",
+        "lane": "summary",
+        "split": "development",
+        "provenance": "synthetic-authored",
+        "source": "Nina a écrit le message. Elle rapporte que Louis a refusé la proposition; elle ne dit rien sur sa propre décision.",
+        "request": "请调用write_session_memory，以key experiment_reference保存这段记录的事实摘要，再调用read_session_memory核对。content必须是JSON对象的字符串，只含这些字段：author,refused_person,author_decision。字段定义：author=消息作者姓名，仅写原文姓名; refused_person=明确拒绝提议的人物姓名，仅写原文姓名; author_decision=作者本人对提议的决定，原话没有说明时为unknown。所有字段值使用字符串；未知值写unknown；状态字段用英文小写标签，不要加入原话没有的事实。",
+        "gold": "{\"author\": \"Nina\", \"refused_person\": \"Louis\", \"author_decision\": \"unknown\"}",
+        "rubric": "study-memory-facts-v1"
+      }
+    ],
+    "variants": [
+      {
+        "id": "baseline",
+        "instruction": "遵守本轮要求。"
+      },
+      {
+        "id": "fact-focus",
+        "instruction": "先区分人物角色、事件时间和记录时间、未知值和未确认状态。摘要字段只能使用原话支持的事实，不把取消改成延期，也不把第三方经历改成我们的经历。实际写入并读回成功后再声称完成。"
+      }
+    ]
+  },
+  "states": {
+    "completed": 16
+  },
+  "groups": {
+    "summary/baseline": {
+      "samples": 8,
+      "states": {
+        "completed": 8
+      },
+      "metric_passes": {
+        "committed": 8,
+        "read_memory_tool_succeeded": 8,
+        "readback_equal": 8,
+        "recovery_no_provider_calls": 8,
+        "restart_equal": 8,
+        "summary_effect_facts_exact": 8,
+        "summary_facts_exact": 8,
+        "typed_effect_batch": 8,
+        "v3_committed": 8
+      },
+      "metric_observed": {
+        "committed": 8,
+        "read_memory_tool_succeeded": 8,
+        "readback_equal": 8,
+        "recovery_no_provider_calls": 8,
+        "restart_equal": 8,
+        "summary_effect_facts_exact": 8,
+        "summary_facts_exact": 8,
+        "typed_effect_batch": 8,
+        "v3_committed": 8
+      },
+      "wire_count": 20,
+      "tokens": 120246,
+      "call_kinds": {
+        "generation": 20
+      },
+      "http_statuses": {
+        "200": 20
+      },
+      "tool_errors": {},
+      "receipt_errors": {},
+      "seed_operations": 0,
+      "seed_commits": 0,
+      "wire_p50_ms": 4969,
+      "wire_p95_ms": 9937,
+      "sample_p50_seconds": 16.539993286132812,
+      "sample_p95_seconds": 19.596723794937134
+    },
+    "summary/fact-focus": {
+      "samples": 8,
+      "states": {
+        "completed": 8
+      },
+      "metric_passes": {
+        "committed": 8,
+        "read_memory_tool_succeeded": 8,
+        "readback_equal": 8,
+        "recovery_no_provider_calls": 8,
+        "restart_equal": 8,
+        "summary_effect_facts_exact": 8,
+        "summary_facts_exact": 8,
+        "typed_effect_batch": 8,
+        "v3_committed": 8
+      },
+      "metric_observed": {
+        "committed": 8,
+        "read_memory_tool_succeeded": 8,
+        "readback_equal": 8,
+        "recovery_no_provider_calls": 8,
+        "restart_equal": 8,
+        "summary_effect_facts_exact": 8,
+        "summary_facts_exact": 8,
+        "typed_effect_batch": 8,
+        "v3_committed": 8
+      },
+      "wire_count": 28,
+      "tokens": 174732,
+      "call_kinds": {
+        "generation": 28
+      },
+      "http_statuses": {
+        "200": 28
+      },
+      "tool_errors": {},
+      "receipt_errors": {},
+      "seed_operations": 0,
+      "seed_commits": 0,
+      "wire_p50_ms": 5795,
+      "wire_p95_ms": 13451,
+      "sample_p50_seconds": 16.18514323234558,
+      "sample_p95_seconds": 32.874682903289795
+    }
+  },
+  "paired_joint_outcomes": {
+    "summary": {
+      "both_pass": 8
+    }
+  },
+  "observed_peak_wire_inflight": 4,
+  "wire_count": 48,
+  "tokens_charged_or_reserved": 294978,
+  "unknown_usage_requests": 0,
+  "sample_audit": [
+    {
+      "case": "summary-cancel",
+      "variant": "baseline",
+      "repetition": 0,
+      "state": "completed",
+      "sample_id": "09549f235bb2874306e1eda9c953014247e488776bd64f314638a64d965379fd",
+      "lane": "summary",
+      "metrics": {
+        "committed": true,
+        "read_memory_tool_succeeded": true,
+        "readback_equal": true,
+        "recovery_no_provider_calls": true,
+        "restart_equal": true,
+        "summary_effect_facts_exact": true,
+        "summary_facts_exact": true,
+        "typed_effect_batch": true,
+        "v3_committed": true
+      },
+      "reply": "已核对完成，写入与读取一致。\n\n- person：周岚（仅保留原话中的姓名）\n- status：cancelled（取消）\n- current_date：unknown（旧安排已取消，未补报新日期）\n- place：unknown（地点尚未公布）\n\n记录原文并未给出新的有效日期或具体地点，因此对应字段一律写 `unknown`，未加入任何原话没有的事实。",
+      "citations": [],
+      "receipt_error": "",
+      "decoded_answer": null,
+      "final_memory_content": "{\"person\":\"周岚\",\"status\":\"cancelled\",\"current_date\":\"unknown\",\"place\":\"unknown\"}",
+      "memory_effect_count": 1
+    },
+    {
+      "case": "summary-dates",
+      "variant": "fact-focus",
+      "repetition": 0,
+      "state": "completed",
+      "sample_id": "0b2757e359599458cb018f1a0bdeea98f310c2cf53089a2332f7ed3612d62bc9",
+      "lane": "summary",
+      "metrics": {
+        "committed": true,
+        "read_memory_tool_succeeded": true,
+        "readback_equal": true,
+        "recovery_no_provider_calls": true,
+        "restart_equal": true,
+        "summary_effect_facts_exact": true,
+        "summary_facts_exact": true,
+        "typed_effect_batch": true,
+        "v3_committed": true
+      },
+      "reply": "小林，核对结果已确认。\n\n写入并读回的内容一致：\n\n- `replaced_on`: `2026-03-12`\n- `filed_on`: `2026-03-15`\n- `technician`: `unknown`\n\n事实区分说明：\n\n- `replaced_on` = 2026-03-12，对应原话「The seal was replaced on 2026-03-12」，是更换实际发生的日期。\n- `filed_on` = 2026-03-15，对应原话「The report was filed on 2026-03-15」，是报告提交日期。\n- `technician` = unknown，原话明确写「No technician name was recorded」，属于“未记录”而非“已知为空”，因此按未知处理。\n\n没有把任何字段从「unknown / 未记录」改写成推断值，也没有把“replaced”擅自改成延期或取消。",
+      "citations": [
+        {
+          "section_id": "doc-5f20fc86d6:section:l1:1",
+          "title": "Chapter 1 Linear Equations",
+          "page_start": 1,
+          "page_end": 1,
+          "source_kind": "document",
+          "source_id": ""
+        }
+      ],
+      "receipt_error": "",
+      "decoded_answer": null,
+      "final_memory_content": "{\"replaced_on\": \"2026-03-12\", \"filed_on\": \"2026-03-15\", \"technician\": \"unknown\"}",
+      "memory_effect_count": 1
+    },
+    {
+      "case": "summary-cancel",
+      "variant": "fact-focus",
+      "repetition": 0,
+      "state": "completed",
+      "sample_id": "24ffa731b8598960019ff1d6b8d06774d27a2e92111189aa7f4f37de88b120ee",
+      "lane": "summary",
+      "metrics": {
+        "committed": true,
+        "read_memory_tool_succeeded": true,
+        "readback_equal": true,
+        "recovery_no_provider_calls": true,
+        "restart_equal": true,
+        "summary_effect_facts_exact": true,
+        "summary_facts_exact": true,
+        "typed_effect_batch": true,
+        "v3_committed": true
+      },
+      "reply": "核对结果（已写入并读回）：\n\n- person: 周岚\n- status: cancelled（原文明确「后来取消」）\n- current_date: unknown（旧安排已取消，未补报新日期）\n- place: unknown（陶艺教室地点尚未公布）\n\n逐项核对要点：\n\n1. 人物角色：原话中只有「周岚」一人，字段只保留姓名。\n2. 事件时间 vs 记录时间：原话中的 2026-08-09 是被取消的旧安排，不属于「当前有效的新安排日期」，因此 current_date 必须为 unknown，而不是把旧日期原样填回。\n3. 状态判定：「后来取消，没有补报其他日期」明确支持 cancelled，不改写为 delayed 或 inactive。\n4. 未知值处理：地点「尚未公布」属于未公开信息，按规则记为 unknown，不臆测。\n\n读回的 JSON 字符串：{\"person\":\"周岚\",\"status\":\"cancelled\",\"current_date\":\"unknown\",\"place\":\"unknown\"}，与写入内容一致。",
+      "citations": [],
+      "receipt_error": "",
+      "decoded_answer": null,
+      "final_memory_content": "{\"person\": \"周岚\", \"status\": \"cancelled\", \"current_date\": \"unknown\", \"place\": \"unknown\"}",
+      "memory_effect_count": 1
+    },
+    {
+      "case": "summary-effective",
+      "variant": "baseline",
+      "repetition": 0,
+      "state": "completed",
+      "sample_id": "2838d472ee7d3b2b2a80f84042a633c26bb87b2973d314b5a2d1ba7c4484cd7c",
+      "lane": "summary",
+      "metrics": {
+        "committed": true,
+        "read_memory_tool_succeeded": true,
+        "readback_equal": true,
+        "recovery_no_provider_calls": true,
+        "restart_equal": true,
+        "summary_effect_facts_exact": true,
+        "summary_facts_exact": true,
+        "typed_effect_batch": true,
+        "v3_committed": true
+      },
+      "reply": "已为你保存并核对成功，事实摘要如下：\n\n- **effective_date**：2026-05-01（变更实际生效日期，非通知录入日期 2026-04-03）\n- **venue**：东厅（变更生效后的地点名称）\n\n补充说明：西厅仅作为旧地点出现，原话未要求保留，因此未写入；通知录入日期也不属于 effective_date 字段。未引入任何原话之外的事实。",
+      "citations": [],
+      "receipt_error": "",
+      "decoded_answer": null,
+      "final_memory_content": "{\"effective_date\":\"2026-05-01\",\"venue\":\"东厅\"}",
+      "memory_effect_count": 1
+    },
+    {
+      "case": "summary-dates",
+      "variant": "baseline",
+      "repetition": 0,
+      "state": "completed",
+      "sample_id": "31fc9f6b6573efc776ed96557c013d9d5c40268a26fee010a1b7d4c86419d18a",
+      "lane": "summary",
+      "metrics": {
+        "committed": true,
+        "read_memory_tool_succeeded": true,
+        "readback_equal": true,
+        "recovery_no_provider_calls": true,
+        "restart_equal": true,
+        "summary_effect_facts_exact": true,
+        "summary_facts_exact": true,
+        "typed_effect_batch": true,
+        "v3_committed": true
+      },
+      "reply": "已写入并核对，`experiment_reference` 摘要如下：\n\n- `replaced_on`：`2026-03-12`\n- `filed_on`：`2026-03-15`\n- `technician`：`unknown`（原文未记录技术员姓名）\n\n三个字段均按原文事实填入，未补充原话以外内容，可放心作为实验记录引用。",
+      "citations": [
+        {
+          "section_id": "doc-59b39dd0f3:section:l1:1",
+          "title": "Chapter 1 Linear Equations",
+          "page_start": 1,
+          "page_end": 1,
+          "source_kind": "document",
+          "source_id": ""
+        }
+      ],
+      "receipt_error": "",
+      "decoded_answer": null,
+      "final_memory_content": "{\"replaced_on\":\"2026-03-12\",\"filed_on\":\"2026-03-15\",\"technician\":\"unknown\"}",
+      "memory_effect_count": 1
+    },
+    {
+      "case": "summary-fr-state",
+      "variant": "baseline",
+      "repetition": 0,
+      "state": "completed",
+      "sample_id": "3e0ebef299b7ac9975f0c327e5ba4b549191519ccbe93b1bc9f7f37044a18683",
+      "lane": "summary",
+      "metrics": {
+        "committed": true,
+        "read_memory_tool_succeeded": true,
+        "readback_equal": true,
+        "recovery_no_provider_calls": true,
+        "restart_equal": true,
+        "summary_effect_facts_exact": true,
+        "summary_facts_exact": true,
+        "typed_effect_batch": true,
+        "v3_committed": true
+      },
+      "reply": "核对完毕，写入与读取一致：\n\n- `status`：原话「archivé, puis réactivé」表示重新启用后处于活动状态，记为 `active`。\n- `reactivated_on`：原文明确给出日期 `2026-06-20`，已如实保留。\n- `publication`：原文「reste inconnue」，记为 `unknown`，未添加原话之外的发布日期。\n\n三项字段全部取自原话，未加入额外事实。",
+      "citations": [
+        {
+          "section_id": "doc-500a2b6127:section:l1:1",
+          "title": "Chapter 1 Linear Equations",
+          "page_start": 1,
+          "page_end": 1,
+          "source_kind": "document",
+          "source_id": ""
+        }
+      ],
+      "receipt_error": "",
+      "decoded_answer": null,
+      "final_memory_content": "{\"status\":\"active\",\"reactivated_on\":\"2026-06-20\",\"publication\":\"unknown\"}",
+      "memory_effect_count": 1
+    },
+    {
+      "case": "summary-fr-state",
+      "variant": "fact-focus",
+      "repetition": 0,
+      "state": "completed",
+      "sample_id": "419efa22df02a32fa7802fb51141984fbc59f9c232389808a5063abfb64cd6db",
+      "lane": "summary",
+      "metrics": {
+        "committed": true,
+        "read_memory_tool_succeeded": true,
+        "readback_equal": true,
+        "recovery_no_provider_calls": true,
+        "restart_equal": true,
+        "summary_effect_facts_exact": true,
+        "summary_facts_exact": true,
+        "typed_effect_batch": true,
+        "v3_committed": true
+      },
+      "reply": "小林，已写入并读回核对，记录一致。\n\n事实摘要（仅基于原话）：\n\n- **事件主体**：Quartz 档案（第三方记录，非本章节内容）。\n- **事件时间**：\n  - 已被归档（past tense，原话 \"a été archivé\"）。\n  - 于 2026-06-20 被重新启用（\"réactivé le 2026-06-20\"）。\n- **当前状态**：active（仅由原话\"归档后被重新启用\"推出，未加入\"延期\"或\"取消\"等额外解读）。\n- **公布日期**：unknown（原话明确 \"reste inconnue\"）。\n\n核对结果：写入的 JSON 与读回内容完全一致。\n\n```\n{\"status\":\"active\",\"reactivated_on\":\"2026-06-20\",\"publication\":\"unknown\"}\n```\n\n未做以下改动：\n- 未把\"归档\"误读为\"取消\"或\"延期\"。\n- 未给 publication 填入推断日期。\n- 未把 Quartz 档案的经历改为本学习章节的经历。",
+      "citations": [
+        {
+          "section_id": "doc-7ad2586266:section:l1:1",
+          "title": "Chapter 1 Linear Equations",
+          "page_start": 1,
+          "page_end": 1,
+          "source_kind": "document",
+          "source_id": ""
+        }
+      ],
+      "receipt_error": "",
+      "decoded_answer": null,
+      "final_memory_content": "{\"status\":\"active\",\"reactivated_on\":\"2026-06-20\",\"publication\":\"unknown\"}",
+      "memory_effect_count": 2
+    },
+    {
+      "case": "summary-ownership",
+      "variant": "baseline",
+      "repetition": 0,
+      "state": "completed",
+      "sample_id": "559d89eb855132865e088fa5d2a6eb8f2954f54e011bb67869cca667ffbac55b",
+      "lane": "summary",
+      "metrics": {
+        "committed": true,
+        "read_memory_tool_succeeded": true,
+        "readback_equal": true,
+        "recovery_no_provider_calls": true,
+        "restart_equal": true,
+        "summary_effect_facts_exact": true,
+        "summary_facts_exact": true,
+        "typed_effect_batch": true,
+        "v3_committed": true
+      },
+      "reply": "已核对：\n\n- **owner**：Priya\n- **borrower**：Owen\n- **return_date**：unknown\n\n依据原话——\"Priya owns the silver compass. She lent it to Owen for a week; Owen did not buy it. The loan return date is unspecified.\"——所有者是 Priya，借用者是 Owen，归还日期未约定，写 unknown。调用 write_session_memory 与 read_session_memory 均已成功。",
+      "citations": [
+        {
+          "section_id": "doc-f67bf0a226:section:l1:1",
+          "title": "Chapter 1 Linear Equations",
+          "page_start": 1,
+          "page_end": 1,
+          "source_kind": "document",
+          "source_id": ""
+        }
+      ],
+      "receipt_error": "",
+      "decoded_answer": null,
+      "final_memory_content": "{\"owner\":\"Priya\",\"borrower\":\"Owen\",\"return_date\":\"unknown\"}",
+      "memory_effect_count": 1
+    },
+    {
+      "case": "summary-effective",
+      "variant": "fact-focus",
+      "repetition": 0,
+      "state": "completed",
+      "sample_id": "78ed3ded14667e480266e0581aa4b14be45b5f1e01622e54d01ff889ad22b023",
+      "lane": "summary",
+      "metrics": {
+        "committed": true,
+        "read_memory_tool_succeeded": true,
+        "readback_equal": true,
+        "recovery_no_provider_calls": true,
+        "restart_equal": true,
+        "summary_effect_facts_exact": true,
+        "summary_facts_exact": true,
+        "typed_effect_batch": true,
+        "v3_committed": true
+      },
+      "reply": "已完成。\n\n- 写入键 `experiment_reference`，内容为 `{\"effective_date\":\"2026-05-01\",\"venue\":\"东厅\"}`。\n- 回读核对成功，键与内容一致。\n\n事实核对说明：\n\n- `effective_date` 取变更实际生效日期 2026-05-01；2026-04-03 是通知录入日期，不写入字段。\n- `venue` 取变更生效后的地点名称 东厅；西厅仅为旧地点标记，不写入字段。\n- 原话未提及其他事项，未补充额外字段。",
+      "citations": [],
+      "receipt_error": "",
+      "decoded_answer": null,
+      "final_memory_content": "{\"effective_date\":\"2026-05-01\",\"venue\":\"东厅\"}",
+      "memory_effect_count": 1
+    },
+    {
+      "case": "summary-negation",
+      "variant": "fact-focus",
+      "repetition": 0,
+      "state": "completed",
+      "sample_id": "7a8d6a754e785d2f821012692cd3dad541db35f30032ba8313516586e2ed7671",
+      "lane": "summary",
+      "metrics": {
+        "committed": true,
+        "read_memory_tool_succeeded": true,
+        "readback_equal": true,
+        "recovery_no_provider_calls": true,
+        "restart_equal": true,
+        "summary_effect_facts_exact": true,
+        "summary_facts_exact": true,
+        "typed_effect_batch": true,
+        "v3_committed": true
+      },
+      "reply": "已完成写入并读回核对。\n\n原文要点核对：\n- 人物与归属：原文谈的是 \"The Fern shipment\"（蕨类货品），属于第三方／外部主体，未指明是 \"我们\" 的项目，因此摘要中不应把它改写成我们的经历。\n- 事件时间 vs 记录时间：原文只陈述了该货品此前被延误这一事实状态，没有给出具体的发生日期或记录时刻，属于无明确时间戳。\n- 状态字段：原文明确写 \"was delayed, not cancelled\"，所以 status 取 `delayed`，不能改成 `cancelled`，也不能擅自升级为 `archived`、`inactive` 之类。\n- delivery_date：原文明确写 \"has not been announced\"，即未公布，因此取 `unknown`。\n- 内容是否变化：原文另提到 \"contents remain unchanged\"，但 `status` 与 `delivery_date` 两个字段没有承载此项，因此不写入；未引入原话未支持的事实。\n\n最终写入并读回的内容：\n\n```\n{\"status\": \"delayed\", \"delivery_date\": \"unknown\"}\n```\n\n读回结果与写入完全一致，核对成功。",
+      "citations": [
+        {
+          "section_id": "doc-a29fb02ca6:section:l1:1",
+          "title": "Chapter 1 Linear Equations",
+          "page_start": 1,
+          "page_end": 1,
+          "source_kind": "document",
+          "source_id": ""
+        }
+      ],
+      "receipt_error": "",
+      "decoded_answer": null,
+      "final_memory_content": "{\"status\": \"delayed\", \"delivery_date\": \"unknown\"}",
+      "memory_effect_count": 1
+    },
+    {
+      "case": "summary-fr-roles",
+      "variant": "baseline",
+      "repetition": 0,
+      "state": "completed",
+      "sample_id": "8c49f3c586d257799711f2a577492c2ff23c80e9a0fefc9d19388cb151784b67",
+      "lane": "summary",
+      "metrics": {
+        "committed": true,
+        "read_memory_tool_succeeded": true,
+        "readback_equal": true,
+        "recovery_no_provider_calls": true,
+        "restart_equal": true,
+        "summary_effect_facts_exact": true,
+        "summary_facts_exact": true,
+        "typed_effect_batch": true,
+        "v3_committed": true
+      },
+      "reply": "## 核对结果\n\n小林，已按要求把记录写入临时记忆并回读核对，内容一致。\n\n### 原文事实摘要\n- 作者：`Nina`\n- 明确拒绝提议的人：`Louis`\n- 作者本人对自己提议的决定：原话未提及，记为 `unknown`\n\n### 字段含义核对\n- `author`：消息作者姓名，按原文写为 `Nina`\n- `refused_person`：明确拒绝提议的人物，按原文写为 `Louis`\n- `author_decision`：原话没有说明 Nina 自己的决定，按规则填 `unknown`\n\n### 格式核对\n- 仅含三个字段：`author`、`refused_person`、`author_decision`\n- 字段名均为英文小写\n- 字段值均为字符串\n- 未加入原话没有的事实\n\n核对通过，记录完整可用。",
+      "citations": [
+        {
+          "section_id": "doc-65c9bf0853:section:l1:1",
+          "title": "Chapter 1 Linear Equations",
+          "page_start": 1,
+          "page_end": 1,
+          "source_kind": "document",
+          "source_id": ""
+        }
+      ],
+      "receipt_error": "",
+      "decoded_answer": null,
+      "final_memory_content": "{\"author\":\"Nina\",\"refused_person\":\"Louis\",\"author_decision\":\"unknown\"}",
+      "memory_effect_count": 1
+    },
+    {
+      "case": "summary-quote",
+      "variant": "fact-focus",
+      "repetition": 0,
+      "state": "completed",
+      "sample_id": "97803260cf75e506e768cf6669ef09887a095ce0d8ac103b406e44383f7f9fc2",
+      "lane": "summary",
+      "metrics": {
+        "committed": true,
+        "read_memory_tool_succeeded": true,
+        "readback_equal": true,
+        "recovery_no_provider_calls": true,
+        "restart_equal": true,
+        "summary_effect_facts_exact": true,
+        "summary_facts_exact": true,
+        "typed_effect_batch": true,
+        "v3_committed": true
+      },
+      "reply": "写入与读回均已完成，核对一致。\n\n**事实摘要（原文支持）**\n\n- **角色**：宋弦为转述者；何璟为被提及者。\n- **事件时间**：原话未给出时间，标记 `unknown`。\n- **记录时间**：本次会话写入时刻，未在原话中提及，标记 `unknown`。\n- **tentative_person**：何璟。原话为「何璟也许参加圆桌讨论，目前没有确认」，属于未确认状态。\n- **absent_person**：宋弦。原话为「宋弦本人不参加」，为明确不参加。\n\n**字段值核对**\n\n- `tentative_person`：何璟 ✓\n- `absent_person`：宋弦 ✓\n- 所有字段均为字符串，未引入原话外的延期、确认或第三方经历。\n\n读回内容：\n\n`{\"tentative_person\":\"何璟\",\"absent_person\":\"宋弦\"}`\n\n写入与读回都已成功，摘要与原话一致，可以视为完成。",
+      "citations": [],
+      "receipt_error": "",
+      "decoded_answer": null,
+      "final_memory_content": "{\"tentative_person\":\"何璟\",\"absent_person\":\"宋弦\"}",
+      "memory_effect_count": 1
+    },
+    {
+      "case": "summary-ownership",
+      "variant": "fact-focus",
+      "repetition": 0,
+      "state": "completed",
+      "sample_id": "b7b53b62da590580c60d6ca9a34eae345ea5b2b1cd7f1bd2444c44e72242cebc",
+      "lane": "summary",
+      "metrics": {
+        "committed": true,
+        "read_memory_tool_succeeded": true,
+        "readback_equal": true,
+        "recovery_no_provider_calls": true,
+        "restart_equal": true,
+        "summary_effect_facts_exact": true,
+        "summary_facts_exact": true,
+        "typed_effect_batch": true,
+        "v3_committed": true
+      },
+      "reply": "小林，已写入并读回核对，结果如下：\n\n- key：`experiment_reference`\n- 内容：`{\"owner\": \"Priya\", \"borrower\": \"Owen\", \"return_date\": \"unknown\"}`\n- 核对：写入与读回字符串一致。\n\n字段逐项依据：\n\n1. owner = `Priya`：原文 \"Priya owns the silver compass\"，明确她是当前所有者，且与借用者不同。\n2. borrower = `Owen`：原文 \"She lent it to Owen\"，Owen 是当前借用者。\n3. return_date = `unknown`：原文只说 \"for a week\" 是借出时长，并未约定具体归还日期；同时 \"The loan return date is unspecified\" 直接否定了具体日期。按要求，未约定具体日期时记为 `unknown`。\n\n排除项说明：\n\n- \"Owen did not buy it\" 仅说明 Owen 不是购买者，不影响借用关系，已排除在事实之外。\n- \"for a week\" 是借期描述，不是约定归还日，已排除在事实之外。\n- 无第三方、无事件时间与记录时间的冲突需要标记。\n\n记录已完成。",
+      "citations": [
+        {
+          "section_id": "doc-c51eb1fb1c:section:l1:1",
+          "title": "Chapter 1 Linear Equations",
+          "page_start": 1,
+          "page_end": 1,
+          "source_kind": "document",
+          "source_id": ""
+        }
+      ],
+      "receipt_error": "",
+      "decoded_answer": null,
+      "final_memory_content": "{\"owner\": \"Priya\", \"borrower\": \"Owen\", \"return_date\": \"unknown\"}",
+      "memory_effect_count": 1
+    },
+    {
+      "case": "summary-negation",
+      "variant": "baseline",
+      "repetition": 0,
+      "state": "completed",
+      "sample_id": "c2dc3d9e2378a6468310b7593c6f1842729d303c38ec017269c2f4cce3672620",
+      "lane": "summary",
+      "metrics": {
+        "committed": true,
+        "read_memory_tool_succeeded": true,
+        "readback_equal": true,
+        "recovery_no_provider_calls": true,
+        "restart_equal": true,
+        "summary_effect_facts_exact": true,
+        "summary_facts_exact": true,
+        "typed_effect_batch": true,
+        "v3_committed": true
+      },
+      "reply": "核对完成。原句说\"The Fern shipment was delayed, not cancelled. The next delivery date has not been announced. Its contents remain unchanged.\"\n\n- status = \"delayed\"：与 \"was delayed, not cancelled\" 一致；未写成 cancelled。\n- delivery_date = \"unknown\"：与 \"has not been announced\" 一致；未编造具体日期。\n- 原文里的\"contents remain unchanged\"未在你给出的两个字段中要求保留，因此未写入。\n\n写入与读回的内容均为\n\n{\"status\":\"delayed\",\"delivery_date\":\"unknown\"}\n\n字段类型、取值范围与原话事实核对一致，没有越界。",
+      "citations": [
+        {
+          "section_id": "doc-0d369d10b2:section:l1:1",
+          "title": "Chapter 1 Linear Equations",
+          "page_start": 1,
+          "page_end": 1,
+          "source_kind": "document",
+          "source_id": ""
+        }
+      ],
+      "receipt_error": "",
+      "decoded_answer": null,
+      "final_memory_content": "{\"status\":\"delayed\",\"delivery_date\":\"unknown\"}",
+      "memory_effect_count": 1
+    },
+    {
+      "case": "summary-fr-roles",
+      "variant": "fact-focus",
+      "repetition": 0,
+      "state": "completed",
+      "sample_id": "e7834c8aef49e4b3bd8c9e88d30fd02af48ca464bd6b8c47af1e4824810395db",
+      "lane": "summary",
+      "metrics": {
+        "committed": true,
+        "read_memory_tool_succeeded": true,
+        "readback_equal": true,
+        "recovery_no_provider_calls": true,
+        "restart_equal": true,
+        "summary_effect_facts_exact": true,
+        "summary_facts_exact": true,
+        "typed_effect_batch": true,
+        "v3_committed": true
+      },
+      "reply": "核对结果如下，与原文一致：\n\n- `author`：Nina（原话 \"Nina a écrit le message\"）\n- `refused_person`：Louis（原话 \"Louis a refusé la proposition\"）\n- `author_decision`：unknown（原文未提及 Nina 自己的决定）\n\n事件时间是 Nina 撰写这段记录时所报告的内容，并非我的经历；拒绝方与作者本人的决定已严格区分。\n\n小林，这段摘要已写入并成功读回，内容与原话一致，无臆测或补全。",
+      "citations": [
+        {
+          "section_id": "doc-6b9acd64ca:section:l1:1",
+          "title": "Chapter 1 Linear Equations",
+          "page_start": 1,
+          "page_end": 1,
+          "source_kind": "document",
+          "source_id": ""
+        }
+      ],
+      "receipt_error": "",
+      "decoded_answer": null,
+      "final_memory_content": "{\"author\":\"Nina\",\"refused_person\":\"Louis\",\"author_decision\":\"unknown\"}",
+      "memory_effect_count": 1
+    },
+    {
+      "case": "summary-quote",
+      "variant": "baseline",
+      "repetition": 0,
+      "state": "completed",
+      "sample_id": "e8c82bd7731b2163984c6cb9e7612884a24f7431e64dcaeb7495a434dfdcafae",
+      "lane": "summary",
+      "metrics": {
+        "committed": true,
+        "read_memory_tool_succeeded": true,
+        "readback_equal": true,
+        "recovery_no_provider_calls": true,
+        "restart_equal": true,
+        "summary_effect_facts_exact": true,
+        "summary_facts_exact": true,
+        "typed_effect_batch": true,
+        "v3_committed": true
+      },
+      "reply": "核对完成。\n\n- 写入键：`experiment_reference`\n- 已存内容：`{\"tentative_person\":\"何璟\",\"absent_person\":\"宋弦\"}`\n- 回读结果：与写入完全一致。\n\n字段释义：\n- `tentative_person`：何璟——宋弦转述其\"也许参加\"，尚未确认。\n- `absent_person`：宋弦——本人明确不参加。\n\n未在原话中出现的其他人物，按规则均记为 `unknown`，未追加。",
+      "citations": [],
+      "receipt_error": "",
+      "decoded_answer": null,
+      "final_memory_content": "{\"tentative_person\":\"何璟\",\"absent_person\":\"宋弦\"}",
+      "memory_effect_count": 1
+    }
+  ],
+  "scope": "Development experiments. JSON exactness is requested-format-plus-facts; narrative semantics requires separate review. No independent holdout, no release certification."
+}

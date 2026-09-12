@@ -1,0 +1,989 @@
+{
+  "version": "priority-assisted-fact-review-v1",
+  "reviewer": "Codex assistant maintaining this experiment; model-assisted, unblinded, not independently reviewed",
+  "independent": false,
+  "reviewed_at": "2026-09-12T08:04:40.192981+00:00",
+  "rubric": "Check only requested fact targets against frozen sources/gold. Accept semantic equivalents such as Room Elm for Elm and Chinese closed for closed. Explicit source-unknown is correct when gold is unknown. No committed reply is unavailable. Missing names cannot count as an answer. Track damaged quotations and unsupported explanations separately. This is not a global semantic correctness or held-out result.",
+  "rows": [
+    {
+      "case": "temporal-fr-two-relationships",
+      "variant": "baseline",
+      "sample_id": "0155663159a401b5f343c1b76cb1b675663e4e2ea746512107a6787a5f9e00be",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "c79ce852d6f70debc0f8acade5bc57c8b766751a1d07bf79a76cdc8e07b89dd2",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "citation-fr-cost",
+      "variant": "baseline",
+      "sample_id": "03210e20764894d1d20ffd1c7c882f1b27c3ef9e1a83e0841075a31af04cee00",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "861394a7bd16dd42c831aadfa5554af231e9fec1bb97705800430cc9bdc9d09a",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "citation-fr-time",
+      "variant": "baseline",
+      "sample_id": "03e9f367e2bdb5d560d921607853d8191ffb64f680e5012e43dc99bde0d00f58",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "b356c43a14b49c674cded2c9b12682521baa01652a23ab35c58e11790e7cb121",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "temporal-ownership-transfer",
+      "variant": "candidate",
+      "sample_id": "04d48d59e4979889cc6d2c27d5c3634db2348bd06bc74f966c5d3731d9ee436f",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "e51869e0911a13fc50fe2fd827219548f040f86292af5276ed8ddad1f87632e0",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "citation-zh-color",
+      "variant": "baseline",
+      "sample_id": "07e190fcdaa619645e6de6403b7b25872e8f493a66cf750059422e9c3c371aa1",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "98ce5b626eb38801a68bb661b81a3d8205f715222a270bc2a9809713b42c6c50",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "citation-zh-price",
+      "variant": "candidate",
+      "sample_id": "09d8315b74e9be2d488fd804dc9cfd7767a10492802e4ef300f5a604b741a977",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "57965b25efbadfc4c2f37822d296a2c786c35620f284543c4376fd527b481229",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "temporal-fr-not-yet",
+      "variant": "baseline",
+      "sample_id": "113c6afb0a6b7f97713ffd8b780986ca17c241be665421cf2de68cf268a89932",
+      "verdict": "unavailable",
+      "reply_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "temporal-distant-negation",
+      "variant": "candidate",
+      "sample_id": "13b0fd5087688962ec82f82189db139b848ae225ec99c83b8cbc74f07706978c",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "cebf55f2e9ea4adb90f7ee7177f41450688acfec9b56f5d7da0af8df34591cf4",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "temporal-middle-update",
+      "variant": "candidate",
+      "sample_id": "14d4693078fff97fa7a7b9d3dc066bd96093bee8470c15fa96128f8073c0d96d",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "ee2a5a2371f4e1072366cb3ca1b4645d433c549d66c156741c7958129797caed",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "temporal-fr-hypothetical",
+      "variant": "candidate",
+      "sample_id": "153548b4d1513f59af31281306612fed01a87372061a468ab8c0fa041bd3b6d5",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "96879611650f80a81392a52e0db9b0237669087c4518e1c130e541a505e0eeef",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "temporal-countermand-before-effective",
+      "variant": "candidate",
+      "sample_id": "1730f2ede40c27ed42f8988db2914b4c14ee1e1f9f91c81d8cb714882a578114",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "2348f998744212575d85959674f9607ab26f67708a917157472832386337c904",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "temporal-fr-expiry-renewal",
+      "variant": "candidate",
+      "sample_id": "18cb84eb92e0773019a184c53f5f099bebb573a64b333b01fcaedaf950c02f7e",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "720d04ada7edd23697187ca273229ba93b3005914f7a70263fd5a168ad34aef6",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "temporal-archive-reactivate",
+      "variant": "candidate",
+      "sample_id": "1fc2eb76ad355058abc6482a337c7b62d596ea128f4a19e047980e575915c161",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "fde01179c6529244612aed98d292a94a859723f152fb9a7e26199e8c1e24805b",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "citation-zh-compare",
+      "variant": "baseline",
+      "sample_id": "21424aaed064f19293cd1abfbb23c95d8ca490979aa97a1381e442caa0efecd4",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "7ee2be16c9712a19cfcd433b258fc1737709a6e79e4bae162ce8f6b3911c6b4e",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "citation-zh-date",
+      "variant": "candidate",
+      "sample_id": "219df2fa782636070ae29269c239a26049efe0289888b853103bbf76e2f3ef90",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "0678d8d550640b00ba7b101ae7a08b8e6c487d543a4bb554c518ca05b3603fe0",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "temporal-retroactive-correction",
+      "variant": "baseline",
+      "sample_id": "2525559a250a05b0705fba1bdeeac172fe918ef8a7796da337ae406f18cc2b90",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "ec40ed3a25af98bef9e280053e6b8ee126bafaa3d9e49786d7121ca1f7dbaf48",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "citation-fr-permission",
+      "variant": "baseline",
+      "sample_id": "2fd9e957167e92211b7a5134eafdef6dea612c01cc9e176e88215e42cd9d080c",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "b05bf073da26f2e88096248e4cdeba64b466726cbfa37c89a35ef9bd55c718ec",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "temporal-record-vs-effective-end",
+      "variant": "baseline",
+      "sample_id": "31504b27a9f772148342723a7ec9db25246c3163af1835d156b4c35e5a1a959d",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "9c0d9182ec0cb28b1ef447da6eec7b4482b8f1a9a9ec002f69015f7b64839cdd",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "temporal-reschedule-not-duplicate",
+      "variant": "baseline",
+      "sample_id": "3236d2e0c35621c8b3563da62ace0f12fb36445645a9e491a89a9d5fbab3703a",
+      "verdict": "unavailable",
+      "reply_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "temporal-retroactive-correction",
+      "variant": "candidate",
+      "sample_id": "363bcd595a9e570b05281b6452202a1dff384ca29b1843bdd23d326b657655b5",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "029bbf95ace1d6004bf343d06132534ec62394dae3fd0220de242f76a2825529",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "temporal-unknown-cancel-time",
+      "variant": "candidate",
+      "sample_id": "39600d00070e59f5233e4fe3af4f82a37a858e0c6beeba3612bde2965c21e18b",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "95a5e6749336db5387e592dd317bd878111a56c67b9779823a06942eae48e1ee",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "citation-zh-negative",
+      "variant": "candidate",
+      "sample_id": "3f80c8825d4b86b30d103418c5202658ab6656116a583959ad63e48e9c48fbad",
+      "verdict": "unavailable",
+      "reply_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "temporal-fr-two-relationships",
+      "variant": "candidate",
+      "sample_id": "41772d4c2098ecc2a5af4910370b15eb110c6302848ac14ca6e1c25968a20c8a",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "90a9c1ac4db2f534f0ce1c3d7b67491d6e8c65bffaa3574b806b6766562eb55e",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "citation-en-valve",
+      "variant": "baseline",
+      "sample_id": "431383ed7d830a57f9f2bd96bc94f28d0891dd8575a4f9a12a6ece7634e10cd7",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "d8cfafed42b6464b38788e1e9931400d5719452db6baecab2e0b0521b64af832",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "citation-en-founder",
+      "variant": "candidate",
+      "sample_id": "45396d636acf6938ecabab914313d1e338a5ea03c4648959e330d568fdc13871",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "16433ec0e5d47a3ebf110b78354d4388f35407847bfab56d77e66d49841b216b",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "temporal-ownership-transfer",
+      "variant": "baseline",
+      "sample_id": "4d295efa3ea3c99e8bc6fa2ad1856230020701605aa3b5ddc30c20931168f0ab",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "8f869ee25e15c83ffee835efd3d225098e0c8b74885b18ff7d570b20e2d12cfd",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "citation-zh-place",
+      "variant": "baseline",
+      "sample_id": "4f2a4ea440daa6c59ca1a4dd8c3271dfb4a43b38e2fa3e6a7156f91698088ce0",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "b35fc2a02382575ffa14f9d551d32baa6ae836462efad20e002c8fcf5b687da7",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "citation-fr-time",
+      "variant": "candidate",
+      "sample_id": "4fc823e781abd648e89e7410f5876acd295cf091ca9719db2339738e592ef8fa",
+      "verdict": "unavailable",
+      "reply_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "temporal-record-vs-effective-end",
+      "variant": "candidate",
+      "sample_id": "502fc334922a27d55c1fbf8717e5f75a363e3f13fd0cabe320ec953d45879c4c",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "6461854d33b2d2fbb3cf544d20a4de81368b325bc07881cd89b788e8febc52d5",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "citation-zh-date",
+      "variant": "baseline",
+      "sample_id": "50444e641b662183e1fe82c768cc7bb5c44b23eb810a89faf23aa043d2573f8a",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "72d3c9b21a11118c6dea20d8ab9de87a2821475e516f9d789db3c71f3b43b096",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "temporal-fr-cancellation-archive",
+      "variant": "candidate",
+      "sample_id": "50a1eed54d76dfe01ef5db85136998a2080097934e8f33b244668a8eba4ae83f",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "68c4bd487702966d13ab4a493fc0553cd8a03efa281c3c4026bcd6ac2ffc5add",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "temporal-future-effective-history",
+      "variant": "candidate",
+      "sample_id": "5108574cea5a6adaf5b25f9a837efc5a6563d6187798d99466899f0f8b4f47b8",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "9bb8976bc9db784ec4235721b02b540d2c6c2bdee9f6746f7893d26191d4fd1d",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "citation-fr-temperature",
+      "variant": "baseline",
+      "sample_id": "51fa6d27b204d4c0f5ea85a821d3025f8a4a7ae1da6a19dd37887f0732da9d05",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "c2356069e9d1e79ca924378153cfbbfb4d4416b1f99d41a2940bfdb66c5319db",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "temporal-fr-duration",
+      "variant": "baseline",
+      "sample_id": "52197d03e4a9d3ed8abbaff68e737951b7d2daeda03500e8eac0ccd0cf9d9971",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "1dd7e0c01135af16b071e1f6e3faf19e27104bdba75e8d7730213e77b6e6e162",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "citation-en-nothing",
+      "variant": "baseline",
+      "sample_id": "526f05311f91dd8edf7f039c87efbec9c0ef4a5355526fc90b41def13169d767",
+      "verdict": "unavailable",
+      "reply_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "citation-en-art",
+      "variant": "candidate",
+      "sample_id": "53f5f91c58c169e5a94953aa01640223439577bc059c39f24781084d113e6217",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "e5ca6f0a8a767576d9bf9148be6b2dac2ec1869502f747d999b03ef669821e4c",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "temporal-partial-cancellation",
+      "variant": "candidate",
+      "sample_id": "5c6eeeebe8bc111f6c8d456dc8e306d4b165f784207523d444a87412cb6dfba5",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "4113b96108bddcdd03a2f8926befa2fe04a4e3592ae59fd8ef41d7ada8312554",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "citation-en-route",
+      "variant": "candidate",
+      "sample_id": "5c96ab8fadd80ec77b0a536fd4eea640cfb87eb71cc63ba94e6fa6ba040fb30e",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "6adb595c9a2f54f7263df3fd988ceb986581129e8cbc1f1b9048b79f889d9a25",
+      "flags": [
+        "damaged_source_quotation"
+      ],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "temporal-archive-reactivate",
+      "variant": "baseline",
+      "sample_id": "5f70c1ecb95fc41c2c2dca4fb197a91fad97d7c4f4d84cee9d2973eedf17145f",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "4c211d6f151a1ac6ea725f6d7b8b61acb2bd4bb79c27dfb0171029949a4bf02e",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "temporal-identity-collision",
+      "variant": "baseline",
+      "sample_id": "5ff97ed359c587c7df8727e4c50b472b59a77c4808d4f23b4c0e0cb57f888691",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "574fef87a3c5842cbe41988b0ed731ed147dfe885288a97c740bafc53af008a1",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "temporal-reopen-without-date",
+      "variant": "candidate",
+      "sample_id": "64add2bf8779de09255aa4ce9ef07883971f39f548b98f44e02ae0a529a4755b",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "02924532c6e8c364d887fcec443156bda68a9610467d4efc5e88834c9bdb6705",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "citation-zh-price",
+      "variant": "baseline",
+      "sample_id": "65ff81a88507135fbf49c1d5cab67b7805bd168f738b842635f5ff7f13310126",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "61d519792389300d533415e7c52bdd784e6b25af5630fcc0199e02744827c958",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "temporal-fr-cancellation-archive",
+      "variant": "baseline",
+      "sample_id": "67a30fd56618122a5812a4bcd70206cdfd95086560a6ceffa50ac521d0270aad",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "905ef96cab85a9cc253aeadf502c644a1d3845932dd0b251faf4f966010f1ea0",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "citation-zh-compare",
+      "variant": "candidate",
+      "sample_id": "69e1db28f2519bfed38f23af73559d7a4c8a8b034fd382064aeee2d3c26f95a1",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "a8d88b6cf0ea813d34be12ea312e0fde07cc22b5d079266ae860481b07083821",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "temporal-countermand-before-effective",
+      "variant": "baseline",
+      "sample_id": "6cc9ed15fb630ca92ba5f55fa2f31712e66daca169850fdb957f44f573d5f0b3",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "6bd5190ba185d9ce43556ca3cfb348f48ddd60fb69b2091ac526464b1fbf85f8",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "temporal-fr-duration",
+      "variant": "candidate",
+      "sample_id": "6d5f05997e4305c70450e4a462096737ebb8532c50250f1a9f70950266d4e72f",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "d75640b643635a835904974e6921675d0e85d67b2bec7bb48c0e346e6c9a866e",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "temporal-fr-effective-order",
+      "variant": "candidate",
+      "sample_id": "6da0c06931796c244460632299c851ad0b9660a26e8ec99a33504b3acbf59335",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "141154d1bec6fca0163a4525dc1d88dfdd1896a7239ebd715144496f01ee79f8",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "citation-en-valve",
+      "variant": "candidate",
+      "sample_id": "702a8becf46d31e0322920b50d02d5b95b76ef383dcff5709c91243893173698",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "868c1afa4415c56101f58746af639b8e9cc2900e8134b55898f67ab75ef04da9",
+      "flags": [
+        "damaged_source_quotation"
+      ],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "temporal-fr-event-vs-announcement",
+      "variant": "baseline",
+      "sample_id": "72d8f893ff4e43bee130e45cae6b41fe5b209212ca8351dbe499f689eb41b989",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "dbf33ef130e108355014ece5156a4730bdc51393da1f32452298d40dad1f448b",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "temporal-identity-collision",
+      "variant": "candidate",
+      "sample_id": "73d8a53fe1c18205bf30d641246efa4603bc74a24de741b9bf7d1bf2edb23139",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "6a0829f62e803ca2f292126164924fa0bf592fe051e08d5779507016b391e591",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "temporal-middle-update",
+      "variant": "baseline",
+      "sample_id": "73ffc12b6c656f53b8725be3d212f2dae3b0a5751b43278a4c7031db8d495032",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "a980d5140c998fcd40e6f8a9967385a24154363096c39e3ae790b379425801bd",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "citation-fr-history",
+      "variant": "candidate",
+      "sample_id": "7455db0b3eb11364671a247988f4fb8876f05d7fb74b835c3362e7bb34fb96ec",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "1e1f2495b49309306c32ce3b9241d34d2741dc46013883357258df0caff45a67",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "citation-zh-author",
+      "variant": "candidate",
+      "sample_id": "7477a142127df89b29f8ab1d81688f4e6f286cdfa2c5ee525cb71373fc6c1346",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "d6c7baedd80e7531c0187f19df98fd5df0582f8a8c1e754ac176bcab55a7366d",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "citation-en-substring",
+      "variant": "baseline",
+      "sample_id": "7d8efbf0b852416040a57a739c56508eafa0add024a4ff7cd60d8d33c17df2dd",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "50c69980174ce627a0590c0530b9cb0fb4d24ec16341684e4ecbe5f27bb4fd51",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "citation-zh-author",
+      "variant": "baseline",
+      "sample_id": "813582a08f14c76fc1e92c96c232c07993b4e6f905103eecf24cbf98579296b0",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "b23a6a8439c0dde5515893e7c90c1e3233b8616e634470f20dc4928bcf3609bc",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "temporal-tentative-not-confirmed",
+      "variant": "baseline",
+      "sample_id": "897f291d97944e5c039b5bb32ca0699dbbced0ae65af0a2712d9fe3845bb3cff",
+      "verdict": "unavailable",
+      "reply_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "temporal-fr-not-yet",
+      "variant": "candidate",
+      "sample_id": "8a80855c6654f4af8cf5b635bd93c4a3c2ab62ab1b320f0b30036c1ef2b0e55b",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "9390298f3fb0c5b160498935d79cb139aef28e1c47358b4bbba61862b9c26e59",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "temporal-cancel-record-time",
+      "variant": "candidate",
+      "sample_id": "8cdd08e08fa9e16d48f11155e575942e0963a73dda3ba7fb680919fb9d8db189",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "247f6553cff8bf96d8438eecc8ff0ccb7b6c72ba2f55b4309956bdc1b8856b0a",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "temporal-fr-unknown-location",
+      "variant": "baseline",
+      "sample_id": "8ce38d5be5b981dbc5bcd46e94bad600ec8a8ed13d4185ed9452c2864fb69250",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "d7a20cb546b6a00af205106757ab459717386d6cd5e9ad56d74d467e499ad57f",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "temporal-fr-last-valid",
+      "variant": "candidate",
+      "sample_id": "8d3f4fba8388fac4eae1583e676ef3c7434adfe299527ffcfbaa39d4f3f898b6",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "16a25bed74bb5d5a612f80f53ad2d3f1e8dec0bcd8f38dd77d03dd4931a35aed",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "citation-en-mass",
+      "variant": "candidate",
+      "sample_id": "8ee5eb68f84eb289e18321a907d396bef3abe6b5025d9b9fa674c8203b5e3843",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "1d4f2db7cb4b942f41439b1a4210a2ef38ed0d59eb2b0553169ec7a0dbf825f9",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "citation-fr-sequence",
+      "variant": "baseline",
+      "sample_id": "8f94b29a123b2d81854fbe475addee798175f1f86d88cce27389dde768d4a6c3",
+      "verdict": "unavailable",
+      "reply_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "temporal-recurring-exception",
+      "variant": "baseline",
+      "sample_id": "963ed3f208701e25d3fd6828486f767743074127bb032c95bef0bce388ad3da0",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "326b2853c204dcd78f17b7c69512cb02985669475c6922ced3cbb271da97e03b",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "temporal-fr-expiry-renewal",
+      "variant": "baseline",
+      "sample_id": "981fb1b650b77097a3f557ed7cd4d39e494b07e5b6c1504c9fdbb9f27a585f60",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "33925e296c6d07c1e9614ea0ed1da5886f28e0f542fc0b0ccde914d2b9ddf810",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "temporal-different-people",
+      "variant": "baseline",
+      "sample_id": "99b97be49be91b66af4947289debbcdafc532684e52763c0a76ae958bc48546f",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "d5d4afee14eccd47a4b2275187eb4e8b06c8902cad03ba64883a5b07d38af9b8",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "temporal-two-clocks",
+      "variant": "candidate",
+      "sample_id": "9aa657bab46b0faba86c5e1cb5856971e31b0e0dbf50e0ad565217d74e53006c",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "be2765c96995a77248aad6ef943a1a8acdad7eabe56fe4e4ebd9117e7af84dbb",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "citation-en-delay",
+      "variant": "baseline",
+      "sample_id": "9b38da5da840df1b64fa051e1406f8b6c727a78f08b57ac8461753d7abd16f4b",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "c9721b76df50dbc00f707b231f43eed9a9019ed44c6a2ffc11b441120ec9cb6b",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "citation-en-substring",
+      "variant": "candidate",
+      "sample_id": "9e2bc139e74d83bcd4f46580acdb7fb3731e2a6fa3398e2325324241bdcd450f",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "31edd039682c1a5c411e6d9b255558c8e4ac7a9ccd875d5e8abbae84e352763e",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "temporal-reopen-without-date",
+      "variant": "baseline",
+      "sample_id": "a2f68e09f0f2d94f9f4588050a78e0d47969444d5991cb4e154c6af8ddfeee6b",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "c912a5c6c65f55a3a3498786b19eda3eef13aa5b8fb1f509769294ad337bebea",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "temporal-different-people",
+      "variant": "candidate",
+      "sample_id": "a48684fdb7589025e435738e1c38eb1aa7963cb03b762b7422be890994ebed77",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "c0100dea6c7576a2827b1d221a24123b67c233689bcf2e1e37bee30f7298cfdf",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "citation-en-nothing",
+      "variant": "candidate",
+      "sample_id": "a91bcbcce0d34c5945cb62cab30371a2d1c7587627254401448d1e9fcc02ecf8",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "f50b18c37a80b5710260d333b607a0eb9c733855c1a090410c1edd22ebc4f814",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "citation-fr-person",
+      "variant": "candidate",
+      "sample_id": "a96d466e52c74c5204d94fb8ed19ed7554cc2519c0577627759fd4d3207df8ef",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "cfdafc1729f827cc7129fff42c2727a9877cd13bfd8a1923ff2ddaecbfab660c",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "citation-fr-cost",
+      "variant": "candidate",
+      "sample_id": "a9adb386c62f45b2c7fb05116e9a7437e375bbf1c23f0d8153eb3fbb5e1a20a0",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "9d69b22fa128766189640c1e0e47bdbb24ae8385bab006809f3e1b2494ca8fff",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "temporal-fr-last-valid",
+      "variant": "baseline",
+      "sample_id": "abdbd524e0db4502ebf0c5342de81c152241502ebd6b6b6489dd5422ee5d5eb4",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "5c6712ca0dc37ea0b6d9533d24f54df58686bfdbfdda791a9130cd8e84ab5b7b",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "temporal-unknown-cancel-time",
+      "variant": "baseline",
+      "sample_id": "b31ea1bb1e004122dcd91d894e2dde0493a6a06370e9c67f17fdbdc171199582",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "02862cff5238256d76c1808b519f01479c0aaf6fbda8e215c4e6073a54840905",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "temporal-fr-event-vs-announcement",
+      "variant": "candidate",
+      "sample_id": "b4b8f7f69901838aca80b04abe35f2f03f1ddb4d2a46a02c201e75e4372e1b95",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "9a130720aa9afeb84c0095f2f12a2385572df0174b24d357343295a4d9239eeb",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "citation-fr-temperature",
+      "variant": "candidate",
+      "sample_id": "b4c29bb5a790a6dd5dad237232af8085ed8624b925c75b1df5a026a0e71da43a",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "33d761828ccd15133ca8d508388df1afd0f0a5b9167cafcbb6ff87e9f9421af0",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "citation-en-mass",
+      "variant": "baseline",
+      "sample_id": "b53e2f2c0d4b83bcb623fe5dbca9a8a4fb3687068dd4776a5a50e8085504db7d",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "a3b3b1ca6c54b2b81cdccf29cb836220792b6f8fc6b050a346025c4188b6e7fb",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "citation-fr-negation",
+      "variant": "candidate",
+      "sample_id": "bc621c9a57a915b923eda196562cee241f5b059b807bcba3e6e71ee5a6eda745",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "e43536f64ff97c7d2ce341b37c01e87ea8c8e4f7a9ae3ee12846cdd8ee21cf4a",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "citation-en-art",
+      "variant": "baseline",
+      "sample_id": "bd6d44e3489554a441360aa7c2fa8e3d3037f78c61242e69bc4ad9776642e1cb",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "69340b3ea457d2f5f21089cff1ebbecd908628ff106c58bfb81770603404383a",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "temporal-two-clocks",
+      "variant": "baseline",
+      "sample_id": "c124afc429798923bde99f7d75065095d5cc468d3b7e334f1a7b49aeb14f9967",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "4f54c24a09c8bc933c3939ff40ec7ce6d7e703a42308fb0d9144c2de39f7fa64",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "citation-fr-negation",
+      "variant": "baseline",
+      "sample_id": "c15e4cd525653a53f8124b3a7164b33b93e6de78bdeed4bd626ce8f802c7698d",
+      "verdict": "missing",
+      "reply_sha256": "ab4ea21eacdd4e907a3876ffe60f257495db5fbe26bc5776b8973d21c005e328",
+      "flags": [
+        "missing_answer_and_source_names"
+      ],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "temporal-tentative-not-confirmed",
+      "variant": "candidate",
+      "sample_id": "c24b67a8846262527d1d2d019c039aa8660700d5dd5f0a28ad5d08e9dfc58ef9",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "1ad11f9be8cd31a731bbe2371fc689c7977a1cea44f946a1c0ff408eb9236d21",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "temporal-cancel-record-time",
+      "variant": "baseline",
+      "sample_id": "c2f2c2fcfb2cfd296d966cbf9271bff42f479d88f1c50b006208ecdd2152bbbe",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "466a1463e95dfdd01b816a2f8f80ec89a6cf8f4c255604e124309b573894f4f1",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "citation-fr-history",
+      "variant": "baseline",
+      "sample_id": "c61e4c47a4bea8a4abbe7cbaebdce7226ead2ad68f9a8d230362446e92968811",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "39917440d1e17a60ff6b3a21fdae9faad8fb489fea0202e4db9008734f207426",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "temporal-distant-negation",
+      "variant": "baseline",
+      "sample_id": "c62b8ce18a0693d64c465804497dbb869e5414a2f63540b391786f9ee2a063a3",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "dae974d6d8a6579f45cc8a93d70f172466f3080792644830f404b4b591c86608",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "citation-zh-meaning",
+      "variant": "candidate",
+      "sample_id": "c74677f031f091b8b150967f584890843a27570d15ad2f9980805ad361b4b8d2",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "816b2f98a7c86bf931a297745e5d518bf23525e1d2bb8f9732f1d5a90aafab5f",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "temporal-recurring-exception",
+      "variant": "candidate",
+      "sample_id": "c7aa2babbd1700b5f069b07f8200f805ef3e8884f6887d92949832750d0fefa0",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "d654cea1842631fa876304999841ace470f2f8009d3c65445bd1c4adc8b38162",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "temporal-fr-hypothetical",
+      "variant": "baseline",
+      "sample_id": "c88285c9b714ee5650476c139bd53e4186ac2eb4f78694276a28680a2843d287",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "94443dc5e0343966b5e3494ef976f768611d0ee082f7855e384e25784910bf2c",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "temporal-fr-effective-order",
+      "variant": "baseline",
+      "sample_id": "c91d745498b93eccd4c8ea589c5421e4b9640a796bc99887c70d4901a8d6265a",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "4523540f1504cd17100c4835e85b7eefd49911580f8efff0599a8f283be6b9e3",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "temporal-reschedule-not-duplicate",
+      "variant": "candidate",
+      "sample_id": "c9c14d7627fb6618e8ce1d383d622b102f02cfe881dc6ea78208f015139acf4e",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "ddc15c5bb2ae766cd58f3cd312d540e7b4dd01845e7ac5daab1c9d6df511913f",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "citation-zh-negative",
+      "variant": "baseline",
+      "sample_id": "cca7276f5d91b0295c2b801398a0c718bfb3aae440a5651fbc59177bdcd53781",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "891c9433f298debd5416efaee2fb5736ba6f0f514942e1e13a4601cc33f6a0b2",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "citation-zh-place",
+      "variant": "candidate",
+      "sample_id": "cd798ef92f4dfa457a0a8cdb90424201f97730fc887d9ded1e2dbfcd2e472680",
+      "verdict": "unavailable",
+      "reply_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "temporal-long-final-update",
+      "variant": "candidate",
+      "sample_id": "d46370c48cbd465880e5f33d2eb9f3c288b901a46d7fb1abf4145af0969bf462",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "6e91ade794d2964e53859c26b2af8bd02e43dbf837312e013d01a2451136f78f",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "citation-zh-color",
+      "variant": "candidate",
+      "sample_id": "d4f0b0ca669154373d952da5fe4746b18a9f7e97f730572c5a45d61fef05b1b6",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "522d173f6e829bac1835622172786b35d2f99137225cffc70e4909d7ed3db66e",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "temporal-reservation-vs-visit",
+      "variant": "candidate",
+      "sample_id": "d772033e7aa29d3eabd9a086fc07dbfe72a7a5fd5374351358afe0e549ef93c6",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "e4a63c1f9d82961593b336d217435120f96574651b4839c22b49e8299da1e36b",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "temporal-reservation-vs-visit",
+      "variant": "baseline",
+      "sample_id": "dae4b7b82989a34bb510e6bc63271f54e6af2ada20694af09f462f3b32549030",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "ea6609eac3f8bcb048434ce22297cf8477f0499278dbcc09408b1c3e05bb3d1a",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "citation-en-founder",
+      "variant": "baseline",
+      "sample_id": "dbf8b075e34e660a222678d84a6645c655cb7ed1d3dfe2645c6833aa5a13fdf4",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "64a1cfe9b618aaa16e978752eb4e3b2b46d5f124291836beb8ad0f368536a706",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "citation-en-route",
+      "variant": "baseline",
+      "sample_id": "e10e896ef221294590bb70da23d20671e256331fd365f77e321af8ff19d58e10",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "8ee787d4a04913e401beebf3a02d975453b0d47c6ebfd7a5c66071c5463a34ee",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "citation-zh-meaning",
+      "variant": "baseline",
+      "sample_id": "e53e4ee61d82a0bcb890d902721661282cda5f465e59542508c0644db18e429d",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "b7938e08f2df2c7e2ddca45687e7895600bdfaf57285ceb4edc351831e17cb55",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "citation-fr-permission",
+      "variant": "candidate",
+      "sample_id": "e8b5b0c9a4c9c28833f9ae097e0bcffb1d44bd7c9c800429daa7be738ff498fe",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "9390298f3fb0c5b160498935d79cb139aef28e1c47358b4bbba61862b9c26e59",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "citation-en-delay",
+      "variant": "candidate",
+      "sample_id": "eada80f69224cee889f753771cef41e37b6ccc3ea3fe369b1c93310dda5aa688",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "16458d5867691c00560b83c2f0c8f62b65454e663c750e2773e0162345ccdcdb",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "citation-fr-person",
+      "variant": "baseline",
+      "sample_id": "eb8533e364833d84dbcf8df0b5276ee31ddd3515e998822e94d087cdb3d6044d",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "4db317a8f1150f5298200ee1fec73bf7824422cd4c31d4557c372661b342d874",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "temporal-long-final-update",
+      "variant": "baseline",
+      "sample_id": "f50504d55699dfd4a7f5638e061328fd407da1a2a4968f99ac6adaada7aed2fc",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "4b4bbbd076c0ce3b1f6a43b075510cacb05307b87e436de11f884e040e220021",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "temporal-fr-unknown-location",
+      "variant": "candidate",
+      "sample_id": "f872649650523e68f0fa45917ce6848c6e42ad7d3258698880a36382a3262b05",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "eab731dceb543628a540a3e6341ccce22f7d2cb3ffae9cf775dcd9bed821621b",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "citation-fr-sequence",
+      "variant": "candidate",
+      "sample_id": "fe10e7111c1afce872b96c0a4064b278a75dcdc9eaeb27e67f8f6d2c0c5497b2",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "4247e97e9be0a3f3100e6f16561fcc9f7d2ce3af1a3ab1efab17c8d6798fd9f1",
+      "flags": [
+        "unsupported_explanation_of_filtering_purpose"
+      ],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "temporal-future-effective-history",
+      "variant": "baseline",
+      "sample_id": "fe4e0905004d3cf1e8dade751e7d7d91c5b661beb0e16603f309651089b56b6f",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "b66c632259277d4308287f4984e973cf5ff5fa486997c3011ae149c5d73f36e8",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    },
+    {
+      "case": "temporal-partial-cancellation",
+      "variant": "baseline",
+      "sample_id": "ffd44fc60e4f06478d1580a0599dbceda2f3d8c10e097f98b38d4d92d3e89c95",
+      "verdict": "matches_requested_facts",
+      "reply_sha256": "d88540304fe257296825a9290fb8dc17495f339bfbe2f18791d926085b097b58",
+      "flags": [],
+      "note": "Target facts reviewed against frozen source/gold; does not certify output format, quotation fidelity or all extra claims."
+    }
+  ]
+}

@@ -33,6 +33,8 @@ from app.services.learning_plan_chat_runtime import LearningPlanChatToolRuntime
 from app.services.model_recovery import consume_model_recovery_state, reset_model_recovery_state
 from app.services.study_chat_attachments import StudyChatAttachmentService
 from app.services.study_chat_preflight import StudyChatPreflightError, validate_study_chat_preclaim
+from app.models.study_chat_effect import StudyMemoryUpsertEffectProposalV1
+from app.services.study_grounding import parse_verbatim_memory
 from app.services.study_session_chat_runtime import StudySessionChatToolRuntime
 from app.services.study_v3 import (
     StudyChatInputManifest,
@@ -172,6 +174,10 @@ def _admit_and_run_study_chat(
     execute,
     dependencies: StudyChatDependencies,
 ) -> StudyChatOperationReceipt:
+    try:
+        parse_verbatim_memory(message, (message_kind or "learner").strip() or "learner")
+    except ValueError as exc:
+        raise StudyChatApplicationError(status_code=422, detail=str(exc)) from exc
     request_payload = StudyChatOperationRequestPayload(
         message=message,
         message_kind=(message_kind or "learner").strip() or "learner",
@@ -484,7 +490,7 @@ def _run_study_chat(context: StudyChatExecutionContext, *, dependencies: StudyCh
     )
     protected_snapshot_payload = {
         "schema_name": "StudyChatProtectedSnapshot",
-        "schema_version": "study-chat-protected-snapshot-v1",
+        "schema_version": "study-chat-protected-snapshot-v2",
         "dependencies": {
             "input": {
                 **study_input_manifest.model_dump(mode="json"),
@@ -519,6 +525,7 @@ def _run_study_chat(context: StudyChatExecutionContext, *, dependencies: StudyCh
             ],
             "session_prompt": session_prompt,
             "model_message": model_message,
+            "learner_message": message,
             "active_plan_context": active_plan_context,
             "attachment_context": attachment_context,
             "learner_multimodal_parts": learner_multimodal_parts or [],
@@ -558,7 +565,12 @@ def _run_study_chat(context: StudyChatExecutionContext, *, dependencies: StudyCh
     def generate_study_reply(_context, artifacts):
         if set(artifacts) != {study_snapshot.artifact_id}:
             raise ValueError("study_snapshot_artifact_set_mismatch")
-        decode_study_snapshot(artifacts[study_snapshot.artifact_id])
+        resolved = decode_study_snapshot(artifacts[study_snapshot.artifact_id])
+        source = parse_verbatim_memory(
+            resolved["dependencies"]["learner_message"],
+            resolved["dependencies"]["input"]["message_kind"],
+        )
+        session_tool_runtime.verbatim_memory_source = source
         dependencies.study_chat_operation_repository.mark_provider_started(
             operation_id=operation_id,
             execution_token=execution_token,
@@ -573,7 +585,11 @@ def _run_study_chat(context: StudyChatExecutionContext, *, dependencies: StudyCh
                 study_unit_title=session.study_unit_title,
                 theme_hint=session.theme_hint,
                 active_plan=active_plan,
-                session_system_prompt=session_prompt,
+                session_system_prompt=session_prompt + (
+                    "\n当前学习者明确请求原文保存。调用 write_session_memory，key="
+                    + source.key + "；服务器从当前操作授权来源绑定原文。仅在工具成功后确认，禁止声称已提交。"
+                    if source is not None else ""
+                ),
                 debug_report=debug_report,
                 document_path=(
                     document.stored_path if document is not None else None
@@ -611,6 +627,12 @@ def _run_study_chat(context: StudyChatExecutionContext, *, dependencies: StudyCh
                 checks,
                 strategy or "provider_bounded_recovery",
             ) from exc
+        if source is not None:
+            batch = effect_collector.prepared_batch()
+            writes = [effect.proposal for effect in batch.effects
+                      if isinstance(effect.proposal, StudyMemoryUpsertEffectProposalV1)] if batch else []
+            if not writes or writes[-1].key != source.key or writes[-1].content != source.content:
+                raise RuntimeError("verbatim_memory_effect_missing")
         result.citations = _merge_chat_citations(
             result.citations,
             session_tool_runtime.response_citations(),

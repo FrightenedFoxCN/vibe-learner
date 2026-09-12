@@ -223,6 +223,12 @@ def run(c: Campaign, output: Path, ledger_path: Path, *, resume=False):
         pending = [sample for sample in samples if states[sample[0]] == 'pending']
         if pending and c.transport == 'minimax' and not os.environ.get('K3_API_KEY', '').strip():
             raise ValueError('K3_API_KEY is required for live dispatch')
+        if pending and c.transport == 'minimax':
+            # Reject local DNS failures before admitting any domain operation or wire.
+            # Transport/network failures after this check still retain reservations.
+            import socket
+            from urllib.parse import urlsplit
+            socket.getaddrinfo(urlsplit(ENDPOINT).hostname, 443, type=socket.SOCK_STREAM)
         ctx = multiprocessing.get_context('spawn')
         active = {}
         try:

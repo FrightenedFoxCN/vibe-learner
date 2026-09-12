@@ -1,0 +1,18 @@
+{
+  "version": "study-user-json-format-diagnostic-v1",
+  "provider_calls": 0,
+  "source_sha256": "784b35e7ea57962997adadb3aeb9e72e05fcf999ef5575015bfb9289c5518e07",
+  "cases": [
+    {
+      "case": "bare_user_json",
+      "accepted": false,
+      "error": "chat_model_invalid_payload"
+    },
+    {
+      "case": "outer_proposal_with_user_json",
+      "accepted": true,
+      "error": null
+    }
+  ],
+  "scope": "Deterministic decoder mechanism only. Raw live provider replies were not retained, so this does not identify the exact cause of every live uncertain result."
+}

@@ -1364,6 +1364,16 @@
               "version": "study-chat-toolset-v1"
             }
           }
+        },
+        {
+          "component_name": "study_grounding",
+          "contract": {
+            "status": "registered",
+            "contract": {
+              "name": "study_grounding",
+              "version": "study-grounding-v1"
+            }
+          }
         }
       ],
       "prompt_contract": {

@@ -36,7 +36,7 @@ from app.services.harness_runtime import (
 
 
 STUDY_SNAPSHOT_CONTRACT = HarnessContractRef(
-    name="StudyChatProtectedSnapshot", version="study-chat-protected-snapshot-v1"
+    name="StudyChatProtectedSnapshot", version="study-chat-protected-snapshot-v2"
 )
 STUDY_INPUT_CONTRACT = HarnessContractRef(
     name="StudyChatInputManifest", version="study-chat-input-manifest-v1"
@@ -135,7 +135,7 @@ def decode_study_snapshot(payload: object) -> dict[str, Any]:
         raise ValueError("study_snapshot_object_required")
     if decoded.get("schema_name") != "StudyChatProtectedSnapshot":
         raise ValueError("study_snapshot_schema_name_invalid")
-    if decoded.get("schema_version") != STUDY_SNAPSHOT_CONTRACT.version:
+    if decoded.get("schema_version") not in ("study-chat-protected-snapshot-v1", STUDY_SNAPSHOT_CONTRACT.version):
         raise ValueError("study_snapshot_schema_version_invalid")
     dependencies = decoded.get("dependencies")
     if not isinstance(dependencies, dict):
@@ -159,6 +159,10 @@ def decode_study_snapshot(payload: object) -> dict[str, Any]:
         "active_scene_context",
         "learner_attachments",
     }
+    if decoded["schema_version"] == STUDY_SNAPSHOT_CONTRACT.version:
+        required.add("learner_message")
+        if not isinstance(dependencies.get("learner_message"), str):
+            raise ValueError("study_snapshot_learner_message_invalid")
     if set(dependencies) != required:
         raise ValueError("study_snapshot_dependency_set_mismatch")
     return decoded
@@ -222,7 +226,10 @@ class StudyV3SnapshotService:
         operation_binding: HarnessOperationBindingV1,
         payload: dict[str, Any],
     ) -> tuple[HarnessSnapshotRefV3, str]:
+        if payload.get("schema_version") != STUDY_SNAPSHOT_CONTRACT.version:
+            raise ValueError("study_snapshot_registration_version_mismatch")
         content = canonical_study_snapshot(payload)
+        decode_study_snapshot(content)
         registration = self.artifacts.register_artifact(
             artifact_type=HarnessArtifactType.STUDY_SESSION_SNAPSHOT,
             artifact_contract=STUDY_SNAPSHOT_CONTRACT,

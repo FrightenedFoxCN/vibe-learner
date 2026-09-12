@@ -417,6 +417,11 @@ export function StudyConsole({
                 onChange={(event) => setMessage(event.target.value)}
                 disabled={disabled || isPending || recoveryLocked}
               />
+              <details>
+                <summary>如何保存原文记忆</summary>
+                <p>输入以下指令，将中间的原文保存到当前会话的指定记忆键。键名使用字母、数字、下划线或短横线；原文最多 4000 字，首尾不能留空白。请等待保存结果后再继续。</p>
+                <pre>{"/remember-verbatim my_note\n需要逐字保留的原文\n/end-remember"}</pre>
+              </details>
               <div style={styles.attachmentToolbar}>
                 <input
                   ref={attachmentInputRef}

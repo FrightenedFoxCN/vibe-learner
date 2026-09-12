@@ -129,3 +129,71 @@ LITELLM_LOCAL_MODEL_COST_MAP=True uv run --project ../../services/ai python -m m
 测量期间通过显式审计事件调整档位，同账本其他 campaign 的新请求被阻止；档位变更要求已排空在途。结束后恢复原控制策略，保留所有费用、未知预留和供应商停止状态。若整个进程被强制杀死，不自动恢复或重发，应先检查原 worker/在途状态及 `previous-control.json`。容量探针不提供自动 resume。
 
 `c*-w*-result.json` 按窗口保存脱敏 wire 与样本状态；`report.json` 记录实际峰值在途、完成吞吐、P50/P95、状态码、unknown usage、最高稳定档和停止原因。重复合成负载可能命中缓存，不代表不同内容长度、图片、长 Planning 或多轮 Study 的吞吐；schema 通过率也不是内容质量评分。
+
+## 2026-09-12 并行记忆实验与交付
+
+[完整实验记录与生产交接](../../docs/quality/m3-parallel-memory-results-2026-09-12.md)记录了 96 个真实领域样本、186 次 HTTP 200 请求，以及另行保留的 32 个 DNS 受阻样本。新增命令全部属于实验工具；没有改变生产默认模型、工具解码或写入策略。
+
+准备三种冻结矩阵，仍使用上文的服务依赖环境与 `PYTHONPATH`：
+
+```bash
+python -m vibe_learner.prepare_quality --transport minimax --experiment instruction --id your-instruction-batch --budget-from /absolute/path/window-budget.json --output /absolute/path/instruction.json
+python -m vibe_learner.prepare_quality --transport minimax --experiment policy --id your-policy-batch --budget-from /absolute/path/window-budget.json --output /absolute/path/policy.json
+python -m vibe_learner.prepare_quality --transport minimax --experiment shape --id your-shape-batch --budget-from /absolute/path/window-budget.json --output /absolute/path/shape.json
+```
+
+`window-budget.json` 的顶层为 `{"budget": ...}`，使用当前账本的完整 budget；不要按每批重建日累计窗口。instruction 为 8 案例×2 条件×2 重复，policy 为 8×3×2，shape 为 8×2×1；最多分别 192/288/96 次 wire。policy 的 `adaptive` 改变 thinking，`force-write-first` 只改变第一次请求的 tool_choice；shape 两臂均为 adaptive，候选只删除精确工具 envelope 中非负整数 `index`，其余结构仍走生产严格解码。这些是开发诊断条件，不是可直接启用的生产配置。
+
+显式恢复已经排空的历史 `provider_overload` 停发：
+
+```bash
+python -m model_quality.reopen --ledger /absolute/path/window.sqlite3 --concurrency 4 --reason 'Explain the authorized new experiment and reduced load'
+```
+
+恢复仅接受 overload，必须无在途、已过至少 60 秒及数值 Retry-After、窗口未过期且容量控制器已释放；最多 4 并发，切换固定策略并事务记录旧状态和理由。不会解除 authentication、reservation_underestimated 等其他停止原因，不重置费用，不重跑历史样本。预算或期限变更仍先走 `model_quality.budget`。操作者应先确认旧调度器已结束；跨 campaign 的应用进程管理不由账本替代。
+
+真实 campaign 在派发 worker 前检查 DNS；DNS 失败保留 pending，修复网络后可用相同源码和配置 `--resume`。这个检查不证明 TLS、认证或供应商可用性。已有 wire 的传输失败仍保留未知预留。
+
+新证据将 observed tool 与 successful tool 分开；工具 trace 的出现不代表执行成功。`tool_call_shapes` 只保存固定字段是否出现、未知字段数量和形状检查，不保存参数、provider ID、推理或未知字段名。历史 `read_memory_tool_executed` 指标只代表观察到调用，请用下面的 receipt 审核重新区分成功/拒绝。当前严格 memory rubric 要求恰好一次同 key 的匹配效果；重复写入但最终正确的情况要单独报告，不能由严格失败率推导最终状态错误率。
+
+完成后生成机器可读审核和可移交证据包：
+
+```bash
+python examples/summarize_campaigns.py --campaign-dir /absolute/path/completed-run --output /absolute/path/audit.json
+python -m model_quality.export --campaign-dir /absolute/path/completed-run --ledger /absolute/path/window.sqlite3 --output /absolute/path/evidence.zip
+```
+
+两个命令都可重复指定 `--campaign-dir`。export 持有所选 campaign 文件锁、拒绝非终态和在途账本，保留原 manifest/report、合成公开 receipt、预算/恢复审计和工具源码，并提供逐文件 SHA-256；检测当前密钥字节后才写入新文件。不会导出数据库、诊断日志或推理。源码是导出时版本，各次执行版本以 manifest 中冻结的摘要为准。该工具只用于可信的合成实验目录，不能作为任意用户数据的通用脱敏器。
+
+## 三条优先 lane、摘要评分与源码快照
+
+[并行实验总记录](../../docs/quality/m3-parallel-results-2026-09-12.md)是本轮生产交接入口。引用 24 来源、事件 30 场景、逐字 24 来源共 156 样本在同一调度器中随机交错，仍只有 4 个 worker；这是有界混合调度，不是加权 lane 公平队列。摘要另有 8 场景×2 条件，按事实对象而非字符比较。
+
+在本目录、已配置服务环境的 `PYTHONPATH` 下：
+
+```bash
+uv run --project ../../services/ai python -m vibe_learner.prepare_lanes --lane mixed --transport minimax --budget-from /absolute/path/current-budget.json --id your-mixed-batch --output /absolute/path/mixed.json
+uv run --project ../../services/ai python -m vibe_learner.prepare_summary --transport minimax --budget-from /absolute/path/current-budget.json --id your-summary-batch --output /absolute/path/summary.json
+uv run --project ../../services/ai python -m model_quality --manifest /absolute/path/mixed.json --output /absolute/path/mixed-run --ledger /absolute/path/window.sqlite3
+```
+
+`--lane citation|temporal|verbatim` 可单独准备对应矩阵。混合 batch 的 `candidate` 按 lane 映射到 normalized tokenizer、oracle-context、source-binding；映射在冻结的 `priority.py` 中。oracle 仅从本样本真实已提交 seed 原话取回，不是生产策略。source-binding 只在已经提出且参数合法的同 key 逐字写入上绑定原文；不允许拿它替代 summary，也不创造新的写入动作。verbatim 两臂均有相同的 index 兼容，不能和未经兼容的旧 baseline 直接作因果比较。
+
+真实运行生成 `manifest.json` 后、改动任何执行源码前，另开终端捕获逐文件匹配的执行源码：
+
+```bash
+python examples/capture_vibe_source.py --campaign-dir /absolute/path/mixed-run --repo /absolute/path/vibe-learner --output /absolute/path/mixed-run/execution-source.zip
+```
+
+脚本核对 manifest 中每个源码/锁文件摘要，任意不符便拒绝，不能把新版代码冒充旧版。`model_quality.export` 自动包含该快照并校验内层摘要和当前密钥字节。早期已有 manifest 而源码已改变的批次仍只能保留原摘要和已存在的导出源码；不要伪造补录。复现实验时，在隔离副本恢复记录的 Git revision 和执行快照、安装锁定依赖，再分配新 campaign ID 与有效累计预算；旧 manifest 的过期时间不能直接重用于新模型调用。
+
+只读汇总和来源选择重放：
+
+```bash
+python examples/summarize_priority.py --campaign-dir /absolute/path/mixed-run --output /absolute/path/mixed-audit.json
+uv run --project ../../services/ai python examples/audit_citation_selection.py --campaign-dir /absolute/path/mixed-run --output /absolute/path/citation-replay.json
+```
+
+`mixed-audit` 保留原指标；旧批中未提交却空引用的记录须以 `citation-replay` 的 unavailable 分类解读。离线重放是 selector 算法证据，不是新 domain commit。JSON 事实 exact 也不等于自然语言语义正确率；总记录保留独立于格式的辅助复核及其非独立限制。
+
+最终本地验证：36 项通用测试、15 项领域测试。数据入口检查合成 PDF 文本抽取；seed 失败回归证明保留首个失败 receipt、不会继续派发 query。没有触发应用发布门或修改生产默认值。

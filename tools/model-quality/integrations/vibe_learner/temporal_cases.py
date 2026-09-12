@@ -1,0 +1,45 @@
+"""30 distinct authored event problems; independent review is still required."""
+import json
+
+FILLER_ZH='另一个练习讨论等式变形与验算，不改变任何约定。'*65
+FILLER_EN='The inventory appendix describes spare bolts and blank labels; it changes no schedule. '*32
+ROWS = [
+('cancel-record-time', ['[记录2026-04-08] 林溪补记：她与杜衡在2026-04-05取消了原定4月12日的会面。','[记录2026-04-09] 旧会面被归档；没有恢复，也未约定新日期。'], '林溪旧会面的取消发生日期、记录取消的日期和当前状态分别是什么？status用cancelled，日期用YYYY-MM-DD。', {'cancelled_on':'2026-04-05','recorded_on':'2026-04-08','status':'cancelled'}, ['2026-04-05','2026-04-08','没有恢复']),
+('future-effective-history', ['[记录2026-09-03] 从2026-10-01起，星河排练地点改为北厅。','[记录2026-09-04] 补记：2026-08-01排练曾在南厅；这不是对10月安排的修改。'], '2026-10-02星河排练应该在哪个厅？venue用north或south。', {'venue':'north'}, ['2026-10-01','北厅','不是']),
+('archive-reactivate', ['[记录2026-02-10] 项目Amber于2月9日归档，状态inactive。','[记录2026-02-14] 项目Amber已在2月13日重新启用，状态active；上市日期仍未确定。'], '项目Amber最终状态和上市日期是什么？state用active或inactive；未知日期用unknown。', {'state':'active','launch':'unknown'}, ['2月13日','active','未确定']),
+('different-people', ['周宁与陆笙的羽毛球预约在2026-07-02取消。','陆笙与宋禾的另一个羽毛球预约仍然有效，时间2026-07-06。'], '陆笙与宋禾的预约状态和日期？status用active或cancelled。', {'status':'active','date':'2026-07-06'}, ['宋禾','仍然有效','2026-07-06']),
+('tentative-not-confirmed', ['邵雨说也许参加周六的读书会；目前只是tentative，没有确认。','组织者发出了读书会确认通知，但邵雨尚未回应。'], '邵雨的出席状态？status只能用tentative或confirmed。', {'status':'tentative'}, ['只是tentative','尚未回应']),
+('unknown-cancel-time', ['锦舟已取消体检预约，但取消发生的日期与时间没有记录。','[记录2026-05-07 18:30] 此时收到上述取消信息；收信时间不是取消时间。'], '锦舟取消发生时间和收信日期？unknown表示没有记录，日期YYYY-MM-DD。', {'cancel_time':'unknown','received_date':'2026-05-07'}, ['没有记录','不是取消时间']),
+('middle-update', ['云杉借阅柜原先使用口令青瓦。','开始整理记录。'+FILLER_ZH+'\n补充：云杉借阅柜口令改为白鹭，旧口令青瓦立即失效。\n'+FILLER_ZH], '云杉借阅柜当前口令及旧口令状态？old用invalid或valid。', {'code':'白鹭','old':'invalid'}, ['白鹭','立即失效']),
+('distant-negation', ['虹桥储物箱最初由范霁保管。','虹桥储物箱仍登记范霁。'+FILLER_ZH+'补充更正：保管人改为陶岑，前文登记不再有效。'], '虹桥储物箱当前保管人是谁？仅用姓名。', {'custodian':'陶岑'}, ['陶岑','不再有效']),
+('reopen-without-date', ['山岚讲座原定2026-03-11，后来取消。','讲座项目重新开放报名，但没有安排新的讲座日期；不能沿用旧日期。'], '山岚讲座目前报名状态和讲座日期？registration用open或closed。', {'registration':'open','event_date':'unknown'}, ['没有安排','不能沿用']),
+('record-vs-effective-end', ['停水通知于2026-06-01发布，停水从2026-06-03生效，到2026-06-04结束。','2026-06-02发布提醒，日期不变。'], '停水生效日期和结束日期？', {'starts':'2026-06-03','ends':'2026-06-04'}, ['2026-06-03','2026-06-04','日期不变']),
+('retroactive-correction', ['On 2026-01-10 the journal incorrectly said parcel Birch arrived on January 8.','A correction posted on 2026-01-12 says Birch actually arrived on 2026-01-07; the January 8 date is retracted.'], 'What is Birch arrival date and the correction posting date? Use YYYY-MM-DD.', {'arrival':'2026-01-07','correction':'2026-01-12'}, ['2026-01-07','2026-01-12','retracted']),
+('two-clocks', ['The gate event occurred at 2026-08-02 09:00 UTC. The local clock was UTC+02:00.','The log was received at 2026-08-02 12:30 UTC+02:00; receipt is not event time.'], 'Return event_utc and event_local as HH:MM, not the receipt time.', {'event_utc':'09:00','event_local':'11:00'}, ['09:00 UTC','UTC+02:00','not event']),
+('recurring-exception', ['The greenhouse opens every Tuesday at 08:00.','Exception for Tuesday 2026-11-03: closed all day for inspection. Normal Tuesday hours resume the following week.'], 'Is the greenhouse open on 2026-11-03? Use yes or no.', {'open':'no'}, ['2026-11-03','closed all day']),
+('reservation-vs-visit', ['Morgan reserved the East archive for 2026-04-21.','Morgan cancelled that reservation before the day and has never visited the East archive.'], 'Has Morgan visited the East archive, and is the reservation active? Use yes or no.', {'visited':'no','active':'no'}, ['cancelled','never visited']),
+('partial-cancellation', ['The Cedar trip has a morning museum visit and an afternoon garden visit.','Only the garden visit was cancelled. The museum visit remains scheduled for 2026-06-18.'], 'Return museum and garden status as active or cancelled.', {'museum':'active','garden':'cancelled'}, ['Only the garden','museum visit remains']),
+('reschedule-not-duplicate', ['Package Delta delivery was scheduled for 2026-09-14.','Delta was rescheduled to 2026-09-16, replacing rather than adding to the September 14 slot.'], 'Return current delivery date and the number of active delivery slots as strings.', {'date':'2026-09-16','slots':'1'}, ['2026-09-16','replacing rather than adding']),
+('countermand-before-effective', ['A bulletin announced the ferry route would close on 2026-12-01.','On 2026-11-29 the closure bulletin was withdrawn before taking effect. The route stays open.'], 'What is the route state on 2026-12-02? Use open or closed.', {'state':'open'}, ['withdrawn before','stays open']),
+('ownership-transfer', ['The cobalt notebook belonged to Elise until 2026-05-20.','On 2026-05-21 Elise gave it permanently to Pavel, who lent it to Noor on May 22 without transferring ownership.'], 'Who owns the cobalt notebook after May 22? Return the person name.', {'owner':'Pavel'}, ['Pavel','without transferring ownership']),
+('identity-collision', ['Sensor Alder-01 was disabled at noon. Sensor Alder-10 stayed active.','The later alert concerns Alder-01 only; it does not change Alder-10.'], 'Return Alder-10 status using active or disabled.', {'status':'active'}, ['Alder-10 stayed active','does not change']),
+('long-final-update', ['The workshop starts at 10:00 in Room Cedar.','The workshop starts at 10:00. '+FILLER_EN+'Final revision: start at 13:45 in Room Elm; all earlier times and rooms are superseded.'], 'Return the current workshop time HH:MM and room name only.', {'time':'13:45','room':'Elm'}, ['13:45','Room Elm','superseded']),
+('fr-cancellation-archive', ['Le rendez-vous de Mila a été annulé le 2026-02-03.','La fiche a été archivée le 2026-02-08, sans rétablir le rendez-vous.'], 'Donne les dates cancellation et archive au format YYYY-MM-DD.', {'cancellation':'2026-02-03','archive':'2026-02-08'}, ['2026-02-03','2026-02-08','sans rétablir']),
+('fr-unknown-location', ['La réunion Iris est confirmée pour le 2026-07-19, mais le lieu reste inconnu.','Une ancienne note mentionne la salle Rouge pour une autre réunion, pas Iris.'], 'Donne date et venue pour Iris; utilise unknown si le lieu est inconnu.', {'date':'2026-07-19','venue':'unknown'}, ['lieu reste inconnu','pas Iris']),
+('fr-effective-order', ['Consigné le 2026-09-06 : le tarif futur, à partir du 2026-10-01, est 17 euros.','Consigné le 2026-09-07 : rappel historique, le tarif du 2026-08-01 était 12 euros.'], 'Quel tarif vaut le 2026-10-02 ? price doit contenir seulement le nombre.', {'price':'17'}, ['2026-10-01','17 euros','historique']),
+('fr-two-relationships', ['Inès et Marc ont annulé leur concert du vendredi.','Marc et Hugo maintiennent leur sortie du samedi; ce sont deux sorties distinctes.'], 'La sortie de Marc et Hugo est-elle active ou cancelled ?', {'status':'active'}, ['Marc et Hugo maintiennent','distinctes']),
+('fr-not-yet', ['La livraison Sable est annoncée pour demain.','Le message dit que le colis est en transit et n\'est pas encore arrivé.'], 'Le colis Sable est-il arrivé ? answer doit être yes ou no.', {'answer':'no'}, ['en transit','pas encore arrivé']),
+('fr-last-valid', ['Le code de la serrure est LUNE.','Le code a été changé en VENT, puis cette modification a été annulée: le code LUNE est rétabli.'], 'Quel est le code actuel ? Utilise les majuscules exactes.', {'code':'LUNE'}, ['VENT','LUNE est rétabli']),
+('fr-duration', ['La séance a commencé à 14:10 et s\'est terminée à 14:55 le même jour.','Le compte rendu a été envoyé à 16:00, ce qui ne prolonge pas la séance.'], 'Quelle est la durée en minutes ? minutes doit être une chaîne numérique.', {'minutes':'45'}, ['14:10','14:55','ne prolonge pas']),
+('fr-hypothetical', ['Si la neige arrive, la promenade sera annulée.','La météo est restée claire; aucune décision d\'annulation n\'a été prise.'], 'Quel statut a la promenade ? Utilise active ou cancelled.', {'status':'active'}, ['Si la neige','aucune décision']),
+('fr-expiry-renewal', ['La carte Atlas expire le 2026-04-30.','Elle a été renouvelée avant expiration; la nouvelle date de fin est 2027-04-30.'], 'Quelle est la date de fin actuelle ? Utilise YYYY-MM-DD.', {'expires':'2027-04-30'}, ['renouvelée','2027-04-30']),
+('fr-event-vs-announcement', ['Une annonce publiée le 2026-08-12 indique que la porte a été réparée le 2026-08-09.','Une copie de cette annonce a circulé le 2026-08-15; elle ne décrit aucune nouvelle réparation.'], 'Donne repair et announcement, sans utiliser la date de la copie.', {'repair':'2026-08-09','announcement':'2026-08-12'}, ['2026-08-09','2026-08-12','aucune nouvelle']),
+]
+
+
+def cases():
+    return [dict(id=identifier,family=identifier,lane='temporal',provenance='synthetic-authored',
+        source=json.dumps({'records':records,'anchors':anchors},ensure_ascii=False),
+        request=question+'\n请检索之前会话的记录，分清原话和助手回复。只返回一个JSON对象，字段为'+','.join(gold)+'，每个值都必须是字符串。不知道就写unknown，不加其他文字。',
+        gold=json.dumps(gold,ensure_ascii=False),rubric='temporal-facts-v1')
+        for identifier,records,question,gold,anchors in ROWS]

@@ -1,0 +1,108 @@
+{
+  "version": "m3-completion-audit-v1",
+  "campaigns": [
+    {
+      "campaign": "m3-memory-pairs-20260912-v1",
+      "samples": 32,
+      "states": {
+        "uncertain": 32
+      },
+      "wires": 32,
+      "http_200": 0,
+      "reported_tokens": 0,
+      "charged_or_reserved_tokens": 3265536
+    },
+    {
+      "campaign": "m3-memory-pairs-20260912-v2",
+      "samples": 32,
+      "states": {
+        "candidate_failed": 28,
+        "completed": 4
+      },
+      "wires": 44,
+      "http_200": 44,
+      "reported_tokens": 234938,
+      "charged_or_reserved_tokens": 234938
+    },
+    {
+      "campaign": "m3-memory-policy-20260912-v1",
+      "samples": 48,
+      "states": {
+        "candidate_failed": 37,
+        "completed": 10,
+        "uncertain": 1
+      },
+      "wires": 92,
+      "http_200": 92,
+      "reported_tokens": 521969,
+      "charged_or_reserved_tokens": 521969
+    },
+    {
+      "campaign": "m3-memory-shape-20260912-v1",
+      "samples": 16,
+      "states": {
+        "completed": 10,
+        "candidate_failed": 5,
+        "uncertain": 1
+      },
+      "wires": 50,
+      "http_200": 50,
+      "reported_tokens": 296778,
+      "charged_or_reserved_tokens": 296778
+    },
+    {
+      "campaign": "m3-priority-mixed-20260912-v1",
+      "samples": 156,
+      "states": {
+        "candidate_failed": 98,
+        "completed": 49,
+        "uncertain": 9
+      },
+      "wires": 424,
+      "http_200": 424,
+      "reported_tokens": 2353010,
+      "charged_or_reserved_tokens": 2353010
+    },
+    {
+      "campaign": "m3-summary-facts-20260912-v1",
+      "samples": 16,
+      "states": {
+        "candidate_failed": 6,
+        "completed": 9,
+        "uncertain": 1
+      },
+      "wires": 40,
+      "http_200": 40,
+      "reported_tokens": 250860,
+      "charged_or_reserved_tokens": 250860
+    },
+    {
+      "campaign": "m3-summary-facts-20260912-v2",
+      "samples": 16,
+      "states": {
+        "completed": 16
+      },
+      "wires": 48,
+      "http_200": 48,
+      "reported_tokens": 294978,
+      "charged_or_reserved_tokens": 294978
+    }
+  ],
+  "sample_evidence_files": 316,
+  "unique_sample_directories": 316,
+  "unique_admitted_harness_operations": 436,
+  "temporal_samples_with_seed_scope_verified": 60,
+  "seed_operations_committed": 120,
+  "http_200": 698,
+  "response_models": [
+    "MiniMax-M3"
+  ],
+  "reported_tokens": 3952533,
+  "observed_peak_inflight": 4,
+  "whole_ledger": {
+    "wires": 1242,
+    "charged_or_reserved_tokens": 7892181,
+    "inflight": 0
+  },
+  "scope": "Development experiments; terminal receipt identity and selected temporal source scope verified. Not independent quality certification or production release acceptance."
+}

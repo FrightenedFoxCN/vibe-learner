@@ -1,0 +1,38 @@
+{
+  "version": "priority-data-calibration-v1",
+  "historical_results_rewritten": false,
+  "findings": [
+    {
+      "id": "citation-uncommitted-denominator",
+      "issue": "Original mixed adapter recorded true citation precision/abstention for some noncommitted empty results. Joint outcomes were already failed/uncertain.",
+      "resolution": "Keep raw report. citation-selection-replay.json makes them unavailable, and future adapter requires committed receipt.",
+      "regression": "test_uncommitted_citation_is_not_successful_abstention"
+    },
+    {
+      "id": "duplicate-json-object-keys",
+      "issue": "Initial JSON fact parser accepted duplicate keys through json.loads. No live success was identified as relying on this; this was a calibration gap.",
+      "resolution": "Future grader rejects duplicate object keys; preserve earlier execution artifacts.",
+      "regression": "test_summary_fact_grader_and_domain_effects"
+    },
+    {
+      "id": "summary-date-meaning",
+      "issue": "summary v1 date did not specify cancelled historical date versus current replacement date. Keeping 2026-08-09 with status cancelled is not automatically an invented date.",
+      "resolution": "Retain v1. v2 uses current_date with an explicit definition; also defines every other field and name/unknown representation.",
+      "v1_ambiguous_samples": [
+        "summary-cancel/baseline/0",
+        "summary-cancel/fact-focus/0"
+      ],
+      "v2_is_independent_confirmation": false
+    },
+    {
+      "id": "summary-canonical-vs-semantic",
+      "issue": "unspecified versus unknown, transliterated names, and descriptive value strings mixed canonical formatting and fact semantics.",
+      "resolution": "Report canonical fact-object results separately; v2 defines exact field meanings and original-name-only values."
+    },
+    {
+      "id": "memory-effect-count",
+      "issue": "Early strict memory rubric required exactly one effect, so repeated writes with a correct final value could fail.",
+      "resolution": "New study-memory-final-v2 checks final memory effect and records all effects; early strict results retained."
+    }
+  ]
+}

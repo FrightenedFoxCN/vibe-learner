@@ -1,0 +1,30 @@
+
+> vibe-learner@0.3.4 test:acceptance:web-routes
+> npm --workspace @vibe-learner/web run test:routes
+
+
+> @vibe-learner/web@0.3.4 test:routes
+> playwright test tests/browser/route-ownership.spec.ts
+
+[WebServer] (node:63811) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 13 tests using 1 worker
+
+(node:63812) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   1 tests/browser/route-ownership.spec.ts:7:3 › / initializes only its owned resources (760ms)
+  ✓   2 tests/browser/route-ownership.spec.ts:7:3 › /manual initializes only its owned resources (651ms)
+  ✓   3 tests/browser/route-ownership.spec.ts:7:3 › /settings initializes only its owned resources (644ms)
+  ✓   4 tests/browser/route-ownership.spec.ts:7:3 › /model-usage initializes only its owned resources (631ms)
+  ✓   5 tests/browser/route-ownership.spec.ts:7:3 › /plan initializes only its owned resources (664ms)
+  ✓   6 tests/browser/route-ownership.spec.ts:7:3 › /study initializes only its owned resources (649ms)
+  ✓   7 tests/browser/route-ownership.spec.ts:7:3 › /persona-spectrum initializes only its owned resources (660ms)
+  ✓   8 tests/browser/route-ownership.spec.ts:7:3 › /scene-setup initializes only its owned resources (639ms)
+  ✓   9 tests/browser/route-ownership.spec.ts:7:3 › /sensory-tools initializes only its owned resources (629ms)
+  ✓  10 tests/browser/route-ownership.spec.ts:7:3 › /tavern initializes only its owned resources (632ms)
+  ✓  11 tests/browser/route-ownership.spec.ts:7:3 › /not-a-real-page initializes only its owned resources (626ms)
+  ✓  12 tests/browser/route-ownership.spec.ts:25:1 › Plan and Study share their owner; leaving it stops learning focus refresh (805ms)
+  ✓  13 tests/browser/route-ownership.spec.ts:45:1 › Plan draft remains visible after navigating to Settings and back (1.1s)
+
+  13 passed (10.0s)

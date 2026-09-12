@@ -1,0 +1,3 @@
+
+# Preserve verbatim acceptance logs, including progress output whitespace.
+docs/quality/evidence/**/*.txt -whitespace

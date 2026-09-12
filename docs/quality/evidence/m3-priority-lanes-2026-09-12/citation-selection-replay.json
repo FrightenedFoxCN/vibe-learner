@@ -1,0 +1,1021 @@
+{
+  "version": "citation-selection-replay-v1",
+  "groups": {
+    "baseline": {
+      "offline": {
+        "irrelevant_citation": 7,
+        "positive_miss": 4,
+        "positive_hit": 8,
+        "correct_no_citation": 5
+      },
+      "committed": {
+        "irrelevant_citation": 6,
+        "positive_miss": 4,
+        "positive_hit": 7,
+        "correct_no_citation": 5
+      },
+      "unavailable": 2
+    },
+    "candidate": {
+      "offline": {
+        "correct_no_citation": 12,
+        "positive_hit": 12
+      },
+      "committed": {
+        "correct_no_citation": 10,
+        "positive_hit": 11
+      },
+      "unavailable": 3
+    }
+  },
+  "rows": [
+    {
+      "case": "citation-fr-cost",
+      "variant": "baseline",
+      "sample_id": "03210e20764894d1d20ffd1c7c882f1b27c3ef9e1a83e0841075a31af04cee00",
+      "relevant": false,
+      "committed": true,
+      "offline_citations": [
+        {
+          "section_id": "doc-565ef46982:section:l1:1",
+          "title": "Chapter 1 Reference",
+          "page_start": 1,
+          "page_end": 1,
+          "source_kind": "document",
+          "source_id": ""
+        }
+      ],
+      "matches_observed_selector": true,
+      "persisted_citations": [
+        {
+          "section_id": "doc-565ef46982:section:l1:1",
+          "title": "Chapter 1 Reference",
+          "page_start": 1,
+          "page_end": 1,
+          "source_kind": "document",
+          "source_id": ""
+        }
+      ],
+      "effective_citation_metric_eligible": true
+    },
+    {
+      "case": "citation-fr-time",
+      "variant": "baseline",
+      "sample_id": "03e9f367e2bdb5d560d921607853d8191ffb64f680e5012e43dc99bde0d00f58",
+      "relevant": false,
+      "committed": true,
+      "offline_citations": [
+        {
+          "section_id": "doc-4a0e98bada:section:l1:1",
+          "title": "Chapter 1 Reference",
+          "page_start": 1,
+          "page_end": 1,
+          "source_kind": "document",
+          "source_id": ""
+        }
+      ],
+      "matches_observed_selector": true,
+      "persisted_citations": [
+        {
+          "section_id": "doc-4a0e98bada:section:l1:1",
+          "title": "Chapter 1 Reference",
+          "page_start": 1,
+          "page_end": 1,
+          "source_kind": "document",
+          "source_id": ""
+        }
+      ],
+      "effective_citation_metric_eligible": true
+    },
+    {
+      "case": "citation-zh-color",
+      "variant": "baseline",
+      "sample_id": "07e190fcdaa619645e6de6403b7b25872e8f493a66cf750059422e9c3c371aa1",
+      "relevant": true,
+      "committed": true,
+      "offline_citations": [],
+      "matches_observed_selector": true,
+      "persisted_citations": [],
+      "effective_citation_metric_eligible": true
+    },
+    {
+      "case": "citation-zh-price",
+      "variant": "candidate",
+      "sample_id": "09d8315b74e9be2d488fd804dc9cfd7767a10492802e4ef300f5a604b741a977",
+      "relevant": false,
+      "committed": true,
+      "offline_citations": [],
+      "matches_observed_selector": true,
+      "persisted_citations": [],
+      "effective_citation_metric_eligible": true
+    },
+    {
+      "case": "citation-zh-compare",
+      "variant": "baseline",
+      "sample_id": "21424aaed064f19293cd1abfbb23c95d8ca490979aa97a1381e442caa0efecd4",
+      "relevant": true,
+      "committed": true,
+      "offline_citations": [],
+      "matches_observed_selector": true,
+      "persisted_citations": [],
+      "effective_citation_metric_eligible": true
+    },
+    {
+      "case": "citation-zh-date",
+      "variant": "candidate",
+      "sample_id": "219df2fa782636070ae29269c239a26049efe0289888b853103bbf76e2f3ef90",
+      "relevant": false,
+      "committed": true,
+      "offline_citations": [],
+      "matches_observed_selector": true,
+      "persisted_citations": [],
+      "effective_citation_metric_eligible": true
+    },
+    {
+      "case": "citation-fr-permission",
+      "variant": "baseline",
+      "sample_id": "2fd9e957167e92211b7a5134eafdef6dea612c01cc9e176e88215e42cd9d080c",
+      "relevant": true,
+      "committed": true,
+      "offline_citations": [
+        {
+          "section_id": "doc-33fc439b4f:section:l1:1",
+          "title": "Chapter 1 Reference",
+          "page_start": 1,
+          "page_end": 1,
+          "source_kind": "document",
+          "source_id": ""
+        }
+      ],
+      "matches_observed_selector": true,
+      "persisted_citations": [
+        {
+          "section_id": "doc-33fc439b4f:section:l1:1",
+          "title": "Chapter 1 Reference",
+          "page_start": 1,
+          "page_end": 1,
+          "source_kind": "document",
+          "source_id": ""
+        }
+      ],
+      "effective_citation_metric_eligible": true
+    },
+    {
+      "case": "citation-zh-negative",
+      "variant": "candidate",
+      "sample_id": "3f80c8825d4b86b30d103418c5202658ab6656116a583959ad63e48e9c48fbad",
+      "relevant": true,
+      "committed": false,
+      "offline_citations": [
+        {
+          "section_id": "doc-33878b227b:section:l1:1",
+          "title": "Chapter 1 Reference",
+          "page_start": 1,
+          "page_end": 1,
+          "source_kind": "document",
+          "source_id": ""
+        }
+      ],
+      "matches_observed_selector": null,
+      "persisted_citations": null,
+      "effective_citation_metric_eligible": false
+    },
+    {
+      "case": "citation-en-valve",
+      "variant": "baseline",
+      "sample_id": "431383ed7d830a57f9f2bd96bc94f28d0891dd8575a4f9a12a6ece7634e10cd7",
+      "relevant": true,
+      "committed": true,
+      "offline_citations": [
+        {
+          "section_id": "doc-03fee64ac7:section:l1:1",
+          "title": "Chapter 1 Reference",
+          "page_start": 1,
+          "page_end": 1,
+          "source_kind": "document",
+          "source_id": ""
+        }
+      ],
+      "matches_observed_selector": true,
+      "persisted_citations": [
+        {
+          "section_id": "doc-03fee64ac7:section:l1:1",
+          "title": "Chapter 1 Reference",
+          "page_start": 1,
+          "page_end": 1,
+          "source_kind": "document",
+          "source_id": ""
+        }
+      ],
+      "effective_citation_metric_eligible": true
+    },
+    {
+      "case": "citation-en-founder",
+      "variant": "candidate",
+      "sample_id": "45396d636acf6938ecabab914313d1e338a5ea03c4648959e330d568fdc13871",
+      "relevant": false,
+      "committed": true,
+      "offline_citations": [],
+      "matches_observed_selector": true,
+      "persisted_citations": [],
+      "effective_citation_metric_eligible": true
+    },
+    {
+      "case": "citation-zh-place",
+      "variant": "baseline",
+      "sample_id": "4f2a4ea440daa6c59ca1a4dd8c3271dfb4a43b38e2fa3e6a7156f91698088ce0",
+      "relevant": false,
+      "committed": true,
+      "offline_citations": [],
+      "matches_observed_selector": true,
+      "persisted_citations": [],
+      "effective_citation_metric_eligible": true
+    },
+    {
+      "case": "citation-fr-time",
+      "variant": "candidate",
+      "sample_id": "4fc823e781abd648e89e7410f5876acd295cf091ca9719db2339738e592ef8fa",
+      "relevant": false,
+      "committed": false,
+      "offline_citations": [],
+      "matches_observed_selector": null,
+      "persisted_citations": null,
+      "effective_citation_metric_eligible": false
+    },
+    {
+      "case": "citation-zh-date",
+      "variant": "baseline",
+      "sample_id": "50444e641b662183e1fe82c768cc7bb5c44b23eb810a89faf23aa043d2573f8a",
+      "relevant": false,
+      "committed": true,
+      "offline_citations": [],
+      "matches_observed_selector": true,
+      "persisted_citations": [],
+      "effective_citation_metric_eligible": true
+    },
+    {
+      "case": "citation-fr-temperature",
+      "variant": "baseline",
+      "sample_id": "51fa6d27b204d4c0f5ea85a821d3025f8a4a7ae1da6a19dd37887f0732da9d05",
+      "relevant": true,
+      "committed": true,
+      "offline_citations": [
+        {
+          "section_id": "doc-98f8c26da4:section:l1:1",
+          "title": "Chapter 1 Reference",
+          "page_start": 1,
+          "page_end": 1,
+          "source_kind": "document",
+          "source_id": ""
+        }
+      ],
+      "matches_observed_selector": true,
+      "persisted_citations": [
+        {
+          "section_id": "doc-98f8c26da4:section:l1:1",
+          "title": "Chapter 1 Reference",
+          "page_start": 1,
+          "page_end": 1,
+          "source_kind": "document",
+          "source_id": ""
+        }
+      ],
+      "effective_citation_metric_eligible": true
+    },
+    {
+      "case": "citation-en-nothing",
+      "variant": "baseline",
+      "sample_id": "526f05311f91dd8edf7f039c87efbec9c0ef4a5355526fc90b41def13169d767",
+      "relevant": false,
+      "committed": false,
+      "offline_citations": [
+        {
+          "section_id": "doc-0a026665e8:section:l1:1",
+          "title": "Chapter 1 Reference",
+          "page_start": 1,
+          "page_end": 1,
+          "source_kind": "document",
+          "source_id": ""
+        }
+      ],
+      "matches_observed_selector": null,
+      "persisted_citations": null,
+      "effective_citation_metric_eligible": false
+    },
+    {
+      "case": "citation-en-art",
+      "variant": "candidate",
+      "sample_id": "53f5f91c58c169e5a94953aa01640223439577bc059c39f24781084d113e6217",
+      "relevant": false,
+      "committed": true,
+      "offline_citations": [],
+      "matches_observed_selector": true,
+      "persisted_citations": [],
+      "effective_citation_metric_eligible": true
+    },
+    {
+      "case": "citation-en-route",
+      "variant": "candidate",
+      "sample_id": "5c96ab8fadd80ec77b0a536fd4eea640cfb87eb71cc63ba94e6fa6ba040fb30e",
+      "relevant": true,
+      "committed": true,
+      "offline_citations": [
+        {
+          "section_id": "doc-15d4924955:section:l1:1",
+          "title": "Chapter 1 Reference",
+          "page_start": 1,
+          "page_end": 1,
+          "source_kind": "document",
+          "source_id": ""
+        }
+      ],
+      "matches_observed_selector": true,
+      "persisted_citations": [
+        {
+          "section_id": "doc-15d4924955:section:l1:1",
+          "title": "Chapter 1 Reference",
+          "page_start": 1,
+          "page_end": 1,
+          "source_kind": "document",
+          "source_id": ""
+        }
+      ],
+      "effective_citation_metric_eligible": true
+    },
+    {
+      "case": "citation-zh-price",
+      "variant": "baseline",
+      "sample_id": "65ff81a88507135fbf49c1d5cab67b7805bd168f738b842635f5ff7f13310126",
+      "relevant": false,
+      "committed": true,
+      "offline_citations": [],
+      "matches_observed_selector": true,
+      "persisted_citations": [],
+      "effective_citation_metric_eligible": true
+    },
+    {
+      "case": "citation-zh-compare",
+      "variant": "candidate",
+      "sample_id": "69e1db28f2519bfed38f23af73559d7a4c8a8b034fd382064aeee2d3c26f95a1",
+      "relevant": true,
+      "committed": true,
+      "offline_citations": [
+        {
+          "section_id": "doc-47e3b3c85f:section:l1:1",
+          "title": "Chapter 1 Reference",
+          "page_start": 1,
+          "page_end": 1,
+          "source_kind": "document",
+          "source_id": ""
+        }
+      ],
+      "matches_observed_selector": true,
+      "persisted_citations": [
+        {
+          "section_id": "doc-47e3b3c85f:section:l1:1",
+          "title": "Chapter 1 Reference",
+          "page_start": 1,
+          "page_end": 1,
+          "source_kind": "document",
+          "source_id": ""
+        }
+      ],
+      "effective_citation_metric_eligible": true
+    },
+    {
+      "case": "citation-en-valve",
+      "variant": "candidate",
+      "sample_id": "702a8becf46d31e0322920b50d02d5b95b76ef383dcff5709c91243893173698",
+      "relevant": true,
+      "committed": true,
+      "offline_citations": [
+        {
+          "section_id": "doc-e4dafdcb7a:section:l1:1",
+          "title": "Chapter 1 Reference",
+          "page_start": 1,
+          "page_end": 1,
+          "source_kind": "document",
+          "source_id": ""
+        }
+      ],
+      "matches_observed_selector": true,
+      "persisted_citations": [
+        {
+          "section_id": "doc-e4dafdcb7a:section:l1:1",
+          "title": "Chapter 1 Reference",
+          "page_start": 1,
+          "page_end": 1,
+          "source_kind": "document",
+          "source_id": ""
+        }
+      ],
+      "effective_citation_metric_eligible": true
+    },
+    {
+      "case": "citation-fr-history",
+      "variant": "candidate",
+      "sample_id": "7455db0b3eb11364671a247988f4fb8876f05d7fb74b835c3362e7bb34fb96ec",
+      "relevant": false,
+      "committed": true,
+      "offline_citations": [],
+      "matches_observed_selector": true,
+      "persisted_citations": [],
+      "effective_citation_metric_eligible": true
+    },
+    {
+      "case": "citation-zh-author",
+      "variant": "candidate",
+      "sample_id": "7477a142127df89b29f8ab1d81688f4e6f286cdfa2c5ee525cb71373fc6c1346",
+      "relevant": false,
+      "committed": true,
+      "offline_citations": [],
+      "matches_observed_selector": true,
+      "persisted_citations": [],
+      "effective_citation_metric_eligible": true
+    },
+    {
+      "case": "citation-en-substring",
+      "variant": "baseline",
+      "sample_id": "7d8efbf0b852416040a57a739c56508eafa0add024a4ff7cd60d8d33c17df2dd",
+      "relevant": false,
+      "committed": true,
+      "offline_citations": [
+        {
+          "section_id": "doc-7736bb923b:section:l1:1",
+          "title": "Chapter 1 Reference",
+          "page_start": 1,
+          "page_end": 1,
+          "source_kind": "document",
+          "source_id": ""
+        }
+      ],
+      "matches_observed_selector": true,
+      "persisted_citations": [
+        {
+          "section_id": "doc-7736bb923b:section:l1:1",
+          "title": "Chapter 1 Reference",
+          "page_start": 1,
+          "page_end": 1,
+          "source_kind": "document",
+          "source_id": ""
+        }
+      ],
+      "effective_citation_metric_eligible": true
+    },
+    {
+      "case": "citation-zh-author",
+      "variant": "baseline",
+      "sample_id": "813582a08f14c76fc1e92c96c232c07993b4e6f905103eecf24cbf98579296b0",
+      "relevant": false,
+      "committed": true,
+      "offline_citations": [],
+      "matches_observed_selector": true,
+      "persisted_citations": [],
+      "effective_citation_metric_eligible": true
+    },
+    {
+      "case": "citation-en-mass",
+      "variant": "candidate",
+      "sample_id": "8ee5eb68f84eb289e18321a907d396bef3abe6b5025d9b9fa674c8203b5e3843",
+      "relevant": true,
+      "committed": true,
+      "offline_citations": [
+        {
+          "section_id": "doc-2ae4263f7d:section:l1:1",
+          "title": "Chapter 1 Reference",
+          "page_start": 1,
+          "page_end": 1,
+          "source_kind": "document",
+          "source_id": ""
+        }
+      ],
+      "matches_observed_selector": true,
+      "persisted_citations": [
+        {
+          "section_id": "doc-2ae4263f7d:section:l1:1",
+          "title": "Chapter 1 Reference",
+          "page_start": 1,
+          "page_end": 1,
+          "source_kind": "document",
+          "source_id": ""
+        }
+      ],
+      "effective_citation_metric_eligible": true
+    },
+    {
+      "case": "citation-fr-sequence",
+      "variant": "baseline",
+      "sample_id": "8f94b29a123b2d81854fbe475addee798175f1f86d88cce27389dde768d4a6c3",
+      "relevant": true,
+      "committed": false,
+      "offline_citations": [
+        {
+          "section_id": "doc-6a3d1b6629:section:l1:1",
+          "title": "Chapter 1 Reference",
+          "page_start": 1,
+          "page_end": 1,
+          "source_kind": "document",
+          "source_id": ""
+        }
+      ],
+      "matches_observed_selector": null,
+      "persisted_citations": null,
+      "effective_citation_metric_eligible": false
+    },
+    {
+      "case": "citation-en-delay",
+      "variant": "baseline",
+      "sample_id": "9b38da5da840df1b64fa051e1406f8b6c727a78f08b57ac8461753d7abd16f4b",
+      "relevant": true,
+      "committed": true,
+      "offline_citations": [
+        {
+          "section_id": "doc-f600e86577:section:l1:1",
+          "title": "Chapter 1 Reference",
+          "page_start": 1,
+          "page_end": 1,
+          "source_kind": "document",
+          "source_id": ""
+        }
+      ],
+      "matches_observed_selector": true,
+      "persisted_citations": [
+        {
+          "section_id": "doc-f600e86577:section:l1:1",
+          "title": "Chapter 1 Reference",
+          "page_start": 1,
+          "page_end": 1,
+          "source_kind": "document",
+          "source_id": ""
+        }
+      ],
+      "effective_citation_metric_eligible": true
+    },
+    {
+      "case": "citation-en-substring",
+      "variant": "candidate",
+      "sample_id": "9e2bc139e74d83bcd4f46580acdb7fb3731e2a6fa3398e2325324241bdcd450f",
+      "relevant": false,
+      "committed": true,
+      "offline_citations": [],
+      "matches_observed_selector": true,
+      "persisted_citations": [],
+      "effective_citation_metric_eligible": true
+    },
+    {
+      "case": "citation-en-nothing",
+      "variant": "candidate",
+      "sample_id": "a91bcbcce0d34c5945cb62cab30371a2d1c7587627254401448d1e9fcc02ecf8",
+      "relevant": false,
+      "committed": true,
+      "offline_citations": [],
+      "matches_observed_selector": true,
+      "persisted_citations": [],
+      "effective_citation_metric_eligible": true
+    },
+    {
+      "case": "citation-fr-person",
+      "variant": "candidate",
+      "sample_id": "a96d466e52c74c5204d94fb8ed19ed7554cc2519c0577627759fd4d3207df8ef",
+      "relevant": false,
+      "committed": true,
+      "offline_citations": [],
+      "matches_observed_selector": true,
+      "persisted_citations": [],
+      "effective_citation_metric_eligible": true
+    },
+    {
+      "case": "citation-fr-cost",
+      "variant": "candidate",
+      "sample_id": "a9adb386c62f45b2c7fb05116e9a7437e375bbf1c23f0d8153eb3fbb5e1a20a0",
+      "relevant": false,
+      "committed": true,
+      "offline_citations": [],
+      "matches_observed_selector": true,
+      "persisted_citations": [],
+      "effective_citation_metric_eligible": true
+    },
+    {
+      "case": "citation-fr-temperature",
+      "variant": "candidate",
+      "sample_id": "b4c29bb5a790a6dd5dad237232af8085ed8624b925c75b1df5a026a0e71da43a",
+      "relevant": true,
+      "committed": true,
+      "offline_citations": [
+        {
+          "section_id": "doc-60aa53e52f:section:l1:1",
+          "title": "Chapter 1 Reference",
+          "page_start": 1,
+          "page_end": 1,
+          "source_kind": "document",
+          "source_id": ""
+        }
+      ],
+      "matches_observed_selector": true,
+      "persisted_citations": [
+        {
+          "section_id": "doc-60aa53e52f:section:l1:1",
+          "title": "Chapter 1 Reference",
+          "page_start": 1,
+          "page_end": 1,
+          "source_kind": "document",
+          "source_id": ""
+        }
+      ],
+      "effective_citation_metric_eligible": true
+    },
+    {
+      "case": "citation-en-mass",
+      "variant": "baseline",
+      "sample_id": "b53e2f2c0d4b83bcb623fe5dbca9a8a4fb3687068dd4776a5a50e8085504db7d",
+      "relevant": true,
+      "committed": true,
+      "offline_citations": [
+        {
+          "section_id": "doc-aede97260c:section:l1:1",
+          "title": "Chapter 1 Reference",
+          "page_start": 1,
+          "page_end": 1,
+          "source_kind": "document",
+          "source_id": ""
+        }
+      ],
+      "matches_observed_selector": true,
+      "persisted_citations": [
+        {
+          "section_id": "doc-aede97260c:section:l1:1",
+          "title": "Chapter 1 Reference",
+          "page_start": 1,
+          "page_end": 1,
+          "source_kind": "document",
+          "source_id": ""
+        }
+      ],
+      "effective_citation_metric_eligible": true
+    },
+    {
+      "case": "citation-fr-negation",
+      "variant": "candidate",
+      "sample_id": "bc621c9a57a915b923eda196562cee241f5b059b807bcba3e6e71ee5a6eda745",
+      "relevant": true,
+      "committed": true,
+      "offline_citations": [
+        {
+          "section_id": "doc-7b682a0467:section:l1:1",
+          "title": "Chapter 1 Reference",
+          "page_start": 1,
+          "page_end": 1,
+          "source_kind": "document",
+          "source_id": ""
+        }
+      ],
+      "matches_observed_selector": true,
+      "persisted_citations": [
+        {
+          "section_id": "doc-7b682a0467:section:l1:1",
+          "title": "Chapter 1 Reference",
+          "page_start": 1,
+          "page_end": 1,
+          "source_kind": "document",
+          "source_id": ""
+        }
+      ],
+      "effective_citation_metric_eligible": true
+    },
+    {
+      "case": "citation-en-art",
+      "variant": "baseline",
+      "sample_id": "bd6d44e3489554a441360aa7c2fa8e3d3037f78c61242e69bc4ad9776642e1cb",
+      "relevant": false,
+      "committed": true,
+      "offline_citations": [
+        {
+          "section_id": "doc-eb15e16459:section:l1:1",
+          "title": "Chapter 1 Reference",
+          "page_start": 1,
+          "page_end": 1,
+          "source_kind": "document",
+          "source_id": ""
+        }
+      ],
+      "matches_observed_selector": true,
+      "persisted_citations": [
+        {
+          "section_id": "doc-eb15e16459:section:l1:1",
+          "title": "Chapter 1 Reference",
+          "page_start": 1,
+          "page_end": 1,
+          "source_kind": "document",
+          "source_id": ""
+        }
+      ],
+      "effective_citation_metric_eligible": true
+    },
+    {
+      "case": "citation-fr-negation",
+      "variant": "baseline",
+      "sample_id": "c15e4cd525653a53f8124b3a7164b33b93e6de78bdeed4bd626ce8f802c7698d",
+      "relevant": true,
+      "committed": true,
+      "offline_citations": [
+        {
+          "section_id": "doc-fceeaa89a4:section:l1:1",
+          "title": "Chapter 1 Reference",
+          "page_start": 1,
+          "page_end": 1,
+          "source_kind": "document",
+          "source_id": ""
+        }
+      ],
+      "matches_observed_selector": true,
+      "persisted_citations": [
+        {
+          "section_id": "doc-fceeaa89a4:section:l1:1",
+          "title": "Chapter 1 Reference",
+          "page_start": 1,
+          "page_end": 1,
+          "source_kind": "document",
+          "source_id": ""
+        }
+      ],
+      "effective_citation_metric_eligible": true
+    },
+    {
+      "case": "citation-fr-history",
+      "variant": "baseline",
+      "sample_id": "c61e4c47a4bea8a4abbe7cbaebdce7226ead2ad68f9a8d230362446e92968811",
+      "relevant": false,
+      "committed": true,
+      "offline_citations": [
+        {
+          "section_id": "doc-fa4f7b8e0f:section:l1:1",
+          "title": "Chapter 1 Reference",
+          "page_start": 1,
+          "page_end": 1,
+          "source_kind": "document",
+          "source_id": ""
+        }
+      ],
+      "matches_observed_selector": true,
+      "persisted_citations": [
+        {
+          "section_id": "doc-fa4f7b8e0f:section:l1:1",
+          "title": "Chapter 1 Reference",
+          "page_start": 1,
+          "page_end": 1,
+          "source_kind": "document",
+          "source_id": ""
+        }
+      ],
+      "effective_citation_metric_eligible": true
+    },
+    {
+      "case": "citation-zh-meaning",
+      "variant": "candidate",
+      "sample_id": "c74677f031f091b8b150967f584890843a27570d15ad2f9980805ad361b4b8d2",
+      "relevant": true,
+      "committed": true,
+      "offline_citations": [
+        {
+          "section_id": "doc-91e8b3270f:section:l1:1",
+          "title": "Chapter 1 Reference",
+          "page_start": 1,
+          "page_end": 1,
+          "source_kind": "document",
+          "source_id": ""
+        }
+      ],
+      "matches_observed_selector": true,
+      "persisted_citations": [
+        {
+          "section_id": "doc-91e8b3270f:section:l1:1",
+          "title": "Chapter 1 Reference",
+          "page_start": 1,
+          "page_end": 1,
+          "source_kind": "document",
+          "source_id": ""
+        }
+      ],
+      "effective_citation_metric_eligible": true
+    },
+    {
+      "case": "citation-zh-negative",
+      "variant": "baseline",
+      "sample_id": "cca7276f5d91b0295c2b801398a0c718bfb3aae440a5651fbc59177bdcd53781",
+      "relevant": true,
+      "committed": true,
+      "offline_citations": [],
+      "matches_observed_selector": true,
+      "persisted_citations": [],
+      "effective_citation_metric_eligible": true
+    },
+    {
+      "case": "citation-zh-place",
+      "variant": "candidate",
+      "sample_id": "cd798ef92f4dfa457a0a8cdb90424201f97730fc887d9ded1e2dbfcd2e472680",
+      "relevant": false,
+      "committed": false,
+      "offline_citations": [],
+      "matches_observed_selector": null,
+      "persisted_citations": null,
+      "effective_citation_metric_eligible": false
+    },
+    {
+      "case": "citation-zh-color",
+      "variant": "candidate",
+      "sample_id": "d4f0b0ca669154373d952da5fe4746b18a9f7e97f730572c5a45d61fef05b1b6",
+      "relevant": true,
+      "committed": true,
+      "offline_citations": [
+        {
+          "section_id": "doc-66cb829389:section:l1:1",
+          "title": "Chapter 1 Reference",
+          "page_start": 1,
+          "page_end": 1,
+          "source_kind": "document",
+          "source_id": ""
+        }
+      ],
+      "matches_observed_selector": true,
+      "persisted_citations": [
+        {
+          "section_id": "doc-66cb829389:section:l1:1",
+          "title": "Chapter 1 Reference",
+          "page_start": 1,
+          "page_end": 1,
+          "source_kind": "document",
+          "source_id": ""
+        }
+      ],
+      "effective_citation_metric_eligible": true
+    },
+    {
+      "case": "citation-en-founder",
+      "variant": "baseline",
+      "sample_id": "dbf8b075e34e660a222678d84a6645c655cb7ed1d3dfe2645c6833aa5a13fdf4",
+      "relevant": false,
+      "committed": true,
+      "offline_citations": [],
+      "matches_observed_selector": true,
+      "persisted_citations": [],
+      "effective_citation_metric_eligible": true
+    },
+    {
+      "case": "citation-en-route",
+      "variant": "baseline",
+      "sample_id": "e10e896ef221294590bb70da23d20671e256331fd365f77e321af8ff19d58e10",
+      "relevant": true,
+      "committed": true,
+      "offline_citations": [
+        {
+          "section_id": "doc-042957b7d2:section:l1:1",
+          "title": "Chapter 1 Reference",
+          "page_start": 1,
+          "page_end": 1,
+          "source_kind": "document",
+          "source_id": ""
+        }
+      ],
+      "matches_observed_selector": true,
+      "persisted_citations": [
+        {
+          "section_id": "doc-042957b7d2:section:l1:1",
+          "title": "Chapter 1 Reference",
+          "page_start": 1,
+          "page_end": 1,
+          "source_kind": "document",
+          "source_id": ""
+        }
+      ],
+      "effective_citation_metric_eligible": true
+    },
+    {
+      "case": "citation-zh-meaning",
+      "variant": "baseline",
+      "sample_id": "e53e4ee61d82a0bcb890d902721661282cda5f465e59542508c0644db18e429d",
+      "relevant": true,
+      "committed": true,
+      "offline_citations": [],
+      "matches_observed_selector": true,
+      "persisted_citations": [],
+      "effective_citation_metric_eligible": true
+    },
+    {
+      "case": "citation-fr-permission",
+      "variant": "candidate",
+      "sample_id": "e8b5b0c9a4c9c28833f9ae097e0bcffb1d44bd7c9c800429daa7be738ff498fe",
+      "relevant": true,
+      "committed": true,
+      "offline_citations": [
+        {
+          "section_id": "doc-91383b2344:section:l1:1",
+          "title": "Chapter 1 Reference",
+          "page_start": 1,
+          "page_end": 1,
+          "source_kind": "document",
+          "source_id": ""
+        }
+      ],
+      "matches_observed_selector": true,
+      "persisted_citations": [
+        {
+          "section_id": "doc-91383b2344:section:l1:1",
+          "title": "Chapter 1 Reference",
+          "page_start": 1,
+          "page_end": 1,
+          "source_kind": "document",
+          "source_id": ""
+        }
+      ],
+      "effective_citation_metric_eligible": true
+    },
+    {
+      "case": "citation-en-delay",
+      "variant": "candidate",
+      "sample_id": "eada80f69224cee889f753771cef41e37b6ccc3ea3fe369b1c93310dda5aa688",
+      "relevant": true,
+      "committed": true,
+      "offline_citations": [
+        {
+          "section_id": "doc-877936e01d:section:l1:1",
+          "title": "Chapter 1 Reference",
+          "page_start": 1,
+          "page_end": 1,
+          "source_kind": "document",
+          "source_id": ""
+        }
+      ],
+      "matches_observed_selector": true,
+      "persisted_citations": [
+        {
+          "section_id": "doc-877936e01d:section:l1:1",
+          "title": "Chapter 1 Reference",
+          "page_start": 1,
+          "page_end": 1,
+          "source_kind": "document",
+          "source_id": ""
+        }
+      ],
+      "effective_citation_metric_eligible": true
+    },
+    {
+      "case": "citation-fr-person",
+      "variant": "baseline",
+      "sample_id": "eb8533e364833d84dbcf8df0b5276ee31ddd3515e998822e94d087cdb3d6044d",
+      "relevant": false,
+      "committed": true,
+      "offline_citations": [
+        {
+          "section_id": "doc-bf08c116ea:section:l1:1",
+          "title": "Chapter 1 Reference",
+          "page_start": 1,
+          "page_end": 1,
+          "source_kind": "document",
+          "source_id": ""
+        }
+      ],
+      "matches_observed_selector": true,
+      "persisted_citations": [
+        {
+          "section_id": "doc-bf08c116ea:section:l1:1",
+          "title": "Chapter 1 Reference",
+          "page_start": 1,
+          "page_end": 1,
+          "source_kind": "document",
+          "source_id": ""
+        }
+      ],
+      "effective_citation_metric_eligible": true
+    },
+    {
+      "case": "citation-fr-sequence",
+      "variant": "candidate",
+      "sample_id": "fe10e7111c1afce872b96c0a4064b278a75dcdc9eaeb27e67f8f6d2c0c5497b2",
+      "relevant": true,
+      "committed": true,
+      "offline_citations": [
+        {
+          "section_id": "doc-e88e3161b8:section:l1:1",
+          "title": "Chapter 1 Reference",
+          "page_start": 1,
+          "page_end": 1,
+          "source_kind": "document",
+          "source_id": ""
+        }
+      ],
+      "matches_observed_selector": true,
+      "persisted_citations": [
+        {
+          "section_id": "doc-e88e3161b8:section:l1:1",
+          "title": "Chapter 1 Reference",
+          "page_start": 1,
+          "page_end": 1,
+          "source_kind": "document",
+          "source_id": ""
+        }
+      ],
+      "effective_citation_metric_eligible": true
+    }
+  ],
+  "scope": "Post-hoc deterministic source-selection replay; no provider calls or new domain effects. Task relevance is gold-labelled source relevance, not an independent NLI/entailment annotation. Noncommitted samples are unavailable, never correct abstentions."
+}

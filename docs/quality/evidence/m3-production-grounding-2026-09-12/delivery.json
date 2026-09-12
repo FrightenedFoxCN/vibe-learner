@@ -1,0 +1,43 @@
+{
+  "version": "production-grounding-delivery-v1",
+  "release_gate": {
+    "command": "npm run check:release",
+    "exit_code": 0,
+    "backend_tests": 858,
+    "log": "release.txt"
+  },
+  "targeted_final": {
+    "tests": 12,
+    "exit_code": 0,
+    "log": "targeted.txt"
+  },
+  "browser": {
+    "route_tests": 13,
+    "grounding_test": 1,
+    "screenshot": "study-grounding.png",
+    "visual_review": "guide and original-text draft visible; no clipping in changed content"
+  },
+  "real_sdk": {
+    "samples": 3,
+    "passed": 3,
+    "successful_calls": 5,
+    "reported_tokens": 26446,
+    "model": "MiniMax-M3",
+    "endpoint": "https://api.minimax.cn/v1/chat/completions",
+    "restart_equal": true,
+    "no_recovery_calls": true
+  },
+  "preserved_failure": {
+    "reason": "duplicate num_retries in smoke wrapper; failure before SDK original called",
+    "local_failed_invocations": 3,
+    "retained_reservation": 312288
+  },
+  "artifact": {
+    "path": "evidence.zip",
+    "sha256": "8ceb5bb37340f76b23181bd12fe98877fdfc86e5541ab6de2fc634995ca592f0",
+    "indexed_files": 26,
+    "hash_verification": "passed"
+  },
+  "git_revision": "32b79e79e7d1cb7ba4ad58120803d3bd752bf12a",
+  "scope": "Working-tree production implementation, not deployment; no production data changes. Independent quality tickets remain open. Live smoke preceded final registration-version guard; final guard covered by release and targeted tests."
+}

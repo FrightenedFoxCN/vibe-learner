@@ -1,0 +1,594 @@
+Final validation, 2026-09-12. Provider-free checks; no new live calls.
+
+=== unit ===
+test_explicit_stages_fence_other_campaigns_and_restore_without_usage_reset (tests.test_capacity.CapacityTests.test_explicit_stages_fence_other_campaigns_and_restore_without_usage_reset) ... ok
+test_measures_actual_overlap_tail_and_failure (tests.test_capacity.CapacityTests.test_measures_actual_overlap_tail_and_failure) ... ok
+test_stage_cannot_clear_provider_stop (tests.test_capacity.CapacityTests.test_stage_cannot_clear_provider_stop) ... ok
+test_dns_failure_leaves_pending_without_wire_or_domain_admission (tests.test_dns_preflight.DNSPreflightTests.test_dns_failure_leaves_pending_without_wire_or_domain_admission) ... ok
+test_nested_execution_snapshot_validates_hash_and_credential_bytes (tests.test_export.ExportTests.test_nested_execution_snapshot_validates_hash_and_credential_bytes) ... ok
+test_portable_evidence_hashes_and_secret_refusal (tests.test_export.ExportTests.test_portable_evidence_hashes_and_secret_refusal) ... {"campaign":"test","states":{"completed":4}}
+{"campaign":"test","states":{"completed":4}}
+{"campaign":"test","states":{"completed":4}}
+{"campaign":"test","states":{"completed":4}}
+ok
+test_tool_shape_telemetry_omits_content_and_unknown_keys (tests.test_export.ExportTests.test_tool_shape_telemetry_omits_content_and_unknown_keys) ... ok
+test_active_worker_lock_blocks_recovery_and_report_rebuild_is_offline (tests.test_infrastructure.InfrastructureTests.test_active_worker_lock_blocks_recovery_and_report_rebuild_is_offline) ... {"campaign":"test","states":{"completed":4}}
+{"campaign":"test","states":{"completed":4}}
+{"campaign":"test","states":{"completed":4}}
+{"campaign":"test","states":{"completed":4}}
+ok
+test_actual_usage_reconciles_and_underestimate_halts (tests.test_infrastructure.InfrastructureTests.test_actual_usage_reconciles_and_underestimate_halts) ... ok
+test_adapter_exception_cannot_leave_inflight_slot_or_claim_success (tests.test_infrastructure.InfrastructureTests.test_adapter_exception_cannot_leave_inflight_slot_or_claim_success) ... {"campaign":"test","states":{"uncertain":4}}
+{"campaign":"test","states":{"uncertain":4}}
+{"campaign":"test","states":{"uncertain":4}}
+{"campaign":"test","states":{"uncertain":4}}
+ok
+test_adapter_owns_rubric_and_rejects_unknown_before_network (tests.test_infrastructure.InfrastructureTests.test_adapter_owns_rubric_and_rejects_unknown_before_network) ... ok
+test_cumulative_ledger_is_immutable_across_batches (tests.test_infrastructure.InfrastructureTests.test_cumulative_ledger_is_immutable_across_batches) ... ok
+test_http_200_provider_error_is_infrastructure_and_stops (tests.test_infrastructure.InfrastructureTests.test_http_200_provider_error_is_infrastructure_and_stops) ... ok
+test_http_auth_and_overload_stop_without_retry_or_secret_log (tests.test_infrastructure.InfrastructureTests.test_http_auth_and_overload_stop_without_retry_or_secret_log) ... ok
+test_invalid_metrics_are_not_candidate_failures_or_success (tests.test_infrastructure.InfrastructureTests.test_invalid_metrics_are_not_candidate_failures_or_success) ... {"campaign":"test","states":{"metric_failed":4}}
+{"campaign":"test","states":{"metric_failed":4}}
+{"campaign":"test","states":{"metric_failed":4}}
+{"campaign":"test","states":{"metric_failed":4}}
+ok
+test_isolated_spawn_checkpoint_resume_and_changed_config (tests.test_infrastructure.InfrastructureTests.test_isolated_spawn_checkpoint_resume_and_changed_config) ... {"campaign":"test","states":{"completed":4}}
+{"campaign":"test","states":{"completed":4}}
+{"campaign":"test","states":{"completed":4}}
+{"campaign":"test","states":{"completed":4}}
+ok
+test_no_redirect_or_reserved_split_and_strict_result_ownership (tests.test_infrastructure.InfrastructureTests.test_no_redirect_or_reserved_split_and_strict_result_ownership) ... ok
+test_rate_concurrency_expiry_and_wire_gates (tests.test_infrastructure.InfrastructureTests.test_rate_concurrency_expiry_and_wire_gates) ... ok
+test_real_worker_crash_retains_inflight_and_is_never_replayed (tests.test_infrastructure.InfrastructureTests.test_real_worker_crash_retains_inflight_and_is_never_replayed) ... {"campaign":"test","states":{"running":3,"uncertain":1}}
+{"campaign":"test","states":{"running":2,"uncertain":2}}
+{"campaign":"test","states":{"running":1,"uncertain":3}}
+{"campaign":"test","states":{"uncertain":4}}
+ok
+test_resume_marks_interrupted_sample_uncertain_without_replay (tests.test_infrastructure.InfrastructureTests.test_resume_marks_interrupted_sample_uncertain_without_replay) ... {"campaign":"test","states":{"completed":4}}
+{"campaign":"test","states":{"completed":4}}
+{"campaign":"test","states":{"completed":4}}
+{"campaign":"test","states":{"completed":4}}
+ok
+test_sample_deadline_terminates_hung_worker (tests.test_infrastructure.InfrastructureTests.test_sample_deadline_terminates_hung_worker) ... {"campaign":"test","states":{"running":3,"uncertain":1}}
+{"campaign":"test","states":{"running":2,"uncertain":2}}
+{"campaign":"test","states":{"running":1,"uncertain":3}}
+{"campaign":"test","states":{"uncertain":4}}
+ok
+test_second_campaign_cannot_reset_resource_wire_limit (tests.test_infrastructure.InfrastructureTests.test_second_campaign_cannot_reset_resource_wire_limit) ... {"campaign":"test","states":{"completed":4}}
+{"campaign":"test","states":{"completed":4}}
+{"campaign":"test","states":{"completed":4}}
+{"campaign":"test","states":{"completed":4}}
+{"campaign":"second","states":{"stopped":4}}
+{"campaign":"second","states":{"stopped":4}}
+{"campaign":"second","states":{"stopped":4}}
+{"campaign":"second","states":{"stopped":4}}
+ok
+test_spawn_processes_cannot_overspend (tests.test_infrastructure.InfrastructureTests.test_spawn_processes_cannot_overspend) ... ok
+test_unknown_usage_and_recovered_crash_keep_reservations (tests.test_infrastructure.InfrastructureTests.test_unknown_usage_and_recovered_crash_keep_reservations) ... ok
+test_unsupported_images_are_rejected_before_wire_admission (tests.test_infrastructure.InfrastructureTests.test_unsupported_images_are_rejected_before_wire_admission) ... ok
+test_usage_missing_details_and_inconsistent_total_remain_unknown (tests.test_infrastructure.InfrastructureTests.test_usage_missing_details_and_inconsistent_total_remain_unknown) ... ok
+test_cooldown_audit_and_unknown_charge_retained (tests.test_reopen.ReopenTests.test_cooldown_audit_and_unknown_charge_retained) ... ok
+test_expiry_and_unsafe_concurrency_refused (tests.test_reopen.ReopenTests.test_expiry_and_unsafe_concurrency_refused) ... ok
+test_inflight_and_other_stop_cannot_be_cleared (tests.test_reopen.ReopenTests.test_inflight_and_other_stop_cannot_be_cleared) ... ok
+test_budget_extension_preserves_existing_usage (tests.test_scaling.AutoscaleTests.test_budget_extension_preserves_existing_usage) ... ok
+test_live_shortened_windows_rejected (tests.test_scaling.AutoscaleTests.test_live_shortened_windows_rejected) ... ok
+test_no_scale_without_samples_time_backlog_or_known_usage (tests.test_scaling.AutoscaleTests.test_no_scale_without_samples_time_backlog_or_known_usage) ... ok
+test_overload_is_immediate_durable_and_reservation_checks_cooldown (tests.test_scaling.AutoscaleTests.test_overload_is_immediate_durable_and_reservation_checks_cooldown) ... ok
+test_spawn_scheduler_scales_real_workers_under_fake_load (tests.test_scaling.AutoscaleTests.test_spawn_scheduler_scales_real_workers_under_fake_load) ... {"campaign":"test","states":{"completed":1,"pending":31}}
+{"campaign":"test","states":{"completed":2,"pending":30}}
+{"campaign":"test","states":{"completed":3,"pending":29}}
+{"campaign":"test","states":{"completed":4,"pending":27,"running":1}}
+{"campaign":"test","states":{"completed":6,"pending":26}}
+{"campaign":"test","states":{"completed":6,"pending":25,"running":1}}
+{"campaign":"test","states":{"completed":8,"pending":22,"running":2}}
+{"campaign":"test","states":{"completed":8,"pending":21,"running":3}}
+{"campaign":"test","states":{"completed":11,"pending":20,"running":1}}
+{"campaign":"test","states":{"completed":11,"pending":20,"running":1}}
+{"campaign":"test","states":{"completed":12,"pending":18,"running":2}}
+{"campaign":"test","states":{"completed":12,"pending":17,"running":3}}
+{"campaign":"test","states":{"completed":15,"pending":16,"running":1}}
+{"campaign":"test","states":{"completed":15,"pending":16,"running":1}}
+{"campaign":"test","states":{"completed":16,"pending":14,"running":2}}
+{"campaign":"test","states":{"completed":16,"pending":13,"running":3}}
+{"campaign":"test","states":{"completed":19,"pending":12,"running":1}}
+{"campaign":"test","states":{"completed":19,"pending":12,"running":1}}
+{"campaign":"test","states":{"completed":20,"pending":10,"running":2}}
+{"campaign":"test","states":{"completed":20,"pending":10,"running":2}}
+{"campaign":"test","states":{"completed":23,"pending":8,"running":1}}
+{"campaign":"test","states":{"completed":23,"pending":8,"running":1}}
+{"campaign":"test","states":{"completed":24,"pending":6,"running":2}}
+{"campaign":"test","states":{"completed":24,"pending":6,"running":2}}
+{"campaign":"test","states":{"completed":28,"pending":4}}
+{"campaign":"test","states":{"completed":28,"pending":4}}
+{"campaign":"test","states":{"completed":28,"pending":2,"running":2}}
+{"campaign":"test","states":{"completed":28,"pending":2,"running":2}}
+{"campaign":"test","states":{"completed":32}}
+{"campaign":"test","states":{"completed":32}}
+{"campaign":"test","states":{"completed":32}}
+{"campaign":"test","states":{"completed":32}}
+ok
+test_two_bad_windows_pause_infrastructure (tests.test_scaling.AutoscaleTests.test_two_bad_windows_pause_infrastructure) ... ok
+test_two_full_windows_then_increase_and_latency_decrease (tests.test_scaling.AutoscaleTests.test_two_full_windows_then_increase_and_latency_decrease) ... ok
+
+----------------------------------------------------------------------
+Ran 36 tests in 12.218s
+
+OK
+
+=== domain ===
+test_invalid_proposal_does_not_stop_load_or_issue_repair_wire (test_capacity_sample.CapacitySampleTests.test_invalid_proposal_does_not_stop_load_or_issue_repair_wire) ... model.tavern.recovery reason=tavern_actor_invalid_payload
+ok
+test_invalid_proposals_keep_a_full_load_window_running (test_capacity_sample.CapacitySampleTests.test_invalid_proposals_keep_a_full_load_window_running) ... model.tavern.recovery reason=tavern_actor_invalid_payload
+model.tavern.recovery reason=tavern_actor_invalid_payload
+model.tavern.recovery reason=tavern_actor_invalid_payload
+model.tavern.recovery reason=tavern_actor_invalid_payload
+model.tavern.recovery reason=tavern_actor_invalid_payload
+model.tavern.recovery reason=tavern_actor_invalid_payload
+model.tavern.recovery reason=tavern_actor_invalid_payload
+model.tavern.recovery reason=tavern_actor_invalid_payload
+model.tavern.recovery reason=tavern_actor_invalid_payload
+model.tavern.recovery reason=tavern_actor_invalid_payload
+model.tavern.recovery reason=tavern_actor_invalid_payload
+model.tavern.recovery reason=tavern_actor_invalid_payload
+model.tavern.recovery reason=tavern_actor_invalid_payload
+model.tavern.recovery reason=tavern_actor_invalid_payload
+model.tavern.recovery reason=tavern_actor_invalid_payload
+{"window_result":{"charged_or_reserved_tokens":315,"completed_samples":15,"dispatch_seconds":0.3173067569732666,"elapsed_seconds":0.343639612197876,"http_statuses":{"None":15},"infrastructure_error_rate":1.0,"level":2,"observed_peak_inflight":2,"offered_seconds":0.3,"p50_ms":40,"p95_ms":41,"proposal_successes":0,"requests":15,"requests_per_second":43.65038100253308,"unknown_usage_requests":0,"window":0,"window_qualified":true}}
+ok
+test_claim_without_memory_effect_is_candidate_failure (test_domains.DomainAcceptance.test_claim_without_memory_effect_is_candidate_failure) ... {"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:33.858241+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:33.866257+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:33.870498+00:00", "severity": "INFO", "event": "log", "request_id": "fab3d97f46d34fbe90e713085a839cc3"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:33.872977+00:00", "severity": "INFO", "event": "log", "request_id": "fab3d97f46d34fbe90e713085a839cc3"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:33.873492+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:33.876241+00:00", "severity": "INFO", "event": "log", "request_id": "5bffcaee7f0547808971299feb42f6a0"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:33.885845+00:00", "severity": "INFO", "event": "log", "request_id": "5bffcaee7f0547808971299feb42f6a0"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:33.911183+00:00", "severity": "INFO", "event": "log", "request_id": "5bffcaee7f0547808971299feb42f6a0"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:33.915109+00:00", "severity": "INFO", "event": "log", "request_id": "5bffcaee7f0547808971299feb42f6a0"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:33.990285+00:00", "severity": "INFO", "event": "log", "request_id": "5bffcaee7f0547808971299feb42f6a0"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:33.994947+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:33.995841+00:00", "severity": "INFO", "event": "log", "request_id": "714d1ddef38649969aed68143e63025c"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:33.997651+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:34.934934+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+ok
+test_quality_matrix_is_paired_and_bounded (test_domains.DomainAcceptance.test_quality_matrix_is_paired_and_bounded) ... ok
+test_study_and_tavern_isolated_commits_and_restart_readback (test_domains.DomainAcceptance.test_study_and_tavern_isolated_commits_and_restart_readback) ... {"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:35.793839+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:35.794417+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:35.802083+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:35.803245+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:35.806214+00:00", "severity": "INFO", "event": "log", "request_id": "7cf77d238bb04721bcdf988450466f41"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:35.806995+00:00", "severity": "INFO", "event": "log", "request_id": "1f522eba16d44b42bcb44aaa814ab574"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:35.808452+00:00", "severity": "INFO", "event": "log", "request_id": "7cf77d238bb04721bcdf988450466f41"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:35.808884+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:35.809337+00:00", "severity": "INFO", "event": "log", "request_id": "1f522eba16d44b42bcb44aaa814ab574"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:35.809760+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:35.811658+00:00", "severity": "INFO", "event": "log", "request_id": "7678e321da864948bd0a6405c76371d8"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:35.812527+00:00", "severity": "INFO", "event": "log", "request_id": "fae9e1728ed4414dbc57a8e9f3a2beb8"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:35.816828+00:00", "severity": "INFO", "event": "log", "request_id": "7678e321da864948bd0a6405c76371d8"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:35.817481+00:00", "severity": "INFO", "event": "log", "request_id": "fae9e1728ed4414dbc57a8e9f3a2beb8"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:35.839799+00:00", "severity": "INFO", "event": "log", "request_id": "7678e321da864948bd0a6405c76371d8"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:35.839917+00:00", "severity": "INFO", "event": "log", "request_id": "fae9e1728ed4414dbc57a8e9f3a2beb8"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:35.844743+00:00", "severity": "INFO", "event": "log", "request_id": "7678e321da864948bd0a6405c76371d8"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:35.844783+00:00", "severity": "INFO", "event": "log", "request_id": "fae9e1728ed4414dbc57a8e9f3a2beb8"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:35.929944+00:00", "severity": "INFO", "event": "log", "request_id": "fae9e1728ed4414dbc57a8e9f3a2beb8"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:35.929989+00:00", "severity": "INFO", "event": "log", "request_id": "7678e321da864948bd0a6405c76371d8"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:35.935998+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:35.936048+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:35.937272+00:00", "severity": "INFO", "event": "log", "request_id": "dffbf76dcc4a432b8e8037d32af0b205"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:35.937273+00:00", "severity": "INFO", "event": "log", "request_id": "b2c7fd026b54452eb90fa96abfda776e"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:35.939957+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:35.939976+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:37.110605+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:37.111032+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"campaign":"domain-study","states":{"completed":2}}
+{"campaign":"domain-study","states":{"completed":2}}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:38.340603+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:38.341645+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:38.348897+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:38.350438+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:38.358994+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:38.360173+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:39.213607+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:39.217252+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"campaign":"domain-tavern","states":{"completed":2}}
+{"campaign":"domain-tavern","states":{"completed":2}}
+ok
+test_only_reviewed_index_metadata_removed_without_mutating_original (test_policy.EnvelopeTests.test_only_reviewed_index_metadata_removed_without_mutating_original) ... ok
+test_only_selected_wire_factor_changes_and_config_restores (test_policy.PolicyTests.test_only_selected_wire_factor_changes_and_config_restores) ... ok
+test_binding_only_changes_authorized_content_and_mixed_cases_are_distinct (test_priority_lanes.PriorityLaneTests.test_binding_only_changes_authorized_content_and_mixed_cases_are_distinct) ... ok
+test_citation_multilingual_actual_document_and_receipts (test_priority_lanes.PriorityLaneTests.test_citation_multilingual_actual_document_and_receipts) ... {"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:40.563277+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:40.565607+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:40.568786+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:40.570334+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:40.576629+00:00", "severity": "INFO", "event": "log", "request_id": "830bf5e107434233afc77553265868ce"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:40.578465+00:00", "severity": "INFO", "event": "log", "request_id": "b0843725691d43b69e493073178470e3"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:40.579760+00:00", "severity": "INFO", "event": "log", "request_id": "830bf5e107434233afc77553265868ce"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:40.581038+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:40.581659+00:00", "severity": "INFO", "event": "log", "request_id": "b0843725691d43b69e493073178470e3"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:40.582281+00:00", "severity": "INFO", "event": "log", "request_id": "c00cf3a8ab504e26bc6cf56b3aa635ad"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:40.582440+00:00", "severity": "INFO", "event": "log", "request_id": "029938679d0343bfab8c62bb36263eef"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:40.583115+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:40.585424+00:00", "severity": "INFO", "event": "log", "request_id": "c00cf3a8ab504e26bc6cf56b3aa635ad"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:40.586065+00:00", "severity": "INFO", "event": "log", "request_id": "029938679d0343bfab8c62bb36263eef"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:40.586775+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:40.587184+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:40.588748+00:00", "severity": "INFO", "event": "log", "request_id": "00674c3f22fd451aabf484f3b41e3b73"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:40.590654+00:00", "severity": "INFO", "event": "log", "request_id": "e98ac84858f844adbb2f8ee5f6c52a9a"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:40.592839+00:00", "severity": "INFO", "event": "log", "request_id": "c15711a6307b4c238c73b1d8468f2679"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:40.593794+00:00", "severity": "INFO", "event": "log", "request_id": "b4d929e0917345c08e1e33e0994b5b56"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:40.595916+00:00", "severity": "INFO", "event": "log", "request_id": "00674c3f22fd451aabf484f3b41e3b73"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:40.598457+00:00", "severity": "INFO", "event": "log", "request_id": "e98ac84858f844adbb2f8ee5f6c52a9a"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:40.599606+00:00", "severity": "INFO", "event": "log", "request_id": "c15711a6307b4c238c73b1d8468f2679"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:40.600054+00:00", "severity": "INFO", "event": "log", "request_id": "b4d929e0917345c08e1e33e0994b5b56"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:40.621927+00:00", "severity": "INFO", "event": "log", "request_id": "00674c3f22fd451aabf484f3b41e3b73"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:40.624081+00:00", "severity": "INFO", "event": "log", "request_id": "e98ac84858f844adbb2f8ee5f6c52a9a"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:40.625183+00:00", "severity": "INFO", "event": "log", "request_id": "b4d929e0917345c08e1e33e0994b5b56"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:40.625309+00:00", "severity": "INFO", "event": "log", "request_id": "c15711a6307b4c238c73b1d8468f2679"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:40.626989+00:00", "severity": "INFO", "event": "log", "request_id": "00674c3f22fd451aabf484f3b41e3b73"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:40.629492+00:00", "severity": "INFO", "event": "log", "request_id": "e98ac84858f844adbb2f8ee5f6c52a9a"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:40.630398+00:00", "severity": "INFO", "event": "log", "request_id": "b4d929e0917345c08e1e33e0994b5b56"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:40.630410+00:00", "severity": "INFO", "event": "log", "request_id": "c15711a6307b4c238c73b1d8468f2679"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:40.735068+00:00", "severity": "INFO", "event": "log", "request_id": "e98ac84858f844adbb2f8ee5f6c52a9a"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:40.735110+00:00", "severity": "INFO", "event": "log", "request_id": "b4d929e0917345c08e1e33e0994b5b56"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:40.735139+00:00", "severity": "INFO", "event": "log", "request_id": "00674c3f22fd451aabf484f3b41e3b73"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:40.735195+00:00", "severity": "INFO", "event": "log", "request_id": "c15711a6307b4c238c73b1d8468f2679"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:40.742772+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:40.742806+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:40.742945+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:40.743086+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:40.745029+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:40.745142+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:40.745440+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:40.745457+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:40.749744+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:40.749806+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:40.750621+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:40.750715+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:40.751055+00:00", "severity": "INFO", "event": "log", "request_id": "152451e932044ae7aa63221e8285dbda"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:40.751122+00:00", "severity": "INFO", "event": "log", "request_id": "c1131ee353154543a5578b2536fa5c46"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:40.752033+00:00", "severity": "INFO", "event": "log", "request_id": "7160ea51a78047ccbc66305dc0529852"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:40.752200+00:00", "severity": "INFO", "event": "log", "request_id": "5c82722ee3ac4670932682fab2f4ceea"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:40.755182+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:40.755191+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:40.756404+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:40.756728+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:41.868122+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:41.868968+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:41.870178+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:41.880699+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"campaign":"priority-citation","states":{"candidate_failed":1,"completed":3,"pending":4}}
+{"campaign":"priority-citation","states":{"candidate_failed":1,"completed":3,"pending":3,"running":1}}
+{"campaign":"priority-citation","states":{"candidate_failed":1,"completed":3,"pending":3,"running":1}}
+{"campaign":"priority-citation","states":{"candidate_failed":1,"completed":3,"pending":3,"running":1}}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:43.329000+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:43.341493+00:00", "severity": "INFO", "event": "log", "request_id": "dda686389cfc4253ac2e88d6b59ccb49"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:43.344840+00:00", "severity": "INFO", "event": "log", "request_id": "dda686389cfc4253ac2e88d6b59ccb49"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:43.346082+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:43.354097+00:00", "severity": "INFO", "event": "log", "request_id": "8a5a6547c7734f2eaec78f69972acad9"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:43.361208+00:00", "severity": "INFO", "event": "log", "request_id": "8a5a6547c7734f2eaec78f69972acad9"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:43.386596+00:00", "severity": "INFO", "event": "log", "request_id": "8a5a6547c7734f2eaec78f69972acad9"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:43.392659+00:00", "severity": "INFO", "event": "log", "request_id": "8a5a6547c7734f2eaec78f69972acad9"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:43.418696+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:43.420917+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:43.421361+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:43.433193+00:00", "severity": "INFO", "event": "log", "request_id": "068e77dd6aec41a68e1104f7ee956af6"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:43.437123+00:00", "severity": "INFO", "event": "log", "request_id": "068e77dd6aec41a68e1104f7ee956af6"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:43.437368+00:00", "severity": "INFO", "event": "log", "request_id": "4c38e93fbb0649dfa34b91d71fda02fb"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:43.438258+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:43.439536+00:00", "severity": "INFO", "event": "log", "request_id": "f03774b855424521b85e920bbc00c44e"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:43.441494+00:00", "severity": "INFO", "event": "log", "request_id": "4c38e93fbb0649dfa34b91d71fda02fb"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:43.442594+00:00", "severity": "INFO", "event": "log", "request_id": "f03774b855424521b85e920bbc00c44e"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:43.443658+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:43.444002+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:43.444360+00:00", "severity": "INFO", "event": "log", "request_id": "981c9104dc2c45d78a51a2272f73a72f"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:43.448132+00:00", "severity": "INFO", "event": "log", "request_id": "a43a35dc740d4e58997d4de409ddc04b"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:43.449511+00:00", "severity": "INFO", "event": "log", "request_id": "e97843f640e64165bd8c7d59c13d8b1d"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:43.451683+00:00", "severity": "INFO", "event": "log", "request_id": "981c9104dc2c45d78a51a2272f73a72f"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:43.455422+00:00", "severity": "INFO", "event": "log", "request_id": "a43a35dc740d4e58997d4de409ddc04b"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:43.457664+00:00", "severity": "INFO", "event": "log", "request_id": "e97843f640e64165bd8c7d59c13d8b1d"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:43.480667+00:00", "severity": "INFO", "event": "log", "request_id": "981c9104dc2c45d78a51a2272f73a72f"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:43.481008+00:00", "severity": "INFO", "event": "log", "request_id": "a43a35dc740d4e58997d4de409ddc04b"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:43.484970+00:00", "severity": "INFO", "event": "log", "request_id": "e97843f640e64165bd8c7d59c13d8b1d"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:43.486475+00:00", "severity": "INFO", "event": "log", "request_id": "a43a35dc740d4e58997d4de409ddc04b"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:43.487112+00:00", "severity": "INFO", "event": "log", "request_id": "981c9104dc2c45d78a51a2272f73a72f"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:43.492600+00:00", "severity": "INFO", "event": "log", "request_id": "e97843f640e64165bd8c7d59c13d8b1d"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:43.497995+00:00", "severity": "INFO", "event": "log", "request_id": "8a5a6547c7734f2eaec78f69972acad9"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:43.507109+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:43.509840+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:43.514773+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:43.516220+00:00", "severity": "INFO", "event": "log", "request_id": "618d6d4b672f421ab9dd90da38571ea8"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:43.520480+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:43.596995+00:00", "severity": "INFO", "event": "log", "request_id": "981c9104dc2c45d78a51a2272f73a72f"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:43.598428+00:00", "severity": "INFO", "event": "log", "request_id": "a43a35dc740d4e58997d4de409ddc04b"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:43.604128+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:43.606436+00:00", "severity": "INFO", "event": "log", "request_id": "e97843f640e64165bd8c7d59c13d8b1d"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:43.606457+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:43.606794+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:43.608496+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:43.612035+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:43.613262+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:43.613439+00:00", "severity": "INFO", "event": "log", "request_id": "46a292888b364a07bedeb2d589bcd180"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:43.613571+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:43.614491+00:00", "severity": "INFO", "event": "log", "request_id": "1776f55946294c838c4ee5b65761c2dc"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:43.615880+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:43.617148+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:43.618552+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:43.620238+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:43.621453+00:00", "severity": "INFO", "event": "log", "request_id": "9ef5f99be76845a2a27540d8a771153c"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:43.624815+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:44.630111+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:44.735986+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:44.737911+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:44.744922+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"campaign":"priority-citation","states":{"candidate_failed":2,"completed":6}}
+{"campaign":"priority-citation","states":{"candidate_failed":2,"completed":6}}
+{"campaign":"priority-citation","states":{"candidate_failed":2,"completed":6}}
+{"campaign":"priority-citation","states":{"candidate_failed":2,"completed":6}}
+ok
+test_gold_grader_rejects_extra_fields_and_narrative (test_priority_lanes.PriorityLaneTests.test_gold_grader_rejects_extra_fields_and_narrative) ... ok
+test_mixed_scheduler_exercises_all_three_actual_domain_paths (test_priority_lanes.PriorityLaneTests.test_mixed_scheduler_exercises_all_three_actual_domain_paths) ... {"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:46.254897+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:46.254884+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:46.255357+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:46.257934+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:46.268330+00:00", "severity": "INFO", "event": "log", "request_id": "6291b937a7fd4cdd9da8c24c83e35a8a"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:46.268371+00:00", "severity": "INFO", "event": "log", "request_id": "86bee76c618f44fe84132bd3edd1e8ca"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:46.268462+00:00", "severity": "INFO", "event": "log", "request_id": "29f39a5f842a4949ad140d38094e006b"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:46.271325+00:00", "severity": "INFO", "event": "log", "request_id": "3410a9e53d814112a96cbde9c8400248"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:46.272381+00:00", "severity": "INFO", "event": "log", "request_id": "86bee76c618f44fe84132bd3edd1e8ca"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:46.272415+00:00", "severity": "INFO", "event": "log", "request_id": "29f39a5f842a4949ad140d38094e006b"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:46.272583+00:00", "severity": "INFO", "event": "log", "request_id": "6291b937a7fd4cdd9da8c24c83e35a8a"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:46.273460+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:46.273583+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:46.273697+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:46.275662+00:00", "severity": "INFO", "event": "log", "request_id": "3410a9e53d814112a96cbde9c8400248"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:46.277158+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:46.280724+00:00", "severity": "INFO", "event": "log", "request_id": "c98dde08823948cbb93d02789eaa83a2"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:46.281219+00:00", "severity": "INFO", "event": "log", "request_id": "fff04e95fa774ec8b4c3cd4cdd44cb91"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:46.281450+00:00", "severity": "INFO", "event": "log", "request_id": "e5d57fc31da24b9c99e5093ca9aee5d8"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:46.283684+00:00", "severity": "INFO", "event": "log", "request_id": "f3ec8df71dfd4cfaaa1b0daa48acf898"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:46.289385+00:00", "severity": "INFO", "event": "log", "request_id": "c98dde08823948cbb93d02789eaa83a2"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:46.289405+00:00", "severity": "INFO", "event": "log", "request_id": "fff04e95fa774ec8b4c3cd4cdd44cb91"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:46.289814+00:00", "severity": "INFO", "event": "log", "request_id": "e5d57fc31da24b9c99e5093ca9aee5d8"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:46.291647+00:00", "severity": "INFO", "event": "log", "request_id": "f3ec8df71dfd4cfaaa1b0daa48acf898"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:46.314922+00:00", "severity": "INFO", "event": "log", "request_id": "c98dde08823948cbb93d02789eaa83a2"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:46.315033+00:00", "severity": "INFO", "event": "log", "request_id": "e5d57fc31da24b9c99e5093ca9aee5d8"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:46.315782+00:00", "severity": "INFO", "event": "log", "request_id": "fff04e95fa774ec8b4c3cd4cdd44cb91"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:46.317287+00:00", "severity": "INFO", "event": "log", "request_id": "f3ec8df71dfd4cfaaa1b0daa48acf898"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:46.320057+00:00", "severity": "INFO", "event": "log", "request_id": "c98dde08823948cbb93d02789eaa83a2"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:46.321037+00:00", "severity": "INFO", "event": "log", "request_id": "e5d57fc31da24b9c99e5093ca9aee5d8"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:46.321698+00:00", "severity": "INFO", "event": "log", "request_id": "fff04e95fa774ec8b4c3cd4cdd44cb91"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:46.323453+00:00", "severity": "INFO", "event": "log", "request_id": "f3ec8df71dfd4cfaaa1b0daa48acf898"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:46.433664+00:00", "severity": "INFO", "event": "log", "request_id": "c98dde08823948cbb93d02789eaa83a2"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:46.433894+00:00", "severity": "INFO", "event": "log", "request_id": "e5d57fc31da24b9c99e5093ca9aee5d8"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:46.434146+00:00", "severity": "INFO", "event": "log", "request_id": "f3ec8df71dfd4cfaaa1b0daa48acf898"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:46.436382+00:00", "severity": "INFO", "event": "log", "request_id": "fff04e95fa774ec8b4c3cd4cdd44cb91"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:46.442069+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:46.442210+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:46.442441+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:46.444287+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:46.444612+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:46.444808+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:46.444836+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:46.447283+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:46.448700+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:46.449096+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:46.449344+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:46.449957+00:00", "severity": "INFO", "event": "log", "request_id": "7b4bf9c42b2b40ae8b4e8f658cecabed"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:46.450554+00:00", "severity": "INFO", "event": "log", "request_id": "7bf8243f17844c4b9525082194327b30"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:46.450709+00:00", "severity": "INFO", "event": "log", "request_id": "b6c0430e837b49cbb50130560d91949a"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:46.452574+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:46.454380+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:46.454486+00:00", "severity": "INFO", "event": "log", "request_id": "9d6360be6e9443369a27fe3beebf0f28"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:46.454518+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:46.455114+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:46.457878+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:47.551707+00:00", "severity": "INFO", "event": "log", "request_id": "c582ab8609304473a83d513e73faa416"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:47.560326+00:00", "severity": "INFO", "event": "log", "request_id": "bdc17ac5030046c4bc2e78ec779bf6ed"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:47.601086+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:47.615280+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:47.661016+00:00", "severity": "INFO", "event": "log", "request_id": "d4548a3b329d474e9b3172a0f3e662b7"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:47.665453+00:00", "severity": "INFO", "event": "log", "request_id": "04a4c036b5334ee0a0723a4dee16e649"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:47.818322+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:47.915930+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"campaign":"priority-mixed","states":{"completed":4,"pending":2}}
+{"campaign":"priority-mixed","states":{"completed":4,"pending":2}}
+{"campaign":"priority-mixed","states":{"completed":4,"running":2}}
+{"campaign":"priority-mixed","states":{"completed":4,"running":2}}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:49.034488+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:49.034683+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:49.043843+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:49.043941+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:49.046691+00:00", "severity": "INFO", "event": "log", "request_id": "2b833933614a46409de2eb340a26e131"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:49.047449+00:00", "severity": "INFO", "event": "log", "request_id": "49f61df91a9b483d94127415510864dd"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:49.048957+00:00", "severity": "INFO", "event": "log", "request_id": "2b833933614a46409de2eb340a26e131"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:49.049460+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:49.049918+00:00", "severity": "INFO", "event": "log", "request_id": "49f61df91a9b483d94127415510864dd"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:49.050375+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:49.052403+00:00", "severity": "INFO", "event": "log", "request_id": "264e5bf6d0ee46d79921161e7a288f36"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:49.053228+00:00", "severity": "INFO", "event": "log", "request_id": "84da2f420560479d91b991a8fa309dfa"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:49.058419+00:00", "severity": "INFO", "event": "log", "request_id": "264e5bf6d0ee46d79921161e7a288f36"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:49.058816+00:00", "severity": "INFO", "event": "log", "request_id": "84da2f420560479d91b991a8fa309dfa"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:49.080915+00:00", "severity": "INFO", "event": "log", "request_id": "264e5bf6d0ee46d79921161e7a288f36"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:49.080919+00:00", "severity": "INFO", "event": "log", "request_id": "84da2f420560479d91b991a8fa309dfa"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:49.085196+00:00", "severity": "INFO", "event": "log", "request_id": "264e5bf6d0ee46d79921161e7a288f36"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:49.085219+00:00", "severity": "INFO", "event": "log", "request_id": "84da2f420560479d91b991a8fa309dfa"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:49.196407+00:00", "severity": "INFO", "event": "log", "request_id": "84da2f420560479d91b991a8fa309dfa"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:49.198454+00:00", "severity": "INFO", "event": "log", "request_id": "264e5bf6d0ee46d79921161e7a288f36"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:49.210285+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:49.210335+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:49.211498+00:00", "severity": "INFO", "event": "log", "request_id": "1c54a8d8f9964bebade8c6a3d054b989"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:49.211575+00:00", "severity": "INFO", "event": "log", "request_id": "0dcf9ee5bc5247568f0222b011e53515"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:49.216357+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:49.216522+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:50.377688+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:50.379042+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"campaign":"priority-mixed","states":{"completed":6}}
+{"campaign":"priority-mixed","states":{"completed":6}}
+ok
+test_seed_failure_retains_receipt_and_does_not_dispatch_query (test_priority_lanes.PriorityLaneTests.test_seed_failure_retains_receipt_and_does_not_dispatch_query) ... {"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:50.903242+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:50.909765+00:00", "severity": "INFO", "event": "log", "request_id": "290344853e24457bbf0ddc1f599621f3"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:50.911825+00:00", "severity": "INFO", "event": "log", "request_id": "290344853e24457bbf0ddc1f599621f3"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:50.915206+00:00", "severity": "INFO", "event": "log", "request_id": "a8da869c35414e4dad0f51459295a550"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:50.920114+00:00", "severity": "INFO", "event": "log", "request_id": "a8da869c35414e4dad0f51459295a550"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:50.936171+00:00", "severity": "INFO", "event": "log", "request_id": "a8da869c35414e4dad0f51459295a550"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:50.939821+00:00", "severity": "INFO", "event": "log", "request_id": "a8da869c35414e4dad0f51459295a550"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:51.017212+00:00", "severity": "INFO", "event": "log", "request_id": "a8da869c35414e4dad0f51459295a550"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:51.027025+00:00", "severity": "INFO", "event": "log", "request_id": "17a87a0ae99f431797369f14e080770d"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:51.090531+00:00", "severity": "WARNING", "event": "log", "request_id": "db2416d410b44382bd503a302cffc7ad"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:51.136501+00:00", "severity": "ERROR", "event": "log", "request_id": "db2416d410b44382bd503a302cffc7ad", "exception_type": "HarnessRuntimeError"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:51.139371+00:00", "severity": "ERROR", "event": "log", "request_id": "db2416d410b44382bd503a302cffc7ad", "exception_type": "StudyChatApplicationError"}
+ok
+test_summary_fact_grader_and_domain_effects (test_priority_lanes.PriorityLaneTests.test_summary_fact_grader_and_domain_effects) ... {"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:52.032455+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:52.032625+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:52.033640+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:52.033776+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:52.044484+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:52.045168+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:52.046403+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:52.046601+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:52.047988+00:00", "severity": "INFO", "event": "log", "request_id": "dbd7d67c78b44ce383b89950012a1fb0"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:52.049854+00:00", "severity": "INFO", "event": "log", "request_id": "57035de396754d71a2770697eec148a5"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:52.049860+00:00", "severity": "INFO", "event": "log", "request_id": "c76b700f0777432fa728cdd61514ea9f"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:52.050909+00:00", "severity": "INFO", "event": "log", "request_id": "6adda66ed0ac448ba23b1db4d69995f4"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:52.052448+00:00", "severity": "INFO", "event": "log", "request_id": "dbd7d67c78b44ce383b89950012a1fb0"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:52.054072+00:00", "severity": "INFO", "event": "log", "request_id": "c76b700f0777432fa728cdd61514ea9f"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:52.054092+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:52.054893+00:00", "severity": "INFO", "event": "log", "request_id": "6adda66ed0ac448ba23b1db4d69995f4"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:52.055207+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:52.056032+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:52.056614+00:00", "severity": "INFO", "event": "log", "request_id": "57035de396754d71a2770697eec148a5"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:52.057483+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:52.058982+00:00", "severity": "INFO", "event": "log", "request_id": "06e8298612aa422fa638755b6c501fae"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:52.060261+00:00", "severity": "INFO", "event": "log", "request_id": "9856c40501f04d61aabf9332828918b3"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:52.060991+00:00", "severity": "INFO", "event": "log", "request_id": "970ea1e635be45769fee7bbe8498498b"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:52.061625+00:00", "severity": "INFO", "event": "log", "request_id": "6ec5cc375a5e407fa6d55f0868be15de"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:52.065593+00:00", "severity": "INFO", "event": "log", "request_id": "06e8298612aa422fa638755b6c501fae"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:52.067584+00:00", "severity": "INFO", "event": "log", "request_id": "9856c40501f04d61aabf9332828918b3"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:52.067588+00:00", "severity": "INFO", "event": "log", "request_id": "970ea1e635be45769fee7bbe8498498b"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:52.068109+00:00", "severity": "INFO", "event": "log", "request_id": "6ec5cc375a5e407fa6d55f0868be15de"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:52.094425+00:00", "severity": "INFO", "event": "log", "request_id": "06e8298612aa422fa638755b6c501fae"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:52.095937+00:00", "severity": "INFO", "event": "log", "request_id": "970ea1e635be45769fee7bbe8498498b"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:52.096398+00:00", "severity": "INFO", "event": "log", "request_id": "9856c40501f04d61aabf9332828918b3"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:52.096610+00:00", "severity": "INFO", "event": "log", "request_id": "6ec5cc375a5e407fa6d55f0868be15de"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:52.099395+00:00", "severity": "INFO", "event": "log", "request_id": "06e8298612aa422fa638755b6c501fae"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:52.101207+00:00", "severity": "INFO", "event": "log", "request_id": "970ea1e635be45769fee7bbe8498498b"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:52.101378+00:00", "severity": "INFO", "event": "log", "request_id": "9856c40501f04d61aabf9332828918b3"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:52.101924+00:00", "severity": "INFO", "event": "log", "request_id": "6ec5cc375a5e407fa6d55f0868be15de"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:52.212274+00:00", "severity": "INFO", "event": "log", "request_id": "06e8298612aa422fa638755b6c501fae"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:52.212545+00:00", "severity": "INFO", "event": "log", "request_id": "9856c40501f04d61aabf9332828918b3"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:52.214968+00:00", "severity": "INFO", "event": "log", "request_id": "970ea1e635be45769fee7bbe8498498b"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:52.215425+00:00", "severity": "INFO", "event": "log", "request_id": "6ec5cc375a5e407fa6d55f0868be15de"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:52.220846+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:52.220888+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:52.222170+00:00", "severity": "INFO", "event": "log", "request_id": "1d2c761d041f447c9b9a72e5f2698bb3"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:52.222348+00:00", "severity": "INFO", "event": "log", "request_id": "ab144e22a3fc4f3c977c2d276ca07d07"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:52.223308+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:52.223327+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:52.224712+00:00", "severity": "INFO", "event": "log", "request_id": "77524d661b4345d0bba63ef38ff4bebb"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:52.224937+00:00", "severity": "INFO", "event": "log", "request_id": "aaecd7408d8441b9af735549388de7f2"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:52.225388+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:52.225501+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:52.227989+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:52.228092+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:53.561178+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:53.565195+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:53.567266+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:53.572706+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"campaign":"summary-facts-v1","states":{"completed":4}}
+{"campaign":"summary-facts-v1","states":{"completed":4}}
+{"campaign":"summary-facts-v1","states":{"completed":4}}
+{"campaign":"summary-facts-v1","states":{"completed":4}}
+ok
+test_temporal_seeds_isolation_metering_and_oracle_coverage (test_priority_lanes.PriorityLaneTests.test_temporal_seeds_isolation_metering_and_oracle_coverage) ... {"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:55.030943+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:55.030967+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:55.032440+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:55.035089+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:55.044737+00:00", "severity": "INFO", "event": "log", "request_id": "ace40164ed21493da0b87927b89019c1"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:55.044967+00:00", "severity": "INFO", "event": "log", "request_id": "86c81bf135a845168317a36e95d298ef"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:55.046800+00:00", "severity": "INFO", "event": "log", "request_id": "f914679b32b34c8a8e0b0a76d0118fb6"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:55.048582+00:00", "severity": "INFO", "event": "log", "request_id": "ace40164ed21493da0b87927b89019c1"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:55.048642+00:00", "severity": "INFO", "event": "log", "request_id": "86c81bf135a845168317a36e95d298ef"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:55.049149+00:00", "severity": "INFO", "event": "log", "request_id": "ed69cb79367e4c80ac0000666c3235ca"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:55.049725+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:55.049816+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:55.050639+00:00", "severity": "INFO", "event": "log", "request_id": "f914679b32b34c8a8e0b0a76d0118fb6"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:55.051696+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:55.052329+00:00", "severity": "INFO", "event": "log", "request_id": "ed69cb79367e4c80ac0000666c3235ca"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:55.053683+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:55.057424+00:00", "severity": "INFO", "event": "log", "request_id": "b19477f0d5394e9e887eefe5f153394c"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:55.057484+00:00", "severity": "INFO", "event": "log", "request_id": "6be43da4688e4d5684cbf4918e3d7694"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:55.058882+00:00", "severity": "INFO", "event": "log", "request_id": "57df4056b8e440e7bf39f99a0c6c91a6"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:55.060679+00:00", "severity": "INFO", "event": "log", "request_id": "8fdc2401e69344628c478434256abe5a"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:55.063732+00:00", "severity": "INFO", "event": "log", "request_id": "b19477f0d5394e9e887eefe5f153394c"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:55.064123+00:00", "severity": "INFO", "event": "log", "request_id": "6be43da4688e4d5684cbf4918e3d7694"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:55.066356+00:00", "severity": "INFO", "event": "log", "request_id": "57df4056b8e440e7bf39f99a0c6c91a6"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:55.067703+00:00", "severity": "INFO", "event": "log", "request_id": "8fdc2401e69344628c478434256abe5a"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:55.091028+00:00", "severity": "INFO", "event": "log", "request_id": "b19477f0d5394e9e887eefe5f153394c"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:55.091064+00:00", "severity": "INFO", "event": "log", "request_id": "6be43da4688e4d5684cbf4918e3d7694"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:55.093665+00:00", "severity": "INFO", "event": "log", "request_id": "57df4056b8e440e7bf39f99a0c6c91a6"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:55.094113+00:00", "severity": "INFO", "event": "log", "request_id": "8fdc2401e69344628c478434256abe5a"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:55.096370+00:00", "severity": "INFO", "event": "log", "request_id": "6be43da4688e4d5684cbf4918e3d7694"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:55.096458+00:00", "severity": "INFO", "event": "log", "request_id": "b19477f0d5394e9e887eefe5f153394c"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:55.099220+00:00", "severity": "INFO", "event": "log", "request_id": "57df4056b8e440e7bf39f99a0c6c91a6"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:55.099796+00:00", "severity": "INFO", "event": "log", "request_id": "8fdc2401e69344628c478434256abe5a"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:55.208127+00:00", "severity": "INFO", "event": "log", "request_id": "b19477f0d5394e9e887eefe5f153394c"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:55.208158+00:00", "severity": "INFO", "event": "log", "request_id": "6be43da4688e4d5684cbf4918e3d7694"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:55.210859+00:00", "severity": "INFO", "event": "log", "request_id": "8fdc2401e69344628c478434256abe5a"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:55.212282+00:00", "severity": "INFO", "event": "log", "request_id": "57df4056b8e440e7bf39f99a0c6c91a6"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:55.216116+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:55.216164+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:55.218907+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:55.218978+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:55.219192+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:55.220282+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:55.222074+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:55.222854+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:55.223708+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:55.224311+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:55.225367+00:00", "severity": "INFO", "event": "log", "request_id": "38f6cae3291b4e2c896d28b20b008936"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:55.225655+00:00", "severity": "INFO", "event": "log", "request_id": "892b4b6ea9414385abb010aaf3b8e1b1"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:55.226731+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:55.227652+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:55.228048+00:00", "severity": "INFO", "event": "log", "request_id": "8239d7b5aacd4a6985c6a985f1eefa4d"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:55.228757+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:55.228924+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:55.229003+00:00", "severity": "INFO", "event": "log", "request_id": "1aaa2aba43c744398366d3baa73468a7"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:55.231510+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:55.232316+00:00", "severity": "INFO", "event": "log"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:56.349760+00:00", "severity": "INFO", "event": "log", "request_id": "5e28369df5e64982b164b4f44afcbd5c"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:56.351767+00:00", "severity": "INFO", "event": "log", "request_id": "1ae8a5832b5941d5bbc28e9e9708d9b6"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:56.363132+00:00", "severity": "INFO", "event": "log", "request_id": "d054baa851fc4aaf8ad5e1ec95c2ef6a"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:56.365890+00:00", "severity": "INFO", "event": "log", "request_id": "d68cb1306c8243bfa1b494ff639ccbfd"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:56.450978+00:00", "severity": "INFO", "event": "log", "request_id": "d295c1b19ef84702bbe5073d5d939e25"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:56.457566+00:00", "severity": "INFO", "event": "log", "request_id": "d52d18a00f7b4f0e98f0f75ab31f0f61"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:56.461032+00:00", "severity": "INFO", "event": "log", "request_id": "583f4882e37a4b9ea569e8af14116c72"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:56.465481+00:00", "severity": "INFO", "event": "log", "request_id": "5eaf61d9ced348a9b6d67b347045e70b"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:56.591444+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:56.608528+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:56.701691+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:56.702967+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"campaign":"priority-temporal","states":{"completed":4}}
+{"campaign":"priority-temporal","states":{"completed":4}}
+{"campaign":"priority-temporal","states":{"completed":4}}
+{"campaign":"priority-temporal","states":{"completed":4}}
+ok
+test_uncommitted_citation_is_not_successful_abstention (test_priority_lanes.PriorityLaneTests.test_uncommitted_citation_is_not_successful_abstention) ... {"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:57.400045+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:57.406099+00:00", "severity": "INFO", "event": "log", "request_id": "e6e8d4ee70ee4928b36909147ee2f50c"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:57.408133+00:00", "severity": "INFO", "event": "log", "request_id": "e6e8d4ee70ee4928b36909147ee2f50c"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:57.411615+00:00", "severity": "INFO", "event": "log", "request_id": "541184c3663b4096862e1e1f0394b8aa"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:57.415757+00:00", "severity": "INFO", "event": "log", "request_id": "541184c3663b4096862e1e1f0394b8aa"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:57.431867+00:00", "severity": "INFO", "event": "log", "request_id": "541184c3663b4096862e1e1f0394b8aa"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:57.434834+00:00", "severity": "INFO", "event": "log", "request_id": "541184c3663b4096862e1e1f0394b8aa"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:57.508145+00:00", "severity": "INFO", "event": "log", "request_id": "541184c3663b4096862e1e1f0394b8aa"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:57.516963+00:00", "severity": "INFO", "event": "log", "request_id": "32dd2798f38141078a80ffdb4a97c688"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:57.588026+00:00", "severity": "WARNING", "event": "log", "request_id": "e94e8868fbf448969cbcaa34eafc34c5"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:57.625615+00:00", "severity": "ERROR", "event": "log", "request_id": "e94e8868fbf448969cbcaa34eafc34c5", "exception_type": "HarnessRuntimeError"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:57.628223+00:00", "severity": "ERROR", "event": "log", "request_id": "e94e8868fbf448969cbcaa34eafc34c5", "exception_type": "StudyChatApplicationError"}
+{"schema_version": "diagnostic-log-v1", "timestamp": "2026-09-12T08:16:57.674656+00:00", "severity": "INFO", "event": "bootstrap.model_provider"}
+ok
+
+----------------------------------------------------------------------
+Ran 15 tests in 24.338s
+
+OK
+sys:1: DeprecationWarning: builtin type swigvarlink has no __module__ attribute
+

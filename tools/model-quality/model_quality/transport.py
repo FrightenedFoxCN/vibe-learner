@@ -51,6 +51,17 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
         return None
 
 
+def tool_call_shape(call):
+    """Allowlisted structural telemetry, never arguments, content or provider IDs."""
+    if not isinstance(call, dict):
+        return {'is_object': False}
+    known = {'id', 'type', 'function', 'index'}
+    return {'is_object': True, 'known_fields': sorted(set(call) & known),
+            'unknown_field_count': len(set(call) - known),
+            'index_is_nonnegative_integer': type(call.get('index')) is int and call['index'] >= 0,
+            'function_fields_valid': isinstance(call.get('function'), dict) and set(call['function']) == {'name', 'arguments'}}
+
+
 class MeteredTransport:
     def __init__(self, campaign: Campaign, ledger: Ledger, sample: str, deadline: float):
         self.campaign, self.ledger, self.sample, self.deadline = campaign, ledger, sample, deadline
@@ -117,6 +128,8 @@ class MeteredTransport:
                 'offered_tools': [t['function']['name'] for t in payload.get('tools', []) if isinstance(t, dict) and isinstance(t.get('function'), dict) and isinstance(t['function'].get('name'), str)],
                 'request_bytes': len(data), 'max_tokens': payload['max_tokens'], 'temperature': payload.get('temperature'),
                 'thinking': c.thinking, 'http_status': None,
+                'tool_choice': payload.get('tool_choice'),
+                'response_format_type': (payload.get('response_format') or {}).get('type'),
                 'prompt_tokens': None, 'completion_tokens': None, 'total_tokens': None,
                 'cached_tokens': None, 'reasoning_tokens': None, 'billing_tokens': None}
         settled = False
@@ -143,6 +156,8 @@ class MeteredTransport:
             meta.update(usage_metadata(raw))
             choices = raw.get('choices')
             finish_reason = choices[0].get('finish_reason') if isinstance(choices, list) and choices and isinstance(choices[0], dict) else None
+            returned_calls = ((choices[0].get('message') or {}).get('tool_calls') or []) if isinstance(choices, list) and choices and isinstance(choices[0], dict) else []
+            meta['tool_call_shapes'] = [tool_call_shape(call) for call in returned_calls[:64]] if isinstance(returned_calls, list) else []
             meta['finish_reason'] = finish_reason if finish_reason in ('stop', 'length', 'tool_calls', 'content_filter', 'function_call') else None
             # Persist only allowlisted scalar telemetry, never provider error bodies.
             meta['response_model'] = raw.get('model') if isinstance(raw.get('model'), str) else None
