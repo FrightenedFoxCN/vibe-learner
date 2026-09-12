@@ -26,6 +26,7 @@ from app.models.domain import (
 )
 from app.models.harness import canonical_harness_digest
 from app.models.planning import PlanScheduleChapterProposalV1
+from app.services.planning_chapter_validation import find_chapter_violation
 from app.models.harness_operation import HarnessDomainOperationKind
 from app.models.planning import (
     LearningPlanOperationRecord,
@@ -827,41 +828,14 @@ class LearningPlanService:
         index: int,
         previous_anchor_start: int,
     ) -> ScheduleChapterRecord:
-        if chapter.anchor_page_start < unit.page_start or chapter.anchor_page_end > unit.page_end:
+        violation = find_chapter_violation(chapter=chapter, unit=unit,
+                                           previous_anchor_start=previous_anchor_start)
+        if violation is not None:
             raise RuntimeError(
-                f"plan_proposal_invariant_failed:schedule_chapters.{index - 1}.anchor_page_start:outside_unit"
-            )
-        if chapter.anchor_page_start < previous_anchor_start:
-            raise RuntimeError(
-                f"plan_proposal_invariant_failed:schedule_chapters.{index - 1}.anchor_page_start:not_ordered"
-            )
-        allowed_sources = set(unit.source_section_ids)
-        if any(source_id not in allowed_sources for source_id in chapter.source_section_ids):
-            raise RuntimeError(
-                f"plan_proposal_invariant_failed:schedule_chapters.{index - 1}.source_section_ids:unknown_ref"
+                f"plan_proposal_invariant_failed:schedule_chapters.{index - 1}.{violation.path}:{violation.reason}"
             )
         next_slices: list[ScheduleChapterContentSliceRecord] = []
-        previous_slice_start = 0
-        for slice_index, raw_slice in enumerate(chapter.content_slices):
-            if (
-                raw_slice.page_start < chapter.anchor_page_start
-                or raw_slice.page_end > chapter.anchor_page_end
-            ):
-                raise RuntimeError(
-                    "plan_proposal_invariant_failed:"
-                    f"schedule_chapters.{index - 1}.content_slices.{slice_index}:outside_chapter"
-                )
-            if raw_slice.page_start < previous_slice_start:
-                raise RuntimeError(
-                    "plan_proposal_invariant_failed:"
-                    f"schedule_chapters.{index - 1}.content_slices.{slice_index}:not_ordered"
-                )
-            if any(source_id not in allowed_sources for source_id in raw_slice.source_section_ids):
-                raise RuntimeError(
-                    "plan_proposal_invariant_failed:"
-                    f"schedule_chapters.{index - 1}.content_slices.{slice_index}.source_section_ids:unknown_ref"
-                )
-            previous_slice_start = raw_slice.page_start
+        for raw_slice in chapter.content_slices:
             next_slices.append(
                 ScheduleChapterContentSliceRecord(
                     page_start=raw_slice.page_start,

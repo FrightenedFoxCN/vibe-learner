@@ -21,6 +21,7 @@ from app.services.plan_tool_runtime import build_plan_tool_runtime
 from app.services.provider_callbacks import _call_interrupt, _emit_progress
 from app.services.provider_capabilities import PlanningModelCapability, PlanModelReply, PlanScheduleItem
 from app.services.provider_payload import _extract_json_payload
+from app.services.planning_chapter_validation import find_chapter_violation
 
 logger = get_logger("vibe_learner.model_provider")
 
@@ -333,24 +334,21 @@ class PlanningProposalDecodeError(RuntimeError):
 def _validate_learning_plan_proposal_refs(
     proposal: LearningPlanProposalV1, study_units: list[StudyUnitRecord],
 ) -> None:
-    """Validate against the post-tool snapshot before the one repair allowance."""
+    """Check references and chapter geometry against the post-tool snapshot before repair."""
     units = {unit.id: unit for unit in study_units}
     for index, item in enumerate(proposal.schedule):
         path = f"schedule.{index}"
         unit = units.get(item.unit_id)
         if unit is None:
             raise PlanningProposalDecodeError(path=f"{path}.unit_id", reason="unknown_ref")
-        allowed = set(unit.source_section_ids)
+        previous_anchor_start = 0
         for chapter_index, chapter in enumerate(item.schedule_chapters):
             chapter_path = f"{path}.schedule_chapters.{chapter_index}"
-            if not set(chapter.source_section_ids).issubset(allowed):
-                raise PlanningProposalDecodeError(path=f"{chapter_path}.source_section_ids", reason="unknown_ref")
-            for slice_index, content_slice in enumerate(chapter.content_slices):
-                if not set(content_slice.source_section_ids).issubset(allowed):
-                    raise PlanningProposalDecodeError(
-                        path=f"{chapter_path}.content_slices.{slice_index}.source_section_ids",
-                        reason="unknown_ref",
-                    )
+            violation = find_chapter_violation(chapter=chapter, unit=unit,
+                                               previous_anchor_start=previous_anchor_start)
+            if violation is not None:
+                raise PlanningProposalDecodeError(path=f"{chapter_path}.{violation.path}", reason=violation.reason)
+            previous_anchor_start = chapter.anchor_page_start
 
 
 

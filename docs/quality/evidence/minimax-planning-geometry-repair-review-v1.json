@@ -1,0 +1,83 @@
+{
+  "scope": "Shared geometry invariant and bounded repair validation",
+  "natural_failure_evidence": "minimax-macbeth-image-detail-v1.jsonl cell 0: schedule_chapters.4.anchor_page_start:not_ordered",
+  "before": {
+    "tests": 3,
+    "failures_including_subtests": 6,
+    "findings": [
+      "Provider preflight accepted unordered/out-of-unit chapters and unordered/out-of-chapter slices.",
+      "No bounded repair invoked for an initial ordering error."
+    ]
+  },
+  "after": {
+    "full_backend_tests": 834,
+    "full_backend_passed": true,
+    "full_backend_seconds": 66.477,
+    "targeted_after_same_page_positive_case": 19,
+    "targeted_passed": true
+  },
+  "limitations": [
+    "Full suite preceded addition of one same-page positive test; targeted suite reran afterward.",
+    "Fault-injected initial proposals are schema-valid synthetic inputs, not natural M3 failures; only repair calls are live.",
+    "Successful geometry repair and commit do not establish semantic plan quality or independent certification."
+  ],
+  "rows": [
+    {
+      "fault_kind": "chapter_order",
+      "synthetic_initial_proposal": true,
+      "real_provider_calls": 1,
+      "boundary_success": true,
+      "runner_invocations": [
+        {
+          "tools_enabled": true,
+          "repair_request": false
+        },
+        {
+          "tools_enabled": false,
+          "repair_request": true
+        }
+      ],
+      "chapter_starts": [
+        1,
+        2
+      ],
+      "slice_starts": [
+        [
+          1
+        ],
+        [
+          2
+        ]
+      ],
+      "timing_quality": "No concrete allocation of 30-minute stages",
+      "semantic_limitation": "Chapter order repair copies Front Matter / AAV parser labels into titles"
+    },
+    {
+      "fault_kind": "slice_order",
+      "synthetic_initial_proposal": true,
+      "real_provider_calls": 1,
+      "boundary_success": true,
+      "runner_invocations": [
+        {
+          "tools_enabled": true,
+          "repair_request": false
+        },
+        {
+          "tools_enabled": false,
+          "repair_request": true
+        }
+      ],
+      "chapter_starts": [
+        1
+      ],
+      "slice_starts": [
+        [
+          1,
+          2
+        ]
+      ],
+      "timing_quality": "No concrete allocation of 30-minute stages",
+      "semantic_limitation": "Repairs order while retaining generic injected plan; does not fully satisfy the learning objective"
+    }
+  ]
+}
