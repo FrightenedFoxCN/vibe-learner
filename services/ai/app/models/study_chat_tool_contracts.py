@@ -4,6 +4,8 @@ from typing import Annotated, Literal, TypeAlias
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from app.models.document_layout import DocumentLayoutCandidateV1, DocumentLayoutLabel
+
 
 STUDY_CHAT_TOOL_ARGUMENT_CONTRACT_VERSION = "study-chat-tool-arguments-v1"
 STUDY_CHAT_TOOL_RESULT_CONTRACT_VERSION = "study-chat-tool-result-v1"
@@ -137,6 +139,20 @@ class ReadProjectedPdfContentArgumentsV1(ReadPageRangeContentArgumentsV1):
 
 class ReadProjectedPdfImagesArgumentsV1(ReadPageRangeImagesArgumentsV1):
     pass
+
+
+class ReadProjectedPdfLayoutCandidatesArgumentsV1(StudyChatToolContractModel):
+    page_number: int = Field(ge=1, le=100_000)
+    target: Annotated[str, Field(min_length=1, max_length=1_200)]
+    labels: list[DocumentLayoutLabel] = Field(min_length=1, max_length=2)
+    recursive_picture: bool = True
+    max_candidates: int = Field(default=24, ge=1, le=32)
+
+    @model_validator(mode="after")
+    def validate_labels(self) -> "ReadProjectedPdfLayoutCandidatesArgumentsV1":
+        if len(self.labels) != len(set(self.labels)):
+            raise ValueError("document_layout_label_duplicate")
+        return self
 
 
 class ProjectUploadedPdfArgumentsV1(StudyChatToolContractModel):
@@ -419,6 +435,19 @@ class ReadProjectedPdfImagesResultV1(ReadPageRangeImagesResultV1):
     source_id: Annotated[str, Field(min_length=1, max_length=160)]
 
 
+class ReadProjectedPdfLayoutCandidatesResultV1(StudyChatToolResultBaseV1):
+    tool_name: Literal["read_projected_pdf_layout_candidates"] = "read_projected_pdf_layout_candidates"
+    source_kind: Literal["attachment_pdf"] = "attachment_pdf"
+    source_id: Annotated[str, Field(min_length=1, max_length=160)]
+    page_number: int = Field(ge=1, le=100_000)
+    target: Annotated[str, Field(min_length=1, max_length=1_200)]
+    labels: list[DocumentLayoutLabel] = Field(min_length=1, max_length=2)
+    recursive_picture: bool
+    engine_status: Literal["completed", "disabled", "unavailable", "failed"]
+    candidate_count: int = Field(ge=0, le=32)
+    candidates: list[DocumentLayoutCandidateV1] = Field(max_length=32)
+
+
 class FocusProjectedPdfPageResultV1(ProjectionPreparedResultV1):
     tool_name: Literal["focus_projected_pdf_page"] = "focus_projected_pdf_page"
     source_kind: Literal["attachment_pdf"] = "attachment_pdf"
@@ -518,6 +547,7 @@ StudyChatToolArguments: TypeAlias = (
     | ReadPageRangeImagesArgumentsV1
     | ReadProjectedPdfContentArgumentsV1
     | ReadProjectedPdfImagesArgumentsV1
+    | ReadProjectedPdfLayoutCandidatesArgumentsV1
     | ProjectUploadedPdfArgumentsV1
     | ProjectUploadedImageArgumentsV1
     | GenerateProjectedImageArgumentsV1
@@ -556,6 +586,7 @@ STUDY_CHAT_TOOL_ARGUMENT_MODELS: dict[str, type[StudyChatToolContractModel]] = {
     "generate_projected_image": GenerateProjectedImageArgumentsV1,
     "read_projected_pdf_content": ReadProjectedPdfContentArgumentsV1,
     "read_projected_pdf_images": ReadProjectedPdfImagesArgumentsV1,
+    "read_projected_pdf_layout_candidates": ReadProjectedPdfLayoutCandidatesArgumentsV1,
     "focus_projected_pdf_page": FocusProjectedPdfPageArgumentsV1,
     "highlight_projected_pdf_text": HighlightProjectedPdfTextArgumentsV1,
     "annotate_projected_pdf_region": AnnotateProjectedPdfRegionArgumentsV1,
@@ -591,6 +622,7 @@ STUDY_CHAT_TOOL_RESULT_MODELS: dict[str, type[StudyChatToolContractModel]] = {
     "generate_projected_image": GenerateProjectedImageResultV1,
     "read_projected_pdf_content": ReadProjectedPdfContentResultV1,
     "read_projected_pdf_images": ReadProjectedPdfImagesResultV1,
+    "read_projected_pdf_layout_candidates": ReadProjectedPdfLayoutCandidatesResultV1,
     "focus_projected_pdf_page": FocusProjectedPdfPageResultV1,
     "highlight_projected_pdf_text": HighlightProjectedPdfTextResultV1,
     "annotate_projected_pdf_region": AnnotateProjectedPdfRegionResultV1,

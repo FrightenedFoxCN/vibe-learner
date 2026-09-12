@@ -18,7 +18,7 @@ const fixture = JSON.parse(await readFile(fixtureUrl, "utf8"));
 
 assert.deepEqual(TOOL_MANIFEST_GOLDEN, fixture);
 assert.equal(TOOL_MANIFEST_REGISTRY.schema_version, "tool-manifest-v1");
-assert.equal(TOOL_MANIFEST_REGISTRY.tools.length, 37);
+assert.equal(TOOL_MANIFEST_REGISTRY.tools.length, 38);
 assert.equal(
   TOOL_MANIFEST_REGISTRY.tools.filter((entry) => entry.workflow === "planning")
     .length,
@@ -27,9 +27,9 @@ assert.equal(
 assert.equal(
   TOOL_MANIFEST_REGISTRY.tools.filter((entry) => entry.workflow === "study_chat")
     .length,
-  31,
+  32,
 );
-assert.equal(Object.keys(TOOL_MANIFEST_BY_KEY).length, 37);
+assert.equal(Object.keys(TOOL_MANIFEST_BY_KEY).length, 38);
 assert.ok(Object.isFrozen(TOOL_MANIFEST_GOLDEN));
 assert.ok(Object.isFrozen(TOOL_MANIFEST_REGISTRY.tools[0]));
 
@@ -98,7 +98,7 @@ assert.equal(
     availableDependencies: dependencies,
     providerCapabilities: capabilities,
   }).length,
-  31,
+  32,
 );
 
 function assertClosedObjects(value) {

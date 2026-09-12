@@ -44,6 +44,7 @@ from app.core.harness_component_versions import (
     TAVERN_SCHEDULER_CONTRACT_VERSION,
     STUDY_CHAT_PROMPT_CONTRACT_VERSION,
     STUDY_CHAT_TOOLSET_CONTRACT_VERSION,
+    STUDY_VISUAL_GROUNDING_CONTRACT_VERSION,
     STUDY_CHAT_TRACE_CONTRACT_VERSION,
     STUDY_CHAT_COMMIT_CONTRACT_VERSION,
     STUDY_CHAT_COMMITTED_PROJECTION_CONTRACT_VERSION,
@@ -166,6 +167,7 @@ class HarnessComponentName(StrEnum):
     STUDY_CHAT_PROMPT = "study_chat_prompt"
     STUDY_CHAT_TOOLSET = "study_chat_toolset"
     STUDY_GROUNDING = "study_grounding"
+    STUDY_VISUAL_GROUNDING = "study_visual_grounding"
     TAVERN_PERSONA_COMPILER = "tavern_persona_compiler"
     TAVERN_ACTOR_PROMPT = "tavern_actor_prompt"
     TAVERN_SCHEDULER = "tavern_scheduler"
@@ -463,6 +465,14 @@ HARNESS_COMPONENT_REGISTRATIONS = MappingProxyType(
                 name="study_chat_toolset", version=STUDY_CHAT_TOOLSET_CONTRACT_VERSION
             ),
         ),
+        HarnessComponentName.STUDY_VISUAL_GROUNDING: HarnessComponentRegistration(
+            HarnessComponentName.STUDY_VISUAL_GROUNDING,
+            "app.services.document_layout",
+            HarnessRegisteredContract(
+                name="study_visual_grounding",
+                version=STUDY_VISUAL_GROUNDING_CONTRACT_VERSION,
+            ),
+        ),
         HarnessComponentName.TAVERN_PERSONA_COMPILER: HarnessComponentRegistration(
             HarnessComponentName.TAVERN_PERSONA_COMPILER,
             "app.services.persona_runtime",
@@ -515,6 +525,7 @@ HARNESS_COMPONENT_OWNERS = MappingProxyType(
         HarnessComponentName.STUDY_CHAT_PROMPT: "app.services.study_session_prompt",
         HarnessComponentName.STUDY_GROUNDING: "app.services.study_grounding",
         HarnessComponentName.STUDY_CHAT_TOOLSET: "app.services.study_session_chat_runtime",
+        HarnessComponentName.STUDY_VISUAL_GROUNDING: "app.services.document_layout",
         HarnessComponentName.TAVERN_PERSONA_COMPILER: "app.services.persona_runtime",
         HarnessComponentName.TAVERN_ACTOR_PROMPT: "app.services.tavern_prompt",
         HarnessComponentName.TAVERN_SCHEDULER: "app.services.tavern",
@@ -614,6 +625,7 @@ HARNESS_OPERATION_STAGE_REGISTRATIONS = MappingProxyType(
                 HarnessComponentName.STUDY_CHAT_PROMPT,
                 HarnessComponentName.STUDY_CHAT_TOOLSET,
                 HarnessComponentName.STUDY_GROUNDING,
+                HarnessComponentName.STUDY_VISUAL_GROUNDING,
             ),
             "study_chat.reply",
         ),

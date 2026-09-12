@@ -292,8 +292,9 @@ const STAGE_VOCABULARY: StageVocabulary[] = [
     ownerModule: "app.services.study_sessions",
     components: [
       { name: "study_chat_prompt", contract: { name: "study_chat_prompt", version: "study-chat-prompt-v1" } },
-      { name: "study_chat_toolset", contract: { name: "study_chat_toolset", version: "study-chat-toolset-v1" } },
+      { name: "study_chat_toolset", contract: { name: "study_chat_toolset", version: "study-chat-toolset-v2" } },
       { name: "study_grounding", contract: { name: "study_grounding", version: "study-grounding-v1" } },
+      { name: "study_visual_grounding", contract: { name: "study_visual_grounding", version: "study-visual-grounding-v1" } },
     ],
     evalRoute: "study_chat.reply",
   },

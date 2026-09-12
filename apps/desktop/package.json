@@ -1,6 +1,6 @@
 {
   "name": "@vibe-learner/desktop",
-  "version": "0.3.4",
+  "version": "0.3.5",
   "private": true,
   "scripts": {
     "icons": "node scripts/generate-icon-assets.mjs src-tauri/icons/icon-source.svg src-tauri/icons",

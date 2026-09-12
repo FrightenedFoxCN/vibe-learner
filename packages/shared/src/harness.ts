@@ -64,6 +64,7 @@ export type HarnessComponentName =
   | "study_chat_prompt"
   | "study_chat_toolset"
   | "study_grounding"
+  | "study_visual_grounding"
   | "tavern_persona_compiler"
   | "tavern_actor_prompt"
   | "tavern_scheduler"
@@ -155,7 +156,11 @@ export const HARNESS_COMPONENT_REGISTRATIONS = deepFreeze({
   study_grounding: { ownerModule: "app.services.study_grounding", contract: { name: "study_grounding", version: "study-grounding-v1" } },
   study_chat_toolset: {
     ownerModule: "app.services.study_session_chat_runtime",
-    contract: { name: "study_chat_toolset", version: "study-chat-toolset-v1" },
+    contract: { name: "study_chat_toolset", version: "study-chat-toolset-v2" },
+  },
+  study_visual_grounding: {
+    ownerModule: "app.services.document_layout",
+    contract: { name: "study_visual_grounding", version: "study-visual-grounding-v1" },
   },
   tavern_persona_compiler: {
     ownerModule: "app.services.persona_runtime",
@@ -226,7 +231,7 @@ export const HARNESS_OPERATION_STAGE_REGISTRATIONS = deepFreeze({
   },
   "study_chat:study_chat_reply": {
     ownerModule: "app.services.study_sessions",
-    componentNames: ["study_chat_prompt", "study_chat_toolset", "study_grounding"],
+    componentNames: ["study_chat_prompt", "study_chat_toolset", "study_grounding", "study_visual_grounding"],
     evalRoute: "study_chat.reply",
   },
   "tavern:actor_reply": {

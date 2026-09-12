@@ -111,7 +111,7 @@
       "owner_module": "app.services.study_session_chat_runtime",
       "contract": {
         "name": "study_chat_toolset",
-        "version": "study-chat-toolset-v1"
+        "version": "study-chat-toolset-v2"
       }
     },
     {
@@ -128,6 +128,14 @@
       "contract": {
         "name": "study_unit_cleaner",
         "version": "study-unit-cleaner-v1"
+      }
+    },
+    {
+      "component_name": "study_visual_grounding",
+      "owner_module": "app.services.document_layout",
+      "contract": {
+        "name": "study_visual_grounding",
+        "version": "study-visual-grounding-v1"
       }
     },
     {
@@ -264,7 +272,8 @@
       "component_names": [
         "study_chat_prompt",
         "study_chat_toolset",
-        "study_grounding"
+        "study_grounding",
+        "study_visual_grounding"
       ],
       "eval_route": "study_chat.reply"
     },

@@ -83,6 +83,7 @@ if TYPE_CHECKING:
     from app.services.documents import DocumentService
     from app.services.session_scene import SessionSceneService
     from app.services.pedagogy import PedagogyOrchestrator
+    from app.services.document_layout import DocumentLayoutService
 
 
 @dataclass(frozen=True)
@@ -98,6 +99,7 @@ class StudyChatDependencies:
     document_service: DocumentService
     session_scene_service: SessionSceneService
     pedagogy_orchestrator: PedagogyOrchestrator
+    document_layout_service: DocumentLayoutService | None = None
     attachments: StudyChatAttachmentService = field(default_factory=StudyChatAttachmentService)
 
 
@@ -470,6 +472,7 @@ def _run_study_chat(context: StudyChatExecutionContext, *, dependencies: StudyCh
         multimodal_enabled=dependencies.model_provider.supports_chat_page_image_tools(),
         model_provider=dependencies.model_provider,
         effect_collector=effect_collector,
+        document_layout_service=dependencies.document_layout_service,
     )
     session_state_context = _resolve_session_state_context(
         session_tool_runtime=session_tool_runtime,
@@ -829,4 +832,3 @@ def _run_study_chat(context: StudyChatExecutionContext, *, dependencies: StudyCh
 
 def _receipt(operation, *, dependencies: StudyChatDependencies) -> StudyChatOperationReceipt:
     return dependencies.study_chat_operation_repository.receipt(operation)
-

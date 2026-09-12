@@ -1,0 +1,628 @@
+{
+  "version": "m3-book-grounding-error-audit-v1",
+  "scope": {
+    "tasks": 12,
+    "independent_pages": 8,
+    "original_tasks": 8,
+    "reused_page_tasks": 4,
+    "split": "development",
+    "annotation": "single task-author review; not held-out or expert-certified",
+    "privacy": "Derived metrics and representative page crops only; public model-quality export remains forbidden."
+  },
+  "instructional_pointer_review": {
+    "rubric": "A box passes when it uniquely and usefully indicates the requested page element for teaching, even if it does not tightly include the full annotated boundary. Explicitly selecting a named distractor or a non-overlapping text region fails.",
+    "direct_pass": 3,
+    "direct_total": 8,
+    "passes": {
+      "graph-node-24-1": "Uniquely encloses the 24.1 label inside the correct node despite missing the node border.",
+      "venn-intersection": "Clearly indicates the requested upper intersection diagram; the strict coverage miss is marginal.",
+      "composition-middle-region": "Encloses the whole middle B region and does not reach the left A or right C regions, though it is loose."
+    },
+    "note": "This secondary visual review does not replace or rescore the strict IoU+coverage metric."
+  },
+  "original_tasks": {
+    "cartesian-1-6-upper": {
+      "Direct": {
+        "status": "candidate_failed",
+        "error_code": null,
+        "task_pass": false,
+        "schema_valid": true,
+        "iou": 0.03585139625717942,
+        "coverage": 0.0729426624658688,
+        "box_px": [
+          369.019,
+          905.472,
+          444.822,
+          975.0329999999999
+        ]
+      },
+      "Layout": {
+        "status": "completed",
+        "error_code": null,
+        "task_pass": true,
+        "schema_valid": true,
+        "iou": 0.5011578947368421,
+        "coverage": 1.0,
+        "box_px": [
+          381,
+          841,
+          506,
+          917
+        ]
+      },
+      "DINO": {
+        "status": "candidate_failed",
+        "error_code": null,
+        "task_pass": false,
+        "schema_valid": true,
+        "iou": 0.0,
+        "coverage": 0.0,
+        "box_px": null
+      },
+      "R1": {
+        "status": "candidate_failed",
+        "error_code": "invalid_reflection_output",
+        "task_pass": false,
+        "schema_valid": false,
+        "iou": null,
+        "coverage": null,
+        "box_px": null
+      },
+      "R2": {
+        "status": "candidate_failed",
+        "error_code": "invalid_reflection_output",
+        "task_pass": false,
+        "schema_valid": false,
+        "iou": null,
+        "coverage": null,
+        "box_px": null
+      },
+      "R3": {
+        "status": "candidate_failed",
+        "error_code": "invalid_reflection_output",
+        "task_pass": false,
+        "schema_valid": false,
+        "iou": null,
+        "coverage": null,
+        "box_px": null
+      }
+    },
+    "composition-middle-region": {
+      "Direct": {
+        "status": "candidate_failed",
+        "error_code": null,
+        "task_pass": false,
+        "schema_valid": true,
+        "iou": 0.4964880858246102,
+        "coverage": 1.0,
+        "box_px": [
+          306.544,
+          51.876,
+          519.792,
+          290.034
+        ]
+      },
+      "Layout": {
+        "status": "candidate_failed",
+        "error_code": null,
+        "task_pass": false,
+        "schema_valid": true,
+        "iou": 0.6224072972437041,
+        "coverage": 0.6224072972437041,
+        "box_px": [
+          372,
+          64,
+          490,
+          197
+        ]
+      },
+      "DINO": {
+        "status": "candidate_failed",
+        "error_code": null,
+        "task_pass": false,
+        "schema_valid": true,
+        "iou": 0.0,
+        "coverage": 0.0,
+        "box_px": null
+      },
+      "R1": {
+        "status": "completed",
+        "error_code": null,
+        "task_pass": true,
+        "schema_valid": true,
+        "iou": 0.5977286441762338,
+        "coverage": 0.8190487804878048,
+        "box_px": [
+          356.524,
+          47.160000000000004,
+          520.625,
+          229.905
+        ]
+      },
+      "R2": {
+        "status": "completed",
+        "error_code": null,
+        "task_pass": true,
+        "schema_valid": true,
+        "iou": 0.5803336587071909,
+        "coverage": 0.8478048780487806,
+        "box_px": [
+          333.20000000000005,
+          47.160000000000004,
+          508.13,
+          235.8
+        ]
+      },
+      "R3": {
+        "status": "completed",
+        "error_code": null,
+        "task_pass": true,
+        "schema_valid": true,
+        "iou": 0.5803336587071909,
+        "coverage": 0.8478048780487806,
+        "box_px": [
+          333.20000000000005,
+          47.160000000000004,
+          508.13,
+          235.8
+        ]
+      }
+    },
+    "graph-node-24-1": {
+      "Direct": {
+        "status": "candidate_failed",
+        "error_code": null,
+        "task_pass": false,
+        "schema_valid": true,
+        "iou": 0.4242626982758621,
+        "coverage": 0.4242626982758621,
+        "box_px": [
+          337.365,
+          784.0350000000001,
+          371.51800000000003,
+          809.9730000000001
+        ]
+      },
+      "Layout": {
+        "status": "completed",
+        "error_code": null,
+        "task_pass": true,
+        "schema_valid": true,
+        "iou": 0.9102005231037489,
+        "coverage": 1.0,
+        "box_px": [
+          319,
+          783,
+          393,
+          814
+        ]
+      },
+      "DINO": {
+        "status": "candidate_failed",
+        "error_code": null,
+        "task_pass": false,
+        "schema_valid": true,
+        "iou": 0.0,
+        "coverage": 0.0,
+        "box_px": null
+      },
+      "R1": {
+        "status": "candidate_failed",
+        "error_code": null,
+        "task_pass": false,
+        "schema_valid": true,
+        "iou": 0.4242626982758621,
+        "coverage": 0.4242626982758621,
+        "box_px": [
+          337.365,
+          784.0350000000001,
+          371.51800000000003,
+          809.9730000000001
+        ]
+      },
+      "R2": {
+        "status": "candidate_failed",
+        "error_code": null,
+        "task_pass": false,
+        "schema_valid": true,
+        "iou": 0.4242626982758621,
+        "coverage": 0.4242626982758621,
+        "box_px": [
+          337.365,
+          784.0350000000001,
+          371.51800000000003,
+          809.9730000000001
+        ]
+      },
+      "R3": {
+        "status": "candidate_failed",
+        "error_code": null,
+        "task_pass": false,
+        "schema_valid": true,
+        "iou": 0.3517106382735311,
+        "coverage": 0.40705933333333433,
+        "box_px": [
+          334.86600000000004,
+          775.782,
+          374.85,
+          805.2570000000001
+        ]
+      }
+    },
+    "hatcher-at-genus2-polygon": {
+      "Direct": {
+        "status": "candidate_failed",
+        "error_code": null,
+        "task_pass": false,
+        "schema_valid": true,
+        "iou": 0.10365394952986427,
+        "coverage": 0.2685714285714283,
+        "box_px": [
+          631.9680000000001,
+          410.40000000000003,
+          860.2560000000001,
+          571.1999999999999
+        ]
+      },
+      "Layout": {
+        "status": "candidate_failed",
+        "error_code": null,
+        "task_pass": false,
+        "schema_valid": true,
+        "iou": 0.0,
+        "coverage": 0.0,
+        "box_px": null
+      },
+      "DINO": {
+        "status": "candidate_failed",
+        "error_code": null,
+        "task_pass": false,
+        "schema_valid": true,
+        "iou": 0.0,
+        "coverage": 0.0,
+        "box_px": null
+      },
+      "R1": {
+        "status": "candidate_failed",
+        "error_code": "invalid_reflection_output",
+        "task_pass": false,
+        "schema_valid": false,
+        "iou": null,
+        "coverage": null,
+        "box_px": null
+      },
+      "R2": {
+        "status": "candidate_failed",
+        "error_code": null,
+        "task_pass": false,
+        "schema_valid": true,
+        "iou": 0.10365394952986427,
+        "coverage": 0.2685714285714283,
+        "box_px": [
+          631.9680000000001,
+          410.40000000000003,
+          860.2560000000001,
+          571.1999999999999
+        ]
+      },
+      "R3": {
+        "status": "candidate_failed",
+        "error_code": null,
+        "task_pass": false,
+        "schema_valid": true,
+        "iou": 0.10365394952986427,
+        "coverage": 0.2685714285714283,
+        "box_px": [
+          631.9680000000001,
+          410.40000000000003,
+          860.2560000000001,
+          571.1999999999999
+        ]
+      }
+    },
+    "hatcher-at-negative-link": {
+      "Direct": {
+        "status": "candidate_failed",
+        "error_code": null,
+        "task_pass": false,
+        "schema_valid": true,
+        "iou": 0.01755732534157881,
+        "coverage": 0.06095238095238073,
+        "box_px": [
+          605.056,
+          555.6,
+          894.592,
+          720.0
+        ]
+      },
+      "Layout": {
+        "status": "candidate_failed",
+        "error_code": null,
+        "task_pass": false,
+        "schema_valid": true,
+        "iou": 0.0,
+        "coverage": 0.0,
+        "box_px": null
+      },
+      "DINO": {
+        "status": "candidate_failed",
+        "error_code": null,
+        "task_pass": false,
+        "schema_valid": true,
+        "iou": 0.0,
+        "coverage": 0.0,
+        "box_px": null
+      },
+      "R1": {
+        "status": "candidate_failed",
+        "error_code": null,
+        "task_pass": false,
+        "schema_valid": true,
+        "iou": 0.04964379192595032,
+        "coverage": 0.1523809523809524,
+        "box_px": [
+          617.12,
+          546.0,
+          895.52,
+          696.0
+        ]
+      },
+      "R2": {
+        "status": "candidate_failed",
+        "error_code": "invalid_reflection_output",
+        "task_pass": false,
+        "schema_valid": false,
+        "iou": null,
+        "coverage": null,
+        "box_px": null
+      },
+      "R3": {
+        "status": "candidate_failed",
+        "error_code": null,
+        "task_pass": false,
+        "schema_valid": true,
+        "iou": 0.04964379192595032,
+        "coverage": 0.1523809523809524,
+        "box_px": [
+          617.12,
+          546.0,
+          895.52,
+          696.0
+        ]
+      }
+    },
+    "hatcher-tn-farey-lower": {
+      "Direct": {
+        "status": "candidate_failed",
+        "error_code": null,
+        "task_pass": false,
+        "schema_valid": true,
+        "iou": 0.3465100249554154,
+        "coverage": 0.5344262295081967,
+        "box_px": [
+          83.52,
+          729.6,
+          892.736,
+          1008.0
+        ]
+      },
+      "Layout": {
+        "status": "candidate_failed",
+        "error_code": null,
+        "task_pass": false,
+        "schema_valid": true,
+        "iou": 0.0,
+        "coverage": 0.0,
+        "box_px": null
+      },
+      "DINO": {
+        "status": "candidate_failed",
+        "error_code": null,
+        "task_pass": false,
+        "schema_valid": true,
+        "iou": 0.0,
+        "coverage": 0.0,
+        "box_px": null
+      },
+      "R1": {
+        "status": "candidate_failed",
+        "error_code": null,
+        "task_pass": false,
+        "schema_valid": true,
+        "iou": 0.41221901219861085,
+        "coverage": 0.6721311475409836,
+        "box_px": [
+          46.400000000000006,
+          720.0,
+          872.3199999999999,
+          1050.0
+        ]
+      },
+      "R2": {
+        "status": "completed",
+        "error_code": null,
+        "task_pass": true,
+        "schema_valid": true,
+        "iou": 0.5095189895720584,
+        "coverage": 0.8491803278688524,
+        "box_px": [
+          46.400000000000006,
+          720.0,
+          872.3199999999999,
+          1104.0
+        ]
+      },
+      "R3": {
+        "status": "completed",
+        "error_code": null,
+        "task_pass": true,
+        "schema_valid": true,
+        "iou": 0.5095189895720584,
+        "coverage": 0.8491803278688524,
+        "box_px": [
+          46.400000000000006,
+          720.0,
+          872.3199999999999,
+          1104.0
+        ]
+      }
+    },
+    "hatcher-tn-local-edge": {
+      "Direct": {
+        "status": "candidate_failed",
+        "error_code": null,
+        "task_pass": false,
+        "schema_valid": true,
+        "iou": 0.0,
+        "coverage": 0.0,
+        "box_px": [
+          642.1759999999999,
+          732.0,
+          790.656,
+          816.0000000000001
+        ]
+      },
+      "Layout": {
+        "status": "candidate_failed",
+        "error_code": null,
+        "task_pass": false,
+        "schema_valid": true,
+        "iou": 0.0,
+        "coverage": 0.0,
+        "box_px": null
+      },
+      "DINO": {
+        "status": "candidate_failed",
+        "error_code": null,
+        "task_pass": false,
+        "schema_valid": true,
+        "iou": 0.0,
+        "coverage": 0.0,
+        "box_px": null
+      },
+      "R1": {
+        "status": "candidate_failed",
+        "error_code": null,
+        "task_pass": false,
+        "schema_valid": true,
+        "iou": 0.0,
+        "coverage": 0.0,
+        "box_px": [
+          642.1759999999999,
+          732.0,
+          790.656,
+          816.0000000000001
+        ]
+      },
+      "R2": {
+        "status": "candidate_failed",
+        "error_code": "invalid_reflection_output",
+        "task_pass": false,
+        "schema_valid": false,
+        "iou": null,
+        "coverage": null,
+        "box_px": null
+      },
+      "R3": {
+        "status": "candidate_failed",
+        "error_code": null,
+        "task_pass": false,
+        "schema_valid": true,
+        "iou": 0.0,
+        "coverage": 0.0,
+        "box_px": [
+          677.4399999999999,
+          810.0,
+          876.9599999999999,
+          878.4
+        ]
+      }
+    },
+    "venn-intersection": {
+      "Direct": {
+        "status": "candidate_failed",
+        "error_code": null,
+        "task_pass": false,
+        "schema_valid": true,
+        "iou": 0.745888966122344,
+        "coverage": 0.7880510917244941,
+        "box_px": [
+          269.892,
+          68.382,
+          624.75,
+          275.886
+        ]
+      },
+      "Layout": {
+        "status": "completed",
+        "error_code": null,
+        "task_pass": true,
+        "schema_valid": true,
+        "iou": 0.9862444994966121,
+        "coverage": 1.0,
+        "box_px": [
+          229,
+          64,
+          602,
+          301
+        ]
+      },
+      "DINO": {
+        "status": "completed",
+        "error_code": null,
+        "task_pass": true,
+        "schema_valid": true,
+        "iou": 0.9801326579227686,
+        "coverage": 0.9991497932596409,
+        "box_px": [
+          228.47097778320312,
+          62.25123596191406,
+          602.2991333007812,
+          299.8002014160156
+        ]
+      },
+      "R1": {
+        "status": "completed",
+        "error_code": null,
+        "task_pass": true,
+        "schema_valid": true,
+        "iou": 0.7866556290957621,
+        "coverage": 0.8880127659574467,
+        "box_px": [
+          187.425,
+          68.382,
+          612.255,
+          277.065
+        ]
+      },
+      "R2": {
+        "status": "completed",
+        "error_code": null,
+        "task_pass": true,
+        "schema_valid": true,
+        "iou": 0.7866556290957621,
+        "coverage": 0.8880127659574467,
+        "box_px": [
+          187.425,
+          68.382,
+          612.255,
+          277.065
+        ]
+      },
+      "R3": {
+        "status": "completed",
+        "error_code": null,
+        "task_pass": true,
+        "schema_valid": true,
+        "iou": 0.7270222533952507,
+        "coverage": 0.8127574468085107,
+        "box_px": [
+          187.425,
+          68.382,
+          612.255,
+          259.38
+        ]
+      }
+    }
+  }
+}

@@ -82,6 +82,15 @@ class Container:
             ocr_engine_name=self.base_settings.ocr_engine,
             onnxtr_model_dir=self.base_settings.onnxtr_model_dir,
         )
+        from app.services.document_layout import DocumentLayoutService
+        self.document_layout_service = DocumentLayoutService(
+            engine=self.base_settings.document_layout_engine,
+            python_executable=self.base_settings.document_layout_python,
+            model_path=self.base_settings.document_layout_model_path,
+            model_sha256=self.base_settings.document_layout_model_sha256,
+            runtime_temp_root=self.storage.ensure_runtime_temp_root(),
+            timeout_seconds=self.base_settings.document_layout_timeout_seconds,
+        )
         if self.base_settings.auto_migrate_local_data and self.store.count_bucket("documents") == 0:
             migrate_from_legacy_store(
                 LegacyLocalJsonStore(data_root),
@@ -193,6 +202,7 @@ class Container:
                 document_service=self.document_service,
                 session_scene_service=self.session_scene_service,
                 pedagogy_orchestrator=orchestrator,
+                document_layout_service=self.document_layout_service,
             ))
 
     def update_runtime_settings(self, updates: dict[str, object]) -> None:

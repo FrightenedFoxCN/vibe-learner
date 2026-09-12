@@ -140,6 +140,11 @@ _TOOL_UI_CATALOG: dict[str, dict[str, dict[str, str]]] = {
             "category": "sensory",
             "category_label": "感官工具",
         },
+        "read_projected_pdf_layout_candidates": {
+            "label": "投射 PDF 图形候选",
+            "category": "sensory",
+            "category_label": "感官工具",
+        },
         "focus_projected_pdf_page": {
             "label": "投射 PDF 切页",
             "category": "sensory",

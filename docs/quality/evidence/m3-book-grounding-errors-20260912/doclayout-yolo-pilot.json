@@ -1,0 +1,798 @@
+{
+  "version": "doclayout-yolo-book-pilot-v1",
+  "scope": "Local proposal generation only; gold used after inference for recall; no M3 requests; private page pixels omitted from JSON.",
+  "summary": {
+    "weight_repo": "juliozhao/DocLayout-YOLO-DocLayNet-Docsynth300K_pretrained",
+    "weight_revision": "51b2c54a642013022382c3d2bd76e84b07656b4a",
+    "weight_sha256": "0ddfc7f411ec23aab661091ca8da6b25abe7bdce6afa3a515811c92d7ccfb1db",
+    "weight_bytes": 40720310,
+    "package": "doclayout-yolo==0.0.4",
+    "imgsz": 1120,
+    "confidence_threshold": 0.05,
+    "device": "cpu",
+    "page_count": 8,
+    "elapsed_seconds": 9.107665707997512,
+    "original_8": {
+      "strict_recall": 3,
+      "containment_recall": 8,
+      "tasks": 8
+    },
+    "calibration_12": {
+      "strict_recall": 2,
+      "containment_recall": 4,
+      "tasks": 12
+    },
+    "label_ranges": {
+      "diagram": [
+        "Picture"
+      ],
+      "formula": [
+        "Formula"
+      ],
+      "letter": []
+    },
+    "scope_decision": "YOLO covers Picture and Formula only; OCR owns text and single-character localization."
+  },
+  "original_tasks": [
+    {
+      "id": "graph-node-24-1",
+      "page_sha256": "732791df2be02f7394800f2eaf368af7cad68e09d300b8cdb701c5c07d6fbb3c",
+      "kind": "diagram",
+      "gold": [
+        320,
+        784,
+        392,
+        813
+      ],
+      "size": [
+        833,
+        1179
+      ],
+      "allowed_labels": [
+        "Picture"
+      ],
+      "page_detection_count": 6,
+      "filtered_candidate_count": 1,
+      "strict_recall": false,
+      "containment_recall": true,
+      "best": {
+        "metrics": {
+          "iou": 0.005452781896993145,
+          "coverage": 1.0
+        },
+        "candidate": {
+          "label": "Picture",
+          "confidence": 0.9753,
+          "box_px": [
+            87.476,
+            510.822,
+            745.215,
+            1093.004
+          ]
+        }
+      }
+    },
+    {
+      "id": "venn-intersection",
+      "page_sha256": "bc4c728fbfea54300ed03584f0b5d410e75d78ab3be83096c512567b233ffcc2",
+      "kind": "diagram",
+      "gold": [
+        230,
+        65,
+        601,
+        300
+      ],
+      "size": [
+        833,
+        1179
+      ],
+      "allowed_labels": [
+        "Picture"
+      ],
+      "page_detection_count": 18,
+      "filtered_candidate_count": 3,
+      "strict_recall": true,
+      "containment_recall": true,
+      "best": {
+        "metrics": {
+          "iou": 0.8526960299447357,
+          "coverage": 1.0
+        },
+        "candidate": {
+          "label": "Picture",
+          "confidence": 0.457483,
+          "box_px": [
+            228.209,
+            63.33,
+            601.357,
+            337.34
+          ]
+        }
+      }
+    },
+    {
+      "id": "cartesian-1-6-upper",
+      "page_sha256": "4375f3fb228866a8768697c76008ef9d557abd298732b8dbdf916eda2da9ea4d",
+      "kind": "diagram",
+      "gold": [
+        382,
+        842,
+        451,
+        911
+      ],
+      "size": [
+        833,
+        1179
+      ],
+      "allowed_labels": [
+        "Picture"
+      ],
+      "page_detection_count": 13,
+      "filtered_candidate_count": 2,
+      "strict_recall": false,
+      "containment_recall": true,
+      "best": {
+        "metrics": {
+          "iou": 0.052232251166244935,
+          "coverage": 1.0
+        },
+        "candidate": {
+          "label": "Picture",
+          "confidence": 0.959168,
+          "box_px": [
+            253.88,
+            778.391,
+            577.994,
+            1059.621
+          ]
+        }
+      }
+    },
+    {
+      "id": "composition-middle-region",
+      "page_sha256": "148afcfd1df607dd12783cbe9845b1c57d32a01d7a3d87bf2932c8c1cd0f6692",
+      "kind": "diagram",
+      "gold": [
+        368,
+        62,
+        491,
+        267
+      ],
+      "size": [
+        833,
+        1179
+      ],
+      "allowed_labels": [
+        "Picture"
+      ],
+      "page_detection_count": 21,
+      "filtered_candidate_count": 1,
+      "strict_recall": false,
+      "containment_recall": true,
+      "best": {
+        "metrics": {
+          "iou": 0.17378734514914204,
+          "coverage": 1.0
+        },
+        "candidate": {
+          "label": "Picture",
+          "confidence": 0.963349,
+          "box_px": [
+            134.647,
+            60.42,
+            698.789,
+            317.609
+          ]
+        }
+      }
+    },
+    {
+      "id": "hatcher-at-genus2-polygon",
+      "page_sha256": "378529b27fb6d2e77d74ccd9378c178e317ae37740d02fdca5d32d3b966d8f02",
+      "kind": "diagram",
+      "gold": [
+        644,
+        308,
+        785,
+        448
+      ],
+      "size": [
+        928,
+        1200
+      ],
+      "allowed_labels": [
+        "Picture"
+      ],
+      "page_detection_count": 16,
+      "filtered_candidate_count": 2,
+      "strict_recall": false,
+      "containment_recall": true,
+      "best": {
+        "metrics": {
+          "iou": 0.0985730875755822,
+          "coverage": 1.0
+        },
+        "candidate": {
+          "label": "Picture",
+          "confidence": 0.897868,
+          "box_px": [
+            368.653,
+            194.157,
+            818.189,
+            639.633
+          ]
+        }
+      }
+    },
+    {
+      "id": "hatcher-at-negative-link",
+      "page_sha256": "0bbb48bdbe4899d419a4689e1bd9a545c46b7e1fd4582c71a18c387ba3b1ba67",
+      "kind": "diagram",
+      "gold": [
+        634,
+        457,
+        813,
+        562
+      ],
+      "size": [
+        928,
+        1200
+      ],
+      "allowed_labels": [
+        "Picture"
+      ],
+      "page_detection_count": 14,
+      "filtered_candidate_count": 3,
+      "strict_recall": false,
+      "containment_recall": true,
+      "best": {
+        "metrics": {
+          "iou": 0.42817105275684497,
+          "coverage": 1.0
+        },
+        "candidate": {
+          "label": "Picture",
+          "confidence": 0.926462,
+          "box_px": [
+            626.103,
+            336.946,
+            817.113,
+            566.756
+          ]
+        }
+      }
+    },
+    {
+      "id": "hatcher-tn-farey-lower",
+      "page_sha256": "f33ee5c36cde0b262d4582ce863f8854c01f133b2dbb5a09ef1b61a2245870e6",
+      "kind": "diagram",
+      "gold": [
+        118,
+        845,
+        804,
+        1150
+      ],
+      "size": [
+        928,
+        1200
+      ],
+      "allowed_labels": [
+        "Picture"
+      ],
+      "page_detection_count": 9,
+      "filtered_candidate_count": 3,
+      "strict_recall": true,
+      "containment_recall": true,
+      "best": {
+        "metrics": {
+          "iou": 0.9712008459350949,
+          "coverage": 0.9712008459350949
+        },
+        "candidate": {
+          "label": "Picture",
+          "confidence": 0.974308,
+          "box_px": [
+            120.023,
+            847.302,
+            803.304,
+            1144.697
+          ]
+        }
+      }
+    },
+    {
+      "id": "hatcher-tn-local-edge",
+      "page_sha256": "df29cc370ffe2595d1cf62a3c022d3390a0a5e76827ab6ec05fb50dac0e5b0b0",
+      "kind": "diagram",
+      "gold": [
+        649,
+        881,
+        809,
+        963
+      ],
+      "size": [
+        928,
+        1200
+      ],
+      "allowed_labels": [
+        "Picture"
+      ],
+      "page_detection_count": 10,
+      "filtered_candidate_count": 2,
+      "strict_recall": true,
+      "containment_recall": true,
+      "best": {
+        "metrics": {
+          "iou": 0.8418701111568976,
+          "coverage": 0.9551187500000005
+        },
+        "candidate": {
+          "label": "Picture",
+          "confidence": 0.850587,
+          "box_px": [
+            651.184,
+            878.866,
+            804.003,
+            972.415
+          ]
+        }
+      }
+    }
+  ],
+  "calibration_tasks": [
+    {
+      "id": "hatcher-at-genus2-polygon",
+      "page_sha256": "378529b27fb6d2e77d74ccd9378c178e317ae37740d02fdca5d32d3b966d8f02",
+      "kind": "diagram",
+      "gold": [
+        644,
+        308,
+        785,
+        448
+      ],
+      "size": [
+        928,
+        1200
+      ],
+      "allowed_labels": [
+        "Picture"
+      ],
+      "page_detection_count": 16,
+      "filtered_candidate_count": 2,
+      "strict_recall": false,
+      "containment_recall": true,
+      "best": {
+        "metrics": {
+          "iou": 0.0985730875755822,
+          "coverage": 1.0
+        },
+        "candidate": {
+          "label": "Picture",
+          "confidence": 0.897868,
+          "box_px": [
+            368.653,
+            194.157,
+            818.189,
+            639.633
+          ]
+        }
+      }
+    },
+    {
+      "id": "hatcher-at-formula-phi",
+      "page_sha256": "378529b27fb6d2e77d74ccd9378c178e317ae37740d02fdca5d32d3b966d8f02",
+      "kind": "formula",
+      "gold": [
+        145,
+        790,
+        416,
+        827
+      ],
+      "size": [
+        928,
+        1200
+      ],
+      "allowed_labels": [
+        "Formula"
+      ],
+      "page_detection_count": 16,
+      "filtered_candidate_count": 0,
+      "strict_recall": false,
+      "containment_recall": false,
+      "best": {
+        "metrics": {
+          "iou": 0,
+          "coverage": 0
+        },
+        "candidate": null
+      }
+    },
+    {
+      "id": "hatcher-at-letter-a",
+      "page_sha256": "378529b27fb6d2e77d74ccd9378c178e317ae37740d02fdca5d32d3b966d8f02",
+      "kind": "letter",
+      "gold": [
+        701,
+        200,
+        722,
+        228
+      ],
+      "size": [
+        928,
+        1200
+      ],
+      "allowed_labels": [],
+      "page_detection_count": 16,
+      "filtered_candidate_count": 0,
+      "strict_recall": false,
+      "containment_recall": false,
+      "best": {
+        "metrics": {
+          "iou": 0,
+          "coverage": 0
+        },
+        "candidate": null
+      }
+    },
+    {
+      "id": "hatcher-at-negative-link",
+      "page_sha256": "0bbb48bdbe4899d419a4689e1bd9a545c46b7e1fd4582c71a18c387ba3b1ba67",
+      "kind": "diagram",
+      "gold": [
+        634,
+        457,
+        813,
+        562
+      ],
+      "size": [
+        928,
+        1200
+      ],
+      "allowed_labels": [
+        "Picture"
+      ],
+      "page_detection_count": 14,
+      "filtered_candidate_count": 3,
+      "strict_recall": false,
+      "containment_recall": true,
+      "best": {
+        "metrics": {
+          "iou": 0.42817105275684497,
+          "coverage": 1.0
+        },
+        "candidate": {
+          "label": "Picture",
+          "confidence": 0.926462,
+          "box_px": [
+            626.103,
+            336.946,
+            817.113,
+            566.756
+          ]
+        }
+      }
+    },
+    {
+      "id": "hatcher-at-formula-bm-bn",
+      "page_sha256": "0bbb48bdbe4899d419a4689e1bd9a545c46b7e1fd4582c71a18c387ba3b1ba67",
+      "kind": "formula",
+      "gold": [
+        143,
+        1033,
+        304,
+        1062
+      ],
+      "size": [
+        928,
+        1200
+      ],
+      "allowed_labels": [
+        "Formula"
+      ],
+      "page_detection_count": 14,
+      "filtered_candidate_count": 0,
+      "strict_recall": false,
+      "containment_recall": false,
+      "best": {
+        "metrics": {
+          "iou": 0,
+          "coverage": 0
+        },
+        "candidate": null
+      }
+    },
+    {
+      "id": "hatcher-at-letter-a-top",
+      "page_sha256": "0bbb48bdbe4899d419a4689e1bd9a545c46b7e1fd4582c71a18c387ba3b1ba67",
+      "kind": "letter",
+      "gold": [
+        631,
+        170,
+        654,
+        198
+      ],
+      "size": [
+        928,
+        1200
+      ],
+      "allowed_labels": [],
+      "page_detection_count": 14,
+      "filtered_candidate_count": 0,
+      "strict_recall": false,
+      "containment_recall": false,
+      "best": {
+        "metrics": {
+          "iou": 0,
+          "coverage": 0
+        },
+        "candidate": null
+      }
+    },
+    {
+      "id": "hatcher-tn-farey-lower",
+      "page_sha256": "f33ee5c36cde0b262d4582ce863f8854c01f133b2dbb5a09ef1b61a2245870e6",
+      "kind": "diagram",
+      "gold": [
+        118,
+        845,
+        804,
+        1150
+      ],
+      "size": [
+        928,
+        1200
+      ],
+      "allowed_labels": [
+        "Picture"
+      ],
+      "page_detection_count": 9,
+      "filtered_candidate_count": 3,
+      "strict_recall": true,
+      "containment_recall": true,
+      "best": {
+        "metrics": {
+          "iou": 0.9712008459350949,
+          "coverage": 0.9712008459350949
+        },
+        "candidate": {
+          "label": "Picture",
+          "confidence": 0.974308,
+          "box_px": [
+            120.023,
+            847.302,
+            803.304,
+            1144.697
+          ]
+        }
+      }
+    },
+    {
+      "id": "hatcher-tn-formula-unit-circle",
+      "page_sha256": "f33ee5c36cde0b262d4582ce863f8854c01f133b2dbb5a09ef1b61a2245870e6",
+      "kind": "formula",
+      "gold": [
+        116,
+        696,
+        329,
+        730
+      ],
+      "size": [
+        928,
+        1200
+      ],
+      "allowed_labels": [
+        "Formula"
+      ],
+      "page_detection_count": 9,
+      "filtered_candidate_count": 0,
+      "strict_recall": false,
+      "containment_recall": false,
+      "best": {
+        "metrics": {
+          "iou": 0,
+          "coverage": 0
+        },
+        "candidate": null
+      }
+    },
+    {
+      "id": "hatcher-tn-letter-x-unit-circle",
+      "page_sha256": "f33ee5c36cde0b262d4582ce863f8854c01f133b2dbb5a09ef1b61a2245870e6",
+      "kind": "letter",
+      "gold": [
+        118,
+        696,
+        145,
+        730
+      ],
+      "size": [
+        928,
+        1200
+      ],
+      "allowed_labels": [],
+      "page_detection_count": 9,
+      "filtered_candidate_count": 0,
+      "strict_recall": false,
+      "containment_recall": false,
+      "best": {
+        "metrics": {
+          "iou": 0,
+          "coverage": 0
+        },
+        "candidate": null
+      }
+    },
+    {
+      "id": "hatcher-tn-local-edge",
+      "page_sha256": "df29cc370ffe2595d1cf62a3c022d3390a0a5e76827ab6ec05fb50dac0e5b0b0",
+      "kind": "diagram",
+      "gold": [
+        649,
+        881,
+        809,
+        963
+      ],
+      "size": [
+        928,
+        1200
+      ],
+      "allowed_labels": [
+        "Picture"
+      ],
+      "page_detection_count": 10,
+      "filtered_candidate_count": 2,
+      "strict_recall": true,
+      "containment_recall": true,
+      "best": {
+        "metrics": {
+          "iou": 0.8418701111568976,
+          "coverage": 0.9551187500000005
+        },
+        "candidate": {
+          "label": "Picture",
+          "confidence": 0.850587,
+          "box_px": [
+            651.184,
+            878.866,
+            804.003,
+            972.415
+          ]
+        }
+      }
+    },
+    {
+      "id": "hatcher-tn-formula-two-three",
+      "page_sha256": "df29cc370ffe2595d1cf62a3c022d3390a0a5e76827ab6ec05fb50dac0e5b0b0",
+      "kind": "formula",
+      "gold": [
+        110,
+        756,
+        201,
+        790
+      ],
+      "size": [
+        928,
+        1200
+      ],
+      "allowed_labels": [
+        "Formula"
+      ],
+      "page_detection_count": 10,
+      "filtered_candidate_count": 0,
+      "strict_recall": false,
+      "containment_recall": false,
+      "best": {
+        "metrics": {
+          "iou": 0,
+          "coverage": 0
+        },
+        "candidate": null
+      }
+    },
+    {
+      "id": "hatcher-tn-letter-q-edge",
+      "page_sha256": "df29cc370ffe2595d1cf62a3c022d3390a0a5e76827ab6ec05fb50dac0e5b0b0",
+      "kind": "letter",
+      "gold": [
+        724,
+        875,
+        748,
+        914
+      ],
+      "size": [
+        928,
+        1200
+      ],
+      "allowed_labels": [],
+      "page_detection_count": 10,
+      "filtered_candidate_count": 0,
+      "strict_recall": false,
+      "containment_recall": false,
+      "best": {
+        "metrics": {
+          "iou": 0,
+          "coverage": 0
+        },
+        "candidate": null
+      }
+    }
+  ],
+  "page_detections": {
+    "732791df2be02f7394800f2eaf368af7cad68e09d300b8cdb701c5c07d6fbb3c": {
+      "count": 6,
+      "labels": {
+        "Page-header": 1,
+        "Picture": 1,
+        "Section-header": 1,
+        "Text": 3
+      }
+    },
+    "bc4c728fbfea54300ed03584f0b5d410e75d78ab3be83096c512567b233ffcc2": {
+      "count": 18,
+      "labels": {
+        "Caption": 2,
+        "List-item": 5,
+        "Page-header": 3,
+        "Picture": 3,
+        "Section-header": 1,
+        "Text": 4
+      }
+    },
+    "4375f3fb228866a8768697c76008ef9d557abd298732b8dbdf916eda2da9ea4d": {
+      "count": 13,
+      "labels": {
+        "Caption": 3,
+        "Formula": 1,
+        "Page-header": 2,
+        "Picture": 2,
+        "Section-header": 1,
+        "Text": 4
+      }
+    },
+    "148afcfd1df607dd12783cbe9845b1c57d32a01d7a3d87bf2932c8c1cd0f6692": {
+      "count": 21,
+      "labels": {
+        "Caption": 2,
+        "Formula": 5,
+        "List-item": 1,
+        "Page-header": 2,
+        "Picture": 1,
+        "Text": 10
+      }
+    },
+    "378529b27fb6d2e77d74ccd9378c178e317ae37740d02fdca5d32d3b966d8f02": {
+      "count": 16,
+      "labels": {
+        "List-item": 3,
+        "Page-header": 4,
+        "Picture": 2,
+        "Section-header": 1,
+        "Text": 6
+      }
+    },
+    "0bbb48bdbe4899d419a4689e1bd9a545c46b7e1fd4582c71a18c387ba3b1ba67": {
+      "count": 14,
+      "labels": {
+        "Page-header": 4,
+        "Picture": 3,
+        "Text": 7
+      }
+    },
+    "f33ee5c36cde0b262d4582ce863f8854c01f133b2dbb5a09ef1b61a2245870e6": {
+      "count": 9,
+      "labels": {
+        "Page-header": 2,
+        "Picture": 3,
+        "Text": 4
+      }
+    },
+    "df29cc370ffe2595d1cf62a3c022d3390a0a5e76827ab6ec05fb50dac0e5b0b0": {
+      "count": 10,
+      "labels": {
+        "Page-header": 2,
+        "Picture": 2,
+        "Text": 6
+      }
+    }
+  }
+}

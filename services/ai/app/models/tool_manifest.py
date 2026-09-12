@@ -488,6 +488,12 @@ _STUDY_META: dict[str, tuple[str, str, str, str]] = {
     "generate_projected_image": ("生成并投射图片", "sensory", "感官工具", "生成一张教学用图片并投到预览窗口。"),
     "read_projected_pdf_content": ("投射 PDF 文本读取", "sensory", "感官工具", "读取当前投射 PDF 的指定页文字内容。"),
     "read_projected_pdf_images": ("投射 PDF 图像读取", "sensory", "感官工具", "渲染当前投射 PDF 的指定页图像。"),
+    "read_projected_pdf_layout_candidates": (
+        "投射 PDF 图形候选",
+        "sensory",
+        "感官工具",
+        "在当前投射 PDF 的指定页检测 Picture 或独立 Formula 候选；正文、行内公式锚点与单字母应继续使用 OCR 文本定位。",
+    ),
     "focus_projected_pdf_page": ("投射 PDF 切页", "sensory", "感官工具", "把当前投射 PDF 的预览焦点移动到某一页。"),
     "highlight_projected_pdf_text": ("投射 PDF 文字高亮", "sensory", "感官工具", "在当前投射 PDF 某一页定位指定文字并生成高亮框。"),
     "annotate_projected_pdf_region": ("投射 PDF 区域框选", "sensory", "感官工具", "在当前投射 PDF 某一页按归一化坐标添加框选。"),
@@ -637,6 +643,7 @@ _STUDY_ENTRIES = (
     _study_entry("generate_projected_image", effects=GENERATED_IMAGE_EFFECTS, sensitivity=PROTECTED_SENSITIVITY, dependencies=_sorted_dependencies(ToolDependency.EFFECT_COLLECTOR, ToolDependency.IMAGE_PROVIDER, ToolDependency.STUDY_SESSION), capabilities=_sorted_capabilities(ToolProviderCapability.FUNCTION_CALLING, ToolProviderCapability.IMAGE_GENERATION), budget=IMAGE_BUDGET),
     _study_entry("read_projected_pdf_content", sensitivity=PROTECTED_SENSITIVITY, dependencies=_sorted_dependencies(ToolDependency.PROJECTED_PDF)),
     _study_entry("read_projected_pdf_images", sensitivity=PROTECTED_SENSITIVITY, dependencies=_sorted_dependencies(ToolDependency.DOCUMENT_FILE, ToolDependency.PROJECTED_PDF), capabilities=_sorted_capabilities(ToolProviderCapability.FUNCTION_CALLING, ToolProviderCapability.MULTIMODAL_INPUT), budget=IMAGE_BUDGET),
+    _study_entry("read_projected_pdf_layout_candidates", sensitivity=PROTECTED_SENSITIVITY, dependencies=_sorted_dependencies(ToolDependency.DOCUMENT_FILE, ToolDependency.PROJECTED_PDF), capabilities=_sorted_capabilities(ToolProviderCapability.FUNCTION_CALLING, ToolProviderCapability.MULTIMODAL_INPUT), budget=IMAGE_BUDGET),
     _study_entry("focus_projected_pdf_page", effects=_db_effect("study_projection_mutation", "study-projection-mutation-v1"), sensitivity=PROTECTED_SENSITIVITY, dependencies=_sorted_dependencies(ToolDependency.EFFECT_COLLECTOR, ToolDependency.PROJECTED_PDF, ToolDependency.STUDY_SESSION)),
     _study_entry("highlight_projected_pdf_text", effects=_db_effect("study_projection_mutation", "study-projection-mutation-v1"), sensitivity=PROTECTED_SENSITIVITY, dependencies=_sorted_dependencies(ToolDependency.DOCUMENT_FILE, ToolDependency.EFFECT_COLLECTOR, ToolDependency.PROJECTED_PDF, ToolDependency.STUDY_SESSION)),
     _study_entry("annotate_projected_pdf_region", effects=_db_effect("study_projection_mutation", "study-projection-mutation-v1"), sensitivity=PROTECTED_SENSITIVITY, dependencies=_sorted_dependencies(ToolDependency.EFFECT_COLLECTOR, ToolDependency.PROJECTED_PDF, ToolDependency.STUDY_SESSION)),
@@ -736,7 +743,7 @@ def validate_tool_manifest_registry() -> None:
         entry.workflow == HarnessWorkflow.STUDY_CHAT
         for entry in TOOL_MANIFEST_REGISTRY.tools
     )
-    if (planning_count, study_count) != (6, 31):
+    if (planning_count, study_count) != (6, 32):
         raise ValueError("tool_manifest_tool_count_invalid")
     for key, entry in TOOL_MANIFEST_ENTRIES.items():
         input_model = TOOL_INPUT_MODELS[key]

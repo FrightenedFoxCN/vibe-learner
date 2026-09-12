@@ -944,7 +944,11 @@ def _system_config(*, suite: HarnessContractRef) -> HarnessEvalSystemConfigV1:
                 ),
                 HarnessContractRef(
                     name="study_chat_toolset",
-                    version="study-chat-toolset-v1",
+                    version="study-chat-toolset-v2",
+                ),
+                HarnessContractRef(
+                    name="study_visual_grounding",
+                    version="study-visual-grounding-v1",
                 ),
             ],
             "max_tool_calls": 1,

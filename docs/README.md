@@ -29,6 +29,8 @@
 
 ## 发布与验收
 
+- [0.3.5 发布记录](releases/0.3.5.md)：数学书页候选定位、真实书页证据、许可边界与发布门修复。
+
 - [0.3.4 发布记录](releases/0.3.4.md)：模型运行时质量修复、采用范围与研究接手入口。
 
 - [0.3.3 发布记录](releases/0.3.3.md)：完成事项、证据入口与保留限制。
@@ -50,6 +52,8 @@
 - [M3 候选生产实现与验收（2026-09-12）](quality/m3-production-grounding-2026-09-12.md)
 
 - [M3 智能体交接（2026-09-12）](quality/m3-agent-handoff-2026-09-12.md)
+
+- [M3 数学书页定位、Reflection 与 DocLayout-YOLO（2026-09-12）](quality/m3-book-grounding-results-2026-09-12.md)
 
 ## 仓库资料整理
 

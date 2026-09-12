@@ -62,25 +62,25 @@ class ToolManifestTests(unittest.TestCase):
             multimodal_enabled=False, debug_report=None, document_path=None,
             session_tool_runtime=FullRuntime(),
         )
-        self.assertEqual(len(tools), 31)
+        self.assertEqual(len(tools), 32)
         self.assertEqual({tool["function"]["name"] for tool in tools}, set(TOOL_CATALOG[CHAT_STAGE]))
 
     def test_catalog_is_complete_stage_qualified_and_strict(self) -> None:
         entries = TOOL_MANIFEST_REGISTRY.tools
-        self.assertEqual(len(entries), 37)
-        self.assertEqual(len({entry.key for entry in entries}), 37)
+        self.assertEqual(len(entries), 38)
+        self.assertEqual(len({entry.key for entry in entries}), 38)
         self.assertEqual(
             sum(entry.workflow == HarnessWorkflow.PLANNING for entry in entries),
             6,
         )
         self.assertEqual(
             sum(entry.workflow == HarnessWorkflow.STUDY_CHAT for entry in entries),
-            31,
+            32,
         )
         self.assertEqual(set(TOOL_MANIFEST_ENTRIES), set(TOOL_INPUT_MODELS))
         self.assertEqual(set(TOOL_MANIFEST_ENTRIES), set(TOOL_RESULT_MODELS))
-        self.assertEqual(len(set(TOOL_INPUT_MODELS.values())), 37)
-        self.assertEqual(len(set(TOOL_RESULT_MODELS.values())), 37)
+        self.assertEqual(len(set(TOOL_INPUT_MODELS.values())), 38)
+        self.assertEqual(len(set(TOOL_RESULT_MODELS.values())), 38)
         for entry in entries:
             self.assertEqual(
                 entry.key,

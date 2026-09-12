@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+import base64
 from typing import Any
 
 from fastapi import HTTPException
@@ -27,6 +28,7 @@ from app.models.study_chat_effect import (
 )
 from app.services.study_grounding import StudyVerbatimMemorySourceV1
 from app.models.study_chat_tool_contracts import WriteSessionMemoryArgumentsV1
+from app.services.document_layout import DocumentLayoutService
 from app.services.plans import LearningPlanService
 from app.services.plan_prompt import read_page_range_images
 from app.services.study_chat_attachments import extract_pdf_page_range_text, search_pdf_text_rects
@@ -50,6 +52,7 @@ SESSION_CHAT_TOOL_NAMES = (
     "generate_projected_image",
     "read_projected_pdf_content",
     "read_projected_pdf_images",
+    "read_projected_pdf_layout_candidates",
     "focus_projected_pdf_page",
     "highlight_projected_pdf_text",
     "annotate_projected_pdf_region",
@@ -71,6 +74,7 @@ class StudySessionChatToolRuntime:
         multimodal_enabled: bool = False,
         model_provider: Any | None = None,
         effect_collector: StudyChatEffectCollector | None = None,
+        document_layout_service: DocumentLayoutService | None = None,
     ) -> None:
         self._session_service = session_service
         self._plan_service = plan_service
@@ -80,6 +84,7 @@ class StudySessionChatToolRuntime:
         self._multimodal_enabled = multimodal_enabled
         self._model_provider = model_provider
         self._effect_collector = effect_collector
+        self._document_layout_service = document_layout_service
         self._response_citations: list[Citation] = []
         self.verbatim_memory_source: StudyVerbatimMemorySourceV1 | None = None
 
@@ -90,6 +95,12 @@ class StudySessionChatToolRuntime:
             return False
         if tool_name == "read_projected_pdf_images" and not self._multimodal_enabled:
             return False
+        if tool_name == "read_projected_pdf_layout_candidates":
+            return bool(
+                self._multimodal_enabled
+                and self._document_layout_service is not None
+                and self._document_layout_service.enabled
+            )
         if tool_name == "generate_projected_image":
             return bool(
                 self._model_provider is not None
@@ -501,6 +512,55 @@ class StudySessionChatToolRuntime:
                 "source_kind": projected_pdf.source_kind,
                 "source_id": projected_pdf.source_id,
                 **payload,
+            }
+
+        if tool_name == "read_projected_pdf_layout_candidates":
+            attachment, projected_pdf = self._require_projected_pdf_attachment()
+            page_number = max(1, int(arguments.get("page_number") or projected_pdf.page_number or 1))
+            page_number = min(page_number, max(1, attachment.page_count or page_number))
+            labels = list(arguments.get("labels") or [])
+            target = str(arguments.get("target") or "").strip()
+            recursive_picture = bool(arguments.get("recursive_picture", True))
+            max_candidates = max(1, min(int(arguments.get("max_candidates") or 24), 32))
+            rendered = read_page_range_images(
+                document_path=attachment.stored_path,
+                page_start=page_number,
+                page_end=page_number,
+                max_images=1,
+            )
+            images = rendered.get("images") or []
+            if not images or not str(images[0].get("image_url") or "").startswith("data:image/png;base64,"):
+                raise HTTPException(status_code=503, detail="projected_pdf_page_render_unavailable")
+            png = base64.b64decode(str(images[0]["image_url"]).split(",", 1)[1], validate=True)
+            assert self._document_layout_service is not None
+            detection = self._document_layout_service.detect_png(
+                png,
+                labels=labels,
+                recursive_picture=recursive_picture,
+            )
+            candidates = list(detection.candidates[:max_candidates])
+            evidence_images = self._document_layout_service.evidence_images(png, detection)
+            self._push_citation(
+                title=attachment.name,
+                page_start=page_number,
+                page_end=page_number,
+                source_kind="attachment_pdf",
+                source_id=attachment.attachment_id,
+            )
+            return {
+                "ok": True,
+                "tool_name": tool_name,
+                "source_kind": projected_pdf.source_kind,
+                "source_id": projected_pdf.source_id,
+                "page_number": page_number,
+                "target": target,
+                "labels": labels,
+                "recursive_picture": recursive_picture,
+                "engine_status": detection.status,
+                "candidate_count": len(candidates),
+                "candidates": [candidate.model_dump(mode="json") for candidate in candidates],
+                "images": evidence_images,
+                "warning": detection.warning,
             }
 
         if tool_name == "focus_projected_pdf_page":

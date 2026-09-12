@@ -1361,7 +1361,7 @@
             "status": "registered",
             "contract": {
               "name": "study_chat_toolset",
-              "version": "study-chat-toolset-v1"
+              "version": "study-chat-toolset-v2"
             }
           }
         },
@@ -1372,6 +1372,16 @@
             "contract": {
               "name": "study_grounding",
               "version": "study-grounding-v1"
+            }
+          }
+        },
+        {
+          "component_name": "study_visual_grounding",
+          "contract": {
+            "status": "registered",
+            "contract": {
+              "name": "study_visual_grounding",
+              "version": "study-visual-grounding-v1"
             }
           }
         }

@@ -162,9 +162,9 @@ class ToolProviderProjectionTests(unittest.TestCase):
             provider_capabilities=capabilities,
         )
         self.assertEqual(len(planning), 6)
-        self.assertEqual(len(study), 31)
+        self.assertEqual(len(study), 32)
         self.assertEqual(len({item.function.name for item in planning}), 6)
-        self.assertEqual(len({item.function.name for item in study}), 31)
+        self.assertEqual(len({item.function.name for item in study}), 32)
         self.assertTrue(all(item.function.strict for item in (*planning, *study)))
 
     def test_projection_filters_missing_dependencies_and_capabilities(self) -> None:

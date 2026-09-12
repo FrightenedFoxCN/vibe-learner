@@ -594,6 +594,19 @@ def _adapt_study_runtime_success(
                 source_id=raw.get("source_id"),
             )
         return image_payload
+    if name == "read_projected_pdf_layout_candidates":
+        return {
+            **base,
+            "source_kind": "attachment_pdf",
+            "source_id": raw.get("source_id"),
+            "page_number": raw.get("page_number"),
+            "target": raw.get("target"),
+            "labels": raw.get("labels", []),
+            "recursive_picture": raw.get("recursive_picture", True),
+            "engine_status": raw.get("engine_status"),
+            "candidate_count": raw.get("candidate_count", 0),
+            "candidates": raw.get("candidates", []),
+        }
     if name in {"project_uploaded_pdf", "project_uploaded_image"}:
         predicted = _mapping(raw.get("predicted_state"))
         return {
@@ -797,6 +810,12 @@ def _provider_result_projection(
             "page_numbers",
             "source_kind",
             "source_id",
+        }
+    elif name == "read_projected_pdf_layout_candidates":
+        allowed = {
+            "schema_version", "ok", "tool_name", "source_kind", "source_id",
+            "page_number", "target", "labels", "recursive_picture", "engine_status",
+            "candidate_count", "candidates",
         }
     else:
         allowed = {

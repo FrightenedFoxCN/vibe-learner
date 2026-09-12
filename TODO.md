@@ -1,6 +1,6 @@
 # TODO
 
-本文件是产品、Harness 和桌面工作的统一待办入口；仅保留未完成任务；完成事项见[0.3.4 发布记录](docs/releases/0.3.4.md)。运行约束见 `AGENTS.md`，架构见 `docs/`，已完成过程记录通过 Git 历史查询。
+本文件是产品、Harness 和桌面工作的统一待办入口；仅保留未完成任务；完成事项见[0.3.5 发布记录](docs/releases/0.3.5.md)。运行约束见 `AGENTS.md`，架构见 `docs/`，已完成过程记录通过 Git 历史查询。
 
 已完成的 2026-09-12 实验与修复见[阶段归档](docs/quality/completed-work-2026-09-12.md)；质量未完成项仅由[独立质量 TODO](docs/quality/TODO.md)维护。
 

@@ -14,6 +14,11 @@ class Settings:
     allowed_origins: tuple[str, ...] = ("http://localhost:3000", "http://127.0.0.1:3000")
     ocr_engine: str = "onnxtr"
     onnxtr_model_dir: str = ""
+    document_layout_engine: str = "disabled"
+    document_layout_python: str = ""
+    document_layout_model_path: str = ""
+    document_layout_model_sha256: str = ""
+    document_layout_timeout_seconds: int = 90
     plan_provider: str = "mock"
     openai_api_key: str = ""
     openai_base_url: str = "https://api.openai.com/v1"
@@ -83,6 +88,16 @@ class Settings:
             allowed_origins=allowed_origins or ("http://localhost:3000", "http://127.0.0.1:3000"),
             ocr_engine=(os.getenv("VIBE_LEARNER_OCR_ENGINE", "onnxtr").strip().lower() or "onnxtr"),
             onnxtr_model_dir=os.getenv("VIBE_LEARNER_ONNXTR_MODEL_DIR", "").strip(),
+            document_layout_engine=(
+                os.getenv("VIBE_LEARNER_DOCUMENT_LAYOUT_ENGINE", "disabled").strip().lower()
+                or "disabled"
+            ),
+            document_layout_python=os.getenv("VIBE_LEARNER_DOCUMENT_LAYOUT_PYTHON", "").strip(),
+            document_layout_model_path=os.getenv("VIBE_LEARNER_DOCUMENT_LAYOUT_MODEL_PATH", "").strip(),
+            document_layout_model_sha256=os.getenv("VIBE_LEARNER_DOCUMENT_LAYOUT_MODEL_SHA256", "").strip(),
+            document_layout_timeout_seconds=_to_int(
+                os.getenv("VIBE_LEARNER_DOCUMENT_LAYOUT_TIMEOUT_SECONDS", "90"), default=90
+            ),
             plan_provider=_normalize_plan_provider(
                 os.getenv("VIBE_LEARNER_PLAN_PROVIDER", "mock").strip().lower() or "mock"
             ),

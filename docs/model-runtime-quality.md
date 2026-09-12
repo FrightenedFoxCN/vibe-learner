@@ -1,6 +1,6 @@
 # 模型运行时质量与边界
 
-本文记录截至 `deed0ae` 已采用的运行时行为，适用于 Planning、Study、Persona、Document、Tavern 及其共享 Provider/Harness。MiniMax-M3 是发现问题的实测模型；这些修复不构成其他模型、平台或全部内容质量的认证。生命周期和身份归属仍以 [Harness 架构](harness-architecture.md) 为准。
+本文记录 `0.3.5` 已采用的运行时行为，适用于 Planning、Study、Persona、Document、Tavern 及其共享 Provider/Harness。MiniMax-M3 是发现问题的实测模型；这些修复不构成其他模型、平台或全部内容质量的认证。生命周期和身份归属仍以 [Harness 架构](harness-architecture.md) 为准。
 
 ## Planning
 
@@ -23,6 +23,25 @@
 - 原文选择器按查询选择句子邻域、多处窗口及偏移，在总计 800 字符预算内保留证据。这是原文检索，不是模型摘要压缩；远处限定、长句和否定关系仍可能丢失。
 - 词法记忆检索回退使用稳定散列和 Unicode/重音规范化，支持中文 bigram，避免 Python hash seed 改变排序。这不等于语义检索或时间关系正确。
 - 自动教材引用不再为无文档、无 chunk 或零词法匹配编造第 1 页/单元范围。仍保留匹配 chunk 排序与去重；词法命中不能证明蕴含，中文召回和跨语言误引仍在 [质量 TODO](quality/TODO.md) 中。
+
+### PDF 图形候选（默认关闭）
+
+- Study Chat 新增纯读工具 `read_projected_pdf_layout_candidates`。它只为当前投射 PDF 的一页返回 `Picture` 和独立 `Formula` 候选；正文、行内公式锚点与单字母继续走 OCR 文本定位。模型选定候选或在 `Picture` 母框内估计局部框后，仍调用既有 `annotate_projected_pdf_region`，没有新增写效果或前端 DTO。
+- 可选实现通过外部 Python 子进程调用 DocLayout-YOLO，对 `Picture` 母框递归一次并做 NMS。内部结果最多 32 个候选；原页、编号候选页和母框 crop 联系表仅作为 provider 图像证据，最多三张，不进入公开结果或 trace。
+- 路径启动时固定，运行时设置不会热切换它。默认 `VIBE_LEARNER_DOCUMENT_LAYOUT_ENGINE=disabled`；启用需设置 `doclayout-yolo`、独立 Python、权重路径及已审核 SHA-256。worker 异常、输出越界、未知标签或权重摘要不匹配均返回类型化不可用结果。
+- Harness 登记为 `study-chat-toolset-v2` 与 `study-visual-grounding-v1`。这表示代码和契约边界已经采用，并不把 8 页开发集的 6/8 结果升级为独立质量认证；页面隔离留出和真实生产 provider acceptance 仍在 [质量 TODO](quality/TODO.md) 中。
+
+配置示例：
+
+```bash
+VIBE_LEARNER_DOCUMENT_LAYOUT_ENGINE=doclayout-yolo
+VIBE_LEARNER_DOCUMENT_LAYOUT_PYTHON=/path/to/isolated/python
+VIBE_LEARNER_DOCUMENT_LAYOUT_MODEL_PATH=/path/to/doclayout_yolo_doclaynet.pt
+VIBE_LEARNER_DOCUMENT_LAYOUT_MODEL_SHA256=0ddfc7f411ec23aab661091ca8da6b25abe7bdce6afa3a515811c92d7ccfb1db
+VIBE_LEARNER_DOCUMENT_LAYOUT_TIMEOUT_SECONDS=90
+```
+
+本仓库许可证为 GPL-3.0。上游 DocLayout-YOLO 代码为 AGPL-3.0，固定权重卡标 Apache-2.0；GPL-3.0 第 13 条允许与 AGPLv3 作品组合，但网络交互时组合中的 AGPL 部分仍受其附加源码提供义务约束。上游 DocSynth300K 数据卡截至 2026-09-12 没有公开 `license` 字段或许可正文，因此仓库 GPL-3.0 不能替代训练数据的来源许可证明。当前采用外部、默认关闭的子进程边界，并在分发或托管启用前保留依赖与数据许可复核项。
 
 ## Provider、Persona 与 Document
 
@@ -79,6 +98,6 @@
 
 ## 验证范围
 
-最后一个生产修复 `7102e74` 后，850 项完整后端测试与 116 项定向测试通过；`deed0ae` 仅追加诊断，没有后续生产修改。共享契约测试在估分目录同步时通过。起始版本的 14 套确定性 Harness eval 通过，不是清理时重新执行的全量发布验收。
+`0.3.5` 工作树的本地发布门通过：867 项完整后端测试、共享契约、Web reliability、Harness pilots、十个 stage regressions、plan revision eval 与生产 Web 构建均成功。DocLayout-YOLO 路径另有 68 项后端定向测试通过；真实书页 8 任务的 M3 母框内局部框结果为 6/8，详细限制见[书页定位报告](quality/m3-book-grounding-results-2026-09-12.md)。
 
-本次文档整理不运行真实模型。需要代码回归时使用仓库规定的 `npm run test:ai`、`npm run test:contracts`；发布门使用 `npm run check:release`。没有新的独立专家、浏览器或跨平台认证。
+需要代码回归时使用仓库规定的 `npm run test:ai`、`npm run test:contracts`；发布门使用 `npm run check:release`。本轮没有新的独立专家、浏览器或跨平台安装认证。

@@ -1,0 +1,780 @@
+{
+  "version": "doclayout-yolo-recursive-book-pilot-v1",
+  "scope": "Offline development diagnostic. All Picture parents were recursively cropped and inferred without query or gold; gold is used only by the post-inference scorer. Private page pixels are omitted.",
+  "model": "juliozhao/DocLayout-YOLO-DocLayNet-Docsynth300K_pretrained",
+  "revision": "51b2c54a642013022382c3d2bd76e84b07656b4a",
+  "weight_sha256": "0ddfc7f411ec23aab661091ca8da6b25abe7bdce6afa3a515811c92d7ccfb1db",
+  "settings": {
+    "imgsz": 1120,
+    "confidence_threshold": 0.05,
+    "device": "cpu"
+  },
+  "summary": {
+    "tasks": 8,
+    "recursive_tight_recall": 4,
+    "level_union_tight_recall": 5,
+    "note": "The union includes the qualifying page-level Picture proposals; recursive-only and union recall are separate."
+  },
+  "tasks": [
+    {
+      "id": "composition-middle-region",
+      "parent_count": 1,
+      "child_count": 5,
+      "candidate_recall": false,
+      "best": {
+        "parent_id": 1,
+        "box_px": [
+          174.51,
+          61.39,
+          658.4,
+          318.0
+        ],
+        "confidence": 0.382011,
+        "iou": 0.2030612640614305,
+        "gold_coverage": 1.0
+      },
+      "children": [
+        {
+          "parent_id": 1,
+          "box_px": [
+            174.51,
+            61.39,
+            658.4,
+            318.0
+          ],
+          "confidence": 0.382011,
+          "iou": 0.2030612640614305,
+          "gold_coverage": 1.0
+        },
+        {
+          "parent_id": 1,
+          "box_px": [
+            135.07,
+            294.77,
+            177.21,
+            317.15
+          ],
+          "confidence": 0.304037,
+          "iou": 0.0,
+          "gold_coverage": 0.0
+        },
+        {
+          "parent_id": 1,
+          "box_px": [
+            355.88,
+            293.3,
+            396.69,
+            317.54
+          ],
+          "confidence": 0.148346,
+          "iou": 0.0,
+          "gold_coverage": 0.0
+        },
+        {
+          "parent_id": 1,
+          "box_px": [
+            135.38,
+            294.73,
+            249.53,
+            317.9
+          ],
+          "confidence": 0.066492,
+          "iou": 0.0,
+          "gold_coverage": 0.0
+        },
+        {
+          "parent_id": 1,
+          "box_px": [
+            135.52,
+            294.68,
+            248.95,
+            317.7
+          ],
+          "confidence": 0.06052,
+          "iou": 0.0,
+          "gold_coverage": 0.0
+        }
+      ]
+    },
+    {
+      "id": "graph-node-24-1",
+      "parent_count": 1,
+      "child_count": 2,
+      "candidate_recall": false,
+      "best": {
+        "parent_id": 1,
+        "box_px": [
+          134.23,
+          550.35,
+          698.67,
+          1094.0
+        ],
+        "confidence": 0.069582,
+        "iou": 0.006804403890519849,
+        "gold_coverage": 1.0
+      },
+      "children": [
+        {
+          "parent_id": 1,
+          "box_px": [
+            134.2,
+            511.84,
+            698.71,
+            1059.14
+          ],
+          "confidence": 0.101151,
+          "iou": 0.0067582300719614095,
+          "gold_coverage": 1.0
+        },
+        {
+          "parent_id": 1,
+          "box_px": [
+            134.23,
+            550.35,
+            698.67,
+            1094.0
+          ],
+          "confidence": 0.069582,
+          "iou": 0.006804403890519849,
+          "gold_coverage": 1.0
+        }
+      ]
+    },
+    {
+      "id": "cartesian-1-6-upper",
+      "parent_count": 2,
+      "child_count": 4,
+      "candidate_recall": false,
+      "best": {
+        "parent_id": 1,
+        "box_px": [
+          254.07,
+          839.75,
+          526.37,
+          1057.01
+        ],
+        "confidence": 0.847155,
+        "iou": 0.08048115850467223,
+        "gold_coverage": 1.0
+      },
+      "children": [
+        {
+          "parent_id": 1,
+          "box_px": [
+            254.07,
+            839.75,
+            526.37,
+            1057.01
+          ],
+          "confidence": 0.847155,
+          "iou": 0.08048115850467223,
+          "gold_coverage": 1.0
+        },
+        {
+          "parent_id": 2,
+          "box_px": [
+            297.35,
+            66.0,
+            555.83,
+            247.67
+          ],
+          "confidence": 0.447435,
+          "iou": 0.0,
+          "gold_coverage": 0.0
+        },
+        {
+          "parent_id": 2,
+          "box_px": [
+            429.27,
+            259.26,
+            440.21,
+            271.62
+          ],
+          "confidence": 0.119037,
+          "iou": 0.0,
+          "gold_coverage": 0.0
+        },
+        {
+          "parent_id": 2,
+          "box_px": [
+            295.8,
+            67.46,
+            431.66,
+            248.33
+          ],
+          "confidence": 0.061014,
+          "iou": 0.0,
+          "gold_coverage": 0.0
+        }
+      ]
+    },
+    {
+      "id": "hatcher-at-genus2-polygon",
+      "parent_count": 2,
+      "child_count": 16,
+      "candidate_recall": true,
+      "best": {
+        "parent_id": 2,
+        "box_px": [
+          644.85,
+          313.48,
+          791.83,
+          446.95
+        ],
+        "confidence": 0.084344,
+        "iou": 0.905754698999808,
+        "gold_coverage": 0.9475854954881859
+      },
+      "children": [
+        {
+          "parent_id": 1,
+          "box_px": [
+            386.91,
+            249.89,
+            607.02,
+            627.52
+          ],
+          "confidence": 0.523332,
+          "iou": 0.0,
+          "gold_coverage": 0.0
+        },
+        {
+          "parent_id": 1,
+          "box_px": [
+            621.66,
+            249.98,
+            811.85,
+            633.45
+          ],
+          "confidence": 0.341425,
+          "iou": 0.27065819370484717,
+          "gold_coverage": 1.0
+        },
+        {
+          "parent_id": 1,
+          "box_px": [
+            400.29,
+            250.14,
+            786.7,
+            629.44
+          ],
+          "confidence": 0.257937,
+          "iou": 0.13468395733602262,
+          "gold_coverage": 1.0
+        },
+        {
+          "parent_id": 1,
+          "box_px": [
+            389.86,
+            329.52,
+            603.38,
+            432.7
+          ],
+          "confidence": 0.135415,
+          "iou": 0.0,
+          "gold_coverage": 0.0
+        },
+        {
+          "parent_id": 1,
+          "box_px": [
+            388.43,
+            449.74,
+            604.0,
+            620.41
+          ],
+          "confidence": 0.115862,
+          "iou": 0.0,
+          "gold_coverage": 0.0
+        },
+        {
+          "parent_id": 1,
+          "box_px": [
+            411.82,
+            215.62,
+            583.41,
+            308.12
+          ],
+          "confidence": 0.081547,
+          "iou": 0.0,
+          "gold_coverage": 0.0
+        },
+        {
+          "parent_id": 1,
+          "box_px": [
+            623.25,
+            451.39,
+            808.01,
+            616.3
+          ],
+          "confidence": 0.078695,
+          "iou": 0.0,
+          "gold_coverage": 0.0
+        },
+        {
+          "parent_id": 1,
+          "box_px": [
+            654.54,
+            209.03,
+            779.73,
+            307.0
+          ],
+          "confidence": 0.057412,
+          "iou": 0.0,
+          "gold_coverage": 0.0
+        },
+        {
+          "parent_id": 2,
+          "box_px": [
+            357.47,
+            198.49,
+            811.59,
+            639.82
+          ],
+          "confidence": 0.627357,
+          "iou": 0.0984941675187594,
+          "gold_coverage": 1.0
+        },
+        {
+          "parent_id": 2,
+          "box_px": [
+            359.09,
+            196.15,
+            813.44,
+            640.3
+          ],
+          "confidence": 0.520955,
+          "iou": 0.0978216865292689,
+          "gold_coverage": 1.0
+        },
+        {
+          "parent_id": 2,
+          "box_px": [
+            644.85,
+            313.48,
+            791.83,
+            446.95
+          ],
+          "confidence": 0.084344,
+          "iou": 0.905754698999808,
+          "gold_coverage": 0.9475854954881859
+        },
+        {
+          "parent_id": 2,
+          "box_px": [
+            660.73,
+            209.01,
+            762.86,
+            308.1
+          ],
+          "confidence": 0.081861,
+          "iou": 0.00032724297483372193,
+          "gold_coverage": 0.0004948269065588396
+        },
+        {
+          "parent_id": 2,
+          "box_px": [
+            384.88,
+            449.55,
+            604.11,
+            640.42
+          ],
+          "confidence": 0.080592,
+          "iou": 0.0,
+          "gold_coverage": 0.0
+        },
+        {
+          "parent_id": 2,
+          "box_px": [
+            389.23,
+            327.92,
+            604.42,
+            433.89
+          ],
+          "confidence": 0.073053,
+          "iou": 0.0,
+          "gold_coverage": 0.0
+        },
+        {
+          "parent_id": 2,
+          "box_px": [
+            419.95,
+            214.79,
+            565.25,
+            308.97
+          ],
+          "confidence": 0.06243,
+          "iou": 0.0,
+          "gold_coverage": 0.0
+        },
+        {
+          "parent_id": 2,
+          "box_px": [
+            106.14,
+            188.0,
+            669.02,
+            641.0
+          ],
+          "confidence": 0.053933,
+          "iou": 0.012913958965774673,
+          "gold_coverage": 0.17743309507978725
+        }
+      ]
+    },
+    {
+      "id": "hatcher-tn-farey-lower",
+      "parent_count": 3,
+      "child_count": 3,
+      "candidate_recall": true,
+      "best": {
+        "parent_id": 1,
+        "box_px": [
+          169.02,
+          847.0,
+          754.88,
+          1145.0
+        ],
+        "confidence": 0.229569,
+        "iou": 0.8344233705363561,
+        "gold_coverage": 0.8344233705363561
+      },
+      "children": [
+        {
+          "parent_id": 1,
+          "box_px": [
+            169.02,
+            847.0,
+            754.88,
+            1145.0
+          ],
+          "confidence": 0.229569,
+          "iou": 0.8344233705363561,
+          "gold_coverage": 0.8344233705363561
+        },
+        {
+          "parent_id": 2,
+          "box_px": [
+            163.01,
+            124.0,
+            760.93,
+            345.0
+          ],
+          "confidence": 0.529273,
+          "iou": 0.0,
+          "gold_coverage": 0.0
+        },
+        {
+          "parent_id": 3,
+          "box_px": [
+            160.71,
+            123.02,
+            767.26,
+            343.89
+          ],
+          "confidence": 0.701529,
+          "iou": 0.0,
+          "gold_coverage": 0.0
+        }
+      ]
+    },
+    {
+      "id": "hatcher-at-negative-link",
+      "parent_count": 3,
+      "child_count": 7,
+      "candidate_recall": true,
+      "best": {
+        "parent_id": 3,
+        "box_px": [
+          636.52,
+          460.28,
+          811.1,
+          559.74
+        ],
+        "confidence": 0.320808,
+        "iou": 0.9238380412815124,
+        "gold_coverage": 0.9238380412815124
+      },
+      "children": [
+        {
+          "parent_id": 1,
+          "box_px": [
+            348.25,
+            831.95,
+            781.56,
+            1069.46
+          ],
+          "confidence": 0.452492,
+          "iou": 0.0,
+          "gold_coverage": 0.0
+        },
+        {
+          "parent_id": 1,
+          "box_px": [
+            326.56,
+            846.72,
+            601.24,
+            945.74
+          ],
+          "confidence": 0.180286,
+          "iou": 0.0,
+          "gold_coverage": 0.0
+        },
+        {
+          "parent_id": 1,
+          "box_px": [
+            325.75,
+            959.93,
+            602.53,
+            1060.43
+          ],
+          "confidence": 0.071862,
+          "iou": 0.0,
+          "gold_coverage": 0.0
+        },
+        {
+          "parent_id": 2,
+          "box_px": [
+            639.88,
+            87.26,
+            805.11,
+            203.68
+          ],
+          "confidence": 0.557516,
+          "iou": 0.0,
+          "gold_coverage": 0.0
+        },
+        {
+          "parent_id": 3,
+          "box_px": [
+            633.62,
+            349.24,
+            807.22,
+            444.6
+          ],
+          "confidence": 0.421593,
+          "iou": 0.0,
+          "gold_coverage": 0.0
+        },
+        {
+          "parent_id": 3,
+          "box_px": [
+            636.52,
+            460.28,
+            811.1,
+            559.74
+          ],
+          "confidence": 0.320808,
+          "iou": 0.9238380412815124,
+          "gold_coverage": 0.9238380412815124
+        },
+        {
+          "parent_id": 3,
+          "box_px": [
+            632.24,
+            372.78,
+            811.05,
+            566.6
+          ],
+          "confidence": 0.240371,
+          "iou": 0.5332638554344721,
+          "gold_coverage": 0.9890990017512657
+        }
+      ]
+    },
+    {
+      "id": "hatcher-tn-local-edge",
+      "parent_count": 2,
+      "child_count": 4,
+      "candidate_recall": false,
+      "best": {
+        "parent_id": 2,
+        "box_px": [
+          662.05,
+          884.73,
+          793.93,
+          960.81
+        ],
+        "confidence": 0.207723,
+        "iou": 0.7647353991639393,
+        "gold_coverage": 0.7647353991639393
+      },
+      "children": [
+        {
+          "parent_id": 1,
+          "box_px": [
+            284.86,
+            368.92,
+            642.12,
+            716.0
+          ],
+          "confidence": 0.196818,
+          "iou": 0.0,
+          "gold_coverage": 0.0
+        },
+        {
+          "parent_id": 2,
+          "box_px": [
+            727.39,
+            940.73,
+            739.17,
+            951.37
+          ],
+          "confidence": 0.293974,
+          "iou": 0.009557821117290054,
+          "gold_coverage": 0.009557821117290054
+        },
+        {
+          "parent_id": 2,
+          "box_px": [
+            728.43,
+            895.57,
+            739.28,
+            909.56
+          ],
+          "confidence": 0.259558,
+          "iou": 0.011562560944020799,
+          "gold_coverage": 0.011562560944020799
+        },
+        {
+          "parent_id": 2,
+          "box_px": [
+            662.05,
+            884.73,
+            793.93,
+            960.81
+          ],
+          "confidence": 0.207723,
+          "iou": 0.7647353991639393,
+          "gold_coverage": 0.7647353991639393
+        }
+      ]
+    },
+    {
+      "id": "venn-intersection",
+      "parent_count": 3,
+      "child_count": 9,
+      "candidate_recall": true,
+      "best": {
+        "parent_id": 1,
+        "box_px": [
+          227.91,
+          63.4,
+          602.56,
+          335.03
+        ],
+        "confidence": 0.860581,
+        "iou": 0.8567179729475051,
+        "gold_coverage": 1.0
+      },
+      "children": [
+        {
+          "parent_id": 1,
+          "box_px": [
+            227.38,
+            374.04,
+            602.63,
+            610.52
+          ],
+          "confidence": 0.889059,
+          "iou": 0.0,
+          "gold_coverage": 0.0
+        },
+        {
+          "parent_id": 1,
+          "box_px": [
+            227.91,
+            63.4,
+            602.56,
+            335.03
+          ],
+          "confidence": 0.860581,
+          "iou": 0.8567179729475051,
+          "gold_coverage": 1.0
+        },
+        {
+          "parent_id": 1,
+          "box_px": [
+            430.55,
+            625.02,
+            470.2,
+            645.77
+          ],
+          "confidence": 0.612791,
+          "iou": 0.0,
+          "gold_coverage": 0.0
+        },
+        {
+          "parent_id": 1,
+          "box_px": [
+            431.14,
+            313.39,
+            471.61,
+            336.63
+          ],
+          "confidence": 0.086075,
+          "iou": 0.0,
+          "gold_coverage": 0.0
+        },
+        {
+          "parent_id": 1,
+          "box_px": [
+            226.0,
+            105.63,
+            602.56,
+            605.4
+          ],
+          "confidence": 0.063005,
+          "iou": 0.3547564458161975,
+          "gold_coverage": 0.8271022066156914
+        },
+        {
+          "parent_id": 2,
+          "box_px": [
+            429.85,
+            624.72,
+            470.18,
+            645.61
+          ],
+          "confidence": 0.859858,
+          "iou": 0.0,
+          "gold_coverage": 0.0
+        },
+        {
+          "parent_id": 2,
+          "box_px": [
+            253.03,
+            374.0,
+            574.47,
+            612.55
+          ],
+          "confidence": 0.434095,
+          "iou": 0.0,
+          "gold_coverage": 0.0
+        },
+        {
+          "parent_id": 3,
+          "box_px": [
+            431.19,
+            313.25,
+            470.71,
+            337.63
+          ],
+          "confidence": 0.652436,
+          "iou": 0.0,
+          "gold_coverage": 0.0
+        },
+        {
+          "parent_id": 3,
+          "box_px": [
+            254.87,
+            63.0,
+            575.11,
+            302.53
+          ],
+          "confidence": 0.32619,
+          "iou": 0.8490359268438763,
+          "gold_coverage": 0.8631627527529981
+        }
+      ]
+    }
+  ]
+}

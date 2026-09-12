@@ -37,7 +37,7 @@ class DiagnosticToolTests(unittest.TestCase):
     def test_all_37_manifest_tools_have_metrics_even_when_arguments_are_rejected(self):
         plan = build_plan_tool_runtime()
         entries = list(TOOL_MANIFEST_ENTRIES.values())
-        self.assertEqual(len(entries), 37)
+        self.assertEqual(len(entries), 38)
         for entry in entries:
             tool_call = call(entry.canonical_name, "PRIVATE_INVALID_JSON")
             result = plan.execute_tool_call(tool_call) if entry.workflow == HarnessWorkflow.PLANNING else study(tool_call)

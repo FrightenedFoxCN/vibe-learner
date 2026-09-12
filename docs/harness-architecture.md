@@ -2,6 +2,8 @@
 
 Harness 是跨工作流的可靠性边界。当前生产实现覆盖 Document/OCR/Study Unit、Planning、Persona/Scene、Study 和 Tavern；前端对响应和历史 trace 严格解码。剩余工作统一见 [TODO](../TODO.md)，工程不变量见 [AGENTS](../AGENTS.md)。
 
+Study Chat 的 `study-chat-toolset-v2` 包含默认关闭的 PDF 图形候选纯读工具；`study-visual-grounding-v1` 登记其固定权重校验、`Picture/Formula` 标签边界、一次 Picture 递归、NMS 和 provider-only 图像证据行为。候选读取不产生 durable effect，最终区域框选继续使用既有 Study projection effect。
+
 ```mermaid
 flowchart TD
     UI[Web / Desktop] --> API[Typed API input]

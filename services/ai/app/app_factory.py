@@ -57,7 +57,7 @@ def create_app(*, settings: Settings | None = None, container_factory: Callable[
                 diagnostics.emit("lifecycle_stopped")
                 diagnostics.close()
 
-    app = FastAPI(title="Vibe Learner AI Service", version="0.3.4", lifespan=lifespan)
+    app = FastAPI(title="Vibe Learner AI Service", version="0.3.5", lifespan=lifespan)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=list(settings.allowed_origins),

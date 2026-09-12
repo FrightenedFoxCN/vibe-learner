@@ -11,7 +11,8 @@
 | Bridge 工具 index 投影修复 | 复用生产规范化、代码复核、有限真实提交与重启读回 | [修复和实测](m3-grounding-repair-results-2026-09-12.md)、[独立源码复核](m3-bridge-artifact-independent-review-2026-09-12.md) |
 | 实验图表制品完整性 | 源数据绑定、真实 SVG / HTML / JSON 交付、双题校验及 live 浏览器检查 | [实现](m3-artifact-completeness-2026-09-12.md)、[后续实测](m3-grounding-repair-results-2026-09-12.md) |
 | 图像定位诊断 | 合成与自然图共 50 个请求；保留候选选择和 mask 失败，不晋级生产 | [结果](m3-visual-grounding-results-2026-09-12.md) |
-| Hatcher 资料留档 | 28 个原始文件逐字节复制、SHA-256 全部通过 | [资料说明](evidence/hatcher-book-pages-2026-09-12/README.md) |
+| Hatcher 测试素材 | 四张实际测试页、四张事前标注图与两份坐标清单；整书和未选页面已移除 | [资料说明](evidence/hatcher-book-pages-2026-09-12/README.md) |
+| 数学书页定位、Reflection 与 DocLayout-YOLO | 坐标网格负面结果归档；Picture 母框 8/8 containment，M3 母框内细化严格 6/8；生产默认未变 | [书页定位报告](m3-book-grounding-results-2026-09-12.md) |
 
 ## 从根待办移入的过程记录
 
