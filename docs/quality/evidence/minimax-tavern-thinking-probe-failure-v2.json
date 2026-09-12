@@ -291,5 +291,13 @@
     }
   ],
   "diagnosis": "Top-level thinking passed to LiteLLM instead of extra_body; all attempts failed locally in milliseconds with no usage/content. Exact underlying adapter error was not captured in this batch; corrected extra_body rerun has wire-confirmed upstream requests.",
-  "counting": "Adapter attempts are not verified upstream model completions or candidate arithmetic failures."
+  "counting": "Adapter attempts are not verified upstream model completions or candidate arithmetic failures.",
+  "offline_followup": {
+    "scope": "offline adapter reproduction with dummy credential and blocked HTTP",
+    "exception_class": "UnsupportedParamsError",
+    "mentions_thinking": true,
+    "mentions_unsupported": true,
+    "http_send_calls": 0,
+    "limitation": "Reproduces the same parameter shape in installed LiteLLM; does not retroactively recover exception details of each historical call."
+  }
 }

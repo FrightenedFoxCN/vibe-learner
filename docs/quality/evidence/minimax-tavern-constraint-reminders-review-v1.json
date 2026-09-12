@@ -1,0 +1,276 @@
+{
+  "scope": "Maintainer review of three experimental prompt conditions",
+  "summary": {
+    "baseline": {
+      "runs": 4,
+      "completed_runs": 4,
+      "actors": 6,
+      "exact_two_flat_bullets": 6,
+      "explicit_verification_condition": 1
+    },
+    "format_check": {
+      "runs": 4,
+      "completed_runs": 4,
+      "actors": 6,
+      "exact_two_flat_bullets": 6,
+      "explicit_verification_condition": 2
+    },
+    "feasibility_check": {
+      "runs": 4,
+      "completed_runs": 4,
+      "actors": 6,
+      "exact_two_flat_bullets": 5,
+      "explicit_verification_condition": 6
+    }
+  },
+  "rows": [
+    {
+      "cell": "0-baseline",
+      "mode": "direct",
+      "boundary_success": true,
+      "calls": 1,
+      "actors": [
+        {
+          "persona": "顾言",
+          "reply": "- 这份安排**不可行**：单程 60 分钟 × 2 + 休息 20 分钟 = **140 分钟**，已超出 120 分钟；交通费 20 × 2 + 饮料 20 = **60 元**，也超出 50 元，两个限制都没满足。\n- 一组同时可行的调整：单程缩至 **50 分钟**（含步行与乘车），往返 100 + 休息 20 = **120 分钟**；交通费各程压到 **10 元**共 20 元，加饮料 20 元 = **40 元**，往返与休息都保留，两项限制都达标。",
+          "exact_two_flat_bullets": true,
+          "original_totals_correct": true,
+          "explicit_real_world_verification_condition": false
+        }
+      ]
+    },
+    {
+      "cell": "0-baseline",
+      "mode": "facilitated",
+      "boundary_success": true,
+      "calls": 2,
+      "actors": [
+        {
+          "persona": "顾言",
+          "reply": "- **原方案核算**：单程60分钟含步行与乘车，往返合计120分钟，再加休息20分钟，**总时间140分钟**，超出120分钟上限20分钟；交通费去程20元、回程20元，加上饮料20元，**总费用60元**，超出50元上限10元。两项均超限，该安排不可行。\n- **调整建议**：将单程出行时间各压缩至50分钟（去50 + 回50 + 休息20 = **120分钟**，刚好用满上限），同时取消饮料一项，仅保留往返交通40元（**总费用40元**，低于上限10元）。如此往返与休息均保留，时间与费用两项限制同时满足。",
+          "exact_two_flat_bullets": true,
+          "original_totals_correct": true,
+          "explicit_real_world_verification_condition": false
+        },
+        {
+          "persona": "林岚",
+          "reply": "- 顾老师的数我重新加了一次：去60 + 回60 + 休息20 = 140分钟，比120分钟上限多出20分钟；饮料20 + 去20 + 回20 = 60元，也比50元上限多出10元，两条线同时超线，这份安排确实不可行。\n- 把单程各压到50分钟（50 + 50 + 20 = 120分钟，刚好用满上限），再砍掉20元饮料，只留往返交通40元，**总费用40元低于上限10元**，时间与费用两项限制就能同时满足；不过50分钟单程到底够不够走到一个有光可拍的地方，我更想先把'周末想拍什么'这一点定下来，再确认这条压缩后的路线是否真的成立。",
+          "exact_two_flat_bullets": true,
+          "original_totals_correct": true,
+          "explicit_real_world_verification_condition": true
+        }
+      ]
+    },
+    {
+      "cell": "1-format_check",
+      "mode": "direct",
+      "boundary_success": true,
+      "calls": 1,
+      "actors": [
+        {
+          "persona": "顾言",
+          "reply": "- 先核原方案：单程60分钟×2加休息20分钟，总时间140分钟，超120分钟上限20分钟；饮料20元加往返交通各20元，总费用60元，超50元预算10元——时间和预算同时超限。\n- 同时满足两项限制且保留往返与20分钟休息的调整：单程压到50分钟（往返100+休息20=120分钟），单程交通降到10元（饮料20+交通10×2=40元），时间和费用都回到限内。",
+          "exact_two_flat_bullets": true,
+          "original_totals_correct": true,
+          "explicit_real_world_verification_condition": false
+        }
+      ]
+    },
+    {
+      "cell": "1-format_check",
+      "mode": "facilitated",
+      "boundary_success": true,
+      "calls": 2,
+      "actors": [
+        {
+          "persona": "顾言",
+          "reply": "- 原方案核算：总时间=去程60+回程60+休息20=**140分钟**，总费用=饮料20+去程交通20+回程交通20=**60元**，时间和预算双双超出限额（120分钟/50元），不可行。\n- 调整建议：在保留往返与休息的前提下，把单程出行时间各压到50分钟（往返合计100分钟，加上休息20分钟正好120分钟），同时把单程交通费各压到15元（往返合计30元，加上饮料20元正好50元）；具体班次与票价请按实际线路再核实一次。",
+          "exact_two_flat_bullets": true,
+          "original_totals_correct": true,
+          "explicit_real_world_verification_condition": true
+        },
+        {
+          "persona": "林岚",
+          "reply": "- 我自己也算了一次：总时间=去程60+回程60+休息20=**140分钟**，总费用=饮料20+去程交通20+回程交通20=**60元**，两项都超过限额（120分钟/50元），这份安排不可行。\n- 调整方向是保留往返和休息——把总时间压到120分钟内、总费用压到50元内，等价于去掉休息后往返合计≤100分钟、交通费合计≤30元，具体班次和票价还得看你所在城市的线路再核实。",
+          "exact_two_flat_bullets": true,
+          "original_totals_correct": true,
+          "explicit_real_world_verification_condition": true
+        }
+      ]
+    },
+    {
+      "cell": "2-feasibility_check",
+      "mode": "direct",
+      "boundary_success": true,
+      "calls": 1,
+      "actors": [
+        {
+          "persona": "顾言",
+          "reply": "- 总时间 = 60（去程）+ 60（回程）+ 20（休息）= **140 分钟**，超出 120 分钟上限 20 分钟。\n- 总费用 = 20（饮料）+ 20（去程交通）+ 20（回程交通）= **60 元**，超出 50 元预算 10 元。两项限制均未满足。\n\n- **时间调整方向**：保留 20 分钟休息的前提下，往返合计需压到 ≤ 100 分钟，即单程 ≤ 50 分钟；这意味着目的地要比原方案更近，能否成立取决于所在城市的实际距离与可用的交通方式——不是把单程 60 分钟改写成 50 分钟就算可行，需要先核实。\n- **费用调整方向**：交通 + 饮料合计需 ≤ 50 元；可尝试用更便宜的出行方式压低交通费，或选更便宜的饮品压缩饮料支出，但具体单价因城市而异，需按所在地实际定价再确认。",
+          "exact_two_flat_bullets": false,
+          "original_totals_correct": true,
+          "explicit_real_world_verification_condition": true
+        }
+      ]
+    },
+    {
+      "cell": "2-feasibility_check",
+      "mode": "facilitated",
+      "boundary_success": true,
+      "calls": 2,
+      "actors": [
+        {
+          "persona": "顾言",
+          "reply": "- 不可行。合计时间：单程 60 + 返程 60 + 休息 20 = 140 分钟，比 120 分钟上限多 20 分钟；合计费用：交通 20 + 返程交通 20 + 饮料 20 = 60 元，比 50 元上限多 10 元。\n- 若保留往返与休息，时间需把单程压到 ≤ 50 分钟（例如 50 + 50 + 20 = 120），同时费用需把饮料压到 ≤ 10 元，或把单程交通费压到 ≤ 15 元（例如 20 + 15 + 15 = 50）；具体能否做到，取决于当地步行加乘车段的实际用时与单段票价，仍待核实。",
+          "exact_two_flat_bullets": true,
+          "original_totals_correct": true,
+          "explicit_real_world_verification_condition": true
+        },
+        {
+          "persona": "林岚",
+          "reply": "- 不可行。总时间 60 + 60 + 20 = 140 分钟，超 120 分钟上限 20 分钟；总费用 20 + 20 + 20 = 60 元，超 50 元上限 10 分钟（应为 10 元）。两项硬限同时被打破，不能只改一头。\n- 调整要在保留往返与 20 分钟休息的前提下，让两条线同时达标：单程 t ≤ 50 分钟、2 × 单程交通费 + 饮料 ≤ 50 元。建议的上限示例（已知条件下的算术可行解）：t = 50、c = 15 元/程、d = 20 元 → 50+50+20 = 120、30+20 = 50；或 t = 45、c = 20 元/程、d = 10 元 → 45+45+20 = 110、40+10 = 50。是否真能落地，仍取决于我们尚未确定的城市里步行加乘车分段用时与单段票价，这点要先核实，不替另一个城市编数字。",
+          "exact_two_flat_bullets": true,
+          "original_totals_correct": true,
+          "explicit_real_world_verification_condition": true
+        }
+      ]
+    },
+    {
+      "cell": "3-feasibility_check",
+      "mode": "direct",
+      "boundary_success": true,
+      "calls": 1,
+      "actors": [
+        {
+          "persona": "顾言",
+          "reply": "- 时间合计：60 + 60 + 20 = **140 分钟**，比 120 分钟上限多 20 分钟；费用合计：饮料 20 + 去程 20 + 回程 20 = **60 元**，比 50 元预算多 10 元，两项都超限，不能直接执行。\n- 调整方向：把单程控制在 ≤ 50 分钟（往返 100 + 休息 20 = 120 分钟刚好封顶），同时把单程交通费压到 10 元以内、饮料降到 15 元上下（合计约 35–40 元，能落到 50 元以内）；但「多近算近」「票价到底几元」要按所在城市实际线路核实，不能直接把旧数字改小就当作可行。",
+          "exact_two_flat_bullets": true,
+          "original_totals_correct": true,
+          "explicit_real_world_verification_condition": true
+        }
+      ]
+    },
+    {
+      "cell": "3-feasibility_check",
+      "mode": "facilitated",
+      "boundary_success": true,
+      "calls": 2,
+      "actors": [
+        {
+          "persona": "顾言",
+          "reply": "- 这份安排不可行。总时间 = 单程60 + 返程60 + 休息20 = 140分钟，超出120分钟上限20分钟；总费用 = 去程交通20 + 回程交通20 + 饮料20 = 60元，超出50元预算10元，两项均超限。\n- 调整建议：单程缩至50分钟（往返合计100分钟），休息保留20分钟，时间 = 100 + 20 = 120分钟刚好达标；交通费维持各20元（合计40元），饮料改为10元，费用 = 40 + 10 = 50元同时达标。往返与休息均保留，单程时间与饮料单价两项需重新核对所在城市的实际值。",
+          "exact_two_flat_bullets": true,
+          "original_totals_correct": true,
+          "explicit_real_world_verification_condition": true
+        },
+        {
+          "persona": "林岚",
+          "reply": "- 自己重新核对：总时间 = 单程60 + 返程60 + 休息20 = 140分钟，超出120分钟上限20分钟；总费用 = 去程交通20 + 回程交通20 + 饮料20 = 60元，超出50元预算10元，时间和预算同时超限，这份安排不可行。\n- 保留往返与休息、同时满足两项限制的数学条件：单程需 ≤ 50分钟（往返100 + 休息20 = 120分钟，刚好踩线）；交通费合计 ≤ 40元时饮品需 ≤ 10元，或交通费合计 ≤ 30元时饮品可保持20元。单程时长和饮品单价依赖所在城市的路况和店铺定价，需要按实际城市重新核实，这只是数学上的可行区间，不是可以直接照搬的具体方案。",
+          "exact_two_flat_bullets": true,
+          "original_totals_correct": true,
+          "explicit_real_world_verification_condition": true
+        }
+      ]
+    },
+    {
+      "cell": "4-format_check",
+      "mode": "direct",
+      "boundary_success": true,
+      "calls": 1,
+      "actors": [
+        {
+          "persona": "顾言",
+          "reply": "- 判断：总时间 60＋60＋20＝140 分钟，超 120 分钟限 20 分钟；总费用 20＋40＝60 元，超 50 元限 10 元，两项都不达标。\n- 调整（保留往返与休息）：单程出行缩至 50 分钟，往返省 20 分钟；饮品降至 10 元，省 10 元。复核：时间 50＋50＋20＝120 分钟，费用 10＋40＝50 元，刚好同时满足两项限制。",
+          "exact_two_flat_bullets": true,
+          "original_totals_correct": true,
+          "explicit_real_world_verification_condition": false
+        }
+      ]
+    },
+    {
+      "cell": "4-format_check",
+      "mode": "facilitated",
+      "boundary_success": true,
+      "calls": 2,
+      "actors": [
+        {
+          "persona": "顾言",
+          "reply": "- 原方案：单程 60 分钟、返程 60 分钟、休息 20 分钟，总时间 60 + 60 + 20 = 140 分钟，超出 120 分钟上限 20 分钟；总费用 饮料 20 元 + 交通 20 + 20 = 60 元，超出 50 元上限 10 元，两项限制都不满足。\n- 调整方案：把单程压缩到 50 分钟、返程 50 分钟、休息 20 分钟，总时间 50 + 50 + 20 = 120 分钟恰好达标；饮料降到 10 元、往返交通各 20 元，总费用 10 + 20 + 20 = 50 元也恰好达标，往返与休息都保留。",
+          "exact_two_flat_bullets": true,
+          "original_totals_correct": true,
+          "explicit_real_world_verification_condition": false
+        },
+        {
+          "persona": "林岚",
+          "reply": "- 我自己也算了一下：单程60+返程60+休息20=140分钟，超出120分钟上限20分钟；饮料20+往返交通40=60元，也超出50元上限10元，两项都超标，这份安排不可行。\n- 调整的话把单程和返程各压到50分钟、休息保留20分钟，总时间50+50+20=120分钟刚好卡在上限；饮料降到10元、交通仍是往返各20元共40元，总费用10+40=50元也恰好达标，往返和休息都没砍掉——只是单程比原来少了10分钟，拍东西要更挑光线和构图了。",
+          "exact_two_flat_bullets": true,
+          "original_totals_correct": true,
+          "explicit_real_world_verification_condition": false
+        }
+      ]
+    },
+    {
+      "cell": "5-baseline",
+      "mode": "direct",
+      "boundary_success": true,
+      "calls": 1,
+      "actors": [
+        {
+          "persona": "顾言",
+          "reply": "- 先核对数字：单程 60 分钟，往返合计 120 分钟，加上休息 20 分钟，总时间 **140 分钟**，已超过 120 分钟上限 20 分钟；交通费 20+20=40 元，加上饮料 20 元，总费用 **60 元**，已超过 50 元上限 10 元，两项限制都不满足。\n- 调整方案（保留往返与休息）：把单程出行压缩到 **50 分钟**，往返合计 100 分钟，加上休息 20 分钟，总时间 **120 分钟**；交通费压到每程 **15 元**，往返 30 元，饮料保持 20 元，总费用 **50 元**；两项限制同时满足。",
+          "exact_two_flat_bullets": true,
+          "original_totals_correct": true,
+          "explicit_real_world_verification_condition": false
+        }
+      ]
+    },
+    {
+      "cell": "5-baseline",
+      "mode": "facilitated",
+      "boundary_success": true,
+      "calls": 2,
+      "actors": [
+        {
+          "persona": "顾言",
+          "reply": "- **核算**：总时间 = 60 + 60 + 20 = **140 分钟**，超 120 分钟限；总费用 = 20（饮料）+ 20 + 20（交通）= **60 元**，超 50 元限。两项均不达标。\n- **调整**：将单程缩至 **50 分钟**（往返 100 + 休息 20 = 120 分钟，刚好满限），饮料压至 **10 元**（10 + 20 + 20 = 50 元，刚好满限）；往返与休息均保留。",
+          "exact_two_flat_bullets": true,
+          "original_totals_correct": true,
+          "explicit_real_world_verification_condition": false
+        },
+        {
+          "persona": "林岚",
+          "reply": "- **我的核算**：单程60 + 返程60 + 休息20 = **140 分钟**，超 120 分钟限 20 分钟；饮料20 + 去程20 + 回程20 = **60 元**，超 50 元限 10 元。两项都不达标。\n- **我的调整**：单程缩到 **50 分钟**（往返 100 + 休息 20 = 120 分钟，刚好满限），单程交通费压到 **15 元**（20 + 15 + 15 = 50 元，刚好满限），饮料保持 20 元不动——休息时想喝就喝，不想委屈自己，往返和休息也都留着。",
+          "exact_two_flat_bullets": true,
+          "original_totals_correct": true,
+          "explicit_real_world_verification_condition": false
+        }
+      ]
+    }
+  ],
+  "findings": [
+    "Fresh baseline 6/6 exact two bullets versus prior adaptive4096 2/6: stochastic variation prevents claiming reminder benefit from historical comparison.",
+    "Format reminder 6/6 exact two bullets, only 2/6 explicitly condition the numeric adjustment on real routes/fares.",
+    "Feasibility reminder 6/6 explicitly qualify actual routes/fares, but 5/6 exact two bullets. First direct reply has four bullets.",
+    "Feasibility cell2 photographer leaves a corrected unit typo: 10 minutes (should be 10 yuan). Grade original totals correct with editorial defect; not an uncorrected arithmetic failure.",
+    "Feasibility cell3 direct reply gives an imprecise approximately 35–40 yuan range from fares <=10 and drink around15; no explicit fixed-price proof.",
+    "Grounding conditions do not establish actual routes or prices; no external travel service was called.",
+    "Photographer-specific route/photography considerations appear in only a few baseline/format replies; persona quality remains limited."
+  ],
+  "limitations": [
+    "One fixture, two repetitions of cells; direct actor always Gu Yan because each cell runs repetitions=1. Facilitated always teacher then photographer.",
+    "Order baseline-format-feasibility-feasibility-format-baseline, not randomized.",
+    "Post-preflight experimental prompt overrides are recorded separately; terminal production trace does not certify their contract registration.",
+    "No production prompt or budget change adopted.",
+    "Reflexion and intrinsic self-correction references read at abstract depth only; no claimed replication."
+  ],
+  "validation": {
+    "targeted_tests": 34,
+    "result": "passed",
+    "modules": [
+      "tests.test_tavern_schema",
+      "tests.test_provider_tavern",
+      "tests.test_tavern_prompt_safety"
+    ],
+    "initial_command_error": "An initially guessed tests.test_tavern_runtime_provider module did not exist; corrected to actual module, then all 34 passed."
+  }
+}

@@ -23,7 +23,13 @@ CONSTRAINT_CASES = {
 }
 
 
-def run(root, repetitions, constraint_case=None, chat_max_tokens=800, thinking_mode=None):
+PROMPT_INTERVENTIONS = {
+    'format_check': '输出前检查content里的用户格式要求：列表条数按实际Markdown列表项计数，不按话题组数计数；将相关说明合并到允许的条目内，不另加列表项、开场或结尾。',
+    'feasibility_check': '提出调整建议时，区分已知条件、建议的预算上限和仍需核实的现实条件。不能仅把已知价格或耗时改成较小数字就声称方案可执行；说明可采取的调整及其适用条件，分别核对不同单位的限制。',
+}
+
+
+def run(root, repetitions, constraint_case=None, chat_max_tokens=800, thinking_mode=None, prompt_intervention=None):
     root.mkdir(parents=True, exist_ok=False)
     settings = Settings(storage_root=str(root / 'data'), database_url=f"sqlite:///{root / 'domain.db'}",
         plan_provider='litellm', ocr_engine='disabled', openai_api_key=os.environ['K3_API_KEY'],
@@ -38,6 +44,11 @@ def run(root, repetitions, constraint_case=None, chat_max_tokens=800, thinking_m
         started = time.perf_counter()
         if thinking_mode:
             payload = {**payload, 'extra_body': {**payload.get('extra_body', {}), 'thinking': {'type': thinking_mode}}}
+        if prompt_intervention:
+            messages = [dict(message) for message in payload['messages']]
+            system = next(message for message in messages if message['role'] == 'system')
+            system['content'] += '\n' + PROMPT_INTERVENTIONS[prompt_intervention]
+            payload = {**payload, 'messages': messages}
         call = {'kind': request_kind, 'model': model, 'max_tokens': payload.get('max_tokens'),
                 'thinking_mode': thinking_mode or 'provider_default'}
         calls.append(call)
@@ -108,7 +119,9 @@ def run(root, repetitions, constraint_case=None, chat_max_tokens=800, thinking_m
                     'expected_room_revision': room.json()['room']['revision']}
                 calls.clear()
                 row = {'scope': 'live_tavern_admission_actor_commit_readback', 'model': 'MiniMax-M3',
-                    'git_revision': revision, 'constraint_case': constraint_case, 'mode': mode,
+                    'git_revision': revision, 'prompt_intervention':prompt_intervention,
+                    'prompt_intervention_text':PROMPT_INTERVENTIONS.get(prompt_intervention),
+                    'experimental_override_scope':'SDK payload after production preflight; not a registered production prompt contract', 'constraint_case': constraint_case, 'mode': mode,
                     'configured_chat_max_tokens':chat_max_tokens, 'thinking_mode':thinking_mode or 'provider_default', 'repetition': repetition, 'request': payload,
                     'persona_inputs': [{'id': p['id'], 'name': p['name'], 'summary': p['summary']} for p in personas],
                     'calls': calls, 'boundary_success': False}
@@ -148,7 +161,8 @@ if __name__ == '__main__':
     parser.add_argument('--constraint-case', choices=CONSTRAINT_CASES)
     parser.add_argument('--chat-max-tokens', type=int, default=800)
     parser.add_argument('--thinking-mode', choices=('adaptive','disabled'))
+    parser.add_argument('--prompt-intervention', choices=PROMPT_INTERVENTIONS)
     args = parser.parse_args()
     if not 1 <= args.repetitions <= 20:
         parser.error('repetitions must be between 1 and 20')
-    run(args.root.resolve(), args.repetitions, args.constraint_case, args.chat_max_tokens, args.thinking_mode)
+    run(args.root.resolve(), args.repetitions, args.constraint_case, args.chat_max_tokens, args.thinking_mode, args.prompt_intervention)
