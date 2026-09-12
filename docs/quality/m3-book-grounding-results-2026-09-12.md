@@ -58,7 +58,11 @@ Direct 的四个 Hatcher 图形显示成对的纵向特征漂移：Algebraic Top
 
 固定多尺度 Canny、闭合与膨胀只在本地生成候选，不调用 M3，也不在生成时读取 gold。严格 proposal recall 为 `3/8`，与原 Layout 的 `3/8` 相同，GroundingDINO 为 `1/8`。Edge 命中 Venn、Cartesian 和 Farey；Layout 命中章节节点、Venn 和 Cartesian，二者并集理论上覆盖 `4/8`。
 
-全页 Edge 每页产生约 132–304 个候选，直接交给 M3 会扩大编号拥挤和 token 成本。可行路线是先用文档版面模型限制 Picture/Formula 区域，再在区域内运行边缘候选，按 OCR caption 邻近度、包含层级、面积和重复框去重。当前只能说 Edge 与 Layout 召回互补，尚未证明最终准确率提升。
+全页 Edge 每页产生约 132–304 个候选，直接交给 M3 会扩大编号拥挤和 token 成本。曾考虑先用文档版面模型限制 `Picture` 区域，再在母框内运行边缘候选，按轮廓层级、面积、长宽比和重复框过滤后交给 M3 离散选择。
+
+**暂缓决定（2026-09-13）：不实现、不实测母框内 Edge 候选。** 当前 Edge 与 Layout 的理论并集只把严格 proposal recall 从 `3/8` 提到 `4/8`；已知可能受益的 Cartesian 与章节节点又都是闭合矩形，样本形态高度相似，不能支持一般化判断。边缘框还会引入文字轮廓、嵌套框和断裂线段，增加候选选择错误、NMS/过滤参数及延迟成本。结合 DocLayout 母框 containment 已为 `8/8`、母框内 M3 细化已为 `6/8`，预期增量不足以支持当前投入。
+
+本思路保留为研究备忘，不进入生产架构、依赖、Harness 组件或模型调用。只有新的 page-disjoint 学术书页显示一类稳定漏检，并且递归 YOLO 与母框内 `local_box` 都无法覆盖，同时离线 Edge proposal 能在冻结参数下跨书增加 recall、把每个母框候选中位数控制在 15 个以内时，才重新建立实验票。当前两个失败例不能单独触发重开。
 
 ## DocLayout-YOLO 母图与子图裁剪
 
@@ -108,8 +112,8 @@ Direct 的四个 Hatcher 图形显示成对的纵向特征漂移：Algebraic Top
 - [GroundingDINO](https://github.com/IDEA-Research/GroundingDINO) 与 [Grounded-Segment-Anything](https://github.com/IDEA-Research/Grounded-Segment-Anything) 名称中的 DINO 不等于 DINOv2。本轮 `1/8` 表明自然图开放词汇检测不能直接外推到稀疏数学线图。
 - 用户指定的 [Image Generators are Generalist Vision Learners / Vision Banana](https://arxiv.org/abs/2604.20329) 将视觉任务统一为 RGB 生成输出，适合研究生成式标注接口，但不是 DINOv2 或现成学术书页检测器。
 
-优先级更高的下一实验是验证“DocLayout-YOLO 一级/递归候选优先＋M3 母框内自由框回退”，再与 Heron、Layout/Edge union 比较。若验证 DINOv2，应作为独立研究臂：冻结 patch 特征，加轻量 box/mask head 或 adapter；8 个页面不足以支撑微调结论，必须先扩展按书和章节分组的 page-disjoint 标注集。
+优先级更高的下一实验是验证“DocLayout-YOLO 一级/递归候选优先＋M3 母框内自由框回退”，再与 Heron 比较；Layout/Edge union 已按上文暂缓。若验证 DINOv2，应作为独立研究臂：冻结 patch 特征，加轻量 box/mask head 或 adapter；8 个页面不足以支撑微调结论，必须先扩展按书和章节分组的 page-disjoint 标注集。
 
 ## 采用边界
 
-工程已加入默认关闭的 DocLayout-YOLO 外部子进程路径、严格候选 DTO 和纯读 Study 工具；Harness 组件登记为 `study-chat-toolset-v2` 与 `study-visual-grounding-v1`。它没有修改默认视觉路径，也没有把外部包或 Torch 加入主依赖。坐标网格已作为负面结果归档；Reflection 只保留最多两轮并保存历史最佳。开发集 6/8 支持候选路径进入工程验证，但尚不足以认证独立质量或默认启用。正文、行内公式锚点和单字母继续由 OCR 负责。
+工程已加入默认关闭的 DocLayout-YOLO 外部子进程路径、严格候选 DTO 和纯读 Study 工具；Harness 组件登记为 `study-chat-toolset-v2` 与 `study-visual-grounding-v1`。它没有修改默认视觉路径，也没有把外部包或 Torch 加入主依赖。坐标网格已作为负面结果归档；母框内 Edge 候选已登记后暂缓；Reflection 只保留最多两轮并保存历史最佳。开发集 6/8 支持候选路径进入工程验证，但尚不足以认证独立质量或默认启用。正文、行内公式锚点和单字母继续由 OCR 负责。
