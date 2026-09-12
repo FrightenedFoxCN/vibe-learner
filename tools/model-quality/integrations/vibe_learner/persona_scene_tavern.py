@@ -142,6 +142,37 @@ def _persona_save_payload(name: str, generated: dict[str, object]) -> dict[str, 
     }
 
 
+def _canonical_confirmation_source(spec: dict[str, object]) -> str:
+    return json.dumps(
+        {
+            "persona_input": spec["persona_input"],
+            "scene_input": spec["scene_input"],
+            "user_message": spec["user_message"],
+        },
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+        allow_nan=False,
+    )
+
+
+def run_confirmation_sample(context, case, variant):
+    try:
+        spec = json.loads(case.gold)
+        if case.source != _canonical_confirmation_source(spec):
+            raise ValueError("confirmation_source_digest_mismatch")
+        constraints = spec["source_fidelity_constraints"]
+        if not isinstance(constraints, dict) or not constraints:
+            raise ValueError("confirmation_constraints_missing")
+    except (AttributeError, KeyError, TypeError, ValueError, json.JSONDecodeError):
+        return {
+            "status": "data_failed",
+            "failure_owner": "data",
+            "error_code": "invalid_persona_scene_tavern_confirmation_fixture",
+        }
+    return run_sample(context, case, variant)
+
+
 def _scene_save_payload(generated: dict[str, object]) -> dict[str, object]:
     return {
         key: generated[key]
