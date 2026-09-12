@@ -13,6 +13,7 @@ from app.services.provider_payload import (
     _extract_json_payload,
 )
 from model_quality.runner import atomic_json
+from model_quality.ledger import GateClosed
 
 from .common import Bridge, create_app, envelope, settings
 from .scene_closed_world_policy import (
@@ -204,7 +205,7 @@ def run_baseline_sample(context, case, variant):
             }
             status = (
                 "uncertain"
-                if bridge.failure is not None
+                if bridge.failure is not None and not isinstance(bridge.failure, GateClosed)
                 else "candidate_failed"
                 if response.status_code == 502 and detail in candidate_codes
                 else "infrastructure_failed"
@@ -259,10 +260,29 @@ def run_baseline_sample(context, case, variant):
                 scope="domain-admitted-proposal; no product projection commit or read-back",
             )
         proposal = _proposal_from_envelope(bridge.responses[-1])
-        issues = validate_scene_closed_world(policy, proposal)
+        try:
+            issues = validate_scene_closed_world(policy, proposal)
+        except SceneClosedWorldInputError as exc:
+            evidence.update(
+                strict_candidate=True,
+                proposal=proposal.model_dump(mode="json"),
+                policy_evaluable=False,
+                not_evaluable=True,
+                error_code="scene_baseline_policy_input_invalid",
+                exception_class=type(exc).__name__,
+            )
+            _write_evidence(context, evidence)
+            return _result(
+                context=context,
+                status="candidate_failed",
+                failure_owner="candidate",
+                metrics={"strict_candidate": True, "policy_evaluable": False},
+                scope="domain-admitted-proposal; no product projection commit or read-back",
+            )
         body = response.json()
         evidence.update(
             strict_candidate=True,
+            policy_evaluable=True,
             proposal=proposal.model_dump(mode="json"),
             issues=[issue.model_dump(mode="json") for issue in issues],
             policy_passed=not issues,
@@ -293,7 +313,11 @@ def run_baseline_sample(context, case, variant):
         evidence["provider_calls"] = bridge.calls
         evidence["strict_candidate"] = False
         _write_evidence(context, evidence)
-        status = "uncertain" if bridge.failure is not None else "infrastructure_failed"
+        status = (
+            "uncertain"
+            if bridge.failure is not None and not isinstance(bridge.failure, GateClosed)
+            else "infrastructure_failed"
+        )
         return _result(
             context=context,
             status=status,
@@ -332,14 +356,35 @@ def run_repair_sample(context, case, variant):
         ),
         "policy": policy.model_dump(mode="json"),
         "baseline_strict_candidate": bool(baseline.get("strict_candidate")),
+        "baseline_status": baseline.get("status", "candidate_failed"),
     }
-    if not baseline.get("strict_candidate") or not isinstance(baseline.get("proposal"), dict):
+    baseline_status = baseline.get("status", "candidate_failed")
+    if baseline_status not in {
+        "completed", "candidate_failed", "infrastructure_failed", "uncertain"
+    }:
         evidence.update(repair_triggered=False, strict_candidate=False, not_evaluable=True)
         _write_evidence(context, evidence)
         return _result(
             context=context,
-            status="candidate_failed",
-            failure_owner="candidate",
+            status="data_failed",
+            failure_owner="data",
+            metrics={"strict_candidate": False, "repair_triggered": False},
+            scope="provider-proposal-only; no domain admission, commit or read-back",
+        )
+    if (
+        not baseline.get("strict_candidate")
+        or not isinstance(baseline.get("proposal"), dict)
+        or baseline.get("policy_evaluable") is False
+    ):
+        evidence.update(repair_triggered=False, strict_candidate=False, not_evaluable=True)
+        _write_evidence(context, evidence)
+        failure_owner = (
+            "candidate" if baseline_status == "candidate_failed" else "infrastructure"
+        )
+        return _result(
+            context=context,
+            status=baseline_status,
+            failure_owner=failure_owner,
             metrics={"strict_candidate": False, "repair_triggered": False},
             scope="provider-proposal-only; no domain admission, commit or read-back",
         )

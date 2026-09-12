@@ -15,6 +15,7 @@ from examples.prepare_scene_closed_world import (
     build_repair_manifest,
 )
 from model_quality.protocol import Campaign, digest
+from model_quality.ledger import GateClosed
 from vibe_learner.scene_closed_world_live import (
     run_baseline_sample,
     run_repair_sample,
@@ -58,7 +59,9 @@ def _repair_spec(*, passing: bool = False):
         "policy": row["scene_closed_world_policy_v1"],
         "fake_proposal": row["valid_minimal_scene_tree_proposal"],
         "baseline": {
+            "status": "completed",
             "strict_candidate": True,
+            "policy_evaluable": True,
             "proposal": baseline,
             "issues": [],
         },
@@ -96,13 +99,13 @@ def _invoke_repair(*, passing=False, raw=None):
     return result, request, evidence
 
 
-def _invoke_baseline(raw):
+def _invoke_baseline(raw, *, side_effect=None):
     row = _fixture_case()
-    request = Mock(return_value=raw)
+    request = Mock(side_effect=side_effect) if side_effect is not None else Mock(return_value=raw)
     campaign = SimpleNamespace(
         model="MiniMax-M3",
         transport="fake",
-        max_output_tokens=4096,
+        max_output_tokens=6400,
         timeout_seconds=90,
         temperature=0.2,
     )
@@ -164,6 +167,7 @@ def _write_frozen_baseline(root: Path, baseline: dict[str, object]) -> None:
             "state": "completed",
             "result": {
                 "status": "completed",
+                "failure_owner": None,
                 "metrics": {"strict_candidate": True},
                 "scope": "domain-admitted-proposal; no product projection commit or read-back",
                 "evidence": [{
@@ -193,7 +197,7 @@ class SceneClosedWorldLiveTests(unittest.TestCase):
         )
         self.assertEqual(len(manifest["cases"]), 6)
         self.assertEqual(manifest["sample_wire_limit"], 2)
-        self.assertEqual(manifest["max_output_tokens"], 4096)
+        self.assertEqual(manifest["max_output_tokens"], 6400)
         self.assertEqual(len({case["family"] for case in manifest["cases"]}), 6)
         self.assertTrue(all(case["source"] == json.loads(case["gold"])["source_text"] for case in manifest["cases"]))
 
@@ -302,6 +306,89 @@ class SceneClosedWorldLiveTests(unittest.TestCase):
         self.assertTrue(evidence["not_evaluable"])
         self.assertEqual(evidence["wire_envelopes"][-1]["finish_reason"], "length")
         self.assertLessEqual(request.call_count, 2)
+
+    def test_baseline_pre_wire_gate_is_infrastructure_not_uncertain(self):
+        row = _fixture_case()
+        invalid = deepcopy(row["valid_minimal_scene_tree_proposal"])
+        invalid["scene_layers"][0]["reuse_hint"] = None
+        first = _wire(invalid)
+        result, request, evidence, _ = _invoke_baseline(
+            first,
+            side_effect=[first, GateClosed("model_or_output_budget_mismatch")],
+        )
+        self.assertEqual(result["status"], "infrastructure_failed")
+        self.assertEqual(result["failure_owner"], "infrastructure")
+        self.assertEqual(evidence["api_error_code"], "setting_generation_failed")
+        self.assertEqual(request.call_count, 2)
+
+    def test_baseline_production_retry_uses_6144_with_two_wire_ceiling(self):
+        row = _fixture_case()
+        invalid = deepcopy(row["valid_minimal_scene_tree_proposal"])
+        invalid["scene_layers"][0]["reuse_hint"] = None
+        first = _wire(invalid)
+        repaired = _wire(row["valid_minimal_scene_tree_proposal"])
+        result, request, _, _ = _invoke_baseline(
+            first,
+            side_effect=[first, repaired],
+        )
+        self.assertEqual(result["status"], "completed")
+        self.assertEqual(request.call_count, 2)
+        self.assertEqual(request.call_args_list[0].args[0]["max_tokens"], 4096)
+        self.assertEqual(request.call_args_list[1].args[0]["max_tokens"], 6144)
+
+    def test_policy_unusable_strict_proposal_is_candidate_not_evaluable(self):
+        row = _fixture_case()
+        proposal = deepcopy(row["valid_minimal_scene_tree_proposal"])
+        proposal["scene_layers"].append(deepcopy(proposal["scene_layers"][0]))
+        result, _, evidence, _ = _invoke_baseline(_wire(proposal))
+        self.assertEqual(result["status"], "candidate_failed")
+        self.assertEqual(result["failure_owner"], "candidate")
+        self.assertTrue(evidence["strict_candidate"])
+        self.assertFalse(evidence["policy_evaluable"])
+        self.assertTrue(evidence["not_evaluable"])
+
+    def test_repair_preserves_frozen_failure_status_without_wire(self):
+        for status, owner in (
+            ("candidate_failed", "candidate"),
+            ("infrastructure_failed", "infrastructure"),
+            ("uncertain", "infrastructure"),
+        ):
+            with self.subTest(status=status):
+                row, spec = _repair_spec(passing=True)
+                spec["baseline"].update(
+                    status=status,
+                    failure_owner=owner,
+                    strict_candidate=False,
+                    proposal=None,
+                    policy_evaluable=None,
+                )
+                request = Mock()
+                context = SimpleNamespace(
+                    transport=SimpleNamespace(
+                        campaign=SimpleNamespace(
+                            model="MiniMax-M3",
+                            transport="fake",
+                            max_output_tokens=4096,
+                        ),
+                        request=request,
+                    )
+                )
+                case = SimpleNamespace(
+                    id=row["case_id"],
+                    source=row["source_text"],
+                    gold=json.dumps(spec, ensure_ascii=False),
+                    rubric="scene-closed-world-repair-v1",
+                )
+                with TemporaryDirectory() as directory:
+                    context.storage = Path(directory)
+                    result = run_repair_sample(
+                        context,
+                        case,
+                        SimpleNamespace(id="conditional-one-wire-repair"),
+                    )
+                self.assertEqual(result["status"], status)
+                self.assertEqual(result["failure_owner"], owner)
+                request.assert_not_called()
 
     def test_typed_issue_triggers_exactly_one_strict_repair_wire(self):
         result, request, evidence = _invoke_repair()

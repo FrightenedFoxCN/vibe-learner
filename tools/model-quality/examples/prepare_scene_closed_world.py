@@ -77,7 +77,7 @@ def build_baseline_manifest(
         "timeout_seconds": 90,
         "sample_deadline_seconds": 300,
         "sample_wire_limit": 2,
-        "max_output_tokens": 4096,
+        "max_output_tokens": 6400,
         "input_reservation_tokens": 100000,
         "thinking": "adaptive",
         "temperature": 0.2,
@@ -130,7 +130,12 @@ def build_repair_manifest(
         raise ValueError("scene_closed_world_baseline_report_invalid")
     report_states = Counter(sample.get("state") for sample in report_samples)
     if (
-        set(report_states) - {"completed", "candidate_failed"}
+        set(report_states) - {
+            "completed",
+            "candidate_failed",
+            "infrastructure_failed",
+            "uncertain",
+        }
         or report.get("states") != dict(report_states)
     ):
         raise ValueError("scene_closed_world_baseline_not_terminal")
@@ -143,6 +148,13 @@ def build_repair_manifest(
         case_id = sample.get("case")
         expected = expected_samples.get(case_id)
         result = sample.get("result")
+        expected_owner = (
+            None
+            if sample.get("state") == "completed"
+            else "candidate"
+            if sample.get("state") == "candidate_failed"
+            else "infrastructure"
+        )
         if (
             not isinstance(case_id, str)
             or expected is None
@@ -151,6 +163,7 @@ def build_repair_manifest(
             or sample.get("repetition") != expected[1]["repetition"]
             or not isinstance(result, dict)
             or result.get("status") != sample.get("state")
+            or result.get("failure_owner") != expected_owner
             or result.get("scope")
             != "domain-admitted-proposal; no product projection commit or read-back"
         ):
@@ -213,11 +226,22 @@ def build_repair_manifest(
                     or not isinstance(evidence.get("proposal"), dict)
                 )
             )
-            or (sample["state"] == "candidate_failed" and strict_candidate)
+            or (
+                sample["state"] == "candidate_failed"
+                and strict_candidate
+                and evidence.get("policy_evaluable") is not False
+            )
+            or (
+                sample["state"] in {"infrastructure_failed", "uncertain"}
+                and strict_candidate
+            )
         ):
             raise ValueError(f"scene_closed_world_baseline_result_mismatch:{case_id}")
         baseline = {
             "strict_candidate": strict_candidate,
+            "status": sample["state"],
+            "failure_owner": result.get("failure_owner"),
+            "policy_evaluable": evidence.get("policy_evaluable"),
             "proposal": evidence.get("proposal"),
             "issues": evidence.get("issues", []),
             "sample_id": sample["sample_id"],
