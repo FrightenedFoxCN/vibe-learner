@@ -1,0 +1,1357 @@
+{
+  "wire_latency_ms": {
+    "50": 10413,
+    "95": 41284
+  },
+  "percentile_method": "nearest-rank",
+  "aggregation_source_digest": "ab9ef49bdfb6e895e2408bec60f58bfa8a0e3b83f5abd11dda286100d7355c07",
+  "failure_owners": {},
+  "version": "quality-report-v1",
+  "campaign": "m3-persona-scene-tavern-confirmation-20260913-v1",
+  "transport": "minimax",
+  "scope": "research infrastructure; not Harness evidence or independent quality certification",
+  "expected_samples": 6,
+  "independent_families": 6,
+  "states": {
+    "completed": 6
+  },
+  "pairs": {
+    "mediator-not-aunt-cinema:0": {
+      "shadow-chain": "completed"
+    },
+    "silent-signal-station:0": {
+      "shadow-chain": "completed"
+    },
+    "unknown-diver-history-parcel-depot:0": {
+      "shadow-chain": "completed"
+    },
+    "auditor-false-clearance-platform:0": {
+      "shadow-chain": "completed"
+    },
+    "three-cell-seed-vault:0": {
+      "shadow-chain": "completed"
+    },
+    "tool-free-conservation-tent:0": {
+      "shadow-chain": "completed"
+    }
+  },
+  "samples": [
+    {
+      "campaign": "m3-persona-scene-tavern-confirmation-20260913-v1",
+      "case": "mediator-not-aunt-cinema",
+      "repetition": 0,
+      "variant": "shadow-chain",
+      "sample_id": "0e1ef319cb4d5638c779571f269f0594d252f4159a2dfed12f767df908eb5ab2",
+      "family": "mediator-not-aunt-cinema",
+      "state": "completed",
+      "result": {
+        "error_code": null,
+        "evidence": [
+          {
+            "contract": "vibe-domain-readback-v1",
+            "path": "domain-evidence.json"
+          }
+        ],
+        "failure_owner": null,
+        "metrics": {
+          "idempotent_replay": true,
+          "persona_proposal_v3": true,
+          "restart_readback": true,
+          "room_snapshot_stable": true,
+          "scene_proposal_v3": true,
+          "source_save_readback": true,
+          "tavern_committed_v3": true
+        },
+        "pid": 17571,
+        "sample_id": "0e1ef319cb4d5638c779571f269f0594d252f4159a2dfed12f767df908eb5ab2",
+        "scope": "domain-primary-output-readback",
+        "status": "completed"
+      },
+      "elapsed_seconds": 32.63942313194275
+    },
+    {
+      "campaign": "m3-persona-scene-tavern-confirmation-20260913-v1",
+      "case": "silent-signal-station",
+      "repetition": 0,
+      "variant": "shadow-chain",
+      "sample_id": "4b0e4315f6a50b1eeaf57c305aa0bdf23fce9dd585006d76f9f38b6c503c6c0c",
+      "family": "silent-signal-station",
+      "state": "completed",
+      "result": {
+        "error_code": null,
+        "evidence": [
+          {
+            "contract": "vibe-domain-readback-v1",
+            "path": "domain-evidence.json"
+          }
+        ],
+        "failure_owner": null,
+        "metrics": {
+          "idempotent_replay": true,
+          "persona_proposal_v3": true,
+          "restart_readback": true,
+          "room_snapshot_stable": true,
+          "scene_proposal_v3": true,
+          "source_save_readback": true,
+          "tavern_committed_v3": true
+        },
+        "pid": 17354,
+        "sample_id": "4b0e4315f6a50b1eeaf57c305aa0bdf23fce9dd585006d76f9f38b6c503c6c0c",
+        "scope": "domain-primary-output-readback",
+        "status": "completed"
+      },
+      "elapsed_seconds": 65.15688514709473
+    },
+    {
+      "campaign": "m3-persona-scene-tavern-confirmation-20260913-v1",
+      "case": "unknown-diver-history-parcel-depot",
+      "repetition": 0,
+      "variant": "shadow-chain",
+      "sample_id": "53268ee46c633968d8d2bf12f9e3d172eeecd0f93f65973feb976f6ade5c49d7",
+      "family": "unknown-diver-history-parcel-depot",
+      "state": "completed",
+      "result": {
+        "error_code": null,
+        "evidence": [
+          {
+            "contract": "vibe-domain-readback-v1",
+            "path": "domain-evidence.json"
+          }
+        ],
+        "failure_owner": null,
+        "metrics": {
+          "idempotent_replay": true,
+          "persona_proposal_v3": true,
+          "restart_readback": true,
+          "room_snapshot_stable": true,
+          "scene_proposal_v3": true,
+          "source_save_readback": true,
+          "tavern_committed_v3": true
+        },
+        "pid": 17355,
+        "sample_id": "53268ee46c633968d8d2bf12f9e3d172eeecd0f93f65973feb976f6ade5c49d7",
+        "scope": "domain-primary-output-readback",
+        "status": "completed"
+      },
+      "elapsed_seconds": 132.12752199172974
+    },
+    {
+      "campaign": "m3-persona-scene-tavern-confirmation-20260913-v1",
+      "case": "auditor-false-clearance-platform",
+      "repetition": 0,
+      "variant": "shadow-chain",
+      "sample_id": "68cc91e5e545b7f40d5272437cdf12cf8d232b7c3c6509cc724678f9189fa5a2",
+      "family": "auditor-false-clearance-platform",
+      "state": "completed",
+      "result": {
+        "error_code": null,
+        "evidence": [
+          {
+            "contract": "vibe-domain-readback-v1",
+            "path": "domain-evidence.json"
+          }
+        ],
+        "failure_owner": null,
+        "metrics": {
+          "idempotent_replay": true,
+          "persona_proposal_v3": true,
+          "restart_readback": true,
+          "room_snapshot_stable": true,
+          "scene_proposal_v3": true,
+          "source_save_readback": true,
+          "tavern_committed_v3": true
+        },
+        "pid": 17744,
+        "sample_id": "68cc91e5e545b7f40d5272437cdf12cf8d232b7c3c6509cc724678f9189fa5a2",
+        "scope": "domain-primary-output-readback",
+        "status": "completed"
+      },
+      "elapsed_seconds": 33.871273040771484
+    },
+    {
+      "campaign": "m3-persona-scene-tavern-confirmation-20260913-v1",
+      "case": "three-cell-seed-vault",
+      "repetition": 0,
+      "variant": "shadow-chain",
+      "sample_id": "69613fbb547c905fdab814444a3af33f35633dea7b77cf42ee70fee9557ba521",
+      "family": "three-cell-seed-vault",
+      "state": "completed",
+      "result": {
+        "error_code": null,
+        "evidence": [
+          {
+            "contract": "vibe-domain-readback-v1",
+            "path": "domain-evidence.json"
+          }
+        ],
+        "failure_owner": null,
+        "metrics": {
+          "idempotent_replay": true,
+          "persona_proposal_v3": true,
+          "restart_readback": true,
+          "room_snapshot_stable": true,
+          "scene_proposal_v3": true,
+          "source_save_readback": true,
+          "tavern_committed_v3": true
+        },
+        "pid": 17656,
+        "sample_id": "69613fbb547c905fdab814444a3af33f35633dea7b77cf42ee70fee9557ba521",
+        "scope": "domain-primary-output-readback",
+        "status": "completed"
+      },
+      "elapsed_seconds": 52.547423124313354
+    },
+    {
+      "campaign": "m3-persona-scene-tavern-confirmation-20260913-v1",
+      "case": "tool-free-conservation-tent",
+      "repetition": 0,
+      "variant": "shadow-chain",
+      "sample_id": "ca5d3aca5451b63e065a6203bf4b1893551bd5596e911bb43959ae43dc303956",
+      "family": "tool-free-conservation-tent",
+      "state": "completed",
+      "result": {
+        "error_code": null,
+        "evidence": [
+          {
+            "contract": "vibe-domain-readback-v1",
+            "path": "domain-evidence.json"
+          }
+        ],
+        "failure_owner": null,
+        "metrics": {
+          "idempotent_replay": true,
+          "persona_proposal_v3": true,
+          "restart_readback": true,
+          "room_snapshot_stable": true,
+          "scene_proposal_v3": true,
+          "source_save_readback": true,
+          "tavern_committed_v3": true
+        },
+        "pid": 17800,
+        "sample_id": "ca5d3aca5451b63e065a6203bf4b1893551bd5596e911bb43959ae43dc303956",
+        "scope": "domain-primary-output-readback",
+        "status": "completed"
+      },
+      "elapsed_seconds": 71.5441198348999
+    }
+  ],
+  "campaign_usage": {
+    "scaling_events": [
+      {
+        "time": 1789193563.8342872,
+        "reason": "initial",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "cooldown_until": 0.0,
+          "current": 2,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789193563.8342872
+        }
+      },
+      {
+        "time": 1789194749.337584,
+        "reason": "capacity_begin",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "capacity_campaign": "m3-capacity-20260912-v1",
+          "cooldown_until": 0.0,
+          "current": 4,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789194749.337525
+        }
+      },
+      {
+        "time": 1789194749.3381288,
+        "reason": "capacity_level_4",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "capacity_campaign": "m3-capacity-20260912-v1",
+          "cooldown_until": 0.0,
+          "current": 4,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789194749.338079
+        }
+      },
+      {
+        "time": 1789194815.017502,
+        "reason": "capacity_restore",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "cooldown_until": 0.0,
+          "current": 2,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789193563.8342872
+        }
+      },
+      {
+        "time": 1789194912.058828,
+        "reason": "capacity_begin",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "capacity_campaign": "m3-capacity-20260912-v2",
+          "cooldown_until": 0.0,
+          "current": 4,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789194912.058772
+        }
+      },
+      {
+        "time": 1789194912.059327,
+        "reason": "capacity_level_4",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "capacity_campaign": "m3-capacity-20260912-v2",
+          "cooldown_until": 0.0,
+          "current": 4,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789194912.059274
+        }
+      },
+      {
+        "time": 1789194959.63645,
+        "reason": "capacity_restore",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "cooldown_until": 0.0,
+          "current": 2,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789193563.8342872
+        }
+      },
+      {
+        "time": 1789195057.4798799,
+        "reason": "capacity_begin",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "capacity_campaign": "m3-capacity-20260912-v3",
+          "cooldown_until": 0.0,
+          "current": 4,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789195057.479805
+        }
+      },
+      {
+        "time": 1789195057.480588,
+        "reason": "capacity_level_4",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "capacity_campaign": "m3-capacity-20260912-v3",
+          "cooldown_until": 0.0,
+          "current": 4,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789195057.480507
+        }
+      },
+      {
+        "time": 1789195183.11363,
+        "reason": "capacity_level_8",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "capacity_campaign": "m3-capacity-20260912-v3",
+          "cooldown_until": 0.0,
+          "current": 8,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789195183.113394
+        }
+      },
+      {
+        "time": 1789195229.955343,
+        "reason": "capacity_restore",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "cooldown_until": 0.0,
+          "current": 2,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789193563.8342872
+        }
+      },
+      {
+        "time": 1789196175.7202592,
+        "reason": "operator_overload_restart",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "cooldown_until": 1789196175.7202592,
+          "current": 4,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789196175.7202592
+        }
+      },
+      {
+        "time": 1789222133.326775,
+        "reason": "operator_overload_restart",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "cooldown_until": 1789222133.326775,
+          "current": 2,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789222133.326775
+        }
+      }
+    ],
+    "stopped": null,
+    "wire_count": 22,
+    "charged_or_reserved_tokens": 68563,
+    "unknown_usage_requests": 0,
+    "wires": [
+      {
+        "id": "ab48e786ec3c4d1d95320bd2dd7a707d",
+        "campaign": "m3-persona-scene-tavern-confirmation-20260913-v1",
+        "sample": "53268ee46c633968d8d2bf12f9e3d172eeecd0f93f65973feb976f6ade5c49d7",
+        "started": 1789244594.937304,
+        "finished": 1789244631.461838,
+        "state": "finished",
+        "reserved": 106400,
+        "charged": 3739,
+        "metadata": {
+          "billing_tokens": null,
+          "cached_tokens": 128,
+          "call_kind": "generation",
+          "completion_tokens": 3002,
+          "elapsed_ms": 36514,
+          "finish_reason": "stop",
+          "http_status": 200,
+          "image_count": 0,
+          "images": [],
+          "max_tokens": 4096,
+          "offered_tools": [],
+          "prompt_tokens": 737,
+          "reasoning_tokens": 0,
+          "request_bytes": 3023,
+          "response_format_type": "json_object",
+          "response_model": "MiniMax-M3",
+          "temperature": 0.2,
+          "thinking": "adaptive",
+          "tool_call_shapes": [],
+          "tool_choice": null,
+          "tool_count": 0,
+          "total_tokens": 3739
+        }
+      },
+      {
+        "id": "435a8bb90dc14aca9402ceb6afabb987",
+        "campaign": "m3-persona-scene-tavern-confirmation-20260913-v1",
+        "sample": "4b0e4315f6a50b1eeaf57c305aa0bdf23fce9dd585006d76f9f38b6c503c6c0c",
+        "started": 1789244594.950258,
+        "finished": 1789244604.524482,
+        "state": "finished",
+        "reserved": 106400,
+        "charged": 2053,
+        "metadata": {
+          "billing_tokens": null,
+          "cached_tokens": 128,
+          "call_kind": "generation",
+          "completion_tokens": 1410,
+          "elapsed_ms": 9573,
+          "finish_reason": "stop",
+          "http_status": 200,
+          "image_count": 0,
+          "images": [],
+          "max_tokens": 4096,
+          "offered_tools": [],
+          "prompt_tokens": 643,
+          "reasoning_tokens": 921,
+          "request_bytes": 2498,
+          "response_format_type": "json_object",
+          "response_model": "MiniMax-M3",
+          "temperature": 0.2,
+          "thinking": "adaptive",
+          "tool_call_shapes": [],
+          "tool_choice": null,
+          "tool_count": 0,
+          "total_tokens": 2053
+        }
+      },
+      {
+        "id": "9bb133bf172749cc9c21e54af6db52fa",
+        "campaign": "m3-persona-scene-tavern-confirmation-20260913-v1",
+        "sample": "4b0e4315f6a50b1eeaf57c305aa0bdf23fce9dd585006d76f9f38b6c503c6c0c",
+        "started": 1789244604.5734138,
+        "finished": 1789244626.53806,
+        "state": "finished",
+        "reserved": 106400,
+        "charged": 2411,
+        "metadata": {
+          "billing_tokens": null,
+          "cached_tokens": 128,
+          "call_kind": "generation",
+          "completion_tokens": 1566,
+          "elapsed_ms": 21963,
+          "finish_reason": "stop",
+          "http_status": 200,
+          "image_count": 0,
+          "images": [],
+          "max_tokens": 4096,
+          "offered_tools": [],
+          "prompt_tokens": 845,
+          "reasoning_tokens": 0,
+          "request_bytes": 3311,
+          "response_format_type": "json_object",
+          "response_model": "MiniMax-M3",
+          "temperature": 0.2,
+          "thinking": "adaptive",
+          "tool_call_shapes": [],
+          "tool_choice": null,
+          "tool_count": 0,
+          "total_tokens": 2411
+        }
+      },
+      {
+        "id": "c29d187a63fc42ffa0f8d901cdde229f",
+        "campaign": "m3-persona-scene-tavern-confirmation-20260913-v1",
+        "sample": "4b0e4315f6a50b1eeaf57c305aa0bdf23fce9dd585006d76f9f38b6c503c6c0c",
+        "started": 1789244626.5396411,
+        "finished": 1789244653.60776,
+        "state": "finished",
+        "reserved": 106400,
+        "charged": 2931,
+        "metadata": {
+          "billing_tokens": null,
+          "cached_tokens": 128,
+          "call_kind": "generation",
+          "completion_tokens": 2045,
+          "elapsed_ms": 27065,
+          "finish_reason": "stop",
+          "http_status": 200,
+          "image_count": 0,
+          "images": [],
+          "max_tokens": 6144,
+          "offered_tools": [],
+          "prompt_tokens": 886,
+          "reasoning_tokens": 0,
+          "request_bytes": 3538,
+          "response_format_type": "json_object",
+          "response_model": "MiniMax-M3",
+          "temperature": 0.2,
+          "thinking": "adaptive",
+          "tool_call_shapes": [],
+          "tool_choice": null,
+          "tool_count": 0,
+          "total_tokens": 2931
+        }
+      },
+      {
+        "id": "3f271e280d4049b193dd3289358a3989",
+        "campaign": "m3-persona-scene-tavern-confirmation-20260913-v1",
+        "sample": "53268ee46c633968d8d2bf12f9e3d172eeecd0f93f65973feb976f6ade5c49d7",
+        "started": 1789244631.508677,
+        "finished": 1789244677.014775,
+        "state": "finished",
+        "reserved": 106400,
+        "charged": 5036,
+        "metadata": {
+          "billing_tokens": null,
+          "cached_tokens": 640,
+          "call_kind": "generation",
+          "completion_tokens": 4096,
+          "elapsed_ms": 45504,
+          "finish_reason": "length",
+          "http_status": 200,
+          "image_count": 0,
+          "images": [],
+          "max_tokens": 4096,
+          "offered_tools": [],
+          "prompt_tokens": 940,
+          "reasoning_tokens": 0,
+          "request_bytes": 3822,
+          "response_format_type": "json_object",
+          "response_model": "MiniMax-M3",
+          "temperature": 0.2,
+          "thinking": "adaptive",
+          "tool_call_shapes": [],
+          "tool_choice": null,
+          "tool_count": 0,
+          "total_tokens": 5036
+        }
+      },
+      {
+        "id": "bdbc46d495304c5baab95d70a08bdfe4",
+        "campaign": "m3-persona-scene-tavern-confirmation-20260913-v1",
+        "sample": "4b0e4315f6a50b1eeaf57c305aa0bdf23fce9dd585006d76f9f38b6c503c6c0c",
+        "started": 1789244653.6714602,
+        "finished": 1789244658.5868402,
+        "state": "finished",
+        "reserved": 106400,
+        "charged": 3950,
+        "metadata": {
+          "billing_tokens": null,
+          "cached_tokens": 128,
+          "call_kind": "generation",
+          "completion_tokens": 1151,
+          "elapsed_ms": 4913,
+          "finish_reason": "stop",
+          "http_status": 200,
+          "image_count": 0,
+          "images": [],
+          "max_tokens": 6400,
+          "offered_tools": [],
+          "prompt_tokens": 2799,
+          "reasoning_tokens": 806,
+          "request_bytes": 12171,
+          "response_format_type": "json_schema",
+          "response_model": "MiniMax-M3",
+          "temperature": 0.2,
+          "thinking": "adaptive",
+          "tool_call_shapes": [],
+          "tool_choice": null,
+          "tool_count": 0,
+          "total_tokens": 3950
+        }
+      },
+      {
+        "id": "3ce339e1d73c4dc59fa1102a60b239dd",
+        "campaign": "m3-persona-scene-tavern-confirmation-20260913-v1",
+        "sample": "0e1ef319cb4d5638c779571f269f0594d252f4159a2dfed12f767df908eb5ab2",
+        "started": 1789244660.5789912,
+        "finished": 1789244670.9943218,
+        "state": "finished",
+        "reserved": 106400,
+        "charged": 1653,
+        "metadata": {
+          "billing_tokens": null,
+          "cached_tokens": 128,
+          "call_kind": "generation",
+          "completion_tokens": 1016,
+          "elapsed_ms": 10413,
+          "finish_reason": "stop",
+          "http_status": 200,
+          "image_count": 0,
+          "images": [],
+          "max_tokens": 4096,
+          "offered_tools": [],
+          "prompt_tokens": 637,
+          "reasoning_tokens": 0,
+          "request_bytes": 2480,
+          "response_format_type": "json_object",
+          "response_model": "MiniMax-M3",
+          "temperature": 0.2,
+          "thinking": "adaptive",
+          "tool_call_shapes": [],
+          "tool_choice": null,
+          "tool_count": 0,
+          "total_tokens": 1653
+        }
+      },
+      {
+        "id": "0953270ff25a416e8c266987e816e670",
+        "campaign": "m3-persona-scene-tavern-confirmation-20260913-v1",
+        "sample": "0e1ef319cb4d5638c779571f269f0594d252f4159a2dfed12f767df908eb5ab2",
+        "started": 1789244671.03852,
+        "finished": 1789244684.6946502,
+        "state": "finished",
+        "reserved": 106400,
+        "charged": 2813,
+        "metadata": {
+          "billing_tokens": null,
+          "cached_tokens": 512,
+          "call_kind": "generation",
+          "completion_tokens": 1963,
+          "elapsed_ms": 13653,
+          "finish_reason": "stop",
+          "http_status": 200,
+          "image_count": 0,
+          "images": [],
+          "max_tokens": 4096,
+          "offered_tools": [],
+          "prompt_tokens": 850,
+          "reasoning_tokens": 880,
+          "request_bytes": 3287,
+          "response_format_type": "json_object",
+          "response_model": "MiniMax-M3",
+          "temperature": 0.2,
+          "thinking": "adaptive",
+          "tool_call_shapes": [],
+          "tool_choice": null,
+          "tool_count": 0,
+          "total_tokens": 2813
+        }
+      },
+      {
+        "id": "969c1fd466604c6385726a249c41488c",
+        "campaign": "m3-persona-scene-tavern-confirmation-20260913-v1",
+        "sample": "53268ee46c633968d8d2bf12f9e3d172eeecd0f93f65973feb976f6ade5c49d7",
+        "started": 1789244677.0174809,
+        "finished": 1789244718.304852,
+        "state": "finished",
+        "reserved": 106400,
+        "charged": 4487,
+        "metadata": {
+          "billing_tokens": null,
+          "cached_tokens": null,
+          "call_kind": "generation",
+          "completion_tokens": 3506,
+          "elapsed_ms": 41284,
+          "finish_reason": "stop",
+          "http_status": 200,
+          "image_count": 0,
+          "images": [],
+          "max_tokens": 6144,
+          "offered_tools": [],
+          "prompt_tokens": 981,
+          "reasoning_tokens": null,
+          "request_bytes": 4049,
+          "response_format_type": "json_object",
+          "response_model": "MiniMax-M3",
+          "temperature": 0.2,
+          "thinking": "adaptive",
+          "tool_call_shapes": [],
+          "tool_choice": null,
+          "tool_count": 0,
+          "total_tokens": 4487
+        }
+      },
+      {
+        "id": "69de406100fb4371a8699e878a1e5aa4",
+        "campaign": "m3-persona-scene-tavern-confirmation-20260913-v1",
+        "sample": "0e1ef319cb4d5638c779571f269f0594d252f4159a2dfed12f767df908eb5ab2",
+        "started": 1789244684.7856221,
+        "finished": 1789244691.709661,
+        "state": "finished",
+        "reserved": 106400,
+        "charged": 3226,
+        "metadata": {
+          "billing_tokens": null,
+          "cached_tokens": 128,
+          "call_kind": "generation",
+          "completion_tokens": 550,
+          "elapsed_ms": 6922,
+          "finish_reason": "stop",
+          "http_status": 200,
+          "image_count": 0,
+          "images": [],
+          "max_tokens": 6400,
+          "offered_tools": [],
+          "prompt_tokens": 2676,
+          "reasoning_tokens": 364,
+          "request_bytes": 11472,
+          "response_format_type": "json_schema",
+          "response_model": "MiniMax-M3",
+          "temperature": 0.2,
+          "thinking": "adaptive",
+          "tool_call_shapes": [],
+          "tool_choice": null,
+          "tool_count": 0,
+          "total_tokens": 3226
+        }
+      },
+      {
+        "id": "4bb07836e73142348705cc2713fa8889",
+        "campaign": "m3-persona-scene-tavern-confirmation-20260913-v1",
+        "sample": "69613fbb547c905fdab814444a3af33f35633dea7b77cf42ee70fee9557ba521",
+        "started": 1789244693.63328,
+        "finished": 1789244702.618023,
+        "state": "finished",
+        "reserved": 106400,
+        "charged": 1212,
+        "metadata": {
+          "billing_tokens": null,
+          "cached_tokens": 128,
+          "call_kind": "generation",
+          "completion_tokens": 586,
+          "elapsed_ms": 8983,
+          "finish_reason": "stop",
+          "http_status": 200,
+          "image_count": 0,
+          "images": [],
+          "max_tokens": 4096,
+          "offered_tools": [],
+          "prompt_tokens": 626,
+          "reasoning_tokens": 0,
+          "request_bytes": 2414,
+          "response_format_type": "json_object",
+          "response_model": "MiniMax-M3",
+          "temperature": 0.2,
+          "thinking": "adaptive",
+          "tool_call_shapes": [],
+          "tool_choice": null,
+          "tool_count": 0,
+          "total_tokens": 1212
+        }
+      },
+      {
+        "id": "c90e10fe69ca4946b29551f0dd8be69d",
+        "campaign": "m3-persona-scene-tavern-confirmation-20260913-v1",
+        "sample": "69613fbb547c905fdab814444a3af33f35633dea7b77cf42ee70fee9557ba521",
+        "started": 1789244702.6209311,
+        "finished": 1789244710.806946,
+        "state": "finished",
+        "reserved": 106400,
+        "charged": 1696,
+        "metadata": {
+          "billing_tokens": null,
+          "cached_tokens": 128,
+          "call_kind": "generation",
+          "completion_tokens": 982,
+          "elapsed_ms": 8179,
+          "finish_reason": "stop",
+          "http_status": 200,
+          "image_count": 0,
+          "images": [],
+          "max_tokens": 6144,
+          "offered_tools": [],
+          "prompt_tokens": 714,
+          "reasoning_tokens": 677,
+          "request_bytes": 2885,
+          "response_format_type": "json_object",
+          "response_model": "MiniMax-M3",
+          "temperature": 0.2,
+          "thinking": "adaptive",
+          "tool_call_shapes": [],
+          "tool_choice": null,
+          "tool_count": 0,
+          "total_tokens": 1696
+        }
+      },
+      {
+        "id": "7c4085dad2d4453ca655f9dea2419c55",
+        "campaign": "m3-persona-scene-tavern-confirmation-20260913-v1",
+        "sample": "69613fbb547c905fdab814444a3af33f35633dea7b77cf42ee70fee9557ba521",
+        "started": 1789244710.855068,
+        "finished": 1789244738.4556649,
+        "state": "finished",
+        "reserved": 106400,
+        "charged": 3545,
+        "metadata": {
+          "billing_tokens": null,
+          "cached_tokens": 128,
+          "call_kind": "generation",
+          "completion_tokens": 2680,
+          "elapsed_ms": 27598,
+          "finish_reason": "stop",
+          "http_status": 200,
+          "image_count": 0,
+          "images": [],
+          "max_tokens": 4096,
+          "offered_tools": [],
+          "prompt_tokens": 865,
+          "reasoning_tokens": 0,
+          "request_bytes": 3398,
+          "response_format_type": "json_object",
+          "response_model": "MiniMax-M3",
+          "temperature": 0.2,
+          "thinking": "adaptive",
+          "tool_call_shapes": [],
+          "tool_choice": null,
+          "tool_count": 0,
+          "total_tokens": 3545
+        }
+      },
+      {
+        "id": "263fcbfbae07465882bcf84b98cf4d77",
+        "campaign": "m3-persona-scene-tavern-confirmation-20260913-v1",
+        "sample": "53268ee46c633968d8d2bf12f9e3d172eeecd0f93f65973feb976f6ade5c49d7",
+        "started": 1789244718.379891,
+        "finished": 1789244725.552635,
+        "state": "finished",
+        "reserved": 106400,
+        "charged": 3645,
+        "metadata": {
+          "billing_tokens": null,
+          "cached_tokens": 640,
+          "call_kind": "generation",
+          "completion_tokens": 465,
+          "elapsed_ms": 7171,
+          "finish_reason": "stop",
+          "http_status": 200,
+          "image_count": 0,
+          "images": [],
+          "max_tokens": 6400,
+          "offered_tools": [],
+          "prompt_tokens": 3180,
+          "reasoning_tokens": 250,
+          "request_bytes": 13567,
+          "response_format_type": "json_schema",
+          "response_model": "MiniMax-M3",
+          "temperature": 0.2,
+          "thinking": "adaptive",
+          "tool_call_shapes": [],
+          "tool_choice": null,
+          "tool_count": 0,
+          "total_tokens": 3645
+        }
+      },
+      {
+        "id": "5a0a67b028cb486c8707504a245844ff",
+        "campaign": "m3-persona-scene-tavern-confirmation-20260913-v1",
+        "sample": "68cc91e5e545b7f40d5272437cdf12cf8d232b7c3c6509cc724678f9189fa5a2",
+        "started": 1789244727.39884,
+        "finished": 1789244731.232285,
+        "state": "finished",
+        "reserved": 106400,
+        "charged": 1556,
+        "metadata": {
+          "billing_tokens": null,
+          "cached_tokens": 128,
+          "call_kind": "generation",
+          "completion_tokens": 909,
+          "elapsed_ms": 3831,
+          "finish_reason": "stop",
+          "http_status": 200,
+          "image_count": 0,
+          "images": [],
+          "max_tokens": 4096,
+          "offered_tools": [],
+          "prompt_tokens": 647,
+          "reasoning_tokens": 601,
+          "request_bytes": 2486,
+          "response_format_type": "json_object",
+          "response_model": "MiniMax-M3",
+          "temperature": 0.2,
+          "thinking": "adaptive",
+          "tool_call_shapes": [],
+          "tool_choice": null,
+          "tool_count": 0,
+          "total_tokens": 1556
+        }
+      },
+      {
+        "id": "64ec925b2a354055b326c42d416116de",
+        "campaign": "m3-persona-scene-tavern-confirmation-20260913-v1",
+        "sample": "68cc91e5e545b7f40d5272437cdf12cf8d232b7c3c6509cc724678f9189fa5a2",
+        "started": 1789244731.2796218,
+        "finished": 1789244750.729671,
+        "state": "finished",
+        "reserved": 106400,
+        "charged": 2223,
+        "metadata": {
+          "billing_tokens": null,
+          "cached_tokens": 384,
+          "call_kind": "generation",
+          "completion_tokens": 1392,
+          "elapsed_ms": 19448,
+          "finish_reason": "stop",
+          "http_status": 200,
+          "image_count": 0,
+          "images": [],
+          "max_tokens": 4096,
+          "offered_tools": [],
+          "prompt_tokens": 831,
+          "reasoning_tokens": 0,
+          "request_bytes": 3248,
+          "response_format_type": "json_object",
+          "response_model": "MiniMax-M3",
+          "temperature": 0.2,
+          "thinking": "adaptive",
+          "tool_call_shapes": [],
+          "tool_choice": null,
+          "tool_count": 0,
+          "total_tokens": 2223
+        }
+      },
+      {
+        "id": "7cb7fcc8b6c54ba1a84ce20163dc06e0",
+        "campaign": "m3-persona-scene-tavern-confirmation-20260913-v1",
+        "sample": "69613fbb547c905fdab814444a3af33f35633dea7b77cf42ee70fee9557ba521",
+        "started": 1789244738.565762,
+        "finished": 1789244744.7199428,
+        "state": "finished",
+        "reserved": 106400,
+        "charged": 3476,
+        "metadata": {
+          "billing_tokens": null,
+          "cached_tokens": 128,
+          "call_kind": "generation",
+          "completion_tokens": 602,
+          "elapsed_ms": 6152,
+          "finish_reason": "stop",
+          "http_status": 200,
+          "image_count": 0,
+          "images": [],
+          "max_tokens": 6400,
+          "offered_tools": [],
+          "prompt_tokens": 2874,
+          "reasoning_tokens": 354,
+          "request_bytes": 12364,
+          "response_format_type": "json_schema",
+          "response_model": "MiniMax-M3",
+          "temperature": 0.2,
+          "thinking": "adaptive",
+          "tool_call_shapes": [],
+          "tool_choice": null,
+          "tool_count": 0,
+          "total_tokens": 3476
+        }
+      },
+      {
+        "id": "0287b3eb54b146a3b2cfb6ae51ac59db",
+        "campaign": "m3-persona-scene-tavern-confirmation-20260913-v1",
+        "sample": "ca5d3aca5451b63e065a6203bf4b1893551bd5596e911bb43959ae43dc303956",
+        "started": 1789244746.578259,
+        "finished": 1789244759.059325,
+        "state": "finished",
+        "reserved": 106400,
+        "charged": 3530,
+        "metadata": {
+          "billing_tokens": null,
+          "cached_tokens": 128,
+          "call_kind": "generation",
+          "completion_tokens": 2800,
+          "elapsed_ms": 12479,
+          "finish_reason": "stop",
+          "http_status": 200,
+          "image_count": 0,
+          "images": [],
+          "max_tokens": 4096,
+          "offered_tools": [],
+          "prompt_tokens": 730,
+          "reasoning_tokens": 2036,
+          "request_bytes": 2996,
+          "response_format_type": "json_object",
+          "response_model": "MiniMax-M3",
+          "temperature": 0.2,
+          "thinking": "adaptive",
+          "tool_call_shapes": [],
+          "tool_choice": null,
+          "tool_count": 0,
+          "total_tokens": 3530
+        }
+      },
+      {
+        "id": "2184de8bbb1744f4ac765b25b5d464dc",
+        "campaign": "m3-persona-scene-tavern-confirmation-20260913-v1",
+        "sample": "68cc91e5e545b7f40d5272437cdf12cf8d232b7c3c6509cc724678f9189fa5a2",
+        "started": 1789244750.807001,
+        "finished": 1789244759.8478239,
+        "state": "finished",
+        "reserved": 106400,
+        "charged": 2809,
+        "metadata": {
+          "billing_tokens": null,
+          "cached_tokens": 512,
+          "call_kind": "generation",
+          "completion_tokens": 535,
+          "elapsed_ms": 9040,
+          "finish_reason": "stop",
+          "http_status": 200,
+          "image_count": 0,
+          "images": [],
+          "max_tokens": 6400,
+          "offered_tools": [],
+          "prompt_tokens": 2274,
+          "reasoning_tokens": 0,
+          "request_bytes": 9930,
+          "response_format_type": "json_schema",
+          "response_model": "MiniMax-M3",
+          "temperature": 0.2,
+          "thinking": "adaptive",
+          "tool_call_shapes": [],
+          "tool_choice": null,
+          "tool_count": 0,
+          "total_tokens": 2809
+        }
+      },
+      {
+        "id": "6a80f302435647a29abbfde204d627f4",
+        "campaign": "m3-persona-scene-tavern-confirmation-20260913-v1",
+        "sample": "ca5d3aca5451b63e065a6203bf4b1893551bd5596e911bb43959ae43dc303956",
+        "started": 1789244759.099259,
+        "finished": 1789244787.2274492,
+        "state": "finished",
+        "reserved": 106400,
+        "charged": 4932,
+        "metadata": {
+          "billing_tokens": null,
+          "cached_tokens": 128,
+          "call_kind": "generation",
+          "completion_tokens": 4096,
+          "elapsed_ms": 28126,
+          "finish_reason": "length",
+          "http_status": 200,
+          "image_count": 0,
+          "images": [],
+          "max_tokens": 4096,
+          "offered_tools": [],
+          "prompt_tokens": 836,
+          "reasoning_tokens": 4053,
+          "request_bytes": 3281,
+          "response_format_type": "json_object",
+          "response_model": "MiniMax-M3",
+          "temperature": 0.2,
+          "thinking": "adaptive",
+          "tool_call_shapes": [],
+          "tool_choice": null,
+          "tool_count": 0,
+          "total_tokens": 4932
+        }
+      },
+      {
+        "id": "bc3224a8046e48808c79d78c2f62cb11",
+        "campaign": "m3-persona-scene-tavern-confirmation-20260913-v1",
+        "sample": "ca5d3aca5451b63e065a6203bf4b1893551bd5596e911bb43959ae43dc303956",
+        "started": 1789244787.22964,
+        "finished": 1789244808.292664,
+        "state": "finished",
+        "reserved": 106400,
+        "charged": 3645,
+        "metadata": {
+          "billing_tokens": null,
+          "cached_tokens": 128,
+          "call_kind": "generation",
+          "completion_tokens": 2768,
+          "elapsed_ms": 21059,
+          "finish_reason": "stop",
+          "http_status": 200,
+          "image_count": 0,
+          "images": [],
+          "max_tokens": 6144,
+          "offered_tools": [],
+          "prompt_tokens": 877,
+          "reasoning_tokens": 2145,
+          "request_bytes": 3508,
+          "response_format_type": "json_object",
+          "response_model": "MiniMax-M3",
+          "temperature": 0.2,
+          "thinking": "adaptive",
+          "tool_call_shapes": [],
+          "tool_choice": null,
+          "tool_count": 0,
+          "total_tokens": 3645
+        }
+      },
+      {
+        "id": "8294fb1af4df4f1881008c0417422f1f",
+        "campaign": "m3-persona-scene-tavern-confirmation-20260913-v1",
+        "sample": "ca5d3aca5451b63e065a6203bf4b1893551bd5596e911bb43959ae43dc303956",
+        "started": 1789244808.3683121,
+        "finished": 1789244816.690001,
+        "state": "finished",
+        "reserved": 106400,
+        "charged": 3995,
+        "metadata": {
+          "billing_tokens": null,
+          "cached_tokens": 128,
+          "call_kind": "generation",
+          "completion_tokens": 1355,
+          "elapsed_ms": 8320,
+          "finish_reason": "stop",
+          "http_status": 200,
+          "image_count": 0,
+          "images": [],
+          "max_tokens": 6400,
+          "offered_tools": [],
+          "prompt_tokens": 2640,
+          "reasoning_tokens": null,
+          "request_bytes": 11636,
+          "response_format_type": "json_schema",
+          "response_model": "MiniMax-M3",
+          "temperature": 0.2,
+          "thinking": "adaptive",
+          "tool_call_shapes": [],
+          "tool_choice": null,
+          "tool_count": 0,
+          "total_tokens": 3995
+        }
+      }
+    ]
+  },
+  "resource_window_usage": {
+    "scaling_events": [
+      {
+        "time": 1789193563.8342872,
+        "reason": "initial",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "cooldown_until": 0.0,
+          "current": 2,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789193563.8342872
+        }
+      },
+      {
+        "time": 1789194749.337584,
+        "reason": "capacity_begin",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "capacity_campaign": "m3-capacity-20260912-v1",
+          "cooldown_until": 0.0,
+          "current": 4,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789194749.337525
+        }
+      },
+      {
+        "time": 1789194749.3381288,
+        "reason": "capacity_level_4",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "capacity_campaign": "m3-capacity-20260912-v1",
+          "cooldown_until": 0.0,
+          "current": 4,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789194749.338079
+        }
+      },
+      {
+        "time": 1789194815.017502,
+        "reason": "capacity_restore",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "cooldown_until": 0.0,
+          "current": 2,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789193563.8342872
+        }
+      },
+      {
+        "time": 1789194912.058828,
+        "reason": "capacity_begin",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "capacity_campaign": "m3-capacity-20260912-v2",
+          "cooldown_until": 0.0,
+          "current": 4,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789194912.058772
+        }
+      },
+      {
+        "time": 1789194912.059327,
+        "reason": "capacity_level_4",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "capacity_campaign": "m3-capacity-20260912-v2",
+          "cooldown_until": 0.0,
+          "current": 4,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789194912.059274
+        }
+      },
+      {
+        "time": 1789194959.63645,
+        "reason": "capacity_restore",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "cooldown_until": 0.0,
+          "current": 2,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789193563.8342872
+        }
+      },
+      {
+        "time": 1789195057.4798799,
+        "reason": "capacity_begin",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "capacity_campaign": "m3-capacity-20260912-v3",
+          "cooldown_until": 0.0,
+          "current": 4,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789195057.479805
+        }
+      },
+      {
+        "time": 1789195057.480588,
+        "reason": "capacity_level_4",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "capacity_campaign": "m3-capacity-20260912-v3",
+          "cooldown_until": 0.0,
+          "current": 4,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789195057.480507
+        }
+      },
+      {
+        "time": 1789195183.11363,
+        "reason": "capacity_level_8",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "capacity_campaign": "m3-capacity-20260912-v3",
+          "cooldown_until": 0.0,
+          "current": 8,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789195183.113394
+        }
+      },
+      {
+        "time": 1789195229.955343,
+        "reason": "capacity_restore",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "cooldown_until": 0.0,
+          "current": 2,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789193563.8342872
+        }
+      },
+      {
+        "time": 1789196175.7202592,
+        "reason": "operator_overload_restart",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "cooldown_until": 1789196175.7202592,
+          "current": 4,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789196175.7202592
+        }
+      },
+      {
+        "time": 1789222133.326775,
+        "reason": "operator_overload_restart",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "cooldown_until": 1789222133.326775,
+          "current": 2,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789222133.326775
+        }
+      }
+    ],
+    "stopped": null,
+    "wire_count": 1793,
+    "charged_or_reserved_tokens": 11908386,
+    "unknown_usage_requests": 46
+  },
+  "billing_limit_certified": false
+}

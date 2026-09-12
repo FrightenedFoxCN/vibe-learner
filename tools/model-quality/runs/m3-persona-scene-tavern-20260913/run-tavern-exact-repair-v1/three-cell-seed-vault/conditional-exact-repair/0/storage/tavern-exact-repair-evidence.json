@@ -1,0 +1,47 @@
+{
+  "version": "persona-scene-tavern-exact-repair-v1",
+  "case_id": "three-cell-seed-vault",
+  "scope": "Research proposal replay only; the frozen committed Tavern Message remains immutable and production Harness evidence is not modified.",
+  "source_sha256": "5d6a138e68f7f99f6498de8ff16aa776c04797e356ed9662548f05358877799e",
+  "initial_reply": {
+    "text": "季研究员，这里没有第四个区域，也没有检疫走廊。\n\n本库仅设三个独立上锁子区——接收格、干藏格、冷藏格，三格各自从室外直接跨越独立外门进入，无前厅、无走廊、无缓冲间，格与格之间互不相通。\n\n您当前位于接收格。若要前往冷藏格，唯一合规路径为：先从本站扫码台旁的独立外门退出至种质库外墙，回到院区后再面对第三扇独立外门，凭冷藏格授权刷卡进入，开门后即可到达低温抽屉所在区域。\n\n如尚未办理冷藏格门禁授权，请先出示相关批件，我方可协助登记。",
+    "mood": "公事公办、保持距离",
+    "action": "从扫码台后侧直起身，目光平视对方，语调平稳无波动",
+    "speech_style": "简洁、正式、机构化",
+    "delivery_cue": "",
+    "state_commentary": "",
+    "addressed_participant_ids": []
+  },
+  "initial_reply_sha256": "5e44856f16b6bb452f9891b167239790089240abe95e57c0f367361fe421152c",
+  "initial_checks": [
+    {
+      "name": "learner_address_exact",
+      "domain": "persona",
+      "passed": true,
+      "observed": "季研究员"
+    },
+    {
+      "name": "tavern_prefix_exact",
+      "domain": "tavern",
+      "passed": false,
+      "observed": "季研究员，这里没有第四个区域，也没有"
+    },
+    {
+      "name": "scene_direct_children_exact",
+      "domain": "scene",
+      "passed": true,
+      "observed": [
+        "接收格",
+        "干藏格",
+        "冷藏格"
+      ]
+    }
+  ],
+  "repair_triggered": true,
+  "wire_count_expected": 1,
+  "manual_semantic_review_required": true,
+  "failure_stage": "repair_decode",
+  "error_class": "RuntimeError",
+  "strict_candidate": false,
+  "exact_checks_passed": false
+}

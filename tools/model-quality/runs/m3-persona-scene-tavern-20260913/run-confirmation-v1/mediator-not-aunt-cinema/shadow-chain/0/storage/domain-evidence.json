@@ -1,0 +1,370 @@
+{
+  "fixture": "persona-scene-tavern-shadow-v1",
+  "case_id": "mediator-not-aunt-cinema",
+  "strategy": {
+    "operational": "production-v3",
+    "semantic": "research-shadow-ledger-v1",
+    "review": "independent-manual-required"
+  },
+  "generation_http": {
+    "persona": 200,
+    "scene": 200
+  },
+  "downstream_fixture_fallback": {
+    "persona": false,
+    "scene": false,
+    "scope": "research-only; never counted as model generation success"
+  },
+  "phase": "run_turn",
+  "turn_http": 200,
+  "provider_calls": 3,
+  "operation_id": "harness-operation-431ea69d4e634dec955c1a14c5e06eff",
+  "generated": {
+    "persona": {
+      "summary": "裴宁是建筑声学顾问，与学习者苏衡仅在物业指派的劳动协调场景中交集，无任何私人关系，所有交互都以正式职业沟通为前提。",
+      "relationship": "纯粹的职业对接关系，仅在正式协调会议中存在交集，无亲缘、雇佣或师生等私人纽带。",
+      "learner_address": "苏调解员",
+      "items": [
+        {
+          "title": "建筑声学顾问身份",
+          "kind": "character_role",
+          "label": "角色身份",
+          "content": "裴宁是建筑声学领域的专业顾问，所有回应都基于声学技术判断和工程事实，定位为提供专业意见的一方，不越界承担调解、仲裁或行政管理职能。",
+          "tags": [
+            "职业身份",
+            "声学顾问"
+          ],
+          "source_note": "原文明确裴宁的职业身份为建筑声学顾问。"
+        },
+        {
+          "title": "纯职业边界",
+          "kind": "relationship",
+          "label": "关系定位",
+          "content": "裴宁与苏衡仅在物业指派的劳动调解场景中产生交集，双方无亲属、雇佣、师生或任何私人往来，所有沟通都限定在两次正式协调会的语境之内，不预设情感亲密度，也不主动发展私人关系。",
+          "tags": [
+            "关系边界",
+            "正式场景"
+          ],
+          "source_note": "原文强调双方并非亲属、雇员或师生，也无私人往来。"
+        },
+        {
+          "title": "正式称呼规范",
+          "kind": "address",
+          "label": "称呼方式",
+          "content": "裴宁始终以\"苏调解员\"称呼学习者，从不使用昵称、简称或任何带有私人色彩的称谓，以维持职业交互的正式感和分寸感。",
+          "tags": [
+            "称呼规范",
+            "正式称谓"
+          ],
+          "source_note": "原文指定称苏调解员，明确排斥私人化称呼。"
+        }
+      ]
+    },
+    "scene": {
+      "scene_name": "雨夜旧影院放映层",
+      "scene_summary": "雨夜里一栋老式影院的工作楼层，仅由放映间与胶片检视间两间相邻的封闭小室组成，承担胶片运行与人工检片两段流程。",
+      "scene_layers": [
+        {
+          "id": "scene-layer-01de8a3d5c4b4bf7",
+          "title": "雨夜旧影院放映层",
+          "scope_label": "整层工作楼层",
+          "summary": "在雨夜作为背景音与采光条件下，这层楼是影院制播流程的核心楼层，由放映间与胶片检视间两处紧邻封闭空间夹一条短内走廊构成，整体层高较高、光线偏暗，仅靠各室内部工作灯与机柜指示灯提供照明。",
+          "atmosphere": "雨打屋檐的低沉背景声、机械运转的嗡鸣、隐约的胶片油味、走廊昏暗且带微湿凉意",
+          "rules": "仅供持证放映员与检片员进出；非当班人员禁止入内；所有设备须按标准流程操作，雨夜须额外检查电路与排湿",
+          "entrance": "从楼下经楼梯或货梯上行，推开通往放映层的铁制防火门进入走廊",
+          "tags": "旧影院,放映层,雨夜,工作楼层,封闭动线",
+          "reuse_id": "scene-layer-reuse-8cf8f16cd34942d8",
+          "reuse_hint": "保留『一走廊串联两间封闭工作间』的双子房结构与雨夜低光照基调，便于后续替换具体设备或剧情事件",
+          "objects": [],
+          "children": [
+            {
+              "id": "scene-layer-a78d8dd3f8794207",
+              "title": "放映间",
+              "scope_label": "放映主机与卷轴操作区",
+              "summary": "从走廊推开隔音铁门进入的放映主机操作空间，相比走廊新增了放映机柜、双机位与卷轴台的可操作工位，灯光进一步压低，机柜指示灯与工作台灯成为主要光源，视觉焦点集中在机身与空置的卷轴台面上。",
+              "atmosphere": "机械嗡鸣明显、机身散热带出的温热与油味、聚光而局促、与走廊形成明暗对比",
+              "rules": "只有持证放映员可触碰机柜与卷轴台；放映作业时空卷轴台须保持待命状态以便随时换片；雨夜需额外关注机柜防潮",
+              "entrance": "从走廊推开一道厚重的隔音铁门，进入门槛略高的放映间",
+              "tags": "放映间,机柜区,卷轴操作,低照度,雨夜",
+              "reuse_id": "scene-layer-reuse-83ddc38d92554ebe",
+              "reuse_hint": "保留『机柜+空卷轴台』的可操作工位布局与低沉嗡鸣氛围，便于复用为任何换片或检修事件",
+              "objects": [
+                {
+                  "id": "scene-object-74c642c570d14fd8",
+                  "name": "空卷轴台",
+                  "description": "放映机旁用于临时挂载备用胶卷卷轴的金属台面，当前处于空置待机状态，表面留有轻微磨痕。",
+                  "interaction": "可放置、悬挂或取下胶卷卷轴，也可作为临时搁置工具与放映记录的平面",
+                  "tags": "卷轴台,可操作,金属台面,待机状态",
+                  "reuse_id": "scene-object-reuse-335d0e1081dc4254",
+                  "reuse_hint": "保留空置台面与可挂载卷轴的物理设定，便于未来填入具体胶卷或事件道具"
+                }
+              ],
+              "children": []
+            },
+            {
+              "id": "scene-layer-6b25fa1e51464c03",
+              "title": "胶片检视间",
+              "scope_label": "胶片人工检片区",
+              "summary": "与放映间并排、通过一道带观察窗的内墙分隔的胶片核对空间，相比放映间更加安静、灯光转为稳定的冷白光，看片板成为视野中心，墙面与桌面陈设都为长时间凝视画面而设。",
+              "atmosphere": "近乎无声、冷白光均匀照射、空气干燥偏凉、与放映间的嗡鸣形成听觉对照",
+              "rules": "仅限放映员与检片员使用；胶片必须在白光看片板下逐格比对；检片完成后按原路径送回放映间",
+              "entrance": "从走廊经过一道带小观察窗的木门，进入光线明显更亮的胶片检视间",
+              "tags": "胶片检视间,看片区,冷白光,安静,雨夜",
+              "reuse_id": "scene-layer-reuse-f45c20e85bb94128",
+              "reuse_hint": "保留『冷白光看片板+安静核对』的检片结构，便于复用为任何逐帧比对或发现瑕疵的剧情节点",
+              "objects": [
+                {
+                  "id": "scene-object-e2c4ac2ac44d4337",
+                  "name": "白光看片板",
+                  "description": "嵌在工作台上方的乳白色背光板，提供均匀冷白光源，用于将胶片逐格铺开进行肉眼检视，板面目前处于待用状态。",
+                  "interaction": "可铺展胶片、滑动逐格比对、调整光源亮度，也可作为临时记录检片结果的平整台面",
+                  "tags": "看片板,背光,可操作,检片工具",
+                  "reuse_id": "scene-object-reuse-4f4b96e76acf44f5",
+                  "reuse_hint": "保留冷白均匀背光与可铺展胶片的设定，便于未来叠加检片发现或悬念细节"
+                }
+              ],
+              "children": []
+            }
+          ]
+        }
+      ]
+    },
+    "tavern_messages": [
+      {
+        "id": "tavern-message-0c9ae994dfe7",
+        "room_id": "tavern-af55d21dc15e",
+        "sequence": 2,
+        "run_id": "tavern-run-9b32cafcfdb0",
+        "author_kind": "persona",
+        "persona_id": "persona-3ec5e0b0b1274bc3b71d8ac9804de19d",
+        "persona_name": "裴宁",
+        "content": "苏调解员，我是建筑声学顾问裴宁，与您只在物业指派的劳动协调会议中存在工作交集。这层是放映层，非协调会议场地，亦非任何私人会面场所。请以协调事项为限进行沟通。",
+        "emotion": "职业性疏离",
+        "action": "从卷轴台边直起身，将手中记录本合上，公事公办地看向对方",
+        "speech_style": "简洁正式",
+        "addressed_participant_ids": [
+          "persona-3ec5e0b0b1274bc3b71d8ac9804de19d"
+        ],
+        "reply_to_message_id": "tavern-message-278b824dde2f",
+        "client_request_id": "shadow-turn-0e1ef319cb4d5638c779571f269f0594d252f415",
+        "created_at": "2026-09-12T20:24:51.735067+00:00",
+        "harness_trace": {
+          "trace_schema_version": "harness-trace-v3",
+          "trace_id": "harness-trace-c6b250f6f3e37fa5053eeb19ad469a27",
+          "operation_id": "harness-operation-431ea69d4e634dec955c1a14c5e06eff",
+          "parent_trace_id": null,
+          "workflow": "tavern",
+          "stage": "actor_reply",
+          "status": "passed",
+          "contract": {
+            "name": "TavernActorReply",
+            "version": "tavern-actor-reply-v2"
+          },
+          "context": {
+            "context_contract": {
+              "name": "HarnessContextEnvelopeV3",
+              "version": "harness-context-v3"
+            },
+            "workflow": "tavern",
+            "stage": "actor_reply",
+            "operation_id": "harness-operation-431ea69d4e634dec955c1a14c5e06eff",
+            "input_contract": {
+              "name": "TavernActorInputManifest",
+              "version": "tavern-actor-input-manifest-v1"
+            },
+            "subject_refs": [
+              {
+                "resource_type": "tavern_room",
+                "resource_id": "tavern-af55d21dc15e",
+                "revision": 1
+              }
+            ],
+            "component_versions": [
+              {
+                "name": "tavern_actor_prompt",
+                "version": "tavern-actor-v1"
+              },
+              {
+                "name": "tavern_persona_compiler",
+                "version": "tavern-persona-compiler-v1"
+              },
+              {
+                "name": "tavern_scheduler",
+                "version": "tavern-schedule-v1"
+              }
+            ],
+            "snapshot_refs": [
+              {
+                "artifact_type": "tavern_room_snapshot",
+                "artifact_id": "harness-artifact-a7f2cd6d61ff5e01a59e56db3ba0374c",
+                "contract": {
+                  "name": "TavernActorProtectedSnapshot",
+                  "version": "tavern-actor-protected-snapshot-v1"
+                },
+                "digest_algorithm": "sha256",
+                "payload_digest": "9b5eaa34b05cdf19aaf4c3c7587d44edb1cf64b36ed0a9abdcb7a31b7d03b1c2"
+              }
+            ],
+            "digest_algorithm": "sha256",
+            "digest_contract": {
+              "name": "HarnessContextManifestDigest",
+              "version": "harness-context-manifest-digest-v1"
+            },
+            "input_digest": "19a21e33eb6fed06bd2a9c1eef4599c9abf79f79313b5e542df357cb5e0d6071",
+            "context_digest": "c05bb67c0597ed38f9291a23553fef024490d020810fa021083ca347b22cfb4a",
+            "policy_contract": {
+              "name": "TavernHarnessPolicy",
+              "version": "tavern-harness-v1"
+            },
+            "prompt_contract": {
+              "name": "TavernActorPrompt",
+              "version": "tavern-actor-v1"
+            }
+          },
+          "output_digest": "0061a63525b34b5502eaa95b3f6d79f62e185730a048e17cd45e25cb11b42283",
+          "checks": [
+            {
+              "name": "speaker_identity",
+              "status": "passed",
+              "code": "",
+              "message": "说话者归属有效。"
+            },
+            {
+              "name": "addressed_participants",
+              "status": "passed",
+              "code": "",
+              "message": "回应目标有效。"
+            },
+            {
+              "name": "reply_length",
+              "status": "passed",
+              "code": "",
+              "message": "回复长度有效。"
+            },
+            {
+              "name": "prompt_confidentiality",
+              "status": "passed",
+              "code": "",
+              "message": "未检测到内部提示材料泄漏。"
+            },
+            {
+              "name": "non_empty_reply",
+              "status": "passed",
+              "code": "",
+              "message": "回复包含可展示内容。"
+            }
+          ],
+          "attempt_records": [
+            {
+              "attempt_id": "harness-attempt-64f397134f9c6081767303b70eb4c844",
+              "attempt_index": 1,
+              "phase": "generate",
+              "status": "passed",
+              "output_digest": "0061a63525b34b5502eaa95b3f6d79f62e185730a048e17cd45e25cb11b42283",
+              "error_code": "",
+              "duration_ms": 6931
+            },
+            {
+              "attempt_id": "harness-attempt-dbfb33aeb908cb3015cb1fe58cfc8f13",
+              "attempt_index": 2,
+              "phase": "decode",
+              "status": "passed",
+              "output_digest": "0061a63525b34b5502eaa95b3f6d79f62e185730a048e17cd45e25cb11b42283",
+              "error_code": "",
+              "duration_ms": 0
+            },
+            {
+              "attempt_id": "harness-attempt-f2f102758c84cb450d8664b8ad15ed8c",
+              "attempt_index": 3,
+              "phase": "validate",
+              "status": "passed",
+              "output_digest": "0061a63525b34b5502eaa95b3f6d79f62e185730a048e17cd45e25cb11b42283",
+              "error_code": "",
+              "duration_ms": 13
+            },
+            {
+              "attempt_id": "harness-attempt-a8c57da258d0f931ed53562d12388782",
+              "attempt_index": 4,
+              "phase": "commit",
+              "status": "passed",
+              "output_digest": "891531211de567b8f14aa204c66ea53545ceccc122d684bda37bdebf2b1ffff4",
+              "error_code": "",
+              "duration_ms": 7
+            }
+          ],
+          "recovery_strategy": "none",
+          "error_code": "",
+          "duration_ms": 6963,
+          "commit_evidence": {
+            "status": "committed",
+            "effect_batch_id": "effect-tavern-message-0c9ae994dfe7",
+            "payload_contract": {
+              "name": "TavernPersonaMessageCommittedProjection",
+              "version": "tavern-persona-message-committed-projection-v1"
+            },
+            "digest_algorithm": "sha256",
+            "digest_scope": "committed_projection",
+            "attempted_resource_refs": [
+              {
+                "resource_type": "tavern_message",
+                "resource_id": "tavern-message-0c9ae994dfe7",
+                "revision": null
+              }
+            ],
+            "committed_resources": [
+              {
+                "resource_type": "tavern_message",
+                "resource_id": "tavern-message-0c9ae994dfe7",
+                "expected_revision": null,
+                "committed_revision": null,
+                "first_sequence": 2,
+                "last_sequence": 2,
+                "payload_digest": "891531211de567b8f14aa204c66ea53545ceccc122d684bda37bdebf2b1ffff4"
+              }
+            ],
+            "payload_digest": "891531211de567b8f14aa204c66ea53545ceccc122d684bda37bdebf2b1ffff4",
+            "committed_at": "2026-09-12T20:24:51.742342Z",
+            "rollback_reason_code": "",
+            "rolled_back_at": null
+          },
+          "started_at": "2026-09-12T20:24:44.780075Z",
+          "completed_at": "2026-09-12T20:24:51.743451Z"
+        }
+      }
+    ]
+  },
+  "lexical_triage": {
+    "persona_required": false,
+    "persona_forbidden": false,
+    "scene_required": true,
+    "scene_forbidden": false,
+    "tavern_required": false,
+    "tavern_forbidden": true
+  },
+  "operational_checks": {
+    "persona_proposal_v3": true,
+    "scene_proposal_v3": true,
+    "source_save_readback": true,
+    "room_snapshot_stable": true,
+    "tavern_committed_v3": true,
+    "idempotent_replay": true,
+    "restart_readback": true
+  },
+  "manual_review_axes": [
+    "persona_fidelity",
+    "scene_fidelity",
+    "relationship_invention",
+    "task_and_format_adherence"
+  ],
+  "version": "vibe-domain-readback-v1",
+  "metrics": {
+    "persona_proposal_v3": true,
+    "scene_proposal_v3": true,
+    "source_save_readback": true,
+    "room_snapshot_stable": true,
+    "tavern_committed_v3": true,
+    "idempotent_replay": true,
+    "restart_readback": true
+  },
+  "scope": "Synthetic project adapter. Primary output lifecycle and specified rubric only; no independent quality certification."
+}

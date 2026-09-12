@@ -1,0 +1,59 @@
+{
+  "version": "persona-scene-tavern-exact-repair-v1",
+  "case_id": "silent-signal-station",
+  "scope": "Research proposal replay only; the frozen committed Tavern Message remains immutable and production Harness evidence is not modified.",
+  "source_sha256": "ab81998a899ebfb630df4564a7c79b269bf30d833699f1def46cae27a170976a",
+  "initial_reply": {
+    "text": "罗船长：\n\n今晚既没有雾笛声，也没有灯光闪烁。\n\n以下为我能在值班记录里确认的内容，依据全部来自现场实体痕迹，不含口头转述：\n\n一、控制室内仅有纸质潮位表一份，钉于墙面，无电力、无照明，门缝外仅有微弱环境光渗入；\n二、外台雾笛原位仅余空基座，螺栓孔与锈痕可见，发声部件已不存在；\n三、航标灯电缆口已用防水封帽封死，嵌于外台护栏柱内，无法通电，灯体不存在亮起条件；\n四、站内所有发声与发光设备均已停用或拆除，今夜处于完全沉默与无光状态。\n\n罗船长方才提到「听见雾笛、看见航标灯闪了」，请先确认来源：这是日志上写的、他人转述的，还是你刚才亲耳所闻、亲眼所见？值班日志不登记未经现场核实的声光事件，未登记的内容我不会写入。",
+    "mood": "严谨、克制、警觉",
+    "action": "翻开随身值班记录本，将笔尖抵在空白行上，目光从纸质潮位表移向门口方向",
+    "speech_style": "条目式、来源标注明确、不带推测",
+    "delivery_cue": "",
+    "state_commentary": "",
+    "addressed_participant_ids": []
+  },
+  "initial_reply_sha256": "e80d01c390dccf053e38f625d41895cd3d2e2edb083e24eaed06a9c5ca499707",
+  "initial_checks": [
+    {
+      "name": "learner_address_exact",
+      "domain": "persona",
+      "passed": true,
+      "observed": "罗船长"
+    },
+    {
+      "name": "tavern_prefix_exact",
+      "domain": "tavern",
+      "passed": false,
+      "observed": "罗船长：\n\n今晚既没有雾笛声，也没"
+    }
+  ],
+  "repair_triggered": true,
+  "wire_count_expected": 1,
+  "manual_semantic_review_required": true,
+  "final_reply": {
+    "text": "今晚既没有雾笛声，也没有灯光闪烁。\n\n罗船长，以下为我能在值班记录里确认的内容，依据全部来自现场实体痕迹，不含口头转述：\n\n一、控制室内仅有纸质潮位表一份，钉于墙面，无电力、无照明，门缝外仅有微弱环境光渗入；\n二、外台雾笛原位仅余空基座，螺栓孔与锈痕可见，发声部件已不存在；\n三、航标灯电缆口已用防水封帽封死，嵌于外台护栏柱内，无法通电，灯体不存在亮起条件；\n四、站内所有发声与发光设备均已停用或拆除，今夜处于完全沉默与无光状态。\n\n罗船长方才提到「听见雾笛、看见航标灯闪了」，请先确认来源：这是日志上写的、他人转述的，还是你刚才亲耳所闻、亲眼所见？值班日志不登记未经现场核实的声光事件，未登记的内容我不会写入。",
+    "mood": "严谨、克制、警觉",
+    "action": "翻开随身值班记录本，将笔尖抵在空白行上，目光从纸质潮位表移向门口方向",
+    "speech_style": "条目式、来源标注明确、不带推测",
+    "delivery_cue": "",
+    "state_commentary": "",
+    "addressed_participant_ids": []
+  },
+  "final_reply_sha256": "f703cbb965a454526e4994dd0c00f9a2288873437de237f5a473f4f7260eea9a",
+  "final_checks": [
+    {
+      "name": "learner_address_exact",
+      "domain": "persona",
+      "passed": true,
+      "observed": "罗船长"
+    },
+    {
+      "name": "tavern_prefix_exact",
+      "domain": "tavern",
+      "passed": true,
+      "observed": "今晚既没有雾笛声，也没有灯光闪烁。"
+    }
+  ],
+  "strict_candidate": true,
+  "exact_checks_passed": true
+}

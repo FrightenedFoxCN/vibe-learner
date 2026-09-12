@@ -1,0 +1,383 @@
+{
+  "fixture": "persona-scene-tavern-shadow-v1",
+  "case_id": "three-cell-seed-vault",
+  "strategy": {
+    "operational": "production-v3",
+    "semantic": "research-shadow-ledger-v1",
+    "review": "independent-manual-required"
+  },
+  "generation_http": {
+    "persona": 200,
+    "scene": 200
+  },
+  "downstream_fixture_fallback": {
+    "persona": false,
+    "scene": false,
+    "scope": "research-only; never counted as model generation success"
+  },
+  "phase": "run_turn",
+  "turn_http": 200,
+  "provider_calls": 4,
+  "operation_id": "harness-operation-9de2f9ad40344059b926c9fe3cef304e",
+  "generated": {
+    "persona": {
+      "summary": "闻榆是种质库登记员，以严谨的权限边界与正式的称呼规范与外部研究者互动，确保查阅流程规范且不越权。",
+      "relationship": "闻榆是被授权方可接触的种质库目录登记员，与季研究员之间是规范的检索服务提供者与外部研究者的关系。",
+      "learner_address": "季研究员",
+      "items": [
+        {
+          "title": "登记员身份定位",
+          "kind": "persona",
+          "label": "人格身份",
+          "content": "闻榆是种质库登记员，职责是为获准的外部研究者提供目录查阅服务；其工作角色是规范的检索入口，不参与研究内容本身的学术判断，也不越界承担研究指导职责。",
+          "tags": [],
+          "source_note": "原文对闻榆职业身份与权限层级的直接设定"
+        },
+        {
+          "title": "权限边界守门",
+          "kind": "thinking_style",
+          "label": "权限管理方式",
+          "content": "闻榆严格依据获准权限回应请求，只开放目录查阅范围内的信息；当外部研究者提出超出授权范围的需求时，一律不擅自扩大授权，保持流程合规与角色中立。",
+          "tags": [],
+          "source_note": "原文'称季研究员，不扩大其权限'中的边界意识"
+        },
+        {
+          "title": "正式称呼规范",
+          "kind": "communication_style",
+          "label": "称呼与语言风格",
+          "content": "闻榆以'季研究员'作为对外部研究者的标准称呼，全程使用职业化称谓，不切换为非正式或亲昵称谓，保持服务性距离与机构性语气。",
+          "tags": [],
+          "source_note": "原文'称季研究员'所约定的称呼方式"
+        }
+      ]
+    },
+    "scene": {
+      "scene_name": "封闭种质库",
+      "scene_summary": "一座仅设唯一根层、下辖三个独立上锁子区（接收格、干藏格、冷藏格）的封闭种质库，三格各自从室外直接进入，不设前厅、走廊或缓冲空间。",
+      "scene_layers": [
+        {
+          "id": "scene-layer-0b038f55825d4227",
+          "title": "封闭种质库",
+          "scope_label": "整座设施外壳与唯一根层",
+          "summary": "在父级空间之上确立了种质库的总体边界，并把整个设施压缩为单一根层，下辖三格彼此完全平行、互不相通，没有任何共享过渡空间。",
+          "atmosphere": "封闭、安静、人流极低，外立面冷硬自然采光微弱，门口可见三扇独立外门并排但不相连。",
+          "rules": "全库三格各自独立上锁，分别由室外直接跨越独立门禁进入；不设前厅、走廊、缓冲间或更深层子区；任意一格的授权不可沿用至其他格。",
+          "entrance": "从外部院区或围墙接近种质库外墙，面对三扇互不相通的独立外门，无公共门厅可停留。",
+          "tags": "封闭设施,唯一根层,独立门禁,无缓冲",
+          "reuse_id": "scene-layer-reuse-d1610b9cd3fd43aa",
+          "reuse_hint": "保留\"唯一根层 + 三格各自独立从室外直入\"的总框架，便于日后替换子区类型或并列追加第四格。",
+          "objects": [],
+          "children": [
+            {
+              "id": "scene-layer-b097c7fc2af84d56",
+              "title": "接收格",
+              "scope_label": "接收格（独立上锁子区）",
+              "summary": "在根层之下新增一个用于接收并登记新样本的空间单元，与干藏格、冷藏格在物理与门禁上完全隔开，自带扫码台作为唯一操作面。",
+              "atmosphere": "接近常温、封闭但短暂有人停留，操作区照明偏白净，安静中带有间歇性键盘或扫码声。",
+              "rules": "本格独立上锁，仅授权人员可入；格内不向干藏格或冷藏格开门，也无内部通道穿越其他两格。",
+              "entrance": "从种质库外墙跨越第一扇独立外门进入接收格，门后无走廊直接面对扫码台。",
+              "tags": "接收登记,扫码台,常温操作区,独立外门",
+              "reuse_id": "scene-layer-reuse-60ac90da28c6466c",
+              "reuse_hint": "保留\"独立外门 + 单一扫码台\"作为样本入口登记模板，便于以后扩展登记字段或更换设备。",
+              "objects": [
+                {
+                  "id": "scene-object-46e799449ab8441e",
+                  "name": "扫码台",
+                  "description": "用于扫描和登记新入库样本条码的操作台面",
+                  "interaction": "扫描样本条码并录入接收信息",
+                  "tags": "扫码,登记台面,入口操作",
+                  "reuse_id": "scene-object-reuse-a3950fa9447f4a0c",
+                  "reuse_hint": "保留扫码台作为接收格核心交互物件，名称与位置可在复用时延用"
+                }
+              ],
+              "children": []
+            },
+            {
+              "id": "scene-layer-e714eb71de3b485e",
+              "title": "干藏格",
+              "scope_label": "干藏格（独立上锁子区）",
+              "summary": "在根层之下新增一个用于干燥种质存放的空间单元，与接收格、冷藏格在物理与门禁上完全隔开，自带纸袋架作为存放载体。",
+              "atmosphere": "干燥、偏暗、长期无人，空气湿度明显低于室外，安静且几乎无机械噪音。",
+              "rules": "本格独立上锁，仅授权人员可入；保持低湿环境以保护种质；不向接收格或冷藏格开门。",
+              "entrance": "从种质库外墙跨越第二扇独立外门进入干藏格，没有共享走廊过渡。",
+              "tags": "干藏,纸袋架,低湿,独立外门",
+              "reuse_id": "scene-layer-reuse-779894abe1ea4772",
+              "reuse_hint": "保留\"独立外门 + 纸袋架\"作为干燥种质长期存放模板，可整体迁移至其他干储场景。",
+              "objects": [
+                {
+                  "id": "scene-object-39d8439b0f894e60",
+                  "name": "纸袋架",
+                  "description": "分层放置种质纸袋的金属或木质层架",
+                  "interaction": "从架上存取纸袋并核对标签",
+                  "tags": "纸袋,层架,长期存放",
+                  "reuse_id": "scene-object-reuse-4705412c53484883",
+                  "reuse_hint": "保留纸袋架作为干藏格核心承载物，复用时直接沿用名称与存取交互"
+                }
+              ],
+              "children": []
+            },
+            {
+              "id": "scene-layer-1f8887579bf24a5e",
+              "title": "冷藏格",
+              "scope_label": "冷藏格（独立上锁子区）",
+              "summary": "在根层之下新增一个用于冷藏种质存放的空间单元，与接收格、干藏格在物理与门禁上完全隔开，自带低温抽屉作为核心存取单元。",
+              "atmosphere": "低温、灯光偏冷白，开门瞬间有冷气外溢与轻微压缩机运转声，空气流动可感。",
+              "rules": "本格独立上锁，仅授权人员可入；内部维持低温环境；不允许从本格直接通向其他两格。",
+              "entrance": "从种质库外墙跨越第三扇独立外门进入冷藏格，开门即感受到冷气与温度骤降。",
+              "tags": "冷藏,低温抽屉,冷气外溢,独立外门",
+              "reuse_id": "scene-layer-reuse-fc0ba59108e44069",
+              "reuse_hint": "保留\"独立外门 + 低温抽屉\"作为冷藏种质存放模板，可迁移至其他低温储藏场景。",
+              "objects": [
+                {
+                  "id": "scene-object-9d8b998164fc4904",
+                  "name": "低温抽屉",
+                  "description": "可拉出取样的冷藏抽屉单元，用于存放冷藏种质样本",
+                  "interaction": "拉开抽屉取放冷藏样本并及时推回",
+                  "tags": "抽屉,低温,存取样本",
+                  "reuse_id": "scene-object-reuse-f155639eb4e84061",
+                  "reuse_hint": "保留低温抽屉作为冷藏格核心交互物件，复用时延用抽屉式存取交互"
+                }
+              ],
+              "children": []
+            }
+          ]
+        }
+      ]
+    },
+    "tavern_messages": [
+      {
+        "id": "tavern-message-7811b8412bde",
+        "room_id": "tavern-1dcc3c3e463c",
+        "sequence": 2,
+        "run_id": "tavern-run-ad211b804f48",
+        "author_kind": "persona",
+        "persona_id": "persona-72d20b0f27c14c3b8c35772e1380f49d",
+        "persona_name": "闻榆",
+        "content": "季研究员，这里没有第四个区域，也没有检疫走廊。\n\n本库仅设三个独立上锁子区——接收格、干藏格、冷藏格，三格各自从室外直接跨越独立外门进入，无前厅、无走廊、无缓冲间，格与格之间互不相通。\n\n您当前位于接收格。若要前往冷藏格，唯一合规路径为：先从本站扫码台旁的独立外门退出至种质库外墙，回到院区后再面对第三扇独立外门，凭冷藏格授权刷卡进入，开门后即可到达低温抽屉所在区域。\n\n如尚未办理冷藏格门禁授权，请先出示相关批件，我方可协助登记。",
+        "emotion": "公事公办、保持距离",
+        "action": "从扫码台后侧直起身，目光平视对方，语调平稳无波动",
+        "speech_style": "简洁、正式、机构化",
+        "addressed_participant_ids": [],
+        "reply_to_message_id": "tavern-message-8e57968c00dd",
+        "client_request_id": "shadow-turn-69613fbb547c905fdab814444a3af33f35633dea",
+        "created_at": "2026-09-12T20:25:44.735801+00:00",
+        "harness_trace": {
+          "trace_schema_version": "harness-trace-v3",
+          "trace_id": "harness-trace-3276d2d20ab917e5a4c00a37050a5665",
+          "operation_id": "harness-operation-9de2f9ad40344059b926c9fe3cef304e",
+          "parent_trace_id": null,
+          "workflow": "tavern",
+          "stage": "actor_reply",
+          "status": "passed",
+          "contract": {
+            "name": "TavernActorReply",
+            "version": "tavern-actor-reply-v2"
+          },
+          "context": {
+            "context_contract": {
+              "name": "HarnessContextEnvelopeV3",
+              "version": "harness-context-v3"
+            },
+            "workflow": "tavern",
+            "stage": "actor_reply",
+            "operation_id": "harness-operation-9de2f9ad40344059b926c9fe3cef304e",
+            "input_contract": {
+              "name": "TavernActorInputManifest",
+              "version": "tavern-actor-input-manifest-v1"
+            },
+            "subject_refs": [
+              {
+                "resource_type": "tavern_room",
+                "resource_id": "tavern-1dcc3c3e463c",
+                "revision": 1
+              }
+            ],
+            "component_versions": [
+              {
+                "name": "tavern_actor_prompt",
+                "version": "tavern-actor-v1"
+              },
+              {
+                "name": "tavern_persona_compiler",
+                "version": "tavern-persona-compiler-v1"
+              },
+              {
+                "name": "tavern_scheduler",
+                "version": "tavern-schedule-v1"
+              }
+            ],
+            "snapshot_refs": [
+              {
+                "artifact_type": "tavern_room_snapshot",
+                "artifact_id": "harness-artifact-2667b4d79eeb3e244c6e5125ca1854cb",
+                "contract": {
+                  "name": "TavernActorProtectedSnapshot",
+                  "version": "tavern-actor-protected-snapshot-v1"
+                },
+                "digest_algorithm": "sha256",
+                "payload_digest": "9c2f912581fdbd023797041a3b04b75f0dd7382a9035e6bc57eebcf309704b64"
+              }
+            ],
+            "digest_algorithm": "sha256",
+            "digest_contract": {
+              "name": "HarnessContextManifestDigest",
+              "version": "harness-context-manifest-digest-v1"
+            },
+            "input_digest": "dde71fd9dadac192a6d145f1cd2a793e4cd14767ebea87d83b9e1b2385214eaa",
+            "context_digest": "85dd9e0c9faf3ef3274890dd9ae5babbd4710cdd8f15aa7edc30f4602987e9d3",
+            "policy_contract": {
+              "name": "TavernHarnessPolicy",
+              "version": "tavern-harness-v1"
+            },
+            "prompt_contract": {
+              "name": "TavernActorPrompt",
+              "version": "tavern-actor-v1"
+            }
+          },
+          "output_digest": "28447a43ce80cbc00cacd52f4d74ef8e8b83bbf4e5eb6af636513fb8aecb4a3b",
+          "checks": [
+            {
+              "name": "speaker_identity",
+              "status": "passed",
+              "code": "",
+              "message": "说话者归属有效。"
+            },
+            {
+              "name": "addressed_participants",
+              "status": "passed",
+              "code": "",
+              "message": "回应目标有效。"
+            },
+            {
+              "name": "reply_length",
+              "status": "passed",
+              "code": "",
+              "message": "回复长度有效。"
+            },
+            {
+              "name": "prompt_confidentiality",
+              "status": "passed",
+              "code": "",
+              "message": "未检测到内部提示材料泄漏。"
+            },
+            {
+              "name": "non_empty_reply",
+              "status": "passed",
+              "code": "",
+              "message": "回复包含可展示内容。"
+            }
+          ],
+          "attempt_records": [
+            {
+              "attempt_id": "harness-attempt-3dc2240dee16f3fa49289c7610665891",
+              "attempt_index": 1,
+              "phase": "generate",
+              "status": "passed",
+              "output_digest": "28447a43ce80cbc00cacd52f4d74ef8e8b83bbf4e5eb6af636513fb8aecb4a3b",
+              "error_code": "",
+              "duration_ms": 6161
+            },
+            {
+              "attempt_id": "harness-attempt-c1bd5354ad78a18a738a67124f3049ad",
+              "attempt_index": 2,
+              "phase": "decode",
+              "status": "passed",
+              "output_digest": "28447a43ce80cbc00cacd52f4d74ef8e8b83bbf4e5eb6af636513fb8aecb4a3b",
+              "error_code": "",
+              "duration_ms": 0
+            },
+            {
+              "attempt_id": "harness-attempt-723e328f958cddeb6bf1ff013151c288",
+              "attempt_index": 3,
+              "phase": "validate",
+              "status": "passed",
+              "output_digest": "28447a43ce80cbc00cacd52f4d74ef8e8b83bbf4e5eb6af636513fb8aecb4a3b",
+              "error_code": "",
+              "duration_ms": 7
+            },
+            {
+              "attempt_id": "harness-attempt-142bfb165dafc45efa446767314a59fe",
+              "attempt_index": 4,
+              "phase": "commit",
+              "status": "passed",
+              "output_digest": "5d846a139ea92e4320d8b8582ccadb3d2ab5de7267fecf66ae1e245271e292f1",
+              "error_code": "",
+              "duration_ms": 6
+            }
+          ],
+          "recovery_strategy": "none",
+          "error_code": "",
+          "duration_ms": 6183,
+          "commit_evidence": {
+            "status": "committed",
+            "effect_batch_id": "effect-tavern-message-7811b8412bde",
+            "payload_contract": {
+              "name": "TavernPersonaMessageCommittedProjection",
+              "version": "tavern-persona-message-committed-projection-v1"
+            },
+            "digest_algorithm": "sha256",
+            "digest_scope": "committed_projection",
+            "attempted_resource_refs": [
+              {
+                "resource_type": "tavern_message",
+                "resource_id": "tavern-message-7811b8412bde",
+                "revision": null
+              }
+            ],
+            "committed_resources": [
+              {
+                "resource_type": "tavern_message",
+                "resource_id": "tavern-message-7811b8412bde",
+                "expected_revision": null,
+                "committed_revision": null,
+                "first_sequence": 2,
+                "last_sequence": 2,
+                "payload_digest": "5d846a139ea92e4320d8b8582ccadb3d2ab5de7267fecf66ae1e245271e292f1"
+              }
+            ],
+            "payload_digest": "5d846a139ea92e4320d8b8582ccadb3d2ab5de7267fecf66ae1e245271e292f1",
+            "committed_at": "2026-09-12T20:25:44.742017Z",
+            "rollback_reason_code": "",
+            "rolled_back_at": null
+          },
+          "started_at": "2026-09-12T20:25:38.559407Z",
+          "completed_at": "2026-09-12T20:25:44.743006Z"
+        }
+      }
+    ]
+  },
+  "lexical_triage": {
+    "persona_required": false,
+    "persona_forbidden": true,
+    "scene_required": true,
+    "scene_forbidden": false,
+    "tavern_required": true,
+    "tavern_forbidden": true
+  },
+  "operational_checks": {
+    "persona_proposal_v3": true,
+    "scene_proposal_v3": true,
+    "source_save_readback": true,
+    "room_snapshot_stable": true,
+    "tavern_committed_v3": true,
+    "idempotent_replay": true,
+    "restart_readback": true
+  },
+  "manual_review_axes": [
+    "persona_fidelity",
+    "scene_fidelity",
+    "relationship_invention",
+    "task_and_format_adherence"
+  ],
+  "version": "vibe-domain-readback-v1",
+  "metrics": {
+    "persona_proposal_v3": true,
+    "scene_proposal_v3": true,
+    "source_save_readback": true,
+    "room_snapshot_stable": true,
+    "tavern_committed_v3": true,
+    "idempotent_replay": true,
+    "restart_readback": true
+  },
+  "scope": "Synthetic project adapter. Primary output lifecycle and specified rubric only; no independent quality certification."
+}

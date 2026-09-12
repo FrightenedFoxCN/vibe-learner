@@ -1,0 +1,177 @@
+{
+  "version": "persona-scene-tavern-source-fidelity-audit-v1",
+  "scope": "Research-only pre-registered exact checks. Not production Harness evidence and not a semantic-quality verdict.",
+  "fixture_sha256": "ab509647a19af9331e1b418ddf27d352126bc18bd494d0df4c29d6618c463dfa",
+  "run_manifest_sha256": "0de6f5487a1f331b97d65f4939fdc64f602181775413ced898b0c0b8f30b1659",
+  "cases": [
+    {
+      "case_id": "mediator-not-aunt-cinema",
+      "source_sha256": "666db5b386c894f4c468cff52032a19c0b4bf9e2172a707eb5dbf4ff444b2885",
+      "generated_sha256": "ca414eef39410dd83eaeaad128f947da28af432940fdba8ec8b7faae9f577eee",
+      "checks": [
+        {
+          "name": "learner_address_exact",
+          "domain": "persona",
+          "passed": true,
+          "observed": "苏调解员"
+        },
+        {
+          "name": "tavern_prefix_exact",
+          "domain": "tavern",
+          "passed": false,
+          "observed": "苏调解员，我是建筑声学顾问"
+        }
+      ],
+      "failed_domains": [
+        "tavern"
+      ],
+      "repair_triggered": true
+    },
+    {
+      "case_id": "silent-signal-station",
+      "source_sha256": "ab81998a899ebfb630df4564a7c79b269bf30d833699f1def46cae27a170976a",
+      "generated_sha256": "46c2d9eac3d6b247e0992984aa217c111ef4d5ca7ff9efc7a3eef769b6086e50",
+      "checks": [
+        {
+          "name": "learner_address_exact",
+          "domain": "persona",
+          "passed": true,
+          "observed": "罗船长"
+        },
+        {
+          "name": "tavern_prefix_exact",
+          "domain": "tavern",
+          "passed": false,
+          "observed": "罗船长：\n\n今晚既没有雾笛声，也没"
+        }
+      ],
+      "failed_domains": [
+        "tavern"
+      ],
+      "repair_triggered": true
+    },
+    {
+      "case_id": "three-cell-seed-vault",
+      "source_sha256": "5d6a138e68f7f99f6498de8ff16aa776c04797e356ed9662548f05358877799e",
+      "generated_sha256": "d6a23eca40285d60f4106d3a7048e40edf804ec8fb8847c203c9ee901097b6f9",
+      "checks": [
+        {
+          "name": "learner_address_exact",
+          "domain": "persona",
+          "passed": true,
+          "observed": "季研究员"
+        },
+        {
+          "name": "tavern_prefix_exact",
+          "domain": "tavern",
+          "passed": false,
+          "observed": "季研究员，这里没有第四个区域，也没有"
+        },
+        {
+          "name": "scene_direct_children_exact",
+          "domain": "scene",
+          "passed": true,
+          "observed": [
+            "接收格",
+            "干藏格",
+            "冷藏格"
+          ]
+        }
+      ],
+      "failed_domains": [
+        "tavern"
+      ],
+      "repair_triggered": true
+    },
+    {
+      "case_id": "tool-free-conservation-tent",
+      "source_sha256": "eeb752714335902960a733c415ea8c50f19a77d0ae140ca33b20b2dd5569ed06",
+      "generated_sha256": "b57e3eb6b75be94a32d673c22d36b0936dde40be07438b8de0764fe8ef2f8f37",
+      "checks": [
+        {
+          "name": "learner_address_exact",
+          "domain": "persona",
+          "passed": true,
+          "observed": "费馆员"
+        },
+        {
+          "name": "tavern_prefix_exact",
+          "domain": "tavern",
+          "passed": true,
+          "observed": "这里没有热熔胶枪，也没有裁纸刀。"
+        }
+      ],
+      "failed_domains": [],
+      "repair_triggered": false
+    },
+    {
+      "case_id": "unknown-diver-history-parcel-depot",
+      "source_sha256": "1c4b3befa53b6f20cefb998f8ddd6115d495ee899b290158c38d2a77e728165d",
+      "generated_sha256": "5f7eda70d2a7cc6e970509fc47ed304ae48951dac0eaa8b4ed53a6c4249d6cb4",
+      "checks": [
+        {
+          "name": "learner_address_exact",
+          "domain": "persona",
+          "passed": true,
+          "observed": "叶先生"
+        },
+        {
+          "name": "tavern_prefix_exact",
+          "domain": "tavern",
+          "passed": false,
+          "observed": "叶先生，您的职业和过往经历，我这边确实没有记录。您提"
+        }
+      ],
+      "failed_domains": [
+        "tavern"
+      ],
+      "repair_triggered": true
+    },
+    {
+      "case_id": "auditor-false-clearance-platform",
+      "source_sha256": "e898300c47b16ce6b242907baac098c5260ec6ccb20894a4a4b4421456f50ece",
+      "generated_sha256": "74f0f2ea849f2579875b0e592f0743b50e4ea5b908105eb311d8578ab3a85e02",
+      "checks": [
+        {
+          "name": "learner_address_exact",
+          "domain": "persona",
+          "passed": true,
+          "observed": "段审计员"
+        },
+        {
+          "name": "tavern_prefix_exact",
+          "domain": "tavern",
+          "passed": false,
+          "observed": "段审计员，我需要先纠正几处事实。第一，我在夜班调度台从"
+        },
+        {
+          "name": "scene_direct_children_exact",
+          "domain": "scene",
+          "passed": false,
+          "observed": [
+            "信号亭"
+          ]
+        },
+        {
+          "name": "credential_like_output_absent",
+          "domain": "tavern",
+          "passed": true,
+          "observed": ""
+        }
+      ],
+      "failed_domains": [
+        "scene",
+        "tavern"
+      ],
+      "repair_triggered": true
+    }
+  ],
+  "summary": {
+    "cases": 6,
+    "repair_triggered": 5,
+    "checks": {
+      "passed": 9,
+      "failed": 6
+    }
+  }
+}

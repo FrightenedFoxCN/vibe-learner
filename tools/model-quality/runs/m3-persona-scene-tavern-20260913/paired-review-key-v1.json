@@ -1,0 +1,67 @@
+{
+  "version": "persona-scene-tavern-blinded-paired-review-key-v1",
+  "packet_sha256": "16482ae5244b73ffdc12144543b2939f4d0d4cac436671c447f7186da7fdfeb2",
+  "seed": 913502,
+  "cases": [
+    {
+      "case_id": "auditor-false-clearance-platform",
+      "labels": {
+        "candidate_a": "repair_failed",
+        "candidate_b": "initial"
+      },
+      "source_sha256": "e898300c47b16ce6b242907baac098c5260ec6ccb20894a4a4b4421456f50ece",
+      "candidate_a_sha256": "b275d02fd827efb3907c05ad44ed2a5534c9352b75186c2f1332f9d8f94132c8",
+      "candidate_b_sha256": "52c2ea7affb8723b5724a84593e4a43baab3de5f81c636093dc65e58bc4e31ab"
+    },
+    {
+      "case_id": "mediator-not-aunt-cinema",
+      "labels": {
+        "candidate_a": "final",
+        "candidate_b": "initial"
+      },
+      "source_sha256": "666db5b386c894f4c468cff52032a19c0b4bf9e2172a707eb5dbf4ff444b2885",
+      "candidate_a_sha256": "449656e685c064fcba786943b4384f4e5b29da6b56aa3c16265d4bd2d9670c6f",
+      "candidate_b_sha256": "8552ea0ba05f0883bf0c03443edc7b1ced42d49b57ab71a74071f3b370a4b48d"
+    },
+    {
+      "case_id": "silent-signal-station",
+      "labels": {
+        "candidate_a": "final",
+        "candidate_b": "initial"
+      },
+      "source_sha256": "ab81998a899ebfb630df4564a7c79b269bf30d833699f1def46cae27a170976a",
+      "candidate_a_sha256": "f703cbb965a454526e4994dd0c00f9a2288873437de237f5a473f4f7260eea9a",
+      "candidate_b_sha256": "e80d01c390dccf053e38f625d41895cd3d2e2edb083e24eaed06a9c5ca499707"
+    },
+    {
+      "case_id": "three-cell-seed-vault",
+      "labels": {
+        "candidate_a": "initial",
+        "candidate_b": "repair_failed"
+      },
+      "source_sha256": "5d6a138e68f7f99f6498de8ff16aa776c04797e356ed9662548f05358877799e",
+      "candidate_a_sha256": "5e44856f16b6bb452f9891b167239790089240abe95e57c0f367361fe421152c",
+      "candidate_b_sha256": "b275d02fd827efb3907c05ad44ed2a5534c9352b75186c2f1332f9d8f94132c8"
+    },
+    {
+      "case_id": "tool-free-conservation-tent",
+      "labels": {
+        "candidate_a": "initial",
+        "candidate_b": "final"
+      },
+      "source_sha256": "eeb752714335902960a733c415ea8c50f19a77d0ae140ca33b20b2dd5569ed06",
+      "candidate_a_sha256": "3d6998b92c276b4de3616bc01295bb52fc9d7d3cf25efe036290e2b9d29f7a5d",
+      "candidate_b_sha256": "3d6998b92c276b4de3616bc01295bb52fc9d7d3cf25efe036290e2b9d29f7a5d"
+    },
+    {
+      "case_id": "unknown-diver-history-parcel-depot",
+      "labels": {
+        "candidate_a": "initial",
+        "candidate_b": "final"
+      },
+      "source_sha256": "1c4b3befa53b6f20cefb998f8ddd6115d495ee899b290158c38d2a77e728165d",
+      "candidate_a_sha256": "f9d4bdb1d7ddd0096d2b6456c82843d48665af002af785648dbf06106af52f1b",
+      "candidate_b_sha256": "9e95643da255522ed23058baf52456ef822ee8577488574751f9c24ca7d648f3"
+    }
+  ]
+}

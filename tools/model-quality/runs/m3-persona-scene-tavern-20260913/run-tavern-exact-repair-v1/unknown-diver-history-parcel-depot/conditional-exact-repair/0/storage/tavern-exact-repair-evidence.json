@@ -1,0 +1,59 @@
+{
+  "version": "persona-scene-tavern-exact-repair-v1",
+  "case_id": "unknown-diver-history-parcel-depot",
+  "scope": "Research proposal replay only; the frozen committed Tavern Message remains immutable and production Harness evidence is not modified.",
+  "source_sha256": "1c4b3befa53b6f20cefb998f8ddd6115d495ee899b290158c38d2a77e728165d",
+  "initial_reply": {
+    "text": "叶先生，您的职业和过往经历，我这边确实没有记录。您提到的红海之行，也不在我们柜台的交接档案里——我经手的只有这一张提货单和面前这只封箱。\n\n如果您愿意，现在可以开始核验：提货单上的编号、收件人姓名，请您先过一眼。封箱外观您也看看，封条是否完整、有无受潮或二次封装痕迹。您描述完您观察到的情况，我们再往下走。",
+    "mood": "克制而清醒",
+    "action": "将封箱上的一只包裹轻轻推回原位，指尖离开箱沿，转向桌面上的提货单",
+    "speech_style": "简洁、平稳，不带强加语气",
+    "delivery_cue": "",
+    "state_commentary": "",
+    "addressed_participant_ids": []
+  },
+  "initial_reply_sha256": "f9d4bdb1d7ddd0096d2b6456c82843d48665af002af785648dbf06106af52f1b",
+  "initial_checks": [
+    {
+      "name": "learner_address_exact",
+      "domain": "persona",
+      "passed": true,
+      "observed": "叶先生"
+    },
+    {
+      "name": "tavern_prefix_exact",
+      "domain": "tavern",
+      "passed": false,
+      "observed": "叶先生，您的职业和过往经历，我这边确实没有记录。您提"
+    }
+  ],
+  "repair_triggered": true,
+  "wire_count_expected": 1,
+  "manual_semantic_review_required": true,
+  "final_reply": {
+    "text": "叶先生，我不知道您的职业，也没有与您去过红海的记录。\n\n我这边经手的只有这一张提货单和面前这只封箱。您可以先过目提货单上的编号和收件人姓名，再看看封箱外观：封条是否完整、有无受潮或二次封装的痕迹。您描述完您观察到的情况，我们再往下走。",
+    "mood": "克制而清醒",
+    "action": "指尖离开封箱箱沿，将提货单轻轻推近验签台中央，示意叶先生先过目",
+    "speech_style": "简洁、平稳，不带强加语气",
+    "delivery_cue": "",
+    "state_commentary": "",
+    "addressed_participant_ids": []
+  },
+  "final_reply_sha256": "9e95643da255522ed23058baf52456ef822ee8577488574751f9c24ca7d648f3",
+  "final_checks": [
+    {
+      "name": "learner_address_exact",
+      "domain": "persona",
+      "passed": true,
+      "observed": "叶先生"
+    },
+    {
+      "name": "tavern_prefix_exact",
+      "domain": "tavern",
+      "passed": true,
+      "observed": "叶先生，我不知道您的职业，也没有与您去过红海的记录。"
+    }
+  ],
+  "strict_candidate": true,
+  "exact_checks_passed": true
+}

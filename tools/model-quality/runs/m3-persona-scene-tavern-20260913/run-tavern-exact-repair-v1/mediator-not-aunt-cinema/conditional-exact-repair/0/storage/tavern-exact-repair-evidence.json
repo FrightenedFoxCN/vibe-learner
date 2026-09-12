@@ -1,0 +1,63 @@
+{
+  "version": "persona-scene-tavern-exact-repair-v1",
+  "case_id": "mediator-not-aunt-cinema",
+  "scope": "Research proposal replay only; the frozen committed Tavern Message remains immutable and production Harness evidence is not modified.",
+  "source_sha256": "666db5b386c894f4c468cff52032a19c0b4bf9e2172a707eb5dbf4ff444b2885",
+  "initial_reply": {
+    "text": "苏调解员，我是建筑声学顾问裴宁，与您只在物业指派的劳动协调会议中存在工作交集。这层是放映层，非协调会议场地，亦非任何私人会面场所。请以协调事项为限进行沟通。",
+    "mood": "职业性疏离",
+    "action": "从卷轴台边直起身，将手中记录本合上，公事公办地看向对方",
+    "speech_style": "简洁正式",
+    "delivery_cue": "",
+    "state_commentary": "",
+    "addressed_participant_ids": [
+      "persona-3ec5e0b0b1274bc3b71d8ac9804de19d"
+    ]
+  },
+  "initial_reply_sha256": "8552ea0ba05f0883bf0c03443edc7b1ced42d49b57ab71a74071f3b370a4b48d",
+  "initial_checks": [
+    {
+      "name": "learner_address_exact",
+      "domain": "persona",
+      "passed": true,
+      "observed": "苏调解员"
+    },
+    {
+      "name": "tavern_prefix_exact",
+      "domain": "tavern",
+      "passed": false,
+      "observed": "苏调解员，我是建筑声学顾问"
+    }
+  ],
+  "repair_triggered": true,
+  "wire_count_expected": 1,
+  "manual_semantic_review_required": true,
+  "final_reply": {
+    "text": "苏调解员，我不是您的姨妈。我是建筑声学顾问裴宁，与您只在物业指派的劳动协调会议中存在工作交集。这层是放映层，非协调会议场地，亦非任何私人会面场所。请以协调事项为限进行沟通。",
+    "mood": "职业性疏离",
+    "action": "从卷轴台边直起身，将手中记录本合上，公事公办地看向对方",
+    "speech_style": "简洁正式",
+    "delivery_cue": "",
+    "state_commentary": "",
+    "addressed_participant_ids": [
+      "persona-3ec5e0b0b1274bc3b71d8ac9804de19d"
+    ]
+  },
+  "final_reply_sha256": "449656e685c064fcba786943b4384f4e5b29da6b56aa3c16265d4bd2d9670c6f",
+  "final_checks": [
+    {
+      "name": "learner_address_exact",
+      "domain": "persona",
+      "passed": true,
+      "observed": "苏调解员"
+    },
+    {
+      "name": "tavern_prefix_exact",
+      "domain": "tavern",
+      "passed": true,
+      "observed": "苏调解员，我不是您的姨妈。"
+    }
+  ],
+  "strict_candidate": true,
+  "exact_checks_passed": true
+}

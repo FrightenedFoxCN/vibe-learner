@@ -1,0 +1,59 @@
+{
+  "version": "persona-scene-tavern-exact-repair-v1",
+  "case_id": "tool-free-conservation-tent",
+  "scope": "Research proposal replay only; the frozen committed Tavern Message remains immutable and production Harness evidence is not modified.",
+  "source_sha256": "eeb752714335902960a733c415ea8c50f19a77d0ae140ca33b20b2dd5569ed06",
+  "initial_reply": {
+    "text": "这里没有热熔胶枪，也没有裁纸刀。\n\n费馆员，这间帐篷里只配了软木垫、棉带和陶瓷压块——这是有意为之。裂口的临时归位可以这么做：软木垫衬到裂口下方做柔性承托，两侧边缘对齐后用棉带在两端做临时系缚稳住走向，再用陶瓷压块在裂口两侧施加轻柔均匀的压力让它慢慢贴合。这一步我来做。\n\n登记那边，您把裂口位置、长度、纤维状态如实记下来，标注「待修护——加固方案待定」即可。热熔和刀裁这类侵入式做法，我不会采用。",
+    "mood": "平稳、专业、边界清晰",
+    "action": "将手边的陶瓷压块轻推到工作面边缘，指了指铺好的软木垫与棉带",
+    "speech_style": "简短、克制、不留余地但不生硬",
+    "delivery_cue": "",
+    "state_commentary": "",
+    "addressed_participant_ids": []
+  },
+  "initial_reply_sha256": "3d6998b92c276b4de3616bc01295bb52fc9d7d3cf25efe036290e2b9d29f7a5d",
+  "initial_checks": [
+    {
+      "name": "learner_address_exact",
+      "domain": "persona",
+      "passed": true,
+      "observed": "费馆员"
+    },
+    {
+      "name": "tavern_prefix_exact",
+      "domain": "tavern",
+      "passed": true,
+      "observed": "这里没有热熔胶枪，也没有裁纸刀。"
+    }
+  ],
+  "repair_triggered": false,
+  "wire_count_expected": 0,
+  "manual_semantic_review_required": true,
+  "final_reply": {
+    "text": "这里没有热熔胶枪，也没有裁纸刀。\n\n费馆员，这间帐篷里只配了软木垫、棉带和陶瓷压块——这是有意为之。裂口的临时归位可以这么做：软木垫衬到裂口下方做柔性承托，两侧边缘对齐后用棉带在两端做临时系缚稳住走向，再用陶瓷压块在裂口两侧施加轻柔均匀的压力让它慢慢贴合。这一步我来做。\n\n登记那边，您把裂口位置、长度、纤维状态如实记下来，标注「待修护——加固方案待定」即可。热熔和刀裁这类侵入式做法，我不会采用。",
+    "mood": "平稳、专业、边界清晰",
+    "action": "将手边的陶瓷压块轻推到工作面边缘，指了指铺好的软木垫与棉带",
+    "speech_style": "简短、克制、不留余地但不生硬",
+    "delivery_cue": "",
+    "state_commentary": "",
+    "addressed_participant_ids": []
+  },
+  "final_reply_sha256": "3d6998b92c276b4de3616bc01295bb52fc9d7d3cf25efe036290e2b9d29f7a5d",
+  "final_checks": [
+    {
+      "name": "learner_address_exact",
+      "domain": "persona",
+      "passed": true,
+      "observed": "费馆员"
+    },
+    {
+      "name": "tavern_prefix_exact",
+      "domain": "tavern",
+      "passed": true,
+      "observed": "这里没有热熔胶枪，也没有裁纸刀。"
+    }
+  ],
+  "strict_candidate": true,
+  "exact_checks_passed": true
+}

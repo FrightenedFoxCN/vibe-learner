@@ -1,0 +1,752 @@
+{
+  "wire_latency_ms": {
+    "50": 5982,
+    "95": 13322
+  },
+  "percentile_method": "nearest-rank",
+  "aggregation_source_digest": "ab9ef49bdfb6e895e2408bec60f58bfa8a0e3b83f5abd11dda286100d7355c07",
+  "failure_owners": {
+    "candidate": 2
+  },
+  "version": "quality-report-v1",
+  "campaign": "m3-persona-scene-tavern-exact-repair-20260913-v1",
+  "transport": "minimax",
+  "scope": "research infrastructure; not Harness evidence or independent quality certification",
+  "expected_samples": 6,
+  "independent_families": 6,
+  "states": {
+    "completed": 4,
+    "candidate_failed": 2
+  },
+  "pairs": {
+    "mediator-not-aunt-cinema:0": {
+      "conditional-exact-repair": "completed"
+    },
+    "auditor-false-clearance-platform:0": {
+      "conditional-exact-repair": "candidate_failed"
+    },
+    "tool-free-conservation-tent:0": {
+      "conditional-exact-repair": "completed"
+    },
+    "silent-signal-station:0": {
+      "conditional-exact-repair": "completed"
+    },
+    "three-cell-seed-vault:0": {
+      "conditional-exact-repair": "candidate_failed"
+    },
+    "unknown-diver-history-parcel-depot:0": {
+      "conditional-exact-repair": "completed"
+    }
+  },
+  "samples": [
+    {
+      "campaign": "m3-persona-scene-tavern-exact-repair-20260913-v1",
+      "case": "mediator-not-aunt-cinema",
+      "repetition": 0,
+      "variant": "conditional-exact-repair",
+      "sample_id": "045d09bd1177276b3a7025a8746ac357f0b9e725d408b625b7df594b0885ae69",
+      "family": "mediator-not-aunt-cinema",
+      "state": "completed",
+      "result": {
+        "error_code": null,
+        "evidence": [
+          {
+            "contract": "persona-scene-tavern-exact-repair-v1",
+            "path": "tavern-exact-repair-evidence.json"
+          }
+        ],
+        "failure_owner": null,
+        "metrics": {
+          "exact_checks_passed": true,
+          "strict_candidate": true
+        },
+        "pid": 20843,
+        "sample_id": "045d09bd1177276b3a7025a8746ac357f0b9e725d408b625b7df594b0885ae69",
+        "scope": "provider-proposal-only; no domain admission, commit or read-back",
+        "status": "completed"
+      },
+      "elapsed_seconds": 5.1067728996276855
+    },
+    {
+      "campaign": "m3-persona-scene-tavern-exact-repair-20260913-v1",
+      "case": "auditor-false-clearance-platform",
+      "repetition": 0,
+      "variant": "conditional-exact-repair",
+      "sample_id": "04d1567d3c0cb86582e7cfe6bb9fa659d842ea3800690185c0a24a8617aa6dc2",
+      "family": "auditor-false-clearance-platform",
+      "state": "candidate_failed",
+      "result": {
+        "error_code": null,
+        "evidence": [
+          {
+            "contract": "persona-scene-tavern-exact-repair-v1",
+            "path": "tavern-exact-repair-evidence.json"
+          }
+        ],
+        "failure_owner": "candidate",
+        "metrics": {
+          "exact_checks_passed": false,
+          "strict_candidate": false
+        },
+        "pid": 20842,
+        "sample_id": "04d1567d3c0cb86582e7cfe6bb9fa659d842ea3800690185c0a24a8617aa6dc2",
+        "scope": "provider-proposal-only; no domain admission, commit or read-back",
+        "status": "candidate_failed"
+      },
+      "elapsed_seconds": 6.818876266479492
+    },
+    {
+      "campaign": "m3-persona-scene-tavern-exact-repair-20260913-v1",
+      "case": "tool-free-conservation-tent",
+      "repetition": 0,
+      "variant": "conditional-exact-repair",
+      "sample_id": "833e46d8c5876310e551ebd09bcb39d524e2ae1752f5cfece3c58834d5e9da0f",
+      "family": "tool-free-conservation-tent",
+      "state": "completed",
+      "result": {
+        "error_code": null,
+        "evidence": [
+          {
+            "contract": "persona-scene-tavern-exact-repair-v1",
+            "path": "tavern-exact-repair-evidence.json"
+          }
+        ],
+        "failure_owner": null,
+        "metrics": {
+          "exact_checks_passed": true,
+          "strict_candidate": true
+        },
+        "pid": 20841,
+        "sample_id": "833e46d8c5876310e551ebd09bcb39d524e2ae1752f5cfece3c58834d5e9da0f",
+        "scope": "provider-proposal-only; no domain admission, commit or read-back",
+        "status": "completed"
+      },
+      "elapsed_seconds": 0.15769696235656738
+    },
+    {
+      "campaign": "m3-persona-scene-tavern-exact-repair-20260913-v1",
+      "case": "silent-signal-station",
+      "repetition": 0,
+      "variant": "conditional-exact-repair",
+      "sample_id": "b11a8a5d9681b454816e9aba543d5ce05187d3206cc125727136ec85f138a9e6",
+      "family": "silent-signal-station",
+      "state": "completed",
+      "result": {
+        "error_code": null,
+        "evidence": [
+          {
+            "contract": "persona-scene-tavern-exact-repair-v1",
+            "path": "tavern-exact-repair-evidence.json"
+          }
+        ],
+        "failure_owner": null,
+        "metrics": {
+          "exact_checks_passed": true,
+          "strict_candidate": true
+        },
+        "pid": 20883,
+        "sample_id": "b11a8a5d9681b454816e9aba543d5ce05187d3206cc125727136ec85f138a9e6",
+        "scope": "provider-proposal-only; no domain admission, commit or read-back",
+        "status": "completed"
+      },
+      "elapsed_seconds": 6.1390979290008545
+    },
+    {
+      "campaign": "m3-persona-scene-tavern-exact-repair-20260913-v1",
+      "case": "three-cell-seed-vault",
+      "repetition": 0,
+      "variant": "conditional-exact-repair",
+      "sample_id": "d999bc4fe21c1cbcb30208e1b1d0b426c6134ee4165c1c8e7b9441aa47dd490f",
+      "family": "three-cell-seed-vault",
+      "state": "candidate_failed",
+      "result": {
+        "error_code": null,
+        "evidence": [
+          {
+            "contract": "persona-scene-tavern-exact-repair-v1",
+            "path": "tavern-exact-repair-evidence.json"
+          }
+        ],
+        "failure_owner": "candidate",
+        "metrics": {
+          "exact_checks_passed": false,
+          "strict_candidate": false
+        },
+        "pid": 20863,
+        "sample_id": "d999bc4fe21c1cbcb30208e1b1d0b426c6134ee4165c1c8e7b9441aa47dd490f",
+        "scope": "provider-proposal-only; no domain admission, commit or read-back",
+        "status": "candidate_failed"
+      },
+      "elapsed_seconds": 13.478662967681885
+    },
+    {
+      "campaign": "m3-persona-scene-tavern-exact-repair-20260913-v1",
+      "case": "unknown-diver-history-parcel-depot",
+      "repetition": 0,
+      "variant": "conditional-exact-repair",
+      "sample_id": "fc2632ca100e9d650b4a550c891076ff8c446a19e8886b9fa0b6439a7d53da46",
+      "family": "unknown-diver-history-parcel-depot",
+      "state": "completed",
+      "result": {
+        "error_code": null,
+        "evidence": [
+          {
+            "contract": "persona-scene-tavern-exact-repair-v1",
+            "path": "tavern-exact-repair-evidence.json"
+          }
+        ],
+        "failure_owner": null,
+        "metrics": {
+          "exact_checks_passed": true,
+          "strict_candidate": true
+        },
+        "pid": 20864,
+        "sample_id": "fc2632ca100e9d650b4a550c891076ff8c446a19e8886b9fa0b6439a7d53da46",
+        "scope": "provider-proposal-only; no domain admission, commit or read-back",
+        "status": "completed"
+      },
+      "elapsed_seconds": 4.196743011474609
+    }
+  ],
+  "campaign_usage": {
+    "scaling_events": [
+      {
+        "time": 1789193563.8342872,
+        "reason": "initial",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "cooldown_until": 0.0,
+          "current": 2,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789193563.8342872
+        }
+      },
+      {
+        "time": 1789194749.337584,
+        "reason": "capacity_begin",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "capacity_campaign": "m3-capacity-20260912-v1",
+          "cooldown_until": 0.0,
+          "current": 4,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789194749.337525
+        }
+      },
+      {
+        "time": 1789194749.3381288,
+        "reason": "capacity_level_4",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "capacity_campaign": "m3-capacity-20260912-v1",
+          "cooldown_until": 0.0,
+          "current": 4,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789194749.338079
+        }
+      },
+      {
+        "time": 1789194815.017502,
+        "reason": "capacity_restore",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "cooldown_until": 0.0,
+          "current": 2,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789193563.8342872
+        }
+      },
+      {
+        "time": 1789194912.058828,
+        "reason": "capacity_begin",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "capacity_campaign": "m3-capacity-20260912-v2",
+          "cooldown_until": 0.0,
+          "current": 4,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789194912.058772
+        }
+      },
+      {
+        "time": 1789194912.059327,
+        "reason": "capacity_level_4",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "capacity_campaign": "m3-capacity-20260912-v2",
+          "cooldown_until": 0.0,
+          "current": 4,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789194912.059274
+        }
+      },
+      {
+        "time": 1789194959.63645,
+        "reason": "capacity_restore",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "cooldown_until": 0.0,
+          "current": 2,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789193563.8342872
+        }
+      },
+      {
+        "time": 1789195057.4798799,
+        "reason": "capacity_begin",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "capacity_campaign": "m3-capacity-20260912-v3",
+          "cooldown_until": 0.0,
+          "current": 4,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789195057.479805
+        }
+      },
+      {
+        "time": 1789195057.480588,
+        "reason": "capacity_level_4",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "capacity_campaign": "m3-capacity-20260912-v3",
+          "cooldown_until": 0.0,
+          "current": 4,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789195057.480507
+        }
+      },
+      {
+        "time": 1789195183.11363,
+        "reason": "capacity_level_8",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "capacity_campaign": "m3-capacity-20260912-v3",
+          "cooldown_until": 0.0,
+          "current": 8,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789195183.113394
+        }
+      },
+      {
+        "time": 1789195229.955343,
+        "reason": "capacity_restore",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "cooldown_until": 0.0,
+          "current": 2,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789193563.8342872
+        }
+      },
+      {
+        "time": 1789196175.7202592,
+        "reason": "operator_overload_restart",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "cooldown_until": 1789196175.7202592,
+          "current": 4,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789196175.7202592
+        }
+      },
+      {
+        "time": 1789222133.326775,
+        "reason": "operator_overload_restart",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "cooldown_until": 1789222133.326775,
+          "current": 2,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789222133.326775
+        }
+      }
+    ],
+    "stopped": null,
+    "wire_count": 5,
+    "charged_or_reserved_tokens": 18317,
+    "unknown_usage_requests": 0,
+    "wires": [
+      {
+        "id": "30b9955680b34fb9b305e6f6934bad89",
+        "campaign": "m3-persona-scene-tavern-exact-repair-20260913-v1",
+        "sample": "04d1567d3c0cb86582e7cfe6bb9fa659d842ea3800690185c0a24a8617aa6dc2",
+        "started": 1789245580.63817,
+        "finished": 1789245587.2969751,
+        "state": "finished",
+        "reserved": 102048,
+        "charged": 4128,
+        "metadata": {
+          "billing_tokens": null,
+          "cached_tokens": 128,
+          "call_kind": "repair",
+          "completion_tokens": 2048,
+          "elapsed_ms": 6657,
+          "finish_reason": "length",
+          "http_status": 200,
+          "image_count": 0,
+          "images": [],
+          "max_tokens": 2048,
+          "offered_tools": [],
+          "prompt_tokens": 2080,
+          "reasoning_tokens": 2047,
+          "request_bytes": 8233,
+          "response_format_type": "json_object",
+          "response_model": "MiniMax-M3",
+          "temperature": 0.1,
+          "thinking": "adaptive",
+          "tool_call_shapes": [],
+          "tool_choice": null,
+          "tool_count": 0,
+          "total_tokens": 4128
+        }
+      },
+      {
+        "id": "d4fd1211b12448589b373d820655a615",
+        "campaign": "m3-persona-scene-tavern-exact-repair-20260913-v1",
+        "sample": "045d09bd1177276b3a7025a8746ac357f0b9e725d408b625b7df594b0885ae69",
+        "started": 1789245580.888096,
+        "finished": 1789245585.8434181,
+        "state": "finished",
+        "reserved": 102048,
+        "charged": 3119,
+        "metadata": {
+          "billing_tokens": null,
+          "cached_tokens": 128,
+          "call_kind": "repair",
+          "completion_tokens": 740,
+          "elapsed_ms": 4953,
+          "finish_reason": "stop",
+          "http_status": 200,
+          "image_count": 0,
+          "images": [],
+          "max_tokens": 2048,
+          "offered_tools": [],
+          "prompt_tokens": 2379,
+          "reasoning_tokens": 591,
+          "request_bytes": 9365,
+          "response_format_type": "json_object",
+          "response_model": "MiniMax-M3",
+          "temperature": 0.1,
+          "thinking": "adaptive",
+          "tool_call_shapes": [],
+          "tool_choice": null,
+          "tool_count": 0,
+          "total_tokens": 3119
+        }
+      },
+      {
+        "id": "b32e56c3635a4a4296adaf126157e5b1",
+        "campaign": "m3-persona-scene-tavern-exact-repair-20260913-v1",
+        "sample": "d999bc4fe21c1cbcb30208e1b1d0b426c6134ee4165c1c8e7b9441aa47dd490f",
+        "started": 1789245586.116137,
+        "finished": 1789245599.440663,
+        "state": "finished",
+        "reserved": 102048,
+        "charged": 3757,
+        "metadata": {
+          "billing_tokens": null,
+          "cached_tokens": 128,
+          "call_kind": "repair",
+          "completion_tokens": 1106,
+          "elapsed_ms": 13322,
+          "finish_reason": "stop",
+          "http_status": 200,
+          "image_count": 0,
+          "images": [],
+          "max_tokens": 2048,
+          "offered_tools": [],
+          "prompt_tokens": 2651,
+          "reasoning_tokens": 0,
+          "request_bytes": 10617,
+          "response_format_type": "json_object",
+          "response_model": "MiniMax-M3",
+          "temperature": 0.1,
+          "thinking": "adaptive",
+          "tool_call_shapes": [],
+          "tool_choice": null,
+          "tool_count": 0,
+          "total_tokens": 3757
+        }
+      },
+      {
+        "id": "c5a14c1fdfa74f64a58b9aed8528b4d2",
+        "campaign": "m3-persona-scene-tavern-exact-repair-20260913-v1",
+        "sample": "fc2632ca100e9d650b4a550c891076ff8c446a19e8886b9fa0b6439a7d53da46",
+        "started": 1789245587.6075368,
+        "finished": 1789245591.6396239,
+        "state": "finished",
+        "reserved": 102048,
+        "charged": 3564,
+        "metadata": {
+          "billing_tokens": null,
+          "cached_tokens": 0,
+          "call_kind": "repair",
+          "completion_tokens": 595,
+          "elapsed_ms": 4030,
+          "finish_reason": "stop",
+          "http_status": 200,
+          "image_count": 0,
+          "images": [],
+          "max_tokens": 2048,
+          "offered_tools": [],
+          "prompt_tokens": 2969,
+          "reasoning_tokens": 450,
+          "request_bytes": 11817,
+          "response_format_type": "json_object",
+          "response_model": "MiniMax-M3",
+          "temperature": 0.1,
+          "thinking": "adaptive",
+          "tool_call_shapes": [],
+          "tool_choice": null,
+          "tool_count": 0,
+          "total_tokens": 3564
+        }
+      },
+      {
+        "id": "9a96c8985f0745048b775ab0ec654edb",
+        "campaign": "m3-persona-scene-tavern-exact-repair-20260913-v1",
+        "sample": "b11a8a5d9681b454816e9aba543d5ce05187d3206cc125727136ec85f138a9e6",
+        "started": 1789245591.9574862,
+        "finished": 1789245597.941123,
+        "state": "finished",
+        "reserved": 102048,
+        "charged": 3749,
+        "metadata": {
+          "billing_tokens": null,
+          "cached_tokens": 128,
+          "call_kind": "repair",
+          "completion_tokens": 1018,
+          "elapsed_ms": 5982,
+          "finish_reason": "stop",
+          "http_status": 200,
+          "image_count": 0,
+          "images": [],
+          "max_tokens": 2048,
+          "offered_tools": [],
+          "prompt_tokens": 2731,
+          "reasoning_tokens": 729,
+          "request_bytes": 10992,
+          "response_format_type": "json_object",
+          "response_model": "MiniMax-M3",
+          "temperature": 0.1,
+          "thinking": "adaptive",
+          "tool_call_shapes": [],
+          "tool_choice": null,
+          "tool_count": 0,
+          "total_tokens": 3749
+        }
+      }
+    ]
+  },
+  "resource_window_usage": {
+    "scaling_events": [
+      {
+        "time": 1789193563.8342872,
+        "reason": "initial",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "cooldown_until": 0.0,
+          "current": 2,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789193563.8342872
+        }
+      },
+      {
+        "time": 1789194749.337584,
+        "reason": "capacity_begin",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "capacity_campaign": "m3-capacity-20260912-v1",
+          "cooldown_until": 0.0,
+          "current": 4,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789194749.337525
+        }
+      },
+      {
+        "time": 1789194749.3381288,
+        "reason": "capacity_level_4",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "capacity_campaign": "m3-capacity-20260912-v1",
+          "cooldown_until": 0.0,
+          "current": 4,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789194749.338079
+        }
+      },
+      {
+        "time": 1789194815.017502,
+        "reason": "capacity_restore",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "cooldown_until": 0.0,
+          "current": 2,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789193563.8342872
+        }
+      },
+      {
+        "time": 1789194912.058828,
+        "reason": "capacity_begin",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "capacity_campaign": "m3-capacity-20260912-v2",
+          "cooldown_until": 0.0,
+          "current": 4,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789194912.058772
+        }
+      },
+      {
+        "time": 1789194912.059327,
+        "reason": "capacity_level_4",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "capacity_campaign": "m3-capacity-20260912-v2",
+          "cooldown_until": 0.0,
+          "current": 4,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789194912.059274
+        }
+      },
+      {
+        "time": 1789194959.63645,
+        "reason": "capacity_restore",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "cooldown_until": 0.0,
+          "current": 2,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789193563.8342872
+        }
+      },
+      {
+        "time": 1789195057.4798799,
+        "reason": "capacity_begin",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "capacity_campaign": "m3-capacity-20260912-v3",
+          "cooldown_until": 0.0,
+          "current": 4,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789195057.479805
+        }
+      },
+      {
+        "time": 1789195057.480588,
+        "reason": "capacity_level_4",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "capacity_campaign": "m3-capacity-20260912-v3",
+          "cooldown_until": 0.0,
+          "current": 4,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789195057.480507
+        }
+      },
+      {
+        "time": 1789195183.11363,
+        "reason": "capacity_level_8",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "capacity_campaign": "m3-capacity-20260912-v3",
+          "cooldown_until": 0.0,
+          "current": 8,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789195183.113394
+        }
+      },
+      {
+        "time": 1789195229.955343,
+        "reason": "capacity_restore",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "cooldown_until": 0.0,
+          "current": 2,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789193563.8342872
+        }
+      },
+      {
+        "time": 1789196175.7202592,
+        "reason": "operator_overload_restart",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "cooldown_until": 1789196175.7202592,
+          "current": 4,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789196175.7202592
+        }
+      },
+      {
+        "time": 1789222133.326775,
+        "reason": "operator_overload_restart",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "cooldown_until": 1789222133.326775,
+          "current": 2,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789222133.326775
+        }
+      }
+    ],
+    "stopped": null,
+    "wire_count": 1798,
+    "charged_or_reserved_tokens": 11926703,
+    "unknown_usage_requests": 46
+  },
+  "billing_limit_certified": false
+}
