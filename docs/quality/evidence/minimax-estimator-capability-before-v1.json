@@ -1,0 +1,29 @@
+{
+  "scope": "Deterministic capability counterexample; no model call or proposal input",
+  "rows": [
+    {
+      "focus": "",
+      "score": 92,
+      "label": "可以收束成稿",
+      "recommendations": [
+        "目录细度和行动性已经足够，可以开始生成最终计划。"
+      ]
+    },
+    {
+      "focus": "核对30分钟活动",
+      "score": 92,
+      "label": "可以收束成稿",
+      "recommendations": [
+        "当前重点：核对30分钟活动。"
+      ]
+    },
+    {
+      "focus": "目标尚未核对，活动还没有编写",
+      "score": 92,
+      "label": "可以收束成稿",
+      "recommendations": [
+        "当前重点：目标尚未核对，活动还没有编写。"
+      ]
+    }
+  ]
+}

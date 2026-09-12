@@ -1,0 +1,29 @@
+{
+  "scope": "Deterministic capability counterexample; no model call or proposal input",
+  "rows": [
+    {
+      "focus": "",
+      "score": 92,
+      "label": "学习单元结构元数据较充分",
+      "recommendations": [
+        "学习单元结构元数据较充分；仍需依据原文和学习目标核对计划的事实、活动与时长。"
+      ]
+    },
+    {
+      "focus": "核对30分钟活动",
+      "score": 92,
+      "label": "学习单元结构元数据较充分",
+      "recommendations": [
+        "当前重点：核对30分钟活动。"
+      ]
+    },
+    {
+      "focus": "目标尚未核对，活动还没有编写",
+      "score": 92,
+      "label": "学习单元结构元数据较充分",
+      "recommendations": [
+        "当前重点：目标尚未核对，活动还没有编写。"
+      ]
+    }
+  ]
+}

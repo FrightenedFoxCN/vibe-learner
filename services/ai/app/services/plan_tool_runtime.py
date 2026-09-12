@@ -422,7 +422,7 @@ def _execute_estimate_plan_completion(
                 "missing_items": ["study_units"],
                 "recommendations": ["先建立最小可执行的章节结构，再生成计划。"],
             },
-            trace_summary="计划完成度偏低：当前没有可用的学习单元",
+            trace_summary="学习单元结构估分偏低：当前没有可用的学习单元",
             follow_up_messages=[],
         )
 
@@ -448,11 +448,11 @@ def _execute_estimate_plan_completion(
         )
     )
     if score >= 80:
-        label = "可以收束成稿"
+        label = "学习单元结构元数据较充分"
     elif score >= 60:
-        label = "还需要一轮打磨"
+        label = "学习单元结构仍需补充"
     else:
-        label = "建议继续细化"
+        label = "建议继续细化学习单元结构"
     missing_items: list[str] = []
     recommendations: list[str] = []
     if detail_coverage_ratio < 0.7:
@@ -467,7 +467,7 @@ def _execute_estimate_plan_completion(
     if focus:
         recommendations.insert(0, f"当前重点：{focus}。")
     if not recommendations:
-        recommendations.append("目录细度和行动性已经足够，可以开始生成最终计划。")
+        recommendations.append("学习单元结构元数据较充分；仍需依据原文和学习目标核对计划的事实、活动与时长。")
     return PlanToolResult(
         payload={
             "ok": True,
@@ -485,7 +485,7 @@ def _execute_estimate_plan_completion(
             "missing_items": missing_items,
             "recommendations": recommendations,
         },
-        trace_summary=f"计划完成度 {score}/100：{label}",
+        trace_summary=f"学习单元结构估分 {score}/100：{label}",
         follow_up_messages=[],
     )
 
