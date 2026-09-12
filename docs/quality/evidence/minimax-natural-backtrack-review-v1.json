@@ -1,0 +1,111 @@
+{
+  "scope": "Maintainer natural captured proposal replay review",
+  "manifest": {
+    "scope": "natural_planning_order_failure_capture",
+    "operations": [
+      {
+        "index": 0,
+        "boundary_success": false,
+        "harness_operation_id": "harness-operation-16aa929a8a24447e844ff721770c78ea",
+        "calls": 3,
+        "errors": [
+          "plan_proposal_schema_invalid:schedule.0.schedule_chapters.3.content_slices.0:outside_chapter"
+        ]
+      }
+    ],
+    "replay_scope": "Direct provider repair diagnostic, no new domain admission or commit",
+    "capture_outcome": "target_observed",
+    "captured_initial_error": {
+      "path": "schedule.0.schedule_chapters.1.anchor_page_start",
+      "reason": "not_ordered"
+    },
+    "captured_initial_geometry": [
+      {
+        "unit_id": "doc-fb6bb7beb6:study-unit:llm:1",
+        "chapters": [
+          {
+            "pages": [
+              2,
+              2
+            ],
+            "slices": [
+              [
+                2,
+                2
+              ]
+            ]
+          },
+          {
+            "pages": [
+              1,
+              1
+            ],
+            "slices": [
+              [
+                1,
+                1
+              ]
+            ]
+          },
+          {
+            "pages": [
+              2,
+              2
+            ],
+            "slices": [
+              [
+                2,
+                2
+              ]
+            ]
+          },
+          {
+            "pages": [
+              1,
+              2
+            ],
+            "slices": [
+              [
+                1,
+                1
+              ],
+              [
+                2,
+                2
+              ]
+            ]
+          }
+        ]
+      }
+    ],
+    "private_capture_file_mode": "0o600"
+  },
+  "summary": {
+    "domain_operations": 1,
+    "domain_committed": 0,
+    "domain_calls": 3,
+    "replay_calls": 4,
+    "baseline_valid": 2,
+    "candidate_valid": 1,
+    "baseline_cases": 2,
+    "candidate_cases": 2,
+    "strict_json_replies": 4
+  },
+  "findings": [
+    "Natural chapter page starts2,1,2,1 reproduce user activity sequence in source chapter structure. Initial not_ordered is verified against captured post-tool units.",
+    "Original one repair changes error to outside_chapter; domain operation remains not committed.",
+    "Both baseline replays make all four chapters cover1–2, losing specific source localization while passing geometry. They retain user activity order and5+10+10+5 timing.",
+    "Candidate first replay sorts chapter anchors1,2,2,2 and explicitly instructs activity order2,1,3,4 in focus. It moves final comparative stage to page2 only, narrowing cross-page review localization.",
+    "Candidate first reply exposes schedule_chapters implementation vocabulary in user-facing focus; not an acceptable universal presentation solution.",
+    "Candidate second replay retains2,1,2,1–2 and fails not_ordered.",
+    "All four retain ordered user activity phases and30 minutes in overview/focus; age quote still omits I think, so not full source-fidelity passes.",
+    "No replay is a domain commit, despite proposal_valid on three outputs. All request inputs identical except appended feedback at SDK boundary, not claimed wire identity."
+  ],
+  "decision": "Do not adopt concise feedback. Investigate explicit separation of source chapters from activity stages without broadening every anchor or leaking schema terms into user instructions.",
+  "limitations": [
+    "One naturally captured failure, two replays per condition",
+    "Replay branch now exercised live; private snapshot0600 retained only under temporary directory",
+    "Natural operation and replay process loaded estimator before separate short-source fix; neither is evidence of that fix",
+    "Full backend tests overlapped part of replay; no latency comparison claimed"
+  ]
+}
