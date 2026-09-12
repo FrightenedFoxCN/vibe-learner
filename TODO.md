@@ -2,7 +2,7 @@
 
 本文件是产品、Harness 和桌面工作的统一待办入口；仅保留未完成任务；完成事项见[0.3.4 发布记录](docs/releases/0.3.4.md)。运行约束见 `AGENTS.md`，架构见 `docs/`，已完成过程记录通过 Git 历史查询。
 
-2026-09-12：模型质量实测已按用户要求在第 121 轮后停止；细项及证据由独立质量 TODO 维护。已完成事项及验收范围见发布记录，研究候选不代表已采用改动。
+2026-09-12：历史模型质量实测在第 121 轮后停止；后续已完成 ACL 2025/2026 研究、首日 2000M tokens 高并行规划与本地反例复现，随后完成独立运行器、领域接入预检与真实容量测量（4 并发通过，8 并发触发 429）；独立质量确认批次尚未启动。细项及证据由独立质量 TODO 维护。已完成事项及验收范围见发布记录，研究候选不代表已采用改动。
 
 优先级表示下一阶段排程，不追溯为 v0.2.1 发布缺陷：
 
@@ -74,6 +74,7 @@
 - [ ] `QG-MODEL-QUALITY-001` `[P2 · 已暂停，待独立复核]` 建立真实模型质量与 held-out 评测基线。
   - 用户要求在 MiniMax-M3 第 121 轮后停止。详细未完成事项、证据和关闭标准只维护在[独立质量 TODO](docs/quality/TODO.md)，不自动继续实测。
   - [已采用运行时行为](docs/model-runtime-quality.md)与[研究接手摘要](docs/quality/research-summary.md)已整理；旧 `QG-002` / `web-strict-decode-adversarial-v1` 不变。
+  - 新增[Agentic design / ACL 研究](docs/quality/agentic-design-research-2026-09-12.md)与[首日 2000M tokens 探索计划](docs/quality/m3-parallel-exploration-2026-09-12.md)：优先引用、写入忠实度、记忆时间关系及独立评审，按需扩容并保留失败证据。
   - 已完成的确定性注册不重做；模型 grader 需独立人工校准，技术恢复和维护者评审不代替内容质量验收。
 
 ## Research parking lot（未排期）

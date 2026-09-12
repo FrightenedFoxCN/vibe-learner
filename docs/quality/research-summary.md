@@ -2,11 +2,14 @@
 
 ## 当前状态与阅读顺序
 
-用户已要求第 121 轮后停止；最后实验提交 `deed0ae`，没有待收尾的模型实验。本次整理不启动新调用。质量门仍开放，继续实测需要新的任务授权。
+历史真实模型实测已在第 121 轮后停止；最后实验提交 `deed0ae`，没有待收尾的模型实验。2026-09-12 后续任务新增联网研究、首日 2000M tokens 的执行规划和 provider-free 本地复现；随后已完成[独立实验运行器](../../tools/model-quality/README.md)和[4 请求 M3 基础设施预检](evidence/m3-parallel-infrastructure-preflight-2026-09-12.json)，随后又完成[自动扩容与 Study/Tavern 领域接入验收](evidence/m3-autoscale-domain-adapters-2026-09-12.json)：4 个样本的持久化与重启读回均通过，但 Study 两例没有专门记忆写入却声明已保存。独立质量确认批次尚未启动，质量门仍开放。最新资源与调度口径见[高并行计划](m3-parallel-exploration-2026-09-12.md)，不以消耗额度或运行满一天为目标。
+
+本次[真实请求容量测量](evidence/m3-live-concurrency-capacity-2026-09-12.json)使用生产 Tavern prompt/schema 与重复合成短样本：4 并发两个有效窗口共 201 请求，全部 HTTP 200，约 96 请求/分钟，窗口 P95 为 3.69–4.03 秒；8 并发约 47 秒内 147 请求出现 1 次 HTTP 429，已停发，未测 16/32/64。供应商硬限制仍未知，429 不能区分并发、RPM 或 TPM；该结果不外推到长 Study/Planning 或图片。前两次仪器修正前的 156 请求窗口不足，保留成本与失败分母，不计为有效容量证据。当前账本保留 provider_overload 停止状态，质量门不变。
 
 1. [生产行为文档](../model-runtime-quality.md)：已采用的 31 个生产/共享契约提交及限制。
 2. [独立质量 TODO](TODO.md)：唯一的详细任务状态、证据入口和关闭标准。
 3. [保留研究证据](evidence/research-notes.md)：未采用候选、未关闭失败及混合观察，沿用原轮次编号。
+4. [Agentic design 与 ACL 2025/2026](agentic-design-research-2026-09-12.md)：已联网核验的来源、对应子任务与候选假设；[当前本地诊断](evidence/agentic-preflight-local-2026-09-12.json)不计为新的 M3 轮次。
 
 研究起点为 `26dfdf9`。需要完整旧过程时可执行 `git show deed0ae:docs/quality/minimax-m3-v1.md`，或从同一版本恢复已清理的单个证据文件。不重写 Git 历史，不删除产品代码、回归测试、旧 Harness 基线或研究探针。
 

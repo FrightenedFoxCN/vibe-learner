@@ -1,0 +1,351 @@
+{
+  "version": "model-quality-infrastructure-preflight-v1",
+  "date": "2026-09-12",
+  "scope": "Four synthetic connectivity requests; not a domain quality experiment or Harness adoption evidence.",
+  "frozen_live_manifest": {
+    "config": {
+      "version": "quality-campaign-v1",
+      "id": "m3-infra-20260912-v1",
+      "purpose": "Verify isolated workers, native wire accounting and resume; no model-quality adoption claim.",
+      "transport": "minimax",
+      "model": "MiniMax-M3",
+      "adapter": "model_quality.adapters:text_probe",
+      "repetitions": 1,
+      "seed": 42,
+      "concurrency": 4,
+      "timeout_seconds": 90,
+      "sample_deadline_seconds": 180,
+      "sample_wire_limit": 1,
+      "max_output_tokens": 256,
+      "input_reservation_tokens": 4096,
+      "temperature": 0.1,
+      "thinking": "disabled",
+      "budget": {
+        "token_limit": 20000,
+        "wire_limit": 4,
+        "rpm": 4,
+        "tpm": 20000,
+        "max_inflight": 4,
+        "expires_at": 1789195785.5107698,
+        "stop_buffer_seconds": 900
+      },
+      "cases": [
+        {
+          "id": "en-control",
+          "family": "en-control",
+          "lane": "preflight",
+          "split": "development",
+          "provenance": "synthetic-authored",
+          "source": "This is a synthetic connectivity test.",
+          "request": "Reply with exactly the two ASCII letters OK, with no other characters.",
+          "gold": "OK",
+          "rubric": "exact-text-v1"
+        },
+        {
+          "id": "zh-control",
+          "family": "zh-control",
+          "lane": "preflight",
+          "split": "development",
+          "provenance": "synthetic-authored",
+          "source": "这是合成连通性测试。",
+          "request": "请只回复两个 ASCII 字母 OK，不添加其他字符。",
+          "gold": "OK",
+          "rubric": "exact-text-v1"
+        }
+      ],
+      "variants": [
+        {
+          "id": "baseline",
+          "instruction": "Follow the user request."
+        },
+        {
+          "id": "precise",
+          "instruction": "Follow the user request exactly, including its output format."
+        }
+      ]
+    },
+    "config_digest": "ce16a2a7b55b232072e01d09b472f3e12d2dcad7fbf00d617e966d96498609d5",
+    "source": {
+      "git_revision": "7157af0c55b0f78f829397efc62c214f35f44ff0",
+      "tracked_dirty_digest": "71c9041aef6c55aadcefbebe2a64b2d20218e9a40ce6aa262e8d0bc9af476fa4",
+      "runner_and_adapter_source": {
+        "__init__.py": "b2eb9a2bbea4a455d4229a2ed5efdffe31fb120f8ef1c6e5592ac1ae24eea07a",
+        "__main__.py": "7f719a647def26dac001a9fca766de78c605b63d5c0f66eecb5917dbbc7fe5a9",
+        "adapters.py": "14bbc0d247af710547ef929b3b375f30f052c7af6cec5280cbff550b247b4bb8",
+        "ledger.py": "5798838f6b790f4bd52820924043e5584c4bca2d7681daf506b11ec835cb7dfe",
+        "protocol.py": "8eb77f58a0f6824bc94e65dc39d10e26d70f7d2e23ed471054d4557d1d47d449",
+        "runner.py": "0b9c179cdd1659b75d8f2c8cd715ae1e24a1a269fad4942792e2f848c2fb33f0",
+        "transport.py": "2e7183da2677a25ae67bb3b74e153088ab1d34680e8e72db2c38f3fd2b113c68",
+        "adapter": "14bbc0d247af710547ef929b3b375f30f052c7af6cec5280cbff550b247b4bb8"
+      },
+      "python": "3.13.5 (main, Jun 12 2025, 12:22:43) [Clang 20.1.4 ]",
+      "dependencies": {
+        "pydantic": "2.13.5",
+        "pydantic-core": "2.46.5",
+        "certifi": "2026.7.22"
+      },
+      "lock_digest": "ea30cf0b09b3f9b100a9c5db49a1c721cf3b8d10f748d7c9cff9c3bfb4598779",
+      "limitations": "Adapter authors must freeze transitive project dependencies separately."
+    },
+    "ledger_path": "/Users/ffox/vibe-learner/tools/model-quality/runs/m3-window-20260912.sqlite3",
+    "endpoint": "https://api.minimax.cn/v1/chat/completions",
+    "credential_env": "K3_API_KEY",
+    "scope": "standalone research campaign"
+  },
+  "live_report": {
+    "wire_latency_ms": {
+      "50": 1005,
+      "95": 1454
+    },
+    "percentile_method": "nearest-rank",
+    "aggregation_source_digest": "61c1cbd92bb08782fc65b089cfc961be563c6a901b59d247e4d968e12ff556bd",
+    "failure_owners": {},
+    "version": "quality-report-v1",
+    "campaign": "m3-infra-20260912-v1",
+    "transport": "minimax",
+    "scope": "research infrastructure; not Harness evidence or independent quality certification",
+    "expected_samples": 4,
+    "independent_families": 2,
+    "states": {
+      "completed": 4
+    },
+    "pairs": {
+      "en-control:0": {
+        "baseline": "completed",
+        "precise": "completed"
+      },
+      "zh-control:0": {
+        "precise": "completed",
+        "baseline": "completed"
+      }
+    },
+    "samples": [
+      {
+        "campaign": "m3-infra-20260912-v1",
+        "case": "en-control",
+        "repetition": 0,
+        "variant": "baseline",
+        "sample_id": "38a06126987f420fc64a8f9d092c1db3ebe1637b4ccf9ec4cacec7fb9ff7abc8",
+        "family": "en-control",
+        "state": "completed",
+        "result": {
+          "error_code": null,
+          "failure_owner": null,
+          "metrics": {
+            "complete_text": true,
+            "exact_text": true
+          },
+          "pid": 27812,
+          "sample_id": "38a06126987f420fc64a8f9d092c1db3ebe1637b4ccf9ec4cacec7fb9ff7abc8",
+          "scope": "provider-proposal-only; no domain admission, commit or read-back",
+          "status": "completed"
+        },
+        "elapsed_seconds": 1.0869688987731934
+      },
+      {
+        "campaign": "m3-infra-20260912-v1",
+        "case": "en-control",
+        "repetition": 0,
+        "variant": "precise",
+        "sample_id": "73cc2167901ddb823121a7837727fe66adc90c7eae243649cc1ba53411912e95",
+        "family": "en-control",
+        "state": "completed",
+        "result": {
+          "error_code": null,
+          "failure_owner": null,
+          "metrics": {
+            "complete_text": true,
+            "exact_text": true
+          },
+          "pid": 27815,
+          "sample_id": "73cc2167901ddb823121a7837727fe66adc90c7eae243649cc1ba53411912e95",
+          "scope": "provider-proposal-only; no domain admission, commit or read-back",
+          "status": "completed"
+        },
+        "elapsed_seconds": 1.5424702167510986
+      },
+      {
+        "campaign": "m3-infra-20260912-v1",
+        "case": "zh-control",
+        "repetition": 0,
+        "variant": "precise",
+        "sample_id": "a483b50f35be076349fc77209cfd6460cae6873597bc1a11551b48fd066a26d6",
+        "family": "zh-control",
+        "state": "completed",
+        "result": {
+          "error_code": null,
+          "failure_owner": null,
+          "metrics": {
+            "complete_text": true,
+            "exact_text": true
+          },
+          "pid": 27810,
+          "sample_id": "a483b50f35be076349fc77209cfd6460cae6873597bc1a11551b48fd066a26d6",
+          "scope": "provider-proposal-only; no domain admission, commit or read-back",
+          "status": "completed"
+        },
+        "elapsed_seconds": 1.1423249244689941
+      },
+      {
+        "campaign": "m3-infra-20260912-v1",
+        "case": "zh-control",
+        "repetition": 0,
+        "variant": "baseline",
+        "sample_id": "f80bf1427109eda58faa0c832577c37e6eed12672e2dc30311fa12fd5e5ef82f",
+        "family": "zh-control",
+        "state": "completed",
+        "result": {
+          "error_code": null,
+          "failure_owner": null,
+          "metrics": {
+            "complete_text": true,
+            "exact_text": true
+          },
+          "pid": 27811,
+          "sample_id": "f80bf1427109eda58faa0c832577c37e6eed12672e2dc30311fa12fd5e5ef82f",
+          "scope": "provider-proposal-only; no domain admission, commit or read-back",
+          "status": "completed"
+        },
+        "elapsed_seconds": 0.9854590892791748
+      }
+    ],
+    "campaign_usage": {
+      "stopped": null,
+      "wire_count": 4,
+      "charged_or_reserved_tokens": 748,
+      "unknown_usage_requests": 0,
+      "wires": [
+        {
+          "id": "96f015ccec7e47ea857a835ee69495d6",
+          "campaign": "m3-infra-20260912-v1",
+          "sample": "f80bf1427109eda58faa0c832577c37e6eed12672e2dc30311fa12fd5e5ef82f",
+          "started": 1789192210.413228,
+          "finished": 1789192211.315414,
+          "state": "finished",
+          "reserved": 4352,
+          "charged": 183,
+          "metadata": {
+            "billing_tokens": null,
+            "cached_tokens": 128,
+            "call_kind": "generation",
+            "completion_tokens": 2,
+            "elapsed_ms": 901,
+            "http_status": 200,
+            "image_count": 0,
+            "prompt_tokens": 181,
+            "reasoning_tokens": null,
+            "response_model": "MiniMax-M3",
+            "total_tokens": 183
+          }
+        },
+        {
+          "id": "88f7c80289a74499909d4a2bd1e8cc76",
+          "campaign": "m3-infra-20260912-v1",
+          "sample": "38a06126987f420fc64a8f9d092c1db3ebe1637b4ccf9ec4cacec7fb9ff7abc8",
+          "started": 1789192210.414403,
+          "finished": 1789192211.4198358,
+          "state": "finished",
+          "reserved": 4352,
+          "charged": 185,
+          "metadata": {
+            "billing_tokens": null,
+            "cached_tokens": 128,
+            "call_kind": "generation",
+            "completion_tokens": 2,
+            "elapsed_ms": 1005,
+            "http_status": 200,
+            "image_count": 0,
+            "prompt_tokens": 183,
+            "reasoning_tokens": null,
+            "response_model": "MiniMax-M3",
+            "total_tokens": 185
+          }
+        },
+        {
+          "id": "37c1825f5c804296bec23fe39d245b7f",
+          "campaign": "m3-infra-20260912-v1",
+          "sample": "a483b50f35be076349fc77209cfd6460cae6873597bc1a11551b48fd066a26d6",
+          "started": 1789192210.415158,
+          "finished": 1789192211.470349,
+          "state": "finished",
+          "reserved": 4352,
+          "charged": 189,
+          "metadata": {
+            "billing_tokens": null,
+            "cached_tokens": 128,
+            "call_kind": "generation",
+            "completion_tokens": 2,
+            "elapsed_ms": 1055,
+            "http_status": 200,
+            "image_count": 0,
+            "prompt_tokens": 187,
+            "reasoning_tokens": null,
+            "response_model": "MiniMax-M3",
+            "total_tokens": 189
+          }
+        },
+        {
+          "id": "89625a4b2e1149dc91e3c1b0f499ede0",
+          "campaign": "m3-infra-20260912-v1",
+          "sample": "73cc2167901ddb823121a7837727fe66adc90c7eae243649cc1ba53411912e95",
+          "started": 1789192210.421958,
+          "finished": 1789192211.8768299,
+          "state": "finished",
+          "reserved": 4352,
+          "charged": 191,
+          "metadata": {
+            "billing_tokens": null,
+            "cached_tokens": null,
+            "call_kind": "generation",
+            "completion_tokens": 2,
+            "elapsed_ms": 1454,
+            "http_status": 200,
+            "image_count": 0,
+            "prompt_tokens": 189,
+            "reasoning_tokens": null,
+            "response_model": "MiniMax-M3",
+            "total_tokens": 191
+          }
+        }
+      ]
+    },
+    "resource_window_usage": {
+      "stopped": null,
+      "wire_count": 4,
+      "charged_or_reserved_tokens": 748,
+      "unknown_usage_requests": 0
+    },
+    "billing_limit_certified": false
+  },
+  "observed_peak_wire_inflight": 4,
+  "resume_verification": {
+    "exit_code": 0,
+    "wire_count_before": 4,
+    "wire_count_after": 4,
+    "new_wire_requests": 0,
+    "scope": "Resume was verified against the frozen live source before subsequent local hardening."
+  },
+  "verification": {
+    "command": "cd tools/model-quality && uv run --locked python -m unittest discover -s tests -v",
+    "source_digests": {
+      "__init__.py": "b2eb9a2bbea4a455d4229a2ed5efdffe31fb120f8ef1c6e5592ac1ae24eea07a",
+      "__main__.py": "7f719a647def26dac001a9fca766de78c605b63d5c0f66eecb5917dbbc7fe5a9",
+      "adapters.py": "14bbc0d247af710547ef929b3b375f30f052c7af6cec5280cbff550b247b4bb8",
+      "ledger.py": "5988d7db04687b123c983142ab27c2096426da11ea527aa942a59df44250e9d5",
+      "protocol.py": "8eb77f58a0f6824bc94e65dc39d10e26d70f7d2e23ed471054d4557d1d47d449",
+      "runner.py": "61c1cbd92bb08782fc65b089cfc961be563c6a901b59d247e4d968e12ff556bd",
+      "transport.py": "6c7db58b696f0d83941341f9f2625b388f4ac03928ed95d272d57439975567cc"
+    },
+    "tests_run": 18,
+    "tests_passed": 18,
+    "exit_code": 0,
+    "elapsed_seconds": 9.108
+  },
+  "limitations": [
+    "Only text connectivity and objective exact-output checks; no real Study/Planning/Tavern admission or read-back.",
+    "Two synthetic language controls are not independent quality benchmark families.",
+    "Provider total_tokens is 748; reasoning and billing tokens are unknown. No billing hard-cap certification.",
+    "No maximum-capacity inference from four requests; no adaptive concurrency or stage budget pools.",
+    "Live source is preserved in frozen_live_manifest. Subsequent report-only, error-envelope and input guard hardening was verified locally without further provider calls."
+  ]
+}

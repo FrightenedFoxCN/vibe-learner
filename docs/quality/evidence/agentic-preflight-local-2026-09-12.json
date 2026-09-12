@@ -1,0 +1,548 @@
+{
+  "schema_version": "agentic-preflight-local-v1",
+  "run_started_at_utc": "2026-09-12T05:23:36.227411+00:00",
+  "run_finished_at_utc": "2026-09-12T05:23:36.732893+00:00",
+  "git_head": "7157af0c55b0f78f829397efc62c214f35f44ff0",
+  "preexisting_worktree_status": [
+    " M apps/desktop/src-tauri/icons/icon.icns",
+    "?? docs/quality/m3-parallel-exploration-2026-09-12.md"
+  ],
+  "raw_root": "/tmp/agentic-preflight-local-20260912-agj98_uu",
+  "wrapper_source": "import json\nfrom pathlib import Path\nimport runpy\nimport sys\n\nnetwork_events = []\nnetwork_log = Path(sys.argv[1])\nscript = sys.argv[2]\nsys.argv = [script, *sys.argv[3:]]\ndef audit(event, args):\n    if event in {'socket.connect', 'socket.connect_ex', 'socket.getaddrinfo', 'http.client.connect'}:\n        network_events.append({'event': event})\n        raise RuntimeError('provider_free_diagnostic_network_forbidden')\nsys.addaudithook(audit)\ntry:\n    runpy.run_path(script, run_name='__main__')\nfinally:\n    network_log.write_text(json.dumps({'blocked_network_attempts': network_events}, indent=2) + '\\n')\n",
+  "scope": "Current-worktree provider-free reproduction of curated synthetic citation and memory excerpt counterexamples. No production edits, database admission, provider calls or quality-gate closure.",
+  "execution": {
+    "python": "Python 3.12.13",
+    "uv": "uv 0.12.10 (Homebrew 2026-09-04 aarch64-apple-darwin)",
+    "network_policy": "uv offline/no-sync; reviewed scripts call only local synthetic pure-function diagnostics; Python audit hook blocks and records network connection/name-resolution attempts."
+  },
+  "runs": [
+    {
+      "probe": "citation_tokenization",
+      "tasks": [
+        "MQ-01"
+      ],
+      "source": "services/ai/tests/acceptance/citation_tokenization_probe.py",
+      "source_sha256": "4c01ef6977890ee6b27ac38b2c23606b581a1fee7b5852d3550cd1cf6e11bdbc",
+      "command_argv": [
+        "uv",
+        "run",
+        "--offline",
+        "--no-sync",
+        "--no-cache",
+        "python",
+        "/tmp/agentic-preflight-local-20260912-agj98_uu/run_diagnostic.py",
+        "/tmp/agentic-preflight-local-20260912-agj98_uu/citation_tokenization/network-audit.json",
+        "tests/acceptance/citation_tokenization_probe.py",
+        "--output",
+        "/tmp/agentic-preflight-local-20260912-agj98_uu/citation_tokenization/output.json"
+      ],
+      "command_display": "PYTHONPATH=. PYTHONDONTWRITEBYTECODE=1 uv run --offline --no-sync --no-cache python /tmp/agentic-preflight-local-20260912-agj98_uu/run_diagnostic.py /tmp/agentic-preflight-local-20260912-agj98_uu/citation_tokenization/network-audit.json tests/acceptance/citation_tokenization_probe.py --output /tmp/agentic-preflight-local-20260912-agj98_uu/citation_tokenization/output.json",
+      "cwd": "/Users/ffox/vibe-learner/services/ai",
+      "started_at_utc": "2026-09-12T05:23:36.255971+00:00",
+      "finished_at_utc": "2026-09-12T05:23:36.464530+00:00",
+      "process_elapsed_seconds": 0.208208,
+      "exit_code": 0,
+      "raw_directory": "/tmp/agentic-preflight-local-20260912-agj98_uu/citation_tokenization",
+      "stdout_bytes": 0,
+      "stderr_bytes": 0,
+      "network_audit": {
+        "blocked_network_attempts": []
+      },
+      "raw_output_sha256": "611dbbc84bd844f92176ebb90ee3c9349e7a86df34449837b819a89de6c31c12",
+      "result": {
+        "scope": "Synthetic lexical diagnostic only; no provider or domain commit",
+        "limitation": "Curated counterexamples, not representative precision/recall estimates.",
+        "rows": [
+          {
+            "case": "zh_relevant",
+            "variant": "current",
+            "query": "请解释一元一次方程。",
+            "source": "一元一次方程含有一个未知数，未知数的次数为一。",
+            "relevant": true,
+            "cited": false,
+            "matches_reviewed_relevance": false
+          },
+          {
+            "case": "zh_relevant",
+            "variant": "memory_tokenizer",
+            "query": "请解释一元一次方程。",
+            "source": "一元一次方程含有一个未知数，未知数的次数为一。",
+            "relevant": true,
+            "cited": true,
+            "matches_reviewed_relevance": true
+          },
+          {
+            "case": "zh_shared_polite_phrase",
+            "variant": "current",
+            "query": "请说明这个约定的取消时间。",
+            "source": "这个等式的两边同时减去三，结果不变。",
+            "relevant": false,
+            "cited": false,
+            "matches_reviewed_relevance": true
+          },
+          {
+            "case": "zh_shared_polite_phrase",
+            "variant": "memory_tokenizer",
+            "query": "请说明这个约定的取消时间。",
+            "source": "这个等式的两边同时减去三，结果不变。",
+            "relevant": false,
+            "cited": true,
+            "matches_reviewed_relevance": false
+          },
+          {
+            "case": "en_relevant",
+            "variant": "current",
+            "query": "Explain subtracting.",
+            "source": "Balance both sides when subtracting.",
+            "relevant": true,
+            "cited": true,
+            "matches_reviewed_relevance": true
+          },
+          {
+            "case": "en_relevant",
+            "variant": "memory_tokenizer",
+            "query": "Explain subtracting.",
+            "source": "Balance both sides when subtracting.",
+            "relevant": true,
+            "cited": true,
+            "matches_reviewed_relevance": true
+          },
+          {
+            "case": "en_shared_function_words",
+            "variant": "current",
+            "query": "What is the cancellation date?",
+            "source": "A linear equation is written with one variable.",
+            "relevant": false,
+            "cited": true,
+            "matches_reviewed_relevance": false
+          },
+          {
+            "case": "en_shared_function_words",
+            "variant": "memory_tokenizer",
+            "query": "What is the cancellation date?",
+            "source": "A linear equation is written with one variable.",
+            "relevant": false,
+            "cited": true,
+            "matches_reviewed_relevance": false
+          },
+          {
+            "case": "fr_relevant",
+            "variant": "current",
+            "query": "Expliquez la dérivée.",
+            "source": "La dérivée mesure le taux de variation.",
+            "relevant": true,
+            "cited": true,
+            "matches_reviewed_relevance": true
+          },
+          {
+            "case": "fr_relevant",
+            "variant": "memory_tokenizer",
+            "query": "Expliquez la dérivée.",
+            "source": "La dérivée mesure le taux de variation.",
+            "relevant": true,
+            "cited": true,
+            "matches_reviewed_relevance": true
+          },
+          {
+            "case": "fr_unrelated_substring",
+            "variant": "current",
+            "query": "Quand Camille a annulé le rendez-vous ?",
+            "source": "Une variable peut prendre plusieurs valeurs.",
+            "relevant": false,
+            "cited": true,
+            "matches_reviewed_relevance": false
+          },
+          {
+            "case": "fr_unrelated_substring",
+            "variant": "memory_tokenizer",
+            "query": "Quand Camille a annulé le rendez-vous ?",
+            "source": "Une variable peut prendre plusieurs valeurs.",
+            "relevant": false,
+            "cited": true,
+            "matches_reviewed_relevance": false
+          },
+          {
+            "case": "unrelated_memory",
+            "variant": "current",
+            "query": "请核对林舟与阿岚的取消发生时间和记录时间。",
+            "source": "A linear equation has one variable.",
+            "relevant": false,
+            "cited": false,
+            "matches_reviewed_relevance": true
+          },
+          {
+            "case": "unrelated_memory",
+            "variant": "memory_tokenizer",
+            "query": "请核对林舟与阿岚的取消发生时间和记录时间。",
+            "source": "A linear equation has one variable.",
+            "relevant": false,
+            "cited": false,
+            "matches_reviewed_relevance": true
+          }
+        ]
+      },
+      "raw_files": {
+        "stdout.txt": {
+          "path": "/tmp/agentic-preflight-local-20260912-agj98_uu/citation_tokenization/stdout.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "stderr.txt": {
+          "path": "/tmp/agentic-preflight-local-20260912-agj98_uu/citation_tokenization/stderr.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "output.json": {
+          "path": "/tmp/agentic-preflight-local-20260912-agj98_uu/citation_tokenization/output.json",
+          "sha256": "611dbbc84bd844f92176ebb90ee3c9349e7a86df34449837b819a89de6c31c12"
+        },
+        "network-audit.json": {
+          "path": "/tmp/agentic-preflight-local-20260912-agj98_uu/citation_tokenization/network-audit.json",
+          "sha256": "262c001c0f8c74954744ace600b55c276500e8c7d8ed1dda40cf83dbb0ee0e54"
+        }
+      }
+    },
+    {
+      "probe": "memory_selector_limits",
+      "tasks": [
+        "MQ-03"
+      ],
+      "source": "services/ai/tests/acceptance/minimax_memory_selector_limits.py",
+      "source_sha256": "a9e2ecc620cda566c04c089421aabd74dbe16a5d2a8f7ee1af465b9908fff645",
+      "command_argv": [
+        "uv",
+        "run",
+        "--offline",
+        "--no-sync",
+        "--no-cache",
+        "python",
+        "/tmp/agentic-preflight-local-20260912-agj98_uu/run_diagnostic.py",
+        "/tmp/agentic-preflight-local-20260912-agj98_uu/memory_selector_limits/network-audit.json",
+        "tests/acceptance/minimax_memory_selector_limits.py",
+        "--output",
+        "/tmp/agentic-preflight-local-20260912-agj98_uu/memory_selector_limits/output.json"
+      ],
+      "command_display": "PYTHONPATH=. PYTHONDONTWRITEBYTECODE=1 uv run --offline --no-sync --no-cache python /tmp/agentic-preflight-local-20260912-agj98_uu/run_diagnostic.py /tmp/agentic-preflight-local-20260912-agj98_uu/memory_selector_limits/network-audit.json tests/acceptance/minimax_memory_selector_limits.py --output /tmp/agentic-preflight-local-20260912-agj98_uu/memory_selector_limits/output.json",
+      "cwd": "/Users/ffox/vibe-learner/services/ai",
+      "started_at_utc": "2026-09-12T05:23:36.464817+00:00",
+      "finished_at_utc": "2026-09-12T05:23:36.595240+00:00",
+      "process_elapsed_seconds": 0.130146,
+      "exit_code": 0,
+      "raw_directory": "/tmp/agentic-preflight-local-20260912-agj98_uu/memory_selector_limits",
+      "stdout_bytes": 0,
+      "stderr_bytes": 0,
+      "network_audit": {
+        "blocked_network_attempts": []
+      },
+      "raw_output_sha256": "4c24fc439788758db9388507ab69c647cd0cabcfb02a6d5595c3fac722325e4e",
+      "result": [
+        {
+          "case": "unpunctuated_chinese",
+          "input_chars": 2422,
+          "query": "复习地点和暗号",
+          "expected_fragment": "南门",
+          "retained": false,
+          "excerpt_chars": 800,
+          "elapsed_ms": 0.821,
+          "excerpt": "复习地点青石暗号晴鸟整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材..."
+        },
+        {
+          "case": "oversized_preceding_sentence",
+          "input_chars": 2427,
+          "query": "复习地点和暗号",
+          "expected_fragment": "南门",
+          "retained": false,
+          "excerpt_chars": 800,
+          "elapsed_ms": 0.335,
+          "excerpt": "复习地点青石，暗号晴鸟。整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整..."
+        },
+        {
+          "case": "cross_language_query",
+          "input_chars": 4156,
+          "query": "复习地点和暗号",
+          "expected_fragment": "Bouleau",
+          "retained": false,
+          "excerpt_chars": 800,
+          "elapsed_ms": 0.224,
+          "excerpt": "Le lieu est la salle Pierre-Verte. Le mot de passe est Oiseau. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de ca..."
+        },
+        {
+          "case": "same_language_control",
+          "input_chars": 4156,
+          "query": "lieu et mot de passe actuel",
+          "expected_fragment": "Bouleau",
+          "retained": true,
+          "excerpt_chars": 785,
+          "elapsed_ms": 0.617,
+          "excerpt": "原文节选（位置为规范化文本字符，未覆盖全文）：\n[字符0:622] Le lieu est la salle Pierre-Verte. Le mot de passe est Oiseau. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul.\n[字符4042:4156]  Exercice de calcul.Correction : le lieu devient la salle Bouleau. Le mot de passe est révoqué, sans remplacement."
+        }
+      ],
+      "raw_files": {
+        "stdout.txt": {
+          "path": "/tmp/agentic-preflight-local-20260912-agj98_uu/memory_selector_limits/stdout.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "stderr.txt": {
+          "path": "/tmp/agentic-preflight-local-20260912-agj98_uu/memory_selector_limits/stderr.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "output.json": {
+          "path": "/tmp/agentic-preflight-local-20260912-agj98_uu/memory_selector_limits/output.json",
+          "sha256": "4c24fc439788758db9388507ab69c647cd0cabcfb02a6d5595c3fac722325e4e"
+        },
+        "network-audit.json": {
+          "path": "/tmp/agentic-preflight-local-20260912-agj98_uu/memory_selector_limits/network-audit.json",
+          "sha256": "262c001c0f8c74954744ace600b55c276500e8c7d8ed1dda40cf83dbb0ee0e54"
+        }
+      }
+    },
+    {
+      "probe": "memory_neighborhood_backoff",
+      "tasks": [
+        "MQ-03"
+      ],
+      "source": "services/ai/tests/acceptance/memory_neighborhood_backoff.py",
+      "source_sha256": "b6ac7c93aa3e79cf6752f2030f3f757380cf55b30d3a593c66c79d5c4f83fbe1",
+      "command_argv": [
+        "uv",
+        "run",
+        "--offline",
+        "--no-sync",
+        "--no-cache",
+        "python",
+        "/tmp/agentic-preflight-local-20260912-agj98_uu/run_diagnostic.py",
+        "/tmp/agentic-preflight-local-20260912-agj98_uu/memory_neighborhood_backoff/network-audit.json",
+        "tests/acceptance/memory_neighborhood_backoff.py",
+        "--output",
+        "/tmp/agentic-preflight-local-20260912-agj98_uu/memory_neighborhood_backoff/output.json"
+      ],
+      "command_display": "PYTHONPATH=. PYTHONDONTWRITEBYTECODE=1 uv run --offline --no-sync --no-cache python /tmp/agentic-preflight-local-20260912-agj98_uu/run_diagnostic.py /tmp/agentic-preflight-local-20260912-agj98_uu/memory_neighborhood_backoff/network-audit.json tests/acceptance/memory_neighborhood_backoff.py --output /tmp/agentic-preflight-local-20260912-agj98_uu/memory_neighborhood_backoff/output.json",
+      "cwd": "/Users/ffox/vibe-learner/services/ai",
+      "started_at_utc": "2026-09-12T05:23:36.595490+00:00",
+      "finished_at_utc": "2026-09-12T05:23:36.732707+00:00",
+      "process_elapsed_seconds": 0.136928,
+      "exit_code": 0,
+      "raw_directory": "/tmp/agentic-preflight-local-20260912-agj98_uu/memory_neighborhood_backoff",
+      "stdout_bytes": 0,
+      "stderr_bytes": 0,
+      "network_audit": {
+        "blocked_network_attempts": []
+      },
+      "raw_output_sha256": "9b318da15954b53b67732208f6fde02a62e20f0b8ee45f019408ca566810ca38",
+      "result": [
+        {
+          "case": "unpunctuated_chinese",
+          "variant": "baseline",
+          "input_chars": 2422,
+          "excerpt_chars": 800,
+          "expected_fragment": "南门",
+          "retained": false,
+          "excerpt": "复习地点青石暗号晴鸟整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材..."
+        },
+        {
+          "case": "unpunctuated_chinese",
+          "variant": "candidate",
+          "input_chars": 2422,
+          "excerpt_chars": 800,
+          "expected_fragment": "南门",
+          "retained": false,
+          "excerpt": "复习地点青石暗号晴鸟整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材..."
+        },
+        {
+          "case": "oversized_preceding_sentence",
+          "variant": "baseline",
+          "input_chars": 2427,
+          "excerpt_chars": 800,
+          "expected_fragment": "南门",
+          "retained": false,
+          "excerpt": "复习地点青石，暗号晴鸟。整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整..."
+        },
+        {
+          "case": "oversized_preceding_sentence",
+          "variant": "candidate",
+          "input_chars": 2427,
+          "excerpt_chars": 74,
+          "expected_fragment": "南门",
+          "retained": true,
+          "excerpt": "原文节选（位置为规范化文本字符，未覆盖全文）：\n[字符0:12] 复习地点青石，暗号晴鸟。\n[字符2413:2427] 地点改为南门，暗号全部撤销。"
+        },
+        {
+          "case": "cross_language_query",
+          "variant": "baseline",
+          "input_chars": 4156,
+          "excerpt_chars": 800,
+          "expected_fragment": "Bouleau",
+          "retained": false,
+          "excerpt": "Le lieu est la salle Pierre-Verte. Le mot de passe est Oiseau. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de ca..."
+        },
+        {
+          "case": "cross_language_query",
+          "variant": "candidate",
+          "input_chars": 4156,
+          "excerpt_chars": 800,
+          "expected_fragment": "Bouleau",
+          "retained": false,
+          "excerpt": "Le lieu est la salle Pierre-Verte. Le mot de passe est Oiseau. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de ca..."
+        },
+        {
+          "case": "same_language_control",
+          "variant": "baseline",
+          "input_chars": 4156,
+          "excerpt_chars": 785,
+          "expected_fragment": "Bouleau",
+          "retained": true,
+          "excerpt": "原文节选（位置为规范化文本字符，未覆盖全文）：\n[字符0:622] Le lieu est la salle Pierre-Verte. Le mot de passe est Oiseau. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul.\n[字符4042:4156]  Exercice de calcul.Correction : le lieu devient la salle Bouleau. Le mot de passe est révoqué, sans remplacement."
+        },
+        {
+          "case": "same_language_control",
+          "variant": "candidate",
+          "input_chars": 4156,
+          "excerpt_chars": 785,
+          "expected_fragment": "Bouleau",
+          "retained": true,
+          "excerpt": "原文节选（位置为规范化文本字符，未覆盖全文）：\n[字符0:622] Le lieu est la salle Pierre-Verte. Le mot de passe est Oiseau. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul.\n[字符4042:4156]  Exercice de calcul.Correction : le lieu devient la salle Bouleau. Le mot de passe est révoqué, sans remplacement."
+        },
+        {
+          "case": "nearby_archive_qualification",
+          "variant": "baseline",
+          "input_chars": 2444,
+          "excerpt_chars": 800,
+          "expected_fragment": "不恢复约定",
+          "retained": false,
+          "excerpt": "地点白桦，暗号已撤销。整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理..."
+        },
+        {
+          "case": "nearby_archive_qualification",
+          "variant": "candidate",
+          "input_chars": 2444,
+          "excerpt_chars": 91,
+          "expected_fragment": "不恢复约定",
+          "retained": true,
+          "excerpt": "原文节选（位置为规范化文本字符，未覆盖全文）：\n[字符0:11] 地点白桦，暗号已撤销。\n[字符2412:2444] 以下只引用旧记录，不恢复约定。地点青石，暗号晴鸟。归档引用完毕。"
+        },
+        {
+          "case": "long_qualifier_before_quote",
+          "variant": "baseline",
+          "input_chars": 2436,
+          "excerpt_chars": 800,
+          "expected_fragment": "不是真实约定",
+          "retained": true,
+          "excerpt": "地点白桦，暗号已撤销。以下只是小说，不是真实约定，整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料..."
+        },
+        {
+          "case": "long_qualifier_before_quote",
+          "variant": "candidate",
+          "input_chars": 2436,
+          "excerpt_chars": 69,
+          "expected_fragment": "不是真实约定",
+          "retained": false,
+          "excerpt": "原文节选（位置为规范化文本字符，未覆盖全文）：\n[字符0:11] 地点白桦，暗号已撤销。\n[字符2426:2436] 地点青石，暗号晴鸟。"
+        }
+      ],
+      "raw_files": {
+        "stdout.txt": {
+          "path": "/tmp/agentic-preflight-local-20260912-agj98_uu/memory_neighborhood_backoff/stdout.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "stderr.txt": {
+          "path": "/tmp/agentic-preflight-local-20260912-agj98_uu/memory_neighborhood_backoff/stderr.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "output.json": {
+          "path": "/tmp/agentic-preflight-local-20260912-agj98_uu/memory_neighborhood_backoff/output.json",
+          "sha256": "9b318da15954b53b67732208f6fde02a62e20f0b8ee45f019408ca566810ca38"
+        },
+        "network-audit.json": {
+          "path": "/tmp/agentic-preflight-local-20260912-agj98_uu/memory_neighborhood_backoff/network-audit.json",
+          "sha256": "262c001c0f8c74954744ace600b55c276500e8c7d8ed1dda40cf83dbb0ee0e54"
+        }
+      }
+    }
+  ],
+  "limitations": [
+    "Curated development counterexamples are not held-out or representative accuracy estimates.",
+    "Single-process elapsed times include interpreter/import overhead; per-case excerpt timings are one-shot diagnostics and not P50/P95 performance measurements.",
+    "The memory tokenizer and neighborhood backoff are probe-only candidates, not production adoption.",
+    "No Study domain commit/read-back, browser rendering, semantic grader calibration or live M3 call was performed.",
+    "Temporary raw paths may expire; full diagnostic JSON results and reproduction commands are embedded here."
+  ],
+  "quality_gate_status": "open",
+  "reviewed_local_dependencies": [
+    {
+      "path": "services/ai/tests/test_study_citation_evidence.py",
+      "sha256": "9b605fea1237facf69922f71f5e5e34f456438fe2c0ef6969e9f1d9eb03c5cee"
+    },
+    {
+      "path": "services/ai/app/services/pedagogy.py",
+      "sha256": "14276071cd110af89537a9de4fc9957e4799182f856cc85417eb9dbf9524333f"
+    },
+    {
+      "path": "services/ai/app/services/study_memory.py",
+      "sha256": "2ccba02fc73083d79995566a51f0b00062b5d835d56edd79d0aad3cb30ff7c06"
+    },
+    {
+      "path": "services/ai/app/services/memory_excerpt.py",
+      "sha256": "46651e61257bc365eec39626034f0ea9763075cbd56fa0c3f08d0c8b68b11c44"
+    }
+  ],
+  "summary": {
+    "diagnostic_processes": 3,
+    "diagnostic_process_exit_zero": 3,
+    "network_connection_or_resolution_attempts": 0,
+    "provider_calls": 0,
+    "domain_operations": 0,
+    "citation": {
+      "current_case_count": 7,
+      "current_matched_curated_labels": 4,
+      "current_false_negative_cases": [
+        "zh_relevant"
+      ],
+      "current_false_positive_cases": [
+        "en_shared_function_words",
+        "fr_unrelated_substring"
+      ],
+      "candidate_case_count": 7,
+      "candidate_matched_curated_labels": 4,
+      "candidate_false_negative_cases": [],
+      "candidate_false_positive_cases": [
+        "zh_shared_polite_phrase",
+        "en_shared_function_words",
+        "fr_unrelated_substring"
+      ],
+      "interpretation": "当前代码仍重现中文召回缺口及英文功能词/法文子串误引。直接复用 memory tokenizer 修复此中文命中，却新增共享礼貌用词误引，不采用候选。以上是开发反例覆盖，不是代表性准确率。"
+    },
+    "memory_selector": {
+      "current_case_count": 4,
+      "current_expected_fragment_retained": 1,
+      "missed_cases": [
+        "unpunctuated_chinese",
+        "oversized_preceding_sentence",
+        "cross_language_query"
+      ],
+      "retained_control": "same_language_control",
+      "excerpt_budget_respected": true,
+      "interpretation": "800 字符预算均遵守，但当前实现对无标点、超长邻句及跨语言查询仍回到缺更新的前缀；同语言控制可保留远处更新。性能快不等于检索质量合格。"
+    },
+    "neighborhood_backoff": {
+      "paired_case_count": 6,
+      "baseline_expected_fragment_retained": 2,
+      "candidate_expected_fragment_retained": 3,
+      "candidate_gains": [
+        "oversized_preceding_sentence",
+        "nearby_archive_qualification"
+      ],
+      "candidate_regressions": [
+        "long_qualifier_before_quote"
+      ],
+      "both_missed": [
+        "unpunctuated_chinese",
+        "cross_language_query"
+      ],
+      "interpretation": "候选提高两例片段保留，但让一例原本保留的“不是真实约定”限定丢失。不能按总命中数上升直接采用，应后续单独评估限定保留、跨语言候选检索和按需取回。"
+    },
+    "next_bounded_research": [
+      "MQ-01: 分离候选召回与答案引用蕴含，并新建未参与实现改写的中英法留出集。",
+      "MQ-03: 将源片段召回、限定保留与读后时间/对象推理解耦评估；不要默认采纳小邻域回退。"
+    ],
+    "mq_status_changes": []
+  },
+  "outer_execution_note": "The outer login-shell tool output included '(eval):5: parse error near `end' before the orchestration output. All three diagnostic subprocesses independently exited 0 with empty stdout/stderr and no network-audit events; the shell line is recorded as orchestration/environment output, not candidate or model failure."
+}

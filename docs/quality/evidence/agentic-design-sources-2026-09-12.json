@@ -1,0 +1,457 @@
+{
+  "schema": "literature-triage-not-harness-eval-v1",
+  "retrieved_on": "2026-09-12",
+  "scope": "Task-directed source triage, not systematic review or MiniMax experiment",
+  "search_query": "site:aclanthology.org 2025.acl agent workflow design",
+  "discovery_sources": [
+    "https://aclanthology.org/events/acl-2025/",
+    "https://aclanthology.org/events/acl-2026/"
+  ],
+  "retrieval_methods": [
+    "Google browser search",
+    "Read-only HTTPS retrieval of official event and article pages"
+  ],
+  "source_count": 22,
+  "limitations": [
+    "Paper results are author-reported; not reproduced on M3.",
+    "ACL main, Findings and BEA workshop are distinct venues.",
+    "Only abstracts and metadata for papers; dataset licenses, exact budgets and full methods require follow-up."
+  ],
+  "sources": [
+    {
+      "id": "2025.acl-long.1037",
+      "title": "Beyond Frameworks: Unpacking Collaboration Strategies in Multi-Agent Systems",
+      "url": "https://aclanthology.org/2025.acl-long.1037/",
+      "venue": "Proceedings of the 63rd Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers)",
+      "publication_date": "2025/7",
+      "doi": "10.18653/v1/2025.acl-long.1037",
+      "publication_status": "published_proceedings",
+      "retrieved_on": "2026-09-12",
+      "reading_scope": "Official abstract and citation metadata; PDF tables/code/data not reviewed",
+      "mapped_quality_todos": [
+        "MQ-05",
+        "MQ-10"
+      ],
+      "research_note": "拆分治理、参与、交互和历史管理，比较各自质量与token成本。"
+    },
+    {
+      "id": "2025.acl-long.1170",
+      "title": "AgentDropout: Dynamic Agent Elimination for Token-Efficient and High-Performance LLM-Based Multi-Agent Collaboration",
+      "url": "https://aclanthology.org/2025.acl-long.1170/",
+      "venue": "Proceedings of the 63rd Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers)",
+      "publication_date": "2025/7",
+      "doi": "10.18653/v1/2025.acl-long.1170",
+      "publication_status": "published_proceedings",
+      "retrieved_on": "2026-09-12",
+      "reading_scope": "Official abstract and citation metadata; PDF tables/code/data not reviewed",
+      "mapped_quality_todos": [
+        "MQ-05",
+        "MQ-08"
+      ],
+      "research_note": "裁剪冗余agent与通信；收益需本项目同预算重测。"
+    },
+    {
+      "id": "2025.acl-long.1401",
+      "title": "Divide-Then-Aggregate: An Efficient Tool Learning Method via Parallel Tool Invocation",
+      "url": "https://aclanthology.org/2025.acl-long.1401/",
+      "venue": "Proceedings of the 63rd Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers)",
+      "publication_date": "2025/7",
+      "doi": "10.18653/v1/2025.acl-long.1401",
+      "publication_status": "published_proceedings",
+      "retrieved_on": "2026-09-12",
+      "reading_scope": "Official abstract and citation metadata; PDF tables/code/data not reviewed",
+      "mapped_quality_todos": [
+        "MQ-05"
+      ],
+      "research_note": "工具依赖DAG与独立子任务聚合；方法包含训练，不能直接外推纯prompt。"
+    },
+    {
+      "id": "2025.acl-long.1574",
+      "title": "CiteEval: Principle-Driven Citation Evaluation for Source Attribution",
+      "url": "https://aclanthology.org/2025.acl-long.1574/",
+      "venue": "Proceedings of the 63rd Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers)",
+      "publication_date": "2025/7",
+      "doi": "10.18653/v1/2025.acl-long.1574",
+      "publication_status": "published_proceedings",
+      "retrieved_on": "2026-09-12",
+      "reading_scope": "Official abstract and citation metadata; PDF tables/code/data not reviewed",
+      "mapped_quality_todos": [
+        "MQ-01",
+        "MQ-10"
+      ],
+      "research_note": "细粒度引用质量不能只用NLI支持度，需结合问题和完整检索上下文。"
+    },
+    {
+      "id": "2025.acl-long.1575",
+      "title": "HiAgent: Hierarchical Working Memory Management for Solving Long-Horizon Agent Tasks with Large Language Model",
+      "url": "https://aclanthology.org/2025.acl-long.1575/",
+      "venue": "Proceedings of the 63rd Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers)",
+      "publication_date": "2025/7",
+      "doi": "10.18653/v1/2025.acl-long.1575",
+      "publication_status": "published_proceedings",
+      "retrieved_on": "2026-09-12",
+      "reading_scope": "Official abstract and citation metadata; PDF tables/code/data not reviewed",
+      "mapped_quality_todos": [
+        "MQ-05",
+        "MQ-08"
+      ],
+      "research_note": "按子目标管理单次任务working memory，不等于跨会话记忆。"
+    },
+    {
+      "id": "2025.acl-long.179",
+      "title": "RAG-Critic: Leveraging Automated Critic-Guided Agentic Workflow for Retrieval Augmented Generation",
+      "url": "https://aclanthology.org/2025.acl-long.179/",
+      "venue": "Proceedings of the 63rd Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers)",
+      "publication_date": "2025/7",
+      "doi": "10.18653/v1/2025.acl-long.179",
+      "publication_status": "published_proceedings",
+      "retrieved_on": "2026-09-12",
+      "reading_scope": "Official abstract and citation metadata; PDF tables/code/data not reviewed",
+      "mapped_quality_todos": [
+        "MQ-01",
+        "MQ-05"
+      ],
+      "research_note": "训练的错误critic和分类恢复流程，不能外推为通用自我反思提示收益。"
+    },
+    {
+      "id": "2025.acl-long.628",
+      "title": "From Objectives to Questions: A Planning-based Framework for Educational Mathematical Question Generation",
+      "url": "https://aclanthology.org/2025.acl-long.628/",
+      "venue": "Proceedings of the 63rd Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers)",
+      "publication_date": "2025/7",
+      "doi": "10.18653/v1/2025.acl-long.628",
+      "publication_status": "published_proceedings",
+      "retrieved_on": "2026-09-12",
+      "reading_scope": "Official abstract and citation metadata; PDF tables/code/data not reviewed",
+      "mapped_quality_todos": [
+        "MQ-04",
+        "MQ-07"
+      ],
+      "research_note": "教育目标驱动的题目规划与评估；MCTS成本须单独审查。"
+    },
+    {
+      "id": "2025.bea-1.77",
+      "title": "Findings of the BEA 2025 Shared Task on Pedagogical Ability Assessment of AI-powered Tutors",
+      "url": "https://aclanthology.org/2025.bea-1.77/",
+      "venue": "Proceedings of the 20th Workshop on Innovative Use of NLP for Building Educational Applications (BEA 2025)",
+      "publication_date": "2025/7",
+      "doi": "10.18653/v1/2025.bea-1.77",
+      "publication_status": "published_proceedings",
+      "retrieved_on": "2026-09-12",
+      "reading_scope": "Official abstract and citation metadata; PDF tables/code/data not reviewed",
+      "mapped_quality_todos": [
+        "MQ-07",
+        "MQ-10"
+      ],
+      "research_note": "四维教学能力评估与独立人工gold；Workshop而非主会论文。"
+    },
+    {
+      "id": "2025.findings-acl.972",
+      "title": "TReMu: Towards Neuro-Symbolic Temporal Reasoning for LLM-Agents with Memory in Multi-Session Dialogues",
+      "url": "https://aclanthology.org/2025.findings-acl.972/",
+      "venue": "Findings of the Association for Computational Linguistics: ACL 2025",
+      "publication_date": "2025/7",
+      "doi": "10.18653/v1/2025.findings-acl.972",
+      "publication_status": "published_proceedings",
+      "retrieved_on": "2026-09-12",
+      "reading_scope": "Official abstract and citation metadata; PDF tables/code/data not reviewed",
+      "mapped_quality_todos": [
+        "MQ-03"
+      ],
+      "research_note": "时间线摘要和符号计算；原始评测为增广多选题，未知日期不可补造。"
+    },
+    {
+      "id": "2026.acl-long.75",
+      "title": "Grammar Search for Multi-Agent Systems",
+      "url": "https://aclanthology.org/2026.acl-long.75/",
+      "venue": "Proceedings of the 64th Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers)",
+      "publication_date": "2026/7",
+      "doi": "10.18653/v1/2026.acl-long.75",
+      "publication_status": "published_proceedings",
+      "retrieved_on": "2026-09-12",
+      "verification": "Read official ACL Anthology event page abstract; independently read individual paper page citation metadata. PDF, tables, code and data were not reviewed.",
+      "abstract_takeaways_and_transfer_hypotheses": [
+        "固定可组合组件的 agent 架构搜索；在两个 backbone、数学与 QA 两个领域的多数 benchmark 上优于既有搜索方法。",
+        "可将候选限定为单次生成、检索后生成、规划-执行、独立候选选择和 critic 修复，做预算匹配消融。"
+      ],
+      "limitations": [
+        "没有证明所有任务都需要多 agent，也没有覆盖本项目工作流。"
+      ],
+      "mapped_quality_todos": [
+        "MQ-05",
+        "MQ-10"
+      ]
+    },
+    {
+      "id": "2026.acl-long.335",
+      "title": "DeepPlanning: Benchmarking Long-Horizon Agentic Planning with Verifiable Constraints",
+      "url": "https://aclanthology.org/2026.acl-long.335/",
+      "venue": "Proceedings of the 64th Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers)",
+      "publication_date": "2026/7",
+      "doi": "10.18653/v1/2026.acl-long.335",
+      "publication_status": "published_proceedings",
+      "retrieved_on": "2026-09-12",
+      "verification": "Read official ACL Anthology event page abstract; independently read individual paper page citation metadata. PDF, tables, code and data were not reviewed.",
+      "abstract_takeaways_and_transfer_hypotheses": [
+        "DeepPlanning 同时要求主动信息搜集、局部约束推理和全局约束优化。",
+        "为 Learning Plan 建立来源覆盖、前置关系、分钟预算与修订后全局一致性的可执行验证。"
+      ],
+      "limitations": [
+        "原始领域是旅行与购物；学习安排的教学有效性仍需独立内容评审。"
+      ],
+      "mapped_quality_todos": [
+        "MQ-04",
+        "MQ-05",
+        "MQ-10"
+      ]
+    },
+    {
+      "id": "2026.acl-long.325",
+      "title": "Planning-Guided Tutoring with Assessment-Driven Memory for Pedagogical LLM Tutors",
+      "url": "https://aclanthology.org/2026.acl-long.325/",
+      "venue": "Proceedings of the 64th Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers)",
+      "publication_date": "2026/7",
+      "doi": "10.18653/v1/2026.acl-long.325",
+      "publication_status": "published_proceedings",
+      "retrieved_on": "2026-09-12",
+      "verification": "Read official ACL Anthology event page abstract; independently read individual paper page citation metadata. PDF, tables, code and data were not reviewed.",
+      "abstract_takeaways_and_transfer_hypotheses": [
+        "ScaffoldLM 使用分步教学计划与 assessment-driven memory，按学习者状态和步骤完成情况选择下一教学行动。",
+        "比较 history-only、摘要记忆、诊断记忆与步骤计划，分别看误解诊断、推进和回退。"
+      ],
+      "limitations": [
+        "原始实验是数学多轮辅导，不能外推到本项目中文/法文教材或真实学习效果。"
+      ],
+      "mapped_quality_todos": [
+        "MQ-03",
+        "MQ-04",
+        "MQ-07",
+        "MQ-10"
+      ]
+    },
+    {
+      "id": "2026.acl-long.1371",
+      "title": "LongTutor: Benchmarking Large Language Models for Long-term Personalized Tutoring",
+      "url": "https://aclanthology.org/2026.acl-long.1371/",
+      "venue": "Proceedings of the 64th Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers)",
+      "publication_date": "2026/7",
+      "doi": "10.18653/v1/2026.acl-long.1371",
+      "publication_status": "published_proceedings",
+      "retrieved_on": "2026-09-12",
+      "verification": "Read official ACL Anthology event page abstract; independently read individual paper page citation metadata. PDF, tables, code and data were not reviewed.",
+      "abstract_takeaways_and_transfer_hypotheses": [
+        "LongTutor 基于专家标注的真实学习日志，分为历史证据获取、知识状态诊断、自适应教学行动。",
+        "摘要指出检索能力与诊断/行动能力存在缺口，三层应独立评分。"
+      ],
+      "limitations": [
+        "数据领域与学习历史形态需要先检查；研究 benchmark 不能直接成为生产验收。"
+      ],
+      "mapped_quality_todos": [
+        "MQ-03",
+        "MQ-07",
+        "MQ-10"
+      ]
+    },
+    {
+      "id": "2026.acl-long.27",
+      "title": "How Memory Management Impacts LLM Agents: An Empirical Study of Experience-Following Behavior",
+      "url": "https://aclanthology.org/2026.acl-long.27/",
+      "venue": "Proceedings of the 64th Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers)",
+      "publication_date": "2026/7",
+      "doi": "10.18653/v1/2026.acl-long.27",
+      "publication_status": "published_proceedings",
+      "retrieved_on": "2026-09-12",
+      "verification": "Read official ACL Anthology event page abstract; independently read individual paper page citation metadata. PDF, tables, code and data were not reviewed.",
+      "abstract_takeaways_and_transfer_hypotheses": [
+        "相似经验会诱发相似输出，造成错误传播和不恰当经验复用。",
+        "增加错误记忆、过时记忆、相似但条件不同、删除和更正后的行为案例。"
+      ],
+      "limitations": [
+        "论文讨论的 agent 经验记忆不是本项目全部领域记忆；成功执行不自动等于适合未来复用。"
+      ],
+      "mapped_quality_todos": [
+        "MQ-02",
+        "MQ-03",
+        "MQ-08",
+        "MQ-10"
+      ]
+    },
+    {
+      "id": "2026.acl-long.370",
+      "title": "Mem2ActBench: A Benchmark for Evaluating Long-Term Memory Utilization in Task-Oriented Autonomous Agents",
+      "url": "https://aclanthology.org/2026.acl-long.370/",
+      "venue": "Proceedings of the 64th Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers)",
+      "publication_date": "2026/7",
+      "doi": "10.18653/v1/2026.acl-long.370",
+      "publication_status": "published_proceedings",
+      "retrieved_on": "2026-09-12",
+      "verification": "Read official ACL Anthology event page abstract; independently read individual paper page citation metadata. PDF, tables, code and data were not reviewed.",
+      "abstract_takeaways_and_transfer_hypotheses": [
+        "Mem2ActBench 从被动事实回忆转向主动选工具与参数 grounding；400 个 tool-use 任务，91.3% 被人工评估为强依赖记忆。",
+        "评测历史偏好、目标及状态是否进入正确工具和参数。"
+      ],
+      "limitations": [
+        "来自合成会话链和既有 benchmark 的任务，不代表本项目学习者。"
+      ],
+      "mapped_quality_todos": [
+        "MQ-03",
+        "MQ-05",
+        "MQ-07",
+        "MQ-10"
+      ]
+    },
+    {
+      "id": "2026.acl-long.1068",
+      "title": "MMTutorBench: The First Multimodal Benchmark for AI Math Tutoring",
+      "url": "https://aclanthology.org/2026.acl-long.1068/",
+      "venue": "Proceedings of the 64th Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers)",
+      "publication_date": "2026/7",
+      "doi": "10.18653/v1/2026.acl-long.1068",
+      "publication_status": "published_proceedings",
+      "retrieved_on": "2026-09-12",
+      "verification": "Read official ACL Anthology event page abstract; independently read individual paper page citation metadata. PDF, tables, code and data were not reviewed.",
+      "abstract_takeaways_and_transfer_hypotheses": [
+        "MMTutorBench 有 770 道题、问题专属 rubric 和六个维度，拆分 Insight Discovery、Operation Formulation、Operation Execution。",
+        "摘要报告 OCR pipeline 使教学质量下降；比较页图、当前 OCR、人工校正文与结构化图文证据。"
+      ],
+      "limitations": [
+        "论文自己的 judge 可靠性结论限于其协议；M3 多模态输入行为及本项目 grader 仍需校准。"
+      ],
+      "mapped_quality_todos": [
+        "MQ-04",
+        "MQ-07",
+        "MQ-09",
+        "MQ-10"
+      ]
+    },
+    {
+      "id": "2026.bea-1.56",
+      "title": "Confirming Correct, Missing the Rest: LLM Tutoring Agents Struggle Where Feedback Matters Most",
+      "url": "https://aclanthology.org/2026.bea-1.56/",
+      "venue": "Proceedings of the 21st Workshop on Innovative Use of NLP for Building Educational Applications (BEA 2026)",
+      "publication_date": "2026/7",
+      "doi": "10.18653/v1/2026.bea-1.56",
+      "publication_status": "published_proceedings",
+      "retrieved_on": "2026-09-12",
+      "verification": "Read official ACL Anthology event page abstract; independently read individual paper page citation metadata. PDF, tables, code and data were not reviewed.",
+      "abstract_takeaways_and_transfer_hypotheses": [
+        "10,836 个 solution-feedback 对的研究显示，LLM 在最优解上接近满分，却会误拒正确但次优路径、误认可错误路径。",
+        "将最优、正确但次优、部分正确、错误分层；诊断正确率与反馈可执行性分别评分。"
+      ],
+      "limitations": [
+        "BEA workshop，原领域是命题逻辑；原论文提出的架构限制解释不能不经复现推广。"
+      ],
+      "mapped_quality_todos": [
+        "MQ-07",
+        "MQ-10"
+      ]
+    },
+    {
+      "id": "2026.acl-long.1960",
+      "title": "Simulated Students in Tutoring Dialogues: Substance or Illusion?",
+      "url": "https://aclanthology.org/2026.acl-long.1960/",
+      "venue": "Proceedings of the 64th Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers)",
+      "publication_date": "2026/7",
+      "doi": "10.18653/v1/2026.acl-long.1960",
+      "publication_status": "published_proceedings",
+      "retrieved_on": "2026-09-12",
+      "verification": "Read official ACL Anthology event page abstract; independently read individual paper page citation metadata. PDF, tables, code and data were not reviewed.",
+      "abstract_takeaways_and_transfer_hypotheses": [
+        "从语言、行为和认知三个方面评测 simulated students，简单 prompting 表现差，训练改善但仍有限。",
+        "M3 学生模拟适合压力测试与筛选；独立专家可评教学质量和适当性，真实学习增益需真实学习者的适当实证测量。"
+      ],
+      "limitations": [
+        "真实数学辅导数据上的发现，不是所有学生模拟器必然失败；也不授权把模拟分数当学习增益。"
+      ],
+      "mapped_quality_todos": [
+        "MQ-07",
+        "MQ-10"
+      ]
+    },
+    {
+      "id": "2026.acl-long.2006",
+      "title": "Simple Agents, Biased Judges: Efficient Multi-Party Dialogue Generation & The Evaluation Gap",
+      "url": "https://aclanthology.org/2026.acl-long.2006/",
+      "venue": "Proceedings of the 64th Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers)",
+      "publication_date": "2026/7",
+      "doi": "10.18653/v1/2026.acl-long.2006",
+      "publication_status": "published_proceedings",
+      "retrieved_on": "2026-09-12",
+      "verification": "Read official ACL Anthology event page abstract; independently read individual paper page citation metadata. PDF, tables, code and data were not reviewed.",
+      "abstract_takeaways_and_transfer_hypotheses": [
+        "319 次 pairwise comparisons 中，human-LLM agreement Cohen κ≈0.11，human-human κ=0.29。",
+        "LLM judge 偏好助理式冗长、回避平局，对乱序对话不敏感；Tavern 加入真人盲评和乱序/身份交换检验。"
+      ],
+      "limitations": [
+        "特定社会对话实验及模型；不能把该 κ 当本项目已测值，须独立校准。"
+      ],
+      "mapped_quality_todos": [
+        "MQ-06",
+        "MQ-10"
+      ]
+    },
+    {
+      "id": "2026.findings-acl.1894",
+      "title": "Single-Agent Generation Surpasses Multi-Agent Systems in Semantic Diversity",
+      "url": "https://aclanthology.org/2026.findings-acl.1894/",
+      "venue": "Findings of the Association for Computational Linguistics: ACL 2026",
+      "publication_date": "2026/7",
+      "doi": "10.18653/v1/2026.findings-acl.1894",
+      "publication_status": "published_proceedings",
+      "retrieved_on": "2026-09-12",
+      "verification": "Read official ACL Anthology event page abstract; independently read individual paper page citation metadata. PDF, tables, code and data were not reviewed.",
+      "abstract_takeaways_and_transfer_hypotheses": [
+        "在匹配 prompt 的发散思考研究中，single-agent 及单次 multi-output 的语义多样性优于 MAS。",
+        "高并行方案保留单次多候选和多个独立调用两种基线，并控制总预算。"
+      ],
+      "limitations": [
+        "Findings 论文、发散思考任务；不能推出单 agent 在规划、工具调用及其他任务普遍更好。"
+      ],
+      "mapped_quality_todos": [
+        "MQ-05",
+        "MQ-06",
+        "MQ-10"
+      ]
+    },
+    {
+      "id": "2026.findings-acl.627",
+      "title": "MedDCR: Learning to Design Agentic Workflows for Medical Coding",
+      "url": "https://aclanthology.org/2026.findings-acl.627/",
+      "venue": "Findings of the Association for Computational Linguistics: ACL 2026",
+      "publication_date": "2026/7",
+      "doi": "10.18653/v1/2026.findings-acl.627",
+      "publication_status": "published_proceedings",
+      "retrieved_on": "2026-09-12",
+      "verification": "Read official ACL Anthology event page abstract; independently read individual paper page citation metadata. PDF, tables, code and data were not reviewed.",
+      "abstract_takeaways_and_transfer_hypotheses": [
+        "MedDCR 将 workflow design 建模为学习问题，Designer 提议、Coder 执行、Reflector 提供反馈，memory archive 保存设计供复用和迭代。",
+        "独特可借鉴点是将架构设计候选与执行轨迹分开持久化，并由失败分类反馈驱动下一轮候选，而不是让执行 agent 即兴修改自身。"
+      ],
+      "limitations": [
+        "Findings 论文；原领域为医疗编码，需多步概念抽取、规则约束、层级编码与跨文档一致性。",
+        "摘要没有足以复核预算公平性或独立 held-out 的细节；没有读取 PDF，不能声称已证明适用本仓库。",
+        "同模型 Designer/Coder/Reflector 仍会共享盲点，最终 judge 和 holdout 不应进入反思记忆。"
+      ],
+      "mapped_quality_todos": [
+        "MQ-04",
+        "MQ-05",
+        "MQ-10"
+      ]
+    },
+    {
+      "id": "anthropic-building-effective-agents",
+      "title": "Building effective agents",
+      "url": "https://www.anthropic.com/research/building-effective-agents",
+      "venue": "Anthropic engineering/research article; not peer-reviewed conference paper",
+      "publication_date": "2024-12-19",
+      "publication_status": "official_vendor_article",
+      "retrieved_on": "2026-09-12",
+      "reading_scope": "Article body; current page warns tooling landscape has changed since initial publication",
+      "mapped_quality_todos": [
+        "MQ-05",
+        "MQ-10"
+      ],
+      "research_note": "Composable workflow patterns and tool interface design; engineering guidance rather than controlled evidence for this repository."
+    }
+  ]
+}

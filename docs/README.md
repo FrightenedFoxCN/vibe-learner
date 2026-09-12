@@ -41,4 +41,6 @@
 
 ## 模型质量研究
 
+[Agentic design 与 ACL 2025/2026 研究](quality/agentic-design-research-2026-09-12.md)将外部结果对应到现有质量子任务；[M3 高并行探索计划](quality/m3-parallel-exploration-2026-09-12.md)按首日 2000M tokens 上限、最短决策时间安排并发与证据产出。首批[本地诊断](quality/evidence/agentic-preflight-local-2026-09-12.json)已执行，随后已完成[独立实验运行器](../tools/model-quality/README.md)、领域接入预检与[真实容量测量](quality/evidence/m3-live-concurrency-capacity-2026-09-12.json)：4 并发通过，8 并发触发 429；独立质量确认仍待完成。
+
 [研究接手摘要](quality/research-summary.md)说明已采用结论、未采用策略和复现入口；[质量研究索引](quality/minimax-m3-v1.md)保留旧链接。未关闭问题的混合实验与原始失败继续保留，纯已完成过程通过 Git 查询。
