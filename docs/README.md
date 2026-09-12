@@ -1,6 +1,6 @@
 # 项目文档
 
-未完成工作统一维护在 [TODO](../TODO.md)。本目录保留当前架构、接口、操作手册和可执行预算；历史审计、验收日志及阶段推进记录通过 Git 历史查询。
+未完成工作统一由 [TODO](../TODO.md) 索引；模型质量的详细任务与证据维护在[独立质量 TODO](quality/TODO.md)。本目录保留当前架构、接口、操作手册和可执行预算；历史审计、验收日志及阶段推进记录通过 Git 历史查询。
 
 | 文档 | 用途 |
 | --- | --- |
@@ -18,13 +18,14 @@
 | [章节与日程](study-chapter-and-schedule.md) | 领域术语和 Session 范围 |
 | [计划修订](plan-revision.md) | Plan CAS、修订预览、接受/拒绝、历史回滚与恢复 |
 | [计划文本契约](plan-text-contract.md) | 面向学习者的文本字段语义 |
+| [模型运行时质量](model-runtime-quality.md) | 已采用的规划、记忆、多模态和 Provider 边界 |
 | [规划 Prompt 契约](learning-plan-prompt-contract.md) | Prompt 结构和模型输入 |
 | [学习工作区](frontend-learning-workspace.md) | Plan/Study 前端职责 |
 | [前端测试边界](frontend-test-boundaries.md) | 独立数据/Hook/组件模块与生产浏览器验收 |
 | [后端测试边界](backend-test-boundaries.md) | 领域契约、生命周期、事务与进程中断门 |
 | [场景编辑器](scene-setup.md) | 层级场景和保存结构 |
 
-修改前先阅读对应领域文档及 [AGENTS](../AGENTS.md)。未完成任务只维护在 TODO；已完成的阶段计划、逐日进展和重复审查记录通过 Git 历史查询，不在当前目录重复维护。
+修改前先阅读对应领域文档及 [AGENTS](../AGENTS.md)。未完成任务由根 TODO 索引，模型质量细项只维护在独立质量 TODO；已完成的阶段计划、逐日进展和重复审查记录通过 Git 历史查询，不在当前目录重复维护。
 
 ## 发布与验收
 
@@ -35,3 +36,7 @@
 - [诊断测量基线](performance/diagnostic-local-baseline-v1.md)：诊断存储与导出协议。
 
 原始结果保留在 `acceptance/`、`performance/` 和 `plans/acceptance/`；保留证据不等于扩大其模型、平台或独立性范围。
+
+## 模型质量研究
+
+[研究接手摘要](quality/research-summary.md)说明已采用结论、未采用策略和复现入口；[质量研究索引](quality/minimax-m3-v1.md)保留旧链接。未关闭问题的混合实验与原始失败继续保留，纯已完成过程通过 Git 查询。

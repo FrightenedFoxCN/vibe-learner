@@ -106,6 +106,14 @@ Prompt wording and runner behavior both bias toward continued tool use when:
 - subsection hints are sparse or noisy
 - the model has not yet gathered enough evidence to emit useful `schedule_chapters`
 
+## Runtime evidence and budget boundaries
+
+`get_study_unit_detail` permits at most three calls per model round and four per operation, executed serially. Detail excerpts follow the revised Study Unit page range; page-text character limits include separators, and image page ranges are bounded before allocation. Complete the tool-result batch before attaching images, and retain tool evidence during strict proposal repair.
+
+A single unit is not coarse solely because its count is one. The existing wide-source criterion requires at most two units and an at-least-80-page span; sparse detail signals remain independent. `estimate_plan_completion` is labeled “学习单元结构估分” and assesses source structure metadata, not the generated plan's activities, goal coverage or factual quality.
+
+Repair and commit validation share chapter invariants. The repair prompt distinguishes application timestamps from learning durations. See [model runtime quality](model-runtime-quality.md) for adopted scope, commit references and verification limits.
+
 ## Change Rules
 
 When changing learning-plan prompting:

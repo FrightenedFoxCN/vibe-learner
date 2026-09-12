@@ -71,11 +71,10 @@
 
 ## 模型质量复核
 
-- [ ] `QG-MODEL-QUALITY-001` `[P2 · 实测进行中]` 建立独立复核的真实模型质量与 held-out 评测基线。
-  - 2026-09-12 用户恢复此项，指定 MiniMax-M3 持续实测与优化；计划及逐轮依据见 [M3 质量检定记录](docs/quality/minimax-m3-v1.md)。旧 `QG-002` / `web-strict-decode-adversarial-v1` 不变。
-  - 重点覆盖填空题语义判分、人格关系/称呼 grounding、规划引用和生成内容质量。
-  - 十个阶段的 64 个确定性案例及原有三个 pilot 已完成；不重做注册，不把技术恢复测试当作模型质量验收。
-  - 模型 grader 用于门禁前必须有独立人工校准；开发者或模型评审结果不能冒充独立人工验收。
+- [ ] `QG-MODEL-QUALITY-001` `[P2 · 已暂停，待独立复核]` 建立真实模型质量与 held-out 评测基线。
+  - 用户要求在 MiniMax-M3 第 121 轮后停止。详细未完成事项、证据和关闭标准只维护在[独立质量 TODO](docs/quality/TODO.md)，不自动继续实测。
+  - [已采用运行时行为](docs/model-runtime-quality.md)与[研究接手摘要](docs/quality/research-summary.md)已整理；旧 `QG-002` / `web-strict-decode-adversarial-v1` 不变。
+  - 已完成的确定性注册不重做；模型 grader 需独立人工校准，技术恢复和维护者评审不代替内容质量验收。
 
 ## Research parking lot（未排期）
 
