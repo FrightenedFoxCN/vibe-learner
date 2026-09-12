@@ -1,0 +1,122 @@
+{
+  "scope": "Maintainer review; not independent certification",
+  "rows": [
+    {
+      "cell": 0,
+      "candidate": false,
+      "committed": true,
+      "sdk_attempts": 5,
+      "responses_with_usage": 5,
+      "tool_refusals": 5,
+      "estimate_calls": 1,
+      "image_parts": 0,
+      "offered_tools": [
+        "get_study_unit_detail",
+        "ask_planning_question",
+        "estimate_plan_completion",
+        "revise_study_units",
+        "read_page_range_content"
+      ],
+      "cache_tokens": [
+        128,
+        18190,
+        24817,
+        27604,
+        27892
+      ]
+    },
+    {
+      "cell": 1,
+      "candidate": true,
+      "committed": false,
+      "sdk_attempts": 4,
+      "responses_with_usage": 3,
+      "tool_refusals": 4,
+      "estimate_calls": 0,
+      "image_parts": 0,
+      "offered_tools": [
+        "get_study_unit_detail",
+        "ask_planning_question",
+        "estimate_plan_completion",
+        "revise_study_units",
+        "read_page_range_content"
+      ],
+      "cache_tokens": [
+        null,
+        17920,
+        28160,
+        null
+      ]
+    },
+    {
+      "cell": 2,
+      "candidate": true,
+      "committed": false,
+      "sdk_attempts": 6,
+      "responses_with_usage": 5,
+      "tool_refusals": 3,
+      "estimate_calls": 1,
+      "image_parts": 0,
+      "offered_tools": [
+        "get_study_unit_detail",
+        "ask_planning_question",
+        "estimate_plan_completion",
+        "revise_study_units",
+        "read_page_range_content"
+      ],
+      "cache_tokens": [
+        128,
+        27109,
+        27110,
+        30404,
+        30893,
+        null
+      ]
+    },
+    {
+      "cell": 3,
+      "candidate": false,
+      "committed": false,
+      "sdk_attempts": 17,
+      "responses_with_usage": 16,
+      "tool_refusals": 31,
+      "estimate_calls": 1,
+      "image_parts": 0,
+      "offered_tools": [
+        "get_study_unit_detail",
+        "ask_planning_question",
+        "estimate_plan_completion",
+        "revise_study_units",
+        "read_page_range_content"
+      ],
+      "cache_tokens": [
+        0,
+        18048,
+        21120,
+        22912,
+        24576,
+        26496,
+        26624,
+        26752,
+        26752,
+        26880,
+        27136,
+        33920,
+        36864,
+        37120,
+        37120,
+        37376,
+        null
+      ]
+    }
+  ],
+  "findings": [
+    "Only cell 0 committed; remaining cells terminated with harness_runtime_wall_time_budget_exceeded. SDK attempts without usage are not counted as completed upstream responses.",
+    "Despite multimodal_enabled and native_tools configuration, observed SDK catalogs contain five tools and no read_page_range_images. No image benefit was tested.",
+    "Committed plan confuses physical and printed page locations: actual chapter I starts PDF31/printed1; plan places Espaces geometriques/Spec around PDF14–22.",
+    "Original TOC says Le spectre premier, not L’esprit premier. Definition1.1 is a locally ringed space; generated Z-functor/gluing account is inaccurate.",
+    "Persona comparison activities are present, but do not establish source correctness. First task durations total240 minutes; five available hours does not require every minute allocated.",
+    "Candidate description showed no demonstrated quality or efficiency improvement. No production adoption.",
+    "Prepared document processed status and nonempty units revalidated; historical Planning failed. All cells loaded code before the text-budget fix."
+  ]
+}

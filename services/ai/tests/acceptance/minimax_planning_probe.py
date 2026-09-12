@@ -68,7 +68,9 @@ def run(root, repetitions, budget_candidate=False, selected_case=None, detail_pa
         initial_evidence_tool=None, page_evidence=None, grounding_candidate=False,
         page_evidence_page=8, persona_domain="math", controlled_page_evidence=False,
         prepared_source_root=None, transcription_file=None, redact_tool_error_evidence=False,
-        tool_recovery_hint_candidate=False, page_evidence_dpi=100, persona_method=None):
+        tool_recovery_hint_candidate=False, page_evidence_dpi=100, persona_method=None, prepared_document_id=None):
+    if prepared_document_id and not prepared_source_root:
+        raise ValueError('Explicit prepared document requires source root')
     if not 72 <= page_evidence_dpi <= 240:
         raise ValueError("Evidence DPI must be between 72 and 240")
     if redact_tool_error_evidence and tool_recovery_hint_candidate:
@@ -110,8 +112,8 @@ def run(root, repetitions, budget_candidate=False, selected_case=None, detail_pa
     prepared_row = None
     if prepared_source_root:
         prepared_row = json.loads((prepared_source_root / "report.jsonl").read_text().splitlines()[0])
-        if not prepared_row.get("boundary_success"):
-            raise ValueError("Prepared source must have completed successfully")
+        if not prepared_row.get("boundary_success") and not prepared_document_id:
+            raise ValueError("Failed source plan requires explicit prepared document ID")
         shutil.copytree(prepared_source_root, root)
         (root / "report.jsonl").unlink()
     else:
@@ -262,12 +264,16 @@ def run(root, repetitions, budget_candidate=False, selected_case=None, detail_pa
         persona.raise_for_status()
         persona_id = persona.json()["id"]
         if prepared_row is not None:
-            document_id = prepared_row["result"]["document_id"]
+            document_id = prepared_document_id or prepared_row["result"]["document_id"]
             current = client.get(f"/documents/{document_id}/status")
             current.raise_for_status()
             document = current.json()
+            if document['status'] != 'processed' or not document.get('study_units'):
+                raise ValueError('Prepared document must be processed with study units')
             source_report = {**prepared_row["source_document"], "reused_prepared_document": True,
-                "source_operation_id": prepared_row["harness_operation_id"]}
+                "source_operation_id": prepared_row["harness_operation_id"],
+                "source_plan_boundary_success": prepared_row["boundary_success"],
+                "prepared_document_status_revalidated": document["status"]}
             source_report["source_process_ms"] = source_report.pop("process_ms", None)
             source_report["study_units"] = len(document.get("study_units", []))
         elif pdf_path is not None:
