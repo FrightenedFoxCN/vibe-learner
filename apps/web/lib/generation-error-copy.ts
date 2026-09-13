@@ -1,7 +1,12 @@
 import { isApiHttpError } from "./http-error";
 
 export function humanizeSettingGenerationError(error: unknown, subject = "内容"): string {
-  if (!isApiHttpError(error)) return `${subject}生成失败，请稍后重试。`;
+  if (!isApiHttpError(error)) {
+    const detail = error instanceof Error ? error.message.trim().slice(0, 160) : "";
+    return detail
+      ? `${subject}生成失败（${detail}），请稍后重试。`
+      : `${subject}生成失败，请稍后重试。`;
+  }
   const code = error.code || error.message;
   const messages: Record<string, string> = {
     setting_model_output_truncated: "模型输出达到上限且未形成完整结果。请减少输入长度后重试；系统会保留本次诊断记录。",
