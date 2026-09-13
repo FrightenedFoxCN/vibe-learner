@@ -7,11 +7,13 @@ from dataclasses import dataclass
 import fitz
 
 from app.models.domain import (
+    DocumentChunkRecord,
     DocumentDebugRecord,
     DocumentSection,
     LearningGoalInput,
     LearningPlanRecord,
     PersonaProfile,
+    PlanningIntentV1,
     PlanningQuestionRecord,
     StudyUnitRecord,
 )
@@ -21,16 +23,20 @@ from app.services.prompt_loader import load_prompt_template
 PLAN_JSON_SCHEMA = (
     "{"
     '"schema_name": "learning-plan-proposal", '
-    '"schema_version": "learning-plan-proposal-v1", '
+    '"schema_version": "learning-plan-proposal-v3", '
     '"course_title": string, '
     '"overview": string, '
+    '"output_language": string, '
     '"today_tasks": string[], '
     '"schedule": ['
     "{"
-    '"unit_id": string, '
+    '"unit_index": integer, '
     '"title": string, '
     '"focus": string, '
     '"activity_type": "learn" | "review", '
+    '"duration_minutes": integer, '
+    '"coverage_mode": "complete" | "selective" | "overview", '
+    '"workload_rationale": string, '
     '"schedule_chapters": ['
     "{"
     '"title": string, '
@@ -69,15 +75,17 @@ def build_learning_plan_messages(
     planning_context = build_learning_plan_context(
         study_units=study_units,
         debug_report=debug_report,
+        planning_intent=goal.planning_intent,
     )
     # One bounded excerpt per unit gives the planner a content cue for every
     # admitted boundary.  This is deliberately much smaller than page-range
     # tool output; tools remain available for targeted verification.
-    unit_by_id = {unit.id: unit for unit in study_units}
     for unit_payload in planning_context["study_units"]:
+        unit_index = unit_payload["unit_index"]
         unit_payload["source_evidence_excerpts"] = _representative_unit_excerpts(
-            unit=unit_by_id[unit_payload["unit_id"]],
+            unit=study_units[unit_index],
             debug_report=debug_report,
+            planning_intent=goal.planning_intent,
         )
     segmentation_hints = _build_segmentation_hints(
         study_units=study_units,
@@ -109,6 +117,7 @@ def build_learning_plan_messages(
         "document_title": document_title,
         "learning_goal": {
             "objective": goal.objective,
+            "planning_intent": goal.planning_intent.model_dump(mode="json"),
             "scene_profile_summary": goal.scene_profile_summary,
             "scene_profile": (
                 {
@@ -170,18 +179,20 @@ def build_learning_plan_context(
     *,
     study_units: list[StudyUnitRecord],
     debug_report: DocumentDebugRecord | None = None,
+    planning_intent: PlanningIntentV1 | None = None,
 ) -> dict[str, object]:
     course_outline = _build_course_outline(debug_report.sections if debug_report else [])
     study_unit_payload = []
     detail_map = build_study_unit_detail_map(
         study_units=study_units,
         debug_report=debug_report,
+        planning_intent=planning_intent,
     )
-    for unit in study_units:
+    for unit_index, unit in enumerate(study_units):
         detail = detail_map[unit.id]
         study_unit_payload.append(
             {
-                "unit_id": unit.id,
+                "unit_index": unit_index,
                 "title": unit.title,
                 "page_start": unit.page_start,
                 "page_end": unit.page_end,
@@ -190,7 +201,10 @@ def build_learning_plan_context(
                 "include_in_plan": unit.include_in_plan,
                 "subsection_titles": detail["subsection_titles"],
                 "related_section_ids": detail["related_section_ids"],
-                "source_section_ids": list(unit.source_section_ids),
+                "source_section_ids": _scoped_source_section_ids(
+                    unit=unit,
+                    planning_intent=planning_intent,
+                ),
                 "detail_tool_target_id": unit.id,
             }
         )
@@ -254,6 +268,7 @@ def read_page_range_content(
     page_start: int,
     page_end: int,
     max_chars: int = 4000,
+    require_containment: bool = False,
 ) -> dict[str, object]:
     if debug_report is None:
         return {
@@ -269,11 +284,15 @@ def read_page_range_content(
     matched_chunks = sorted([
         chunk
         for chunk in debug_report.chunks
-        if _ranges_overlap(
-            start_a=page_start,
-            end_a=page_end,
-            start_b=chunk.page_start,
-            end_b=chunk.page_end,
+        if (
+            chunk.page_start >= page_start and chunk.page_end <= page_end
+            if require_containment
+            else _ranges_overlap(
+                start_a=page_start,
+                end_a=page_end,
+                start_b=chunk.page_start,
+                end_b=chunk.page_end,
+            )
         )
     ], key=lambda chunk: (chunk.page_start, chunk.page_end, chunk.id))
     parts: list[str] = []
@@ -324,7 +343,10 @@ def read_page_range_content(
 
 
 def _representative_unit_excerpts(
-    *, unit: StudyUnitRecord, debug_report: DocumentDebugRecord | None,
+    *,
+    unit: StudyUnitRecord,
+    debug_report: DocumentDebugRecord | None,
+    planning_intent: PlanningIntentV1 | None = None,
 ) -> list[dict[str, object]]:
     if debug_report is None:
         return []
@@ -332,6 +354,10 @@ def _representative_unit_excerpts(
         unit=unit,
         chunks=debug_report.chunks,
         related_section_ids=list(unit.source_section_ids),
+    )
+    chunks = _scope_chunks_to_explicit_intent(
+        chunks=chunks,
+        planning_intent=planning_intent,
     )
     if not chunks:
         return []
@@ -394,12 +420,25 @@ def build_study_unit_detail_map(
     *,
     study_units: list[StudyUnitRecord],
     debug_report: DocumentDebugRecord | None = None,
+    planning_intent: PlanningIntentV1 | None = None,
 ) -> dict[str, dict[str, object]]:
     sections = debug_report.sections if debug_report else []
     chunks = debug_report.chunks if debug_report else []
     detail_map: dict[str, dict[str, object]] = {}
     for unit in study_units:
         related_sections = _related_sections_for_unit(unit=unit, sections=sections)
+        if (
+            planning_intent is not None
+            and planning_intent.outline_targets.status == "user_explicit"
+        ):
+            allowed_section_ids = set(
+                planning_intent.outline_targets.value or []
+            )
+            related_sections = [
+                section
+                for section in related_sections
+                if section.id in allowed_section_ids
+            ]
         related_section_ids = [section.id for section in related_sections]
         subsection_titles = [
             section.title
@@ -410,6 +449,10 @@ def build_study_unit_detail_map(
             unit=unit,
             chunks=chunks,
             related_section_ids=related_section_ids,
+        )
+        related_chunks = _scope_chunks_to_explicit_intent(
+            chunks=related_chunks,
+            planning_intent=planning_intent,
         )
         detail_map[unit.id] = {
             "unit_id": unit.id,
@@ -445,6 +488,51 @@ def build_study_unit_detail_map(
             ],
         }
     return detail_map
+
+
+def _scope_chunks_to_explicit_intent(
+    *,
+    chunks: list[DocumentChunkRecord],
+    planning_intent: PlanningIntentV1 | None,
+) -> list[DocumentChunkRecord]:
+    if planning_intent is None:
+        return chunks
+    page_constraint = planning_intent.pdf_page_ranges
+    outline_constraint = planning_intent.outline_targets
+    page_ranges = (
+        [(item.page_start, item.page_end) for item in (page_constraint.value or [])]
+        if page_constraint.status == "user_explicit"
+        else []
+    )
+    section_ids = (
+        set(outline_constraint.value or [])
+        if outline_constraint.status == "user_explicit"
+        else set()
+    )
+    return [
+        chunk
+        for chunk in chunks
+        if (
+            not page_ranges
+            or any(
+                chunk.page_start >= start and chunk.page_end <= end
+                for start, end in page_ranges
+            )
+        )
+        and (not section_ids or chunk.section_id in section_ids)
+    ]
+
+
+def _scoped_source_section_ids(
+    *, unit: StudyUnitRecord, planning_intent: PlanningIntentV1 | None,
+) -> list[str]:
+    if (
+        planning_intent is None
+        or planning_intent.outline_targets.status != "user_explicit"
+    ):
+        return list(unit.source_section_ids)
+    allowed = set(planning_intent.outline_targets.value or [])
+    return [section_id for section_id in unit.source_section_ids if section_id in allowed]
 
 
 def _build_course_outline(sections: list[DocumentSection]) -> list[dict[str, object]]:

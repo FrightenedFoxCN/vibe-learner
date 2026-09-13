@@ -38,9 +38,11 @@ def run_sample(context, case, variant):
             return envelope(tools=[{'id': 'fake-read', 'type': 'function', 'function': {'name': 'read_page_range_content', 'arguments': '{"page_start":1,"page_end":2}'}}])
         original = json.loads(next(m['content'] for m in payload['messages'] if m['role'] == 'user'))
         units = original['study_units']
-        return envelope(json.dumps({'schema_name': 'learning-plan-proposal', 'schema_version': 'learning-plan-proposal-v1',
-            'course_title': 'Synthetic course', 'overview': 'Read and practice the supplied source.', 'today_tasks': ['Read the source.'],
-            'schedule': [{'unit_id': u['unit_id'], 'title': u['title'], 'focus': 'Read definitions and work the provided examples.', 'activity_type': 'learn',
+        return envelope(json.dumps({'schema_name': 'learning-plan-proposal', 'schema_version': 'learning-plan-proposal-v2',
+            'course_title': 'Synthetic course', 'overview': 'Read and practice the supplied source.',
+            'output_language': 'en', 'today_tasks': ['Read the source.'],
+            'schedule': [{'unit_index': u['unit_index'], 'title': u['title'], 'focus': 'Read definitions and work the provided examples.', 'activity_type': 'learn',
+                'duration_minutes': 45,
                 'schedule_chapters': [{'title': u['title'], 'anchor_page_start': u['page_start'], 'anchor_page_end': u['page_end'],
                     'source_section_ids': u['source_section_ids'], 'content_slices': [{'page_start': u['page_start'], 'page_end': u['page_end'], 'source_section_ids': u['source_section_ids']}]}]} for u in units if u['include_in_plan']]}))
     config = settings(context)

@@ -256,6 +256,7 @@ class StudyArrangementService:
             course_title=course_title,
             objective=goal.objective,
             scene_profile_summary=goal.scene_profile_summary,
+            planning_intent=goal.planning_intent,
             overview=overview,
             today_tasks=today_tasks,
             study_units=units,
@@ -299,6 +300,7 @@ class StudyArrangementService:
             course_title=course_title,
             objective=goal.objective,
             scene_profile_summary=goal.scene_profile_summary,
+            planning_intent=goal.planning_intent,
             overview=overview,
             today_tasks=today_tasks,
             study_units=units,
@@ -549,6 +551,7 @@ class StudyArrangementService:
                     title=f"{unit.title} 精读",
                     focus=f"完成 {unit.title} 的首轮理解，标出定义、定理与例子。",
                     activity_type="learn",
+                    duration_minutes=45,
                     schedule_chapters=schedule_chapters,
                 )
             )
@@ -560,6 +563,7 @@ class StudyArrangementService:
                     title=f"{unit.title} 回顾",
                     focus=f"复述 {unit.title}，补一条错因或例题笔记。",
                     activity_type="review",
+                    duration_minutes=45,
                     schedule_chapters=schedule_chapters,
                 )
             )

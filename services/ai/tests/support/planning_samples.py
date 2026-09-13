@@ -23,13 +23,17 @@ def valid_proposal_payload() -> dict:
         "schema_version": LEARNING_PLAN_PROPOSAL_SCHEMA_VERSION,
         "course_title": "离散数学基础",
         "overview": "先建立命题逻辑与集合的知识结构。",
+        "output_language": "zh-CN",
         "today_tasks": ["阅读第一章并整理定义。"],
         "schedule": [
             {
-                "unit_id": "unit-1",
+                "unit_index": 0,
                 "title": "第一章精读",
                 "focus": "理解集合与命题逻辑。",
                 "activity_type": "learn",
+                "duration_minutes": 45,
+                "coverage_mode": "complete",
+                "workload_rationale": "",
                 "schedule_chapters": [
                     {
                         "title": "1.1 集合",
@@ -48,4 +52,3 @@ def valid_proposal_payload() -> dict:
             }
         ],
     }
-

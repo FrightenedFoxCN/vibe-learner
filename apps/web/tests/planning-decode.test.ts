@@ -116,7 +116,86 @@ test("Planning decoder accepts a coherent plan and list envelope", () => {
     expectedDocumentId: "document-1",
   });
   assert.equal(plan.schedule[0]?.scheduleChapters[0]?.anchorPageEnd, 2);
+  assert.equal(plan.schedule[0]?.coverageMode, "complete");
   assert.deepEqual(decodeLearningPlanList({ items: [wirePlan()] }), [plan]);
+});
+
+test("Planning decoder requires an auditable reason for selective or overview coverage", () => {
+  const base = wirePlan();
+  const schedule = base.schedule[0];
+  const accepted = decodeLearningPlan({
+    ...base,
+    schedule: [{
+      ...schedule,
+      coverage_mode: "overview",
+      workload_rationale: "This session maps the chapter, skips line-by-line proofs, and defers exercises to the next close-reading session.",
+    }],
+  });
+  assert.equal(accepted.schedule[0]?.coverageMode, "overview");
+
+  assert.throws(
+    () => decodeLearningPlan({
+      ...base,
+      schedule: [{
+        ...schedule,
+        coverage_mode: "selective",
+        workload_rationale: "Skim it.",
+      }],
+    }),
+    (error: unknown) => error instanceof PlanningDecodeError
+      && error.reason === "overload_requires_sufficient_rationale",
+  );
+});
+
+test("Planning decoder keeps unknown intent separate from model-inferred resolution", () => {
+  const base = wirePlan();
+  const resolved = {
+    schema_version: "planning-resolved-intent-v1",
+    pdf_page_ranges: {
+      source: "model_inferred",
+      value: [{ page_start: 1, page_end: 2 }],
+    },
+    outline_targets: { source: "model_inferred", value: ["section-1"] },
+    session_count: { source: "model_inferred", value: 1 },
+    minutes_per_session: { source: "model_inferred", value: 45 },
+    output_language: { source: "model_inferred", value: "en" },
+  };
+  const wire = {
+    ...base,
+    output_language: "en",
+    resolved_planning_intent: resolved,
+    schedule: [{ ...base.schedule[0], duration_minutes: 45 }],
+  };
+  const plan = decodeLearningPlan(wire);
+  assert.equal(plan.planningIntent.sessionCount.status, "unknown");
+  assert.equal(plan.resolvedPlanningIntent?.sessionCount.source, "model_inferred");
+  assert.equal(plan.resolvedPlanningIntent?.minutesPerSession.value, 45);
+
+  assert.throws(
+    () => decodeLearningPlan({
+      ...wire,
+      resolved_planning_intent: {
+        ...resolved,
+        session_count: { source: "user_explicit", value: 1 },
+      },
+    }),
+    (error: unknown) => error instanceof PlanningDecodeError
+      && error.reason === "resolved_intent_source_mismatch",
+  );
+  assert.throws(
+    () => decodeLearningPlan({
+      ...wire,
+      resolved_planning_intent: {
+        ...resolved,
+        pdf_page_ranges: {
+          source: "model_inferred",
+          value: [{ page_start: 1, page_end: 1 }],
+        },
+      },
+    }),
+    (error: unknown) => error instanceof PlanningDecodeError
+      && error.reason === "resolved_page_ranges_mismatch",
+  );
 });
 
 test("Planning decoder accepts the real goal-only synthetic Study Unit scope", () => {

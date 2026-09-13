@@ -135,6 +135,37 @@ export interface LearningGoal {
   sceneProfileSummary?: string;
   // Optional structured scene profile chosen before planning.
   sceneProfile?: SceneProfile;
+  // Structured constraints; omitted fields remain explicitly unknown on the server.
+  planningIntent?: PlanningIntent;
+}
+
+export type PlanningIntentValue<T> =
+  | { status: "unknown"; value: null }
+  | { status: "user_explicit"; value: T };
+
+export interface PlanningPageRange {
+  pageStart: number;
+  pageEnd: number;
+}
+
+export interface PlanningIntent {
+  schemaVersion: "planning-intent-v1";
+  pdfPageRanges: PlanningIntentValue<PlanningPageRange[]>;
+  outlineTargets: PlanningIntentValue<string[]>;
+  sessionCount: PlanningIntentValue<number>;
+  minutesPerSession: PlanningIntentValue<number>;
+  outputLanguage: PlanningIntentValue<string>;
+}
+
+export type PlanningResolvedSource = "user_explicit" | "model_inferred";
+
+export interface PlanningResolvedIntent {
+  schemaVersion: "planning-resolved-intent-v1";
+  pdfPageRanges: { source: PlanningResolvedSource; value: PlanningPageRange[] };
+  outlineTargets: { source: PlanningResolvedSource; value: string[] };
+  sessionCount: { source: PlanningResolvedSource; value: number };
+  minutesPerSession: { source: PlanningResolvedSource; value: number };
+  outputLanguage: { source: PlanningResolvedSource; value: string };
 }
 
 export interface SceneProfile {
@@ -187,6 +218,11 @@ export interface LearningPlan {
   sceneProfileSummary?: string;
   // Optional structured scene profile captured at plan creation time.
   sceneProfile?: SceneProfile;
+  planningIntent: PlanningIntent;
+  // Legacy persisted plans may not have this projection. New plans always do.
+  resolvedPlanningIntent?: PlanningResolvedIntent;
+  // Model-resolved language tag; remains separate from user-explicit intent provenance.
+  outputLanguage: string;
   // One or two sentence learner-facing summary of the plan. This is not a title.
   overview: string;
   // Actionable learner tasks for the current session/day.
@@ -695,6 +731,9 @@ export interface StudyScheduleItem {
   title: string;
   focus: string;
   activityType: string;
+  durationMinutes?: number;
+  coverageMode?: "complete" | "selective" | "overview";
+  workloadRationale?: string;
   status: string;
   scheduleChapters: ScheduleChapter[];
 }

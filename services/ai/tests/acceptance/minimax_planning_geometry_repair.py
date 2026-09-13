@@ -7,7 +7,7 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 from app.models.domain import PlanGenerationTraceRecord
-from app.models.planning import LearningPlanProposalV1
+from app.models.planning import LearningPlanProposalV3
 from app.services.provider_planning import RemotePlanningProvider
 from tests.acceptance.minimax_planning_probe import run
 
@@ -21,13 +21,16 @@ def invalid_geometry(unit, kind):
     else:
         chapters = [chapter(1,2)]
         chapters[0]['content_slices'] = [chapter(2,2)['content_slices'][0], chapter(1,1)['content_slices'][0]]
-    proposal = {'schema_name':'learning-plan-proposal', 'schema_version':'learning-plan-proposal-v1',
+    proposal = {'schema_name':'learning-plan-proposal', 'schema_version':'learning-plan-proposal-v3',
                 'course_title':'两页阅读活动', 'overview':'核对正文、插图与推测的边界。',
+                'output_language':'zh-CN',
                 'today_tasks':['根据学习目标安排各阶段，并核对页码与证据。'],
-                'schedule':[{'unit_id':unit.id, 'title':'阅读与核对', 'focus':'按目标安排阅读活动。',
-                             'activity_type':'learn', 'schedule_chapters':chapters}]}
+                'schedule':[{'unit_index':0, 'title':'阅读与核对', 'focus':'按目标安排阅读活动。',
+                             'activity_type':'learn', 'duration_minutes':45,
+                             'coverage_mode':'complete', 'workload_rationale':'',
+                             'schedule_chapters':chapters}]}
     # It is strict schema-valid; only the cross-chapter/slice order is intentionally wrong.
-    return LearningPlanProposalV1.model_validate(proposal).model_dump_json()
+    return LearningPlanProposalV3.model_validate(proposal).model_dump_json()
 
 
 GEOMETRY_REPAIR_HINT = (

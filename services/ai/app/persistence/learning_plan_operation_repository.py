@@ -92,7 +92,11 @@ class LearningPlanOperationRepository:
                 )
                 if existing is not None:
                     record = _from_row(existing)
-                    if record.request_fingerprint != fingerprint:
+                    comparison_fingerprint = learning_plan_request_fingerprint(
+                        request,
+                        contract_version=record.fingerprint_contract_version,
+                    )
+                    if record.request_fingerprint != comparison_fingerprint:
                         raise LearningPlanRequestConflict(record.client_request_id)
                     resolution = self.harness_operations.resolve_domain_in_session(
                         session,
@@ -114,7 +118,7 @@ class LearningPlanOperationRepository:
                             existing.operation_id,
                             resolution.status.value,
                         )
-                    _validate_duplicate(record, fingerprint=fingerprint)
+                    _validate_duplicate(record, fingerprint=comparison_fingerprint)
                     return record, True
 
                 document_id: str | None = request.document_id or None

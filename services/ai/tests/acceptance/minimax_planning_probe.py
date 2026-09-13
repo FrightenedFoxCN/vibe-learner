@@ -17,6 +17,7 @@ from fastapi.testclient import TestClient
 from app.app_factory import create_app
 from app.core.settings import Settings
 from app.models.api import LearningPlanCreateResponse, LearningPlanResponse
+from app.models.domain import PlanningIntentV1
 from app.persistence.harness_runtime_repository import HarnessRuntimeRepository
 from app.services.provider_sdk import ProviderRequestAdapter
 from app.services.plan_tool_runtime import PlanToolRuntime
@@ -46,6 +47,170 @@ def planning_outcomes(readback_equal, operation_status, traces, execution_count)
         "tool_failures": sum(t["status"] not in {"passed", "repaired"} for t in tools),
         "tool_error_codes": [t["error_code"] for t in tools if t["status"] not in {"passed", "repaired"}],
     }
+
+
+def planning_intent_outcomes(plan, intent, detail_reads, page_content_reads):
+    """Evaluate only machine-checkable intent boundaries; never grade prose quality."""
+    failures = []
+    intent = PlanningIntentV1.model_validate(intent).model_dump(mode="json")
+    raw = plan.get("planning_intent")
+    resolved = plan.get("resolved_planning_intent")
+    if raw != intent:
+        failures.append("raw_intent_not_preserved")
+    if not isinstance(resolved, dict):
+        return {"success": False, "failures": [*failures, "resolved_intent_missing"]}
+
+    schedule = plan.get("schedule") if isinstance(plan.get("schedule"), list) else []
+    chapters = [
+        chapter
+        for item in schedule if isinstance(item, dict)
+        for chapter in item.get("schedule_chapters", []) if isinstance(chapter, dict)
+    ]
+    slices = [
+        content_slice
+        for chapter in chapters
+        for content_slice in chapter.get("content_slices", [])
+        if isinstance(content_slice, dict)
+    ]
+
+    def field(name):
+        value = intent.get(name)
+        return value if isinstance(value, dict) else {"status": "unknown", "value": None}
+
+    def resolved_field(name):
+        value = resolved.get(name)
+        return value if isinstance(value, dict) else {}
+
+    for name in ("pdf_page_ranges", "outline_targets", "session_count",
+                 "minutes_per_session", "output_language"):
+        expected_source = "user_explicit" if field(name).get("status") == "user_explicit" else "model_inferred"
+        if resolved_field(name).get("source") != expected_source:
+            failures.append(f"{name}_provenance_mismatch")
+
+    page_constraint = field("pdf_page_ranges")
+    if page_constraint.get("status") == "user_explicit":
+        ranges = [
+            (item.get("page_start"), item.get("page_end"))
+            for item in page_constraint.get("value", []) if isinstance(item, dict)
+        ]
+
+        def contained(start, end):
+            return type(start) is int and type(end) is int and any(
+                start >= allowed_start and end <= allowed_end
+                for allowed_start, allowed_end in ranges
+            )
+
+        if any(not contained(item.get("anchor_page_start"), item.get("anchor_page_end")) for item in chapters):
+            failures.append("chapter_outside_explicit_pages")
+        if any(not contained(item.get("page_start"), item.get("page_end")) for item in slices):
+            failures.append("content_slice_outside_explicit_pages")
+        covered = set()
+        for item in slices:
+            start, end = item.get("page_start"), item.get("page_end")
+            if type(start) is int and type(end) is int:
+                covered.update(range(start, end + 1))
+        requested = {page for start, end in ranges for page in range(start, end + 1)}
+        if not requested.issubset(covered):
+            failures.append("explicit_pages_not_covered")
+        for read in page_content_reads:
+            if read.get("ok") is True and not contained(read.get("page_start"), read.get("page_end")):
+                failures.append("successful_page_tool_outside_explicit_pages")
+                break
+        for read in detail_reads:
+            if any(not contained(start, end) for start, end in read.get("excerpt_pages", [])):
+                failures.append("detail_excerpt_outside_explicit_pages")
+                break
+        if resolved_field("pdf_page_ranges").get("value") != page_constraint.get("value"):
+            failures.append("resolved_pages_mismatch")
+
+    outline_constraint = field("outline_targets")
+    if outline_constraint.get("status") == "user_explicit":
+        allowed = set(outline_constraint.get("value", []))
+        refs = [
+            source_id
+            for item in [*chapters, *slices]
+            for source_id in item.get("source_section_ids", [])
+        ]
+        if any(source_id not in allowed for source_id in refs):
+            failures.append("source_section_outside_explicit_outline")
+        if resolved_field("outline_targets").get("value") != outline_constraint.get("value"):
+            failures.append("resolved_outline_mismatch")
+
+    session_constraint = field("session_count")
+    if session_constraint.get("status") == "user_explicit":
+        if len(schedule) != session_constraint.get("value"):
+            failures.append("session_count_mismatch")
+        if resolved_field("session_count").get("value") != session_constraint.get("value"):
+            failures.append("resolved_session_count_mismatch")
+
+    minutes_constraint = field("minutes_per_session")
+    durations = [item.get("duration_minutes") for item in schedule if isinstance(item, dict)]
+    if minutes_constraint.get("status") == "user_explicit":
+        if any(value != minutes_constraint.get("value") for value in durations):
+            failures.append("minutes_per_session_mismatch")
+        if resolved_field("minutes_per_session").get("value") != minutes_constraint.get("value"):
+            failures.append("resolved_minutes_mismatch")
+
+    language_constraint = field("output_language")
+    if language_constraint.get("status") == "user_explicit":
+        expected = str(language_constraint.get("value") or "").casefold()
+        if str(plan.get("output_language") or "").casefold() != expected:
+            failures.append("output_language_mismatch")
+        if str(resolved_field("output_language").get("value") or "").casefold() != expected:
+            failures.append("resolved_output_language_mismatch")
+
+    return {"success": not failures, "failures": failures}
+
+
+def planning_workload_outcomes(plan):
+    """Check the auditable workload boundary without grading rationale prose."""
+    failures = []
+    outcomes = []
+    schedule = plan.get("schedule") if isinstance(plan.get("schedule"), list) else []
+    for index, item in enumerate(schedule):
+        if not isinstance(item, dict):
+            failures.append(f"schedule_{index}_invalid")
+            continue
+        pages = set()
+        chapters = item.get("schedule_chapters", [])
+        if not isinstance(chapters, list):
+            failures.append(f"schedule_{index}_chapters_invalid")
+            chapters = []
+        for chapter in chapters:
+            if not isinstance(chapter, dict):
+                continue
+            content_slices = chapter.get("content_slices", [])
+            if not isinstance(content_slices, list):
+                continue
+            for content_slice in content_slices:
+                if not isinstance(content_slice, dict):
+                    continue
+                page_start = content_slice.get("page_start")
+                page_end = content_slice.get("page_end")
+                if type(page_start) is not int or type(page_end) is not int:
+                    continue
+                if page_end >= page_start:
+                    pages.update(range(page_start, page_end + 1))
+        duration = item.get("duration_minutes")
+        minutes_per_page = 1 if item.get("activity_type") == "review" else 3
+        capacity = max(1, duration // minutes_per_page) if type(duration) is int else 0
+        overloaded = len(pages) > capacity
+        mode = item.get("coverage_mode")
+        rationale = item.get("workload_rationale")
+        rationale_chars = len(rationale.strip()) if isinstance(rationale, str) else 0
+        if overloaded and mode not in {"selective", "overview"}:
+            failures.append(f"schedule_{index}_overload_mode_missing")
+        if overloaded and rationale_chars < 40:
+            failures.append(f"schedule_{index}_overload_rationale_insufficient")
+        outcomes.append({
+            "schedule_index": index,
+            "scheduled_pages": len(pages),
+            "page_capacity": capacity,
+            "overloaded": overloaded,
+            "coverage_mode": mode,
+            "rationale_characters": rationale_chars,
+        })
+    return {"success": not failures, "failures": failures, "schedule": outcomes}
 
 
 def _request_shape(payload):
@@ -105,7 +270,8 @@ def run(root, repetitions, budget_candidate=False, selected_case=None, detail_pa
         prepared_source_root=None, transcription_file=None, redact_tool_error_evidence=False,
         tool_recovery_hint_candidate=False, page_evidence_dpi=100, persona_method=None, prepared_document_id=None,
         finalize_after_tool_rounds=None, finalization_tool_policy='omit',
-        transcription_source='experimental_model_transcription', structure_fidelity_candidate=False):
+        transcription_source='experimental_model_transcription', structure_fidelity_candidate=False,
+        planning_intent=None):
     if transcription_source not in {'experimental_model_transcription', 'experimental_native_vision_ocr'}:
         raise ValueError('Unknown supplementary transcription source')
     if finalization_tool_policy not in {'omit', 'none'}:
@@ -399,6 +565,8 @@ def run(root, repetitions, budget_candidate=False, selected_case=None, detail_pa
                     if prepared_row is not None:
                         request_id += f"-{root.name}"
                     payload = {"client_request_id": request_id, "persona_id": persona_id, "objective": objective}
+                    if planning_intent is not None:
+                        payload["planning_intent"] = planning_intent
                     admitted_unit_count = None
                     if case_id != "goal_only":
                         current_document = client.get(f"/documents/{document_id}/status")
@@ -409,6 +577,7 @@ def run(root, repetitions, budget_candidate=False, selected_case=None, detail_pa
                     row = {"scope": "live_planning_admission_commit_readback", "fixture_version": "planning-quality-v1",
                         "git_revision": revision, "case_id": case_id, "repetition": repetition,
                         "model": "MiniMax-M3", "objective": objective, "calls": calls, "boundary_success": False}
+                    row["planning_intent"] = planning_intent
                     row["source_document"] = source_report
                     row["detail_evidence_reads"] = detail_reads
                     row["page_content_reads"] = page_content_reads
@@ -489,6 +658,23 @@ def run(root, repetitions, budget_candidate=False, selected_case=None, detail_pa
                             row["terminal_traces"] = [e.terminal_trace.model_dump(mode="json") for e in executions if e.terminal_trace]
                             row.update(planning_outcomes(row.get("readback_equal"), operation.status,
                                 row["terminal_traces"], len(executions)))
+                            if planning_intent is not None:
+                                row["intent_validation"] = planning_intent_outcomes(
+                                    row.get("result", {}), planning_intent,
+                                    detail_reads, page_content_reads,
+                                )
+                                row["boundary_success"] = bool(row["boundary_success"])
+                                row["boundary_success"] = (
+                                    row["boundary_success"]
+                                    and row["intent_validation"]["success"]
+                                )
+                            row["workload_validation"] = planning_workload_outcomes(
+                                row.get("result", {})
+                            )
+                            row["boundary_success"] = (
+                                bool(row["boundary_success"])
+                                and row["workload_validation"]["success"]
+                            )
                     except Exception as exc:
                         row["error_class"] = type(exc).__name__
                     row["elapsed_ms"] = round((time.perf_counter() - start) * 1000)
@@ -524,11 +710,27 @@ if __name__ == "__main__":
     parser.add_argument("--finalize-after-tool-rounds", type=int)
     parser.add_argument("--finalization-tool-policy", choices=("omit", "none"), default="omit")
     parser.add_argument("--structure-fidelity-candidate", action="store_true")
+    parser.add_argument("--planning-intent-json")
     args = parser.parse_args()
     if not 1 <= args.repetitions <= 20:
         parser.error("repetitions must be between 1 and 20")
+    planning_intent = None
+    if args.planning_intent_json:
+        try:
+            planning_intent = json.loads(args.planning_intent_json)
+        except json.JSONDecodeError as exc:
+            parser.error(f"--planning-intent-json must be valid JSON: {exc.msg}")
+        if not isinstance(planning_intent, dict):
+            parser.error("--planning-intent-json must decode to an object")
+        try:
+            planning_intent = PlanningIntentV1.model_validate(
+                planning_intent
+            ).model_dump(mode="json")
+        except ValueError as exc:
+            parser.error(f"--planning-intent-json violates PlanningIntentV1: {exc}")
     run(args.root.resolve(), args.repetitions, args.budget_candidate, args.case, args.detail_parallel_candidate,
         args.pdf, args.objective, args.ocr_engine, args.multimodal, args.persona_variant, args.initial_evidence_tool, args.page_evidence, args.grounding_candidate, args.page_evidence_page, args.persona_domain, args.controlled_page_evidence, args.prepared_source_root, args.transcription_file, args.redact_tool_error_evidence, args.tool_recovery_hint_candidate, args.page_evidence_dpi, prepared_document_id=args.prepared_document_id,
         finalize_after_tool_rounds=args.finalize_after_tool_rounds,
         finalization_tool_policy=args.finalization_tool_policy,
-        structure_fidelity_candidate=args.structure_fidelity_candidate)
+        structure_fidelity_candidate=args.structure_fidelity_candidate,
+        planning_intent=planning_intent)

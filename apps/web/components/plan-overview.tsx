@@ -343,6 +343,12 @@ export function PlanOverview({
                       </div>
                     </div>
                     <p style={styles.scheduleFocus}>{item.focus}</p>
+                    {item.coverageMode && item.coverageMode !== "complete" && item.workloadRationale ? (
+                      <p style={styles.scheduleFocus}>
+                        {item.coverageMode === "overview" ? "导览说明" : "选读说明"}：
+                        {item.workloadRationale}
+                      </p>
+                    ) : null}
                     {item.scheduleChapters.length && expandedScheduleItems[item.id] ? (
                       <div style={styles.subsectionList}>
                         {item.scheduleChapters.map((chapter) => (

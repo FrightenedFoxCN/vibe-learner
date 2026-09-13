@@ -25,7 +25,7 @@ Current required sections:
 Current schema string:
 
 ```text
-{"schema_name": "learning-plan-proposal", "schema_version": "learning-plan-proposal-v1", "course_title": string, "overview": string, "today_tasks": string[], "schedule": [{"unit_id": string, "title": string, "focus": string, "activity_type": "learn" | "review", "schedule_chapters": [{"title": string, "anchor_page_start": integer, "anchor_page_end": integer, "source_section_ids": string[], "content_slices": [{"page_start": integer, "page_end": integer, "source_section_ids": string[]}]}]}]}.
+{"schema_name": "learning-plan-proposal", "schema_version": "learning-plan-proposal-v3", "course_title": string, "overview": string, "output_language": string, "today_tasks": string[], "schedule": [{"unit_index": integer, "title": string, "focus": string, "activity_type": "learn" | "review", "duration_minutes": integer, "coverage_mode": "complete" | "selective" | "overview", "workload_rationale": string, "schedule_chapters": [{"title": string, "anchor_page_start": integer, "anchor_page_end": integer, "source_section_ids": string[], "content_slices": [{"page_start": integer, "page_end": integer, "source_section_ids": string[]}]}]}]}.
 ```
 
 There is no top-level `study_chapters` field anymore.
@@ -73,14 +73,16 @@ The user payload is therefore sent as a pretty-printed JSON string, not as nativ
 
 ## Output Contract
 
-The planner must return a single JSON object that strictly decodes as `LearningPlanProposalV1` (`extra="forbid"`, strict primitive types). The runner permits at most one bounded schema-repair attempt before failure.
+The planner must return a single JSON object that strictly decodes as `LearningPlanProposalV3` (`extra="forbid"`, strict primitive types). The runner permits at most one bounded schema-repair attempt before failure. Historical v2 payloads remain decode-only compatibility inputs.
 
 Required semantic rules:
 
 - `course_title` is the learner-facing plan header.
 - `overview` is a short summary paragraph.
 - `today_tasks` is the current actionable task list.
-- `schedule[].unit_id` must point to an existing `study_unit.id`.
+- `schedule[].unit_index` must be an in-range request-local index into the current Study Unit snapshot. Application-owned Study Unit IDs are not part of the model proposal.
+- `schedule[].duration_minutes` and `output_language` are required model-resolved values. They never overwrite an `unknown` field in the original user intent; the committed resolved-intent projection records their `model_inferred` provenance.
+- `schedule[].coverage_mode` distinguishes complete study from selective reading and rapid overview. `schedule[].workload_rationale` is persisted and shown to the learner when the proposed page span exceeds the conservative time budget.
 - `schedule[].schedule_chapters[]` is required for every schedule item.
 - `schedule[].schedule_chapters[]` must stay inside the parent study unit's page range and content scope.
 - `schedule[].schedule_chapters[].title` should name concrete chapter or subchapter content, not abstract themes.
@@ -98,7 +100,7 @@ Required semantic rules:
 
 This wording policy does not transfer application-owned identity, revisions, timestamps, progress, or effects into the model proposal. Existing strict decode, invariant validation, tool authorization, and commit boundaries remain authoritative.
 
-The reviewed Planning behavior is registered as `LearningPlanPrompt@planning-prompt-v3`; the corresponding Study Chat behavior is registered as `StudyChatPrompt@study-chat-prompt-v2`. Planning v3 adds one bounded representative excerpt per Study Unit, source-structure fidelity rules, honest page-read truncation metadata, and a one-round tool finalization policy. Historical v1/v2 traces and archived experiment evidence remain unchanged.
+The reviewed Planning behavior is registered as `LearningPlanPrompt@planning-prompt-v6`; the corresponding Study Chat behavior is registered as `StudyChatPrompt@study-chat-prompt-v2`. Planning v6 retains the v5 provenance-aware intent rules and upgrades model output to `LearningPlanProposalV3`. A normal `learn` session budgets at least three minutes per distinct physical page and a `review` session at least one. Exceeding that baseline is allowed only as `selective` or `overview` coverage with an auditable rationale explaining the pedagogical reason, omitted or compressed content, and follow-up path. Committed resolution remains separate from original intent, so every unspecified user field stays `unknown`. Historical prompt and proposal evidence remains unchanged.
 
 The same strategy is separately adopted for Study Chat, including the rule that a tool effect may be described as completed only after successful execution. This document does not otherwise define the Study Chat contract. The adoption does not change Tavern, Persona/Scene generation, Harness schemas, or multimodal defaults.
 

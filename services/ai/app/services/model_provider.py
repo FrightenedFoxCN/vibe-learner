@@ -64,7 +64,6 @@ from app.models.domain import (
     persona_sorted_slots,
 )
 from app.models.planning import (
-    LearningPlanProposalV1,
     PlanContentSliceProposalV1,
     PlanScheduleChapterProposalV1,
 )
@@ -334,7 +333,17 @@ class MockModelProvider(LocalExerciseProvider, ModelProvider):
                 f"按学习者新增偏好修订：{latest_answer.answer.strip()}。",
             )
         schedule: list[PlanScheduleItem] = []
-        for unit in plannable_units[:4]:
+        explicit_session_count = (
+            goal.planning_intent.session_count.value
+            if goal.planning_intent.session_count.status == "user_explicit"
+            else None
+        )
+        schedule_count = explicit_session_count or min(4, len(plannable_units))
+        scheduled_units = [
+            plannable_units[index % len(plannable_units)]
+            for index in range(schedule_count)
+        ] if plannable_units else []
+        for unit in scheduled_units:
             schedule.append(
                 PlanScheduleItem(
                     unit_id=unit.id,
@@ -345,7 +354,18 @@ class MockModelProvider(LocalExerciseProvider, ModelProvider):
                         else f"在 {unit.title} 中整理概念、例题与疑问。"
                     ),
                     activity_type="learn",
-                    schedule_chapters=_fallback_schedule_chapters_for_unit(unit),
+                    schedule_chapters=_fallback_schedule_chapters_for_unit(
+                        unit,
+                        page_ranges=[
+                            (item.page_start, item.page_end)
+                            for item in (goal.planning_intent.pdf_page_ranges.value or [])
+                        ] if goal.planning_intent.pdf_page_ranges.status == "user_explicit" else None,
+                    ),
+                    duration_minutes=(
+                        goal.planning_intent.minutes_per_session.value
+                        if goal.planning_intent.minutes_per_session.status == "user_explicit"
+                        else 45
+                    ),
                 )
             )
         # course_title is the generated textbook-grounded title; objective remains learner-authored goal text.
@@ -359,6 +379,11 @@ class MockModelProvider(LocalExerciseProvider, ModelProvider):
                 f"覆盖 {len(plannable_units)} 个学习单元。"
                 f"{' 目标优先：' + objective_hint + '。' if objective_hint else ''}"
                 f"{' 已吸收最新规划回答。' if answered_questions else ''}"
+            ),
+            output_language=(
+                goal.planning_intent.output_language.value
+                if goal.planning_intent.output_language.status == "user_explicit"
+                else ("zh-CN" if re.search(r"[\u3400-\u9fff]", f"{goal.objective}{document_title}") else "en")
             ),
             today_tasks=today_tasks,
             schedule=schedule,
@@ -1284,20 +1309,27 @@ def _build_course_title(
 
 def _fallback_schedule_chapters_for_unit(
     unit: StudyUnitRecord,
+    page_ranges: list[tuple[int, int]] | None = None,
 ) -> list[PlanScheduleChapterProposalV1]:
     normalized_sources = [str(item).strip() for item in unit.source_section_ids if str(item).strip()]
+    intersections = [
+        (max(unit.page_start, start), min(unit.page_end, end))
+        for start, end in (page_ranges or [(unit.page_start, unit.page_end)])
+        if unit.page_start <= end and unit.page_end >= start
+    ]
     return [
         PlanScheduleChapterProposalV1(
             title=unit.title,
-            anchor_page_start=unit.page_start,
-            anchor_page_end=unit.page_end,
+            anchor_page_start=page_start,
+            anchor_page_end=page_end,
             source_section_ids=normalized_sources,
             content_slices=[
                 PlanContentSliceProposalV1(
-                    page_start=unit.page_start,
-                    page_end=unit.page_end,
+                    page_start=page_start,
+                    page_end=page_end,
                     source_section_ids=normalized_sources,
                 )
             ],
         )
+        for page_start, page_end in intersections
     ]

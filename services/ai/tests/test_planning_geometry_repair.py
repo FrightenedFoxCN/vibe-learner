@@ -6,7 +6,7 @@ from types import SimpleNamespace
 from unittest.mock import Mock
 
 from app.models.domain import LearningGoalInput, PlanGenerationTraceRecord, StudyUnitRecord
-from app.models.planning import LearningPlanProposalV1
+from app.models.planning import LearningPlanProposalV3
 from app.services.plans import LearningPlanService
 from app.services.provider_planning import (RemotePlanningProvider, PlanningProposalDecodeError,
                                             _validate_learning_plan_proposal_refs)
@@ -49,7 +49,7 @@ class PlanningGeometryRepairTests(unittest.TestCase):
         service = object.__new__(LearningPlanService)
         for raw, reason in cases:
             with self.subTest(reason=reason, payload=raw):
-                proposal = LearningPlanProposalV1.model_validate(raw)
+                proposal = LearningPlanProposalV3.model_validate(raw)
                 with self.assertRaises(PlanningProposalDecodeError) as error:
                     _validate_learning_plan_proposal_refs(proposal, [unit()])
                 self.assertEqual(error.exception.reason, reason)
@@ -57,7 +57,7 @@ class PlanningGeometryRepairTests(unittest.TestCase):
                     service._normalize_schedule_chapters(raw_schedule_chapters=proposal.schedule[0].schedule_chapters, unit=unit())
 
     def test_same_page_chapters_remain_allowed(self):
-        proposal = LearningPlanProposalV1.model_validate(two_chapters([1,1]))
+        proposal = LearningPlanProposalV3.model_validate(two_chapters([1,1]))
         _validate_learning_plan_proposal_refs(proposal, [unit()])
         service = object.__new__(LearningPlanService)
         chapters = service._normalize_schedule_chapters(

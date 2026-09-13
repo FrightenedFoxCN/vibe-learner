@@ -11,6 +11,7 @@ from app.models.domain import (
     DocumentDebugRecord,
     DocumentRecord,
     LearningPlanRecord,
+    PlanningIntentV1,
     PlanGenerationTraceRecord,
     SceneProfileRecord,
 )
@@ -19,9 +20,10 @@ from app.models.domain import (
 PLANNING_TOOL_ARGUMENT_CONTRACT_VERSION = "planning-tool-arguments-v1"
 PLANNING_TOOL_RESULT_CONTRACT_VERSION = "planning-tool-result-v1"
 LEARNING_PLAN_PROPOSAL_SCHEMA_NAME = "learning-plan-proposal"
-LEARNING_PLAN_PROPOSAL_SCHEMA_VERSION = "learning-plan-proposal-v1"
+LEARNING_PLAN_PROPOSAL_SCHEMA_VERSION = "learning-plan-proposal-v3"
 LEARNING_PLAN_OPERATION_REQUEST_SCHEMA_VERSION = "learning-plan-operation-request-v1"
-LEARNING_PLAN_OPERATION_FINGERPRINT_VERSION = "learning-plan-operation-fingerprint-v1"
+LEARNING_PLAN_OPERATION_FINGERPRINT_LEGACY_VERSION = "learning-plan-operation-fingerprint-v1"
+LEARNING_PLAN_OPERATION_FINGERPRINT_VERSION = "learning-plan-operation-fingerprint-v2"
 LEARNING_PLAN_COMMITTED_PROJECTION_VERSION = "learning-plan-committed-projection-v1"
 LEARNING_PLAN_COMMIT_CONTRACT_VERSION = "learning-plan-commit-v1"
 
@@ -270,29 +272,55 @@ class PlanScheduleChapterProposalV1(_StrictPlanningModel):
         return self
 
 
-class PlanScheduleItemProposalV1(_StrictPlanningModel):
-    unit_id: str = Field(min_length=1, max_length=128)
+class PlanScheduleItemProposalV2(_StrictPlanningModel):
+    unit_index: int = Field(ge=0, le=23)
     title: ShortText
     focus: Annotated[str, Field(min_length=1, max_length=2000)]
     activity_type: Literal["learn", "review"]
+    duration_minutes: int = Field(ge=1, le=480)
     schedule_chapters: list[PlanScheduleChapterProposalV1] = Field(min_length=1, max_length=24)
 
 
-class LearningPlanProposalV1(_StrictPlanningModel):
+class LearningPlanProposalV2(_StrictPlanningModel):
     schema_name: Literal["learning-plan-proposal"]
-    schema_version: Literal["learning-plan-proposal-v1"]
+    schema_version: Literal["learning-plan-proposal-v2"]
     course_title: ShortText
     overview: LongText
+    output_language: str = Field(
+        min_length=2,
+        max_length=35,
+        pattern=r"^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$",
+    )
     today_tasks: list[ShortText] = Field(min_length=1, max_length=12)
-    schedule: list[PlanScheduleItemProposalV1] = Field(min_length=1, max_length=24)
+    schedule: list[PlanScheduleItemProposalV2] = Field(min_length=1, max_length=24)
+
+
+class PlanScheduleItemProposalV3(PlanScheduleItemProposalV2):
+    coverage_mode: Literal["complete", "selective", "overview"]
+    workload_rationale: Annotated[str, Field(max_length=1000)] = ""
 
     @model_validator(mode="after")
-    def validate_unique_unit_refs(self) -> "LearningPlanProposalV1":
-        unit_ids = [item.unit_id for item in self.schedule]
-        if len(set(unit_ids)) != len(unit_ids):
-            raise ValueError("duplicate_schedule_unit_ref")
+    def validate_workload_rationale(self) -> "PlanScheduleItemProposalV3":
+        if (
+            self.coverage_mode in {"selective", "overview"}
+            and len(self.workload_rationale.strip()) < 40
+        ):
+            raise ValueError("coverage_rationale_too_short")
         return self
 
+
+class LearningPlanProposalV3(_StrictPlanningModel):
+    schema_name: Literal["learning-plan-proposal"]
+    schema_version: Literal["learning-plan-proposal-v3"]
+    course_title: ShortText
+    overview: LongText
+    output_language: str = Field(
+        min_length=2,
+        max_length=35,
+        pattern=r"^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$",
+    )
+    today_tasks: list[ShortText] = Field(min_length=1, max_length=12)
+    schedule: list[PlanScheduleItemProposalV3] = Field(min_length=1, max_length=24)
 
 PLANNING_TOOL_ARGUMENT_MODELS: dict[str, type[_StrictPlanningModel]] = {
     "get_study_unit_detail": GetStudyUnitDetailArgumentsV1,
@@ -337,6 +365,7 @@ class LearningPlanOperationRequestV1(_StrictPlanningModel):
     objective: str = Field(min_length=1, max_length=12000)
     scene_profile_summary: str = Field(default="", max_length=4000)
     scene_profile: SceneProfileRecord | None = None
+    planning_intent: PlanningIntentV1 = Field(default_factory=PlanningIntentV1)
     expected_document_updated_at: str = Field(default="", max_length=64)
 
     @model_validator(mode="after")
@@ -438,7 +467,10 @@ class LearningPlanOperationRecord(_StrictPlanningModel):
     def validate_operation(self) -> "LearningPlanOperationRecord":
         if self.request_schema_version != LEARNING_PLAN_OPERATION_REQUEST_SCHEMA_VERSION:
             raise ValueError("unsupported_learning_plan_request_schema")
-        if self.fingerprint_contract_version != LEARNING_PLAN_OPERATION_FINGERPRINT_VERSION:
+        if self.fingerprint_contract_version not in {
+            LEARNING_PLAN_OPERATION_FINGERPRINT_LEGACY_VERSION,
+            LEARNING_PLAN_OPERATION_FINGERPRINT_VERSION,
+        }:
             raise ValueError("unsupported_learning_plan_fingerprint_contract")
         if self.request_payload.client_request_id != self.client_request_id:
             raise ValueError("learning_plan_request_identity_mismatch")
@@ -446,7 +478,10 @@ class LearningPlanOperationRecord(_StrictPlanningModel):
             raise ValueError("learning_plan_document_identity_mismatch")
         if self.request_payload.persona_id != self.persona_id:
             raise ValueError("learning_plan_persona_identity_mismatch")
-        if learning_plan_request_fingerprint(self.request_payload) != self.request_fingerprint:
+        if learning_plan_request_fingerprint(
+            self.request_payload,
+            contract_version=self.fingerprint_contract_version,
+        ) != self.request_fingerprint:
             raise ValueError("learning_plan_request_fingerprint_mismatch")
         if self.document_id:
             if not self.base_document_updated_at or not self.base_document_digest:
@@ -494,8 +529,17 @@ class LearningPlanOperationRecord(_StrictPlanningModel):
         return self
 
 
-def learning_plan_request_fingerprint(payload: LearningPlanOperationRequestV1) -> str:
-    return planning_projection_digest(payload.model_dump(mode="json"))
+def learning_plan_request_fingerprint(
+    payload: LearningPlanOperationRequestV1,
+    *,
+    contract_version: str = LEARNING_PLAN_OPERATION_FINGERPRINT_VERSION,
+) -> str:
+    projection = payload.model_dump(mode="json")
+    if contract_version == LEARNING_PLAN_OPERATION_FINGERPRINT_LEGACY_VERSION:
+        projection.pop("planning_intent", None)
+    elif contract_version != LEARNING_PLAN_OPERATION_FINGERPRINT_VERSION:
+        raise ValueError("unsupported_learning_plan_fingerprint_contract")
+    return planning_projection_digest(projection)
 
 
 def planning_projection_digest(payload: dict[str, Any]) -> str:
