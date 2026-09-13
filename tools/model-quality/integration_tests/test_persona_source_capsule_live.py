@@ -191,7 +191,24 @@ class PersonaSourceCapsuleLiveTests(unittest.TestCase):
             from vibe_learner.persona_source_capsule import PersonaSourceConstraintCapsuleV1
             decoded = PersonaSourceConstraintCapsuleV1.model_validate(capsule, strict=True)
             projection = build_prompt_projection(decoded)
-            self.assertEqual(set(projection), {"version", "address", "claims", "rules"})
+            self.assertEqual(
+                set(projection),
+                {
+                    "version",
+                    "address_source_char_start",
+                    "address_source_char_end",
+                    "claims",
+                    "rules",
+                },
+            )
+            self.assertEqual(
+                projection["address_source_char_start"],
+                capsule["address_source_span"]["char_start"],
+            )
+            self.assertEqual(
+                projection["address_source_char_end"],
+                capsule["address_source_span"]["char_end"],
+            )
             self.assertTrue(all(
                 set(claim)
                 == {"claim_id", "kind", "key", "polarity", "source_char_start", "source_char_end"}
@@ -216,6 +233,10 @@ class PersonaSourceCapsuleLiveTests(unittest.TestCase):
             for mutation in row["single_point_mutations"]:
                 marker = mutation["value"]
                 self.assertEqual(candidate_text.count(marker), baseline_text.count(marker))
+            self.assertEqual(
+                candidate_text.count(capsule["address_exact"]),
+                baseline_text.count(capsule["address_exact"]),
+            )
             self.assertNotIn("tools", payload)
             self.assertNotIn("web_search", json.dumps(payload, ensure_ascii=False))
 

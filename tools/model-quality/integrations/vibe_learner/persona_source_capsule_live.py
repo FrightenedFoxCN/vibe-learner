@@ -103,7 +103,8 @@ def build_prompt_projection(capsule) -> dict[str, object]:
     """Project claim coordinates, never duplicated source text or grading gold."""
     return {
         "version": "persona-source-constraint-prompt-v1",
-        "address": capsule.address_exact,
+        "address_source_char_start": capsule.address_source_span.char_start,
+        "address_source_char_end": capsule.address_source_span.char_end,
         "claims": [
             {
                 "claim_id": claim.claim_id,
@@ -116,7 +117,7 @@ def build_prompt_projection(capsule) -> dict[str, object]:
             for claim in capsule.claims
         ],
         "rules": [
-            "称呼必须使用 address 的原值。",
+            "称呼必须使用 address_source_char_start/address_source_char_end 指向的冻结原文。",
             "source_char_start/source_char_end 指向 user 消息中同一份冻结来源；按坐标回看原文，不要补写坐标外事实。",
             "polarity 为 denied 时不得断言该 claim；为 unknown 时必须保留未知状态。",
             "不要把角色职业自动改写成与学习者的关系或权限。",
