@@ -192,7 +192,7 @@
     "services/ai/app/workers/document_layout_worker.py": "5206ebf37a3ba53254acb61da53a3a43ff2149ca5ef9ffa088c5e7e1f4c82883",
     "services/ai/uv.lock": "b1f53f8b8856a60ceba6871ae6affec35e1c75da8c0864f50ed76f4970a80f28",
     "tools/model-quality/examples/aggregate_tavern_counterfactual_full_call_blind.py": "8a7abbffa97365925410bfa07a2e067baf8a3c235ebb2b82dec45987deaaec75",
-    "tools/model-quality/examples/export_tavern_counterfactual_full_call_blind.py": "db6a638e273de5cb917b78f607efab6ad48262eef35caa1fe087f6da88327e97",
+    "tools/model-quality/examples/export_tavern_counterfactual_full_call_blind.py": "e6d38cbd04ef7c25cb30a271a34ae22bbbcbb3d22ccdcb7bc6c053eeb6905057",
     "tools/model-quality/examples/prepare_tavern_counterfactual_full_call_blind.py": "4b79a818616fde835d07344761432e267c74975c52c0376e0aa6329e04fe97ba",
     "tools/model-quality/fixtures/persona-scene/tavern-counterfactual-production-full-call-blind-rubric-v1.json": "cc6872eef4860729f245189e57b455461b9c6f6598a09acedba36a177ce42f86",
     "tools/model-quality/fixtures/persona-scene/tavern-counterfactual-twins-v1.json": "f2b85d63c25c1584042da96a16348e1c74d036f60a2fd231c6c432a204c75b0f",

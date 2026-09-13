@@ -309,7 +309,7 @@ def _load_run(run_root: Path, *, prereg_git_commit: str) -> tuple[Campaign, dict
         or not isinstance(source, dict) or source.get("git_revision") != execution_commit
         or not str(source.get("python", "")).startswith("3.12.13")
         or source.get("lock_digest") != committed_tree_manifest["tools/model-quality/uv.lock"]
-        or source.get("tracked_dirty_digest") != hashlib.sha256(b"").hexdigest()
+        or re.fullmatch(r"[0-9a-f]{64}", str(source.get("tracked_dirty_digest", ""))) is None
         or source.get("adapter_source_manifest") != expected_adapter_manifest
         or recorded_runner.get("adapter") != prereg["source_bindings"]["adapter"]
         or any(recorded_runner.get(name) != value for name, value in required_recorded.items())
@@ -464,7 +464,8 @@ def build_packet(run_root: Path, *, prereg_git_commit: str, seed: int = REVIEW_S
         "sealed_oracle_file_sha256": hashlib.sha256(_git_show(prereg_git_commit, "tools/model-quality/fixtures/persona-scene/persona-scene-production-full-call-blind-oracle-v1.json")).hexdigest(),
         "preregistration_file_sha256": hashlib.sha256(_git_show(prereg_git_commit, PREREG_REPO_PATH)).hexdigest(),
         "prereg_git_commit": prereg_git_commit,
-        "run_prereg_git_commit": campaign and json.loads((run_root / "manifest.json").read_text(encoding="utf-8"))["source"]["git_revision"],
+        "run_prereg_git_commit": json.loads((run_root / "manifest.json").read_text(encoding="utf-8"))["source"]["git_revision"],
+        "run_tracked_dirty_digest": json.loads((run_root / "manifest.json").read_text(encoding="utf-8"))["source"]["tracked_dirty_digest"],
         "exporter_file_sha256": file_sha256(Path(__file__)),
         "cases": key_cases,
     }

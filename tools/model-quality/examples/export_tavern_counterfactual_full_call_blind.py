@@ -116,17 +116,24 @@ def load_run(run_root: Path) -> tuple[Campaign, dict[str, object], dict[str, dic
         ):
             raise ValueError("tavern_full_call_sample_binding_invalid")
         references = result.get("evidence")
-        if not isinstance(references, list) or len(references) != 1:
-            raise ValueError("tavern_full_call_evidence_reference_invalid")
-        reference = references[0]
         evidence_path = run_root / case.id / VARIANT / "0" / "storage" / EVIDENCE_NAME
-        if (
-            not isinstance(reference, dict) or reference.get("path") != EVIDENCE_NAME
-            or reference.get("contract") != EVIDENCE_CONTRACT
-            or reference.get("sha256") != file_sha(evidence_path)
-        ):
-            raise ValueError("tavern_full_call_evidence_digest_invalid")
-        evidence = json.loads(evidence_path.read_text(encoding="utf-8"))
+        if state == "infrastructure_failed" and not references:
+            evidence = {
+                "campaign_id": CAMPAIGN_ID,
+                "case_id": case.id,
+                "provider_calls": 0,
+            }
+        else:
+            if not isinstance(references, list) or len(references) != 1:
+                raise ValueError("tavern_full_call_evidence_reference_invalid")
+            reference = references[0]
+            if (
+                not isinstance(reference, dict) or reference.get("path") != EVIDENCE_NAME
+                or reference.get("contract") != EVIDENCE_CONTRACT
+                or reference.get("sha256") != file_sha(evidence_path)
+            ):
+                raise ValueError("tavern_full_call_evidence_digest_invalid")
+            evidence = json.loads(evidence_path.read_text(encoding="utf-8"))
         if evidence.get("case_id") != case.id or evidence.get("campaign_id") != CAMPAIGN_ID:
             raise ValueError("tavern_full_call_evidence_case_invalid")
         if state == "completed":
