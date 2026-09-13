@@ -15,7 +15,6 @@ import type { useStudySessionNavigation } from "./use-study-session-navigation";
 interface ContinuationOptions {
   session: StudySessionRecord | null;
   view: StudyAsyncViewFence<StudySessionRecord>;
-  busy: boolean;
   ensureSessionForSection: ReturnType<typeof useStudySessionNavigation>["ensureSessionForSection"];
   sendHiddenSessionMessage: ReturnType<typeof useStudyMessages>["sendHiddenSessionMessage"];
   automaticStudyRequest: ReturnType<typeof useStudyMessages>["automaticStudyRequest"];
@@ -149,12 +148,6 @@ export function useStudyContinuation(options: ContinuationOptions, port: StudyCo
       logWorkspaceError("workflow:study_follow_up:interrupt_error", error); return false;
     } finally { interrupting.current = false; finish(); }
   }
-
-  useEffect(() => {
-    const session = options.session;
-    if (!session || options.busy || pendingCount > 0) return;
-    void runPrelude(session, { studyUnitId: session.studyUnitId, sectionTitle: session.studyUnitTitle ?? session.studyUnitId, themeHint: session.themeHint ?? "" });
-  }, [options.session, options.busy, pendingCount]);
 
   useEffect(() => {
     const session = options.session;

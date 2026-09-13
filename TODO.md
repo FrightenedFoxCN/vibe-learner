@@ -42,10 +42,6 @@
 
 本节复现证据见 [2026-09-13 M3 Planning production 配对复测](docs/acceptance/m3-planning-retest-2026-09-13.md)；验收报告保留事实，本节维护工程状态。
 
-- [ ] `PLAN-STUDY-EXPLICIT-START-001` `[P1]` 禁止 Learning Plan 提交后或页面重入时，在没有用户显式“开始”动作的情况下创建 Study Session 或调用 provider。
-  - 2026-09-13 两组 production 复测发生 6 次自动 Study completion / 69,738 tokens；其中法文 Session 还把计划 `study-unit:4` 错绑为 `study-unit:2` 并提交了错误 Turn。
-  - 若保留 prelude，必须由可见用户动作触发，精确绑定所选 schedule 的 Study Unit，动作前说明预计调用/成本；恢复只能查询原 operation，不得以新 key 绕过 terminal `uncertain`。
-
 - [ ] `PLAN-NAVIGATION-LIFECYCLE-001` `[P1]` 让 Planning 长任务跨页持续，或在离页前明确提示将取消并展示已发生费用。
   - 当前普通导航会调用 Document/Planning stream cancel；真实请求仍可能完成并计费，但 Learning Plan 不提交。全局 Debug 与返回后的 Plan Workspace 应显示活动、已中断、费用和可恢复状态。
 

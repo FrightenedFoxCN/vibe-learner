@@ -47,7 +47,7 @@ export function LearningWorkspace() {
     answerPlanQuestion,
     removePlan,
     refreshPlanSnapshot,
-    handleSwitchSection,
+    triggerSessionPrelude,
     getPageCache,
     setPageCache,
   } = useLearningWorkspace();
@@ -89,7 +89,11 @@ export function LearningWorkspace() {
         status: "in_progress",
       });
     }
-    await handleSwitchSection(input.studyUnitId);
+    await triggerSessionPrelude({
+      studyUnitId: input.studyUnitId,
+      sectionTitle: input.chapter,
+      themeHint: activePlan.schedule.find((item) => item.id === input.scheduleId)?.focus ?? "",
+    });
     appNavigator.push("/study", {
       plan: activePlan.id,
       schedule: input.scheduleId,

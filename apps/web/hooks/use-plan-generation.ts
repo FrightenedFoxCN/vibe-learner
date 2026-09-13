@@ -1,16 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { DocumentRecord, LearningPlan, SceneProfile, StudySessionRecord } from "@vibe-learner/shared";
+import type { DocumentRecord, LearningPlan, SceneProfile } from "@vibe-learner/shared";
 import { createDiagnosticId, diagnosticContext, type DiagnosticContext } from "../lib/diagnostics";
 import { uploadDocument, processDocumentStream } from "../lib/data/documents";
 import { cancelStreamRun, createLearningPlanStream } from "../lib/data/learning-plans";
-import { createStudySession } from "../lib/data/study-sessions";
-import { buildInitialStudySessionInput } from "../lib/learning-workspace-state";
 import { createStudyChatRequestId } from "../lib/client-request-id";
 import { compactPreviewValue } from "../lib/preview";
 import { logWorkspaceError, logWorkspaceInfo } from "../lib/learning-workspace-telemetry";
-import { PLAN_GENERATED_NOTICE, PLAN_GENERATED_SESSION_FAILED_NOTICE } from "../lib/learning-workspace-copy";
+import { PLAN_GENERATED_NOTICE } from "../lib/learning-workspace-copy";
 
 export interface GeneratePlanInput {
   mode: "document" | "goal_only";
@@ -24,9 +22,8 @@ export interface PlanGenerationPort {
   processDocumentStream: typeof processDocumentStream;
   createLearningPlanStream: typeof createLearningPlanStream;
   cancelStreamRun: typeof cancelStreamRun;
-  createStudySession: typeof createStudySession;
 }
-const defaultPort: PlanGenerationPort = { uploadDocument, processDocumentStream, createLearningPlanStream, cancelStreamRun, createStudySession };
+const defaultPort: PlanGenerationPort = { uploadDocument, processDocumentStream, createLearningPlanStream, cancelStreamRun };
 
 interface PlanGenerationOptions {
   personaId: string;
@@ -36,8 +33,7 @@ interface PlanGenerationOptions {
   onFinished: () => void;
   onNotice: (notice: string) => void;
   onDocument: (document: DocumentRecord) => void;
-  onPlan: (plan: LearningPlan) => () => boolean;
-  onSession: (session: StudySessionRecord) => void;
+  onPlan: (plan: LearningPlan) => void;
 }
 
 export function usePlanGeneration(options: PlanGenerationOptions, port: PlanGenerationPort = defaultPort) {
@@ -216,32 +212,8 @@ export function usePlanGeneration(options: PlanGenerationOptions, port: PlanGene
         planId: nextPlan.id,
         taskCount: nextPlan.todayTasks.length
       });
-      const isCurrentPlanView = options.onPlan(nextPlan);
-
-      try {
-        const nextSession = await port.createStudySession({
-          ...buildInitialStudySessionInput({ plan: nextPlan, document: nextDocument, planId: nextPlan.id, personaId: options.personaId }),
-          sceneProfile,
-        }, diagnostic);
-        if (
-          !ownsOperation(abortController) || abortController.signal.aborted || !isCurrentPlanView()
-        ) {
-          return;
-        }
-        options.onSession(nextSession);
-        logWorkspaceInfo("workflow:upload:session_ready", { sessionId: nextSession.id, studyUnitId: nextSession.studyUnitId });
-        options.onNotice(nextPlan.creationMode === "goal_only"
-              ? "目标计划已生成，会话已创建。"
-              : PLAN_GENERATED_NOTICE);
-      } catch (sessionError) {
-        if (
-          !ownsOperation(abortController) || abortController.signal.aborted || !isCurrentPlanView()
-        ) {
-          return;
-        }
-        options.onNotice(PLAN_GENERATED_SESSION_FAILED_NOTICE);
-        logWorkspaceError("workflow:upload:session_error", sessionError);
-      }
+      options.onPlan(nextPlan);
+      options.onNotice(PLAN_GENERATED_NOTICE);
     } catch (error) {
       if (!ownsOperation(abortController)) return;
       if (isAbortLikeError(error)) {
@@ -294,4 +266,3 @@ function isAbortLikeError(error: unknown) {
   }
   return String(error).includes("stream_interrupted");
 }
-

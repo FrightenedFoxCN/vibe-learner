@@ -28,7 +28,7 @@ function fixture({ prepared = true, pendingOperation = false, followUp = false }
     hasPendingOperation: () => state.pendingOperation,
     now: () => Date.parse("2026-09-10T00:00:00Z"), setTimeout: (callback, delay) => { const id = ++timerId; timers.set(id, { callback, delay }); return id; }, clearTimeout: id => timers.delete(id),
   };
-  const props = { session, view, busy: false, ensureSessionForSection: async () => view.session,
+  const props = { session, view, ensureSessionForSection: async () => view.session,
     sendHiddenSessionMessage: input => { const pending = deferred(); messages.push({ input, ...pending }); return pending.promise; },
     automaticStudyRequest: key => ({ clientRequestId: key, queryExisting: false }), onSession: value => { applied.push(value); view.activateSession(value); }, onNotice: value => notices.push(value) };
   const h = renderHook(options => useStudyContinuation(options, port), { initialProps: props });
@@ -36,16 +36,15 @@ function fixture({ prepared = true, pendingOperation = false, followUp = false }
   return { ...h, props, session, view, timers, messages, cancellations, applied, notices, callbacks, state, fireTimer };
 }
 
-test("failed automatic prelude is not retried on busy changes; explicit retry uses its scoped operation", async () => {
+test("an unprepared restored Session stays idle until explicit prelude", async () => {
   const h = fixture({ prepared: false });
-  assert.equal(h.messages.length, 1);
-  await act(async () => { h.messages[0].reject(new Error("uncertain")); });
-  h.rerender({ ...h.props, busy: true }); h.rerender(h.props);
-  assert.equal(h.messages.length, 1);
+  assert.equal(h.messages.length, 0);
+  h.rerender({ ...h.props, session: { ...h.session } }); h.rerender(h.props);
+  assert.equal(h.messages.length, 0);
   let retry;
   await act(async () => { retry = h.result.current.triggerSessionPrelude({ studyUnitId: "unit-1" }); });
-  assert.equal(h.messages[1].input.operationKey, "prelude:session-1:unit-1:4");
-  await act(async () => { h.messages[1].reject(new Error("still failed")); assert.equal(await retry, false); });
+  assert.equal(h.messages[0].input.operationKey, "prelude:session-1:unit-1:4");
+  await act(async () => { h.messages[0].reject(new Error("still failed")); assert.equal(await retry, false); });
 });
 
 test("a pending operation prevents restored unprepared Session from starting another automatic message", () => {

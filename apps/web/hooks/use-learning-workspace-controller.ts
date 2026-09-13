@@ -253,12 +253,6 @@ export function useLearningWorkspaceController({
       selectedPlanIdRef.current = plan.id;
       transitionStudyView(`study-plan:${plan.id}`, true);
       dispatch({ type: "generated_plan_applied", plan });
-      const revision = studyViewFenceRef.current.viewRevision;
-      return () => mountedRef.current && selectedPlanIdRef.current === plan.id && studyViewFenceRef.current.viewRevision === revision;
-    },
-    onSession: (studySession) => {
-      activateStudySessionView(studySession);
-      dispatch({ type: "study_session_set", studySession, clearResponse: true });
     },
   });
 
@@ -348,7 +342,6 @@ export function useLearningWorkspaceController({
 
   const continuation = useStudyContinuation({
     session: state.studySession, view: studyViewFenceRef.current,
-    busy: state.isBusy || isMutating || isQuerying || isNavigating || isSending || isApplying,
     ensureSessionForSection, sendHiddenSessionMessage, automaticStudyRequest,
     onSession: (studySession) => {
       activateStudySessionView(studySession);

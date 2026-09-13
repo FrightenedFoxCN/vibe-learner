@@ -15,20 +15,18 @@ const deferred = () => {
 const plan = id => ({ id, creationMode: "goal_only", todayTasks: [], studyUnits: [], studyUnitProgress: [], schedule: [], objective: "learn" });
 const input = { mode: "goal_only", objective: "learn" };
 function fixture(overrides = {}, optionOverrides = {}) {
-  const calls = { finished: 0, plans: [], sessions: [], documents: [], notices: [], cancelled: [] };
+  const calls = { finished: 0, plans: [], documents: [], notices: [], cancelled: [] };
   const options = {
     personaId: "teacher", blockedReason: "", resolveSceneProfile: () => undefined,
     onStarted() {}, onFinished() { calls.finished++; },
     onNotice(value) { calls.notices.push(value); },
     onDocument(value) { calls.documents.push(value); },
-    onPlan(value) { calls.plans.push(value); return () => true; },
-    onSession(value) { calls.sessions.push(value); }, ...optionOverrides,
+    onPlan(value) { calls.plans.push(value); }, ...optionOverrides,
   };
   const port = {
     uploadDocument: async () => { throw new Error("unexpected upload"); },
     processDocumentStream: async () => { throw new Error("unexpected parse"); },
     createLearningPlanStream: async () => plan("plan"),
-    createStudySession: async () => ({ id: "session" }),
     cancelStreamRun: async id => { calls.cancelled.push(id); }, ...overrides,
   };
   return { ...renderHook(() => usePlanGeneration(options, port)), calls };
@@ -69,57 +67,37 @@ test("superseded stream events and finally cannot overwrite the active generatio
   assert.equal(view.calls.finished, 1);
 });
 
-test("unmount cancels the known operation and suppresses late committed session projection", async () => {
-  const session = deferred();
+test("a committed plan never creates a Study Session", async () => {
+  let sessionCreates = 0;
   const view = fixture({
     createLearningPlanStream: async (_input, event) => { event({ stage: "working", operationId: "operation", payload: {} }); return plan("plan"); },
-    createStudySession: () => session.promise,
+    createStudySession: () => { sessionCreates++; throw new Error("must not create a Session"); },
   });
-  let run;
-  await act(async () => { run = view.result.current.generatePlanWorkflow(input); });
-  view.unmount();
-  await act(async () => { session.resolve({ id: "late" }); await run; });
-  assert.deepEqual(view.calls.cancelled, ["operation"]);
-  assert.deepEqual(view.calls.sessions, []);
-  assert.equal(view.calls.finished, 0);
+  await act(async () => { await view.result.current.generatePlanWorkflow(input); });
+  assert.equal(sessionCreates, 0);
+  assert.deepEqual(view.calls.plans.map(item => item.id), ["plan"]);
+  assert.equal(view.calls.notices.at(-1), "学习计划已生成。");
+  assert.equal(view.calls.finished, 1);
 });
 
-test("changing the selected view fences session success and failure", async () => {
-  for (const fails of [false, true]) {
-    const session = deferred(); let current = true;
-    const view = fixture({ createStudySession: () => session.promise }, { onPlan: () => () => current });
-    let run;
-    await act(async () => { run = view.result.current.generatePlanWorkflow(input); });
-    current = false;
-    const notices = [...view.calls.notices];
-    await act(async () => { fails ? session.reject(new Error("late")) : session.resolve({ id: "late" }); await run; });
-    assert.deepEqual(view.calls.sessions, []);
-    assert.deepEqual(view.calls.notices, notices);
-    assert.equal(view.calls.finished, 1);
-    view.unmount();
-  }
-});
-
-test("plan and initial session share the scene captured before generation", async () => {
+test("plan generation captures the selected scene without creating a Session", async () => {
   const scene = { summary: "original", nested: { name: "room" } };
-  const pending = deferred(); let planInput, sessionInput;
+  const pending = deferred(); let planInput; let sessionCreates = 0;
   const view = fixture({
     createLearningPlanStream: data => { planInput = data; return pending.promise; },
-    createStudySession: async data => { sessionInput = data; return { id: "session" }; },
+    createStudySession: async () => { sessionCreates++; return { id: "session" }; },
   }, { resolveSceneProfile: () => scene });
   let run;
   act(() => { run = view.result.current.generatePlanWorkflow(input); });
   scene.summary = "edited"; scene.nested.name = "changed";
   await act(async () => { pending.resolve(plan("new")); await run; });
   assert.deepEqual(planInput.sceneProfile, { summary: "original", nested: { name: "room" } });
-  assert.deepEqual(sessionInput.sceneProfile, planInput.sceneProfile);
-  assert.equal(sessionInput.planId, "new");
-  assert.equal(view.calls.sessions.length, 1);
+  assert.equal(sessionCreates, 0);
 });
 
 test("document generation carries the parsed revision and bounds stream history", async () => {
   const document = { id: "book", updatedAt: "revision", studyUnits: [{ id: "unit" }] };
-  let planInput, sessionInput;
+  let planInput; let sessionCreates = 0;
   const view = fixture({
     uploadDocument: async () => ({ id: "book" }),
     processDocumentStream: async (_id, _options, event) => {
@@ -133,13 +111,12 @@ test("document generation carries the parsed revision and bounds stream history"
       event({ stage: "stream_completed", payload: {} });
       return { ...plan("document-plan"), creationMode: "document" };
     },
-    createStudySession: async data => { sessionInput = data; return { id: "session" }; },
+    createStudySession: async () => { sessionCreates++; return { id: "session" }; },
   });
   await act(async () => { await view.result.current.generatePlanWorkflow({ mode: "document", file: new File(["pdf"], "book.pdf"), objective: "learn" }); });
   assert.deepEqual(view.calls.documents, [document]);
   assert.equal(planInput.expectedDocumentUpdatedAt, "revision");
-  assert.equal(sessionInput.documentId, "book");
-  assert.equal(sessionInput.studyUnitId, "unit");
+  assert.equal(sessionCreates, 0);
   assert.equal(view.result.current.processStreamEvents.length, 80);
   assert.equal(view.result.current.planStreamEvents.length, 120);
   assert.equal(view.result.current.processStreamStatus, "completed");
@@ -147,24 +124,23 @@ test("document generation carries the parsed revision and bounds stream history"
 });
 
 
-test("upload, parse, plan and session keep one action captured before page replacement", async () => {
+test("upload, parse and plan keep one action captured before page replacement", async () => {
   const owner = registerDiagnosticPage("/plan"), parsing = deferred(), contexts = [];
   const document = { id: "doc", studyUnits: [], updatedAt: "2026-09-10T00:00:00Z" };
   const view = fixture({
     uploadDocument: async (_file, options) => { contexts.push(options.diagnostic); return document; },
     processDocumentStream: (_id, options) => { contexts.push(options.diagnostic); return parsing.promise; },
     createLearningPlanStream: async (_goal, _event, options) => { contexts.push(options.diagnostic); return plan("planned"); },
-    createStudySession: async (_input, context) => { contexts.push(context); return { id: "session" }; },
   });
   let running;
   await act(async () => { running = view.result.current.generatePlanWorkflow({ mode: "document", file: new File(["private"], "private.pdf"), objective: "private objective" }); });
   assert.equal(contexts.length, 2);
   const replacement = registerDiagnosticPage("/study"); owner.dispose();
   await act(async () => { parsing.resolve(document); await running; });
-  assert.equal(contexts.length, 4);
+  assert.equal(contexts.length, 3);
   assert.ok(contexts[0].flow_id);
   assert.ok(contexts.every(context => context === contexts[0]));
-  assert.equal(contexts[3].page_view_id, owner.id);
+  assert.equal(contexts[2].page_view_id, owner.id);
   assert.ok(!JSON.stringify(contexts).includes("private"));
   replacement.dispose();
 });

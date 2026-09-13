@@ -16,8 +16,5 @@ export const PLAN_SWITCH_NOTICE =
 export const PLAN_GENERATED_NOTICE =
   "学习计划已生成。";
 
-export const PLAN_GENERATED_SESSION_FAILED_NOTICE =
-  "学习计划已生成，会话创建失败。";
-
 export const SESSION_CREATED_NOTICE =
   "学习会话已创建。";

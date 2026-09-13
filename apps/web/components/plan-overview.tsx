@@ -259,6 +259,9 @@ export function PlanOverview({
 
             {plan.schedule.length ? (
               <div style={styles.scheduleList}>
+                <p style={styles.startNotice}>
+                  点击“开始”会创建或打开对应学习会话，并调用模型准备该 Study Unit；这会产生模型用量。
+                </p>
                 {visibleScheduleItems.map((item) => (
                   <div key={item.id} style={styles.scheduleItem}>
                     <div style={styles.scheduleHeader}>
@@ -558,6 +561,13 @@ const styles: Record<string, CSSProperties> = {
     display: "grid",
     gap: 0,
     borderTop: "1px solid color-mix(in srgb, var(--border) 72%, white)",
+  },
+  startNotice: {
+    margin: 0,
+    paddingTop: 12,
+    color: "var(--muted)",
+    fontSize: 13,
+    lineHeight: 1.55,
   },
   scheduleItem: {
     display: "grid",

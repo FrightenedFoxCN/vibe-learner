@@ -50,7 +50,6 @@ export function StudyDialogPage() {
     handleAsk,
     handleAskForSection,
     updatePlanProgress,
-    triggerSessionPrelude,
     chatFailure,
     queryStudyChatOperation,
     retryFailedAsk,
@@ -137,7 +136,7 @@ export function StudyDialogPage() {
       if (nextPage > 0) {
         handleOpenPdfPage(nextPage);
       }
-      if (scheduleItem.unitId && (!studySession || scheduleItem.unitId !== studySession.studyUnitId)) {
+      if (studySession && scheduleItem.unitId && scheduleItem.unitId !== studySession.studyUnitId) {
         await handleSwitchSection(scheduleItem.unitId);
       }
     },
@@ -464,12 +463,7 @@ export function StudyDialogPage() {
       status: "in_progress",
     });
     await navigateToSchedule(nextSchedule.id);
-    await triggerSessionPrelude({
-      studyUnitId: nextSchedule.unitId,
-      sectionTitle: nextSchedule.scheduleChapters[0]?.title || nextSchedule.title,
-      themeHint: nextSchedule.focus || "",
-    });
-  }, [activePlan, currentScheduleId, navigateToSchedule, scheduleOptions, triggerSessionPrelude, updatePlanProgress]);
+  }, [activePlan, currentScheduleId, navigateToSchedule, scheduleOptions, updatePlanProgress]);
 
   return (
     <main className="with-app-nav study-dialog-page" style={pageStyle}>
