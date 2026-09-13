@@ -1,0 +1,261 @@
+{
+  "version": "m3-next-harness-strategies-preregistration-v2",
+  "status": "design_anchor_before_fixture_prereg_commit_and_any_live_wire",
+  "date": "2026-09-13",
+  "canonical_bytes": {
+    "source": "strict_utf8_without_bom_no_trim_no_unicode_normalization",
+    "codepoint_offsets": "zero_based_half_open_unicode_scalar_indices",
+    "utf8_offsets": "zero_based_half_open_indices_into_original_utf8_bytes",
+    "json_parse": "reject_duplicate_keys_and_nonfinite_numbers",
+    "json_encode": "utf8_sorted_keys_compact_ensure_ascii_false_allow_nan_false_arrays_in_source_order_integers_only",
+    "json_pointer": "rfc6901_canonical_tilde_escapes_only",
+    "independent_golden_vectors_required": ["ascii", "cjk", "emoji", "combining_mark"]
+  },
+  "historical_502_boundary": {
+    "classification": "local_api_mapping_after_http_200_provider_responses",
+    "not_upstream_502": true,
+    "used_as_strategy_start_not_quality_endpoint": true
+  },
+  "persona_capsule_dependency": {
+    "promotion_passed": false,
+    "reused_families": false,
+    "reused_outputs": false,
+    "reused_scores": false,
+    "tavern_transfer": false
+  },
+  "anchor_protocol": {
+    "this_commit_role": "design_anchor_only",
+    "campaign_ids": ["tavern-counterfactual-twins-readiness-20260913-v1", "persona-claim-ledger-readiness-20260913-v1"],
+    "pre_calibration_prereg_commit_must_bind": [
+      "fixture bytes and per-family source/projection/semantic-atom digests",
+      "sealed oracle bytes",
+      "canonical golden vectors",
+      "validator and mutation builder source digests",
+      "packet/key builder source digest",
+      "aggregator source digest and aggregation rules",
+      "dependency lock and runtime image or interpreter digest",
+      "entrypoint argv and complete configuration digest",
+      "environment and filesystem input allowlist",
+      "historical corpus ancestry and dedup manifest"
+    ],
+    "pre_calibration_external_attestation": "first_only_append_only_author_nonrewritable_ci_or_independent_external_witness_of_campaign_id_and_exact_prereg_commit_sha",
+    "one_preregistration_per_campaign_id": true,
+    "extra_or_unmatched_prereg_or_admission_policy": "campaign_terminal_readiness_failed_without_new_family_denominator",
+    "abandoned_unrecorded_or_runtime_drift_policy": "campaign_terminal_readiness_failed_without_new_family_denominator",
+    "runner_requires_attestation_before_start": true,
+    "run_manifest_binds_attested_prereg_sha": true,
+    "local_commit_tag_timestamp_or_ancestry_alone_is_sufficient": false,
+    "post_run_frozen_commit_may_bind_only": ["manifest", "report", "per-sample allowlisted raw evidence", "run anchor"],
+    "post_review_commit_must_bind": ["rebuilt packet and key", "two raw reviewer files", "reviewer identity and isolation attestations", "raw and canonical review digests"],
+    "reviewer_delivery_witness": "before_author_reads_body_append_only_author_nonrewritable_external_witness_of_campaign_id_prereg_sha_reviewer_task_id_and_raw_bytes_sha256",
+    "post_hoc_reviewer_key_signature_is_accepted": false,
+    "post_review_commit_accepts_only_pre_witnessed_review_bytes": true,
+    "aggregate_requires_three_distinct_commits_in_order": true,
+    "aggregator_checks_git_ancestry": true,
+    "post_run_commit_may_change_prereg_inputs_or_builder": false,
+    "sha_alone_is_anti_forgery_evidence": false,
+    "hermetic_readiness_execution": {
+      "network": "denied",
+      "wall_clock": "denied",
+      "unseeded_randomness": "denied",
+      "unallowlisted_environment": "denied",
+      "unallowlisted_file_reads": "denied",
+      "actual_input_digests_recorded_and_revalidated": true
+    }
+  },
+  "tavern_counterfactual_twins": {
+    "version": "tavern-counterfactual-twins-readiness-v1",
+    "scope": "provider_free_research_readiness_only",
+    "families": [
+      {"id": "archive_keycard_view", "axis": "permission_fidelity", "second_polarity": "denied", "authority": "participant_snapshot", "semantic_atom": "actor may view the archive ledger"},
+      {"id": "clinic_supply_inventory", "axis": "permission_fidelity", "second_polarity": "explicitly_unknown", "authority": "participant_snapshot", "semantic_atom": "actor may open the inventory cabinet"},
+      {"id": "lighthouse_correspondence", "axis": "relationship_fidelity", "second_polarity": "denied", "authority": "participant_snapshot", "semantic_atom": "actor and user are established pen pals"},
+      {"id": "neighborhood_watch_intro", "axis": "relationship_fidelity", "second_polarity": "explicitly_unknown", "authority": "participant_snapshot", "semantic_atom": "actor and user served together on the watch"},
+      {"id": "pottery_fair_visit", "axis": "shared_history_fidelity", "second_polarity": "denied", "authority": "transcript_snapshot", "semantic_atom": "actor and user attended the prior pottery fair together"},
+      {"id": "ferry_winch_repair", "axis": "shared_history_fidelity", "second_polarity": "explicitly_unknown", "authority": "transcript_snapshot", "semantic_atom": "actor and user repaired the ferry winch together"},
+      {"id": "radio_weather_measurement", "axis": "epistemic_provenance", "second_polarity": "denied", "authority": "transcript_snapshot", "semantic_atom": "actor personally measured the reported wind speed"},
+      {"id": "observatory_plate_sighting", "axis": "epistemic_provenance", "second_polarity": "explicitly_unknown", "authority": "transcript_snapshot", "semantic_atom": "actor directly observed the plate marking"},
+      {"id": "greenhouse_valve_state", "axis": "world_state_fidelity", "second_polarity": "denied", "authority": "scene_snapshot", "semantic_atom": "the north irrigation valve is open"},
+      {"id": "rehearsal_east_exit", "axis": "world_state_fidelity", "second_polarity": "explicitly_unknown", "authority": "scene_snapshot", "semantic_atom": "the east rehearsal exit is accessible"}
+    ],
+    "family_uniqueness": {
+      "reject_duplicate_source_digest": true,
+      "reject_duplicate_projection_digest": true,
+      "reject_equivalent_normalized_semantic_atom": true,
+      "reject_historical_family_or_source_digest_overlap": true,
+      "historical_semantic_ancestry_manifest_required": true,
+      "two_reviewers_confirm_no_renamed_or_paraphrased_reuse": true
+    },
+    "twins_per_family": 2,
+    "first_polarity": "supported",
+    "deny_family_count": 5,
+    "explicitly_unknown_family_count": 5,
+    "single_authoritative_atom_delta": true,
+    "normalized_projection_extra_delta_max": 0,
+    "unknown_is_distinct_from_denied": true,
+    "generator_visible_payload_excludes": ["axis", "polarity label", "oracle", "expected markers", "mutation IDs and issue codes", "source coordinates", "allowed-delta metadata", "pair-varying integrity digests"],
+    "provider_free_gate": {
+      "pristine_twins_required": "20/20",
+      "hard_negative_controls_required": "40/40",
+      "hard_negative_catalog_per_twin": [
+        {"id": "quoted_opposite_literal", "changed_spans": 1, "expected_codes": []},
+        {"id": "explicit_denial_of_opposite", "changed_spans": 1, "expected_codes": []}
+      ],
+      "hard_negative_content_digests_must_be_unique": true,
+      "single_point_mutations_required": "60/60_exact_single_code",
+      "mutation_catalog": [
+        {"id": "extra_authoritative_delta", "expected_code": "extra_authoritative_delta"},
+        {"id": "declared_delta_pointer_mismatch", "expected_code": "declared_delta_pointer_mismatch"},
+        {"id": "source_codepoint_span_shift", "expected_code": "source_codepoint_span_shift"},
+        {"id": "source_utf8_span_shift", "expected_code": "source_utf8_span_shift"},
+        {"id": "source_slice_digest_mismatch", "expected_code": "source_slice_digest_mismatch"},
+        {"id": "canonical_world_digest_mismatch", "expected_code": "canonical_world_digest_mismatch"}
+      ],
+      "pair_copy_mutation": {"id": "pair_copy_reply", "required": "10/10", "expected_code": "counterfactual_insensitivity"},
+      "surface_diverse_insensitivity_controls": [
+        {"id": "surface_paraphrase_copy", "required": "10/10", "expected_code": "counterfactual_insensitivity", "semantic_equivalence_owner": "sealed_oracle_plus_fixture_reviewers"},
+        {"id": "nonce_decorated_copy", "required": "10/10", "expected_code": "counterfactual_insensitivity", "semantic_equivalence_owner": "sealed_oracle_plus_fixture_reviewers"}
+      ],
+      "all_insensitivity_controls_required": "30/30",
+      "each_mutation_changes_exactly_one_pointer_or_span": true,
+      "digest_coordinate_and_allowed_delta_tamper_fail_closed": true,
+      "fixture_oracle_reviewers": 2,
+      "reviewer_set": "tavern_only_disjoint_from_persona_reviewers",
+      "reviewers_cannot_read_each_other": true,
+      "fixture_oracle_unambiguous_required": "10/10",
+      "denominator_unit": "family",
+      "denominator": 10,
+      "failure_or_unavailable_removed": false,
+      "repeated_or_mutated_cases_increase_denominator": false
+    },
+    "gold_access_matrix": {
+      "adapter_or_generator": ["public source", "generator-visible Tavern projection"],
+      "offline_deterministic_grader_after_run_freeze": ["sealed oracle", "frozen output"],
+      "packet_builder_after_run_freeze": ["sealed oracle", "allowlisted frozen evidence"],
+      "blind_reviewer": ["blind packet only"],
+      "aggregator": ["exactly three commit anchors", "externally witnessed prereg and review digests", "frozen builders and aggregator", "sealed oracle", "packet and key", "reviews"]
+    },
+    "old_conditional_tavern_repair_adapter_allowed": false,
+    "symmetric_family_sentinel": true,
+    "reject_duplicate_case_or_reviewer": true,
+    "reject_normalized_same_body_reviews": true,
+    "reject_packet_key_joint_rewrite": true,
+    "reject_evaluable_subset_statistics": true,
+    "commit_evidence_scope": "one_tavern_message_primary_output_only",
+    "run_step_and_idempotency_are_separate_operational_evidence": true,
+    "production_v3_semantic_claim": false,
+    "maximum_authorization_after_pass": "permit_separate_live_shadow_preregistration"
+  },
+  "persona_claim_ledger": {
+    "version": "persona-explicit-semantic-claim-ledger-readiness-v1",
+    "scope": "provider_free_research_readiness_only",
+    "production_schema_changed": false,
+    "research_envelope": "PersonaClaimLedgerProposalEnvelopeV1",
+    "ledger_owner": "human_or_application",
+    "receipt_owner": "model_self_report",
+    "receipt_is_harness_or_domain_commit_receipt": false,
+    "claim_states": ["asserted", "denied", "explicitly_unknown"],
+    "claim_coverage_states": ["required", "optional", "forbid_assertion"],
+    "legal_state_use_reference_matrix": [
+      {"source_state": "asserted", "semantic_use": "assert", "claim_refs": "one_or_more_matching"},
+      {"source_state": "denied", "semantic_use": "deny", "claim_refs": "one_or_more_matching"},
+      {"source_state": "explicitly_unknown", "semantic_use": "preserve_unknown", "claim_refs": "one_or_more_matching"},
+      {"source_state": null, "semantic_use": "unsupported", "claim_refs": "exactly_zero"}
+    ],
+    "absence_implies_unknown": false,
+    "unknown_allows_positive_assertion": false,
+    "unsupported_is_unknown": false,
+    "unsupported_semantic_assertion": {
+      "structurally_decodable": true,
+      "candidate_accepted": false,
+      "stable_error_code": "unsupported_semantic_assertion",
+      "maximum_in_pristine_readiness_or_live_candidate": 0
+    },
+    "families": [
+      {"id": "ice_core_courier", "focus": "multibyte address and source coordinates", "required_claims": [{"semantic_key": "address:ice_core_contact", "state": "asserted", "qualifier": "exact_multibyte_address", "minimum_receipts": 1}, {"semantic_key": "relationship:delivery_contact_only", "state": "asserted", "qualifier": "not_teacher_or_friend", "minimum_receipts": 1}]},
+      {"id": "community_darkroom", "focus": "quotation and hypothetical versus assertion", "required_claims": [{"semantic_key": "relationship:community_darkroom_peer", "state": "asserted", "qualifier": "peer_only", "minimum_receipts": 1}, {"semantic_key": "epistemic:quoted_camera_ownership", "state": "denied", "qualifier": "quotation_is_not_fact", "minimum_receipts": 1}]},
+      {"id": "orchard_sensor", "focus": "scoped read permission and denied edit permission", "required_claims": [{"semantic_key": "permission:sensor_logs_read", "state": "asserted", "qualifier": "read_only", "minimum_receipts": 1}, {"semantic_key": "permission:sensor_config_edit", "state": "denied", "qualifier": "no_edit_authority", "minimum_receipts": 1}]},
+      {"id": "museum_audio_circle", "focus": "multiple people and coreference", "required_claims": [{"semantic_key": "relationship:user_actor_audio_circle_peer", "state": "asserted", "qualifier": "distinguish_third_person", "minimum_receipts": 1}, {"semantic_key": "shared_history:user_actor_restored_recording", "state": "denied", "qualifier": "third_person_did_restoration", "minimum_receipts": 1}]},
+      {"id": "ferry_tide_log", "focus": "time-qualified permission and relationship", "required_claims": [{"semantic_key": "permission:tide_log_annotate_2025", "state": "asserted", "qualifier": "during_2025_season_only", "minimum_receipts": 1}, {"semantic_key": "relationship:ferry_shift_colleague_after_2025", "state": "denied", "qualifier": "not_after_season", "minimum_receipts": 1}]},
+      {"id": "seed_library", "focus": "positive and denied shared history together", "required_claims": [{"semantic_key": "shared_history:seed_swap_2024", "state": "asserted", "qualifier": "one_named_event", "minimum_receipts": 1}, {"semantic_key": "shared_history:catalog_trip", "state": "denied", "qualifier": "did_not_attend_together", "minimum_receipts": 1}]},
+      {"id": "planetarium_caption", "focus": "direct and reported epistemic provenance", "required_claims": [{"semantic_key": "epistemic:caption_text_personally_read", "state": "asserted", "qualifier": "direct_observation", "minimum_receipts": 1}, {"semantic_key": "epistemic:plate_origin", "state": "explicitly_unknown", "qualifier": "reported_but_unverified", "minimum_receipts": 1}]},
+      {"id": "river_microplastic", "focus": "asserted profession, source-explicit unknown qualification, non-teacher relationship", "required_claims": [{"semantic_key": "profession:microplastic_technician", "state": "asserted", "qualifier": "occupation_only", "minimum_receipts": 1}, {"semantic_key": "profession:licensed_scientist_qualification", "state": "explicitly_unknown", "qualifier": "source_explicitly_says_qualification_is_unknown", "minimum_receipts": 1}, {"semantic_key": "relationship:field_contact_not_teacher", "state": "asserted", "qualifier": "non_teacher", "minimum_receipts": 1}]}
+    ],
+    "family_uniqueness": {
+      "reject_duplicate_source_digest": true,
+      "reject_duplicate_ledger_digest": true,
+      "reject_equivalent_normalized_semantic_matrix": true,
+      "reject_historical_family_or_source_digest_overlap": true,
+      "historical_semantic_ancestry_manifest_required": true,
+      "two_reviewers_confirm_no_renamed_or_paraphrased_reuse": true
+    },
+    "semantic_completeness": {
+      "sealed_human_owned_semantic_span_oracle_required": true,
+      "oracle_scope": "frozen_provider_free_canned_proposals_only",
+      "oracle_does_not_certify_unknown_live_output": true,
+      "future_live_requires_preregistered_output_independent_extraction_rule": true,
+      "future_live_requires_externally_witnessed_independent_blind_span_review": true,
+      "model_can_self_classify_nonsemantic": false,
+      "required_claim_coverage_enforced": true,
+      "generic_or_refusal_proposal_allowed": false,
+      "required_claim_omission_code": "proposal_information_loss",
+      "unreceipted_semantic_leaf_code": "semantic_leaf_receipt_coverage_missing",
+      "unsupported_semantic_assertion_code": "unsupported_semantic_assertion"
+    },
+    "provider_free_gate": {
+      "pristine_required": "8/8",
+      "hard_negative_controls_required": "8/8_expected_outcome",
+      "hard_negative_catalog": [
+        {"family": "ice_core_courier", "id": "quoted_or_hypothetical_literal", "changed_spans": 1, "expected_codes": []},
+        {"family": "community_darkroom", "id": "quoted_or_hypothetical_literal", "changed_spans": 1, "expected_codes": []},
+        {"family": "orchard_sensor", "id": "explicit_denial_literal", "changed_spans": 1, "expected_codes": []},
+        {"family": "museum_audio_circle", "id": "explicit_denial_literal", "changed_spans": 1, "expected_codes": []},
+        {"family": "ferry_tide_log", "id": "generic_shell", "changed_spans": 1, "expected_codes": ["proposal_information_loss"]},
+        {"family": "seed_library", "id": "generic_shell", "changed_spans": 1, "expected_codes": ["proposal_information_loss"]},
+        {"family": "planetarium_caption", "id": "refusal_shell", "changed_spans": 1, "expected_codes": ["proposal_information_loss"]},
+        {"family": "river_microplastic", "id": "refusal_shell", "changed_spans": 1, "expected_codes": ["proposal_information_loss"]}
+      ],
+      "hard_negative_content_digests_must_be_unique": true,
+      "mutations_per_family": 21,
+      "single_point_mutations_required": "168/168_exact_single_code",
+      "mutation_catalog": ["schema_extra_field", "source_state_enum_invalid", "source_sha_mismatch", "source_codepoint_span_mismatch", "source_utf8_span_mismatch", "source_slice_digest_mismatch", "duplicate_claim_id", "claim_id_collision", "contradictory_semantic_key", "unknown_has_concrete_value", "proposal_digest_mismatch", "proposal_json_pointer_invalid", "proposal_codepoint_span_mismatch", "proposal_utf8_span_mismatch", "unknown_claim_reference", "duplicate_claim_reference", "illegal_state_use_relation", "unsupported_semantic_assertion", "semantic_leaf_receipt_coverage_missing", "overlapping_receipt_span", "duplicate_receipt"],
+      "mutation_expected_code_equals_id": true,
+      "each_mutation_changes_exactly_one_pointer_or_span": true,
+      "inner_mutations_reseal_outer_digest": true,
+      "ledger_source_reviewers": 2,
+      "reviewer_set": "persona_only_disjoint_from_tavern_reviewers",
+      "reviewers_cannot_read_each_other": true,
+      "ledger_source_and_coverage_unambiguous_required": "8/8",
+      "denominator_unit": "family",
+      "denominator": 8,
+      "failure_or_unavailable_removed": false,
+      "repeated_or_mutated_cases_increase_denominator": false
+    },
+    "gold_access_matrix": {
+      "adapter_or_generator": ["raw source", "ledger prompt projection with claim ID, semantic key, state, qualifier and source text"],
+      "adapter_or_generator_forbidden": ["coverage roles", "semantic-span completeness oracle", "controls", "mutations", "issue codes", "review key", "expected outcome"],
+      "offline_validator_or_grader_after_output_freeze": ["full ledger", "coverage", "semantic-span completeness oracle", "frozen output"],
+      "provider_free_mutation_builder": ["fixture", "oracle", "no live adapter import"],
+      "paired_semantic_reviewer": ["source", "anonymous proposal"],
+      "candidate_receipt_reviewer": ["anonymous proposal", "receipt", "ledger audit packet"],
+      "aggregator": ["exactly three commit anchors", "externally witnessed prereg and review digests", "frozen builders and aggregator", "oracles", "packets", "keys", "reviews"]
+    },
+    "live_gate_if_separately_preregistered": {
+      "denominator_pairs": 8,
+      "minimum_strict_paired_proposals_with_strict_candidate_sidecar": 7,
+      "minimum_major_reductions_confirmed_by_both_reviewers": 4,
+      "maximum_candidate_only_major_from_either_reviewer": 0,
+      "maximum_candidate_major_on_relationship_permission_profession_shared_history_or_epistemic": 0,
+      "maximum_false_supported_or_false_unknown_major": 0,
+      "maximum_required_claim_omission_or_generic_refusal_major": 0,
+      "failure_or_unavailable_removed_or_retried": false,
+      "paired_semantic_packet_excludes_ledger_receipt_and_arm": true,
+      "receipt_uses_separate_candidate_only_audit_packet": true
+    },
+    "proposal_commit_evidence": "not_applicable",
+    "save_boundary": "separate_user_authored_save",
+    "maximum_authorization_after_pass": "permit_separate_live_paired_preregistration"
+  },
+  "global_non_authorizations": ["no_live_provider_wire", "no_production_harness_registry_change", "no_production_prompt_change", "no_persona_or_scene_generation", "no_persona_save", "no_tavern_message_commit_semantic_claim", "no_model_quality_or_production_promotion_claim"],
+  "next_required_artifacts": ["strict fixtures implementing every frozen family semantic atom", "per-family source projection ledger and oracle digests", "provider-free validators", "fixed-catalog single-point mutation calibration", "hermetic runtime dependency entrypoint argv config and input allowlist", "review packet and key deterministic rebuild tests", "four isolated fixture reviewers split into disjoint Tavern and Persona sets", "future live-only blind-output reviewer sets disjoint from all fixture reviewers", "first-only external prereg attestation", "pre-calibration prereg commit followed by post-run frozen commit and post-review evidence commit", "append-only external raw-review digest witness before author access"]
+}
