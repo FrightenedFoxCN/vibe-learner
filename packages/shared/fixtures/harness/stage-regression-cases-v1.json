@@ -441,9 +441,9 @@
       }
     },
     {
-      "case_id": "plan_generation-duplicate_unit",
+      "case_id": "plan_generation-multi_session_same_unit",
       "stage": "plan_generation",
-      "scenario": "duplicate_unit",
+      "scenario": "multi_session_same_unit",
       "input": {
         "schema_name": "learning-plan-proposal",
         "schema_version": "learning-plan-proposal-v1",
@@ -506,8 +506,8 @@
         ]
       },
       "expected": {
-        "accepted": false,
-        "grounded": false
+        "accepted": true,
+        "grounded": true
       }
     },
     {

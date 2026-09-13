@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import hashlib
-from typing import Any
+from typing import Any, Literal
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.models.study_question import (
     StudyInteractiveQuestionRecordV2 as InteractiveQuestion,
@@ -264,6 +264,108 @@ class DocumentRecord(BaseModel):
     debug_ready: bool = False
 
 
+class _StrictPlanningIntentModel(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+
+
+class PlanningPageRangeV1(_StrictPlanningIntentModel):
+    page_start: int = Field(ge=1)
+    page_end: int = Field(ge=1)
+
+    @model_validator(mode="after")
+    def validate_range(self) -> "PlanningPageRangeV1":
+        if self.page_end < self.page_start:
+            raise ValueError("page_end_before_page_start")
+        return self
+
+
+class PlanningPageRangesIntentV1(_StrictPlanningIntentModel):
+    status: Literal["unknown", "user_explicit"] = "unknown"
+    value: list[PlanningPageRangeV1] | None = None
+
+    @model_validator(mode="after")
+    def validate_status_value(self) -> "PlanningPageRangesIntentV1":
+        if self.status == "unknown" and self.value is not None:
+            raise ValueError("unknown_intent_must_not_have_value")
+        if self.status == "user_explicit" and not self.value:
+            raise ValueError("explicit_intent_value_required")
+        if self.value:
+            ordered = sorted(self.value, key=lambda item: (item.page_start, item.page_end))
+            for previous, current in zip(ordered, ordered[1:]):
+                if current.page_start <= previous.page_end:
+                    raise ValueError("page_ranges_overlap")
+        return self
+
+
+class PlanningOutlineTargetsIntentV1(_StrictPlanningIntentModel):
+    status: Literal["unknown", "user_explicit"] = "unknown"
+    value: list[str] | None = Field(default=None, max_length=64)
+
+    @model_validator(mode="after")
+    def validate_status_value(self) -> "PlanningOutlineTargetsIntentV1":
+        if self.status == "unknown" and self.value is not None:
+            raise ValueError("unknown_intent_must_not_have_value")
+        if self.status == "user_explicit" and not self.value:
+            raise ValueError("explicit_intent_value_required")
+        if self.value is not None:
+            if any(not item.strip() or len(item) > 128 for item in self.value):
+                raise ValueError("outline_target_invalid")
+            if len(set(self.value)) != len(self.value):
+                raise ValueError("duplicate_outline_target")
+        return self
+
+
+class PlanningIntegerIntentV1(_StrictPlanningIntentModel):
+    status: Literal["unknown", "user_explicit"] = "unknown"
+    value: int | None = Field(default=None, ge=1, le=480)
+
+    @model_validator(mode="after")
+    def validate_status_value(self) -> "PlanningIntegerIntentV1":
+        if self.status == "unknown" and self.value is not None:
+            raise ValueError("unknown_intent_must_not_have_value")
+        if self.status == "user_explicit" and self.value is None:
+            raise ValueError("explicit_intent_value_required")
+        return self
+
+
+class PlanningLanguageIntentV1(_StrictPlanningIntentModel):
+    status: Literal["unknown", "user_explicit"] = "unknown"
+    value: str | None = Field(default=None, min_length=2, max_length=35)
+
+    @model_validator(mode="after")
+    def validate_status_value(self) -> "PlanningLanguageIntentV1":
+        if self.status == "unknown" and self.value is not None:
+            raise ValueError("unknown_intent_must_not_have_value")
+        if self.status == "user_explicit" and self.value is None:
+            raise ValueError("explicit_intent_value_required")
+        return self
+
+
+class PlanningIntentV1(_StrictPlanningIntentModel):
+    schema_version: Literal["planning-intent-v1"] = "planning-intent-v1"
+    pdf_page_ranges: PlanningPageRangesIntentV1 = Field(
+        default_factory=PlanningPageRangesIntentV1
+    )
+    outline_targets: PlanningOutlineTargetsIntentV1 = Field(
+        default_factory=PlanningOutlineTargetsIntentV1
+    )
+    session_count: PlanningIntegerIntentV1 = Field(
+        default_factory=PlanningIntegerIntentV1
+    )
+    minutes_per_session: PlanningIntegerIntentV1 = Field(
+        default_factory=PlanningIntegerIntentV1
+    )
+    output_language: PlanningLanguageIntentV1 = Field(
+        default_factory=PlanningLanguageIntentV1
+    )
+
+    @model_validator(mode="after")
+    def validate_field_limits(self) -> "PlanningIntentV1":
+        if self.session_count.value is not None and self.session_count.value > 24:
+            raise ValueError("session_count_above_schedule_limit")
+        return self
+
+
 class LearningGoalInput(BaseModel):
     document_id: str = ""
     persona_id: str
@@ -274,6 +376,7 @@ class LearningGoalInput(BaseModel):
     )
     scene_profile_summary: str = ""
     scene_profile: "SceneProfileRecord | None" = None
+    planning_intent: PlanningIntentV1 = Field(default_factory=PlanningIntentV1)
 
     @model_validator(mode="after")
     def populate_scene_summary_from_profile(self) -> "LearningGoalInput":
@@ -449,6 +552,7 @@ class StudyScheduleRecord(BaseModel):
     title: str
     focus: str
     activity_type: str
+    duration_minutes: int | None = Field(default=None, ge=1, le=480)
     status: str = "planned"
     schedule_chapters: list[ScheduleChapterRecord] = Field(default_factory=list)
 
@@ -546,6 +650,8 @@ class LearningPlanRecord(BaseModel):
     )
     scene_profile_summary: str = ""
     scene_profile: SceneProfileRecord | None = None
+    planning_intent: PlanningIntentV1 = Field(default_factory=PlanningIntentV1)
+    output_language: str = Field(default="unknown", min_length=2, max_length=35)
     overview: str = Field(
         description=(
             "One or two sentence learner-facing plan summary. Use this as body/summary text, not as the plan title."

@@ -43,12 +43,11 @@ class PlanningContractTests(unittest.TestCase):
         with self.assertRaises(PlanningProposalDecodeError):
             _decode_learning_plan_proposal(invalid_contract, allow_json_repair=True)
 
-    def test_duplicate_unit_repair_receives_specific_safe_invariant(self) -> None:
+    def test_duplicate_unit_refs_are_allowed_for_multi_session_plans(self) -> None:
         payload = _valid_proposal_payload()
         payload["schedule"].append(dict(payload["schedule"][0]))
-        with self.assertRaises(PlanningProposalDecodeError) as raised:
-            _decode_learning_plan_proposal(json.dumps(payload))
-        self.assertEqual(raised.exception.reason, "duplicate_schedule_unit_ref")
+        proposal = _decode_learning_plan_proposal(json.dumps(payload))
+        self.assertEqual([item.unit_id for item in proposal.schedule], ["unit-1", "unit-1"])
 
     def test_goal_only_prompt_and_projection_use_empty_section_allowlist(self) -> None:
         from app.services.plan_prompt import build_learning_plan_messages

@@ -11,7 +11,7 @@ from pydantic import ValidationError
 from app.core.logging import get_logger
 from app.models.domain import (
     DocumentDebugRecord, LearningGoalInput, LearningPlanRecord, PersonaProfile,
-    PlanningQuestionRecord, PlanGenerationTraceRecord, StudyUnitRecord,
+    PlanningIntentV1, PlanningQuestionRecord, PlanGenerationTraceRecord, StudyUnitRecord,
 )
 from app.models.planning import LearningPlanProposalV1
 from app.services.model_recovery import record_model_recovery
@@ -23,6 +23,7 @@ from app.services.provider_callbacks import _call_interrupt, _emit_progress
 from app.services.provider_capabilities import PlanningModelCapability, PlanModelReply, PlanScheduleItem
 from app.services.provider_payload import _extract_json_payload
 from app.services.planning_chapter_validation import find_chapter_violation
+from app.services.planning_intent import validate_schedule_against_intent
 
 logger = get_logger("vibe_learner.model_provider")
 
@@ -101,6 +102,7 @@ class RemotePlanningProvider(PlanningModelCapability):
             tools_enabled=self.plan_tools_enabled,
             planning_questions=planning_questions,
             progress_callback=progress_callback,
+            planning_intent=goal.planning_intent,
         )
         active_tool_runtime = tool_runtime
         active_model = self.plan_model
@@ -126,6 +128,7 @@ class RemotePlanningProvider(PlanningModelCapability):
                 tools_enabled=fallback_tools_enabled,
                 planning_questions=planning_questions,
                 progress_callback=progress_callback,
+                planning_intent=goal.planning_intent,
             )
             logger.warning(
                 "model.plan.fallback start primary=%s fallback=%s tools_enabled=%s",
@@ -167,12 +170,18 @@ class RemotePlanningProvider(PlanningModelCapability):
         final_trace = run_result.trace
         try:
             proposal = _decode_learning_plan_proposal(run_result.content)
-            _validate_learning_plan_proposal_refs(proposal, active_tool_runtime.current_study_units() or study_units)
+            _validate_learning_plan_proposal_refs(
+                proposal,
+                active_tool_runtime.current_study_units() or study_units,
+                goal.planning_intent,
+            )
         except PlanningProposalDecodeError as first_error:
             repair_units = active_tool_runtime.current_study_units() or study_units
             try:
                 proposal = _decode_learning_plan_proposal(run_result.content, allow_json_repair=True)
-                _validate_learning_plan_proposal_refs(proposal, repair_units)
+                _validate_learning_plan_proposal_refs(
+                    proposal, repair_units, goal.planning_intent
+                )
             except PlanningProposalDecodeError:
                 recovery = record_model_recovery(
                     category="schema_retry", reason="plan_proposal_schema_invalid",
@@ -199,6 +208,7 @@ class RemotePlanningProvider(PlanningModelCapability):
                         "first_error_path": first_error.path or "$",
                         "first_error_reason": first_error.reason,
                         "allowed_units": allowed_units,
+                        "planning_intent": goal.planning_intent.model_dump(mode="json"),
                         "candidate_output": run_result.content,
                     }, ensure_ascii=False)},
                 ]
@@ -212,6 +222,7 @@ class RemotePlanningProvider(PlanningModelCapability):
                         debug_report=debug_report, document_path=document_path, tools_enabled=False,
                         planning_questions=active_tool_runtime.current_planning_questions(),
                         progress_callback=progress_callback,
+                        planning_intent=goal.planning_intent,
                     ),
                     progress_callback=progress_callback, interrupt_check=interrupt_check,
                     allow_fallback=False,
@@ -220,7 +231,9 @@ class RemotePlanningProvider(PlanningModelCapability):
                     raise RuntimeError("plan_proposal_repair_empty_response") from first_error
                 try:
                     proposal = _decode_learning_plan_proposal(repaired_result.content)
-                    _validate_learning_plan_proposal_refs(proposal, repair_units)
+                    _validate_learning_plan_proposal_refs(
+                        proposal, repair_units, goal.planning_intent
+                    )
                 except PlanningProposalDecodeError as repair_error:
                     raise RuntimeError(
                         f"plan_proposal_schema_invalid:{repair_error.path or '$'}:{repair_error.reason}"
@@ -247,6 +260,7 @@ class RemotePlanningProvider(PlanningModelCapability):
                 focus=item.focus,
                 activity_type=item.activity_type,
                 schedule_chapters=list(item.schedule_chapters),
+                duration_minutes=item.duration_minutes,
             )
             for item in proposal.schedule
         ]
@@ -260,6 +274,7 @@ class RemotePlanningProvider(PlanningModelCapability):
             revised_study_units=active_study_units if _study_units_changed(study_units, active_study_units) else None,
             planning_questions=planning_questions,
             debug_trace=final_trace,
+            output_language=proposal.output_language,
         )
 
 
@@ -273,12 +288,14 @@ class RemotePlanningProvider(PlanningModelCapability):
         tools_enabled: bool,
         planning_questions: list[PlanningQuestionRecord] | None = None,
         progress_callback: Callable[[str, dict[str, object]], None] | None = None,
+        planning_intent: PlanningIntentV1 | None = None,
     ):
         if not tools_enabled:
             return build_plan_tool_runtime(
                 study_units=study_units, detail_map=detail_map,
                 planning_questions=planning_questions,
                 disabled_tools=set(TOOL_CATALOG[PLAN_STAGE]),
+                planning_intent=planning_intent,
             )
         return build_plan_tool_runtime(
             study_units=study_units,
@@ -289,6 +306,7 @@ class RemotePlanningProvider(PlanningModelCapability):
             planning_questions=planning_questions,
             progress_callback=progress_callback,
             disabled_tools=set(self.disabled_tools),
+            planning_intent=planning_intent,
         )
 
 
@@ -338,7 +356,9 @@ class PlanningProposalDecodeError(RuntimeError):
 
 
 def _validate_learning_plan_proposal_refs(
-    proposal: LearningPlanProposalV1, study_units: list[StudyUnitRecord],
+    proposal: LearningPlanProposalV1,
+    study_units: list[StudyUnitRecord],
+    planning_intent: PlanningIntentV1 | None = None,
 ) -> None:
     """Check references and chapter geometry against the post-tool snapshot before repair."""
     units = {unit.id: unit for unit in study_units}
@@ -355,6 +375,24 @@ def _validate_learning_plan_proposal_refs(
             if violation is not None:
                 raise PlanningProposalDecodeError(path=f"{chapter_path}.{violation.path}", reason=violation.reason)
             previous_anchor_start = chapter.anchor_page_start
+    try:
+        validate_schedule_against_intent(
+            schedule=list(proposal.schedule),
+            intent=planning_intent or PlanningIntentV1(),
+        )
+        explicit_language = (planning_intent or PlanningIntentV1()).output_language
+        if (
+            explicit_language.status == "user_explicit"
+            and proposal.output_language.casefold() != (explicit_language.value or "").casefold()
+        ):
+            raise RuntimeError(
+                "plan_proposal_invariant_failed:output_language:explicit_language_mismatch"
+            )
+    except RuntimeError as exc:
+        parts = str(exc).split(":", 2)
+        if len(parts) == 3 and parts[0] == "plan_proposal_invariant_failed":
+            raise PlanningProposalDecodeError(path=parts[1], reason=parts[2]) from exc
+        raise
 
 
 

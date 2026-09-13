@@ -843,7 +843,7 @@
             "status": "registered",
             "contract": {
               "name": "planning_prompt",
-              "version": "planning-prompt-v3"
+              "version": "planning-prompt-v4"
             }
           }
         },
@@ -862,7 +862,7 @@
         "status": "registered",
         "contract": {
           "name": "LearningPlanPrompt",
-          "version": "planning-prompt-v3"
+          "version": "planning-prompt-v4"
         }
       },
       "policy_contract": {
@@ -1110,7 +1110,7 @@
             "status": "registered",
             "contract": {
               "name": "planning_tool_runtime",
-              "version": "planning-tool-runtime-v1"
+              "version": "planning-tool-runtime-v2"
             }
           }
         },

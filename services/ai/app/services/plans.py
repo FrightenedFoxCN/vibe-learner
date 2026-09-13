@@ -27,6 +27,11 @@ from app.models.domain import (
 from app.models.harness import canonical_harness_digest
 from app.models.planning import PlanScheduleChapterProposalV1
 from app.services.planning_chapter_validation import find_chapter_violation
+from app.services.planning_intent import (
+    select_study_units_for_intent,
+    validate_intent_against_document,
+    validate_schedule_against_intent,
+)
 from app.models.harness_operation import HarnessDomainOperationKind
 from app.models.planning import (
     LearningPlanOperationRecord,
@@ -117,6 +122,7 @@ class LearningPlanService:
             objective=goal.objective,
             scene_profile_summary=goal.scene_profile_summary,
             scene_profile=goal.scene_profile,
+            planning_intent=goal.planning_intent,
             expected_document_updated_at=expected_document_updated_at,
         )
         try:
@@ -452,13 +458,44 @@ class LearningPlanService:
                 "creation_mode": plan.creation_mode,
             },
         )
+        if document is not None:
+            validate_intent_against_document(
+                intent=goal.planning_intent,
+                page_count=document.page_count,
+                section_ids={
+                    *(
+                        section.id
+                        for section in (
+                            debug_report.sections
+                            if debug_report is not None
+                            else document.sections
+                        )
+                    ),
+                    *(
+                        section_id
+                        for unit in plan.study_units
+                        for section_id in unit.source_section_ids
+                    ),
+                },
+            )
+        elif (
+            goal.planning_intent.pdf_page_ranges.status == "user_explicit"
+            or goal.planning_intent.outline_targets.status == "user_explicit"
+        ):
+            raise RuntimeError("planning_intent_invalid:document_scope_without_document")
+        scoped_study_units = select_study_units_for_intent(
+            study_units=plan.study_units,
+            intent=goal.planning_intent,
+        )
+        if not scoped_study_units:
+            raise RuntimeError("planning_intent_invalid:scope_has_no_study_units")
         if provider_start_callback is not None:
             provider_start_callback()
         model_plan = self.model_provider.generate_learning_plan(
             persona=persona,
             document_title=document_title,
             goal=goal,
-            study_units=plan.study_units,
+            study_units=scoped_study_units,
             document_path=document_path,
             debug_report=debug_report,
             progress_callback=progress_callback,
@@ -476,13 +513,11 @@ class LearningPlanService:
                     debug_report.study_units = model_plan.revised_study_units
         unit_by_id = {unit.id: unit for unit in plan.study_units}
         filtered_schedule: list[StudyScheduleRecord] = []
-        seen_unit_ids: set[str] = set()
+        validate_schedule_against_intent(
+            schedule=model_plan.schedule,
+            intent=goal.planning_intent,
+        )
         for index, item in enumerate(model_plan.schedule):
-            if item.unit_id in seen_unit_ids:
-                raise RuntimeError(
-                    f"plan_proposal_invariant_failed:schedule.{index}.unit_id:duplicate_ref"
-                )
-            seen_unit_ids.add(item.unit_id)
             unit = unit_by_id.get(item.unit_id)
             if unit is None:
                 raise RuntimeError(
@@ -495,6 +530,7 @@ class LearningPlanService:
             plan.course_title = model_plan.course_title
         if model_plan.overview:
             plan.overview = model_plan.overview
+        plan.output_language = model_plan.output_language
         if model_plan.today_tasks:
             plan.today_tasks = model_plan.today_tasks
         # The selected Scene is application-owned request state.  Assign it
@@ -764,6 +800,7 @@ class LearningPlanService:
             title=item.title,
             focus=item.focus,
             activity_type=item.activity_type,
+            duration_minutes=getattr(item, "duration_minutes", None),
             status="planned",
             schedule_chapters=schedule_chapters,
         )

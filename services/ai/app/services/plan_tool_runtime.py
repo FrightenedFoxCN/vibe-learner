@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from app.core.diagnostic_tool import observe_tool_call
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any, Callable
 from uuid import uuid4
@@ -11,7 +11,12 @@ from app.core.harness_component_versions import (
     PLANNING_TOOL_RUNTIME_CONTRACT_VERSION,
     PLANNING_TOOLSET_CONTRACT_VERSION,
 )
-from app.models.domain import DocumentDebugRecord, PlanningQuestionRecord, StudyUnitRecord
+from app.models.domain import (
+    DocumentDebugRecord,
+    PlanningIntentV1,
+    PlanningQuestionRecord,
+    StudyUnitRecord,
+)
 from app.models.harness import HarnessStage, HarnessWorkflow
 from app.models.tool_manifest import (
     TOOL_MANIFEST_ENTRIES,
@@ -24,6 +29,7 @@ from app.services.plan_prompt import (
     read_page_range_content,
     read_page_range_images,
 )
+from app.services.planning_intent import range_is_within_explicit_scope
 from app.services.tool_provider_projection import (
     ProviderToolCallDecodeError,
     ToolContractViolation,
@@ -53,6 +59,7 @@ class PlanToolRuntimeContext:
     multimodal_enabled: bool
     planning_questions: list[PlanningQuestionRecord]
     progress_callback: Callable[[str, dict[str, object]], None] | None
+    planning_intent: PlanningIntentV1 = field(default_factory=PlanningIntentV1)
 
 
 @dataclass(frozen=True)
@@ -202,6 +209,7 @@ def build_plan_tool_runtime(
     planning_questions: list[PlanningQuestionRecord] | None = None,
     progress_callback: Callable[[str, dict[str, object]], None] | None = None,
     disabled_tools: set[str] | None = None,
+    planning_intent: PlanningIntentV1 | None = None,
 ) -> PlanToolRuntime:
     return PlanToolRuntime(
         context=PlanToolRuntimeContext(
@@ -212,6 +220,7 @@ def build_plan_tool_runtime(
             multimodal_enabled=multimodal_enabled,
             planning_questions=list(planning_questions or []),
             progress_callback=progress_callback,
+            planning_intent=planning_intent or PlanningIntentV1(),
         ),
         disabled_tools=disabled_tools,
     )
@@ -264,7 +273,12 @@ def _registered_plan_tools() -> list[PlanToolDefinition]:
         ),
         PlanToolDefinition(
             name="revise_study_units",
-            is_available=lambda context: context.debug_report is not None and bool(context.study_units),
+            is_available=lambda context: (
+                context.debug_report is not None
+                and bool(context.study_units)
+                and context.planning_intent.pdf_page_ranges.status == "unknown"
+                and context.planning_intent.outline_targets.status == "unknown"
+            ),
             execute=_execute_revise_study_units,
         ),
         PlanToolDefinition(
@@ -577,6 +591,22 @@ def _execute_read_page_range_content(
     page_start = max(1, int(arguments.get("page_start") or 1))
     page_end = max(page_start, int(arguments.get("page_end") or page_start))
     max_chars = max(500, min(6000, int(arguments.get("max_chars") or 3000)))
+    if not range_is_within_explicit_scope(
+        page_start=page_start,
+        page_end=page_end,
+        intent=context.planning_intent,
+    ):
+        return PlanToolResult(
+            payload={
+                "ok": False,
+                "tool_name": "read_page_range_content",
+                "error": "outside_explicit_scope",
+                "path": ["page_start"],
+                "detail": "requested physical PDF pages are outside the user-explicit scope",
+            },
+            trace_summary=f"拒绝读取显式范围外的第 {page_start}-{page_end} 页文本",
+            follow_up_messages=[],
+        )
     return PlanToolResult(
         payload={
             "ok": True,
@@ -650,6 +680,22 @@ def _execute_read_page_range_images(
     page_start = max(1, int(arguments.get("page_start") or 1))
     page_end = max(page_start, int(arguments.get("page_end") or page_start))
     max_images = max(1, min(4, int(arguments.get("max_images") or 3)))
+    if not range_is_within_explicit_scope(
+        page_start=page_start,
+        page_end=page_end,
+        intent=context.planning_intent,
+    ):
+        return PlanToolResult(
+            payload={
+                "ok": False,
+                "tool_name": "read_page_range_images",
+                "error": "outside_explicit_scope",
+                "path": ["page_start"],
+                "detail": "requested physical PDF pages are outside the user-explicit scope",
+            },
+            trace_summary=f"拒绝渲染显式范围外的第 {page_start}-{page_end} 页图像",
+            follow_up_messages=[],
+        )
     image_result = read_page_range_images(
         document_path=context.document_path,
         page_start=page_start,

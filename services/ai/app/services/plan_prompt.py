@@ -24,6 +24,7 @@ PLAN_JSON_SCHEMA = (
     '"schema_version": "learning-plan-proposal-v1", '
     '"course_title": string, '
     '"overview": string, '
+    '"output_language": string, '
     '"today_tasks": string[], '
     '"schedule": ['
     "{"
@@ -31,6 +32,7 @@ PLAN_JSON_SCHEMA = (
     '"title": string, '
     '"focus": string, '
     '"activity_type": "learn" | "review", '
+    '"duration_minutes": integer | null, '
     '"schedule_chapters": ['
     "{"
     '"title": string, '
@@ -109,6 +111,7 @@ def build_learning_plan_messages(
         "document_title": document_title,
         "learning_goal": {
             "objective": goal.objective,
+            "planning_intent": goal.planning_intent.model_dump(mode="json"),
             "scene_profile_summary": goal.scene_profile_summary,
             "scene_profile": (
                 {

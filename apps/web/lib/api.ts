@@ -1529,6 +1529,27 @@ function createLearningPlanRequestId(): string {
   return `learning-plan-${suffix}`;
 }
 
+function serializePlanningIntent(intent: LearningGoal["planningIntent"]): object | undefined {
+  if (!intent) return undefined;
+  const serializeValue = <T, U>(
+    item: { status: "unknown"; value: null } | { status: "user_explicit"; value: T },
+    map: (value: T) => U,
+  ) => item.status === "unknown"
+    ? { status: "unknown", value: null }
+    : { status: "user_explicit", value: map(item.value) };
+  return {
+    schema_version: intent.schemaVersion,
+    pdf_page_ranges: serializeValue(intent.pdfPageRanges, (ranges) => ranges.map((range) => ({
+      page_start: range.pageStart,
+      page_end: range.pageEnd,
+    }))),
+    outline_targets: serializeValue(intent.outlineTargets, (targets) => targets),
+    session_count: serializeValue(intent.sessionCount, (value) => value),
+    minutes_per_session: serializeValue(intent.minutesPerSession, (value) => value),
+    output_language: serializeValue(intent.outputLanguage, (value) => value),
+  };
+}
+
 export async function createLearningPlan(goal: LearningGoal): Promise<LearningPlan> {
   const clientRequestId = goal.clientRequestId?.trim() || createLearningPlanRequestId();
   const sceneSummary = goal.sceneProfileSummary ?? goal.sceneProfile?.summary ?? "";
@@ -1544,7 +1565,8 @@ export async function createLearningPlan(goal: LearningGoal): Promise<LearningPl
         expected_document_updated_at: goal.expectedDocumentUpdatedAt ?? "",
         objective: goal.objective,
         scene_profile_summary: sceneSummary,
-        scene_profile: serializeSceneProfile(goal.sceneProfile)
+        scene_profile: serializeSceneProfile(goal.sceneProfile),
+        planning_intent: serializePlanningIntent(goal.planningIntent)
       })
     });
   const payload = await readJson<unknown>(diagnosticResponse);
@@ -1678,7 +1700,8 @@ export async function createLearningPlanStream(
       expected_document_updated_at: goal.expectedDocumentUpdatedAt ?? "",
       objective: goal.objective,
       scene_profile_summary: sceneSummary,
-      scene_profile: serializeSceneProfile(goal.sceneProfile)
+      scene_profile: serializeSceneProfile(goal.sceneProfile),
+      planning_intent: serializePlanningIntent(goal.planningIntent)
     })
   }, options?.diagnostic);
   if (!response.ok || !response.body) {

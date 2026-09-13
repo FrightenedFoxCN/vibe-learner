@@ -245,7 +245,7 @@ const STAGE_VOCABULARY: StageVocabulary[] = [
     stage: "plan_generation",
     ownerModule: "app.services.model_provider",
     components: [
-      { name: "planning_prompt", contract: { name: "planning_prompt", version: "planning-prompt-v3" } },
+      { name: "planning_prompt", contract: { name: "planning_prompt", version: "planning-prompt-v4" } },
       {
         name: "planning_toolset",
         contract: { name: "planning_toolset", version: "planning-toolset-v2" },
@@ -262,7 +262,7 @@ const STAGE_VOCABULARY: StageVocabulary[] = [
         name: "planning_tool_runtime",
         contract: {
           name: "planning_tool_runtime",
-          version: "planning-tool-runtime-v1",
+          version: "planning-tool-runtime-v2",
         },
       },
       {
@@ -671,7 +671,7 @@ const entries: HarnessWorkflowManifestEntryV1[] = [
     output: contract("LearningPlanCommittedProjection", "learning-plan-committed-projection-v1"),
     artifacts: ["document_debug", "persona_snapshot", "planning_context", "scene_snapshot", "study_unit_input"],
     decoder: "app.services.harness_broad_adoption.LearningPlanWorkflowAdapter",
-    prompt: contract("LearningPlanPrompt", "planning-prompt-v3"),
+    prompt: contract("LearningPlanPrompt", "planning-prompt-v4"),
     policy: contract("LearningPlanHarnessPolicy", "learning-plan-harness-v1"),
     toolset: TOOL_MANIFEST_SLOT,
     commit: { status: "registered", key: { workflow: "planning", stage: "plan_generation", trace_contract: contract("LearningPlanRuntimeOutput", "learning-plan-runtime-output-v1"), payload_contract: contract("LearningPlanCommittedProjection", "learning-plan-committed-projection-v1") } },

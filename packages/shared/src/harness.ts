@@ -141,14 +141,14 @@ export const HARNESS_COMPONENT_REGISTRATIONS = deepFreeze({
   },
   ocr_engine: { ownerModule: "app.services.ocr_engine", contract: { name: "ocr_engine", version: "ocr-engine-v1" } },
   study_unit_cleaner: { ownerModule: "app.services.study_arrangement", contract: { name: "study_unit_cleaner", version: "study-unit-cleaner-v1" } },
-  planning_prompt: { ownerModule: "app.services.plan_prompt", contract: { name: "planning_prompt", version: "planning-prompt-v3" } },
+  planning_prompt: { ownerModule: "app.services.plan_prompt", contract: { name: "planning_prompt", version: "planning-prompt-v4" } },
   planning_toolset: {
     ownerModule: "app.services.plan_tool_runtime",
     contract: { name: "planning_toolset", version: "planning-toolset-v2" },
   },
   planning_tool_runtime: {
     ownerModule: "app.services.plan_tool_runtime",
-    contract: { name: "planning_tool_runtime", version: "planning-tool-runtime-v1" },
+    contract: { name: "planning_tool_runtime", version: "planning-tool-runtime-v2" },
   },
   persona_compiler: { ownerModule: "app.services.persona_cards", contract: { name: "persona_compiler", version: "persona-compiler-v1" } },
   scene_compiler: { ownerModule: "app.services.scene_setup", contract: { name: "scene_compiler", version: "scene-compiler-v1" } },

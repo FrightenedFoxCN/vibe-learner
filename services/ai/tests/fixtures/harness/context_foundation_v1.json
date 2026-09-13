@@ -45,5 +45,5 @@
   "input_digest": "09760744d31e3b0094b6a661913e9dc6149e2537f621127f79ec32a77d45c8cb",
   "context_digest": "b589088267ef873ad8468f4e94304b7dba5decbee236bb36df51bf4022f28387",
   "policy_version": "planning-policy-v2",
-  "prompt_version": "planning-prompt-v3"
+  "prompt_version": "planning-prompt-v4"
 }

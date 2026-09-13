@@ -10,7 +10,7 @@
     "PersonaGenerationProposalV1": "59296fcf91eb2e2dd8539faac477fff791692f348abfec8c03343d51667f2702",
     "SceneGenerationProposalV1": "2650ce04f8de55b7030eaa53eeae4eab0bda704e1d27cced2688733b3b71d657",
     "DocumentProcessRuntimeOutputV1": "54c9460dbd8ac0e693b783ac1a4d6c216d27d27ff469b3780066d6d5970bc320",
-    "LearningPlanRuntimeOutputV1": "1f10a775eb61da7b9cec0d7c156d21708deac982faa3d89fedde3bdfe28a0697",
+    "LearningPlanRuntimeOutputV1": "936d506b77ab2c59e9d4685564f1b13e3d5ec2465b80db94839610c8023b5e73",
     "DocumentStageInputManifest": "4352c7b4494bd3e6f44e94c8e2214087818c2022850a08e21039581ab35e8c37",
     "DocumentStageEvidenceV1": "c4d57f13b16937e0043705db1f9f9c89f47259668967f0351a3b0f06e0d02231",
     "PlanningToolExecutionInputManifest": "671780eed37afe5d51a62d892d57b44017736b1be9570d7c0a75dc1b9fa81e06",
@@ -95,7 +95,7 @@
     },
     "PLAN_PROMPT_CONTRACT": {
       "name": "LearningPlanPrompt",
-      "version": "planning-prompt-v3"
+      "version": "planning-prompt-v4"
     },
     "PLAN_POLICY_CONTRACT": {
       "name": "LearningPlanHarnessPolicy",

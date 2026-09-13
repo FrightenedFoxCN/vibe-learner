@@ -4,7 +4,7 @@
 
 ## Planning
 
-- `source-minimal-v3` 已经用户明确授权，作为 Learning Plan 的生产默认文本策略，并登记为 `LearningPlanPrompt@planning-prompt-v3`。v3 为每个 Study Unit 附带一个受限代表性正文片段，要求来源没有子标题时保留单一父级锚点，并在一个工具核查轮后收束；页读取的实际覆盖与截断必须显式返回。`focus`、`today_tasks` 与学习活动应采用最小忠实改写：保留完整来源跨度及来源当时的计划/拟议/预定状态，区分“记录/报告/观察/列出/承认”与已经证实的事实，并将学习用时与来源事件的现实持续时间分开。不得补造来源未支持的操作、提交动作或工作流机制。
+- `source-minimal-v3` 仍是 Learning Plan 的生产默认文本策略；当前登记为 `LearningPlanPrompt@planning-prompt-v4`。v4 在 v3 的受限代表性正文、单一父级锚点、工具收束和最小忠实改写规则之上，新增来源明确的 Planning intent：未指定字段保持 `unknown`，只有 `user_explicit` 值成为硬约束，模型推断值不得伪装成用户输入。显式物理页范围同时约束初始 Study Unit 选择、页读取工具和最终章节几何；显式课次数、单次时长与输出语言进入严格 proposal 校验。
 - `get_study_unit_detail` 每个模型轮次最多 3 次，每次操作总上限仍为 4；工具仍按 provider 调用顺序串行执行。其他工具的限制不变。Python Tool Manifest、TypeScript 与 golden fixture 保持一致，历史 v1 pilot 不改写，当前预算回归使用 v2。
 - 详情摘录先限定到修订后 Study Unit 的页范围，再优先匹配来源 Section；没有本地页证据时返回空，不以父 Section 的开头冒充当前单元内容。跨页 chunk 保留真实范围。
 - Planning 与 Study 共用的页文本工具严格计算字符预算，包含首个超长 chunk 和段落分隔符。图片工具在分配页码列表前验证并限制页范围。

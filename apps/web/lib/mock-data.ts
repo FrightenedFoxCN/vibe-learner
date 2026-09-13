@@ -53,6 +53,15 @@ export const mockPlan: LearningPlan = {
   creationMode: "document",
   courseTitle: "力学导论 / 牛顿定律",
   objective: "掌握力学导论",
+  planningIntent: {
+    schemaVersion: "planning-intent-v1",
+    pdfPageRanges: { status: "unknown", value: null },
+    outlineTargets: { status: "unknown", value: null },
+    sessionCount: { status: "unknown", value: null },
+    minutesPerSession: { status: "unknown", value: null },
+    outputLanguage: { status: "unknown", value: null },
+  },
+  outputLanguage: "zh-CN",
   overview: "先完成力学导论的首轮精读排期，再依次推进定义、受力分析与例题复述等关键内容。",
   todayTasks: [
     "阅读教材第 12-18 页，标出本章定义句。",

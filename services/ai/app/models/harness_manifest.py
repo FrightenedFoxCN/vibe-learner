@@ -765,7 +765,7 @@ _ENTRIES = (
             HarnessArtifactType.STUDY_UNIT_INPUT,
         ),
         decoder_route="app.services.harness_broad_adoption.LearningPlanWorkflowAdapter",
-        prompt=("LearningPlanPrompt", "planning-prompt-v3"),
+        prompt=("LearningPlanPrompt", "planning-prompt-v4"),
         policy=("LearningPlanHarnessPolicy", "learning-plan-harness-v1"),
         toolset=_TOOL_MANIFEST_SLOT,
         commit_policy=HarnessManifestRegisteredCommitPolicySlotV1(

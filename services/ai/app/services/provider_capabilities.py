@@ -44,6 +44,7 @@ class PlanScheduleItem:
     focus: str
     activity_type: str
     schedule_chapters: list[PlanScheduleChapterProposalV1]
+    duration_minutes: int | None = None
 
 
 @dataclass
@@ -55,6 +56,7 @@ class PlanModelReply:
     revised_study_units: list[StudyUnitRecord] | None = None
     planning_questions: list[PlanningQuestionRecord] | None = None
     debug_trace: PlanGenerationTraceRecord | None = None
+    output_language: str = "unknown"
 
 
 class PlanningModelCapability:

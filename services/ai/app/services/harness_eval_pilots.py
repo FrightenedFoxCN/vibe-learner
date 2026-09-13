@@ -904,7 +904,7 @@ def _system_config(*, suite: HarnessContractRef) -> HarnessEvalSystemConfigV1:
             ),
             "provider_adapter_contract": HarnessContractRef(
                 name="PlanToolRuntime",
-                version="planning-tool-runtime-v1",
+                version="planning-tool-runtime-v2",
             ),
             "provider_model_contract": HarnessContractRef(
                 name="DeterministicToolCallFixture",
@@ -927,7 +927,7 @@ def _system_config(*, suite: HarnessContractRef) -> HarnessEvalSystemConfigV1:
             "component_contracts": [
                 HarnessContractRef(
                     name="planning_tool_runtime",
-                    version="planning-tool-runtime-v1",
+                    version="planning-tool-runtime-v2",
                 ),
                 HarnessContractRef(
                     name="planning_toolset",

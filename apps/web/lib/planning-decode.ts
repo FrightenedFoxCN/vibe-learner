@@ -7,6 +7,8 @@ import type {
   PlanGenerationRoundTrace,
   PlanGenerationTrace,
   PlanningChunkExcerpt,
+  PlanningIntent,
+  PlanningIntentValue,
   PlanningOutlineNode,
   PlanningSectionRef,
   PlanningStudyUnitContext,
@@ -74,6 +76,85 @@ export class PlanningDecodeError extends Error {
 const decoder = new StrictResponseDecoder((path, reason) => {
   throw new PlanningDecodeError(path, reason);
 });
+
+function decodeIntentValue<T>(
+  raw: unknown,
+  path: string,
+  decodeExplicit: (rawValue: unknown, valuePath: string) => T,
+): PlanningIntentValue<T> {
+  const value = decoder.record(raw, path);
+  const status = decoder.enumeration(
+    decoder.field(value, "status", path),
+    ["unknown", "user_explicit"] as const,
+    `${path}.status`,
+  );
+  const rawValue = decoder.field(value, "value", path);
+  if (status === "unknown") {
+    if (rawValue !== null) {
+      throw new PlanningDecodeError(`${path}.value`, "unknown_intent_must_not_have_value");
+    }
+    return { status, value: null };
+  }
+  return { status, value: decodeExplicit(rawValue, `${path}.value`) };
+}
+
+function decodePlanningIntent(raw: unknown, path: string): PlanningIntent {
+  const value = decoder.record(raw, path);
+  const schemaVersion = decoder.enumeration(
+    decoder.field(value, "schema_version", path),
+    ["planning-intent-v1"] as const,
+    `${path}.schema_version`,
+  );
+  return {
+    schemaVersion,
+    pdfPageRanges: decodeIntentValue(
+      decoder.field(value, "pdf_page_ranges", path),
+      `${path}.pdf_page_ranges`,
+      (rawRanges, rangesPath) => decoder.array(rawRanges, rangesPath, (rawRange, rangePath) => {
+        const range = decoder.record(rawRange, rangePath);
+        const pageStart = decoder.integer(
+          decoder.field(range, "page_start", rangePath), `${rangePath}.page_start`, 1,
+        );
+        const pageEnd = decoder.integer(
+          decoder.field(range, "page_end", rangePath), `${rangePath}.page_end`, 1,
+        );
+        decoder.range(pageStart, pageEnd, rangePath);
+        return { pageStart, pageEnd };
+      }),
+    ),
+    outlineTargets: decodeIntentValue(
+      decoder.field(value, "outline_targets", path),
+      `${path}.outline_targets`,
+      (rawTargets, targetsPath) => decoder.stringArray(rawTargets, targetsPath),
+    ),
+    sessionCount: decodeIntentValue(
+      decoder.field(value, "session_count", path),
+      `${path}.session_count`,
+      (rawCount, countPath) => decoder.integer(rawCount, countPath, 1, 24),
+    ),
+    minutesPerSession: decodeIntentValue(
+      decoder.field(value, "minutes_per_session", path),
+      `${path}.minutes_per_session`,
+      (rawMinutes, minutesPath) => decoder.integer(rawMinutes, minutesPath, 1, 480),
+    ),
+    outputLanguage: decodeIntentValue(
+      decoder.field(value, "output_language", path),
+      `${path}.output_language`,
+      (rawLanguage, languagePath) => decoder.string(rawLanguage, languagePath),
+    ),
+  };
+}
+
+function unknownPlanningIntent(): PlanningIntent {
+  return {
+    schemaVersion: "planning-intent-v1",
+    pdfPageRanges: { status: "unknown", value: null },
+    outlineTargets: { status: "unknown", value: null },
+    sessionCount: { status: "unknown", value: null },
+    minutesPerSession: { status: "unknown", value: null },
+    outputLanguage: { status: "unknown", value: null },
+  };
+}
 
 function assertKnownReferences(
   refs: string[],
@@ -621,6 +702,9 @@ function decodeScheduleItem(
       ACTIVITY_TYPES,
       `${path}.activity_type`,
     ),
+    ...(value.duration_minutes === null || value.duration_minutes === undefined
+      ? {}
+      : { durationMinutes: decoder.integer(value.duration_minutes, `${path}.duration_minutes`, 1, 480) }),
     status: decoder.enumeration(
       decoder.field(value, "status", path),
       SCHEDULE_STATUSES,
@@ -865,7 +949,6 @@ export function decodeLearningPlan(
     (item, itemPath) => decodeScheduleItem(item, itemPath, unitMap),
   );
   decoder.unique(schedule.map((item) => item.id), `${path}.schedule.id`);
-  decoder.unique(schedule.map((item) => item.unitId), `${path}.schedule.unit_id`);
   decoder.unique(
     schedule.flatMap((item) => item.scheduleChapters.map((chapter) => chapter.id)),
     `${path}.schedule.schedule_chapters.id`,
@@ -1130,6 +1213,21 @@ export function decodeLearningPlan(
     `${path}.scene_profile`,
     decodeSceneProfile,
   );
+  const planningIntent = value.planning_intent === undefined
+    ? unknownPlanningIntent()
+    : decodePlanningIntent(value.planning_intent, `${path}.planning_intent`);
+  const outputLanguage = value.output_language === undefined
+    ? "unknown"
+    : decoder.string(value.output_language, `${path}.output_language`);
+  if (
+    planningIntent.outputLanguage.status === "user_explicit"
+    && outputLanguage.toLocaleLowerCase() !== planningIntent.outputLanguage.value.toLocaleLowerCase()
+  ) {
+    throw new PlanningDecodeError(
+      `${path}.output_language`,
+      "explicit_language_projection_mismatch",
+    );
+  }
   return {
     id,
     revision: value.revision === undefined ? 0 : decoder.integer(value.revision, `${path}.revision`, 0),
@@ -1150,6 +1248,8 @@ export function decodeLearningPlan(
       true,
     ),
     ...(sceneProfile === null ? {} : { sceneProfile }),
+    planningIntent,
+    outputLanguage,
     overview: decoder.string(decoder.field(value, "overview", path), `${path}.overview`),
     todayTasks: decoder.stringArray(
       decoder.field(value, "today_tasks", path),
