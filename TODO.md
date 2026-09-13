@@ -19,9 +19,6 @@
 - [ ] `UX-PLAN-SCHEDULE-001` `[P2]` 将多次课程投影为可独立开始、完成和复盘的进度原子。
   - 2026-09-13 M3 复测中，`4 × 45` 分钟和 `2 × 30` 分钟均被压进一个 schedule/focus，UI 只能显示 `0 / 1`；应明确每次课的时长、范围与 today task，并改善长 focus 的扫描性。
 
-- [ ] `UX-MATERIAL-PREVIEW-001` `[P1]` 修复 citation 打开 Material Preview 后 PDF 内容白屏且无 loading/error 的问题。
-  - production 中后端文件请求为 200，标题和页码控件可见，但正文持续空白并出现 `Dependent image isn't ready yet`；需覆盖加载成功、超时、渲染失败与重试状态，恢复学习者核对引用的路径。
-
 - [ ] `UX-MODEL-USAGE-001` `[P2]` 让 Model Usage 支持明确时区、按 operation/workflow 分类、筛选和导出。
   - Planning repair、失败/中断重试和自动下游调用必须可区分；页面统计与 `PLAN-OBSERVABILITY-001` 的 operation 聚合口径一致，不再只展示当前一次成功调用。
 

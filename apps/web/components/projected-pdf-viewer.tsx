@@ -24,6 +24,13 @@ type TextSelectionState = {
   rects: PdfRect[];
 };
 
+type PreviewLoadState =
+  | { phase: "document_loading" | "page_loading"; message: string }
+  | { phase: "ready"; message: "" }
+  | { phase: "error"; message: string };
+
+const PREVIEW_TIMEOUT_MS = 12_000;
+
 export function ProjectedPdfViewer({
   fileUrl,
   title,
@@ -41,7 +48,11 @@ export function ProjectedPdfViewer({
   const wheelDeltaRef = useRef(0);
   const wheelNavAtRef = useRef(0);
   const [pageHeight, setPageHeight] = useState(0);
-  const [loadError, setLoadError] = useState("");
+  const [loadState, setLoadState] = useState<PreviewLoadState>({
+    phase: "document_loading",
+    message: "正在载入 PDF…",
+  });
+  const [retryToken, setRetryToken] = useState(0);
   const [isRegionMode, setIsRegionMode] = useState(false);
   const [textSelection, setTextSelection] = useState<TextSelectionState | null>(null);
   const [draftRegion, setDraftRegion] = useState<PdfRect | null>(null);
@@ -60,10 +71,25 @@ export function ProjectedPdfViewer({
   }, []);
 
   useEffect(() => {
-    setLoadError("");
+    setLoadState({ phase: "document_loading", message: "正在载入 PDF…" });
     clearInteractionState();
     wheelDeltaRef.current = 0;
-  }, [fileUrl, pageNumber]);
+  }, [fileUrl, pageNumber, retryToken]);
+
+  useEffect(() => {
+    if (!fileUrl || loadState.phase === "ready" || loadState.phase === "error") return;
+    const timer = window.setTimeout(() => {
+      setLoadState({
+        phase: "error",
+        message: loadState.phase === "document_loading" ? "PDF 加载超时。" : "PDF 页面渲染超时。",
+      });
+    }, PREVIEW_TIMEOUT_MS);
+    return () => window.clearTimeout(timer);
+  }, [fileUrl, loadState.phase, retryToken]);
+
+  const retryPreview = () => {
+    setRetryToken((current) => current + 1);
+  };
 
   const clearInteractionState = () => {
     dragStateRef.current = null;
@@ -265,12 +291,16 @@ export function ProjectedPdfViewer({
 
         {fileUrl ? (
           <Document
+            key={`${fileUrl}:${retryToken}`}
             className="pdf-preview-document"
             file={fileUrl}
-            loading={<div style={styles.loadingState}>PDF 加载中…</div>}
-            error={<div style={styles.errorState}>{loadError || "PDF 加载失败。"}</div>}
-            onLoadError={(error) => setLoadError(String(error))}
-            onLoadSuccess={(payload) => onPageCountChange?.(payload.numPages)}
+            loading={null}
+            error={null}
+            onLoadError={() => setLoadState({ phase: "error", message: "PDF 加载失败。" })}
+            onLoadSuccess={(payload) => {
+              onPageCountChange?.(payload.numPages);
+              setLoadState({ phase: "page_loading", message: `正在渲染第 ${pageNumber} 页…` });
+            }}
           >
             <div
               ref={pageShellRef}
@@ -287,8 +317,10 @@ export function ProjectedPdfViewer({
                 height={pageHeight || undefined}
                 renderTextLayer
                 renderAnnotationLayer={false}
-                loading={<div style={styles.loadingState}>PDF 页面加载中…</div>}
-                error={<div style={styles.errorState}>当前页加载失败。</div>}
+                loading={null}
+                error={null}
+                onRenderSuccess={() => setLoadState({ phase: "ready", message: "" })}
+                onRenderError={() => setLoadState({ phase: "error", message: "当前页渲染失败。" })}
               />
 
               <div style={styles.overlayStage}>
@@ -373,6 +405,20 @@ export function ProjectedPdfViewer({
         ) : (
           <div style={styles.errorState}>当前没有可预览的 PDF。</div>
         )}
+        {fileUrl && loadState.phase !== "ready" ? (
+          <div
+            style={styles.statusLayer}
+            role={loadState.phase === "error" ? "alert" : "status"}
+            aria-live="polite"
+          >
+            <span>{loadState.message}</span>
+            {loadState.phase === "error" ? (
+              <button type="button" style={styles.retryButton} onClick={retryPreview}>
+                重新加载
+              </button>
+            ) : null}
+          </div>
+        ) : null}
       </div>
     </div>
   );
@@ -552,5 +598,28 @@ const styles: Record<string, CSSProperties> = {
     fontSize: 13,
     textAlign: "center",
     padding: 16,
+  },
+  statusLayer: {
+    position: "absolute",
+    inset: 0,
+    zIndex: 6,
+    display: "grid",
+    placeContent: "center",
+    justifyItems: "center",
+    gap: 12,
+    padding: 24,
+    background: "var(--surface)",
+    color: "var(--muted)",
+    fontSize: 13,
+    textAlign: "center",
+  },
+  retryButton: {
+    minHeight: 40,
+    padding: "0 16px",
+    border: "1px solid var(--border-strong)",
+    borderRadius: 999,
+    background: "white",
+    color: "var(--ink)",
+    cursor: "pointer",
   },
 };
