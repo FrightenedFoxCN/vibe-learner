@@ -520,6 +520,19 @@ pub fn run() {
             let state = app_handle.state::<DesktopAppState>();
             let _ = inject_runtime_config_webview(window, state.inner());
         })
+        .on_window_event(|window, event| {
+            if window.label() == "main"
+                && matches!(event, tauri::WindowEvent::CloseRequested { .. })
+            {
+                if let Some(state) = window.app_handle().try_state::<DesktopAppState>() {
+                    // macOS can close the last WebView without immediately
+                    // terminating the application run loop. Tie the child
+                    // process lifetime to the window boundary as well as the
+                    // application ExitRequested/Exit events below.
+                    state.shutdown_sidecar();
+                }
+            }
+        })
         .on_menu_event(|app, event| {
             if event.id() == DESKTOP_VIEW_TOGGLE_NAV_ID {
                 emit_desktop_view_event(app, DESKTOP_VIEW_TOGGLE_NAV_EVENT);

@@ -1926,7 +1926,11 @@ export async function getStudyChatOperation(input: {
 }): Promise<StudyChatOperationResponse> {
   const diagnosticResponse = await request(
       `${AI_BASE_URL()}/study-sessions/${encodeURIComponent(input.sessionId)}/chat-operations/${encodeURIComponent(input.clientRequestId)}`,
-      undefined, studyDiagnosticContext(input.sessionId, input.clientRequestId, input.diagnosticFlowId),
+      {
+        cache: "no-store",
+        headers: { "Cache-Control": "no-cache" },
+      },
+      studyDiagnosticContext(input.sessionId, input.clientRequestId, input.diagnosticFlowId),
     );
   const payload = await readJson<unknown>(
     diagnosticResponse,
