@@ -16,6 +16,9 @@ from app.services.plan_tool_runtime import PlanToolRuntime
 from app.services.prompt_loader import load_prompt_template
 
 
+PLANNING_MAX_TOKENS = 8192
+
+
 @dataclass(frozen=True)
 class OpenAIPlanRunnerResult:
     content: str
@@ -81,6 +84,7 @@ class OpenAIPlanRunner:
                 "model": self.model,
                 "messages": current_messages,
                 "temperature": 0.1,
+                "max_tokens": PLANNING_MAX_TOKENS,
                 "response_format": {"type": "json_object"},
             }
             tools_offered = (

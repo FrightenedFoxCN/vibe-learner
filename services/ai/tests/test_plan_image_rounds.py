@@ -37,6 +37,7 @@ class PlanImageRoundTests(unittest.TestCase):
         result = OpenAIPlanRunner(model="fixture", timeout_seconds=1, request_chat_completion=request).run(
             document_id="fixture", messages=[{"role": "system", "content": "fixture"}], tool_runtime=runtime)
         self.assertEqual(result.content, '{"course_title":"fixture"}')
+        self.assertEqual([payload["max_tokens"] for payload in requests], [8192, 8192])
         self.assertEqual(result.tool_messages, requests[-1]["messages"][1:])
         self.assertNotIn("tool_messages", result.trace.model_dump())
         self.assertEqual(len(result.trace.rounds[0].tool_calls), 3)
@@ -65,6 +66,7 @@ class PlanImageRoundTests(unittest.TestCase):
             document_id="fixture", messages=[{"role": "system", "content": "fixture"}], tool_runtime=runtime)
 
         self.assertEqual(result.content, '{"course_title":"fixture"}')
+        self.assertEqual([payload["max_tokens"] for payload in requests], [8192, 8192, 8192])
         self.assertEqual(len(executions), 1)
         self.assertIn("tools", requests[0])
         self.assertNotIn("tools", requests[1])

@@ -6,6 +6,7 @@
 
 - `source-minimal-v3` 仍是 Learning Plan 的生产默认文本策略；当前登记为 `LearningPlanPrompt@planning-prompt-v6`。v6 保留 v5 的来源明确 Planning intent：未指定字段保持 `unknown`，只有 `user_explicit` 值成为硬约束，模型推断写入独立 resolved projection，不得伪装成用户输入。生产 proposal 为 `LearningPlanProposalV3`：除 request-local `unit_index`、具体输出语言和课次时长外，每课还声明完整学习、选读或导览覆盖。超出保守页数/时长基线时允许选读或导览，但必须持久化足量理由，解释教学目的、被省略或压缩的内容和后续补回方式。显式物理页范围与目录目标继续约束初始选择、工具读取和最终来源几何。
 - `get_study_unit_detail` 每个模型轮次最多 3 次，每次操作总上限仍为 4；工具仍按 provider 调用顺序串行执行。其他工具的限制不变。Python Tool Manifest、TypeScript 与 golden fixture 保持一致，历史 v1 pilot 不改写，当前预算回归使用 v2。
+- Planning 的每个 provider 轮次固定使用 `max_tokens=8192`。该上限覆盖初始工具选择、工具后最终生成及严格 schema 修复轮，用于约束 MiniMax M3 的长推理尾延迟；Harness wall-time 与失败归类仍是独立边界。
 - 详情摘录先限定到修订后 Study Unit 的页范围，再优先匹配来源 Section；没有本地页证据时返回空，不以父 Section 的开头冒充当前单元内容。跨页 chunk 保留真实范围。
 - Planning 与 Study 共用的页文本工具严格计算字符预算，包含首个超长 chunk 和段落分隔符。图片工具在分配页码列表前验证并限制页范围。
 - 一轮所有工具回执完成后再附加图片。严格提案修复保留已获取的工具证据和图片；页码范围错误提供类型化恢复指引。修复与提交共用章节不变量，不能因恢复而放宽来源范围。
