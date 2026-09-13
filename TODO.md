@@ -12,17 +12,41 @@
 
 ## UX 与文档
 
+- [ ] `UX-SETTINGS-PROBES-001` `[P2]` 将 Settings 模型验证从全页 loading 拆成 scope-owned 状态，并为能力“未知”提供保守决策说明。
+  - 验证计划、学习或设定模型时，只锁定共享同一 endpoint/credential 的冲突操作；页面必须明确当前正在验证的 scope，不能让所有拉取、验证和能力刷新控件无差别进入 loading。
+  - provider 未返回图像/联网能力时，解释“未知”不等于支持或不支持；手工开关保持显式用户决定，并说明错误开启可能导致的请求失败。
+
+- [ ] `UX-PLAN-WORKSPACE-LAYOUT-001` `[P2]` 改善 Plan Workspace 的宽屏利用、文件选择反馈与表单语义。
+  - 在桌面宽视口形成有意义的双栏或受控阅读宽度，不让创建表单、进度与计划结果全部挤在左半屏；长公式、页码、定义、练习与复盘应可扫描和复制。
+  - 超长 PDF 文件名只在一个权威位置展示截断值，并可查看完整名称；不要同时由原生文件控件和“已保留”文案重复撑高页面。
+  - 为学习目标和其他表单控件建立可由浏览器显式解析的 `label for` / `id` 关联，并增加真实浏览器可访问名称回归。
+
 - [ ] `UX-PLAN-SCHEDULE-001` `[P2]` 将多次课程投影为可独立开始、完成和复盘的进度原子。
   - 2026-09-13 M3 复测中，`4 × 45` 分钟和 `2 × 30` 分钟均被压进一个 schedule/focus，UI 只能显示 `0 / 1`；应明确每次课的时长、范围与 today task，并改善长 focus 的扫描性。
 
 - [ ] `UX-MODEL-USAGE-001` `[P2]` 让 Model Usage 支持明确时区、按 operation/workflow 分类、筛选和导出。
   - Planning repair、失败/中断重试和自动下游调用必须可区分；页面统计与 `PLAN-OBSERVABILITY-001` 的 operation 聚合口径一致，不再只展示当前一次成功调用。
+  - Settings 的真实代表请求必须纳入账务或明确标成排除范围；刷新、分页/时间范围与成本估算的统计口径对用户可见，长明细不再无限单页堆叠。
+
+- [ ] `UX-OUTPUT-LANGUAGE-001` `[P2]` 为 Planning 与 Study 提供显式、可持久化的输出语言偏好。
+  - `自动` 模式说明如何根据用户目标、教材与 Persona 决定语言；用户指定法文等语言后，计划指导语、任务与后续 Study 默认保持一致，不因中文产品壳混成中法英三语。
+  - 语言偏好属于应用输入并进入 operation fingerprint/read-back，不靠模型从自由文本猜测，也不改写教材原文、引文或专有名词。
 
 - [ ] `UX-DENSITY-SENSORY-001` `[P2]` 为 Sensory Tools 增加搜索、筛选和渐进披露；保存/错误定位不得丢失滚动或焦点，批量/删除动作与普通编辑分层。
 - [ ] `UX-DENSITY-PERSONA-001` `[P2]` 收口 Persona 的默认折叠、搜索/筛选和主次动作；保存/错误定位不得丢失滚动或焦点，批量/删除动作与普通编辑分层。
   - 重构同步进展：人格库默认折叠，展开状态具有 ARIA 语义；草稿/保存/模型辅助与展示已分离。完整筛选、危险动作分层与独立 UX 复核仍待完成。
+  - 生成提案应用前展示名称缺失、字段 diff 和将被清空的内容；允许逐卡接受/拒绝或合并，不能让“清空后全量应用”与普通编辑处在同一风险层级。若名称仍为空，应用后聚焦并明确提示必填字段。
 - [ ] `UX-DENSITY-SCENE-001` `[P2]` 收口 Scene 的默认折叠、搜索/筛选和危险操作分层；保存/错误定位不得丢失滚动或焦点，批量/删除动作与普通编辑分层。
   - 重构同步进展：复用/存档区与示例深层树默认折叠，树折叠接入原草稿存储，树操作控件扩大到 44px；删除采用独立模态。完整搜索筛选、错误焦点定位与独立设备复核仍待完成。
+  - 生成预览须展示层/物体数量、规则与相对当前树的结构 diff；覆盖当前编辑树前暴露新增物体和约束冲突，不能只显示名称、摘要和节点数。
+
+- [ ] `UX-STUDY-PRESENTATION-001` `[P2]` 收口 Study Dialog 的宽屏布局、状态来源和教师正文/表演提示/系统回执层级。
+  - 宽桌面不保留无意义的右侧与 Conversation—Composer 大片空白；首轮回复、待确认效果和输入区保持可连续阅读。
+  - 顶部 action notice、网络同步、Session 状态和模型生成状态各有稳定职责；角色动作、delivery cue、工具回执默认渐进披露，不与教师正文争夺主层级。
+
+- [ ] `STUDY-HYDRATION-A11Y-001` `[P1]` 保证刷新后首帧与 hydration 后暴露一致的 Assistant Turn 和互动题可访问名称。
+  - 后端已读回正文时，初始 AX 树不得只剩动作、工具和 citation；已提交选项必须始终保留文本标签，不能先暴露为无名称的 `0/1` radio 再依赖任意重渲染修复。
+  - 加入 production 浏览器刷新门，覆盖多个历史 Turn、已提交题目、折叠解析和待确认效果。
 
 - [ ] `DOC-USER-001` `[P2]` 补齐并独立走查用户手册。
   - 2026-09-11：新增主页独立入口与 `/manual` 网页手册，简述首次使用、主要操作、恢复、数据及安装；正文统一在网页维护。独立新数据主流程与桌面安装走查仍待验收。
@@ -48,9 +72,18 @@
 - [ ] `PLAN-OBSERVABILITY-001` `[P1]` 统一一次 Planning operation 的 provider round、工具、repair、token、时延、终态与产物口径。
   - UI/Model Usage/Harness trace 必须包含 schema repair 和失败前的安全字段级证据，并聚合首次失败、中断、重试及自动下游调用；不能再出现 UI 2 calls、审计 3 completions 的分裂。
   - 重新界定 Planning trace 的留存、脱敏与访问政策；在 `provider_reasoning_committed=false`、`raw_book_text_committed=false` 时，不得从 API/Debug 暴露完整 thinking 或原始教材输出。
+  - Document 已 committed 而 Planning schema/repair 失败时，Plan Workspace 必须显示 Planning 失败及已发生费用，不能泛化为“教材处理失败”；长最终轮展示已等待/总耗时、超时边界和当前阶段。
+
+- [ ] `PLAN-STUDY-UNIT-REVISION-001` `[P1]` 将 Planning 的 `revise_study_units` 从隐式共享 Document 改写变成可审查的提案与独立确认。
+  - 模型取证阶段不得在没有预览的情况下替换后续所有 Plan/Study 共用的 Study Units；展示旧/新页范围、标题、分类与保留/删除 diff，并使用 Document revision CAS 提交。
+  - 拒绝或跳过修订仍可继续生成保守计划；确认后的 Document、Plan context、Harness effect/trace 与重启 read-back 必须指向同一 revision。
 
 - [ ] `OCR-CHECKPOINT-RECOVERY-001` `[P1]` 让长 OCR 在阶段完成后可读、可续跑。
   - 总 wall-time 在全部页面处理完成后耗尽时，不得抹掉已完成页和 Study Unit；保存有界 checkpoint，并验证重启、超时和重复请求的 read-back/续跑语义。
+
+- [ ] `OCR-PROGRESS-UX-001` `[P1]` 向 Plan Workspace 投影长 OCR 的真实进度与可恢复错误。
+  - 显示总页数、已完成页、当前 text/OCR fallback 阶段、速率与有证据的预计时间/警告；跨领域 notice 不得覆盖当前 Document 终态。
+  - 失败时说明已完成范围、失败阶段、是否保存 checkpoint、同配置重试风险，以及拆分 PDF、调整上限或联系管理员等可行动建议；不直接暴露内部异常码。
 
 ### 性能与 Tavern transport
 
@@ -71,6 +104,10 @@
 
 - [ ] `STUDY-OP-RECOVERY-UX-001` `[P2]` 覆盖超长轮询、终态刷新、断网和页面恢复文案，不放宽 same-key mismatch 或 `uncertain` 禁止重放。
 
+- [ ] `STUDY-ANSWER-CONTINUATION-001` `[P1]` 拆分互动题评分提交与可选的模型教学续接。
+  - 本地/服务端评分一旦 committed，立即稳定显示“已记录”，不再以全页“更新中”暗示评分未落盘，也不锁定无冲突的 Plan 操作。
+  - 自动续接改为显式、可取消且在动作前说明会调用模型；若模型提出新问题，必须提交完整互动题契约或明确标成普通自由回答提示，不能留下无选项的半道选择题。
+
 ## 可靠性、部署与输入边界
 
 - [ ] `REL-DESKTOP-001` `[P2]` 完成真实桌面/浏览器恢复验收。
@@ -87,6 +124,9 @@
 
 - [ ] `DOC-INPUT-BOUNDS-001` `[P2]` 定义文档上传字节/页数上限与可恢复的拒绝行为。
   - 当前上传没有硬性上限；256 页压力测试已通过。明确单个不可分割文本块的策略，不能把 chunk packing target 当作硬上限。
+
+- [ ] `DOC-OCR-STATUS-001` `[P2]` 区分 OCR 未需要、未运行、成功、部分降级与失败。
+  - 全文本文档在 Document 成功且 `used_ocr=false` 时不得返回 `ocr_status=failed`；API、Debug 与 Plan Workspace 使用同一状态词和解释。
 
 - [ ] `OCR-STRESS-001` `[P2]` 完成真实 OCR 多语言、大型扫描件和失败恢复测试。
   - 复用已实现的 CPU fallback；测量内存、时延及错误状态，区分压力样本与正式支持上限。

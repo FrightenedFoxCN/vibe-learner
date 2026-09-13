@@ -230,6 +230,22 @@
 - `DOC-USER-001`：Web 手册覆盖面较广，但自动 prelude/费用、当前 revision 能力、页码体系、Settings 验证和失败恢复说明与实现不一致，且未做桌面安装验收，保持开放。
 - `STUDY-OP-RECOVERY-UX-001` 与 `REL-DESKTOP-001` 的相关风险得到新证据，但本轮没有覆盖各自完整关闭标准；不应借 smoke test 部分通过提前关闭。
 
+### 2026-09-13 后续体验待办差异审计
+
+原 smoke 当轮没有修改 TODO；后续将当时未被正式任务承接的体验问题补入根 `TODO.md`：
+
+- Settings scope loading/能力未知说明 → `UX-SETTINGS-PROBES-001`。
+- Plan 宽屏、文件名重复和表单 label → `UX-PLAN-WORKSPACE-LAYOUT-001`。
+- Study 宽屏、状态来源和表演/回执层级 → `UX-STUDY-PRESENTATION-001`。
+- 刷新首帧 Assistant Turn/radio 可访问名称丢失 → `STUDY-HYDRATION-A11Y-001`。
+- 互动题评分后隐式昂贵续接与半道问题 → `STUDY-ANSWER-CONTINUATION-001`。
+- Planning 工具隐式替换共享 Study Units → `PLAN-STUDY-UNIT-REVISION-001`。
+- 长 OCR 进度、终态和可行动错误 → `OCR-PROGRESS-UX-001`。
+- 全文本文档把未使用 OCR 表达为失败 → `DOC-OCR-STATUS-001`。
+- 输出语言混杂与缺少显式偏好 → `UX-OUTPUT-LANGUAGE-001`。
+
+Persona 选择性应用/名称缺失与 Scene 结构 diff 继续归入既有 `UX-DENSITY-PERSONA-001`、`UX-DENSITY-SCENE-001`，Model Usage 的 Settings 请求遗漏、分页和成本口径归入 `UX-MODEL-USAGE-001`，避免重复建票。模型语义、OCR 内容忠实度与独立质量判断仍只由 `docs/quality/TODO.md` 管理，本次不接手或验收 MQ。
+
 ## 状态口径
 
 - `通过` 只表示本轮明确覆盖的具体检查通过，不外推到其他样本、平台或模型。
