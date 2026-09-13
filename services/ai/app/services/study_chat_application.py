@@ -66,6 +66,7 @@ from app.core.logging import get_logger
 from app.models.study_chat_operation import StudyChatMessageKind
 from app.models.study_chat_operation import StudyChatOperationReceipt
 from app.services.study_chat_errors import StudyChatApplicationError, map_chat_generation_error
+from app.services.provider_transport import ModelRequestError
 from app.services.study_chat_context import (
     _compose_hidden_prefixed_message, _resolve_session_state_context,
     _compose_session_prompt, _merge_chat_citations, _resolve_session_document,
@@ -272,12 +273,21 @@ def _admit_and_run_study_chat(
     except Exception as exc:
         error_code = _study_chat_uncertain_error_code(exc)
         harness_trace = _study_chat_terminal_harness_trace(operation.operation_id, dependencies=dependencies)
-        terminal = dependencies.study_chat_operation_repository.mark_uncertain(
-            operation_id=operation.operation_id,
-            execution_token=operation.execution_token,
-            error_code=error_code,
-            harness_trace=harness_trace,
-        )
+        if _is_deterministic_provider_rejection(exc):
+            error_code = _study_chat_not_committed_error_code(exc)
+            terminal = dependencies.study_chat_operation_repository.mark_not_committed_after_provider_rejection(
+                operation_id=operation.operation_id,
+                execution_token=operation.execution_token,
+                error_code=error_code,
+                harness_trace=harness_trace,
+            )
+        else:
+            terminal = dependencies.study_chat_operation_repository.mark_uncertain(
+                operation_id=operation.operation_id,
+                execution_token=operation.execution_token,
+                error_code=error_code,
+                harness_trace=harness_trace,
+            )
         if terminal.status != StudyChatOperationStatus.COMMITTED:
             try:
                 dependencies.attachments.cleanup(
@@ -325,6 +335,15 @@ def _study_chat_uncertain_error_code(exc: Exception) -> str:
         detail = exc.detail if isinstance(exc.detail, str) else "http_error"
         return f"study_chat_uncertain_{detail}"[:128]
     return "study_chat_execution_uncertain"
+
+
+def _is_deterministic_provider_rejection(exc: Exception) -> bool:
+    return isinstance(exc, ModelRequestError) and str(exc.status_code) == "400"
+
+
+def _study_chat_not_committed_error_code(exc: ModelRequestError) -> str:
+    upstream = exc.upstream_code or "bad_request"
+    return f"study_chat_not_committed_chat_model_upstream_error:400:{upstream}"[:128]
 
 
 def _study_chat_terminal_harness_trace(operation_id: str, *, dependencies: StudyChatDependencies):

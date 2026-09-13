@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 import re
+from copy import deepcopy
 from typing import Any, Callable
 
 from app.core.execution_budget import execution_call_timeout_seconds
@@ -66,6 +67,12 @@ class ProviderRequestAdapter:
             payload,
             api_base=request_base_url,
         )
+        if _is_gemini_model(model):
+            # Gemini function declarations do not accept JSON Schema nullable
+            # unions (anyOf: [integer, null]). An omitted optional argument has
+            # the same meaning for our tool contracts, so project the concrete
+            # branch while leaving the canonical Pydantic/OpenAI schema intact.
+            resolved_payload["tools"] = _normalize_gemini_tools(resolved_payload.get("tools"))
         tools_enabled = "tools" in payload
         tool_round = len(
             [message for message in resolved_payload.get("messages", []) if message.get("role") == "tool"]
@@ -281,6 +288,31 @@ def adapt_openai_compatible_payload(
             adapted["max_completion_tokens"] = adapted.pop("max_tokens")
             adjustments.append("max_tokens_to_max_completion_tokens")
     return adapted, adjustments
+
+
+def _is_gemini_model(model: str) -> bool:
+    return _bare_model_id(model).lower().startswith(("gemini", "vertex_ai/gemini"))
+
+
+def _normalize_gemini_tools(value: Any) -> Any:
+    if not isinstance(value, list):
+        return value
+    return [_normalize_gemini_schema(deepcopy(tool)) for tool in value]
+
+
+def _normalize_gemini_schema(value: Any) -> Any:
+    if isinstance(value, list):
+        return [_normalize_gemini_schema(item) for item in value]
+    if not isinstance(value, dict):
+        return value
+    nullable = value.get("anyOf")
+    if isinstance(nullable, list) and len(nullable) == 2:
+        concrete = next((item for item in nullable if isinstance(item, dict) and item.get("type") != "null"), None)
+        has_null = any(isinstance(item, dict) and item.get("type") == "null" for item in nullable)
+        if concrete is not None and has_null:
+            value = {key: item for key, item in value.items() if key != "anyOf"}
+            value.update(concrete)
+    return {key: _normalize_gemini_schema(item) for key, item in value.items()}
 
 
 

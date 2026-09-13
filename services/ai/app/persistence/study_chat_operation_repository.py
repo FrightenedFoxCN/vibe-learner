@@ -424,6 +424,55 @@ class StudyChatOperationRepository:
             assert row is not None
             return _from_row(row)
 
+    def mark_not_committed_after_provider_rejection(
+        self,
+        *,
+        operation_id: str,
+        execution_token: str,
+        error_code: str,
+        harness_trace: HarnessTraceV3 | None = None,
+    ) -> StudyChatOperationRecord:
+        """Close a claimed operation when the provider deterministically rejected the request.
+
+        A provider HTTP 4xx is not an ambiguous external effect: no model result
+        was accepted and the operation can safely be retried with a new request
+        identity after the caller fixes the request/schema.
+        """
+        with self.database.session() as session:
+            now = database_utc_wire(session)
+            values: dict[str, object] = {
+                "status": StudyChatOperationStatus.NOT_COMMITTED.value,
+                "active_slot": None,
+                "claim_count": 0,
+                "execution_token": "",
+                "execution_started_at": "",
+                "provider_started_at": "",
+                "execution_deadline_at": "",
+                "heartbeat_at": "",
+                "error_code": error_code,
+                "completed_at": now,
+                "updated_at": now,
+            }
+            if harness_trace is not None:
+                values["harness_trace"] = harness_trace.model_dump(mode="json")
+            marked = session.execute(
+                update(StudyChatOperationRow)
+                .where(
+                    StudyChatOperationRow.operation_id == operation_id,
+                    StudyChatOperationRow.status == StudyChatOperationStatus.RUNNING.value,
+                    StudyChatOperationRow.execution_token == execution_token,
+                )
+                .values(**values)
+            )
+            if marked.rowcount != 1:
+                row = session.get(StudyChatOperationRow, operation_id)
+                if row is None:
+                    raise StudyChatOperationNotFound(operation_id)
+                return _from_row(row)
+            row = session.get(StudyChatOperationRow, operation_id)
+            assert row is not None
+            return _from_row(row)
+
     def receipt(self, record: StudyChatOperationRecord) -> StudyChatOperationReceipt:
         return StudyChatOperationReceipt(
             operation_id=record.operation_id,

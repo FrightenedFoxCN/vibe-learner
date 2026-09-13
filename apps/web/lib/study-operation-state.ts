@@ -60,6 +60,13 @@ export function presentStudyChatOperation(receipt: StudyChatOperationResponse): 
         canResend: false,
       };
     case "not_committed":
+      if (receipt.errorCode.includes("chat_model_upstream_error:400")) {
+        return {
+          detail: "上游拒绝了本次工具参数（400），本次没有写入会话。修复模型/工具配置后，可以用新的请求身份重新发送。",
+          canQuery: false,
+          canResend: true,
+        };
+      }
       return {
         detail: receipt.safeToRetry
           ? "已确认本次请求没有写入会话。你可以重新发送，新发送会使用新的请求身份。"

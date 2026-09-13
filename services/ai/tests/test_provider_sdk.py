@@ -45,6 +45,23 @@ assert "app.services.model_provider" not in sys.modules
                 self.assertNotIn("temperature", call)
                 self.assertIn("temperature", payload)
 
+    def test_gemini_tool_projection_unwraps_nullable_parameter_type(self):
+        completion = Mock(return_value={"choices": []})
+        payload = {
+            "model": "gemini-3.7-flash",
+            "messages": [],
+            "tools": [{"type": "function", "function": {"name": "clear_projected_pdf_overlays", "parameters": {
+                "type": "object", "properties": {"page_number": {
+                    "anyOf": [{"type": "integer", "minimum": 1}, {"type": "null"}]
+                }}
+            }}}],
+        }
+        self.adapter(completion=completion).request_chat_completion(payload, request_kind="chat", model="gemini-3.7-flash")
+        projected = completion.call_args.kwargs["tools"][0]["function"]["parameters"]["properties"]["page_number"]
+        self.assertEqual(projected["type"], "integer")
+        self.assertNotIn("anyOf", projected)
+        self.assertIn("anyOf", payload["tools"][0]["function"]["parameters"]["properties"]["page_number"])
+
     def test_harness_call_timeout_overrides_global_runtime_timeout(self):
         completion = Mock(return_value={"choices": []})
         with execution_budget_scope(None, call_timeout_seconds=lambda: 120):
