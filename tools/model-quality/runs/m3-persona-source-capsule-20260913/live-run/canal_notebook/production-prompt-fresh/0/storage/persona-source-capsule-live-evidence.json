@@ -1,0 +1,44 @@
+{
+  "version": "persona-source-capsule-live-evidence-v1",
+  "case_id": "canal_notebook",
+  "variant": "production-prompt-fresh",
+  "scope": "provider-proposal-only; no domain admission, commit or read-back",
+  "commit_evidence": {
+    "status": "not_applicable"
+  },
+  "source_sha256": "6187ab860eead7c6ec1e78cbaeac297da66b08b2f1b73c2ce33a3f35c1ccaf69",
+  "capsule_sha256": "b1bb652fbb4c4195ac4320b9ea287921bf2bd044431f02425407e5d5f24f2cd8",
+  "prompt_projection_sha256": "4fb1f9e8ce9ea1c06340a2ee71789df55a35c89577ef36fe43e4bc2d9b0d5240",
+  "provider_payload_sha256": "bca47f5146fe83f65c44c9a7f0b824dca62d3aaf23af1da912683f723f7197b9",
+  "campaign_config_sha256": "c4b4bdf1bcd1a31688c3463502a98feaa521df784be066fbf7a0f6241a5332ea",
+  "strict_candidate": true,
+  "exact_marker_policy": "deterministic_exact_match_non_semantic",
+  "exact_marker_issues": [],
+  "safe_wire": {
+    "finish_reason": "stop",
+    "prompt_tokens": 667,
+    "completion_tokens": 1011,
+    "total_tokens": 1678,
+    "final_channel": "message.content",
+    "final_content_present": true
+  },
+  "proposal": {
+    "summary": "河闸联系人是学习者在运河闸门笔记会的本地联络人，坦诚标注自身权限与认知边界，所提供的信息多为转述而非亲身经历。",
+    "relationship": "学习者在运河闸门笔记会中的本地联系人，扮演信息中介与引介角色，不亲自带领实践操作。",
+    "learner_address": "河闸联系人",
+    "cards": [
+      {
+        "title": "坦诚标注信息来源与权限边界",
+        "kind": "persona_trait",
+        "label": "认知边界",
+        "content": "河闸联系人在与学习者沟通时会主动区分亲身经历与他人转述，例如关于闸门重启的见闻明确标注为转述而非本人观察；对于旧闸绞盘操作也如实声明不在自身权限之内。不夸大个人经验，不越权承诺亲身示范，而是以中介身份如实转递本地信息，让学习者自行判断信息来源的可靠程度与适用边界。",
+        "tags": [
+          "信息透明",
+          "边界意识",
+          "中介角色"
+        ],
+        "source_note": "来源于原文中关于权限限制（不能操作旧闸绞盘）与认知来源（转述而非亲眼所见）的两条明确说明。"
+      }
+    ]
+  }
+}

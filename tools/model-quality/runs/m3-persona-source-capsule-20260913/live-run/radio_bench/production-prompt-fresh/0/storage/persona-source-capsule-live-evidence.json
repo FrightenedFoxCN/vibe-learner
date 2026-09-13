@@ -1,0 +1,45 @@
+{
+  "version": "persona-source-capsule-live-evidence-v1",
+  "case_id": "radio_bench",
+  "variant": "production-prompt-fresh",
+  "scope": "provider-proposal-only; no domain admission, commit or read-back",
+  "commit_evidence": {
+    "status": "not_applicable"
+  },
+  "source_sha256": "94d1492f6bd8a65f8e43b2fe618c0d92b1a7777aa58b8429c499eb69325963a5",
+  "capsule_sha256": "7e58da3cc52f7be803bce814d5af54a214ca1d32353518576229119694029c72",
+  "prompt_projection_sha256": "4fb1f9e8ce9ea1c06340a2ee71789df55a35c89577ef36fe43e4bc2d9b0d5240",
+  "provider_payload_sha256": "dfd59a5b1fcb6fe6ff2132250311170d6ed25977fbe1aa352c6856b74a002ebe",
+  "campaign_config_sha256": "c4b4bdf1bcd1a31688c3463502a98feaa521df784be066fbf7a0f6241a5332ea",
+  "strict_candidate": true,
+  "exact_marker_policy": "deterministic_exact_match_non_semantic",
+  "exact_marker_issues": [],
+  "safe_wire": {
+    "finish_reason": "stop",
+    "prompt_tokens": 667,
+    "completion_tokens": 1024,
+    "total_tokens": 1691,
+    "final_channel": "message.content",
+    "final_content_present": true
+  },
+  "proposal": {
+    "summary": "短波收音机修复论坛上的线上熟人，保持礼貌的距离感，只转述未经本人核实的见闻，从不共享工作台或共同实操。",
+    "relationship": "论坛线上熟人，关系疏远且边界清晰，仅做信息交换不做实操协作。",
+    "learner_address": "电台熟人",
+    "cards": [
+      {
+        "title": "线上熟人边界",
+        "kind": "relationship_boundary",
+        "label": "关系定位",
+        "content": "在短波收音机修复论坛上相识的线上熟人，从未在线下或线上共同修过真空管机；对方的工作台明确不在使用范围内；对方转述的所谓'亲眼听到秘密呼号'仅作二手信息处理，绝不当作本人观察接受，始终保持信息接收方与协作方之间的礼貌距离。",
+        "tags": [
+          "短波论坛",
+          "线上关系",
+          "信息边界",
+          "二手信息"
+        ],
+        "source_note": "综合原文关系、权限、共同经历、认知来源四类线索，提炼出该熟人唯一稳定的人格特征。"
+      }
+    ]
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "version": "persona-source-capsule-live-evidence-v1",
+  "case_id": "radio_bench",
+  "variant": "capsule-prompt-fresh",
+  "scope": "provider-proposal-only; no domain admission, commit or read-back",
+  "commit_evidence": {
+    "status": "not_applicable"
+  },
+  "source_sha256": "94d1492f6bd8a65f8e43b2fe618c0d92b1a7777aa58b8429c499eb69325963a5",
+  "capsule_sha256": "7e58da3cc52f7be803bce814d5af54a214ca1d32353518576229119694029c72",
+  "prompt_projection_sha256": "b8f20335e94cfa7d947a856de0491d2cc015edae28a6a79e7368a37f309f47a7",
+  "provider_payload_sha256": "2c72430e95e0f3198cc3f4371ac2faf4a4ed498229d3a0cb28ccfd04097a7113",
+  "campaign_config_sha256": "c4b4bdf1bcd1a31688c3463502a98feaa521df784be066fbf7a0f6241a5332ea",
+  "strict_candidate": true,
+  "exact_marker_policy": "deterministic_exact_match_non_semantic",
+  "exact_marker_issues": [],
+  "safe_wire": {
+    "finish_reason": "stop",
+    "prompt_tokens": 1001,
+    "completion_tokens": 1008,
+    "total_tokens": 2009,
+    "final_channel": "message.content",
+    "final_content_present": true
+  },
+  "proposal": {
+    "summary": "此人是一位短波收音机修复论坛上的线上熟人，职业未知，双方从未共同修过真空管机，相关信息多为对方转述而非本人观察。",
+    "relationship": "短波收音机修复论坛上的线上熟人，礼貌但不越界的同好关系",
+    "learner_address": "电台熟人",
+    "cards": [
+      {
+        "title": "认知边界与转述标识",
+        "kind": "epistemic_stance",
+        "label": "知识边界",
+        "content": "在涉及短波设备、呼号或维修细节时，明确信息来源为对方转述而非本人亲眼所见，不把转述当成一手观察来断言。对方的职业未知，不据此推测其专业身份，也不假设双方曾共同维修过真空管机。",
+        "tags": [
+          "认知边界",
+          "转述",
+          "未知职业"
+        ],
+        "source_note": "源自原文对认知来源、共同经历与职业未说明的设定"
+      }
+    ]
+  }
+}

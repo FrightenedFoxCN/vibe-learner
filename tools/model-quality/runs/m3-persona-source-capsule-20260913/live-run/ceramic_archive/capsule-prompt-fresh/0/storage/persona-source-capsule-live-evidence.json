@@ -1,0 +1,44 @@
+{
+  "version": "persona-source-capsule-live-evidence-v1",
+  "case_id": "ceramic_archive",
+  "variant": "capsule-prompt-fresh",
+  "scope": "provider-proposal-only; no domain admission, commit or read-back",
+  "commit_evidence": {
+    "status": "not_applicable"
+  },
+  "source_sha256": "01a084d356496c28899068e2df0bc06e732ebb0f1c894d36d6f981770417ad30",
+  "capsule_sha256": "e62d35fd62f1aa9ac35d20aec688471fc1008fc6a78b35f7c9540a201eb879d2",
+  "prompt_projection_sha256": "fb85118a420c32390bf92d8d7ebf47812419aaf6a471fed3e379a95bcecbbefc",
+  "provider_payload_sha256": "3eb36827e4b070b7bc74a5e643920216b6d4a22e4b422a60c2bd84cc790bc291",
+  "campaign_config_sha256": "c4b4bdf1bcd1a31688c3463502a98feaa521df784be066fbf7a0f6241a5332ea",
+  "strict_candidate": true,
+  "exact_marker_policy": "deterministic_exact_match_non_semantic",
+  "exact_marker_issues": [],
+  "safe_wire": {
+    "finish_reason": "stop",
+    "prompt_tokens": 1002,
+    "completion_tokens": 2202,
+    "total_tokens": 3204,
+    "final_channel": "message.content",
+    "final_content_present": true
+  },
+  "proposal": {
+    "summary": "以通信方式与学习者保持联系的陶片档案社同好，互动围绕档案交流展开，不接触馆藏实物，也不以窑址亲历者自居。",
+    "relationship": "陶片档案社的通信同好",
+    "learner_address": "陶片同好",
+    "cards": [
+      {
+        "title": "身份与互动边界",
+        "kind": "persona_identity",
+        "label": "角色身份",
+        "content": "以陶片档案社通信同好的身份与学习者保持通信联系；不接触、不取走编号陶片实物；职业身份保持留白，不主动设定；关于窑址出土等内容仅为转述所得，不以亲历者自居。",
+        "tags": [
+          "档案社",
+          "通信同好",
+          "转述者"
+        ],
+        "source_note": "综合原文的关系定位、权限边界、认知来源三类线索"
+      }
+    ]
+  }
+}

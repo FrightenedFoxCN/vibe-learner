@@ -1,0 +1,24 @@
+{
+  "version": "m3-persona-source-capsule-frozen-run-anchor-v1",
+  "run_root": "tools/model-quality/runs/m3-persona-source-capsule-20260913/live-run",
+  "manifest_file_sha256": "2fc949b049ec36f447632f5df835871ef4454d55f8254fb4437ee2e6419328d2",
+  "report_file_sha256": "b65c8d576fbe95dc4ba64341bf070761294bf863489853963d198b921fbe2273",
+  "evidence_files": {
+    "tools/model-quality/runs/m3-persona-source-capsule-20260913/live-run/alpine_weather/capsule-prompt-fresh/0/storage/persona-source-capsule-live-evidence.json": "fa8ef3907c003e7389d8db94a33768afc5cb64543b186760abb917a66900e594",
+    "tools/model-quality/runs/m3-persona-source-capsule-20260913/live-run/alpine_weather/production-prompt-fresh/0/storage/persona-source-capsule-live-evidence.json": "fc6234666074d0457c0912675fa239b4506ebaff09fd37aa47a0ad8f9c9855f5",
+    "tools/model-quality/runs/m3-persona-source-capsule-20260913/live-run/canal_notebook/capsule-prompt-fresh/0/storage/persona-source-capsule-live-evidence.json": "c802c2fa91416a71245e23133361d76cf1a0b6704fa770b6e792b23ab2b3bce3",
+    "tools/model-quality/runs/m3-persona-source-capsule-20260913/live-run/canal_notebook/production-prompt-fresh/0/storage/persona-source-capsule-live-evidence.json": "d313e55b89a382d750bafaa34238da9f7a046769ba1aec93ac5f037b6ef63afd",
+    "tools/model-quality/runs/m3-persona-source-capsule-20260913/live-run/ceramic_archive/capsule-prompt-fresh/0/storage/persona-source-capsule-live-evidence.json": "67847b29b14a96d95fb1dbb2cf662c976d39a60ac53bf72ca0fcba0de125fc5f",
+    "tools/model-quality/runs/m3-persona-source-capsule-20260913/live-run/ceramic_archive/production-prompt-fresh/0/storage/persona-source-capsule-live-evidence.json": "f3ad831a1ebebd6b89e1f48750de98149fc753c9e1caa3a356a93f8a9339370f",
+    "tools/model-quality/runs/m3-persona-source-capsule-20260913/live-run/coastal_beacon/capsule-prompt-fresh/0/storage/persona-source-capsule-live-evidence.json": "6065eedb6547add1e90e3fbc1730a29a549ff395c1cdef0b7bb869d4d279ac0c",
+    "tools/model-quality/runs/m3-persona-source-capsule-20260913/live-run/coastal_beacon/production-prompt-fresh/0/storage/persona-source-capsule-live-evidence.json": "fe19ff381cc00084fd1c7e1d533aca9d99f012a0bac21633c285f7dda847057b",
+    "tools/model-quality/runs/m3-persona-source-capsule-20260913/live-run/prop_registry/capsule-prompt-fresh/0/storage/persona-source-capsule-live-evidence.json": "667be25e2c03e44a5ab9e5b7c9cfeeaf622258c87ffd848898a6a63854b04af2",
+    "tools/model-quality/runs/m3-persona-source-capsule-20260913/live-run/prop_registry/production-prompt-fresh/0/storage/persona-source-capsule-live-evidence.json": "95d86a279faf2da6b7725f8ca6d15e1e70790cc56e3b5ee2a75b0ea84185c08a",
+    "tools/model-quality/runs/m3-persona-source-capsule-20260913/live-run/radio_bench/capsule-prompt-fresh/0/storage/persona-source-capsule-live-evidence.json": "3805267a3c0f3a15d66cdcd5fece2c3ec51075904e9af4042cc72eff577aae80",
+    "tools/model-quality/runs/m3-persona-source-capsule-20260913/live-run/radio_bench/production-prompt-fresh/0/storage/persona-source-capsule-live-evidence.json": "6ef775f5d0707c4099a018d3a6a8a8bc43a6eff63935bd87500e531bb469bed3",
+    "tools/model-quality/runs/m3-persona-source-capsule-20260913/live-run/rooftop_garden/capsule-prompt-fresh/0/storage/persona-source-capsule-live-evidence.json": "1878fc295d1468986ea82f5a3fbc7e8a3d329499777f037bd1acb644b58d2d8c",
+    "tools/model-quality/runs/m3-persona-source-capsule-20260913/live-run/rooftop_garden/production-prompt-fresh/0/storage/persona-source-capsule-live-evidence.json": "38e3a32423d9d96b0d15e3f2a787a8c9df3d8c0208a3bc15f1f61902b856006a",
+    "tools/model-quality/runs/m3-persona-source-capsule-20260913/live-run/wetland_count/capsule-prompt-fresh/0/storage/persona-source-capsule-live-evidence.json": "29b5cfb4f64cbe6e6fe8cab1e29158fd73b389d47d5df8ea72fc800b076902cf",
+    "tools/model-quality/runs/m3-persona-source-capsule-20260913/live-run/wetland_count/production-prompt-fresh/0/storage/persona-source-capsule-live-evidence.json": "af3e071e62d7d3a15a7fa758a09f50fb78572a3730fa81c51e714862ef857e24"
+  }
+}

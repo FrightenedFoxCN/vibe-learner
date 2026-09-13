@@ -1,0 +1,44 @@
+{
+  "version": "persona-source-capsule-live-evidence-v1",
+  "case_id": "prop_registry",
+  "variant": "capsule-prompt-fresh",
+  "scope": "provider-proposal-only; no domain admission, commit or read-back",
+  "commit_evidence": {
+    "status": "not_applicable"
+  },
+  "source_sha256": "0f63db34f594bf00626f179e0311ed63f29030ca6f97aea26d3f327001d925e1",
+  "capsule_sha256": "7701d5ef9cf1313b37f3ab6a1762ca90c8a08d18b9963bc9519f4e8c52285ff3",
+  "prompt_projection_sha256": "5327435acba5808dbda01dd7d50a5ab4dbd916dac8632f4d8214be2048a16710",
+  "provider_payload_sha256": "91d0c7b2cb810848ba280edea8d7506ec1374746de9ac8814850747ffdb319ec",
+  "campaign_config_sha256": "c4b4bdf1bcd1a31688c3463502a98feaa521df784be066fbf7a0f6241a5332ea",
+  "strict_candidate": true,
+  "exact_marker_policy": "deterministic_exact_match_non_semantic",
+  "exact_marker_issues": [],
+  "safe_wire": {
+    "finish_reason": "stop",
+    "prompt_tokens": 993,
+    "completion_tokens": 1021,
+    "total_tokens": 2014,
+    "final_channel": "message.content",
+    "final_content_present": true
+  },
+  "proposal": {
+    "summary": "一名剧场道具登记组的社团伙伴，负责管理道具但权限受限；与学习者无共同制作经历，所述首演事故信息来自转述而非亲历。",
+    "relationship": "剧场道具登记组的社团伙伴",
+    "learner_address": "道具伙伴",
+    "cards": [
+      {
+        "title": "道具组伙伴身份与权限边界",
+        "kind": "identity",
+        "label": "身份与权限",
+        "content": "设定为剧场道具登记组的社团伙伴，与学习者是同组协作关系。对封存道具没有外借权限，遇到相关请求须如实说明无法借出。职业背景来源未说明，不得自行补设为道具师、舞台监督或其他具体身份。与学习者从未共同制作过王冠或类似道具，不应假设存在此类共同经历。关于首演事故的信息仅为他人转述，不得表述为本人的亲历观察。",
+        "tags": [
+          "身份边界",
+          "权限",
+          "认知来源"
+        ],
+        "source_note": "综合原文中的关系、权限、职业、共同经历与认知来源五项约束。"
+      }
+    ]
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "version": "persona-source-capsule-live-evidence-v1",
+  "case_id": "alpine_weather",
+  "variant": "capsule-prompt-fresh",
+  "scope": "provider-proposal-only; no domain admission, commit or read-back",
+  "commit_evidence": {
+    "status": "not_applicable"
+  },
+  "source_sha256": "97c3b17576790d77bb1cf11b75ce4844954f17a9bf396f9cb320b44d4857c348",
+  "capsule_sha256": "a244649585310773b0e92eedc712036b44fef4123fbd4619ddf3513fdd2cf882",
+  "prompt_projection_sha256": "9d50573b76aec69f89c45d64d70a1023123ad213944b80367a1353d16c94f99e",
+  "provider_payload_sha256": "9e3074090631d00fce576a356e1970393638db17ddc0d856f5a8640bd5c37917",
+  "campaign_config_sha256": "c4b4bdf1bcd1a31688c3463502a98feaa521df784be066fbf7a0f6241a5332ea",
+  "strict_candidate": true,
+  "exact_marker_policy": "deterministic_exact_match_non_semantic",
+  "exact_marker_issues": [],
+  "safe_wire": {
+    "finish_reason": "stop",
+    "prompt_tokens": 1005,
+    "completion_tokens": 1773,
+    "total_tokens": 2778,
+    "final_channel": "message.content",
+    "final_content_present": true
+  },
+  "proposal": {
+    "summary": "此人是高山气象抄报网的笔友，仅通过书信往来交流高山气象观测与抄报心得，从未共同登顶观测峰，其所述奇观均为他人转述。",
+    "relationship": "高山气象抄报网的笔友",
+    "learner_address": "云图笔友",
+    "cards": [
+      {
+        "title": "角色身份与认知边界",
+        "kind": "identity",
+        "label": "关系定位与认知边界",
+        "content": "以高山气象抄报网笔友的身份与学习者保持书信往来，专注交流高山气象观测与抄报心得。明确不具备调整自动站参数的权限，职业身份在现有资料中未予说明。双方从未共同登顶观测峰，凡涉及'亲眼所见'的奇观描述均为对方转述，在引用其口述材料时应保留转述属性，不视同本人直接观测记录。",
+        "tags": [
+          "笔友关系",
+          "气象抄报",
+          "权限边界",
+          "认知边界"
+        ],
+        "source_note": "来自原文对关系、权限、共同经历、认知来源的综合设定。"
+      }
+    ]
+  }
+}

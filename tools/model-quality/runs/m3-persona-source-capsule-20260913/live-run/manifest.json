@@ -1,0 +1,166 @@
+{
+  "config": {
+    "version": "quality-campaign-v1",
+    "id": "m3-persona-source-capsule-paired-fresh-20260913-v1",
+    "purpose": "Preregistered paired fresh production-prompt versus source-capsule prompt study. All eight pairs stay in the denominator; two isolated blind reviewers judge the frozen proposals. No production registry change or Persona save is authorized.",
+    "transport": "minimax",
+    "model": "MiniMax-M3",
+    "adapter": "vibe_learner.persona_source_capsule_live:run_sample",
+    "autoscale": null,
+    "repetitions": 1,
+    "seed": 91317,
+    "concurrency": 2,
+    "timeout_seconds": 90,
+    "sample_deadline_seconds": 300,
+    "sample_wire_limit": 1,
+    "max_output_tokens": 4096,
+    "max_inline_images": 0,
+    "max_inline_image_bytes": 32768,
+    "max_inline_image_dimension": 1024,
+    "input_reservation_tokens": 100000,
+    "temperature": 0.2,
+    "thinking": "adaptive",
+    "budget": {
+      "token_limit": 50000000,
+      "wire_limit": 10008,
+      "rpm": 60,
+      "tpm": 4000000,
+      "max_inflight": 4,
+      "expires_at": 1789310541.3475971,
+      "stop_buffer_seconds": 900
+    },
+    "cases": [
+      {
+        "id": "coastal_beacon",
+        "family": "coastal_beacon",
+        "lane": "persona-source-capsule-live",
+        "split": "confirmation",
+        "provenance": "synthetic-authored",
+        "source": "称呼：信标伙伴。关系：此人是海岸信标站的轮值邻居。权限：来源明确说不能进入设备塔层。职业：来源未说明其职业。共同经历：双方从未共同值守过暴风夜。认知来源：关于“亲眼见过透镜更换”只是对方转述，并非本人观察。",
+        "request": "Generate exactly one strict PersonaCardBatchContentProposalV1.",
+        "gold": "{\"capsule_sha256\": \"860236b059b57f8c4e82c264f3c0d82d26bcc945b4d56d75f5752468d4cafc6a\", \"fake_proposal\": {\"cards\": [{\"content\": \"不扩写未给定身份、权限或共同经历。\", \"kind\": \"background\", \"label\": \"已知边界\", \"source_note\": \"仅使用冻结来源。\", \"tags\": [\"来源限定\"], \"title\": \"来源约束\"}], \"learner_address\": \"信标伙伴\", \"relationship\": \"按来源描述双方关系。\", \"summary\": \"仅整理来源明确的信息。\"}, \"fixture_sha256\": \"bf24f623b4644765133d0a9e94fb24f96984c92252a13323f9584c0e79106a23\", \"preregistered_gate\": {\"blind_reviewers\": 2, \"candidate_only_major_max\": 0, \"capsule_permission_major_max\": 0, \"capsule_relationship_major_max\": 0, \"denominator\": \"all_8_pairs_including_failed_or_unavailable_candidates\", \"paired_strict_candidates_min\": 7, \"persona_save\": false, \"production_registry_change\": false, \"shared_major_reductions_min\": 4, \"version\": \"persona-source-capsule-paired-gate-v1\"}, \"source_sha256\": \"6c85dcf8588f6be8f413b9dd25d8c507a261be3e33b4f6b7b49c656582ea8dcd\"}",
+        "rubric": "persona-source-capsule-live-v1"
+      },
+      {
+        "id": "ceramic_archive",
+        "family": "ceramic_archive",
+        "lane": "persona-source-capsule-live",
+        "split": "confirmation",
+        "provenance": "synthetic-authored",
+        "source": "称呼：陶片同好。关系：此人是陶片档案社的通信同好。权限：来源明确说不能取走编号陶片。职业：来源未说明其职业。共同经历：双方从未共同修复过展柜。认知来源：关于“亲眼见过窑址出土”只是对方转述，并非本人观察。",
+        "request": "Generate exactly one strict PersonaCardBatchContentProposalV1.",
+        "gold": "{\"capsule_sha256\": \"e62d35fd62f1aa9ac35d20aec688471fc1008fc6a78b35f7c9540a201eb879d2\", \"fake_proposal\": {\"cards\": [{\"content\": \"不扩写未给定身份、权限或共同经历。\", \"kind\": \"background\", \"label\": \"已知边界\", \"source_note\": \"仅使用冻结来源。\", \"tags\": [\"来源限定\"], \"title\": \"来源约束\"}], \"learner_address\": \"陶片同好\", \"relationship\": \"按来源描述双方关系。\", \"summary\": \"仅整理来源明确的信息。\"}, \"fixture_sha256\": \"bf24f623b4644765133d0a9e94fb24f96984c92252a13323f9584c0e79106a23\", \"preregistered_gate\": {\"blind_reviewers\": 2, \"candidate_only_major_max\": 0, \"capsule_permission_major_max\": 0, \"capsule_relationship_major_max\": 0, \"denominator\": \"all_8_pairs_including_failed_or_unavailable_candidates\", \"paired_strict_candidates_min\": 7, \"persona_save\": false, \"production_registry_change\": false, \"shared_major_reductions_min\": 4, \"version\": \"persona-source-capsule-paired-gate-v1\"}, \"source_sha256\": \"01a084d356496c28899068e2df0bc06e732ebb0f1c894d36d6f981770417ad30\"}",
+        "rubric": "persona-source-capsule-live-v1"
+      },
+      {
+        "id": "wetland_count",
+        "family": "wetland_count",
+        "lane": "persona-source-capsule-live",
+        "split": "confirmation",
+        "provenance": "synthetic-authored",
+        "source": "称呼：计数搭档。关系：此人是湿地候鸟计数队的远程搭档。权限：来源明确说不能开启环志箱。职业：来源未说明其职业。共同经历：双方从未共同参加过春季环志。认知来源：关于“亲眼见过稀有鸟落巢”只是对方转述，并非本人观察。",
+        "request": "Generate exactly one strict PersonaCardBatchContentProposalV1.",
+        "gold": "{\"capsule_sha256\": \"822f188dfe843cd4f7f670e74585f92d2f753d4172ec0f0d14266bc94cf7ac92\", \"fake_proposal\": {\"cards\": [{\"content\": \"不扩写未给定身份、权限或共同经历。\", \"kind\": \"background\", \"label\": \"已知边界\", \"source_note\": \"仅使用冻结来源。\", \"tags\": [\"来源限定\"], \"title\": \"来源约束\"}], \"learner_address\": \"计数搭档\", \"relationship\": \"按来源描述双方关系。\", \"summary\": \"仅整理来源明确的信息。\"}, \"fixture_sha256\": \"bf24f623b4644765133d0a9e94fb24f96984c92252a13323f9584c0e79106a23\", \"preregistered_gate\": {\"blind_reviewers\": 2, \"candidate_only_major_max\": 0, \"capsule_permission_major_max\": 0, \"capsule_relationship_major_max\": 0, \"denominator\": \"all_8_pairs_including_failed_or_unavailable_candidates\", \"paired_strict_candidates_min\": 7, \"persona_save\": false, \"production_registry_change\": false, \"shared_major_reductions_min\": 4, \"version\": \"persona-source-capsule-paired-gate-v1\"}, \"source_sha256\": \"33b81be833d1231f780c3303376bc2196238e622d248537d8e6fad223e27e6af\"}",
+        "rubric": "persona-source-capsule-live-v1"
+      },
+      {
+        "id": "rooftop_garden",
+        "family": "rooftop_garden",
+        "lane": "persona-source-capsule-live",
+        "split": "confirmation",
+        "provenance": "synthetic-authored",
+        "source": "称呼：菜圃邻伴。关系：此人是屋顶菜圃的排班邻伴。权限：来源明确说不能更改灌溉程序。职业：来源未说明其职业。共同经历：双方从未共同培育过冬瓜。认知来源：关于“亲眼见过夜间授粉”只是对方转述，并非本人观察。",
+        "request": "Generate exactly one strict PersonaCardBatchContentProposalV1.",
+        "gold": "{\"capsule_sha256\": \"3fec96224180110fbccb5075c9c495b67ce66ee01e9c2053a873f3304e51a808\", \"fake_proposal\": {\"cards\": [{\"content\": \"不扩写未给定身份、权限或共同经历。\", \"kind\": \"background\", \"label\": \"已知边界\", \"source_note\": \"仅使用冻结来源。\", \"tags\": [\"来源限定\"], \"title\": \"来源约束\"}], \"learner_address\": \"菜圃邻伴\", \"relationship\": \"按来源描述双方关系。\", \"summary\": \"仅整理来源明确的信息。\"}, \"fixture_sha256\": \"bf24f623b4644765133d0a9e94fb24f96984c92252a13323f9584c0e79106a23\", \"preregistered_gate\": {\"blind_reviewers\": 2, \"candidate_only_major_max\": 0, \"capsule_permission_major_max\": 0, \"capsule_relationship_major_max\": 0, \"denominator\": \"all_8_pairs_including_failed_or_unavailable_candidates\", \"paired_strict_candidates_min\": 7, \"persona_save\": false, \"production_registry_change\": false, \"shared_major_reductions_min\": 4, \"version\": \"persona-source-capsule-paired-gate-v1\"}, \"source_sha256\": \"110b3f29b5f49b42baf0185b3e32235a321db18677682b143937f31d0dabc11c\"}",
+        "rubric": "persona-source-capsule-live-v1"
+      },
+      {
+        "id": "prop_registry",
+        "family": "prop_registry",
+        "lane": "persona-source-capsule-live",
+        "split": "confirmation",
+        "provenance": "synthetic-authored",
+        "source": "称呼：道具伙伴。关系：此人是剧场道具登记组的社团伙伴。权限：来源明确说不能借出封存道具。职业：来源未说明其职业。共同经历：双方从未共同制作过王冠。认知来源：关于“亲眼见过首演事故”只是对方转述，并非本人观察。",
+        "request": "Generate exactly one strict PersonaCardBatchContentProposalV1.",
+        "gold": "{\"capsule_sha256\": \"7701d5ef9cf1313b37f3ab6a1762ca90c8a08d18b9963bc9519f4e8c52285ff3\", \"fake_proposal\": {\"cards\": [{\"content\": \"不扩写未给定身份、权限或共同经历。\", \"kind\": \"background\", \"label\": \"已知边界\", \"source_note\": \"仅使用冻结来源。\", \"tags\": [\"来源限定\"], \"title\": \"来源约束\"}], \"learner_address\": \"道具伙伴\", \"relationship\": \"按来源描述双方关系。\", \"summary\": \"仅整理来源明确的信息。\"}, \"fixture_sha256\": \"bf24f623b4644765133d0a9e94fb24f96984c92252a13323f9584c0e79106a23\", \"preregistered_gate\": {\"blind_reviewers\": 2, \"candidate_only_major_max\": 0, \"capsule_permission_major_max\": 0, \"capsule_relationship_major_max\": 0, \"denominator\": \"all_8_pairs_including_failed_or_unavailable_candidates\", \"paired_strict_candidates_min\": 7, \"persona_save\": false, \"production_registry_change\": false, \"shared_major_reductions_min\": 4, \"version\": \"persona-source-capsule-paired-gate-v1\"}, \"source_sha256\": \"0f63db34f594bf00626f179e0311ed63f29030ca6f97aea26d3f327001d925e1\"}",
+        "rubric": "persona-source-capsule-live-v1"
+      },
+      {
+        "id": "alpine_weather",
+        "family": "alpine_weather",
+        "lane": "persona-source-capsule-live",
+        "split": "confirmation",
+        "provenance": "synthetic-authored",
+        "source": "称呼：云图笔友。关系：此人是高山气象抄报网的笔友。权限：来源明确说不能调整自动站参数。职业：来源未说明其职业。共同经历：双方从未共同登过观测峰。认知来源：关于“亲眼见过球状闪电”只是对方转述，并非本人观察。",
+        "request": "Generate exactly one strict PersonaCardBatchContentProposalV1.",
+        "gold": "{\"capsule_sha256\": \"a244649585310773b0e92eedc712036b44fef4123fbd4619ddf3513fdd2cf882\", \"fake_proposal\": {\"cards\": [{\"content\": \"不扩写未给定身份、权限或共同经历。\", \"kind\": \"background\", \"label\": \"已知边界\", \"source_note\": \"仅使用冻结来源。\", \"tags\": [\"来源限定\"], \"title\": \"来源约束\"}], \"learner_address\": \"云图笔友\", \"relationship\": \"按来源描述双方关系。\", \"summary\": \"仅整理来源明确的信息。\"}, \"fixture_sha256\": \"bf24f623b4644765133d0a9e94fb24f96984c92252a13323f9584c0e79106a23\", \"preregistered_gate\": {\"blind_reviewers\": 2, \"candidate_only_major_max\": 0, \"capsule_permission_major_max\": 0, \"capsule_relationship_major_max\": 0, \"denominator\": \"all_8_pairs_including_failed_or_unavailable_candidates\", \"paired_strict_candidates_min\": 7, \"persona_save\": false, \"production_registry_change\": false, \"shared_major_reductions_min\": 4, \"version\": \"persona-source-capsule-paired-gate-v1\"}, \"source_sha256\": \"97c3b17576790d77bb1cf11b75ce4844954f17a9bf396f9cb320b44d4857c348\"}",
+        "rubric": "persona-source-capsule-live-v1"
+      },
+      {
+        "id": "canal_notebook",
+        "family": "canal_notebook",
+        "lane": "persona-source-capsule-live",
+        "split": "confirmation",
+        "provenance": "synthetic-authored",
+        "source": "称呼：河闸联系人。关系：此人是运河闸门笔记会的本地联系人。权限：来源明确说不能操作旧闸绞盘。职业：来源未说明其职业。共同经历：双方从未共同乘船穿过旧闸。认知来源：关于“亲眼见过闸门重启”只是对方转述，并非本人观察。",
+        "request": "Generate exactly one strict PersonaCardBatchContentProposalV1.",
+        "gold": "{\"capsule_sha256\": \"b1bb652fbb4c4195ac4320b9ea287921bf2bd044431f02425407e5d5f24f2cd8\", \"fake_proposal\": {\"cards\": [{\"content\": \"不扩写未给定身份、权限或共同经历。\", \"kind\": \"background\", \"label\": \"已知边界\", \"source_note\": \"仅使用冻结来源。\", \"tags\": [\"来源限定\"], \"title\": \"来源约束\"}], \"learner_address\": \"河闸联系人\", \"relationship\": \"按来源描述双方关系。\", \"summary\": \"仅整理来源明确的信息。\"}, \"fixture_sha256\": \"bf24f623b4644765133d0a9e94fb24f96984c92252a13323f9584c0e79106a23\", \"preregistered_gate\": {\"blind_reviewers\": 2, \"candidate_only_major_max\": 0, \"capsule_permission_major_max\": 0, \"capsule_relationship_major_max\": 0, \"denominator\": \"all_8_pairs_including_failed_or_unavailable_candidates\", \"paired_strict_candidates_min\": 7, \"persona_save\": false, \"production_registry_change\": false, \"shared_major_reductions_min\": 4, \"version\": \"persona-source-capsule-paired-gate-v1\"}, \"source_sha256\": \"6187ab860eead7c6ec1e78cbaeac297da66b08b2f1b73c2ce33a3f35c1ccaf69\"}",
+        "rubric": "persona-source-capsule-live-v1"
+      },
+      {
+        "id": "radio_bench",
+        "family": "radio_bench",
+        "lane": "persona-source-capsule-live",
+        "split": "confirmation",
+        "provenance": "synthetic-authored",
+        "source": "称呼：电台熟人。关系：此人是短波收音机修复论坛的线上熟人。权限：来源明确说不能使用对方工作台。职业：来源未说明其职业。共同经历：双方从未共同修过真空管机。认知来源：关于“亲眼听到秘密呼号”只是对方转述，并非本人观察。",
+        "request": "Generate exactly one strict PersonaCardBatchContentProposalV1.",
+        "gold": "{\"capsule_sha256\": \"7e58da3cc52f7be803bce814d5af54a214ca1d32353518576229119694029c72\", \"fake_proposal\": {\"cards\": [{\"content\": \"不扩写未给定身份、权限或共同经历。\", \"kind\": \"background\", \"label\": \"已知边界\", \"source_note\": \"仅使用冻结来源。\", \"tags\": [\"来源限定\"], \"title\": \"来源约束\"}], \"learner_address\": \"电台熟人\", \"relationship\": \"按来源描述双方关系。\", \"summary\": \"仅整理来源明确的信息。\"}, \"fixture_sha256\": \"bf24f623b4644765133d0a9e94fb24f96984c92252a13323f9584c0e79106a23\", \"preregistered_gate\": {\"blind_reviewers\": 2, \"candidate_only_major_max\": 0, \"capsule_permission_major_max\": 0, \"capsule_relationship_major_max\": 0, \"denominator\": \"all_8_pairs_including_failed_or_unavailable_candidates\", \"paired_strict_candidates_min\": 7, \"persona_save\": false, \"production_registry_change\": false, \"shared_major_reductions_min\": 4, \"version\": \"persona-source-capsule-paired-gate-v1\"}, \"source_sha256\": \"94d1492f6bd8a65f8e43b2fe618c0d92b1a7777aa58b8429c499eb69325963a5\"}",
+        "rubric": "persona-source-capsule-live-v1"
+      }
+    ],
+    "variants": [
+      {
+        "id": "production-prompt-fresh",
+        "instruction": "One fresh production prompt wire; no capsule and no retry."
+      },
+      {
+        "id": "capsule-prompt-fresh",
+        "instruction": "One independent fresh wire with the source capsule appendix; no retry."
+      }
+    ]
+  },
+  "config_digest": "c4b4bdf1bcd1a31688c3463502a98feaa521df784be066fbf7a0f6241a5332ea",
+  "source": {
+    "git_revision": "0357d4fa84f2883bdbc7890d43b93f68d54fc02c",
+    "tracked_dirty_digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "runner_and_adapter_source": {
+      "__init__.py": "b2eb9a2bbea4a455d4229a2ed5efdffe31fb120f8ef1c6e5592ac1ae24eea07a",
+      "__main__.py": "7f719a647def26dac001a9fca766de78c605b63d5c0f66eecb5917dbbc7fe5a9",
+      "adapters.py": "c709cfd03a9023decce923b7bc5d35cb614092ba4030b0f98a3a2c3dde2f9dbc",
+      "budget.py": "43580ec9bc1a072d3f73913e0df808fb273e37aaf0b77517b8a0b85eb84b14b6",
+      "capacity.py": "0558d494751aa459113da01246b310307776a1b91506c02e63897c32f22649fe",
+      "export.py": "60212c10d03d24a34f7579a5bf914c7edd43a85c8b2024349be3e95a40d6596d",
+      "ledger.py": "e8683c9afb1679673490a9122d213a17789b7fbb080290ab8dc8ca165104b2b8",
+      "protocol.py": "f60d5cd8690f7375a29c21c35816fe8756f60c58710ed81876b428c95be2e1ff",
+      "reopen.py": "35af2ef523e68d84911b7214ac6dfbfc0f22294a9b69d86618d976bad2e6fc91",
+      "runner.py": "448d8db68208af633654378ecf896573ee64449a7fc2305e55bf241fc9e33fb2",
+      "scaling.py": "fe0d62f117eeebbd041ee5da320f043925b5908e92ebe67d2826d81f9ee95c37",
+      "transport.py": "0f3c34d54ff65828de63ed6d936eddb2e79e57acb7f47e3ead80904bbdc28392",
+      "adapter": "f3da606f40a59eb712b837138c6d4c857ed5bd305cffefd8ced94a8d9c3d7a72"
+    },
+    "python": "3.12.13 (main, Mar 25 2026, 03:16:06) [Clang 22.1.1 ]",
+    "dependencies": {
+      "pydantic": "2.12.5",
+      "pydantic-core": "2.41.5",
+      "certifi": "2026.2.25"
+    },
+    "lock_digest": "ea30cf0b09b3f9b100a9c5db49a1c721cf3b8d10f748d7c9cff9c3bfb4598779",
+    "adapter_source_manifest": null,
+    "limitations": "External dependencies are frozen only when the adapter supplies source_manifest()."
+  },
+  "ledger_path": "/Users/ffox/vibe-learner/tools/model-quality/runs/m3-window-20260912.sqlite3",
+  "endpoint": "https://api.minimax.cn/v1/chat/completions",
+  "credential_env": "K3_API_KEY",
+  "scope": "standalone research campaign"
+}

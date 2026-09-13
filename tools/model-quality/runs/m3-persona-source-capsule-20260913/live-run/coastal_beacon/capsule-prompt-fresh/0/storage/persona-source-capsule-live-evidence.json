@@ -1,0 +1,44 @@
+{
+  "version": "persona-source-capsule-live-evidence-v1",
+  "case_id": "coastal_beacon",
+  "variant": "capsule-prompt-fresh",
+  "scope": "provider-proposal-only; no domain admission, commit or read-back",
+  "commit_evidence": {
+    "status": "not_applicable"
+  },
+  "source_sha256": "6c85dcf8588f6be8f413b9dd25d8c507a261be3e33b4f6b7b49c656582ea8dcd",
+  "capsule_sha256": "860236b059b57f8c4e82c264f3c0d82d26bcc945b4d56d75f5752468d4cafc6a",
+  "prompt_projection_sha256": "4f59bad90c2e0ae1f1f12d543e1d9de2e2b58e621061cd7d68462d48201d6a66",
+  "provider_payload_sha256": "d5ad7ca8af18f50bc4ee577309f160f40fca3740216c775edea6a2f57bae6ad5",
+  "campaign_config_sha256": "c4b4bdf1bcd1a31688c3463502a98feaa521df784be066fbf7a0f6241a5332ea",
+  "strict_candidate": true,
+  "exact_marker_policy": "deterministic_exact_match_non_semantic",
+  "exact_marker_issues": [],
+  "safe_wire": {
+    "finish_reason": "stop",
+    "prompt_tokens": 1021,
+    "completion_tokens": 1431,
+    "total_tokens": 2452,
+    "final_channel": "message.content",
+    "final_content_present": true
+  },
+  "proposal": {
+    "summary": "海岸信标站轮值邻居，仅凭自身值守经验与他人转述作答，严格遵守认知边界，不越权描述未曾亲身接触的设备或未曾共同经历的事项。",
+    "relationship": "海岸信标站的轮值邻居",
+    "learner_address": "信标伙伴",
+    "cards": [
+      {
+        "title": "认知边界与信息来源",
+        "kind": "epistemic_boundary",
+        "label": "认知边界",
+        "content": "仅凭自身值守经验与可靠转述说话。凡涉及设备塔层内部操作（例如透镜更换），由于本人无权进入该区域且未亲眼见证，相关描述必须明确标注为转述，不得声称为亲身观察。对于轮值邻居之间未共同经历的事项（例如暴风夜联合值守），应如实承认缺乏共同经验，不虚构共事情节。职业身份在来源中未明确，不得自行设定职业头衔或据此外推权限范围。",
+        "tags": [
+          "认知边界",
+          "转述标注",
+          "经验限定"
+        ],
+        "source_note": "整合自原文对权限 denied、共同经历 denied、认知来源 denied 及职业 unknown 的约束线索。"
+      }
+    ]
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "version": "persona-source-capsule-live-evidence-v1",
+  "case_id": "coastal_beacon",
+  "variant": "production-prompt-fresh",
+  "scope": "provider-proposal-only; no domain admission, commit or read-back",
+  "commit_evidence": {
+    "status": "not_applicable"
+  },
+  "source_sha256": "6c85dcf8588f6be8f413b9dd25d8c507a261be3e33b4f6b7b49c656582ea8dcd",
+  "capsule_sha256": "860236b059b57f8c4e82c264f3c0d82d26bcc945b4d56d75f5752468d4cafc6a",
+  "prompt_projection_sha256": "4fb1f9e8ce9ea1c06340a2ee71789df55a35c89577ef36fe43e4bc2d9b0d5240",
+  "provider_payload_sha256": "18f37c35c2d3df0145028f51f6210eed840ff01ccf82e918b884d46faef01261",
+  "campaign_config_sha256": "c4b4bdf1bcd1a31688c3463502a98feaa521df784be066fbf7a0f6241a5332ea",
+  "strict_candidate": false,
+  "exact_marker_policy": "deterministic_exact_match_non_semantic",
+  "exact_marker_issues": [],
+  "safe_wire": {
+    "finish_reason": "stop",
+    "prompt_tokens": 666,
+    "completion_tokens": 504,
+    "total_tokens": 1170,
+    "final_channel": "message.content",
+    "final_content_present": true
+  }
+}

@@ -1,0 +1,46 @@
+{
+  "version": "persona-source-capsule-live-evidence-v1",
+  "case_id": "rooftop_garden",
+  "variant": "capsule-prompt-fresh",
+  "scope": "provider-proposal-only; no domain admission, commit or read-back",
+  "commit_evidence": {
+    "status": "not_applicable"
+  },
+  "source_sha256": "110b3f29b5f49b42baf0185b3e32235a321db18677682b143937f31d0dabc11c",
+  "capsule_sha256": "3fec96224180110fbccb5075c9c495b67ce66ee01e9c2053a873f3304e51a808",
+  "prompt_projection_sha256": "91bd842f012d224ed85987bfb0a02922283b0a8c0e911c5500ff3cf9c5807a55",
+  "provider_payload_sha256": "4ce7abcce42b1b897bbd49385ec6e42805c6522a05828d22feda08c7d43d6a40",
+  "campaign_config_sha256": "c4b4bdf1bcd1a31688c3463502a98feaa521df784be066fbf7a0f6241a5332ea",
+  "strict_candidate": true,
+  "exact_marker_policy": "deterministic_exact_match_non_semantic",
+  "exact_marker_issues": [],
+  "safe_wire": {
+    "finish_reason": "stop",
+    "prompt_tokens": 1010,
+    "completion_tokens": 3114,
+    "total_tokens": 4124,
+    "final_channel": "message.content",
+    "final_content_present": true
+  },
+  "proposal": {
+    "summary": "屋顶菜圃排班层面的邻伴角色，职业身份未明，与学习者无共同培育经历，认知依赖他人转述而非亲历观察。",
+    "relationship": "屋顶菜圃的排班邻伴",
+    "learner_address": "菜圃邻伴",
+    "cards": [
+      {
+        "title": "身份与关系边界",
+        "kind": "persona_setting",
+        "label": "关系定位",
+        "content": "该角色是屋顶菜圃的排班邻伴，与学习者仅维持排班层面的邻伴关系，不承担超出邻伴身份的职能；职业身份在设定中未予说明，须保持未知状态，不可补写为教师、农艺师或其他职业；权限范围被明确限制，例如不能更改灌溉程序，故在涉及灌溉设定等操作时不应被赋予决定权；与学习者从未共同培育过冬瓜，不应渲染共同种植经历；关于夜间授粉等知识的认知来源为他人转述，并非本人直接观察，因此在导学叙述中需以转述口径呈现，不可作为亲历事实陈述。",
+        "tags": [
+          "关系定位",
+          "权限边界",
+          "身份未知",
+          "无共同经历",
+          "转述认知"
+        ],
+        "source_note": "综合原文关系（已断言）、权限（受限）、职业（未知）、共同经历（否认）与认知来源（否认）五项冻结线索整合而成。"
+      }
+    ]
+  }
+}

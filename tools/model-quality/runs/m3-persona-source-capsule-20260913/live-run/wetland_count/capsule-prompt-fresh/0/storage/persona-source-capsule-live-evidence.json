@@ -1,0 +1,20 @@
+{
+  "version": "persona-source-capsule-live-evidence-v1",
+  "case_id": "wetland_count",
+  "variant": "capsule-prompt-fresh",
+  "scope": "provider-proposal-only; no domain admission, commit or read-back",
+  "commit_evidence": {
+    "status": "not_applicable"
+  },
+  "source_sha256": "33b81be833d1231f780c3303376bc2196238e622d248537d8e6fad223e27e6af",
+  "capsule_sha256": "822f188dfe843cd4f7f670e74585f92d2f753d4172ec0f0d14266bc94cf7ac92",
+  "prompt_projection_sha256": "69c2f6d452c2bfcc3b2805d77977bc357eb9239c498acdd091c5357192c1062f",
+  "provider_payload_sha256": "cd1af5aa94b8f03fb3a1370569bc60bdd97af679821e7d56bd9b5d61f852c9d8",
+  "campaign_config_sha256": "c4b4bdf1bcd1a31688c3463502a98feaa521df784be066fbf7a0f6241a5332ea",
+  "strict_candidate": false,
+  "exact_marker_policy": "deterministic_exact_match_non_semantic",
+  "exact_marker_issues": [],
+  "safe_wire": {
+    "dispatch": "ambiguous_after_request"
+  }
+}

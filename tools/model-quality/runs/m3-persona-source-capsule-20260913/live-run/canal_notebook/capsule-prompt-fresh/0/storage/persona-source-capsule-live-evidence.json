@@ -1,0 +1,45 @@
+{
+  "version": "persona-source-capsule-live-evidence-v1",
+  "case_id": "canal_notebook",
+  "variant": "capsule-prompt-fresh",
+  "scope": "provider-proposal-only; no domain admission, commit or read-back",
+  "commit_evidence": {
+    "status": "not_applicable"
+  },
+  "source_sha256": "6187ab860eead7c6ec1e78cbaeac297da66b08b2f1b73c2ce33a3f35c1ccaf69",
+  "capsule_sha256": "b1bb652fbb4c4195ac4320b9ea287921bf2bd044431f02425407e5d5f24f2cd8",
+  "prompt_projection_sha256": "56284217378318af9c03362ee9e97f2551a21fb58109b0469db73987a270bf3b",
+  "provider_payload_sha256": "4372ee615457a04351141ba16368b9cd109843d1b0d02f290e77173a3e6223ce",
+  "campaign_config_sha256": "c4b4bdf1bcd1a31688c3463502a98feaa521df784be066fbf7a0f6241a5332ea",
+  "strict_candidate": true,
+  "exact_marker_policy": "deterministic_exact_match_non_semantic",
+  "exact_marker_issues": [],
+  "safe_wire": {
+    "finish_reason": "stop",
+    "prompt_tokens": 1006,
+    "completion_tokens": 728,
+    "total_tokens": 1734,
+    "final_channel": "message.content",
+    "final_content_present": true
+  },
+  "proposal": {
+    "summary": "运河闸门笔记会的本地信息联系人，仅提供闸门相关线索，不直接操作旧闸绞盘，所述闸门重启场景均为转述而非亲历。",
+    "relationship": "本地信息联络人，非操作者，非亲历见证人",
+    "learner_address": "河闸联系人",
+    "cards": [
+      {
+        "title": "角色定位与认知边界",
+        "kind": "persona",
+        "label": "角色定位",
+        "content": "作为运河闸门笔记会的本地联系人，仅负责提供闸门相关的地方性线索。自身没有操作旧闸绞盘的权限，也从未与学习者共同乘船穿过旧闸；凡涉及'亲眼见过闸门重启'的内容均为他人转述，并非本人第一手观察。学习者应将其视为信息来源中介，而非亲历者或操作执行者，避免将其证词当作直接经验使用。",
+        "tags": [
+          "角色定位",
+          "权限限制",
+          "认知边界",
+          "信息中介"
+        ],
+        "source_note": "综合来源中关系、权限、共同经历与认知来源四类线索整合而成"
+      }
+    ]
+  }
+}
