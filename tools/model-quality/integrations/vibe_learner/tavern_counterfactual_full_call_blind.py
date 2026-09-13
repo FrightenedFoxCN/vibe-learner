@@ -43,7 +43,8 @@ RUBRIC = "m3-tavern-counterfactual-production-full-call-blind-rubric-v1"
 VARIANT = "production-full-call"
 EVIDENCE_NAME = "tavern-counterfactual-full-call-evidence.json"
 EVIDENCE_CONTRACT = "tavern-counterfactual-full-call-evidence-v1"
-SCOPE = "production Tavern full call; one Message primary_output_only plus separately checked Room/Run/Step operations"
+SCOPE = "domain-primary-output-readback"
+SCOPE_DESCRIPTION = "production Tavern full call; one Message primary_output_only plus separately checked Room/Run/Step operations"
 SEED = 91341
 CONCURRENCY = 2
 TIMEOUT_SECONDS = 90
@@ -69,6 +70,14 @@ GATE = {
 
 def _file_sha(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def _runtime_sha(value: object) -> str:
+    """Digest finite application projections without fixture-only float bans."""
+    raw = json.dumps(
+        value, ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False
+    ).encode("utf-8")
+    return hashlib.sha256(raw).hexdigest()
 
 
 def load_fixture() -> TavernCounterfactualFixtureV1:
@@ -248,6 +257,7 @@ def run_sample(context, case, variant):
         "campaign_id": CAMPAIGN_ID,
         "case_id": case.id,
         "message_commit_scope": "primary_output_only",
+        "scope_description": SCOPE_DESCRIPTION,
     }
     try:
         public = _load_public_input(case.source)
@@ -440,9 +450,9 @@ def run_sample(context, case, variant):
             "provider_calls": bridge.calls,
             "operational_checks": operational,
             "trace_summary": safe_traces(terminal),
-            "room_snapshot_sha256": canonical_sha256(snapshot.model_dump(mode="json")),
-            "restart_room_sha256": canonical_sha256(restart_room.model_dump(mode="json")),
-            "restart_runs_sha256": canonical_sha256(restart_runs.model_dump(mode="json")),
+            "room_snapshot_sha256": _runtime_sha(snapshot.model_dump(mode="json")),
+            "restart_room_sha256": _runtime_sha(restart_room.model_dump(mode="json")),
+            "restart_runs_sha256": _runtime_sha(restart_runs.model_dump(mode="json")),
             "private_resource_ids": [
                 persona["id"], scene["scene_id"], room.room.id, turn.run.id,
                 message.id, message.reply_to_message_id,

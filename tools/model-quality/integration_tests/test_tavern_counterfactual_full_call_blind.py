@@ -12,7 +12,9 @@ from examples.export_tavern_counterfactual_full_call_blind import (
     KEY_VERSION, PACKET_VERSION, UNAVAILABLE, public_rubric, value_sha,
 )
 from examples.prepare_tavern_counterfactual_full_call_blind import build_manifest
-from vibe_learner.tavern_counterfactual_full_call_blind import CAMPAIGN_ID, GATE
+from vibe_learner.tavern_counterfactual_full_call_blind import (
+    CAMPAIGN_ID, GATE, SCOPE, _runtime_sha,
+)
 
 
 def _budget() -> dict[str, object]:
@@ -21,6 +23,10 @@ def _budget() -> dict[str, object]:
 
 
 class TavernCounterfactualFullCallBlindTests(unittest.TestCase):
+    def test_runtime_projection_digest_accepts_finite_application_floats(self):
+        self.assertEqual(SCOPE, "domain-primary-output-readback")
+        self.assertEqual(_runtime_sha({"weight": 50.0}), _runtime_sha({"weight": 50.0}))
+
     def test_manifest_is_exact_twenty_arm_full_call_campaign(self):
         manifest = build_manifest(budget_document={"budget": _budget()}, transport="minimax")
         self.assertEqual(manifest["id"], CAMPAIGN_ID)

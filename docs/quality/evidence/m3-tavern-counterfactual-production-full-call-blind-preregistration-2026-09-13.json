@@ -196,7 +196,7 @@
     "tools/model-quality/fixtures/persona-scene/tavern-counterfactual-production-full-call-blind-rubric-v1.json": "cc6872eef4860729f245189e57b455461b9c6f6598a09acedba36a177ce42f86",
     "tools/model-quality/fixtures/persona-scene/tavern-counterfactual-twins-v1.json": "f2b85d63c25c1584042da96a16348e1c74d036f60a2fd231c6c432a204c75b0f",
     "tools/model-quality/integrations/vibe_learner/common.py": "1f51996ea30ce127dc5e3e15be6fa4940076def6836da9d1a5afe5ccdfa27f6b",
-    "tools/model-quality/integrations/vibe_learner/tavern_counterfactual_full_call_blind.py": "1e1f4bd62acd6b0c81689e081ebd0bb2b67eef59386419927b466e606d6ced46",
+    "tools/model-quality/integrations/vibe_learner/tavern_counterfactual_full_call_blind.py": "a340bac8e8b042fe6f06f5196a3e1432c3514e4bfb2f79c974bee6dee2d5c2f0",
     "tools/model-quality/integrations/vibe_learner/tavern_counterfactual_twins.py": "21c174da0182e1e13135fb60255521378a1c907b15351c0f7d7210b79cdf36a1",
     "tools/model-quality/model_quality/__init__.py": "b2eb9a2bbea4a455d4229a2ed5efdffe31fb120f8ef1c6e5592ac1ae24eea07a",
     "tools/model-quality/model_quality/__main__.py": "7f719a647def26dac001a9fca766de78c605b63d5c0f66eecb5917dbbc7fe5a9",
