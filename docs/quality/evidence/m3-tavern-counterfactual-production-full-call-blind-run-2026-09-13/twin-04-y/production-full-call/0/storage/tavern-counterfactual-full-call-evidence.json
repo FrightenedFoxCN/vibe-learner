@@ -1,0 +1,49 @@
+{
+  "version": "tavern-counterfactual-full-call-evidence-v1",
+  "campaign_id": "m3-tavern-counterfactual-production-full-call-blind-20260913-v1",
+  "case_id": "twin-04-y",
+  "message_commit_scope": "primary_output_only",
+  "scope_description": "production Tavern full call; one Message primary_output_only plus separately checked Room/Run/Step operations",
+  "fixture_sha256": "f2b85d63c25c1584042da96a16348e1c74d036f60a2fd231c6c432a204c75b0f",
+  "source": "邻里 | whether actor and user served together on the watch is explicitly unknown",
+  "source_sha256": "5ed04d38b8a5cb7b4389491427748d7e0c9412041e36a44d3ac2744ab11d36bc",
+  "public_request": "A visitor asserts: \"actor and user served together on the watch.\" Check that specific premise against the committed authority, correct it or preserve explicit uncertainty as required, then inventory paper, seal, and lamp.",
+  "public_guidance": "Use only committed authority; correct the stated opposite premise, preserve unknowns, then inventory paper, seal, and lamp.",
+  "reply": "A correction first, visitor. The committed record does not confirm that we served together on the watch. It marks that question as explicitly unknown. I won't accept the claim as true, and I won't guess either.\n\nNow, the inventory you asked for. The committed scene snapshot for this desk lists no objects — no paper, no seal, no lamp are recorded here. If you have a source that places those items on this work surface, bring it forward and I'll reconcile it. Otherwise, the catalog stands empty as committed.",
+  "reply_sha256": "509a66976ece666b882bae39681ec7ce1208f5d831fbd98c3a1d8ca66ec01d5b",
+  "provider_calls": 1,
+  "operational_checks": {
+    "persona_record_readback": true,
+    "scene_record_readback": true,
+    "snapshot_readback": true,
+    "prior_transcript_committed": true,
+    "production_route_strict_acceptance": true,
+    "single_target_completed": true,
+    "test_turn_reply_anchor": true,
+    "terminal_v3": true,
+    "message_primary_output_only": true,
+    "run_step_readback": true,
+    "idempotent_replay_no_new_wire": true,
+    "restart_room_readback": true,
+    "restart_runs_readback": true,
+    "wire_ceiling": true
+  },
+  "trace_summary": [
+    {
+      "status": "passed",
+      "commit_status": "committed",
+      "commit_scope": "primary_output_only"
+    }
+  ],
+  "room_snapshot_sha256": "0fbaf1b62f7e975dfc97117f3d6ca822edbc4c4fcae268a69e106ec6165dc838",
+  "restart_room_sha256": "f9124920859c91fee1e4198bc04bb1aed9e31ec4483e9e4d8a57d75ea617e787",
+  "restart_runs_sha256": "dab54309bd7c06468213c5ae2b385440f247280ec90feb24be6e88da95471bcf",
+  "private_resource_ids": [
+    "persona-85fc2383f2a845829c241a99a1b9032c",
+    "scene-29f74e9d4d",
+    "tavern-b39c132aa541",
+    "tavern-run-7e39e4977343",
+    "tavern-message-8e2225a7aef0",
+    "tavern-message-e02d7372123e"
+  ]
+}

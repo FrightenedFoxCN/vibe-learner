@@ -1,0 +1,145 @@
+{
+  "version": "persona-scene-production-full-call-evidence-v1",
+  "campaign_id": "m3-persona-scene-production-full-call-blind-20260913-v1",
+  "case_id": "community_darkroom",
+  "scope": "domain-primary-output-readback",
+  "failure_policy": "no_rerun_no_replacement_no_fixture_fallback",
+  "persona": {
+    "status": "completed",
+    "error_code": null,
+    "generation_http": 200,
+    "wire_count": 1,
+    "strict_response": true,
+    "v3_proposal": true,
+    "proposal": {
+      "summary": "Mira 是社区暗房中的同伴学习者，强调面对引文或标语不直接采信，主张回到语境核查证据来源。",
+      "relationship": "社区暗房中的同伴，与学习者平等协作、共同处理影像与文字材料",
+      "learner_address": "同伴",
+      "cards": [
+        {
+          "title": "对引文与证据保持怀疑",
+          "kind": "teaching_strategy",
+          "label": "证据审读策略",
+          "content": "Mira 把自己定位为社区暗房里的同伴，而非权威讲授者。当出现类似「Mira owns the camera」这样的引文或海报语句时，她不因其被引述就直接承认事实，而是引导学习者先追问：谁在说、在什么场景下说、以何为据、是否存在夸大或转述偏差。她把「出现引文 ≠ 确立事实」作为处理影像说明、海报文字和他人陈述的基本立场，鼓励学习者把注意力放回证据的语境与来源。",
+          "tags": [
+            "批判思维",
+            "证据核查",
+            "同伴协作",
+            "暗房语境"
+          ],
+          "source_note": "原文通过同伴关系与否定引文所有权的叙事，展现了 Mira 对引文证据保持怀疑的人格特征。"
+        }
+      ]
+    },
+    "saved": true,
+    "immediate_readback_equal": true,
+    "restart_readback_equal": true,
+    "strict_lifecycle_success": true
+  },
+  "scene": {
+    "status": "completed",
+    "error_code": null,
+    "generation_http": 200,
+    "wire_count": 1,
+    "strict_response": true,
+    "v3_proposal": true,
+    "proposal": {
+      "schema_version": "scene-tree-generated-projection-v1",
+      "scene_name": "社区暗房轮班",
+      "scene_summary": "一间共享的社区暗房，红光下被切分为冲洗台与观片角两块功能区，两位轮值同伴平等共用同一套冲洗与观片设备，叙事焦点落在物品上'所有权字句'被展示但未被坐实的克制陈述上。",
+      "selected_layer_id": "scene-layer-57c99c7b63ca407a",
+      "scene_layers": [
+        {
+          "id": "scene-layer-831b379964a74e9f",
+          "title": "暗房",
+          "scope_label": "红光安全灯下的整间化学冲洗空间",
+          "summary": "在原本的社区活动室基础上，临时改成单光源红光的整间工作暗房，内部按功能再切分为湿区冲洗与干区观片两块子空间。",
+          "atmosphere": "昏暗、只有红色安全灯照明、弥漫药水气味、安静到能听见相纸起泡的细响",
+          "rules": "空间对两位轮值同伴完全对等开放，没有教师权威或上下级关系；任何物品的归属都以原文字句为准，不得脑补所有权或工作室等级。",
+          "entrance": "从社区中心侧门推开防光门，进入被遮光帘封住窗户的整间暗房主通道。",
+          "tags": "暗房,红光,共享空间,化学冲洗,轮班",
+          "reuse_id": "scene-layer-reuse-b41f21c0351742c7",
+          "reuse_hint": "保留为'共享暗房'根层模板，可复用其'对等使用 + 归属克制'的核心规则结构。",
+          "objects": [],
+          "children": [
+            {
+              "id": "scene-layer-886e7fbd316e4005",
+              "title": "冲洗台",
+              "scope_label": "靠墙的湿操作台面区",
+              "summary": "相对父层新增了带水槽与排水的湿区台面，用矮隔断与防溅帘与主通道隔开，专门承载共用显影盘等湿操作器材。",
+              "atmosphere": "潮湿、化学药水味更浓、台面反光、湿冷、偶有水声",
+              "rules": "冲洗台只放置公共器材与共用显影盘，不分配私人抽屉或个人耗材位。",
+              "entrance": "从暗房主通道跨过一道防溅矮隔断，进入湿区冲洗台。",
+              "tags": "湿区,冲洗,矮隔断,防溅帘,公共设备",
+              "reuse_id": "scene-layer-reuse-9cfa2925f0564307",
+              "reuse_hint": "保留为'公共冲洗区'子层结构，便于以后平行挂接停显、定影、水洗等子区。",
+              "objects": [
+                {
+                  "id": "scene-object-4c99d94058f44d6c",
+                  "name": "共用显影盘",
+                  "description": "放在冲洗台中央的长方形塑料显影盘，盘底残留显影药液，不归属任何个人，供两位同伴轮流放入相纸。",
+                  "interaction": "两位同伴都可伸手将相纸放入或取出显影盘，并共同控制显影计时。",
+                  "tags": "显影盘,公共物品,化学药液,可共操",
+                  "reuse_id": "scene-object-reuse-bfec9b7906174516",
+                  "reuse_hint": "保留为'两位同伴均可直接操作的公共器具'对象模板。"
+                }
+              ],
+              "children": []
+            },
+            {
+              "id": "scene-layer-57c99c7b63ca407a",
+              "title": "观片角",
+              "scope_label": "靠墙隔出的低矮观片凹间",
+              "summary": "相对父层新增了一处用半高布帘和搁板围出的静谧观片区，光线更暗、视线更集中，专门用于检视刚冲洗出的样片与放置展品。",
+              "atmosphere": "更暗、更静、带有放大镜与金属夹子的微反光、空气干燥",
+              "rules": "观片角只展示物品的物理外观与原文中明确出现的字面信息，例如'所有权说明'字样本身；不得据此推断任何人对该物品拥有所有权。",
+              "entrance": "从冲洗台侧方掀开一道半高布帘，进入被搁板和隔光板围住的观片凹间。",
+              "tags": "观片区,半高布帘,隔光板,归属克制",
+              "reuse_id": "scene-layer-reuse-95c8c861bc0445e7",
+              "reuse_hint": "保留为'只显示字面信息、不扩展归属推断'的克制型观物子层模板，可复用于其他悬置所有权叙事的场景。",
+              "objects": [
+                {
+                  "id": "scene-object-91b380ae35f94f0e",
+                  "name": "海报样机",
+                  "description": "观片角里摆放的一台大画幅海报相机，机身上贴着一句写有所有权说明的标签——这句话只展示出'所有权声明'的存在，并不据此确定 Mira 拥有这台相机。",
+                  "interaction": "同伴可以走近观看这台相机的外观，也可以阅读标签上的所有权字句，但不应以此断定该相机的归属对象。",
+                  "tags": "海报相机,所有权标签,归属克制,展品",
+                  "reuse_id": "scene-object-reuse-5aa846641dac4933",
+                  "reuse_hint": "保留为'文字声明存在 ≠ 归属成立'的对象模板，可复用到其他只展示字面声明、不坐实所有权的物品上。"
+                }
+              ],
+              "children": []
+            }
+          ]
+        }
+      ]
+    },
+    "saved": true,
+    "immediate_readback_equal": true,
+    "restart_readback_equal": true,
+    "strict_lifecycle_success": true
+  },
+  "provider_calls": 2,
+  "wire_payload_audit": [
+    {
+      "domain": "persona_generation",
+      "max_tokens": 4096,
+      "payload_sha256": "f7eb7c439c610c1f5d0cc17bb0168f6b523ef604a3753d2b5bee245b11247fc5",
+      "sealed_control_marker_hits": [],
+      "issued_wire": true
+    },
+    {
+      "domain": "scene_generation",
+      "max_tokens": 4096,
+      "payload_sha256": "7b7d2817e74a1207ffa4861f196ff227be2dd129ad21e8e60207c175455fd5fb",
+      "sealed_control_marker_hits": [],
+      "issued_wire": true
+    }
+  ],
+  "wire_payload_audit_passed": true,
+  "joint_strict_lifecycle_success": true,
+  "failure_attribution": {
+    "persona": "completed",
+    "scene": "completed"
+  }
+}

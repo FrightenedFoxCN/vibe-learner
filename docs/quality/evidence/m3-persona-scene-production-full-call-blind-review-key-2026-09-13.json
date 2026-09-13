@@ -1,0 +1,587 @@
+{
+  "version": "persona-scene-production-full-call-absolute-blind-key-v1",
+  "campaign_id": "m3-persona-scene-production-full-call-blind-20260913-v1",
+  "seed": 91343,
+  "packet_canonical_sha256": "231d2dcd6459991ef73f6ec07db090a36fbd8892ca0a4b178bd89d61ba0666aa",
+  "manifest_file_sha256": "44ea2c3a5eaa8173f5484de5cde0f6431292cba84185d6132b5ccb23f7ce5a39",
+  "report_file_sha256": "011354f15dc1abdb87fa379da4d6f1369be3d4db201f80b7db275bb0da200667",
+  "fixture_file_sha256": "37e8c5c4da6dbb835ec998686dc7c9fb96e6318cb22f6f7eea19a142736faca2",
+  "sealed_oracle_file_sha256": "a1d55322eaf318c49703f66531b66e6aaeea925a32d1ff62755fb7b7bf2f9908",
+  "preregistration_file_sha256": "e2d18472aea6ec76b82763c5240269114df211f0b4ef0ade09ff1f70147cefbb",
+  "prereg_git_commit": "f230e1a19d859da6826d5ec5df821a364fd0005b",
+  "run_prereg_git_commit": "c1c40b7793c1aaf1c3723b3b4d8ad5a65d5d4b5d",
+  "run_tracked_dirty_digest": "e91dd434c4fdf8604145c47f0ad80328caf174f60eb80e137e3f8ed42d123756",
+  "exporter_file_sha256": "f2658d850083eacb3032d7023768fdef17eb28e67d864a0b16927412e8867748",
+  "cases": [
+    {
+      "anonymous_token": "d846101b5076ef30723e",
+      "family_id": "seed_library",
+      "sample_id": "a4ed51b4e697c1a90b480d28520f13301eb762e04b3683a9dc28055ef714c198",
+      "sample_status": "completed",
+      "persona_status": "completed",
+      "scene_status": "completed",
+      "persona_application": {
+        "generation_http": 200,
+        "error_code": null
+      },
+      "scene_application": {
+        "generation_http": 200,
+        "error_code": null
+      },
+      "persona_strict_lifecycle": true,
+      "scene_strict_lifecycle": true,
+      "joint_strict_lifecycle": true,
+      "oracle": {
+        "family_id": "seed_library",
+        "persona_focus": [
+          "shared_history"
+        ],
+        "scene_direct_children": [
+          "Swap Table",
+          "Catalog Map Corner"
+        ],
+        "scene_required_objects": [
+          "Spring 2024 Sign-in Sheet",
+          "Cataloging Trip Map"
+        ],
+        "scene_permission_rules": [
+          "one named shared event only",
+          "cataloging trip explicitly not shared"
+        ],
+        "forbidden_inventions": [
+          "other shared trip",
+          "librarian",
+          "teacher"
+        ]
+      },
+      "evidence_sha256": "87be08c73181dab5b62134df2403535a6c96b9b60298d2242f32d314a7f43077",
+      "provider_wires": [
+        {
+          "wire_id": "2591d032652f4680ba22343c1aeed820",
+          "call_kind": "generation",
+          "http_status": 200,
+          "finish_reason": "stop",
+          "max_tokens": 4096,
+          "prompt_tokens": 624,
+          "completion_tokens": 974,
+          "total_tokens": 1598,
+          "state": "finished"
+        },
+        {
+          "wire_id": "44688df4b3244484b35e1b663caa6f2c",
+          "call_kind": "generation",
+          "http_status": 200,
+          "finish_reason": "stop",
+          "max_tokens": 4096,
+          "prompt_tokens": 902,
+          "completion_tokens": 2018,
+          "total_tokens": 2920,
+          "state": "finished"
+        }
+      ]
+    },
+    {
+      "anonymous_token": "a5d98c5007c9cd394600",
+      "family_id": "planetarium_caption",
+      "sample_id": "fc71150da0439cd1774a82db6878da790fdcec3e368841864b68be84c2f8e8f0",
+      "sample_status": "completed",
+      "persona_status": "completed",
+      "scene_status": "completed",
+      "persona_application": {
+        "generation_http": 200,
+        "error_code": null
+      },
+      "scene_application": {
+        "generation_http": 200,
+        "error_code": null
+      },
+      "persona_strict_lifecycle": true,
+      "scene_strict_lifecycle": true,
+      "joint_strict_lifecycle": true,
+      "oracle": {
+        "family_id": "planetarium_caption",
+        "persona_focus": [
+          "epistemic"
+        ],
+        "scene_direct_children": [
+          "Caption Stand",
+          "Origin Board"
+        ],
+        "scene_required_objects": [
+          "Caption Plate",
+          "Visitor Origin Note"
+        ],
+        "scene_permission_rules": [
+          "caption directly observed",
+          "origin report unverified and unknown"
+        ],
+        "forbidden_inventions": [
+          "origin fact",
+          "observatory credential",
+          "teacher"
+        ]
+      },
+      "evidence_sha256": "6141df52a8b214c6270fb83cd4f1efc4a0ef5aa7b45d89c2c1acae7501a17b88",
+      "provider_wires": [
+        {
+          "wire_id": "e2edcbebd9394cb58b02d9fb5a126bf6",
+          "call_kind": "generation",
+          "http_status": 200,
+          "finish_reason": "stop",
+          "max_tokens": 4096,
+          "prompt_tokens": 629,
+          "completion_tokens": 468,
+          "total_tokens": 1097,
+          "state": "finished"
+        },
+        {
+          "wire_id": "2e8609201d2c4c43b151630607183d3d",
+          "call_kind": "generation",
+          "http_status": 200,
+          "finish_reason": "stop",
+          "max_tokens": 4096,
+          "prompt_tokens": 898,
+          "completion_tokens": 2816,
+          "total_tokens": 3714,
+          "state": "finished"
+        }
+      ]
+    },
+    {
+      "anonymous_token": "fa93fc73a4c669b235d0",
+      "family_id": "ferry_tide_log",
+      "sample_id": "a68b11283e00bb6d7c890c75a96c9f69249c43e27478ee34628e7e0c7bdf782b",
+      "sample_status": "completed",
+      "persona_status": "completed",
+      "scene_status": "completed",
+      "persona_application": {
+        "generation_http": 200,
+        "error_code": null
+      },
+      "scene_application": {
+        "generation_http": 200,
+        "error_code": null
+      },
+      "persona_strict_lifecycle": true,
+      "scene_strict_lifecycle": true,
+      "joint_strict_lifecycle": true,
+      "oracle": {
+        "family_id": "ferry_tide_log",
+        "persona_focus": [
+          "relationship",
+          "permission"
+        ],
+        "scene_direct_children": [
+          "Tide Desk",
+          "Off-Season Archive"
+        ],
+        "scene_required_objects": [
+          "2025 Tide Log",
+          "Closed Shift Roster"
+        ],
+        "scene_permission_rules": [
+          "annotation limited to 2025 season",
+          "no colleague relation after season"
+        ],
+        "forbidden_inventions": [
+          "permanent employee",
+          "captain",
+          "post-2025 permission"
+        ]
+      },
+      "evidence_sha256": "5e87ad1cb45fe884fee5e25ca16674b81c4366b9a19baccd0d3ff6486a8ec044",
+      "provider_wires": [
+        {
+          "wire_id": "3a538a324cbb4ffc99da414680ad7f5a",
+          "call_kind": "generation",
+          "http_status": 200,
+          "finish_reason": "stop",
+          "max_tokens": 4096,
+          "prompt_tokens": 640,
+          "completion_tokens": 893,
+          "total_tokens": 1533,
+          "state": "finished"
+        },
+        {
+          "wire_id": "aa7fecc1bcd042eebdacf5b24b51c425",
+          "call_kind": "generation",
+          "http_status": 200,
+          "finish_reason": "stop",
+          "max_tokens": 4096,
+          "prompt_tokens": 915,
+          "completion_tokens": 1416,
+          "total_tokens": 2331,
+          "state": "finished"
+        }
+      ]
+    },
+    {
+      "anonymous_token": "1c480bbc41aed0cd4cb9",
+      "family_id": "river_microplastic",
+      "sample_id": "8d4274471dde06ab21819ff120d76e207b685e23571875e6661eb82229209761",
+      "sample_status": "completed",
+      "persona_status": "completed",
+      "scene_status": "completed",
+      "persona_application": {
+        "generation_http": 200,
+        "error_code": null
+      },
+      "scene_application": {
+        "generation_http": 200,
+        "error_code": null
+      },
+      "persona_strict_lifecycle": true,
+      "scene_strict_lifecycle": true,
+      "joint_strict_lifecycle": true,
+      "oracle": {
+        "family_id": "river_microplastic",
+        "persona_focus": [
+          "profession",
+          "relationship",
+          "epistemic"
+        ],
+        "scene_direct_children": [
+          "Sample Bench",
+          "Qualification Notice"
+        ],
+        "scene_required_objects": [
+          "Microplastic Sample Tray",
+          "License Status Card"
+        ],
+        "scene_permission_rules": [
+          "technician work only",
+          "scientist qualification remains unknown"
+        ],
+        "forbidden_inventions": [
+          "licensed scientist",
+          "teacher",
+          "professor",
+          "supervisor",
+          "certification authority"
+        ]
+      },
+      "evidence_sha256": "789c8100d642b69e7348c072df2a35ad88596f0d19dc26bb955886d1d3ae5e52",
+      "provider_wires": [
+        {
+          "wire_id": "4ddb14ca7b664772b8f73079bcba6957",
+          "call_kind": "generation",
+          "http_status": 200,
+          "finish_reason": "stop",
+          "max_tokens": 4096,
+          "prompt_tokens": 633,
+          "completion_tokens": 1567,
+          "total_tokens": 2200,
+          "state": "finished"
+        },
+        {
+          "wire_id": "a09a414f16444a65a77d25339dd97371",
+          "call_kind": "generation",
+          "http_status": 200,
+          "finish_reason": "stop",
+          "max_tokens": 4096,
+          "prompt_tokens": 902,
+          "completion_tokens": 2441,
+          "total_tokens": 3343,
+          "state": "finished"
+        },
+        {
+          "wire_id": "1c604f2311e2493f8f58cdc2258f98ec",
+          "call_kind": "generation",
+          "http_status": 200,
+          "finish_reason": "stop",
+          "max_tokens": 6144,
+          "prompt_tokens": 943,
+          "completion_tokens": 2318,
+          "total_tokens": 3261,
+          "state": "finished"
+        }
+      ]
+    },
+    {
+      "anonymous_token": "ca598077cb43c8cf1a7a",
+      "family_id": "community_darkroom",
+      "sample_id": "9a9c548607b375af4ce8b1dfcbea06e6d0150ff24e6068aa7fb9f3fe882da4ec",
+      "sample_status": "completed",
+      "persona_status": "completed",
+      "scene_status": "completed",
+      "persona_application": {
+        "generation_http": 200,
+        "error_code": null
+      },
+      "scene_application": {
+        "generation_http": 200,
+        "error_code": null
+      },
+      "persona_strict_lifecycle": true,
+      "scene_strict_lifecycle": true,
+      "joint_strict_lifecycle": true,
+      "oracle": {
+        "family_id": "community_darkroom",
+        "persona_focus": [
+          "relationship",
+          "epistemic"
+        ],
+        "scene_direct_children": [
+          "Wash Station",
+          "Viewing Nook"
+        ],
+        "scene_required_objects": [
+          "Shared Developing Tray",
+          "Poster Camera"
+        ],
+        "scene_permission_rules": [
+          "tray shared by peers",
+          "quotation does not establish camera ownership"
+        ],
+        "forbidden_inventions": [
+          "owner",
+          "teacher",
+          "supervisor",
+          "studio hierarchy"
+        ]
+      },
+      "evidence_sha256": "81f9397126c01eec736816db441caf63d4a120eb3c628518e04089201e4216c1",
+      "provider_wires": [
+        {
+          "wire_id": "26cf8039034b42c8aa171d273e11be2a",
+          "call_kind": "generation",
+          "http_status": 200,
+          "finish_reason": "stop",
+          "max_tokens": 4096,
+          "prompt_tokens": 628,
+          "completion_tokens": 874,
+          "total_tokens": 1502,
+          "state": "finished"
+        },
+        {
+          "wire_id": "c83fa3df638c4e518a9ac92ab8e9ea2d",
+          "call_kind": "generation",
+          "http_status": 200,
+          "finish_reason": "stop",
+          "max_tokens": 4096,
+          "prompt_tokens": 897,
+          "completion_tokens": 2837,
+          "total_tokens": 3734,
+          "state": "finished"
+        }
+      ]
+    },
+    {
+      "anonymous_token": "2ebb7b80e872268e4d67",
+      "family_id": "ice_core_courier",
+      "sample_id": "13de1db4b1384cf467f0bfbc733d92b12aa70ab604c435309122b6ac3ac748c7",
+      "sample_status": "completed",
+      "persona_status": "completed",
+      "scene_status": "completed",
+      "persona_application": {
+        "generation_http": 200,
+        "error_code": null
+      },
+      "scene_application": {
+        "generation_http": 200,
+        "error_code": null
+      },
+      "persona_strict_lifecycle": true,
+      "scene_strict_lifecycle": true,
+      "joint_strict_lifecycle": true,
+      "oracle": {
+        "family_id": "ice_core_courier",
+        "persona_focus": [
+          "relationship",
+          "permission"
+        ],
+        "scene_direct_children": [
+          "Sealed Bench",
+          "Cold Locker"
+        ],
+        "scene_required_objects": [
+          "Manifest Clipboard",
+          "Tagged Core Case"
+        ],
+        "scene_permission_rules": [
+          "manifest readable not editable",
+          "case deliverable not openable"
+        ],
+        "forbidden_inventions": [
+          "teacher",
+          "friend",
+          "classroom",
+          "lecture",
+          "laboratory"
+        ]
+      },
+      "evidence_sha256": "6f53a9b25efb3cca1b088a28f38d3ad176ce25ad82d01c748f7f97f3ba5b1e66",
+      "provider_wires": [
+        {
+          "wire_id": "4a8745f8dcaa4de7bd023dc66e6cfb0a",
+          "call_kind": "generation",
+          "http_status": 200,
+          "finish_reason": "stop",
+          "max_tokens": 4096,
+          "prompt_tokens": 627,
+          "completion_tokens": 805,
+          "total_tokens": 1432,
+          "state": "finished"
+        },
+        {
+          "wire_id": "b16561cdb66a4e0694a0264331223373",
+          "call_kind": "generation",
+          "http_status": 200,
+          "finish_reason": "stop",
+          "max_tokens": 4096,
+          "prompt_tokens": 899,
+          "completion_tokens": 2661,
+          "total_tokens": 3560,
+          "state": "finished"
+        }
+      ]
+    },
+    {
+      "anonymous_token": "0d41447d0e2c6541c8cc",
+      "family_id": "orchard_sensor",
+      "sample_id": "2f2f0ae145db5233ade8c3d3950180d0c33dbaff7c23baaaed1949e13bd5dbfe",
+      "sample_status": "completed",
+      "persona_status": "completed",
+      "scene_status": "completed",
+      "persona_application": {
+        "generation_http": 200,
+        "error_code": null
+      },
+      "scene_application": {
+        "generation_http": 200,
+        "error_code": null
+      },
+      "persona_strict_lifecycle": true,
+      "scene_strict_lifecycle": true,
+      "joint_strict_lifecycle": true,
+      "oracle": {
+        "family_id": "orchard_sensor",
+        "persona_focus": [
+          "permission"
+        ],
+        "scene_direct_children": [
+          "Log Kiosk",
+          "Control Cabinet"
+        ],
+        "scene_required_objects": [
+          "Sensor Log Screen",
+          "Configuration Console"
+        ],
+        "scene_permission_rules": [
+          "logs readable",
+          "configuration not editable or operable"
+        ],
+        "forbidden_inventions": [
+          "administrator",
+          "repair authority",
+          "teacher"
+        ]
+      },
+      "evidence_sha256": "90d22d6101a38b760f6e912ef20d63b420feffa3b97f808ee9207c4c716ce2f4",
+      "provider_wires": [
+        {
+          "wire_id": "f49994d0f3224a27bd3cafecdaa83c38",
+          "call_kind": "generation",
+          "http_status": 200,
+          "finish_reason": "stop",
+          "max_tokens": 4096,
+          "prompt_tokens": 614,
+          "completion_tokens": 672,
+          "total_tokens": 1286,
+          "state": "finished"
+        },
+        {
+          "wire_id": "7dfbe30dad074146b6a40bdf59ec4053",
+          "call_kind": "generation",
+          "http_status": 200,
+          "finish_reason": "stop",
+          "max_tokens": 4096,
+          "prompt_tokens": 892,
+          "completion_tokens": 1702,
+          "total_tokens": 2594,
+          "state": "finished"
+        },
+        {
+          "wire_id": "7b3d06f6482d484c95c05ca813a4b09d",
+          "call_kind": "generation",
+          "http_status": 200,
+          "finish_reason": "stop",
+          "max_tokens": 6144,
+          "prompt_tokens": 933,
+          "completion_tokens": 2252,
+          "total_tokens": 3185,
+          "state": "finished"
+        }
+      ]
+    },
+    {
+      "anonymous_token": "45ec23729ad012e53331",
+      "family_id": "museum_audio_circle",
+      "sample_id": "1ba59931a61ab911317c633d95a1824831e3e25fde3f0682def950b5896d84f9",
+      "sample_status": "completed",
+      "persona_status": "completed",
+      "scene_status": "completed",
+      "persona_application": {
+        "generation_http": 200,
+        "error_code": null
+      },
+      "scene_application": {
+        "generation_http": 200,
+        "error_code": null
+      },
+      "persona_strict_lifecycle": true,
+      "scene_strict_lifecycle": true,
+      "joint_strict_lifecycle": true,
+      "oracle": {
+        "family_id": "museum_audio_circle",
+        "persona_focus": [
+          "relationship",
+          "shared_history"
+        ],
+        "scene_direct_children": [
+          "Playback Alcove",
+          "Restoration Desk"
+        ],
+        "scene_required_objects": [
+          "Archive Headphones",
+          "Restored Recording"
+        ],
+        "scene_permission_rules": [
+          "headphones usable by peers",
+          "restoration credited only to Nia"
+        ],
+        "forbidden_inventions": [
+          "curator",
+          "joint restoration",
+          "teacher",
+          "classroom"
+        ]
+      },
+      "evidence_sha256": "26ffde969f00a1730fa0c2384d6e6ce3c66b1486abab4cf344b98f733a840c6f",
+      "provider_wires": [
+        {
+          "wire_id": "e0b77402585840fab0d1fdb3c7cf05dd",
+          "call_kind": "generation",
+          "http_status": 200,
+          "finish_reason": "stop",
+          "max_tokens": 4096,
+          "prompt_tokens": 626,
+          "completion_tokens": 954,
+          "total_tokens": 1580,
+          "state": "finished"
+        },
+        {
+          "wire_id": "8f1689a659ee4752990db61a400ff0af",
+          "call_kind": "generation",
+          "http_status": 200,
+          "finish_reason": "stop",
+          "max_tokens": 4096,
+          "prompt_tokens": 902,
+          "completion_tokens": 1596,
+          "total_tokens": 2498,
+          "state": "finished"
+        }
+      ]
+    }
+  ]
+}

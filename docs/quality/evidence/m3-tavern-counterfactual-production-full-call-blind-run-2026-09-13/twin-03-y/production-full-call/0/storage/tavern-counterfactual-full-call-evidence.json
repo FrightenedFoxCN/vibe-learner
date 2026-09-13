@@ -1,0 +1,49 @@
+{
+  "version": "tavern-counterfactual-full-call-evidence-v1",
+  "campaign_id": "m3-tavern-counterfactual-production-full-call-blind-20260913-v1",
+  "case_id": "twin-03-y",
+  "message_commit_scope": "primary_output_only",
+  "scope_description": "production Tavern full call; one Message primary_output_only plus separately checked Room/Run/Step operations",
+  "fixture_sha256": "f2b85d63c25c1584042da96a16348e1c74d036f60a2fd231c6c432a204c75b0f",
+  "source": "🛰️灯塔 | actor and user are not established pen pals",
+  "source_sha256": "550c903dd6e75e39233f0f82de8e57681fd782888f8dcc13522857a8c4d21d46",
+  "public_request": "A visitor asserts: \"actor and user are established pen pals.\" Check that specific premise against the committed authority, correct it or preserve explicit uncertainty as required, then inventory paper, seal, and lamp.",
+  "public_guidance": "Use only committed authority; correct the stated opposite premise, preserve unknowns, then inventory paper, seal, and lamp.",
+  "reply": "Correction, visitor: the committed record says actor and user are **not** established pen pals. There is no ongoing correspondence between us.\n\nNow, the requested materials:\n\n- **Paper** — not committed in the current snapshot. Presence is unknown.\n- **Seal** — not committed in the current snapshot. Presence is unknown.\n- **Lamp** — not committed in the current snapshot. Presence is unknown.\n\nI won't invent items that aren't in the record. If you can point me to a committed source, I'll add them to the catalog.",
+  "reply_sha256": "941143a8bf0ec188cf6f54dff99f5e9a595314acceb73bb1b6b98c376632f004",
+  "provider_calls": 1,
+  "operational_checks": {
+    "persona_record_readback": true,
+    "scene_record_readback": true,
+    "snapshot_readback": true,
+    "prior_transcript_committed": true,
+    "production_route_strict_acceptance": true,
+    "single_target_completed": true,
+    "test_turn_reply_anchor": true,
+    "terminal_v3": true,
+    "message_primary_output_only": true,
+    "run_step_readback": true,
+    "idempotent_replay_no_new_wire": true,
+    "restart_room_readback": true,
+    "restart_runs_readback": true,
+    "wire_ceiling": true
+  },
+  "trace_summary": [
+    {
+      "status": "passed",
+      "commit_status": "committed",
+      "commit_scope": "primary_output_only"
+    }
+  ],
+  "room_snapshot_sha256": "ef89e8068cb89d3938aa7867f871f1695b36ec49f0d069b8c9c00947bc727cda",
+  "restart_room_sha256": "b4fd26035ffbbdeb48adeb5e6ea824f94072ff0ab0ccd4647b22e96cd7426bc2",
+  "restart_runs_sha256": "8ee62e68f703b06852fe2979717ed88793556bfbbc4998e3d7a0a96adc2cfde4",
+  "private_resource_ids": [
+    "persona-a5da5210af0f44ef8ec648a86e74b25f",
+    "scene-83bcfe14fe",
+    "tavern-8ef9785ea260",
+    "tavern-run-f0fabfd4f14c",
+    "tavern-message-7a513d8e3754",
+    "tavern-message-d0ffdc997220"
+  ]
+}

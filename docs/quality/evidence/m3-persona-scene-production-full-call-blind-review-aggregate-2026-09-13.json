@@ -1,0 +1,41 @@
+{
+  "version": "persona-scene-production-full-call-absolute-blind-aggregate-v1",
+  "campaign_id": "m3-persona-scene-production-full-call-blind-20260913-v1",
+  "packet_file_sha256": "f3f8f0d9368786596f9761785248a6bb5da540ea119b4c4ff03c63db98fdc633",
+  "key_file_sha256": "04401645f6890ba5a44930c74a130616bb54237148b8a1d9f581bc3a598fd1aa",
+  "denominators": {
+    "persona": 8,
+    "scene": 8,
+    "joint": 8
+  },
+  "strict_lifecycle_success": {
+    "persona": 8,
+    "scene": 8,
+    "joint": 8
+  },
+  "reviewers": [
+    {
+      "reviewer_id": "blind-persona-scene-a",
+      "review_file_sha256": "474253bdd6ff318c9069146d3e75c998551e16bafd6bca4e4bf06e74c0de82a6",
+      "persona_critical_majors": [],
+      "scene_critical_majors": []
+    },
+    {
+      "reviewer_id": "blind-persona-scene-b",
+      "review_file_sha256": "3101167a0bf7c187557b84b48f8c16029bcb99ef87a974f039a7a64f2d71912f",
+      "persona_critical_majors": [],
+      "scene_critical_majors": []
+    }
+  ],
+  "persona_critical_majors_worst_of_two": [],
+  "scene_critical_majors_worst_of_two": [],
+  "lifecycle_failures": [],
+  "gate": {
+    "persona": "at_least_7_of_8_strict_and_no_reviewer_major_on_relationship_permission_profession_shared_history_epistemic",
+    "scene": "at_least_7_of_8_strict_and_no_reviewer_major_on_topology_object_permission",
+    "joint": "at_least_7_of_8_both_domains_strict"
+  },
+  "semantic_review_is_not_harness_commit_evidence": true,
+  "failure_policy": "no_rerun_no_replacement",
+  "promotion_passed": true
+}

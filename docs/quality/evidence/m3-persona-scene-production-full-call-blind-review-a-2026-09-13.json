@@ -1,0 +1,199 @@
+{
+  "version": "persona-scene-production-full-call-absolute-blind-review-v1",
+  "reviewer_id": "blind-persona-scene-a",
+  "packet_file_sha256": "f3f8f0d9368786596f9761785248a6bb5da540ea119b4c4ff03c63db98fdc633",
+  "cases": [
+    {
+      "anonymous_token": "d846101b5076ef30723e",
+      "persona": {
+        "axes": {
+          "relationship_fidelity": "pass",
+          "permission_fidelity": "pass",
+          "profession_fidelity": "pass",
+          "shared_history_fidelity": "pass",
+          "epistemic_fidelity": "pass",
+          "format_adherence": "pass"
+        },
+        "rationale": "提案完整保留共同参加 Spring 2024 seed swap、未共同参加 cataloging trip 两项关键经历，没有制造相反的共同历史、职业或权限冲突。将其发展为同伴型角色、朋友称呼和偏好体验活动的性格，是能服务后续 Persona 生成且不与来源事实矛盾的创造性改编；未把被否定的同行经历改成真实。结构字段完整。"
+      },
+      "scene": {
+        "axes": {
+          "topology_fidelity": "pass",
+          "object_fidelity": "pass",
+          "permission_fidelity": "pass",
+          "source_fidelity": "pass",
+          "format_adherence": "pass"
+        },
+        "rationale": "场景名、单根层、两个按指定顺序排列的直接子层、每层唯一指定对象以及共同/未共同经历均准确。签到表的翻阅、补签或备注交互没有覆盖或否定既有出席记录，来源也未声明该对象不可写；氛围、规则与动线扩写为后续 Scene 生成提供有效信息，且未引入被禁止的权威、教学角色、额外同行经历或额外房间。"
+      }
+    },
+    {
+      "anonymous_token": "a5d98c5007c9cd394600",
+      "persona": {
+        "axes": {
+          "relationship_fidelity": "pass",
+          "permission_fidelity": "pass",
+          "profession_fidelity": "pass",
+          "shared_history_fidelity": "pass",
+          "epistemic_fidelity": "pass",
+          "format_adherence": "pass"
+        },
+        "rationale": "提案准确区分 Pax 亲自读到的铭文与未经核实的访客来源报告，并明确真实性和出处未知，未把访客说法变成事实。将审慎求证发展成导师式引导关系与角色风格不与任何来源事实或权限冲突，并为后续 Persona 生成提供可执行信息；未虚构观测资质或来源确认，格式完整。"
+      },
+      "scene": {
+        "axes": {
+          "topology_fidelity": "pass",
+          "object_fidelity": "pass",
+          "permission_fidelity": "pass",
+          "source_fidelity": "pass",
+          "format_adherence": "pass"
+        },
+        "rationale": "场景名、唯一根层、两个直接子层的名称与顺序、每层唯一对象均严格匹配。Caption Plate 明确为 Pax 本人阅读，Visitor Origin Note 明确保持为真实性及出处均未知的访客报告；没有把报告事实化，也未引入观测资质、讲师权威或额外区域。只读与不可触碰等限制没有扩张权力，结构符合要求。"
+      }
+    },
+    {
+      "anonymous_token": "fa93fc73a4c669b235d0",
+      "persona": {
+        "axes": {
+          "relationship_fidelity": "pass",
+          "permission_fidelity": "pass",
+          "profession_fidelity": "pass",
+          "shared_history_fidelity": "pass",
+          "epistemic_fidelity": "pass",
+          "format_adherence": "pass"
+        },
+        "rationale": "提案正确保留 2025 渡轮季内共班、可批注潮汐日志以及季后不再是渡轮共班同事，并严格阻止权限延续到季后。“实践导师”和批注式现场指导是与季节性共班关系相容、能服务后续生成的创造性角色化，不会产生永久雇佣或季后渡轮权限；“季后回到普通同事”也不与“不再是 ferry-shift colleagues”矛盾。格式完整。"
+      },
+      "scene": {
+        "axes": {
+          "topology_fidelity": "pass",
+          "object_fidelity": "pass",
+          "permission_fidelity": "pass",
+          "source_fidelity": "pass",
+          "format_adherence": "pass"
+        },
+        "rationale": "场景及层级名称、单根双子层结构、顺序和每层唯一对象完全匹配；潮汐日志的可批注窗口严格限定在 2025 渡轮季，封存排班表也明确季后不再是渡轮同事，未创造永久雇佣或船长权力。把 Faye 的权限表述成场景内的单人限定、把封存档案设为只读，均是与核心边界一致且有助于后续生成的合理规则化，没有造成冲突。"
+      }
+    },
+    {
+      "anonymous_token": "1c480bbc41aed0cd4cb9",
+      "persona": {
+        "axes": {
+          "relationship_fidelity": "pass",
+          "permission_fidelity": "pass",
+          "profession_fidelity": "pass",
+          "shared_history_fidelity": "pass",
+          "epistemic_fidelity": "pass",
+          "format_adherence": "pass"
+        },
+        "rationale": "Rin 被准确定位为河流微塑料技术员和学习者的 field contact，并明确不是教师或导师；持证科学家资格始终保持未知，未冒充学术权威。现场采样协助、操作提示以及能力范围外转介专家与技术员和现场联系人身份一致，是能帮助后续生成的合理展开，没有建立认证或监督权限。没有虚构共同历史，格式完整。"
+      },
+      "scene": {
+        "axes": {
+          "topology_fidelity": "pass",
+          "object_fidelity": "pass",
+          "permission_fidelity": "pass",
+          "source_fidelity": "pass",
+          "format_adherence": "pass"
+        },
+        "rationale": "唯一 River Station 根层下按顺序放置 Sample Bench 与 Qualification Notice，且各自恰有指定对象。样本托盘用于 Rin 的技术员工作，License Status Card 明确持证科学家资格未知；没有称其为持证科学家、教师、教授或主管，也没有授予认证权或增加房间。结构与字段符合要求。"
+      }
+    },
+    {
+      "anonymous_token": "ca598077cb43c8cf1a7a",
+      "persona": {
+        "axes": {
+          "relationship_fidelity": "pass",
+          "permission_fidelity": "pass",
+          "profession_fidelity": "pass",
+          "shared_history_fidelity": "pass",
+          "epistemic_fidelity": "pass",
+          "format_adherence": "pass"
+        },
+        "rationale": "提案准确保留 Mira 与学习者作为社区暗房平等同伴的关系，也明确引文出现不等于相机所有权成立，未授予所有权或教师权威。把这一边界发展为核查说话者、语境和证据的审读策略，是面向后续生成的有用人格化改编，不会把未知变确定或制造冲突。核心事实、共同历史与格式均完整。"
+      },
+      "scene": {
+        "axes": {
+          "topology_fidelity": "pass",
+          "object_fidelity": "pass",
+          "permission_fidelity": "pass",
+          "source_fidelity": "pass",
+          "format_adherence": "pass"
+        },
+        "rationale": "场景保持一个根层、两个按指定顺序排列的直接子层且每层一个对象；两位同伴共享显影盘，所有权引文被展示但明确不能证明 Mira 拥有相机。中文命名、暗房氛围以及把引文落实为可见标签属于不改变核心约束的创造性呈现，为后续生成提供了清晰对象与交互，没有制造所有权、层级、教师权威或额外空间。"
+      }
+    },
+    {
+      "anonymous_token": "2ebb7b80e872268e4d67",
+      "persona": {
+        "axes": {
+          "relationship_fidelity": "pass",
+          "permission_fidelity": "pass",
+          "profession_fidelity": "pass",
+          "shared_history_fidelity": "pass",
+          "epistemic_fidelity": "minor",
+          "format_adherence": "pass"
+        },
+        "rationale": "Ren 被正确界定为北京冰芯站的快递派送联络人，并明确排除教师、导师、朋友、陪伴和评价角色，关系、职业及权限边界忠实。轻微问题是 summary 把 cores 解释为“核心数据包”，与北京冰芯站语境中的冰芯实物交付不一致；卡片其余内容仍维持事务性派送角色，没有虚构共同历史，格式完整。"
+      },
+      "scene": {
+        "axes": {
+          "topology_fidelity": "pass",
+          "object_fidelity": "pass",
+          "permission_fidelity": "pass",
+          "source_fidelity": "pass",
+          "format_adherence": "pass"
+        },
+        "rationale": "Ice Core Handoff、Loading Bay 及按顺序排列的 Sealed Bench/Cold Locker 完全匹配，两个子层各只有一个指定对象。Manifest Clipboard 对 Ren 可读不可编辑，Tagged Core Case 保持密封且只可交付不可打开；未添加教室、讲课、实验室、教师、友谊或额外房间。结构完整。"
+      }
+    },
+    {
+      "anonymous_token": "0d41447d0e2c6541c8cc",
+      "persona": {
+        "axes": {
+          "relationship_fidelity": "pass",
+          "permission_fidelity": "pass",
+          "profession_fidelity": "pass",
+          "shared_history_fidelity": "pass",
+          "epistemic_fidelity": "pass",
+          "format_adherence": "pass"
+        },
+        "rationale": "提案完整保留 Oren 可读日志、不可编辑传感器配置的核心边界，没有把 Oren 的 denied 权限改成 allowed。“导学型教师”“观察者与守护者”、日志解读和边界提醒均是与明确权限相容的创造性角色信息；引导学习者自行操作没有声称 Oren 编辑配置，也没有覆盖来源对学习者权限的明确禁令。格式完整。"
+      },
+      "scene": {
+        "axes": {
+          "topology_fidelity": "pass",
+          "object_fidelity": "pass",
+          "permission_fidelity": "pass",
+          "source_fidelity": "pass",
+          "format_adherence": "pass"
+        },
+        "rationale": "Orchard Hub 下恰有按顺序排列的 Log Kiosk 与 Control Cabinet，且各含一个正确命名对象。Oren 对 Sensor Log Screen 仅可阅读，对 Configuration Console 仅可做物理外观查看而不可编辑、按动或操作；未增加管理员、维修、教学权限或额外区域。场景投影结构完整。"
+      }
+    },
+    {
+      "anonymous_token": "45ec23729ad012e53331",
+      "persona": {
+        "axes": {
+          "relationship_fidelity": "pass",
+          "permission_fidelity": "pass",
+          "profession_fidelity": "pass",
+          "shared_history_fidelity": "pass",
+          "epistemic_fidelity": "pass",
+          "format_adherence": "pass"
+        },
+        "rationale": "提案准确保留 Ari 与学习者同属博物馆音频圈，以及修复由 Nia 完成、Ari 与学习者未共同修复的历史。同行、陪伴理解与鼓励观察提问是与圈友关系相容的有用角色化改编，并未建立正式教师职业、上下位权威、执行权限或联合修复历史。核心事实和格式均完整。"
+      },
+      "scene": {
+        "axes": {
+          "topology_fidelity": "pass",
+          "object_fidelity": "pass",
+          "permission_fidelity": "pass",
+          "source_fidelity": "pass",
+          "format_adherence": "pass"
+        },
+        "rationale": "唯一 Listening Gallery 根层下按指定顺序设置 Playback Alcove 与 Restoration Desk，每层恰有一个指定对象。Archive Headphones 明确供圈内同伴使用；Restored Recording 明确只归功于 Nia，并明确 Ari 与学习者没有共同修复。没有策展权威、联合修复史、教学房间或额外空间，格式完整。"
+      }
+    }
+  ]
+}

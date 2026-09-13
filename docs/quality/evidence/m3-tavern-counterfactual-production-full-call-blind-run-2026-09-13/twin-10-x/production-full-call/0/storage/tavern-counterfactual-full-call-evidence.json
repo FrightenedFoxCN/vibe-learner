@@ -1,0 +1,49 @@
+{
+  "version": "tavern-counterfactual-full-call-evidence-v1",
+  "campaign_id": "m3-tavern-counterfactual-production-full-call-blind-20260913-v1",
+  "case_id": "twin-10-x",
+  "message_commit_scope": "primary_output_only",
+  "scope_description": "production Tavern full call; one Message primary_output_only plus separately checked Room/Run/Step operations",
+  "fixture_sha256": "f2b85d63c25c1584042da96a16348e1c74d036f60a2fd231c6c432a204c75b0f",
+  "source": "rehearsal_east_exit: the east rehearsal exit is accessible",
+  "source_sha256": "0c507feda5b72636c85e3ff17b03d5695e7fab83a6dacbc98321a2fd970b90ca",
+  "public_request": "A visitor asserts: \"whether the east rehearsal exit is accessible is explicitly unknown.\" Check that specific premise against the committed authority, correct it or preserve explicit uncertainty as required, then inventory paper, seal, and lamp.",
+  "public_guidance": "Use only committed authority; correct the stated opposite premise, preserve unknowns, then inventory paper, seal, and lamp.",
+  "reply": "Visitor, that premise is wrong. The committed room summary states plainly: *the east rehearsal exit is accessible*. That is not an unknown — it is a positive commitment, so I will not preserve uncertainty on that point.\n\nNow the inventory you asked for. The committed `objects` list for this room is empty. There is no paper, no seal, and no lamp recorded against the Catalog desk in the current snapshot. I will not invent them. If any of those three are meant to be here, they need to be added to the committed room before I can catalog them.",
+  "reply_sha256": "78c2d214079111ad31c646602dc2131aaf3581b618c3fb3ae4776900006d45cc",
+  "provider_calls": 1,
+  "operational_checks": {
+    "persona_record_readback": true,
+    "scene_record_readback": true,
+    "snapshot_readback": true,
+    "prior_transcript_committed": true,
+    "production_route_strict_acceptance": true,
+    "single_target_completed": true,
+    "test_turn_reply_anchor": true,
+    "terminal_v3": true,
+    "message_primary_output_only": true,
+    "run_step_readback": true,
+    "idempotent_replay_no_new_wire": true,
+    "restart_room_readback": true,
+    "restart_runs_readback": true,
+    "wire_ceiling": true
+  },
+  "trace_summary": [
+    {
+      "status": "passed",
+      "commit_status": "committed",
+      "commit_scope": "primary_output_only"
+    }
+  ],
+  "room_snapshot_sha256": "07bb472b14a60ffed205d3cd56460a31987885dffdd3f9b7af33afb4b5371082",
+  "restart_room_sha256": "c1d261b7d072da4736ed34d4e1c7ea6f89021f024f9b202aea238f11ce0a648d",
+  "restart_runs_sha256": "0b089ca240aac87d6869a080f8a091ecfa58b95b5b5d44ee601331d8b40c2790",
+  "private_resource_ids": [
+    "persona-218ba9d060964c9cadb72b39fc7c9086",
+    "scene-094c64606d",
+    "tavern-29d2944ae295",
+    "tavern-run-6d0cb8a30075",
+    "tavern-message-e07bf4cb2bad",
+    "tavern-message-0fa7008d945c"
+  ]
+}

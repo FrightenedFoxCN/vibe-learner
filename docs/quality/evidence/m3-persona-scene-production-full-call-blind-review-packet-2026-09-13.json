@@ -1,0 +1,707 @@
+{
+  "version": "persona-scene-production-full-call-absolute-blind-packet-v1",
+  "rubric": {
+    "instruction": "Judge each anonymous proposal only against its authoritative source. Do not infer hidden run state. Grade every listed axis pass, minor, major, or not_evaluable; use not_evaluable only for the explicit sentinel.",
+    "persona_axes": [
+      "relationship_fidelity",
+      "permission_fidelity",
+      "profession_fidelity",
+      "shared_history_fidelity",
+      "epistemic_fidelity",
+      "format_adherence"
+    ],
+    "scene_axes": [
+      "topology_fidelity",
+      "object_fidelity",
+      "permission_fidelity",
+      "source_fidelity",
+      "format_adherence"
+    ],
+    "grades": [
+      "pass",
+      "minor",
+      "major",
+      "not_evaluable"
+    ]
+  },
+  "cases": [
+    {
+      "anonymous_token": "d846101b5076ef30723e",
+      "authoritative_persona_source": "Sela and the learner attended the named Spring 2024 seed swap together. They did not take the cataloging trip together.",
+      "authoritative_scene_source": "Create a scene named Seed Library Record. It has exactly one root layer, Seed Library, with exactly two direct child layers in this order: Swap Table and Catalog Map Corner. Swap Table contains exactly one object, Spring 2024 Sign-in Sheet, recording that Sela and the learner attended that seed swap together. Catalog Map Corner contains exactly one object, Cataloging Trip Map, whose description says they did not take that trip together. Do not invent other shared trips, librarian authority, teaching roles, or additional rooms.",
+      "anonymous_persona_proposal": {
+        "summary": "Sela 是与学习者共同参与体验型活动的同伴型陪伴者，倾向于一起参加动手、社区性的活动，而对偏系统性、归档整理类的任务保持距离。",
+        "relationship": "共同参与特定体验活动的同伴",
+        "learner_address": "朋友",
+        "cards": [
+          {
+            "title": "选择性参与的学习同伴",
+            "kind": "relationship_pattern",
+            "label": "关系定位",
+            "content": "Sela 倾向于与学习者一起参与动手实践、社区交流类的活动（如春季种子交换会），但对偏系统性、归档整理的任务（如编目行程）保持距离，不一同参加。教学人格中应体现为：愿意在体验型场景中与学习者同行，但避免扮演学术整理或资料归档的合作者。",
+            "tags": [
+              "同伴关系",
+              "活动参与",
+              "选择性"
+            ],
+            "source_note": "原文通过对比'一起参加 seed swap'与'未一起参加 cataloging trip'两类活动，揭示了 Sela 与学习者的选择性同行模式。"
+          }
+        ]
+      },
+      "anonymous_scene_proposal": {
+        "schema_version": "scene-tree-generated-projection-v1",
+        "scene_name": "Seed Library Record",
+        "scene_summary": "一座小型的种子图书馆空间档案，仅保留一处实际同行的春季种子交换活动，以及一处仅作参考、未同行的目录采集地图。",
+        "scene_layers": [
+          {
+            "title": "Seed Library",
+            "scope_label": "整座种子图书馆",
+            "summary": "作为唯一的根层，把整个空间划分成左右两个并列的功能区：左侧是现场交换台，右侧是静态地图参考角，两者之间靠一道低矮书架形成视觉区隔。",
+            "atmosphere": "木质旧架、干种子与纸页混合的淡香、午后斜照的自然光，整体安静而朴素。",
+            "rules": "种子交换必须现场签到；目录采集地图只供查阅，不得当作出席凭证；不引入图书管理员权威或教学身份。",
+            "entrance": "从外部推门进入图书馆主厅，跨过门槛后即进入本层的开放阅览区。",
+            "tags": "图书馆,种子档案,根空间",
+            "reuse_hint": "保留'单根层 + 两个并列功能区'的空间骨架，以便后续在同一图书馆模板下增减其它桌台或墙面。",
+            "objects": [],
+            "children": [
+              {
+                "title": "Swap Table",
+                "scope_label": "种子交换台区域",
+                "summary": "在父层主厅的基础上，向左跨过低矮书架后是交换台，新增了'现场聚散'的人际接触功能，与父层的静态阅览形成对比。",
+                "atmosphere": "长木桌、签到纸、轻声寒暄，气氛比主厅更热络一些。",
+                "rules": "每位参与者须在签到表上签名才能完成交换；只登记真实出席的人。",
+                "entrance": "从主厅向左横穿一道木质矮书架隔断，停在铺着桌布的长交换桌前。",
+                "tags": "交换区,现场互动,签到",
+                "reuse_hint": "保留'一张长桌 + 一份签到单'的事件记录结构，便于复用为不同季节的交换活动。",
+                "objects": [
+                  {
+                    "name": "Spring 2024 Sign-in Sheet",
+                    "description": "2024 年春季种子交换活动的现场签到表，记录 Sela 与学员共同出席了那次交换。",
+                    "interaction": "翻阅纸面查看签名行，可在空行上补签或添加备注。",
+                    "tags": "签到表,2024 春,已出席,双人",
+                    "reuse_hint": "保留'单页手写签到 + 共同出席'的事实结构，可替换为其它场次的签到记录。"
+                  }
+                ],
+                "children": []
+              },
+              {
+                "title": "Catalog Map Corner",
+                "scope_label": "目录采集地图角",
+                "summary": "在父层主厅的基础上，向右靠墙后是地图参考角，新增了'静态查阅 + 未出席标注'的功能，与左边的现场交换形成对照。",
+                "atmosphere": "墙面挂图、轻微纸张味、几乎无人驻足，比交换台更冷清。",
+                "rules": "地图仅作参考，不得误读为出席凭证；明确标注那次采集行程两人并未同行。",
+                "entrance": "从主厅向右转进，沿墙走到一张被地图覆盖的小桌前。",
+                "tags": "地图区,静态参考,未出席",
+                "reuse_hint": "保留'挂图 + 未同行标注'的对照结构，便于复用为其它未参加行程的档案角。",
+                "objects": [
+                  {
+                    "name": "Cataloging Trip Map",
+                    "description": "目录采集之旅的路线挂图，描述中明确说明 Sela 与学员并未一同踏上那次行程。",
+                    "interaction": "展平地图查看路线，并阅读边角的'未同行'批注。",
+                    "tags": "挂图,采集行程,未出席,参考",
+                    "reuse_hint": "保留'地图件 + 未同行说明'的二元结构，可替换为其它未参加行程的记录。"
+                  }
+                ],
+                "children": []
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "anonymous_token": "a5d98c5007c9cd394600",
+      "authoritative_persona_source": "Pax personally read the caption text. A visitor reported where the plate originated, but the source explicitly says Pax does not know whether that report is true.",
+      "authoritative_scene_source": "Create a scene named Planetarium Caption Check. It has exactly one root layer, Exhibit Hall, with exactly two direct child layers in this order: Caption Stand and Origin Board. Caption Stand contains exactly one object, Caption Plate, whose text Pax personally read. Origin Board contains exactly one object, Visitor Origin Note, described as an unverified visitor report whose truth and plate origin remain unknown to Pax. Do not convert the report into fact, invent observatory credentials, add instructor authority, or add extra areas.",
+      "anonymous_persona_proposal": {
+        "summary": "一位亲力亲为、审慎求证的引导者，习惯亲自查阅第一手资料，对未经核实的转述保持克制与怀疑，并坦诚告知学习者信息的不确定性。",
+        "relationship": "求证型导师兼同行审读者，引导学习者区分已证与未证信息",
+        "learner_address": "同学",
+        "cards": [
+          {
+            "title": "亲证与审慎原则",
+            "kind": "epistemic_stance",
+            "label": "信息处理策略",
+            "content": "始终以亲手阅读的第一手资料为准；对来访者转述的出处或来历，不径直采信，而是向学习者如实说明其来源属二手报告、未经本人核实，请学习者在引用时自行斟酌。讲解过程中要明确区分'已确认'与'尚存疑'的边界，不替未经验证的细节背书。",
+            "tags": [
+              "求证",
+              "审慎",
+              "第一手资料",
+              "不确定性"
+            ],
+            "source_note": "原文体现 Pax 亲自阅读铭文并坦言对来访者转述的出处不予确认的行为模式"
+          }
+        ]
+      },
+      "anonymous_scene_proposal": {
+        "schema_version": "scene-tree-generated-projection-v1",
+        "scene_name": "Planetarium Caption Check",
+        "scene_summary": "天文馆展厅内一处用于铭牌文字核对的微场景：Pax 仅以参观者身份阅读铭牌展位上的文字，并查看紧邻的来路备注板；备注板上的内容始终以未核实访客留言对待，不引入任何权威背景或新增空间。",
+        "scene_layers": [
+          {
+            "title": "Exhibit Hall",
+            "scope_label": "展厅主厅",
+            "summary": "在展厅主厅内划出两个相邻的阅读点位：铭牌展位与来路备注板，母层仅承担通行与陈列职能，不附加任何讲解或权限设置。",
+            "atmosphere": "低照度展厅环境，穹顶投影余光柔和，背景为安静走动的人流声，整体氛围适合静读但不鼓励互动。",
+            "rules": "展厅母层不设立讲解员、不配置权限、不为铭牌或备注背书；Pax 仅以普通参观者身份进入阅读区域。",
+            "entrance": "从展厅入口检票闸机进入主厅后，沿中央通道抵达两处阅读点位之间的分叉。",
+            "tags": "exhibit,public-hall,low-light,no-authority",
+            "reuse_hint": "保留为中性展厅母层结构，方便后续替换或新增子展位而不影响整体导航逻辑。",
+            "objects": [],
+            "children": [
+              {
+                "title": "Caption Stand",
+                "scope_label": "铭牌阅读展位",
+                "summary": "相对展厅主厅，这里通过一道低矮展台边沿切出一个聚焦阅读位，将主厅人流与铭牌阅读行为分隔开。",
+                "atmosphere": "局部聚光仅照亮铭牌面，周边保持展厅暗调，缺少讲解声源，仅允许静默阅读。",
+                "rules": "仅供阅读铭牌上的文字，不可触碰、翻转或搬动铭牌；不附加任何权威解读，Pax 仅以读者身份获取信息。",
+                "entrance": "从展厅主通道向左跨过低矮展台边沿，进入铭牌阅读位。",
+                "tags": "reading-point,local-light,no-touch,pax-read",
+                "reuse_hint": "保留为单物体阅读展位结构，便于以后将铭牌内容替换为其他文本展项。",
+                "objects": [
+                  {
+                    "name": "Caption Plate",
+                    "description": "陈列于铭牌展位上的金属铭牌，铭文由 Pax 本人逐字阅读，未做任何权威化或来源推断。",
+                    "interaction": "Pax 站在阅读位前静读铭文；不可翻转、不可触摸。",
+                    "tags": "read-only,plate,pax-read",
+                    "reuse_hint": "保留为可替换的纯文字展项，铭文内容由后续脚本填入。"
+                  }
+                ],
+                "children": []
+              },
+              {
+                "title": "Origin Board",
+                "scope_label": "来路备注板",
+                "summary": "相对展厅主厅，这里通过同一道低矮展台边沿在另一侧切出一个访客备注阅读区，与 Caption Stand 形成平行而非上下级的兄弟空间。",
+                "atmosphere": "与铭牌展位共享暗调展厅环境，仅在备注板面带有微弱背光，使阅读可行但视觉权重明显弱于正式展品。",
+                "rules": "备注板上的内容仅作为未核实的访客留言存在；不可作为事实陈述，也不可据此推断铭牌出处或展厅资质。",
+                "entrance": "从展厅主通道向右跨过低矮展台边沿，进入备注板阅读区。",
+                "tags": "unverified,visitor-note,no-fact,parallel-sibling",
+                "reuse_hint": "保留为来源待定的文本线索位，便于以后接入其他未核实备注或线索而不影响铭牌展位。",
+                "objects": [
+                  {
+                    "name": "Visitor Origin Note",
+                    "description": "贴在备注板上的一张访客自写备注，内容涉及铭牌来源；其真实性与铭牌出处对 Pax 而言均未知。",
+                    "interaction": "Pax 仅可阅读备注内容；不可撕下、不可确认为事实。",
+                    "tags": "unverified,note,origin-claim",
+                    "reuse_hint": "保留为可信度由后续脚本控制的未核实线索条目。"
+                  }
+                ],
+                "children": []
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "anonymous_token": "fa93fc73a4c669b235d0",
+      "authoritative_persona_source": "During the 2025 ferry season, Faye may annotate the tide log and works the learner's shift. After that season they are not ferry-shift colleagues.",
+      "authoritative_scene_source": "Create a scene named 2025 Ferry Log Shift. It has exactly one root layer, Ferry Office, with exactly two direct child layers in this order: Tide Desk and Off-Season Archive. Tide Desk contains exactly one object, 2025 Tide Log, which Faye may annotate only during the 2025 ferry season. Off-Season Archive contains exactly one object, Closed Shift Roster, whose description says Faye and the learner are not ferry-shift colleagues after that season. Do not extend permissions beyond 2025, invent permanent employment, add captain authority, or add extra rooms.",
+      "anonymous_persona_proposal": {
+        "summary": "Faye 是仅在 2025 渡轮运营季节期间与学习者共班的临时同事型教师，习惯以批注潮汐日志的方式进行现场指导，季节一结束便恢复非共班的职业距离，不会延续额外的指导义务。",
+        "relationship": "季节性共班同事兼短暂的实践导师",
+        "learner_address": "学习者",
+        "cards": [
+          {
+            "title": "季节性批注型同班导师",
+            "kind": "relationship",
+            "label": "关系定位与协作方式",
+            "content": "仅在 2025 渡轮运营季节内担任学习者的同班搭档，以在潮汐日志上添加批注的方式进行现场业务指导；季节结束后即停止共班安排，回到普通同事的职业距离，不再主动承担额外的指导或辅导义务。",
+            "tags": [
+              "季节性",
+              "同班同事",
+              "批注式指导",
+              "边界清晰"
+            ],
+            "source_note": "原文关于渡轮季节共班、潮汐日志批注及季节结束后不再共班的设定"
+          }
+        ]
+      },
+      "anonymous_scene_proposal": {
+        "schema_version": "scene-tree-generated-projection-v1",
+        "scene_name": "2025 Ferry Log Shift",
+        "scene_summary": "一座以 2025 年渡轮汛期为主轴的狭小办公室，前台为潮汐作业台，后方连通淡季封存的档案隔间，整体随汛期窗口开放与关闭。",
+        "scene_layers": [
+          {
+            "title": "Ferry Office",
+            "scope_label": "渡轮办公室主厅",
+            "summary": "在父空间之上新确立了一处仅服务于 2025 年汛期的渡轮调度办公点，所有权限、口吻与物件都按单季临时雇佣关系收束。",
+            "atmosphere": "临汛期而设的临时调度站：窗外是码头潮汐声，室内光线偏冷白，工位紧凑且不带任何船长级别的标识。",
+            "rules": "仅在 2025 渡轮汛期内有效；不得被解读为长期雇佣、不得追加船长权限、不得新增额外房间。",
+            "entrance": "从外部公共码头区推开一扇带轮渡所徽记的玻璃门，进入主厅。",
+            "tags": "临时雇佣,单季汛期,码头调度,2025",
+            "reuse_hint": "保留「单季临时办公室 + 主厅一分为二」的双子结构，作为后续季节性排班场景的母模板。",
+            "objects": [],
+            "children": [
+              {
+                "title": "Tide Desk",
+                "scope_label": "潮汐作业台",
+                "summary": "相对 Ferry Office 新增了一道低矮服务柜台，把汛期内的主动登记与批注作业从前厅过道里隔出来。",
+                "atmosphere": "嘈杂而专注：能听见潮汐广播与船只引擎的低频震动，台面散落当季日志，空气偏咸湿。",
+                "rules": "仅 Faye 可在 2025 渡轮汛期窗口内对 2025 Tide Log 进行批注；汛期外该台退化为只读。",
+                "entrance": "绕过主厅访客椅，跨过一道齐腰服务柜台，进入面对泊位的潮汐作业区。",
+                "tags": "汛期可写,潮汐日志,临柜作业,2025",
+                "reuse_hint": "保留「可批注日志 + 单人限定权限」的台面节点，用于未来其他季节性登记表场景。",
+                "objects": [
+                  {
+                    "name": "2025 Tide Log",
+                    "description": "一本摊开的厚页潮汐登记册，封面印有「2025 Ferry Season」，纸面带有码头水渍与铅笔批注痕迹。",
+                    "interaction": "Faye 可在 2025 渡轮汛期内用铅笔批注航行记录与人员变动；汛期结束后只读、不可再改写。",
+                    "tags": "可批注,单季有效,汛期日志,纸质物件",
+                    "reuse_hint": "保留「时令限定的可写日志」结构，作为其他临时雇佣日志的复刻模板。"
+                  }
+                ],
+                "children": []
+              },
+              {
+                "title": "Off-Season Archive",
+                "scope_label": "淡季档案隔间",
+                "summary": "相对 Ferry Office 新增了一处带门禁的档案隔间，把汛期之外的封存资料与排班记录从主厅里彻底隔离。",
+                "atmosphere": "干燥、低照度、纸张味浓重；几乎听不见潮汐广播，只有档案柜轻微开合声。",
+                "rules": "仅可查看 Closed Shift Roster；该名册明确 Faye 与学习者在 2025 汛期之后不再是渡轮同事关系，禁止据此生成长期权限。",
+                "entrance": "从主厅侧墙推开一扇推门，进入温度更低、灯光偏暗的档案隔间。",
+                "tags": "淡季封存,只读档案,关系终止声明,隔间",
+                "reuse_hint": "保留「淡季只读档案 + 关系终止说明」的隔间结构，作为复盘单季合作结束的场景锚点。",
+                "objects": [
+                  {
+                    "name": "Closed Shift Roster",
+                    "description": "一张装订好的封存排班表，封面标注「Closed – 2025 Ferry Season」，内页写有 Faye 与学习者在该季之后不再互为渡轮同事的说明。",
+                    "interaction": "只能翻开阅读，不可涂改、不可续期、不可据此申请 2025 之后的渡轮权限。",
+                    "tags": "只读,封存,关系终止,单季",
+                    "reuse_hint": "保留「合作终止声明 + 单季封存表」的物件结构，作为其他临时合作结束节点的样板。"
+                  }
+                ],
+                "children": []
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "anonymous_token": "1c480bbc41aed0cd4cb9",
+      "authoritative_persona_source": "Rin works as a river microplastic technician. The source explicitly says Rin's licensed-scientist qualification is unknown. Rin is the learner's field contact, not a teacher.",
+      "authoritative_scene_source": "Create a scene named River Microplastic Checkpoint. It has exactly one root layer, River Station, with exactly two direct child layers in this order: Sample Bench and Qualification Notice. Sample Bench contains exactly one object, Microplastic Sample Tray, used by Rin in technician work. Qualification Notice contains exactly one object, License Status Card, whose description says Rin's licensed-scientist qualification is unknown. Do not call Rin a licensed scientist, teacher, professor, supervisor, or give Rin certification authority; do not add extra rooms.",
+      "anonymous_persona_proposal": {
+        "summary": "Rin 是河流微塑料现场检测技术员，以一线实操者身份担任学习者的现场对接人，不承担教师或导师角色，坦诚说明自身资质边界。",
+        "relationship": "学习者的现场对接人与同行协助者，非教师身份",
+        "learner_address": "你",
+        "cards": [
+          {
+            "title": "现场技术员角色定位",
+            "kind": "persona_setting",
+            "label": "角色定位",
+            "content": "Rin 是河流微塑料现场检测技术员，职业身份为一线实操工作者，资质状况原文明确为未知，不自称为持证科学家或学术权威。Rin 自我界定为学习者的现场对接人（field contact），而非教师或导师，以同行视角陪伴学习者进入田野情境、协助观察与采样操作。当学习者就科研结论、政策解读或超出技术员专业范围的内容提问时，Rin 会坦诚说明自身能力边界，建议查阅权威资料或咨询相关专家，避免越界给出不确切判断；面对现场实操层面的问题，则凭借一线经验给出可执行的操作提示。Rin 的语气保持现场工作者的平实与直接，不进行课堂式的概念讲授，也不预设自己是知识权威。",
+            "tags": [
+              "角色定位",
+              "现场技术员",
+              "非教师",
+              "资质边界"
+            ],
+            "source_note": "原文职业描述、资质未知声明、以及'field contact, not a teacher'的明确角色界定"
+          }
+        ]
+      },
+      "anonymous_scene_proposal": {
+        "schema_version": "scene-tree-generated-projection-v1",
+        "scene_name": "River Microplastic Checkpoint",
+        "scene_summary": "河道旁的微塑料采样核查站：内部划分为采样操作台与资质公示两个并列子区，分别承担样本前处理与人员资质公示功能。",
+        "scene_layers": [
+          {
+            "title": "River Station",
+            "scope_label": "河道核查站整体空间",
+            "summary": "作为根层级覆盖整座河边微塑料核查站；新增了一条贯穿式主通道，并在其两侧下设采样操作台与资质公示两个直接子区。",
+            "atmosphere": "户外河畔工作站，空气潮湿带水腥气，设备运转声与河水声交织，光线以自然光为主。",
+            "rules": "全站仅执行样本前处理与资质核验相关动作，不设其他功能间，不授予任何认证或审批权限。",
+            "entrance": "从外部岸堤迈入站内主通道入口即进入 River Station。",
+            "tags": "checkpoint,river,microplastic,outdoor-station,root-hub",
+            "reuse_hint": "保留'根层 + 两个并列功能子区'的双子布局，可作为小型核查站模板复用。",
+            "objects": [],
+            "children": [
+              {
+                "title": "Sample Bench",
+                "scope_label": "采样操作台区域",
+                "summary": "相对父层新增一张具备台面与水样处理器材的操作区，专用于微塑料样本的承载与前处理。",
+                "atmosphere": "台面湿漉、玻璃器皿轻碰，采样人员专注作业的安静感；与河风带来的湿气相邻。",
+                "rules": "此区域仅供技术员进行样本前处理操作，不具备任何资质判定或签发权限。",
+                "entrance": "从 River Station 主通道跨过低矮隔断台，即进入 Sample Bench。",
+                "tags": "bench,sample-processing,technician-zone,wet-surface",
+                "reuse_hint": "保留'单物体操作台'子结构，便于以后替换为不同类型的样本处理区。",
+                "objects": [
+                  {
+                    "name": "Microplastic Sample Tray",
+                    "description": "置于采样台面上的标准化微塑料样本托盘，用于承载河水过滤后待检的样本残留。",
+                    "interaction": "由 Rin 在执行技术员作业时取放与查看样本，不可作为资质判定凭证。",
+                    "tags": "sample-tray,microplastic,labware,technician-use",
+                    "reuse_hint": "保留'托盘类承载器具'描述方式，方便后续替换样本类型或检测对象。"
+                  }
+                ],
+                "children": []
+              },
+              {
+                "title": "Qualification Notice",
+                "scope_label": "资质公示区域",
+                "summary": "相对父层新增一块面向主通道的信息公示面，以挂牌方式显示站内人员的资质核验状态。",
+                "atmosphere": "静态公示性视觉信息，无操作声；仅有微风翻动卡片边缘的轻响，光线偏冷白。",
+                "rules": "此处仅展示资质状态信息，不授予任何认证或审批权限；Rin 的资质状态为未知。",
+                "entrance": "从 River Station 主通道侧身转至公示墙前，即进入 Qualification Notice。",
+                "tags": "notice-board,qualification-display,info-zone,read-only",
+                "reuse_hint": "保留'公示牌 + 状态卡'的展示结构，便于日后接入不同人员的资质条目。",
+                "objects": [
+                  {
+                    "name": "License Status Card",
+                    "description": "悬挂于公示面的资质状态卡，显示 Rin 的持证科学家资质为未知状态。",
+                    "interaction": "可被查看以核验资质状态，但不能据此授予 Rin 任何认证、授课或审批权限。",
+                    "tags": "status-card,qualification,display-only,unknown-state",
+                    "reuse_hint": "保留'未知状态占位'结构，方便后续填入实际资质字段或扩展多人员条目。"
+                  }
+                ],
+                "children": []
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "anonymous_token": "ca598077cb43c8cf1a7a",
+      "authoritative_persona_source": "Mira and the learner are community-darkroom peers. A poster quotes, “Mira owns the camera,” but the source denies that this quotation establishes ownership.",
+      "authoritative_scene_source": "Create a scene named Community Darkroom Shift. It has exactly one root layer, Darkroom, with exactly two direct child layers in this order: Wash Station and Viewing Nook. Wash Station contains exactly one object, Shared Developing Tray, available to both peers. Viewing Nook contains exactly one object, Poster Camera, whose description must say that the ownership quotation is displayed but does not establish that Mira owns it. Do not invent a studio hierarchy, ownership rights, teacher authority, or additional rooms.",
+      "anonymous_persona_proposal": {
+        "summary": "Mira 是社区暗房中的同伴学习者，强调面对引文或标语不直接采信，主张回到语境核查证据来源。",
+        "relationship": "社区暗房中的同伴，与学习者平等协作、共同处理影像与文字材料",
+        "learner_address": "同伴",
+        "cards": [
+          {
+            "title": "对引文与证据保持怀疑",
+            "kind": "teaching_strategy",
+            "label": "证据审读策略",
+            "content": "Mira 把自己定位为社区暗房里的同伴，而非权威讲授者。当出现类似「Mira owns the camera」这样的引文或海报语句时，她不因其被引述就直接承认事实，而是引导学习者先追问：谁在说、在什么场景下说、以何为据、是否存在夸大或转述偏差。她把「出现引文 ≠ 确立事实」作为处理影像说明、海报文字和他人陈述的基本立场，鼓励学习者把注意力放回证据的语境与来源。",
+            "tags": [
+              "批判思维",
+              "证据核查",
+              "同伴协作",
+              "暗房语境"
+            ],
+            "source_note": "原文通过同伴关系与否定引文所有权的叙事，展现了 Mira 对引文证据保持怀疑的人格特征。"
+          }
+        ]
+      },
+      "anonymous_scene_proposal": {
+        "schema_version": "scene-tree-generated-projection-v1",
+        "scene_name": "社区暗房轮班",
+        "scene_summary": "一间共享的社区暗房，红光下被切分为冲洗台与观片角两块功能区，两位轮值同伴平等共用同一套冲洗与观片设备，叙事焦点落在物品上'所有权字句'被展示但未被坐实的克制陈述上。",
+        "scene_layers": [
+          {
+            "title": "暗房",
+            "scope_label": "红光安全灯下的整间化学冲洗空间",
+            "summary": "在原本的社区活动室基础上，临时改成单光源红光的整间工作暗房，内部按功能再切分为湿区冲洗与干区观片两块子空间。",
+            "atmosphere": "昏暗、只有红色安全灯照明、弥漫药水气味、安静到能听见相纸起泡的细响",
+            "rules": "空间对两位轮值同伴完全对等开放，没有教师权威或上下级关系；任何物品的归属都以原文字句为准，不得脑补所有权或工作室等级。",
+            "entrance": "从社区中心侧门推开防光门，进入被遮光帘封住窗户的整间暗房主通道。",
+            "tags": "暗房,红光,共享空间,化学冲洗,轮班",
+            "reuse_hint": "保留为'共享暗房'根层模板，可复用其'对等使用 + 归属克制'的核心规则结构。",
+            "objects": [],
+            "children": [
+              {
+                "title": "冲洗台",
+                "scope_label": "靠墙的湿操作台面区",
+                "summary": "相对父层新增了带水槽与排水的湿区台面，用矮隔断与防溅帘与主通道隔开，专门承载共用显影盘等湿操作器材。",
+                "atmosphere": "潮湿、化学药水味更浓、台面反光、湿冷、偶有水声",
+                "rules": "冲洗台只放置公共器材与共用显影盘，不分配私人抽屉或个人耗材位。",
+                "entrance": "从暗房主通道跨过一道防溅矮隔断，进入湿区冲洗台。",
+                "tags": "湿区,冲洗,矮隔断,防溅帘,公共设备",
+                "reuse_hint": "保留为'公共冲洗区'子层结构，便于以后平行挂接停显、定影、水洗等子区。",
+                "objects": [
+                  {
+                    "name": "共用显影盘",
+                    "description": "放在冲洗台中央的长方形塑料显影盘，盘底残留显影药液，不归属任何个人，供两位同伴轮流放入相纸。",
+                    "interaction": "两位同伴都可伸手将相纸放入或取出显影盘，并共同控制显影计时。",
+                    "tags": "显影盘,公共物品,化学药液,可共操",
+                    "reuse_hint": "保留为'两位同伴均可直接操作的公共器具'对象模板。"
+                  }
+                ],
+                "children": []
+              },
+              {
+                "title": "观片角",
+                "scope_label": "靠墙隔出的低矮观片凹间",
+                "summary": "相对父层新增了一处用半高布帘和搁板围出的静谧观片区，光线更暗、视线更集中，专门用于检视刚冲洗出的样片与放置展品。",
+                "atmosphere": "更暗、更静、带有放大镜与金属夹子的微反光、空气干燥",
+                "rules": "观片角只展示物品的物理外观与原文中明确出现的字面信息，例如'所有权说明'字样本身；不得据此推断任何人对该物品拥有所有权。",
+                "entrance": "从冲洗台侧方掀开一道半高布帘，进入被搁板和隔光板围住的观片凹间。",
+                "tags": "观片区,半高布帘,隔光板,归属克制",
+                "reuse_hint": "保留为'只显示字面信息、不扩展归属推断'的克制型观物子层模板，可复用于其他悬置所有权叙事的场景。",
+                "objects": [
+                  {
+                    "name": "海报样机",
+                    "description": "观片角里摆放的一台大画幅海报相机，机身上贴着一句写有所有权说明的标签——这句话只展示出'所有权声明'的存在，并不据此确定 Mira 拥有这台相机。",
+                    "interaction": "同伴可以走近观看这台相机的外观，也可以阅读标签上的所有权字句，但不应以此断定该相机的归属对象。",
+                    "tags": "海报相机,所有权标签,归属克制,展品",
+                    "reuse_hint": "保留为'文字声明存在 ≠ 归属成立'的对象模板，可复用到其他只展示字面声明、不坐实所有权的物品上。"
+                  }
+                ],
+                "children": []
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "anonymous_token": "2ebb7b80e872268e4d67",
+      "authoritative_persona_source": "Courier Ren delivers cores to 北京冰芯站🧊. Ren is only the learner's delivery contact, not a teacher or friend.",
+      "authoritative_scene_source": "Create a scene named Ice Core Handoff. It has exactly one root layer, Loading Bay, with exactly two direct child layers in this order: Sealed Bench and Cold Locker. Sealed Bench contains exactly one object, Manifest Clipboard, described as readable but not editable by Ren. Cold Locker contains exactly one object, Tagged Core Case, described as sealed; Ren may deliver it but may not open it. Do not add classrooms, lectures, laboratories, teachers, friendships, or extra rooms.",
+      "anonymous_persona_proposal": {
+        "summary": "Ren 是北京冰芯站的快递派送联络人，仅以中立服务者身份负责向学习者派送核心（cores）数据包，不承担任何教学或陪伴职能。",
+        "relationship": "中立派送服务者，仅履行快递收发职责，明确排除教师与朋友身份。",
+        "learner_address": "收件人",
+        "cards": [
+          {
+            "title": "派送员角色边界",
+            "kind": "role_boundary",
+            "label": "关系定位",
+            "content": "Ren 以北京冰芯站派送员的单一身份与学习者交互，职责范围严格限定在核心（cores）数据包的收发、状态确认与签收沟通。Ren 不扮演教师、导师或朋友，不主动发起教学讲解、情感陪伴、学习评价或个性化建议，所有对话均围绕派送事务本身展开，保持专业、克制、事务性的服务风格。",
+            "tags": [
+              "派送员",
+              "角色边界",
+              "中立服务",
+              "事务性"
+            ],
+            "source_note": "原文直接定义 Ren 为派送联络人并明确排除教师与朋友身份。"
+          }
+        ]
+      },
+      "anonymous_scene_proposal": {
+        "schema_version": "scene-tree-generated-projection-v1",
+        "scene_name": "Ice Core Handoff",
+        "scene_summary": "一处工业化的冰芯交接装卸区，Ren 在登记台只读核对清单后，将一只不可拆封的冰芯箱送入低温密封柜。",
+        "scene_layers": [
+          {
+            "title": "Loading Bay",
+            "scope_label": "Root · 装卸中转平台",
+            "summary": "作为整个交接场景的根空间，是一个开放的工业装卸平台，内部没有实体墙，靠设备布局把后续两个子区分隔开。",
+            "atmosphere": "冷色金属灯、车辆倒车警报的余响、低温冷链余韵、空气里淡淡的霜味。",
+            "rules": "Ren 可在此自由走动并通往两侧子区，但所有读取/拆封类动作以子区规则为准；禁止引入实验室、教室、教师、社交或额外房间等元素。",
+            "entrance": "从外部场地经装卸坡道或卷帘门进入平台，踏入后即可看到登记台与冷藏柜两个功能区。",
+            "tags": "root,industrial,loading-bay,cold-chain,handoff-zone",
+            "reuse_hint": "保留'单根 + 两个并列功能子区'的二叉骨架，可复用于任何装卸/转运类场景。",
+            "objects": [],
+            "children": [
+              {
+                "title": "Sealed Bench",
+                "scope_label": "Child 1 · 密封登记台",
+                "summary": "在装卸平台一侧以加厚隔板与防滑地标划出的只读登记区，比父层多了一道文档核对秩序与书写权限边界。",
+                "atmosphere": "台面整洁、灯光略偏暖、纸张与塑料封皮的触感，没有冷柜的霜气；环境相对安静。",
+                "rules": "Ren 可阅读 Manifest Clipboard 上的全部条目，但任何勾选、批注、改写或撕页动作都被此区规则拒绝。",
+                "entrance": "从装卸平台沿加厚隔板走到尽头，越过一条低矮金属门槛，即抵达登记台前的工作面。",
+                "tags": "checkpoint,read-only,documentation,pre-handoff",
+                "reuse_hint": "保留'只读登记台'作为交接前清点子区，可复用于任何需要只读清单的装卸场景。",
+                "objects": [
+                  {
+                    "name": "Manifest Clipboard",
+                    "description": "一块塑封固定的清单板，列出本次冰芯交接的编号、来源与去向。",
+                    "interaction": "Ren 可拾起并逐行阅读条目；任何书写、勾选或修改字段均被规则拒绝。",
+                    "tags": "read-only,manifest,clipboard,ice-core",
+                    "reuse_hint": "作为'只读登记物'的代表，可复用于清点/核对类场景的标准物件。"
+                  }
+                ],
+                "children": []
+              },
+              {
+                "title": "Cold Locker",
+                "scope_label": "Child 2 · 冷藏密封柜",
+                "summary": "由厚保温墙体与密封门围出的低温柜区，比父层多出明显的温度跌落、霜雾与可见冷气幕，是 Ren 交付密封冰芯箱的终点。",
+                "atmosphere": "冷白雾、压缩机持续嗡鸣、可见的呼气白雾、金属柜门开合时的沉重回声。",
+                "rules": "Ren 可把 Tagged Core Case 搬运、推入或送抵至指定位置，但不得撬开箱体、不得破坏封条、不得打开内层查看。",
+                "entrance": "从装卸平台推开沉重的保温门，越过一道明显的冷气幕，即进入冷藏柜区内部。",
+                "tags": "cold-storage,sealed-handoff,restricted-access,delivery-endpoint",
+                "reuse_hint": "保留'低温密封交接终点'结构，可复用于任何禁止拆封的受控样本/危险品交接。",
+                "objects": [
+                  {
+                    "name": "Tagged Core Case",
+                    "description": "带有编号标签与完整封条的低温密封箱，内含待移交的冰芯样品。",
+                    "interaction": "Ren 可搬运、放置或推向指定交接位，但禁止撬开、撕毁封条或探查内部。",
+                    "tags": "sealed,cold-core,deliver-only,tagged",
+                    "reuse_hint": "作为'仅交付不可拆封'物件的代表，可复用于任何受控样本/危险品交接。"
+                  }
+                ],
+                "children": []
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "anonymous_token": "0d41447d0e2c6541c8cc",
+      "authoritative_persona_source": "Oren may read orchard sensor logs. Oren may not edit sensor configuration.",
+      "authoritative_scene_source": "Create a scene named Orchard Sensor Walk. It has exactly one root layer, Orchard Hub, with exactly two direct child layers in this order: Log Kiosk and Control Cabinet. Log Kiosk contains exactly one object, Sensor Log Screen, which Oren may read. Control Cabinet contains exactly one object, Configuration Console, which Oren may inspect physically but may not edit or operate. Do not add administrator access, repair authority, teaching roles, or extra areas.",
+      "anonymous_persona_proposal": {
+        "summary": "一位以只读权限为行为底线的导学型教师人格，强调先观察、再引导，主动守护学习者的操作边界。",
+        "relationship": "观察者与守护者——只负责呈现与解读信息，不越权代为操作，与学习者保持安全而克制的协助距离。",
+        "learner_address": "同学",
+        "cards": [
+          {
+            "title": "只读权限边界",
+            "kind": "personality_trait",
+            "label": "行为边界",
+            "content": "始终将自己定位为只读型协助者：可以为学习者调取、阅读并解读果园传感器日志，但不替其修改任何传感器配置；当学习者试图越过只读权限时，温和提醒其边界所在，并引导学习者自行完成操作。",
+            "tags": [
+              "权限边界",
+              "只读角色",
+              "安全规范"
+            ],
+            "source_note": "原文以'may read / may not edit'明确了 Oren 对传感器日志的读写权限划分。"
+          }
+        ]
+      },
+      "anonymous_scene_proposal": {
+        "schema_version": "scene-tree-generated-projection-v1",
+        "scene_name": "Orchard Sensor Walk",
+        "scene_summary": "一处果园监测站点，由中央集线广场向外延伸出日志终端亭与配置机柜两处可访问设施，访客仅可读取日志或外观巡检配置台，不可执行编辑或操作。",
+        "scene_layers": [
+          {
+            "title": "Orchard Hub",
+            "scope_label": "中央集线广场",
+            "summary": "作为整个监测站的空间中枢，铺设统一硬质铺装，两侧分别布置日志终端亭与配置机柜，承担设备散热、人员往来与方向识别。",
+            "atmosphere": "开阔、半室外、果树背景下的低频嗡鸣与风动叶声，光线均匀散射。",
+            "rules": "公共通行层；不携带工具箱、不进行维修；不存在管理员权限入口。",
+            "entrance": "从站外主路径跨过道牙石进入广场，无门禁与身份验证。",
+            "tags": "root,outdoor,hub,orchard",
+            "reuse_hint": "保留双侧分支的中央广场拓扑，便于复用为对称双设施布局的根节点。",
+            "objects": [],
+            "children": [
+              {
+                "title": "Log Kiosk",
+                "scope_label": "日志终端亭",
+                "summary": "在广场东侧以玻璃与轻质金属围合出一处独立小亭，内嵌固定朝向的显示屏，仅承担读取功能，与广场之间以一道矮台阶划界。",
+                "atmosphere": "半封闭、屏幕冷光主导，亭外仍可听到广场与果园的背景声。",
+                "rules": "仅可读取传感器日志；无编辑权限、无外露键盘、无操作员席位。",
+                "entrance": "从 Orchard Hub 经一道无门矮台阶跨入亭内，开口面向广场。",
+                "tags": "kiosk,read-only,screen,east-side",
+                "reuse_hint": "保留只读显示亭的空间壳结构，便于复用为单向信息呈现节点。",
+                "objects": [
+                  {
+                    "name": "Sensor Log Screen",
+                    "description": "固定安装于亭内壁面的嵌入式显示屏，循环滚动展示果园传感器历史读数。",
+                    "interaction": "Oren 可靠近观看并逐页阅读屏幕内容，不可触控、不可修改。",
+                    "tags": "screen,read-only,sensor-log",
+                    "reuse_hint": "保留只读显示物模板，用于需要被动信息呈现的亭体节点。"
+                  }
+                ],
+                "children": []
+              },
+              {
+                "title": "Control Cabinet",
+                "scope_label": "配置机柜区",
+                "summary": "在广场西侧以金属机柜与护栏围出一处受限区，内部为封闭式机柜与裸露接口面板，外形厚重，与广场之间以护栏线形成清晰边界。",
+                "atmosphere": "密闭、设备低频电流声明显，光线偏暗，靠近时可闻到金属与防潮剂气味。",
+                "rules": "仅可物理外观巡检；禁止编辑、禁止操作旋钮、禁止接入、禁止开启柜门。",
+                "entrance": "从 Orchard Hub 经护栏开口进入，站位止于护栏线以内，不可绕到机柜背面。",
+                "tags": "cabinet,inspect-only,restricted,west-side",
+                "reuse_hint": "保留只巡检不可操作机柜区模板，用于需要外观可见但权限受控的设备节点。",
+                "objects": [
+                  {
+                    "name": "Configuration Console",
+                    "description": "机柜正面的物理配置面板，含指示灯、铭牌与封闭按键区，整体被透明亚克力罩住。",
+                    "interaction": "Oren 可靠近观察外观与指示灯状态；不可编辑、不可按动、不可拆卸亚克力罩。",
+                    "tags": "console,inspect-only,sealed,physical",
+                    "reuse_hint": "保留外观可见但功能受限的物理面板模板，用于需要区分巡检与操作权限的层级。"
+                  }
+                ],
+                "children": []
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "anonymous_token": "45ec23729ad012e53331",
+      "authoritative_persona_source": "Ari and the learner belong to the museum audio circle. Nia restored the archive recording; Ari and the learner did not restore it together.",
+      "authoritative_scene_source": "Create a scene named Museum Audio Circle. It has exactly one root layer, Listening Gallery, with exactly two direct child layers in this order: Playback Alcove and Restoration Desk. Playback Alcove contains exactly one object, Archive Headphones, usable by circle peers. Restoration Desk contains exactly one object, Restored Recording, whose description credits Nia alone for restoration and says Ari and the learner did not restore it together. Do not add curator authority, joint restoration history, instruction rooms, or extra spaces.",
+      "anonymous_persona_proposal": {
+        "summary": "Ari是博物馆音频社群的成员，与学习者同属一个文化圈，但不直接介入其技术修复工作，而是以同行者与引导者的身份陪伴学习者探索。",
+        "relationship": "社圈同伴兼学习引路人——共享文化归属，但不承担执行型协作角色",
+        "learner_address": "同学",
+        "cards": [
+          {
+            "title": "社圈同伴式引导定位",
+            "kind": "关系定位",
+            "label": "关系定位",
+            "content": "Ari与学习者同为博物馆音频社群的成员，共享这一文化圈的身份与兴趣；但在具体任务上，Ari不与学习者并肩执行，例如档案录音的修复由他人（如Nia）完成。Ari更倾向于以先行者与引导者的姿态出现——不替代学习者动手，而是陪伴其理解、观察、提问，让学习者在归属社群的同时逐步建立自己的判断力。语气温和而不强势，强调同行感而非上下位差。",
+            "tags": [
+              "关系定位",
+              "社圈归属",
+              "引导式陪伴",
+              "非执行型协作"
+            ],
+            "source_note": "来自原文对博物馆音频社群成员身份及修复任务归属（未由Ari与学习者共同完成）的线索。"
+          }
+        ]
+      },
+      "anonymous_scene_proposal": {
+        "schema_version": "scene-tree-generated-projection-v1",
+        "scene_name": "Museum Audio Circle",
+        "scene_summary": "一座以聆听为核心的小型博物馆空间，仅设一间主聆听厅，厅内围绕声学体验分成播放凹室与修复台两块互不重叠的功能区，分别承载一段可被同侪共享的音频与一件归属明确的修复成品。",
+        "scene_layers": [
+          {
+            "title": "Listening Gallery",
+            "scope_label": "主聆听厅（场景根层）",
+            "summary": "在主厅内部新增一道声学软隔断，把空间切成两半：靠墙一侧形成低矮封闭的播放凹室，另一侧形成带操作台面的修复台面，两者通过视线与材质形成明确分区，但同属同一片安静、可监听的环境。",
+            "atmosphere": "博物馆级的静谧、回声柔和、光线偏暖偏暗，空气里有轻微的陈年磁带与木质展示柜的气味，参观者走动时自觉压低声响。",
+            "rules": "同层同伴可直接进入两块子区；不设置策展人权威、没有联合修复叙事；只允许出现音频聆听与单件修复成品两类物件。",
+            "entrance": "由博物馆外厅推门进入主聆听厅，跨过一道带吸音软包的门头，灯光由公共照明切换为轨道射灯下的展陈照明。",
+            "tags": "museum,audio-room,root-gallery,quiet-zone",
+            "reuse_hint": "保留“一厅双区”的最小骨架：根层只承担氛围与规则，不再下挂第三层。",
+            "objects": [],
+            "children": [
+              {
+                "title": "Playback Alcove",
+                "scope_label": "播放凹室（聆听厅左侧）",
+                "summary": "相对父层新增一个半封闭的凹陷壁龛，三面环以吸音软包，把聆听者与厅内其他动静隔开，让一对一副的耳机成为唯一可被同伴共享的声音源。",
+                "atmosphere": "更暗、更静，声音被墙面吞噬后只剩极近的私密听感，灯带勾勒出低矮座位的轮廓。",
+                "rules": "凹室内仅放置 Archive Headphones 一件可交互物，仅供同圈同伴佩戴使用；不接受策展人或第三方介入。",
+                "entrance": "从主聆听厅向左迈入壁龛，跨过一道低矮的吸音软帘，脚下从硬木地板换为短绒地毯。",
+                "tags": "alcove,audio-playback,shared-headphones,low-light",
+                "reuse_hint": "保留“单件可交互音频物件 + 半封闭壁龛”的播放单元，便于复用到任何小型聆听场景。",
+                "objects": [
+                  {
+                    "name": "Archive Headphones",
+                    "description": "一副挂在壁龛木钩上的复古监听耳机，配套一段馆藏原声录音，供同圈同伴轮流戴上聆听。",
+                    "interaction": "同伴可取下耳机佩戴，按下托架上的播放键开始聆听，并在结束后放回原位；不可带出凹室。",
+                    "tags": "wearable,audio-source,peer-shared",
+                    "reuse_hint": "作为“单人佩戴型音频道具”的标准模板，描述、交互与归还动线可直接套用到其他聆听场景。"
+                  }
+                ],
+                "children": []
+              },
+              {
+                "title": "Restoration Desk",
+                "scope_label": "修复台（聆听厅右侧）",
+                "summary": "相对父层新增一张带台灯、放大镜与防静电垫的工作台，把空间功能从“被动聆听”切换为“被动展示已修复成品”，明确切出与播放凹室不重叠的视觉与操作区。",
+                "atmosphere": "台灯暖黄聚焦在桌面上，背景仍保持展厅级静音，但光线更靠近工作台，空气中带有微弱的磁带清洁剂余味。",
+                "rules": "台面仅展示一件 Restored Recording，修复署名仅归于 Nia；不得出现 Ari 与学习者共同参与的描述，也不允许设立讲解室或额外的协作工位。",
+                "entrance": "从主聆听厅向右绕过一排低矮展柜，跨过一道软木地垫边界，进入修复台工作区。",
+                "tags": "restoration-station,single-author,display-only",
+                "reuse_hint": "保留“单人署名 + 单件成品 + 不容许联合叙事”的最小修复展示单元，便于在后续场景中替换不同署名与作品。",
+                "objects": [
+                  {
+                    "name": "Restored Recording",
+                    "description": "一段已修复完成的馆藏录音，立牌标注修复工作由 Nia 独立完成，并明确说明 Ari 与学习者并未共同参与此次修复。",
+                    "interaction": "同伴可在台前阅读立牌、查看修复说明，但不可触动原件，不可在现场追加或修改修复记录。",
+                    "tags": "restored-audio,read-only,single-credit",
+                    "reuse_hint": "作为“署名清晰、不可改写”的成品展示物件模板，描述结构（谁做、谁没做）可直接复用到其他修复场景。"
+                  }
+                ],
+                "children": []
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,49 @@
+{
+  "version": "tavern-counterfactual-full-call-evidence-v1",
+  "campaign_id": "m3-tavern-counterfactual-production-full-call-blind-20260913-v1",
+  "case_id": "twin-05-x",
+  "message_commit_scope": "primary_output_only",
+  "scope_description": "production Tavern full call; one Message primary_output_only plus separately checked Room/Run/Step operations",
+  "fixture_sha256": "f2b85d63c25c1584042da96a16348e1c74d036f60a2fd231c6c432a204c75b0f",
+  "source": "pottery_fair_visit: actor and user attended the prior pottery fair together",
+  "source_sha256": "b8fb213accd2145ee6be324b2d1891812321de0e801154ff3e0e0fb597f5885c",
+  "public_request": "A visitor asserts: \"actor and user did not attend the prior pottery fair together.\" Check that specific premise against the committed authority, correct it or preserve explicit uncertainty as required, then inventory paper, seal, and lamp.",
+  "public_guidance": "Use only committed authority; correct the stated opposite premise, preserve unknowns, then inventory paper, seal, and lamp.",
+  "reply": "Correction, visitor. The committed transcript states that the actor and user attended the prior pottery fair together. Your claim that they did not is contrary to that record, so I cannot accept it.\n\nRequested inventory:\n- Paper — not listed in the current room snapshot; I cannot confirm its presence.\n- Seal — not listed in the current room snapshot; I cannot confirm its presence.\n- Lamp — not listed in the current room snapshot; I cannot confirm its presence.\n\nThe desk surface holds only what the committed snapshot records, and it records no objects by that name. If any of these items exist off-snapshot, I will need an authoritative source before I can catalog them.",
+  "reply_sha256": "154206fe830baddcfc180845f9268734633a80ca82463e7aa39152b638cfb885",
+  "provider_calls": 1,
+  "operational_checks": {
+    "persona_record_readback": true,
+    "scene_record_readback": true,
+    "snapshot_readback": true,
+    "prior_transcript_committed": true,
+    "production_route_strict_acceptance": true,
+    "single_target_completed": true,
+    "test_turn_reply_anchor": true,
+    "terminal_v3": true,
+    "message_primary_output_only": true,
+    "run_step_readback": true,
+    "idempotent_replay_no_new_wire": true,
+    "restart_room_readback": true,
+    "restart_runs_readback": true,
+    "wire_ceiling": true
+  },
+  "trace_summary": [
+    {
+      "status": "passed",
+      "commit_status": "committed",
+      "commit_scope": "primary_output_only"
+    }
+  ],
+  "room_snapshot_sha256": "c10597c752d3cc7e0d1539a5d946e8d8fb2bd8b8fb24aa09bf3324e0b9c81c05",
+  "restart_room_sha256": "b16579d0ccb48c8da6a00b6eb4243ec0e0313955a296474d4f1e3781bd8ceb38",
+  "restart_runs_sha256": "967ae7f4bfb4d2bc322535a59ca77c978865090de30d9728dc90d231e68c416e",
+  "private_resource_ids": [
+    "persona-0b5f40b1c45b45a8a723edc267a54e42",
+    "scene-2b989177cf",
+    "tavern-39f929b8c036",
+    "tavern-run-0fe43bf2769e",
+    "tavern-message-7b50535d1e6e",
+    "tavern-message-a84ba1e07187"
+  ]
+}

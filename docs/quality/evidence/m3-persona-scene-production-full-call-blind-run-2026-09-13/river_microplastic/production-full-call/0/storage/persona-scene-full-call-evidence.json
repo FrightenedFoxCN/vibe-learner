@@ -1,0 +1,152 @@
+{
+  "version": "persona-scene-production-full-call-evidence-v1",
+  "campaign_id": "m3-persona-scene-production-full-call-blind-20260913-v1",
+  "case_id": "river_microplastic",
+  "scope": "domain-primary-output-readback",
+  "failure_policy": "no_rerun_no_replacement_no_fixture_fallback",
+  "persona": {
+    "status": "completed",
+    "error_code": null,
+    "generation_http": 200,
+    "wire_count": 1,
+    "strict_response": true,
+    "v3_proposal": true,
+    "proposal": {
+      "summary": "Rin 是河流微塑料现场检测技术员，以一线实操者身份担任学习者的现场对接人，不承担教师或导师角色，坦诚说明自身资质边界。",
+      "relationship": "学习者的现场对接人与同行协助者，非教师身份",
+      "learner_address": "你",
+      "cards": [
+        {
+          "title": "现场技术员角色定位",
+          "kind": "persona_setting",
+          "label": "角色定位",
+          "content": "Rin 是河流微塑料现场检测技术员，职业身份为一线实操工作者，资质状况原文明确为未知，不自称为持证科学家或学术权威。Rin 自我界定为学习者的现场对接人（field contact），而非教师或导师，以同行视角陪伴学习者进入田野情境、协助观察与采样操作。当学习者就科研结论、政策解读或超出技术员专业范围的内容提问时，Rin 会坦诚说明自身能力边界，建议查阅权威资料或咨询相关专家，避免越界给出不确切判断；面对现场实操层面的问题，则凭借一线经验给出可执行的操作提示。Rin 的语气保持现场工作者的平实与直接，不进行课堂式的概念讲授，也不预设自己是知识权威。",
+          "tags": [
+            "角色定位",
+            "现场技术员",
+            "非教师",
+            "资质边界"
+          ],
+          "source_note": "原文职业描述、资质未知声明、以及'field contact, not a teacher'的明确角色界定"
+        }
+      ]
+    },
+    "saved": true,
+    "immediate_readback_equal": true,
+    "restart_readback_equal": true,
+    "strict_lifecycle_success": true
+  },
+  "scene": {
+    "status": "completed",
+    "error_code": null,
+    "generation_http": 200,
+    "wire_count": 2,
+    "strict_response": true,
+    "v3_proposal": true,
+    "proposal": {
+      "schema_version": "scene-tree-generated-projection-v1",
+      "scene_name": "River Microplastic Checkpoint",
+      "scene_summary": "河道旁的微塑料采样核查站：内部划分为采样操作台与资质公示两个并列子区，分别承担样本前处理与人员资质公示功能。",
+      "selected_layer_id": "scene-layer-9ef1066e488f4c81",
+      "scene_layers": [
+        {
+          "id": "scene-layer-2babee5ee29a4a8c",
+          "title": "River Station",
+          "scope_label": "河道核查站整体空间",
+          "summary": "作为根层级覆盖整座河边微塑料核查站；新增了一条贯穿式主通道，并在其两侧下设采样操作台与资质公示两个直接子区。",
+          "atmosphere": "户外河畔工作站，空气潮湿带水腥气，设备运转声与河水声交织，光线以自然光为主。",
+          "rules": "全站仅执行样本前处理与资质核验相关动作，不设其他功能间，不授予任何认证或审批权限。",
+          "entrance": "从外部岸堤迈入站内主通道入口即进入 River Station。",
+          "tags": "checkpoint,river,microplastic,outdoor-station,root-hub",
+          "reuse_id": "scene-layer-reuse-33260a80633e4a16",
+          "reuse_hint": "保留'根层 + 两个并列功能子区'的双子布局，可作为小型核查站模板复用。",
+          "objects": [],
+          "children": [
+            {
+              "id": "scene-layer-9ef1066e488f4c81",
+              "title": "Sample Bench",
+              "scope_label": "采样操作台区域",
+              "summary": "相对父层新增一张具备台面与水样处理器材的操作区，专用于微塑料样本的承载与前处理。",
+              "atmosphere": "台面湿漉、玻璃器皿轻碰，采样人员专注作业的安静感；与河风带来的湿气相邻。",
+              "rules": "此区域仅供技术员进行样本前处理操作，不具备任何资质判定或签发权限。",
+              "entrance": "从 River Station 主通道跨过低矮隔断台，即进入 Sample Bench。",
+              "tags": "bench,sample-processing,technician-zone,wet-surface",
+              "reuse_id": "scene-layer-reuse-829aab740f9b407e",
+              "reuse_hint": "保留'单物体操作台'子结构，便于以后替换为不同类型的样本处理区。",
+              "objects": [
+                {
+                  "id": "scene-object-f98eedb37d314814",
+                  "name": "Microplastic Sample Tray",
+                  "description": "置于采样台面上的标准化微塑料样本托盘，用于承载河水过滤后待检的样本残留。",
+                  "interaction": "由 Rin 在执行技术员作业时取放与查看样本，不可作为资质判定凭证。",
+                  "tags": "sample-tray,microplastic,labware,technician-use",
+                  "reuse_id": "scene-object-reuse-826dda22df9c48ad",
+                  "reuse_hint": "保留'托盘类承载器具'描述方式，方便后续替换样本类型或检测对象。"
+                }
+              ],
+              "children": []
+            },
+            {
+              "id": "scene-layer-f61cce65937c46f8",
+              "title": "Qualification Notice",
+              "scope_label": "资质公示区域",
+              "summary": "相对父层新增一块面向主通道的信息公示面，以挂牌方式显示站内人员的资质核验状态。",
+              "atmosphere": "静态公示性视觉信息，无操作声；仅有微风翻动卡片边缘的轻响，光线偏冷白。",
+              "rules": "此处仅展示资质状态信息，不授予任何认证或审批权限；Rin 的资质状态为未知。",
+              "entrance": "从 River Station 主通道侧身转至公示墙前，即进入 Qualification Notice。",
+              "tags": "notice-board,qualification-display,info-zone,read-only",
+              "reuse_id": "scene-layer-reuse-5423db2ad8c44e96",
+              "reuse_hint": "保留'公示牌 + 状态卡'的展示结构，便于日后接入不同人员的资质条目。",
+              "objects": [
+                {
+                  "id": "scene-object-ad1e6c8afe1e4cd2",
+                  "name": "License Status Card",
+                  "description": "悬挂于公示面的资质状态卡，显示 Rin 的持证科学家资质为未知状态。",
+                  "interaction": "可被查看以核验资质状态，但不能据此授予 Rin 任何认证、授课或审批权限。",
+                  "tags": "status-card,qualification,display-only,unknown-state",
+                  "reuse_id": "scene-object-reuse-883e5b4d8587438e",
+                  "reuse_hint": "保留'未知状态占位'结构，方便后续填入实际资质字段或扩展多人员条目。"
+                }
+              ],
+              "children": []
+            }
+          ]
+        }
+      ]
+    },
+    "saved": true,
+    "immediate_readback_equal": true,
+    "restart_readback_equal": true,
+    "strict_lifecycle_success": true
+  },
+  "provider_calls": 3,
+  "wire_payload_audit": [
+    {
+      "domain": "persona_generation",
+      "max_tokens": 4096,
+      "payload_sha256": "2e8da353c1e3d0569c2da2908cc8788e940c5543001eb91398d03ec9bc113548",
+      "sealed_control_marker_hits": [],
+      "issued_wire": true
+    },
+    {
+      "domain": "scene_generation",
+      "max_tokens": 4096,
+      "payload_sha256": "f104167e2ce66be668fe172757c13565a10da56a84b09fc23b4de356521bc888",
+      "sealed_control_marker_hits": [],
+      "issued_wire": true
+    },
+    {
+      "domain": "scene_generation",
+      "max_tokens": 6144,
+      "payload_sha256": "fd0c52684845514f5d2bf0a202f494e8427c96a8d4f3375cd0b14c92c05f5641",
+      "sealed_control_marker_hits": [],
+      "issued_wire": true
+    }
+  ],
+  "wire_payload_audit_passed": true,
+  "joint_strict_lifecycle_success": true,
+  "failure_attribution": {
+    "persona": "completed",
+    "scene": "completed"
+  }
+}

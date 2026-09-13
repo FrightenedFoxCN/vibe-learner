@@ -1,0 +1,297 @@
+{
+  "version": "m3-tavern-counterfactual-production-full-call-blinded-key-v1",
+  "campaign_id": "m3-tavern-counterfactual-production-full-call-blind-20260913-v1",
+  "seed": 913413,
+  "prereg_git_commit": "fa0737fe5f6f1c4aa8cbfb69b86121c8ed35cf7a",
+  "fixture_sha256": "f2b85d63c25c1584042da96a16348e1c74d036f60a2fd231c6c432a204c75b0f",
+  "prereg_canonical_sha256": "449497b0c4a6df2a1b370c74113cea84b77c82eb221bc2416f072a87ad4d21f1",
+  "manifest_file_sha256": "a73e0dfacc154f1ee3b7a9f2c7ac4a3357a5b4a014cd87daed31fd633e64be3b",
+  "report_file_sha256": "757bf32c85695d54cd61b3167fa235a0233532427f3664b00e846031d10f94b2",
+  "rubric_file_sha256": "cc6872eef4860729f245189e57b455461b9c6f6598a09acedba36a177ce42f86",
+  "packet_canonical_sha256": "675d5a1ae83917bb55b5c0cbc8e49cce87bae558be0c7d24c33708c2fa88bc4f",
+  "gate": {
+    "denominator_families": 10,
+    "double_strict_min": 9,
+    "denied_evaluable_min": 4,
+    "explicitly_unknown_evaluable_min": 4,
+    "shared_authority_and_sensitivity_min": 9,
+    "reviewer_new_major_max": 0,
+    "reviewers": 2,
+    "completed_operational_checks_required": true,
+    "message_commit_scope": "primary_output_only",
+    "max_wires_per_twin": 3,
+    "max_wires_total": 60
+  },
+  "cases": [
+    {
+      "pair_id": "pair-01",
+      "family_id": "lighthouse_correspondence",
+      "axis": "relationship_fidelity",
+      "second_polarity": "denied",
+      "strict_pair": true,
+      "labels": {
+        "candidate_a": {
+          "case_id": "twin-03-y",
+          "family_id": "lighthouse_correspondence",
+          "arm": "y",
+          "polarity": "denied",
+          "source": "🛰️灯塔 | actor and user are not established pen pals",
+          "source_sha256": "550c903dd6e75e39233f0f82de8e57681fd782888f8dcc13522857a8c4d21d46"
+        },
+        "candidate_b": {
+          "case_id": "twin-03-x",
+          "family_id": "lighthouse_correspondence",
+          "arm": "x",
+          "polarity": "supported",
+          "source": "🛰️灯塔 | actor and user are established pen pals",
+          "source_sha256": "5a99fe104c7742b7a9f0702f9f5740aad578851b652943181d90a8ed5e741ff0"
+        }
+      },
+      "candidate_a_sha256": "e66882317862cdc1cde38355039c62f647b52e1aee8be3635c55c48b42275711",
+      "candidate_b_sha256": "5341299de0abebf605d1670fcf1c3294e931fb96a992d78d7698b35ef06ff817"
+    },
+    {
+      "pair_id": "pair-02",
+      "family_id": "greenhouse_valve_state",
+      "axis": "world_state_fidelity",
+      "second_polarity": "denied",
+      "strict_pair": false,
+      "labels": {
+        "candidate_a": {
+          "case_id": "twin-09-y",
+          "family_id": "greenhouse_valve_state",
+          "arm": "y",
+          "polarity": "denied",
+          "source": "greenhouse_valve_state: the north irrigation valve is not open",
+          "source_sha256": "eb4748b69995ca64d9db53e674431e707797315efba23dc8685c9f50bc98eb2f"
+        },
+        "candidate_b": {
+          "case_id": "twin-09-x",
+          "family_id": "greenhouse_valve_state",
+          "arm": "x",
+          "polarity": "supported",
+          "source": "greenhouse_valve_state: the north irrigation valve is open",
+          "source_sha256": "03bcfdd46bad1402ae21e1e67c6ee7fca05bdc83037812e1b9323b8c876fc2b8"
+        }
+      },
+      "candidate_a_sha256": "667d62cab3b55f916ff653efdfc1d9a81815c8b9a1176711d841da835e20e33d",
+      "candidate_b_sha256": "667d62cab3b55f916ff653efdfc1d9a81815c8b9a1176711d841da835e20e33d"
+    },
+    {
+      "pair_id": "pair-03",
+      "family_id": "radio_weather_measurement",
+      "axis": "epistemic_provenance",
+      "second_polarity": "denied",
+      "strict_pair": true,
+      "labels": {
+        "candidate_a": {
+          "case_id": "twin-07-y",
+          "family_id": "radio_weather_measurement",
+          "arm": "y",
+          "polarity": "denied",
+          "source": "radio_weather_measurement: actor did not personally measure the reported wind speed",
+          "source_sha256": "b60a5d4b53bf3f4a54e38e9b4cc21cdc940942500c8697a67964a03db43e8580"
+        },
+        "candidate_b": {
+          "case_id": "twin-07-x",
+          "family_id": "radio_weather_measurement",
+          "arm": "x",
+          "polarity": "supported",
+          "source": "radio_weather_measurement: actor personally measured the reported wind speed",
+          "source_sha256": "9ef18d1d50cba4c87385f1fae56af8c7c8a7270180470059c5d7c0080acbab08"
+        }
+      },
+      "candidate_a_sha256": "7d313f53bd45af4c004c8ec9009412f3b34f4e507c5022447d0335d46af59063",
+      "candidate_b_sha256": "2fb96d578fa9bcbb207662a3cea6509a4be2640d1782b9e368f8507cac1c98f5"
+    },
+    {
+      "pair_id": "pair-04",
+      "family_id": "ferry_winch_repair",
+      "axis": "shared_history_fidelity",
+      "second_polarity": "explicitly_unknown",
+      "strict_pair": false,
+      "labels": {
+        "candidate_a": {
+          "case_id": "twin-06-y",
+          "family_id": "ferry_winch_repair",
+          "arm": "y",
+          "polarity": "explicitly_unknown",
+          "source": "ferry_winch_repair: whether actor and user repaired the ferry winch together is explicitly unknown",
+          "source_sha256": "647562022a22fd687d591e36db1a1f0102552b2c343dc460f871c39fb5c183c1"
+        },
+        "candidate_b": {
+          "case_id": "twin-06-x",
+          "family_id": "ferry_winch_repair",
+          "arm": "x",
+          "polarity": "supported",
+          "source": "ferry_winch_repair: actor and user repaired the ferry winch together",
+          "source_sha256": "e80840c93772a8cdbd3c8310ed982d341c539de7dd24aa933e3f574764b8d436"
+        }
+      },
+      "candidate_a_sha256": "667d62cab3b55f916ff653efdfc1d9a81815c8b9a1176711d841da835e20e33d",
+      "candidate_b_sha256": "667d62cab3b55f916ff653efdfc1d9a81815c8b9a1176711d841da835e20e33d"
+    },
+    {
+      "pair_id": "pair-05",
+      "family_id": "clinic_supply_inventory",
+      "axis": "permission_fidelity",
+      "second_polarity": "explicitly_unknown",
+      "strict_pair": false,
+      "labels": {
+        "candidate_a": {
+          "case_id": "twin-02-y",
+          "family_id": "clinic_supply_inventory",
+          "arm": "y",
+          "polarity": "explicitly_unknown",
+          "source": "诊所 é | whether actor may open the inventory cabinet is explicitly unknown",
+          "source_sha256": "08872ab352367fd2ab4b3a8bf8782eef8127a1d09279edc5ac6d46af307ecc6d"
+        },
+        "candidate_b": {
+          "case_id": "twin-02-x",
+          "family_id": "clinic_supply_inventory",
+          "arm": "x",
+          "polarity": "supported",
+          "source": "诊所 é | actor may open the inventory cabinet",
+          "source_sha256": "182c8f6e5e4b92562b2ebb8a6d090a943096e60c6c45f922e25c455a12431082"
+        }
+      },
+      "candidate_a_sha256": "667d62cab3b55f916ff653efdfc1d9a81815c8b9a1176711d841da835e20e33d",
+      "candidate_b_sha256": "667d62cab3b55f916ff653efdfc1d9a81815c8b9a1176711d841da835e20e33d"
+    },
+    {
+      "pair_id": "pair-06",
+      "family_id": "rehearsal_east_exit",
+      "axis": "world_state_fidelity",
+      "second_polarity": "explicitly_unknown",
+      "strict_pair": true,
+      "labels": {
+        "candidate_a": {
+          "case_id": "twin-10-x",
+          "family_id": "rehearsal_east_exit",
+          "arm": "x",
+          "polarity": "supported",
+          "source": "rehearsal_east_exit: the east rehearsal exit is accessible",
+          "source_sha256": "0c507feda5b72636c85e3ff17b03d5695e7fab83a6dacbc98321a2fd970b90ca"
+        },
+        "candidate_b": {
+          "case_id": "twin-10-y",
+          "family_id": "rehearsal_east_exit",
+          "arm": "y",
+          "polarity": "explicitly_unknown",
+          "source": "rehearsal_east_exit: whether the east rehearsal exit is accessible is explicitly unknown",
+          "source_sha256": "413109e88b88b0d34362f74306cefb280baa249aab5e958b8a57f6aab2d19bcd"
+        }
+      },
+      "candidate_a_sha256": "e74bbdfeee736bd9f23338873097f6c664dd921e5220f8dfe06ded2ee062bbb6",
+      "candidate_b_sha256": "02b333188aea003c0becd42125e63da4ff51b2a235e04ae7ba522850d4b5cf17"
+    },
+    {
+      "pair_id": "pair-07",
+      "family_id": "archive_keycard_view",
+      "axis": "permission_fidelity",
+      "second_polarity": "denied",
+      "strict_pair": false,
+      "labels": {
+        "candidate_a": {
+          "case_id": "twin-01-x",
+          "family_id": "archive_keycard_view",
+          "arm": "x",
+          "polarity": "supported",
+          "source": "档案🦊 | actor may view the archive ledger",
+          "source_sha256": "bbd1af3a5ca22a15eaef7ea9113ed033a1b2520d770d87c9c568aeae1df12ec5"
+        },
+        "candidate_b": {
+          "case_id": "twin-01-y",
+          "family_id": "archive_keycard_view",
+          "arm": "y",
+          "polarity": "denied",
+          "source": "档案🦊 | actor may not view the archive ledger",
+          "source_sha256": "60c846abb9ef3007d0e6ad084ea872e1e72b344336adf501dff316a5ca7afd6d"
+        }
+      },
+      "candidate_a_sha256": "667d62cab3b55f916ff653efdfc1d9a81815c8b9a1176711d841da835e20e33d",
+      "candidate_b_sha256": "667d62cab3b55f916ff653efdfc1d9a81815c8b9a1176711d841da835e20e33d"
+    },
+    {
+      "pair_id": "pair-08",
+      "family_id": "neighborhood_watch_intro",
+      "axis": "relationship_fidelity",
+      "second_polarity": "explicitly_unknown",
+      "strict_pair": false,
+      "labels": {
+        "candidate_a": {
+          "case_id": "twin-04-x",
+          "family_id": "neighborhood_watch_intro",
+          "arm": "x",
+          "polarity": "supported",
+          "source": "邻里 | actor and user served together on the watch",
+          "source_sha256": "b50b4ebe8ad3b0af4a5a7183a1467a29ff7b854ef99a275759db77c56e08828b"
+        },
+        "candidate_b": {
+          "case_id": "twin-04-y",
+          "family_id": "neighborhood_watch_intro",
+          "arm": "y",
+          "polarity": "explicitly_unknown",
+          "source": "邻里 | whether actor and user served together on the watch is explicitly unknown",
+          "source_sha256": "5ed04d38b8a5cb7b4389491427748d7e0c9412041e36a44d3ac2744ab11d36bc"
+        }
+      },
+      "candidate_a_sha256": "667d62cab3b55f916ff653efdfc1d9a81815c8b9a1176711d841da835e20e33d",
+      "candidate_b_sha256": "667d62cab3b55f916ff653efdfc1d9a81815c8b9a1176711d841da835e20e33d"
+    },
+    {
+      "pair_id": "pair-09",
+      "family_id": "observatory_plate_sighting",
+      "axis": "epistemic_provenance",
+      "second_polarity": "explicitly_unknown",
+      "strict_pair": true,
+      "labels": {
+        "candidate_a": {
+          "case_id": "twin-08-x",
+          "family_id": "observatory_plate_sighting",
+          "arm": "x",
+          "polarity": "supported",
+          "source": "observatory_plate_sighting: actor directly observed the plate marking",
+          "source_sha256": "a94ec8591502dfe3f9686a2638342b645c62e5277bb7e7ce517bf73892cd8a29"
+        },
+        "candidate_b": {
+          "case_id": "twin-08-y",
+          "family_id": "observatory_plate_sighting",
+          "arm": "y",
+          "polarity": "explicitly_unknown",
+          "source": "observatory_plate_sighting: whether actor directly observed the plate marking is explicitly unknown",
+          "source_sha256": "0935fec29b899bada9600bcadb01acaf8ce9c849aca49ae3c8bfda2e2a20f325"
+        }
+      },
+      "candidate_a_sha256": "e3275b185d0705635c1574d3b37530c921c54e1e8cbb722759994d4566e5a11e",
+      "candidate_b_sha256": "b5dbed2a4047d53d2970f0aa363d797c5181e12fd7ec029b5f4fb2919bc1be45"
+    },
+    {
+      "pair_id": "pair-10",
+      "family_id": "pottery_fair_visit",
+      "axis": "shared_history_fidelity",
+      "second_polarity": "denied",
+      "strict_pair": true,
+      "labels": {
+        "candidate_a": {
+          "case_id": "twin-05-x",
+          "family_id": "pottery_fair_visit",
+          "arm": "x",
+          "polarity": "supported",
+          "source": "pottery_fair_visit: actor and user attended the prior pottery fair together",
+          "source_sha256": "b8fb213accd2145ee6be324b2d1891812321de0e801154ff3e0e0fb597f5885c"
+        },
+        "candidate_b": {
+          "case_id": "twin-05-y",
+          "family_id": "pottery_fair_visit",
+          "arm": "y",
+          "polarity": "denied",
+          "source": "pottery_fair_visit: actor and user did not attend the prior pottery fair together",
+          "source_sha256": "00c1bb9695650963b0a6804be1ddeccde1cf2fc2a5623e9e03acccc672b7d54e"
+        }
+      },
+      "candidate_a_sha256": "319b3726de582866e6b29426fba799e7536fd946c3d0d079197718be61ea60ca",
+      "candidate_b_sha256": "073b9e93b6a2ea01488c76e72cc6f1082dc1ff13b5feddb9d74db7442416b60a"
+    }
+  ]
+}

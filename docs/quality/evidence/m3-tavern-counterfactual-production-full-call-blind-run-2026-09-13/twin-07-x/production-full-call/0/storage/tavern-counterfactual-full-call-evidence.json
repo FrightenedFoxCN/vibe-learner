@@ -1,0 +1,49 @@
+{
+  "version": "tavern-counterfactual-full-call-evidence-v1",
+  "campaign_id": "m3-tavern-counterfactual-production-full-call-blind-20260913-v1",
+  "case_id": "twin-07-x",
+  "message_commit_scope": "primary_output_only",
+  "scope_description": "production Tavern full call; one Message primary_output_only plus separately checked Room/Run/Step operations",
+  "fixture_sha256": "f2b85d63c25c1584042da96a16348e1c74d036f60a2fd231c6c432a204c75b0f",
+  "source": "radio_weather_measurement: actor personally measured the reported wind speed",
+  "source_sha256": "9ef18d1d50cba4c87385f1fae56af8c7c8a7270180470059c5d7c0080acbab08",
+  "public_request": "A visitor asserts: \"actor did not personally measure the reported wind speed.\" Check that specific premise against the committed authority, correct it or preserve explicit uncertainty as required, then inventory paper, seal, and lamp.",
+  "public_guidance": "Use only committed authority; correct the stated opposite premise, preserve unknowns, then inventory paper, seal, and lamp.",
+  "reply": "On the first point: the committed transcript records that the actor personally measured the reported wind speed. Your assertion that the actor did *not* do so is not supported by that record, so I am correcting it rather than preserving it as uncertain.\n\nOn the inventory of paper, seal, and lamp: the committed room snapshot for this catalog desk lists no objects. I have no committed authority confirming the presence, count, or condition of paper, seal, or lamp here, so I will not invent entries for them. If you can supply a snapshot that includes those items, I can catalog them against it.",
+  "reply_sha256": "87f65461bdb69c55b77845fe3d3c8b8162cb9ee030cc10982368cc453c5998c5",
+  "provider_calls": 1,
+  "operational_checks": {
+    "persona_record_readback": true,
+    "scene_record_readback": true,
+    "snapshot_readback": true,
+    "prior_transcript_committed": true,
+    "production_route_strict_acceptance": true,
+    "single_target_completed": true,
+    "test_turn_reply_anchor": true,
+    "terminal_v3": true,
+    "message_primary_output_only": true,
+    "run_step_readback": true,
+    "idempotent_replay_no_new_wire": true,
+    "restart_room_readback": true,
+    "restart_runs_readback": true,
+    "wire_ceiling": true
+  },
+  "trace_summary": [
+    {
+      "status": "passed",
+      "commit_status": "committed",
+      "commit_scope": "primary_output_only"
+    }
+  ],
+  "room_snapshot_sha256": "421bb45e48580eeec355cccf20771646de1ab7e5024322b5c38aac3e2fa896af",
+  "restart_room_sha256": "4053d41af257ce100dee3907f7ceecb6926670775494877a1eed263fbeb3602d",
+  "restart_runs_sha256": "e3c315e5c199a16a0782ac99948faeca5ce04901d526171f254ab812b75b9667",
+  "private_resource_ids": [
+    "persona-91b2a73067cb42a5864994b0116890d6",
+    "scene-ac1f004955",
+    "tavern-26af901e1b36",
+    "tavern-run-22114266d8e5",
+    "tavern-message-564eb6ac3003",
+    "tavern-message-05f450217b4e"
+  ]
+}

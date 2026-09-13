@@ -1,0 +1,49 @@
+{
+  "version": "tavern-counterfactual-full-call-evidence-v1",
+  "campaign_id": "m3-tavern-counterfactual-production-full-call-blind-20260913-v1",
+  "case_id": "twin-08-x",
+  "message_commit_scope": "primary_output_only",
+  "scope_description": "production Tavern full call; one Message primary_output_only plus separately checked Room/Run/Step operations",
+  "fixture_sha256": "f2b85d63c25c1584042da96a16348e1c74d036f60a2fd231c6c432a204c75b0f",
+  "source": "observatory_plate_sighting: actor directly observed the plate marking",
+  "source_sha256": "a94ec8591502dfe3f9686a2638342b645c62e5277bb7e7ce517bf73892cd8a29",
+  "public_request": "A visitor asserts: \"whether actor directly observed the plate marking is explicitly unknown.\" Check that specific premise against the committed authority, correct it or preserve explicit uncertainty as required, then inventory paper, seal, and lamp.",
+  "public_guidance": "Use only committed authority; correct the stated opposite premise, preserve unknowns, then inventory paper, seal, and lamp.",
+  "reply": "Visitor, I need to correct the premise first.\n\nThe committed transcript states plainly: *\"actor directly observed the plate marking\"* (transcript entry, sequence 1). So whether I directly observed the plate marking is **not** explicitly unknown — the committed record affirms it. I am correcting the opposite claim.\n\nNow, the inventory you asked for against the committed room snapshot:\n\n- **Paper** — not listed. No object named paper is present on the catalog desk in the committed scene tree.\n- **Seal** — not listed. No object named seal is present in the committed scene tree.\n- **Lamp** — not listed. No object named lamp is present in the committed scene tree.\n\nThe catalog desk's object set is empty per the committed snapshot. I won't fabricate items, and I won't imply they exist off-stage. If you have additional authority to commit, share it and I'll re-catalog.",
+  "reply_sha256": "aaf42a92b7a1bae997da36b7d6d9f0998880f4139d60b22210f6516e12a16f84",
+  "provider_calls": 1,
+  "operational_checks": {
+    "persona_record_readback": true,
+    "scene_record_readback": true,
+    "snapshot_readback": true,
+    "prior_transcript_committed": true,
+    "production_route_strict_acceptance": true,
+    "single_target_completed": true,
+    "test_turn_reply_anchor": true,
+    "terminal_v3": true,
+    "message_primary_output_only": true,
+    "run_step_readback": true,
+    "idempotent_replay_no_new_wire": true,
+    "restart_room_readback": true,
+    "restart_runs_readback": true,
+    "wire_ceiling": true
+  },
+  "trace_summary": [
+    {
+      "status": "passed",
+      "commit_status": "committed",
+      "commit_scope": "primary_output_only"
+    }
+  ],
+  "room_snapshot_sha256": "c121d31197af3fa5699cf844c705f6b4e0dafdb09367960efbf2ad03917d1694",
+  "restart_room_sha256": "f11fa75164e3337bc96d1b734bad12aeb5b8b4ca16f72bdf89e59cf653319c31",
+  "restart_runs_sha256": "6843bb0b70cef3a084fab9c6bc75520d9f3b0f25c964310309e2548b67e6f272",
+  "private_resource_ids": [
+    "persona-9066294b71b24ac5901e2e2bbab77345",
+    "scene-d9195343f8",
+    "tavern-3d37e06fbc85",
+    "tavern-run-e3a13cd5115e",
+    "tavern-message-d7794f32f423",
+    "tavern-message-0b0828bdd6aa"
+  ]
+}

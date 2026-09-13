@@ -1,0 +1,1340 @@
+{
+  "wire_latency_ms": {
+    "50": 5108,
+    "95": 15735
+  },
+  "percentile_method": "nearest-rank",
+  "aggregation_source_digest": "448d8db68208af633654378ecf896573ee64449a7fc2305e55bf241fc9e33fb2",
+  "failure_owners": {
+    "infrastructure": 5
+  },
+  "version": "quality-report-v1",
+  "campaign": "m3-tavern-counterfactual-production-full-call-blind-20260913-v1",
+  "transport": "minimax",
+  "scope": "research infrastructure; not Harness evidence or independent quality certification",
+  "expected_samples": 20,
+  "independent_families": 10,
+  "states": {
+    "completed": 15,
+    "infrastructure_failed": 5
+  },
+  "pairs": {
+    "twin-01-y:0": {
+      "production-full-call": "completed"
+    },
+    "twin-07-x:0": {
+      "production-full-call": "completed"
+    },
+    "twin-06-y:0": {
+      "production-full-call": "completed"
+    },
+    "twin-02-x:0": {
+      "production-full-call": "completed"
+    },
+    "twin-10-y:0": {
+      "production-full-call": "completed"
+    },
+    "twin-09-y:0": {
+      "production-full-call": "infrastructure_failed"
+    },
+    "twin-03-x:0": {
+      "production-full-call": "completed"
+    },
+    "twin-04-x:0": {
+      "production-full-call": "infrastructure_failed"
+    },
+    "twin-03-y:0": {
+      "production-full-call": "completed"
+    },
+    "twin-01-x:0": {
+      "production-full-call": "infrastructure_failed"
+    },
+    "twin-04-y:0": {
+      "production-full-call": "completed"
+    },
+    "twin-08-y:0": {
+      "production-full-call": "completed"
+    },
+    "twin-02-y:0": {
+      "production-full-call": "infrastructure_failed"
+    },
+    "twin-05-y:0": {
+      "production-full-call": "completed"
+    },
+    "twin-06-x:0": {
+      "production-full-call": "infrastructure_failed"
+    },
+    "twin-08-x:0": {
+      "production-full-call": "completed"
+    },
+    "twin-07-y:0": {
+      "production-full-call": "completed"
+    },
+    "twin-05-x:0": {
+      "production-full-call": "completed"
+    },
+    "twin-09-x:0": {
+      "production-full-call": "completed"
+    },
+    "twin-10-x:0": {
+      "production-full-call": "completed"
+    }
+  },
+  "samples": [
+    {
+      "campaign": "m3-tavern-counterfactual-production-full-call-blind-20260913-v1",
+      "case": "twin-01-y",
+      "repetition": 0,
+      "variant": "production-full-call",
+      "sample_id": "05ace161df76222b26381c197039178c0b57e65df61146cabe03049a2f7eec3c",
+      "family": "archive_keycard_view",
+      "state": "completed",
+      "result": {
+        "error_code": null,
+        "evidence": [
+          {
+            "contract": "tavern-counterfactual-full-call-evidence-v1",
+            "path": "tavern-counterfactual-full-call-evidence.json",
+            "sha256": "a492ed4a3f243c466ae8925ab1bdbb5bee608ca11244c974be79bcb880f34676"
+          }
+        ],
+        "failure_owner": null,
+        "metrics": {
+          "idempotent_replay_no_new_wire": true,
+          "message_primary_output_only": true,
+          "persona_record_readback": true,
+          "prior_transcript_committed": true,
+          "production_route_strict_acceptance": true,
+          "restart_room_readback": true,
+          "restart_runs_readback": true,
+          "run_step_readback": true,
+          "scene_record_readback": true,
+          "single_target_completed": true,
+          "snapshot_readback": true,
+          "terminal_v3": true,
+          "test_turn_reply_anchor": true,
+          "wire_ceiling": true
+        },
+        "pid": 85061,
+        "sample_id": "05ace161df76222b26381c197039178c0b57e65df61146cabe03049a2f7eec3c",
+        "scope": "domain-primary-output-readback",
+        "status": "completed"
+      },
+      "elapsed_seconds": 6.881482839584351
+    },
+    {
+      "campaign": "m3-tavern-counterfactual-production-full-call-blind-20260913-v1",
+      "case": "twin-07-x",
+      "repetition": 0,
+      "variant": "production-full-call",
+      "sample_id": "079ee3f7350defb1854b58fa8561eda8557613998ecbd75174f181b583c6fe1c",
+      "family": "radio_weather_measurement",
+      "state": "completed",
+      "result": {
+        "error_code": null,
+        "evidence": [
+          {
+            "contract": "tavern-counterfactual-full-call-evidence-v1",
+            "path": "tavern-counterfactual-full-call-evidence.json",
+            "sha256": "57f9dfecdef6851c398120cbbb0d283d3326369e87848940ea845c1fbe14ae9c"
+          }
+        ],
+        "failure_owner": null,
+        "metrics": {
+          "idempotent_replay_no_new_wire": true,
+          "message_primary_output_only": true,
+          "persona_record_readback": true,
+          "prior_transcript_committed": true,
+          "production_route_strict_acceptance": true,
+          "restart_room_readback": true,
+          "restart_runs_readback": true,
+          "run_step_readback": true,
+          "scene_record_readback": true,
+          "single_target_completed": true,
+          "snapshot_readback": true,
+          "terminal_v3": true,
+          "test_turn_reply_anchor": true,
+          "wire_ceiling": true
+        },
+        "pid": 85110,
+        "sample_id": "079ee3f7350defb1854b58fa8561eda8557613998ecbd75174f181b583c6fe1c",
+        "scope": "domain-primary-output-readback",
+        "status": "completed"
+      },
+      "elapsed_seconds": 10.204890966415405
+    },
+    {
+      "campaign": "m3-tavern-counterfactual-production-full-call-blind-20260913-v1",
+      "case": "twin-06-y",
+      "repetition": 0,
+      "variant": "production-full-call",
+      "sample_id": "34e095425849780e560a7aa1b3317b53762e9d1682ddb5626d73b673230934c5",
+      "family": "ferry_winch_repair",
+      "state": "completed",
+      "result": {
+        "error_code": null,
+        "evidence": [
+          {
+            "contract": "tavern-counterfactual-full-call-evidence-v1",
+            "path": "tavern-counterfactual-full-call-evidence.json",
+            "sha256": "0212e233d918d9cb3de765f80b35eed78cbe8dfe59b83e66df26050f4cfd6402"
+          }
+        ],
+        "failure_owner": null,
+        "metrics": {
+          "idempotent_replay_no_new_wire": true,
+          "message_primary_output_only": true,
+          "persona_record_readback": true,
+          "prior_transcript_committed": true,
+          "production_route_strict_acceptance": true,
+          "restart_room_readback": true,
+          "restart_runs_readback": true,
+          "run_step_readback": true,
+          "scene_record_readback": true,
+          "single_target_completed": true,
+          "snapshot_readback": true,
+          "terminal_v3": true,
+          "test_turn_reply_anchor": true,
+          "wire_ceiling": true
+        },
+        "pid": 85371,
+        "sample_id": "34e095425849780e560a7aa1b3317b53762e9d1682ddb5626d73b673230934c5",
+        "scope": "domain-primary-output-readback",
+        "status": "completed"
+      },
+      "elapsed_seconds": 7.0303239822387695
+    },
+    {
+      "campaign": "m3-tavern-counterfactual-production-full-call-blind-20260913-v1",
+      "case": "twin-02-x",
+      "repetition": 0,
+      "variant": "production-full-call",
+      "sample_id": "485daf5166fbe66a9f4e2ed43142bfb24ae4e8126cae3f5efb970fb0e9837e39",
+      "family": "clinic_supply_inventory",
+      "state": "completed",
+      "result": {
+        "error_code": null,
+        "evidence": [
+          {
+            "contract": "tavern-counterfactual-full-call-evidence-v1",
+            "path": "tavern-counterfactual-full-call-evidence.json",
+            "sha256": "98728e2d000f7884a78024325d93b043821f8ad00dfdc462288d26e9bb6018b0"
+          }
+        ],
+        "failure_owner": null,
+        "metrics": {
+          "idempotent_replay_no_new_wire": true,
+          "message_primary_output_only": true,
+          "persona_record_readback": true,
+          "prior_transcript_committed": true,
+          "production_route_strict_acceptance": true,
+          "restart_room_readback": true,
+          "restart_runs_readback": true,
+          "run_step_readback": true,
+          "scene_record_readback": true,
+          "single_target_completed": true,
+          "snapshot_readback": true,
+          "terminal_v3": true,
+          "test_turn_reply_anchor": true,
+          "wire_ceiling": true
+        },
+        "pid": 85335,
+        "sample_id": "485daf5166fbe66a9f4e2ed43142bfb24ae4e8126cae3f5efb970fb0e9837e39",
+        "scope": "domain-primary-output-readback",
+        "status": "completed"
+      },
+      "elapsed_seconds": 5.7768518924713135
+    },
+    {
+      "campaign": "m3-tavern-counterfactual-production-full-call-blind-20260913-v1",
+      "case": "twin-10-y",
+      "repetition": 0,
+      "variant": "production-full-call",
+      "sample_id": "5ae39df3eeb9ae3204392a0ad90f9a876822b5e77f9c55637df93c0d2b4071a0",
+      "family": "rehearsal_east_exit",
+      "state": "completed",
+      "result": {
+        "error_code": null,
+        "evidence": [
+          {
+            "contract": "tavern-counterfactual-full-call-evidence-v1",
+            "path": "tavern-counterfactual-full-call-evidence.json",
+            "sha256": "4a831351f8a81bf3b096d5e50e65089b37934f7e533496676ae7c48b9e758ef1"
+          }
+        ],
+        "failure_owner": null,
+        "metrics": {
+          "idempotent_replay_no_new_wire": true,
+          "message_primary_output_only": true,
+          "persona_record_readback": true,
+          "prior_transcript_committed": true,
+          "production_route_strict_acceptance": true,
+          "restart_room_readback": true,
+          "restart_runs_readback": true,
+          "run_step_readback": true,
+          "scene_record_readback": true,
+          "single_target_completed": true,
+          "snapshot_readback": true,
+          "terminal_v3": true,
+          "test_turn_reply_anchor": true,
+          "wire_ceiling": true
+        },
+        "pid": 85427,
+        "sample_id": "5ae39df3eeb9ae3204392a0ad90f9a876822b5e77f9c55637df93c0d2b4071a0",
+        "scope": "domain-primary-output-readback",
+        "status": "completed"
+      },
+      "elapsed_seconds": 5.4523091316223145
+    },
+    {
+      "campaign": "m3-tavern-counterfactual-production-full-call-blind-20260913-v1",
+      "case": "twin-09-y",
+      "repetition": 0,
+      "variant": "production-full-call",
+      "sample_id": "63b83105a99f29499ea522f8b7ffdd686a3938ce1057428561cf0e61bcc26aa8",
+      "family": "greenhouse_valve_state",
+      "state": "infrastructure_failed",
+      "result": {
+        "error_class": "SyntaxError",
+        "failure_owner": "infrastructure",
+        "pid": 85537,
+        "sample_id": "63b83105a99f29499ea522f8b7ffdd686a3938ce1057428561cf0e61bcc26aa8",
+        "status": "infrastructure_failed"
+      },
+      "elapsed_seconds": 0.15723609924316406
+    },
+    {
+      "campaign": "m3-tavern-counterfactual-production-full-call-blind-20260913-v1",
+      "case": "twin-03-x",
+      "repetition": 0,
+      "variant": "production-full-call",
+      "sample_id": "6d4734487442f1e8354e7c59429be97b5b3d8a5721ac2039699fb379a16c7306",
+      "family": "lighthouse_correspondence",
+      "state": "completed",
+      "result": {
+        "error_code": null,
+        "evidence": [
+          {
+            "contract": "tavern-counterfactual-full-call-evidence-v1",
+            "path": "tavern-counterfactual-full-call-evidence.json",
+            "sha256": "915083c32c38554a6e95cda89d18ce9937ce536410c894b63b9e18efe6a03bb2"
+          }
+        ],
+        "failure_owner": null,
+        "metrics": {
+          "idempotent_replay_no_new_wire": true,
+          "message_primary_output_only": true,
+          "persona_record_readback": true,
+          "prior_transcript_committed": true,
+          "production_route_strict_acceptance": true,
+          "restart_room_readback": true,
+          "restart_runs_readback": true,
+          "run_step_readback": true,
+          "scene_record_readback": true,
+          "single_target_completed": true,
+          "snapshot_readback": true,
+          "terminal_v3": true,
+          "test_turn_reply_anchor": true,
+          "wire_ceiling": true
+        },
+        "pid": 85394,
+        "sample_id": "6d4734487442f1e8354e7c59429be97b5b3d8a5721ac2039699fb379a16c7306",
+        "scope": "domain-primary-output-readback",
+        "status": "completed"
+      },
+      "elapsed_seconds": 4.922560930252075
+    },
+    {
+      "campaign": "m3-tavern-counterfactual-production-full-call-blind-20260913-v1",
+      "case": "twin-04-x",
+      "repetition": 0,
+      "variant": "production-full-call",
+      "sample_id": "7a285b92a5e231733e21326120cfce153fdddd992476a2595942e427e8b33332",
+      "family": "neighborhood_watch_intro",
+      "state": "infrastructure_failed",
+      "result": {
+        "error_class": "SyntaxError",
+        "failure_owner": "infrastructure",
+        "pid": 85547,
+        "sample_id": "7a285b92a5e231733e21326120cfce153fdddd992476a2595942e427e8b33332",
+        "status": "infrastructure_failed"
+      },
+      "elapsed_seconds": 0.15549492835998535
+    },
+    {
+      "campaign": "m3-tavern-counterfactual-production-full-call-blind-20260913-v1",
+      "case": "twin-03-y",
+      "repetition": 0,
+      "variant": "production-full-call",
+      "sample_id": "7dba9cfa500956ff0f0f33208f47cd7391aca890719a3c7d34d84b129a02bd95",
+      "family": "lighthouse_correspondence",
+      "state": "completed",
+      "result": {
+        "error_code": null,
+        "evidence": [
+          {
+            "contract": "tavern-counterfactual-full-call-evidence-v1",
+            "path": "tavern-counterfactual-full-call-evidence.json",
+            "sha256": "bc6cb1ee7f8f6719aa8f80c5c407fa6873d2560041af4c6df1f05176eab55035"
+          }
+        ],
+        "failure_owner": null,
+        "metrics": {
+          "idempotent_replay_no_new_wire": true,
+          "message_primary_output_only": true,
+          "persona_record_readback": true,
+          "prior_transcript_committed": true,
+          "production_route_strict_acceptance": true,
+          "restart_room_readback": true,
+          "restart_runs_readback": true,
+          "run_step_readback": true,
+          "scene_record_readback": true,
+          "single_target_completed": true,
+          "snapshot_readback": true,
+          "terminal_v3": true,
+          "test_turn_reply_anchor": true,
+          "wire_ceiling": true
+        },
+        "pid": 85472,
+        "sample_id": "7dba9cfa500956ff0f0f33208f47cd7391aca890719a3c7d34d84b129a02bd95",
+        "scope": "domain-primary-output-readback",
+        "status": "completed"
+      },
+      "elapsed_seconds": 4.308164119720459
+    },
+    {
+      "campaign": "m3-tavern-counterfactual-production-full-call-blind-20260913-v1",
+      "case": "twin-01-x",
+      "repetition": 0,
+      "variant": "production-full-call",
+      "sample_id": "7e3dc6582aa23b819db589cbac232bd405803ec0dcfb1e7e7c02d93174a36f5c",
+      "family": "archive_keycard_view",
+      "state": "infrastructure_failed",
+      "result": {
+        "error_class": "SyntaxError",
+        "failure_owner": "infrastructure",
+        "pid": 85546,
+        "sample_id": "7e3dc6582aa23b819db589cbac232bd405803ec0dcfb1e7e7c02d93174a36f5c",
+        "status": "infrastructure_failed"
+      },
+      "elapsed_seconds": 0.15441107749938965
+    },
+    {
+      "campaign": "m3-tavern-counterfactual-production-full-call-blind-20260913-v1",
+      "case": "twin-04-y",
+      "repetition": 0,
+      "variant": "production-full-call",
+      "sample_id": "9d0ec2a4d4123f701c3e4058c0fdf7aca0492f015ee4e1a81019b2ccafbd0082",
+      "family": "neighborhood_watch_intro",
+      "state": "completed",
+      "result": {
+        "error_code": null,
+        "evidence": [
+          {
+            "contract": "tavern-counterfactual-full-call-evidence-v1",
+            "path": "tavern-counterfactual-full-call-evidence.json",
+            "sha256": "cf1860182cbea3b4b5a7fbf437ec5bf15db2cf000724334d40f12e359682fee0"
+          }
+        ],
+        "failure_owner": null,
+        "metrics": {
+          "idempotent_replay_no_new_wire": true,
+          "message_primary_output_only": true,
+          "persona_record_readback": true,
+          "prior_transcript_committed": true,
+          "production_route_strict_acceptance": true,
+          "restart_room_readback": true,
+          "restart_runs_readback": true,
+          "run_step_readback": true,
+          "scene_record_readback": true,
+          "single_target_completed": true,
+          "snapshot_readback": true,
+          "terminal_v3": true,
+          "test_turn_reply_anchor": true,
+          "wire_ceiling": true
+        },
+        "pid": 85111,
+        "sample_id": "9d0ec2a4d4123f701c3e4058c0fdf7aca0492f015ee4e1a81019b2ccafbd0082",
+        "scope": "domain-primary-output-readback",
+        "status": "completed"
+      },
+      "elapsed_seconds": 13.465256214141846
+    },
+    {
+      "campaign": "m3-tavern-counterfactual-production-full-call-blind-20260913-v1",
+      "case": "twin-08-y",
+      "repetition": 0,
+      "variant": "production-full-call",
+      "sample_id": "9e4110182c94ba1f04ad8018d183cc776508226015b7b89beb9c73b8109a60cf",
+      "family": "observatory_plate_sighting",
+      "state": "completed",
+      "result": {
+        "error_code": null,
+        "evidence": [
+          {
+            "contract": "tavern-counterfactual-full-call-evidence-v1",
+            "path": "tavern-counterfactual-full-call-evidence.json",
+            "sha256": "1fba00dc7bdcf6a1d0f5990422883fb808e7866bd657b1620286825974d95d0d"
+          }
+        ],
+        "failure_owner": null,
+        "metrics": {
+          "idempotent_replay_no_new_wire": true,
+          "message_primary_output_only": true,
+          "persona_record_readback": true,
+          "prior_transcript_committed": true,
+          "production_route_strict_acceptance": true,
+          "restart_room_readback": true,
+          "restart_runs_readback": true,
+          "run_step_readback": true,
+          "scene_record_readback": true,
+          "single_target_completed": true,
+          "snapshot_readback": true,
+          "terminal_v3": true,
+          "test_turn_reply_anchor": true,
+          "wire_ceiling": true
+        },
+        "pid": 85193,
+        "sample_id": "9e4110182c94ba1f04ad8018d183cc776508226015b7b89beb9c73b8109a60cf",
+        "scope": "domain-primary-output-readback",
+        "status": "completed"
+      },
+      "elapsed_seconds": 10.544447898864746
+    },
+    {
+      "campaign": "m3-tavern-counterfactual-production-full-call-blind-20260913-v1",
+      "case": "twin-02-y",
+      "repetition": 0,
+      "variant": "production-full-call",
+      "sample_id": "a69b6d820f6bee0127fa35186fc069f1004e457d068cc4ac4911377356194e3a",
+      "family": "clinic_supply_inventory",
+      "state": "infrastructure_failed",
+      "result": {
+        "error_class": "SyntaxError",
+        "failure_owner": "infrastructure",
+        "pid": 85535,
+        "sample_id": "a69b6d820f6bee0127fa35186fc069f1004e457d068cc4ac4911377356194e3a",
+        "status": "infrastructure_failed"
+      },
+      "elapsed_seconds": 0.14784479141235352
+    },
+    {
+      "campaign": "m3-tavern-counterfactual-production-full-call-blind-20260913-v1",
+      "case": "twin-05-y",
+      "repetition": 0,
+      "variant": "production-full-call",
+      "sample_id": "b917130c190a8ce6f8ccee56f48546b179f41fcd1d4ed90a3349b0e1dae77ea4",
+      "family": "pottery_fair_visit",
+      "state": "completed",
+      "result": {
+        "error_code": null,
+        "evidence": [
+          {
+            "contract": "tavern-counterfactual-full-call-evidence-v1",
+            "path": "tavern-counterfactual-full-call-evidence.json",
+            "sha256": "fb136c4ce7ead356f793ffdbefeae79b1ccc523355c20134bb9722f47b3334af"
+          }
+        ],
+        "failure_owner": null,
+        "metrics": {
+          "idempotent_replay_no_new_wire": true,
+          "message_primary_output_only": true,
+          "persona_record_readback": true,
+          "prior_transcript_committed": true,
+          "production_route_strict_acceptance": true,
+          "restart_room_readback": true,
+          "restart_runs_readback": true,
+          "run_step_readback": true,
+          "scene_record_readback": true,
+          "single_target_completed": true,
+          "snapshot_readback": true,
+          "terminal_v3": true,
+          "test_turn_reply_anchor": true,
+          "wire_ceiling": true
+        },
+        "pid": 84990,
+        "sample_id": "b917130c190a8ce6f8ccee56f48546b179f41fcd1d4ed90a3349b0e1dae77ea4",
+        "scope": "domain-primary-output-readback",
+        "status": "completed"
+      },
+      "elapsed_seconds": 7.122086048126221
+    },
+    {
+      "campaign": "m3-tavern-counterfactual-production-full-call-blind-20260913-v1",
+      "case": "twin-06-x",
+      "repetition": 0,
+      "variant": "production-full-call",
+      "sample_id": "bfe92b768d128d131ec5e8b4e67b80bec0fd3dd582807b1e449e8f746d44c800",
+      "family": "ferry_winch_repair",
+      "state": "infrastructure_failed",
+      "result": {
+        "error_class": "SyntaxError",
+        "failure_owner": "infrastructure",
+        "pid": 85540,
+        "sample_id": "bfe92b768d128d131ec5e8b4e67b80bec0fd3dd582807b1e449e8f746d44c800",
+        "status": "infrastructure_failed"
+      },
+      "elapsed_seconds": 0.15497398376464844
+    },
+    {
+      "campaign": "m3-tavern-counterfactual-production-full-call-blind-20260913-v1",
+      "case": "twin-08-x",
+      "repetition": 0,
+      "variant": "production-full-call",
+      "sample_id": "c7a5bf89f317599b8513d0aadf794bc32d5c66e912e4d56688e5389429b60791",
+      "family": "observatory_plate_sighting",
+      "state": "completed",
+      "result": {
+        "error_code": null,
+        "evidence": [
+          {
+            "contract": "tavern-counterfactual-full-call-evidence-v1",
+            "path": "tavern-counterfactual-full-call-evidence.json",
+            "sha256": "17e5673a78b7711fc66fb29d6e827fb8e9412f8c24ec1268c642b2817860a114"
+          }
+        ],
+        "failure_owner": null,
+        "metrics": {
+          "idempotent_replay_no_new_wire": true,
+          "message_primary_output_only": true,
+          "persona_record_readback": true,
+          "prior_transcript_committed": true,
+          "production_route_strict_acceptance": true,
+          "restart_room_readback": true,
+          "restart_runs_readback": true,
+          "run_step_readback": true,
+          "scene_record_readback": true,
+          "single_target_completed": true,
+          "snapshot_readback": true,
+          "terminal_v3": true,
+          "test_turn_reply_anchor": true,
+          "wire_ceiling": true
+        },
+        "pid": 85424,
+        "sample_id": "c7a5bf89f317599b8513d0aadf794bc32d5c66e912e4d56688e5389429b60791",
+        "scope": "domain-primary-output-readback",
+        "status": "completed"
+      },
+      "elapsed_seconds": 5.451495885848999
+    },
+    {
+      "campaign": "m3-tavern-counterfactual-production-full-call-blind-20260913-v1",
+      "case": "twin-07-y",
+      "repetition": 0,
+      "variant": "production-full-call",
+      "sample_id": "cebd9e5bfec1d67138b3048a82c02fdbac858394555320349a13d70a5ef3969b",
+      "family": "radio_weather_measurement",
+      "state": "completed",
+      "result": {
+        "error_code": null,
+        "evidence": [
+          {
+            "contract": "tavern-counterfactual-full-call-evidence-v1",
+            "path": "tavern-counterfactual-full-call-evidence.json",
+            "sha256": "2bed1f8d7fe4bf0f7a6b03dd72dc68119302d7b89a7210f55cbde24c172010f7"
+          }
+        ],
+        "failure_owner": null,
+        "metrics": {
+          "idempotent_replay_no_new_wire": true,
+          "message_primary_output_only": true,
+          "persona_record_readback": true,
+          "prior_transcript_committed": true,
+          "production_route_strict_acceptance": true,
+          "restart_room_readback": true,
+          "restart_runs_readback": true,
+          "run_step_readback": true,
+          "scene_record_readback": true,
+          "single_target_completed": true,
+          "snapshot_readback": true,
+          "terminal_v3": true,
+          "test_turn_reply_anchor": true,
+          "wire_ceiling": true
+        },
+        "pid": 85221,
+        "sample_id": "cebd9e5bfec1d67138b3048a82c02fdbac858394555320349a13d70a5ef3969b",
+        "scope": "domain-primary-output-readback",
+        "status": "completed"
+      },
+      "elapsed_seconds": 17.736618041992188
+    },
+    {
+      "campaign": "m3-tavern-counterfactual-production-full-call-blind-20260913-v1",
+      "case": "twin-05-x",
+      "repetition": 0,
+      "variant": "production-full-call",
+      "sample_id": "e0cda69daa02060d0c4db7e7b833d5d59f980b2f298b20a38dc559b6bc6f73bd",
+      "family": "pottery_fair_visit",
+      "state": "completed",
+      "result": {
+        "error_code": null,
+        "evidence": [
+          {
+            "contract": "tavern-counterfactual-full-call-evidence-v1",
+            "path": "tavern-counterfactual-full-call-evidence.json",
+            "sha256": "10014e771801fdb07d66e5b616fac9a7927d9af04d1c1b7e9c15e017daaa666f"
+          }
+        ],
+        "failure_owner": null,
+        "metrics": {
+          "idempotent_replay_no_new_wire": true,
+          "message_primary_output_only": true,
+          "persona_record_readback": true,
+          "prior_transcript_committed": true,
+          "production_route_strict_acceptance": true,
+          "restart_room_readback": true,
+          "restart_runs_readback": true,
+          "run_step_readback": true,
+          "scene_record_readback": true,
+          "single_target_completed": true,
+          "snapshot_readback": true,
+          "terminal_v3": true,
+          "test_turn_reply_anchor": true,
+          "wire_ceiling": true
+        },
+        "pid": 85477,
+        "sample_id": "e0cda69daa02060d0c4db7e7b833d5d59f980b2f298b20a38dc559b6bc6f73bd",
+        "scope": "domain-primary-output-readback",
+        "status": "completed"
+      },
+      "elapsed_seconds": 10.515985012054443
+    },
+    {
+      "campaign": "m3-tavern-counterfactual-production-full-call-blind-20260913-v1",
+      "case": "twin-09-x",
+      "repetition": 0,
+      "variant": "production-full-call",
+      "sample_id": "ecbb9f0a47dcd34f2f04227e3d857aa5bf1cd7f9796ecef4cf46e509c6c91438",
+      "family": "greenhouse_valve_state",
+      "state": "completed",
+      "result": {
+        "error_code": null,
+        "evidence": [
+          {
+            "contract": "tavern-counterfactual-full-call-evidence-v1",
+            "path": "tavern-counterfactual-full-call-evidence.json",
+            "sha256": "29409cc058804cf0aec56fdc7ceb2524dff84ede7e2a3e28d2893e1205ece5dd"
+          }
+        ],
+        "failure_owner": null,
+        "metrics": {
+          "idempotent_replay_no_new_wire": true,
+          "message_primary_output_only": true,
+          "persona_record_readback": true,
+          "prior_transcript_committed": true,
+          "production_route_strict_acceptance": true,
+          "restart_room_readback": true,
+          "restart_runs_readback": true,
+          "run_step_readback": true,
+          "scene_record_readback": true,
+          "single_target_completed": true,
+          "snapshot_readback": true,
+          "terminal_v3": true,
+          "test_turn_reply_anchor": true,
+          "wire_ceiling": true
+        },
+        "pid": 84989,
+        "sample_id": "ecbb9f0a47dcd34f2f04227e3d857aa5bf1cd7f9796ecef4cf46e509c6c91438",
+        "scope": "domain-primary-output-readback",
+        "status": "completed"
+      },
+      "elapsed_seconds": 14.270247220993042
+    },
+    {
+      "campaign": "m3-tavern-counterfactual-production-full-call-blind-20260913-v1",
+      "case": "twin-10-x",
+      "repetition": 0,
+      "variant": "production-full-call",
+      "sample_id": "f13f05e74e92d44592a026b7ef6fe30de8e8dfe5ef19042bf9268a5e7ae98308",
+      "family": "rehearsal_east_exit",
+      "state": "completed",
+      "result": {
+        "error_code": null,
+        "evidence": [
+          {
+            "contract": "tavern-counterfactual-full-call-evidence-v1",
+            "path": "tavern-counterfactual-full-call-evidence.json",
+            "sha256": "ac6c2f4e768c10726cc9ad73ffce09ac14f93483d5014af936e8c0e3e1837981"
+          }
+        ],
+        "failure_owner": null,
+        "metrics": {
+          "idempotent_replay_no_new_wire": true,
+          "message_primary_output_only": true,
+          "persona_record_readback": true,
+          "prior_transcript_committed": true,
+          "production_route_strict_acceptance": true,
+          "restart_room_readback": true,
+          "restart_runs_readback": true,
+          "run_step_readback": true,
+          "scene_record_readback": true,
+          "single_target_completed": true,
+          "snapshot_readback": true,
+          "terminal_v3": true,
+          "test_turn_reply_anchor": true,
+          "wire_ceiling": true
+        },
+        "pid": 85283,
+        "sample_id": "f13f05e74e92d44592a026b7ef6fe30de8e8dfe5ef19042bf9268a5e7ae98308",
+        "scope": "domain-primary-output-readback",
+        "status": "completed"
+      },
+      "elapsed_seconds": 6.048804998397827
+    }
+  ],
+  "campaign_usage": {
+    "scaling_events": [
+      {
+        "time": 1789296480.614112,
+        "reason": "initial",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "cooldown_until": 0.0,
+          "current": 2,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789296480.614112
+        }
+      }
+    ],
+    "stopped": null,
+    "wire_count": 15,
+    "charged_or_reserved_tokens": 29068,
+    "unknown_usage_requests": 0,
+    "wires": [
+      {
+        "id": "b24ffcb3d97e45c0963735200c2d19a7",
+        "campaign": "m3-tavern-counterfactual-production-full-call-blind-20260913-v1",
+        "sample": "b917130c190a8ce6f8ccee56f48546b179f41fcd1d4ed90a3349b0e1dae77ea4",
+        "started": 1789296482.4018009,
+        "finished": 1789296487.511023,
+        "state": "finished",
+        "reserved": 104096,
+        "charged": 1882,
+        "metadata": {
+          "billing_tokens": null,
+          "cached_tokens": 911,
+          "call_kind": "generation",
+          "completion_tokens": 484,
+          "elapsed_ms": 5108,
+          "finish_reason": "stop",
+          "http_status": 200,
+          "image_count": 0,
+          "images": [],
+          "max_tokens": 4096,
+          "offered_tools": [],
+          "prompt_tokens": 1398,
+          "reasoning_tokens": 215,
+          "request_bytes": 6676,
+          "response_format_type": "json_schema",
+          "response_model": "MiniMax-M3",
+          "temperature": 0.2,
+          "thinking": "adaptive",
+          "tool_call_shapes": [],
+          "tool_choice": null,
+          "tool_count": 0,
+          "total_tokens": 1882
+        }
+      },
+      {
+        "id": "5d62d63852bf4905822f55b7a7d86603",
+        "campaign": "m3-tavern-counterfactual-production-full-call-blind-20260913-v1",
+        "sample": "ecbb9f0a47dcd34f2f04227e3d857aa5bf1cd7f9796ecef4cf46e509c6c91438",
+        "started": 1789296482.547534,
+        "finished": 1789296494.709655,
+        "state": "finished",
+        "reserved": 104096,
+        "charged": 2094,
+        "metadata": {
+          "billing_tokens": null,
+          "cached_tokens": 512,
+          "call_kind": "generation",
+          "completion_tokens": 700,
+          "elapsed_ms": 12161,
+          "finish_reason": "stop",
+          "http_status": 200,
+          "image_count": 0,
+          "images": [],
+          "max_tokens": 4096,
+          "offered_tools": [],
+          "prompt_tokens": 1394,
+          "reasoning_tokens": null,
+          "request_bytes": 6620,
+          "response_format_type": "json_schema",
+          "response_model": "MiniMax-M3",
+          "temperature": 0.2,
+          "thinking": "adaptive",
+          "tool_call_shapes": [],
+          "tool_choice": null,
+          "tool_count": 0,
+          "total_tokens": 2094
+        }
+      },
+      {
+        "id": "56cf9057f11d4dd4be41da6492190b8e",
+        "campaign": "m3-tavern-counterfactual-production-full-call-blind-20260913-v1",
+        "sample": "05ace161df76222b26381c197039178c0b57e65df61146cabe03049a2f7eec3c",
+        "started": 1789296489.793152,
+        "finished": 1789296494.86713,
+        "state": "finished",
+        "reserved": 104096,
+        "charged": 1873,
+        "metadata": {
+          "billing_tokens": null,
+          "cached_tokens": 128,
+          "call_kind": "generation",
+          "completion_tokens": 496,
+          "elapsed_ms": 5073,
+          "finish_reason": "stop",
+          "http_status": 200,
+          "image_count": 0,
+          "images": [],
+          "max_tokens": 4096,
+          "offered_tools": [],
+          "prompt_tokens": 1377,
+          "reasoning_tokens": 226,
+          "request_bytes": 6594,
+          "response_format_type": "json_schema",
+          "response_model": "MiniMax-M3",
+          "temperature": 0.2,
+          "thinking": "adaptive",
+          "tool_call_shapes": [],
+          "tool_choice": null,
+          "tool_count": 0,
+          "total_tokens": 1873
+        }
+      },
+      {
+        "id": "2e4b80ce59294f14bdbbc6a8bb4c9ccd",
+        "campaign": "m3-tavern-counterfactual-production-full-call-blind-20260913-v1",
+        "sample": "079ee3f7350defb1854b58fa8561eda8557613998ecbd75174f181b583c6fe1c",
+        "started": 1789296499.5562649,
+        "finished": 1789296505.360197,
+        "state": "finished",
+        "reserved": 104096,
+        "charged": 1778,
+        "metadata": {
+          "billing_tokens": null,
+          "cached_tokens": 128,
+          "call_kind": "generation",
+          "completion_tokens": 388,
+          "elapsed_ms": 5803,
+          "finish_reason": "stop",
+          "http_status": 200,
+          "image_count": 0,
+          "images": [],
+          "max_tokens": 4096,
+          "offered_tools": [],
+          "prompt_tokens": 1390,
+          "reasoning_tokens": 0,
+          "request_bytes": 6665,
+          "response_format_type": "json_schema",
+          "response_model": "MiniMax-M3",
+          "temperature": 0.2,
+          "thinking": "adaptive",
+          "tool_call_shapes": [],
+          "tool_choice": null,
+          "tool_count": 0,
+          "total_tokens": 1778
+        }
+      },
+      {
+        "id": "1e0a50257347439d86ebdd56bfb4989d",
+        "campaign": "m3-tavern-counterfactual-production-full-call-blind-20260913-v1",
+        "sample": "9d0ec2a4d4123f701c3e4058c0fdf7aca0492f015ee4e1a81019b2ccafbd0082",
+        "started": 1789296500.5742831,
+        "finished": 1789296508.783097,
+        "state": "finished",
+        "reserved": 104096,
+        "charged": 1867,
+        "metadata": {
+          "billing_tokens": null,
+          "cached_tokens": 128,
+          "call_kind": "generation",
+          "completion_tokens": 474,
+          "elapsed_ms": 8208,
+          "finish_reason": "stop",
+          "http_status": 200,
+          "image_count": 0,
+          "images": [],
+          "max_tokens": 4096,
+          "offered_tools": [],
+          "prompt_tokens": 1393,
+          "reasoning_tokens": 0,
+          "request_bytes": 6676,
+          "response_format_type": "json_schema",
+          "response_model": "MiniMax-M3",
+          "temperature": 0.2,
+          "thinking": "adaptive",
+          "tool_call_shapes": [],
+          "tool_choice": null,
+          "tool_count": 0,
+          "total_tokens": 1867
+        }
+      },
+      {
+        "id": "d5e1d07154454d499d331c2f972083e8",
+        "campaign": "m3-tavern-counterfactual-production-full-call-blind-20260913-v1",
+        "sample": "9e4110182c94ba1f04ad8018d183cc776508226015b7b89beb9c73b8109a60cf",
+        "started": 1789296507.871045,
+        "finished": 1789296516.288331,
+        "state": "finished",
+        "reserved": 104096,
+        "charged": 1921,
+        "metadata": {
+          "billing_tokens": null,
+          "cached_tokens": 128,
+          "call_kind": "generation",
+          "completion_tokens": 529,
+          "elapsed_ms": 8416,
+          "finish_reason": "stop",
+          "http_status": 200,
+          "image_count": 0,
+          "images": [],
+          "max_tokens": 4096,
+          "offered_tools": [],
+          "prompt_tokens": 1392,
+          "reasoning_tokens": 0,
+          "request_bytes": 6672,
+          "response_format_type": "json_schema",
+          "response_model": "MiniMax-M3",
+          "temperature": 0.2,
+          "thinking": "adaptive",
+          "tool_call_shapes": [],
+          "tool_choice": null,
+          "tool_count": 0,
+          "total_tokens": 1921
+        }
+      },
+      {
+        "id": "9dfae49c867e453e9d14111ae3a632f7",
+        "campaign": "m3-tavern-counterfactual-production-full-call-blind-20260913-v1",
+        "sample": "cebd9e5bfec1d67138b3048a82c02fdbac858394555320349a13d70a5ef3969b",
+        "started": 1789296511.1862762,
+        "finished": 1789296526.922751,
+        "state": "finished",
+        "reserved": 104096,
+        "charged": 2428,
+        "metadata": {
+          "billing_tokens": null,
+          "cached_tokens": 896,
+          "call_kind": "generation",
+          "completion_tokens": 1032,
+          "elapsed_ms": 15735,
+          "finish_reason": "stop",
+          "http_status": 200,
+          "image_count": 0,
+          "images": [],
+          "max_tokens": 4096,
+          "offered_tools": [],
+          "prompt_tokens": 1396,
+          "reasoning_tokens": 0,
+          "request_bytes": 6665,
+          "response_format_type": "json_schema",
+          "response_model": "MiniMax-M3",
+          "temperature": 0.2,
+          "thinking": "adaptive",
+          "tool_call_shapes": [],
+          "tool_choice": null,
+          "tool_count": 0,
+          "total_tokens": 2428
+        }
+      },
+      {
+        "id": "1188418d3d504fed898c9712d4cff211",
+        "campaign": "m3-tavern-counterfactual-production-full-call-blind-20260913-v1",
+        "sample": "f13f05e74e92d44592a026b7ef6fe30de8e8dfe5ef19042bf9268a5e7ae98308",
+        "started": 1789296518.6216462,
+        "finished": 1789296522.767483,
+        "state": "finished",
+        "reserved": 104096,
+        "charged": 1869,
+        "metadata": {
+          "billing_tokens": null,
+          "cached_tokens": 512,
+          "call_kind": "generation",
+          "completion_tokens": 473,
+          "elapsed_ms": 4145,
+          "finish_reason": "stop",
+          "http_status": 200,
+          "image_count": 0,
+          "images": [],
+          "max_tokens": 4096,
+          "offered_tools": [],
+          "prompt_tokens": 1396,
+          "reasoning_tokens": 281,
+          "request_bytes": 6652,
+          "response_format_type": "json_schema",
+          "response_model": "MiniMax-M3",
+          "temperature": 0.2,
+          "thinking": "adaptive",
+          "tool_call_shapes": [],
+          "tool_choice": null,
+          "tool_count": 0,
+          "total_tokens": 1869
+        }
+      },
+      {
+        "id": "dc859121b7bf42c992704be8ed1406fd",
+        "campaign": "m3-tavern-counterfactual-production-full-call-blind-20260913-v1",
+        "sample": "485daf5166fbe66a9f4e2ed43142bfb24ae4e8126cae3f5efb970fb0e9837e39",
+        "started": 1789296525.018421,
+        "finished": 1789296528.953713,
+        "state": "finished",
+        "reserved": 104096,
+        "charged": 1876,
+        "metadata": {
+          "billing_tokens": null,
+          "cached_tokens": 512,
+          "call_kind": "generation",
+          "completion_tokens": 476,
+          "elapsed_ms": 3934,
+          "finish_reason": "stop",
+          "http_status": 200,
+          "image_count": 0,
+          "images": [],
+          "max_tokens": 4096,
+          "offered_tools": [],
+          "prompt_tokens": 1400,
+          "reasoning_tokens": 242,
+          "request_bytes": 6625,
+          "response_format_type": "json_schema",
+          "response_model": "MiniMax-M3",
+          "temperature": 0.2,
+          "thinking": "adaptive",
+          "tool_call_shapes": [],
+          "tool_choice": null,
+          "tool_count": 0,
+          "total_tokens": 1876
+        }
+      },
+      {
+        "id": "8e09b15d3c024581beda1060eb5f8ac7",
+        "campaign": "m3-tavern-counterfactual-production-full-call-blind-20260913-v1",
+        "sample": "34e095425849780e560a7aa1b3317b53762e9d1682ddb5626d73b673230934c5",
+        "started": 1789296529.213448,
+        "finished": 1789296534.352627,
+        "state": "finished",
+        "reserved": 104096,
+        "charged": 1932,
+        "metadata": {
+          "billing_tokens": null,
+          "cached_tokens": 128,
+          "call_kind": "generation",
+          "completion_tokens": 534,
+          "elapsed_ms": 5138,
+          "finish_reason": "stop",
+          "http_status": 200,
+          "image_count": 0,
+          "images": [],
+          "max_tokens": 4096,
+          "offered_tools": [],
+          "prompt_tokens": 1398,
+          "reasoning_tokens": 269,
+          "request_bytes": 6686,
+          "response_format_type": "json_schema",
+          "response_model": "MiniMax-M3",
+          "temperature": 0.2,
+          "thinking": "adaptive",
+          "tool_call_shapes": [],
+          "tool_choice": null,
+          "tool_count": 0,
+          "total_tokens": 1932
+        }
+      },
+      {
+        "id": "89b1dcade226431497bb67e2045b3192",
+        "campaign": "m3-tavern-counterfactual-production-full-call-blind-20260913-v1",
+        "sample": "6d4734487442f1e8354e7c59429be97b5b3d8a5721ac2039699fb379a16c7306",
+        "started": 1789296531.178108,
+        "finished": 1789296534.2433732,
+        "state": "finished",
+        "reserved": 104096,
+        "charged": 1864,
+        "metadata": {
+          "billing_tokens": null,
+          "cached_tokens": 128,
+          "call_kind": "generation",
+          "completion_tokens": 483,
+          "elapsed_ms": 3064,
+          "finish_reason": "stop",
+          "http_status": 200,
+          "image_count": 0,
+          "images": [],
+          "max_tokens": 4096,
+          "offered_tools": [],
+          "prompt_tokens": 1381,
+          "reasoning_tokens": 298,
+          "request_bytes": 6608,
+          "response_format_type": "json_schema",
+          "response_model": "MiniMax-M3",
+          "temperature": 0.2,
+          "thinking": "adaptive",
+          "tool_call_shapes": [],
+          "tool_choice": null,
+          "tool_count": 0,
+          "total_tokens": 1864
+        }
+      },
+      {
+        "id": "570ad9bc2267459cbc9e59b28844106f",
+        "campaign": "m3-tavern-counterfactual-production-full-call-blind-20260913-v1",
+        "sample": "c7a5bf89f317599b8513d0aadf794bc32d5c66e912e4d56688e5389429b60791",
+        "started": 1789296536.755432,
+        "finished": 1789296540.281357,
+        "state": "finished",
+        "reserved": 104096,
+        "charged": 1952,
+        "metadata": {
+          "billing_tokens": null,
+          "cached_tokens": 128,
+          "call_kind": "generation",
+          "completion_tokens": 562,
+          "elapsed_ms": 3524,
+          "finish_reason": "stop",
+          "http_status": 200,
+          "image_count": 0,
+          "images": [],
+          "max_tokens": 4096,
+          "offered_tools": [],
+          "prompt_tokens": 1390,
+          "reasoning_tokens": 249,
+          "request_bytes": 6672,
+          "response_format_type": "json_schema",
+          "response_model": "MiniMax-M3",
+          "temperature": 0.2,
+          "thinking": "adaptive",
+          "tool_call_shapes": [],
+          "tool_choice": null,
+          "tool_count": 0,
+          "total_tokens": 1952
+        }
+      },
+      {
+        "id": "088ebf6f8ebd41a288d0e459315422de",
+        "campaign": "m3-tavern-counterfactual-production-full-call-blind-20260913-v1",
+        "sample": "5ae39df3eeb9ae3204392a0ad90f9a876822b5e77f9c55637df93c0d2b4071a0",
+        "started": 1789296536.872291,
+        "finished": 1789296540.368064,
+        "state": "finished",
+        "reserved": 104096,
+        "charged": 2040,
+        "metadata": {
+          "billing_tokens": null,
+          "cached_tokens": 896,
+          "call_kind": "generation",
+          "completion_tokens": 655,
+          "elapsed_ms": 3495,
+          "finish_reason": "stop",
+          "http_status": 200,
+          "image_count": 0,
+          "images": [],
+          "max_tokens": 4096,
+          "offered_tools": [],
+          "prompt_tokens": 1385,
+          "reasoning_tokens": null,
+          "request_bytes": 6652,
+          "response_format_type": "json_schema",
+          "response_model": "MiniMax-M3",
+          "temperature": 0.2,
+          "thinking": "adaptive",
+          "tool_call_shapes": [],
+          "tool_choice": null,
+          "tool_count": 0,
+          "total_tokens": 2040
+        }
+      },
+      {
+        "id": "b8a8af2d2b014f418f9132a3387c2b79",
+        "campaign": "m3-tavern-counterfactual-production-full-call-blind-20260913-v1",
+        "sample": "7dba9cfa500956ff0f0f33208f47cd7391aca890719a3c7d34d84b129a02bd95",
+        "started": 1789296542.68305,
+        "finished": 1789296545.1097238,
+        "state": "finished",
+        "reserved": 104096,
+        "charged": 1784,
+        "metadata": {
+          "billing_tokens": null,
+          "cached_tokens": 128,
+          "call_kind": "generation",
+          "completion_tokens": 400,
+          "elapsed_ms": 2426,
+          "finish_reason": "stop",
+          "http_status": 200,
+          "image_count": 0,
+          "images": [],
+          "max_tokens": 4096,
+          "offered_tools": [],
+          "prompt_tokens": 1384,
+          "reasoning_tokens": 192,
+          "request_bytes": 6612,
+          "response_format_type": "json_schema",
+          "response_model": "MiniMax-M3",
+          "temperature": 0.2,
+          "thinking": "adaptive",
+          "tool_call_shapes": [],
+          "tool_choice": null,
+          "tool_count": 0,
+          "total_tokens": 1784
+        }
+      },
+      {
+        "id": "a086b6ebde344d8092c6828b1fd14456",
+        "campaign": "m3-tavern-counterfactual-production-full-call-blind-20260913-v1",
+        "sample": "e0cda69daa02060d0c4db7e7b833d5d59f980b2f298b20a38dc559b6bc6f73bd",
+        "started": 1789296542.734139,
+        "finished": 1789296551.3387039,
+        "state": "finished",
+        "reserved": 104096,
+        "charged": 1908,
+        "metadata": {
+          "billing_tokens": null,
+          "cached_tokens": 128,
+          "call_kind": "generation",
+          "completion_tokens": 506,
+          "elapsed_ms": 8603,
+          "finish_reason": "stop",
+          "http_status": 200,
+          "image_count": 0,
+          "images": [],
+          "max_tokens": 4096,
+          "offered_tools": [],
+          "prompt_tokens": 1402,
+          "reasoning_tokens": 0,
+          "request_bytes": 6676,
+          "response_format_type": "json_schema",
+          "response_model": "MiniMax-M3",
+          "temperature": 0.2,
+          "thinking": "adaptive",
+          "tool_call_shapes": [],
+          "tool_choice": null,
+          "tool_count": 0,
+          "total_tokens": 1908
+        }
+      }
+    ]
+  },
+  "resource_window_usage": {
+    "scaling_events": [
+      {
+        "time": 1789296480.614112,
+        "reason": "initial",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "cooldown_until": 0.0,
+          "current": 2,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789296480.614112
+        }
+      }
+    ],
+    "stopped": null,
+    "wire_count": 15,
+    "charged_or_reserved_tokens": 29068,
+    "unknown_usage_requests": 0
+  },
+  "billing_limit_certified": false
+}

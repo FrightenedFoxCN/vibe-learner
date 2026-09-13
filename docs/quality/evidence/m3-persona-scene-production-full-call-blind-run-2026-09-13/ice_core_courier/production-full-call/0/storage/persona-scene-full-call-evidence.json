@@ -1,0 +1,145 @@
+{
+  "version": "persona-scene-production-full-call-evidence-v1",
+  "campaign_id": "m3-persona-scene-production-full-call-blind-20260913-v1",
+  "case_id": "ice_core_courier",
+  "scope": "domain-primary-output-readback",
+  "failure_policy": "no_rerun_no_replacement_no_fixture_fallback",
+  "persona": {
+    "status": "completed",
+    "error_code": null,
+    "generation_http": 200,
+    "wire_count": 1,
+    "strict_response": true,
+    "v3_proposal": true,
+    "proposal": {
+      "summary": "Ren 是北京冰芯站的快递派送联络人，仅以中立服务者身份负责向学习者派送核心（cores）数据包，不承担任何教学或陪伴职能。",
+      "relationship": "中立派送服务者，仅履行快递收发职责，明确排除教师与朋友身份。",
+      "learner_address": "收件人",
+      "cards": [
+        {
+          "title": "派送员角色边界",
+          "kind": "role_boundary",
+          "label": "关系定位",
+          "content": "Ren 以北京冰芯站派送员的单一身份与学习者交互，职责范围严格限定在核心（cores）数据包的收发、状态确认与签收沟通。Ren 不扮演教师、导师或朋友，不主动发起教学讲解、情感陪伴、学习评价或个性化建议，所有对话均围绕派送事务本身展开，保持专业、克制、事务性的服务风格。",
+          "tags": [
+            "派送员",
+            "角色边界",
+            "中立服务",
+            "事务性"
+          ],
+          "source_note": "原文直接定义 Ren 为派送联络人并明确排除教师与朋友身份。"
+        }
+      ]
+    },
+    "saved": true,
+    "immediate_readback_equal": true,
+    "restart_readback_equal": true,
+    "strict_lifecycle_success": true
+  },
+  "scene": {
+    "status": "completed",
+    "error_code": null,
+    "generation_http": 200,
+    "wire_count": 1,
+    "strict_response": true,
+    "v3_proposal": true,
+    "proposal": {
+      "schema_version": "scene-tree-generated-projection-v1",
+      "scene_name": "Ice Core Handoff",
+      "scene_summary": "一处工业化的冰芯交接装卸区，Ren 在登记台只读核对清单后，将一只不可拆封的冰芯箱送入低温密封柜。",
+      "selected_layer_id": "scene-layer-ccb2aaf41c9e4889",
+      "scene_layers": [
+        {
+          "id": "scene-layer-bf4f809c64b44be2",
+          "title": "Loading Bay",
+          "scope_label": "Root · 装卸中转平台",
+          "summary": "作为整个交接场景的根空间，是一个开放的工业装卸平台，内部没有实体墙，靠设备布局把后续两个子区分隔开。",
+          "atmosphere": "冷色金属灯、车辆倒车警报的余响、低温冷链余韵、空气里淡淡的霜味。",
+          "rules": "Ren 可在此自由走动并通往两侧子区，但所有读取/拆封类动作以子区规则为准；禁止引入实验室、教室、教师、社交或额外房间等元素。",
+          "entrance": "从外部场地经装卸坡道或卷帘门进入平台，踏入后即可看到登记台与冷藏柜两个功能区。",
+          "tags": "root,industrial,loading-bay,cold-chain,handoff-zone",
+          "reuse_id": "scene-layer-reuse-bd0222439c5a4ea9",
+          "reuse_hint": "保留'单根 + 两个并列功能子区'的二叉骨架，可复用于任何装卸/转运类场景。",
+          "objects": [],
+          "children": [
+            {
+              "id": "scene-layer-40364ce3a1b34054",
+              "title": "Sealed Bench",
+              "scope_label": "Child 1 · 密封登记台",
+              "summary": "在装卸平台一侧以加厚隔板与防滑地标划出的只读登记区，比父层多了一道文档核对秩序与书写权限边界。",
+              "atmosphere": "台面整洁、灯光略偏暖、纸张与塑料封皮的触感，没有冷柜的霜气；环境相对安静。",
+              "rules": "Ren 可阅读 Manifest Clipboard 上的全部条目，但任何勾选、批注、改写或撕页动作都被此区规则拒绝。",
+              "entrance": "从装卸平台沿加厚隔板走到尽头，越过一条低矮金属门槛，即抵达登记台前的工作面。",
+              "tags": "checkpoint,read-only,documentation,pre-handoff",
+              "reuse_id": "scene-layer-reuse-0c65a462d0804eaf",
+              "reuse_hint": "保留'只读登记台'作为交接前清点子区，可复用于任何需要只读清单的装卸场景。",
+              "objects": [
+                {
+                  "id": "scene-object-6c78eb48e750459b",
+                  "name": "Manifest Clipboard",
+                  "description": "一块塑封固定的清单板，列出本次冰芯交接的编号、来源与去向。",
+                  "interaction": "Ren 可拾起并逐行阅读条目；任何书写、勾选或修改字段均被规则拒绝。",
+                  "tags": "read-only,manifest,clipboard,ice-core",
+                  "reuse_id": "scene-object-reuse-243b5c30dce046e8",
+                  "reuse_hint": "作为'只读登记物'的代表，可复用于清点/核对类场景的标准物件。"
+                }
+              ],
+              "children": []
+            },
+            {
+              "id": "scene-layer-ccb2aaf41c9e4889",
+              "title": "Cold Locker",
+              "scope_label": "Child 2 · 冷藏密封柜",
+              "summary": "由厚保温墙体与密封门围出的低温柜区，比父层多出明显的温度跌落、霜雾与可见冷气幕，是 Ren 交付密封冰芯箱的终点。",
+              "atmosphere": "冷白雾、压缩机持续嗡鸣、可见的呼气白雾、金属柜门开合时的沉重回声。",
+              "rules": "Ren 可把 Tagged Core Case 搬运、推入或送抵至指定位置，但不得撬开箱体、不得破坏封条、不得打开内层查看。",
+              "entrance": "从装卸平台推开沉重的保温门，越过一道明显的冷气幕，即进入冷藏柜区内部。",
+              "tags": "cold-storage,sealed-handoff,restricted-access,delivery-endpoint",
+              "reuse_id": "scene-layer-reuse-28f12755cb7c4d21",
+              "reuse_hint": "保留'低温密封交接终点'结构，可复用于任何禁止拆封的受控样本/危险品交接。",
+              "objects": [
+                {
+                  "id": "scene-object-d0028f09979b4209",
+                  "name": "Tagged Core Case",
+                  "description": "带有编号标签与完整封条的低温密封箱，内含待移交的冰芯样品。",
+                  "interaction": "Ren 可搬运、放置或推向指定交接位，但禁止撬开、撕毁封条或探查内部。",
+                  "tags": "sealed,cold-core,deliver-only,tagged",
+                  "reuse_id": "scene-object-reuse-e42a176eafae47fd",
+                  "reuse_hint": "作为'仅交付不可拆封'物件的代表，可复用于任何受控样本/危险品交接。"
+                }
+              ],
+              "children": []
+            }
+          ]
+        }
+      ]
+    },
+    "saved": true,
+    "immediate_readback_equal": true,
+    "restart_readback_equal": true,
+    "strict_lifecycle_success": true
+  },
+  "provider_calls": 2,
+  "wire_payload_audit": [
+    {
+      "domain": "persona_generation",
+      "max_tokens": 4096,
+      "payload_sha256": "df62e9777ffc05548a8085a9bb3f36586610a2c35ae129e4d5933e8c196f6435",
+      "sealed_control_marker_hits": [],
+      "issued_wire": true
+    },
+    {
+      "domain": "scene_generation",
+      "max_tokens": 4096,
+      "payload_sha256": "15ccc076e5f48cfb1d7c01c59cc3cf4705a83642bc7afaa3701a1790ae1bc071",
+      "sealed_control_marker_hits": [],
+      "issued_wire": true
+    }
+  ],
+  "wire_payload_audit_passed": true,
+  "joint_strict_lifecycle_success": true,
+  "failure_attribution": {
+    "persona": "completed",
+    "scene": "completed"
+  }
+}

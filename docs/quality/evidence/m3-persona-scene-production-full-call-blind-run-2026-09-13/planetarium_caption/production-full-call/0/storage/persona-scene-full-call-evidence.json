@@ -1,0 +1,145 @@
+{
+  "version": "persona-scene-production-full-call-evidence-v1",
+  "campaign_id": "m3-persona-scene-production-full-call-blind-20260913-v1",
+  "case_id": "planetarium_caption",
+  "scope": "domain-primary-output-readback",
+  "failure_policy": "no_rerun_no_replacement_no_fixture_fallback",
+  "persona": {
+    "status": "completed",
+    "error_code": null,
+    "generation_http": 200,
+    "wire_count": 1,
+    "strict_response": true,
+    "v3_proposal": true,
+    "proposal": {
+      "summary": "一位亲力亲为、审慎求证的引导者，习惯亲自查阅第一手资料，对未经核实的转述保持克制与怀疑，并坦诚告知学习者信息的不确定性。",
+      "relationship": "求证型导师兼同行审读者，引导学习者区分已证与未证信息",
+      "learner_address": "同学",
+      "cards": [
+        {
+          "title": "亲证与审慎原则",
+          "kind": "epistemic_stance",
+          "label": "信息处理策略",
+          "content": "始终以亲手阅读的第一手资料为准；对来访者转述的出处或来历，不径直采信，而是向学习者如实说明其来源属二手报告、未经本人核实，请学习者在引用时自行斟酌。讲解过程中要明确区分'已确认'与'尚存疑'的边界，不替未经验证的细节背书。",
+          "tags": [
+            "求证",
+            "审慎",
+            "第一手资料",
+            "不确定性"
+          ],
+          "source_note": "原文体现 Pax 亲自阅读铭文并坦言对来访者转述的出处不予确认的行为模式"
+        }
+      ]
+    },
+    "saved": true,
+    "immediate_readback_equal": true,
+    "restart_readback_equal": true,
+    "strict_lifecycle_success": true
+  },
+  "scene": {
+    "status": "completed",
+    "error_code": null,
+    "generation_http": 200,
+    "wire_count": 1,
+    "strict_response": true,
+    "v3_proposal": true,
+    "proposal": {
+      "schema_version": "scene-tree-generated-projection-v1",
+      "scene_name": "Planetarium Caption Check",
+      "scene_summary": "天文馆展厅内一处用于铭牌文字核对的微场景：Pax 仅以参观者身份阅读铭牌展位上的文字，并查看紧邻的来路备注板；备注板上的内容始终以未核实访客留言对待，不引入任何权威背景或新增空间。",
+      "selected_layer_id": "scene-layer-a58be41a6d994f39",
+      "scene_layers": [
+        {
+          "id": "scene-layer-a58be41a6d994f39",
+          "title": "Exhibit Hall",
+          "scope_label": "展厅主厅",
+          "summary": "在展厅主厅内划出两个相邻的阅读点位：铭牌展位与来路备注板，母层仅承担通行与陈列职能，不附加任何讲解或权限设置。",
+          "atmosphere": "低照度展厅环境，穹顶投影余光柔和，背景为安静走动的人流声，整体氛围适合静读但不鼓励互动。",
+          "rules": "展厅母层不设立讲解员、不配置权限、不为铭牌或备注背书；Pax 仅以普通参观者身份进入阅读区域。",
+          "entrance": "从展厅入口检票闸机进入主厅后，沿中央通道抵达两处阅读点位之间的分叉。",
+          "tags": "exhibit,public-hall,low-light,no-authority",
+          "reuse_id": "scene-layer-reuse-c15013a0ab824b23",
+          "reuse_hint": "保留为中性展厅母层结构，方便后续替换或新增子展位而不影响整体导航逻辑。",
+          "objects": [],
+          "children": [
+            {
+              "id": "scene-layer-f5d3519dc5504f89",
+              "title": "Caption Stand",
+              "scope_label": "铭牌阅读展位",
+              "summary": "相对展厅主厅，这里通过一道低矮展台边沿切出一个聚焦阅读位，将主厅人流与铭牌阅读行为分隔开。",
+              "atmosphere": "局部聚光仅照亮铭牌面，周边保持展厅暗调，缺少讲解声源，仅允许静默阅读。",
+              "rules": "仅供阅读铭牌上的文字，不可触碰、翻转或搬动铭牌；不附加任何权威解读，Pax 仅以读者身份获取信息。",
+              "entrance": "从展厅主通道向左跨过低矮展台边沿，进入铭牌阅读位。",
+              "tags": "reading-point,local-light,no-touch,pax-read",
+              "reuse_id": "scene-layer-reuse-156f4432da9b429c",
+              "reuse_hint": "保留为单物体阅读展位结构，便于以后将铭牌内容替换为其他文本展项。",
+              "objects": [
+                {
+                  "id": "scene-object-cc0ea9c9b41d4149",
+                  "name": "Caption Plate",
+                  "description": "陈列于铭牌展位上的金属铭牌，铭文由 Pax 本人逐字阅读，未做任何权威化或来源推断。",
+                  "interaction": "Pax 站在阅读位前静读铭文；不可翻转、不可触摸。",
+                  "tags": "read-only,plate,pax-read",
+                  "reuse_id": "scene-object-reuse-a9effee0958d45ed",
+                  "reuse_hint": "保留为可替换的纯文字展项，铭文内容由后续脚本填入。"
+                }
+              ],
+              "children": []
+            },
+            {
+              "id": "scene-layer-c4cfaa663acf4a5b",
+              "title": "Origin Board",
+              "scope_label": "来路备注板",
+              "summary": "相对展厅主厅，这里通过同一道低矮展台边沿在另一侧切出一个访客备注阅读区，与 Caption Stand 形成平行而非上下级的兄弟空间。",
+              "atmosphere": "与铭牌展位共享暗调展厅环境，仅在备注板面带有微弱背光，使阅读可行但视觉权重明显弱于正式展品。",
+              "rules": "备注板上的内容仅作为未核实的访客留言存在；不可作为事实陈述，也不可据此推断铭牌出处或展厅资质。",
+              "entrance": "从展厅主通道向右跨过低矮展台边沿，进入备注板阅读区。",
+              "tags": "unverified,visitor-note,no-fact,parallel-sibling",
+              "reuse_id": "scene-layer-reuse-7aae977638214094",
+              "reuse_hint": "保留为来源待定的文本线索位，便于以后接入其他未核实备注或线索而不影响铭牌展位。",
+              "objects": [
+                {
+                  "id": "scene-object-2da157aa5a5f4c3a",
+                  "name": "Visitor Origin Note",
+                  "description": "贴在备注板上的一张访客自写备注，内容涉及铭牌来源；其真实性与铭牌出处对 Pax 而言均未知。",
+                  "interaction": "Pax 仅可阅读备注内容；不可撕下、不可确认为事实。",
+                  "tags": "unverified,note,origin-claim",
+                  "reuse_id": "scene-object-reuse-92a7803d45404fab",
+                  "reuse_hint": "保留为可信度由后续脚本控制的未核实线索条目。"
+                }
+              ],
+              "children": []
+            }
+          ]
+        }
+      ]
+    },
+    "saved": true,
+    "immediate_readback_equal": true,
+    "restart_readback_equal": true,
+    "strict_lifecycle_success": true
+  },
+  "provider_calls": 2,
+  "wire_payload_audit": [
+    {
+      "domain": "persona_generation",
+      "max_tokens": 4096,
+      "payload_sha256": "97045e3126987161e937fbbe7ddabb07583ade552cf9d750f0aa0ef428ac563f",
+      "sealed_control_marker_hits": [],
+      "issued_wire": true
+    },
+    {
+      "domain": "scene_generation",
+      "max_tokens": 4096,
+      "payload_sha256": "3ca787de5d75cef8e7de02d9275e8a6e5bb92f5fd36c80fc04b17743cb94c362",
+      "sealed_control_marker_hits": [],
+      "issued_wire": true
+    }
+  ],
+  "wire_payload_audit_passed": true,
+  "joint_strict_lifecycle_success": true,
+  "failure_attribution": {
+    "persona": "completed",
+    "scene": "completed"
+  }
+}
