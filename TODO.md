@@ -12,6 +12,19 @@
 
 ## UX 与文档
 
+- [ ] `UX-SETTINGS-MODEL-CARDS-001` `[P2]` 修复 Settings“连接与模型分配”三张模型卡的标题/描述基线错位。
+  - 2026-09-13 production 实测中，“计划生成”卡相对“学习对话”“设定辅助”卡的描述基线低约 2.54 px，标题加描述块高约 5.08 px；DOM 字号与 grid gap 声明相同，优先排查浏览器 text autosizing 与容器上下文。
+  - 在相同 production viewport、至少一个 Chromium 浏览器和桌面壳复测三卡 layout rect 与视觉基线；不要用改文案或固定卡片高度掩盖字体度量差异。
+
+- [ ] `UX-PLAN-SCHEDULE-001` `[P2]` 将多次课程投影为可独立开始、完成和复盘的进度原子。
+  - 2026-09-13 M3 复测中，`4 × 45` 分钟和 `2 × 30` 分钟均被压进一个 schedule/focus，UI 只能显示 `0 / 1`；应明确每次课的时长、范围与 today task，并改善长 focus 的扫描性。
+
+- [ ] `UX-MATERIAL-PREVIEW-001` `[P1]` 修复 citation 打开 Material Preview 后 PDF 内容白屏且无 loading/error 的问题。
+  - production 中后端文件请求为 200，标题和页码控件可见，但正文持续空白并出现 `Dependent image isn't ready yet`；需覆盖加载成功、超时、渲染失败与重试状态，恢复学习者核对引用的路径。
+
+- [ ] `UX-MODEL-USAGE-001` `[P2]` 让 Model Usage 支持明确时区、按 operation/workflow 分类、筛选和导出。
+  - Planning repair、失败/中断重试和自动下游调用必须可区分；页面统计与 `PLAN-OBSERVABILITY-001` 的 operation 聚合口径一致，不再只展示当前一次成功调用。
+
 - [ ] `UX-DENSITY-SENSORY-001` `[P2]` 为 Sensory Tools 增加搜索、筛选和渐进披露；保存/错误定位不得丢失滚动或焦点，批量/删除动作与普通编辑分层。
 - [ ] `UX-DENSITY-PERSONA-001` `[P2]` 收口 Persona 的默认折叠、搜索/筛选和主次动作；保存/错误定位不得丢失滚动或焦点，批量/删除动作与普通编辑分层。
   - 重构同步进展：人格库默认折叠，展开状态具有 ARIA 语义；草稿/保存/模型辅助与展示已分离。完整筛选、危险动作分层与独立 UX 复核仍待完成。
@@ -25,7 +38,38 @@
   - 覆盖 DMG/NSIS/AppImage 安装、unsigned 限制和 SHA-256 校验。
   - 使用全新临时数据目录走通一次 mock 主流程和一次桌面安装流程。
 
+### Planning → Study 工作流
+
+本节复现证据见 [2026-09-13 M3 Planning production 配对复测](docs/acceptance/m3-planning-retest-2026-09-13.md)；验收报告保留事实，本节维护工程状态。
+
+- [ ] `PLAN-STUDY-EXPLICIT-START-001` `[P1]` 禁止 Learning Plan 提交后或页面重入时，在没有用户显式“开始”动作的情况下创建 Study Session 或调用 provider。
+  - 2026-09-13 两组 production 复测发生 6 次自动 Study completion / 69,738 tokens；其中法文 Session 还把计划 `study-unit:4` 错绑为 `study-unit:2` 并提交了错误 Turn。
+  - 若保留 prelude，必须由可见用户动作触发，精确绑定所选 schedule 的 Study Unit，动作前说明预计调用/成本；恢复只能查询原 operation，不得以新 key 绕过 terminal `uncertain`。
+
+- [ ] `PLAN-NAVIGATION-LIFECYCLE-001` `[P1]` 让 Planning 长任务跨页持续，或在离页前明确提示将取消并展示已发生费用。
+  - 当前普通导航会调用 Document/Planning stream cancel；真实请求仍可能完成并计费，但 Learning Plan 不提交。全局 Debug 与返回后的 Plan Workspace 应显示活动、已中断、费用和可恢复状态。
+
+- [ ] `STUDY-COMMITTED-READBACK-001` `[P1]` 消除后端已 committed Turn 被前端 strict decoder 拒绝造成的状态分裂。
+  - 以持久化 Session read-back 为唯一用户投影；decoder 错误须给出字段路径，禁止因 UI 未接纳 committed 结果而自动换 operation key 重发。
+
+- [ ] `PLAN-PAGE-BOUNDS-001` `[P1]` 将用户显式 PDF 物理页范围变成服务端工具、proposal 与 commit invariant。
+  - 用户指定 PDF 100–103 时，取证工具参数、schedule anchor 和 content slices 必须落在该范围；物理页与印刷页分别建模，不能让模型把印刷 70–73 当成物理 70–73 后成功提交。
+  - 本票只负责应用约束；教材语义、公式、旧记号和范围完整性质量由 `docs/quality/TODO.md` 的 `MQ-04` 负责。
+
+- [ ] `PLAN-OBSERVABILITY-001` `[P1]` 统一一次 Planning operation 的 provider round、工具、repair、token、时延、终态与产物口径。
+  - UI/Model Usage/Harness trace 必须包含 schema repair 和失败前的安全字段级证据，并聚合首次失败、中断、重试及自动下游调用；不能再出现 UI 2 calls、审计 3 completions 的分裂。
+  - 重新界定 Planning trace 的留存、脱敏与访问政策；在 `provider_reasoning_committed=false`、`raw_book_text_committed=false` 时，不得从 API/Debug 暴露完整 thinking 或原始教材输出。
+
+- [ ] `PLAN-SCENE-BINDING-001` `[P1]` 让 Plan Workspace 的“无场景”选择约束 committed Plan 与后续 Study Session 投影。
+  - 提交前以应用 invariant 校验选择值、Plan scene 与 Session scene；不要把“无场景”降为模型可忽略的提示。
+
+- [ ] `OCR-CHECKPOINT-RECOVERY-001` `[P1]` 让长 OCR 在阶段完成后可读、可续跑。
+  - 总 wall-time 在全部页面处理完成后耗尽时，不得抹掉已完成页和 Study Unit；保存有界 checkpoint，并验证重启、超时和重复请求的 read-back/续跑语义。
+
 ### 性能与 Tavern transport
+
+- [ ] `TAV-FACILITATED-ORDER-001` `[P2]` 统一 Tavern facilitated 的目标选择顺序、服务端 schedule 与 Participant Roster 反馈。
+  - 服务端仍以 participant `display_order` 为权威时，UI 必须在发送前显示实际执行顺序；若产品承诺用户选择顺序，则需在契约、持久化、恢复和 retry 中共同保留该顺序。
 
 - [ ] `PERF-WEB-DEDUPE-001` `[P2]` 去除页面内重复资源请求。
   - Tavern 对 Persona/Scene 各请求一次；窗口 focus 与恢复流程不得造成无界重复刷新。
