@@ -1,0 +1,135 @@
+{
+  "version": "m3-persona-source-capsule-blinded-paired-review-key-v2",
+  "packet_canonical_sha256": "f43ba51012c13913009856dc667728975ec5f29df6d14a6e9373a8a5d571b384",
+  "seed": 913719,
+  "manifest_config_digest": "c4b4bdf1bcd1a31688c3463502a98feaa521df784be066fbf7a0f6241a5332ea",
+  "manifest_file_sha256": "2fc949b049ec36f447632f5df835871ef4454d55f8254fb4437ee2e6419328d2",
+  "report_file_sha256": "b65c8d576fbe95dc4ba64341bf070761294bf863489853963d198b921fbe2273",
+  "run_anchor_sha256": "630c51ba2fec1dac9939ec3ba8912874fbe076cb24b4f29f1e3d3342670836a3",
+  "run_anchor_git_commit": "570e84c5bbd7a06925d59e919c9b94e563814a93",
+  "fixture_sha256": "bf24f623b4644765133d0a9e94fb24f96984c92252a13323f9584c0e79106a23",
+  "proposal_commit": "not_applicable",
+  "persona_save": false,
+  "cases": [
+    {
+      "case_id": "alpine_weather",
+      "labels": {
+        "candidate_a": "production-prompt-fresh",
+        "candidate_b": "capsule-prompt-fresh"
+      },
+      "source_sha256": "23235bcdafb965eeebe3b5a5cd87d6be648e97865fc9aecea64023b76da5a249",
+      "candidate_a_sha256": "f1661e2a2d9d3f7f8fce89e760a0caa798da4aa49161d068c0a175099345f6a9",
+      "candidate_b_sha256": "7783b6bd4e9d09ea00da974bb014b3aacef84f904b7c0d40e16d249fb4171d73",
+      "baseline_sample_id": "598f13be1f4410c721c23ff5d51d070f5c6bdf9ec14ec3c114e9eea522d62723",
+      "capsule_sample_id": "2330bbfc2dcd76150610a5bba241a06df1f54773c2ce78d0011eb93f0b250c98",
+      "baseline_evidence_sha256": "fc6234666074d0457c0912675fa239b4506ebaff09fd37aa47a0ad8f9c9855f5",
+      "capsule_evidence_sha256": "fa8ef3907c003e7389d8db94a33768afc5cb64543b186760abb917a66900e594",
+      "pair_strict_candidate": true
+    },
+    {
+      "case_id": "canal_notebook",
+      "labels": {
+        "candidate_a": "production-prompt-fresh",
+        "candidate_b": "capsule-prompt-fresh"
+      },
+      "source_sha256": "3845d6a63d81fa758c55f8eec6f6314b4ca085262d9b5e341243778e5be67c3b",
+      "candidate_a_sha256": "f95acc89214e3b1843b4149900fdf881d2ef96b46f9290fead933f393aacf4d0",
+      "candidate_b_sha256": "47810fea4c30dc4da5b4fc69faa75d1980c27fb51bb303e695d0d35f8823f161",
+      "baseline_sample_id": "e578e7587f26c1722fc59fae8de92839e2f796e2b2c810d67cc0adb93a9fe8a3",
+      "capsule_sample_id": "f40036219aeabca128216672701cbd00befb92668dd1835956111b1ce6fbd54a",
+      "baseline_evidence_sha256": "d313e55b89a382d750bafaa34238da9f7a046769ba1aec93ac5f037b6ef63afd",
+      "capsule_evidence_sha256": "c802c2fa91416a71245e23133361d76cf1a0b6704fa770b6e792b23ab2b3bce3",
+      "pair_strict_candidate": true
+    },
+    {
+      "case_id": "ceramic_archive",
+      "labels": {
+        "candidate_a": "capsule-prompt-fresh",
+        "candidate_b": "production-prompt-fresh"
+      },
+      "source_sha256": "5ebfe963ebacc8b061bfb4ec1a42dc70606eb086f548e80a64de3272ce0239a9",
+      "candidate_a_sha256": "b69622e9d19544e606f6faf2c020496a4546206798a537db5a7f85560de2c2ca",
+      "candidate_b_sha256": "631adec96dc7e9316dec21496747df871acffeae62a8cbcb2800bde861625240",
+      "baseline_sample_id": "5ebe9fa380ed90d5fc41a6efc6dd4d9356292da52e56c00f778b8783cba5c33d",
+      "capsule_sample_id": "118c533b3ffffcffdc0c85a3db652681514cc3eff20aa9025bc8b97196e02513",
+      "baseline_evidence_sha256": "f3ad831a1ebebd6b89e1f48750de98149fc753c9e1caa3a356a93f8a9339370f",
+      "capsule_evidence_sha256": "67847b29b14a96d95fb1dbb2cf662c976d39a60ac53bf72ca0fcba0de125fc5f",
+      "pair_strict_candidate": true
+    },
+    {
+      "case_id": "coastal_beacon",
+      "labels": {
+        "candidate_a": "capsule-prompt-fresh",
+        "candidate_b": "production-prompt-fresh"
+      },
+      "source_sha256": "bd29dde1d1fa7262e6bc22da1d514197d86f1aa34025b4704dea1e9db02adc17",
+      "candidate_a_sha256": "fedeeca6de5ffbac27478f52cf2e484426d1ea9d83f1bd1a7b21b6183fa2e35c",
+      "candidate_b_sha256": "fedeeca6de5ffbac27478f52cf2e484426d1ea9d83f1bd1a7b21b6183fa2e35c",
+      "baseline_sample_id": "277b056a262622bfc3f1222f93baf34e0e74be039ba205a438716af1922718c0",
+      "capsule_sample_id": "7023fe3b9feee131da0b5fff938b34d676a594ad9f03edcfa4c0475e693b6ccf",
+      "baseline_evidence_sha256": "fe19ff381cc00084fd1c7e1d533aca9d99f012a0bac21633c285f7dda847057b",
+      "capsule_evidence_sha256": "6065eedb6547add1e90e3fbc1730a29a549ff395c1cdef0b7bb869d4d279ac0c",
+      "pair_strict_candidate": false
+    },
+    {
+      "case_id": "prop_registry",
+      "labels": {
+        "candidate_a": "capsule-prompt-fresh",
+        "candidate_b": "production-prompt-fresh"
+      },
+      "source_sha256": "9ef000748666c99f0176928a0c924f419c9c56061ae25a3822ab619a10a53b58",
+      "candidate_a_sha256": "39ec485e2f09f4f191f4a174a79581f53649487132f4692372db27b609acd947",
+      "candidate_b_sha256": "ac0faa558d29bc5752cd38bf52a33cb2c277ad60597256b65894fdd62ccb20fc",
+      "baseline_sample_id": "f4ddc276f5b53640472de3ff97ab7029286a9484307a82ca649362c216307ce9",
+      "capsule_sample_id": "1c3bf4ccbd3d9734e6e9589ac700dd2a60519834bcb097e1a09187e651693d0b",
+      "baseline_evidence_sha256": "95d86a279faf2da6b7725f8ca6d15e1e70790cc56e3b5ee2a75b0ea84185c08a",
+      "capsule_evidence_sha256": "667be25e2c03e44a5ab9e5b7c9cfeeaf622258c87ffd848898a6a63854b04af2",
+      "pair_strict_candidate": true
+    },
+    {
+      "case_id": "radio_bench",
+      "labels": {
+        "candidate_a": "production-prompt-fresh",
+        "candidate_b": "capsule-prompt-fresh"
+      },
+      "source_sha256": "4a277bf97c250c6ea0efe44d51a1c653ff9dadbd93203e30cf42972e03058d5c",
+      "candidate_a_sha256": "9414558b98eb82378ac394378170b624a7b70d216055b2f5bac6252b4e8cf306",
+      "candidate_b_sha256": "febde656953fafccb190ad1b8610a6a3c0b2383dc7d2def26ca1d01d562ee39d",
+      "baseline_sample_id": "8d712a904833d465b98cc67d283d62cd97e34bf724b05cd24e3bf0e79720332f",
+      "capsule_sample_id": "c9a43437714616f791cb33cfb4c36461ed29b943413cf27b2dde8868c71fa970",
+      "baseline_evidence_sha256": "6ef775f5d0707c4099a018d3a6a8a8bc43a6eff63935bd87500e531bb469bed3",
+      "capsule_evidence_sha256": "3805267a3c0f3a15d66cdcd5fece2c3ec51075904e9af4042cc72eff577aae80",
+      "pair_strict_candidate": true
+    },
+    {
+      "case_id": "rooftop_garden",
+      "labels": {
+        "candidate_a": "production-prompt-fresh",
+        "candidate_b": "capsule-prompt-fresh"
+      },
+      "source_sha256": "9326add3e6924149574016e0459e6d83324d922a777c7b40ace5e3a68fc865c3",
+      "candidate_a_sha256": "73b62e6bb908f21faad4b2ddaad12164a423e9db96640d1d18414c64d0e5d045",
+      "candidate_b_sha256": "24fda4f1be7c12d708fdd71b558626cd80271d71116831b9e75b50c806837227",
+      "baseline_sample_id": "ba30c4cdb8545b5b780f5dade74c887fc23a0c557e156eef0019eb5d5c94fa8a",
+      "capsule_sample_id": "4a33b01ba22d729fabbea7dd45a062f01cef9815c7398473068973f28d4dc404",
+      "baseline_evidence_sha256": "38e3a32423d9d96b0d15e3f2a787a8c9df3d8c0208a3bc15f1f61902b856006a",
+      "capsule_evidence_sha256": "1878fc295d1468986ea82f5a3fbc7e8a3d329499777f037bd1acb644b58d2d8c",
+      "pair_strict_candidate": true
+    },
+    {
+      "case_id": "wetland_count",
+      "labels": {
+        "candidate_a": "capsule-prompt-fresh",
+        "candidate_b": "production-prompt-fresh"
+      },
+      "source_sha256": "d5393b4897481aebfc3455cc9c53771912fb1aa37d836fdea528d149e5fa5b9a",
+      "candidate_a_sha256": "fedeeca6de5ffbac27478f52cf2e484426d1ea9d83f1bd1a7b21b6183fa2e35c",
+      "candidate_b_sha256": "fedeeca6de5ffbac27478f52cf2e484426d1ea9d83f1bd1a7b21b6183fa2e35c",
+      "baseline_sample_id": "c3dbd3a76ee9405cf67d150424d98759bcf3b25dc50dc6ecc33005f70521573e",
+      "capsule_sample_id": "270bba748d162c71fd6e146446454934cb08b98a8d28463b18ee1d33d8d3cc51",
+      "baseline_evidence_sha256": "af3e071e62d7d3a15a7fa758a09f50fb78572a3730fa81c51e714862ef857e24",
+      "capsule_evidence_sha256": "29b5cfb4f64cbe6e6fe8cab1e29158fd73b389d47d5df8ea72fc800b076902cf",
+      "pair_strict_candidate": false
+    }
+  ]
+}

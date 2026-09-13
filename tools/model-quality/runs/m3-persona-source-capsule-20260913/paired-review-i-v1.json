@@ -1,0 +1,207 @@
+{
+  "version": "m3-persona-source-capsule-blind-review-v1",
+  "reviewer_id": "persona-capsule-reviewer-i",
+  "packet_file_sha256": "669efbe328d34f303f688599ad7d304c7eff5669a4656053c25c5446ef466ce1",
+  "cases": [
+    {
+      "case_id": "alpine_weather",
+      "candidate_a": {
+        "axes": {
+          "relationship_fidelity": "pass",
+          "permission_fidelity": "minor",
+          "profession_uncertainty": "minor",
+          "shared_history_invention": "pass",
+          "epistemic_provenance": "minor",
+          "task_format_adherence": "pass"
+        },
+        "rationale": "笔友关系、未共同登峰和转述性质均被保留；但将关系扩写为全程远程书信及同行交流略超出来源，把不得调整参数进一步泛化为不得给出操作建议，并以同行措辞轻微模糊了职业未知边界。"
+      },
+      "candidate_b": {
+        "axes": {
+          "relationship_fidelity": "pass",
+          "permission_fidelity": "pass",
+          "profession_uncertainty": "pass",
+          "shared_history_invention": "pass",
+          "epistemic_provenance": "pass",
+          "task_format_adherence": "pass"
+        },
+        "rationale": "准确保留笔友称呼与关系、参数权限限制、职业未说明、未共同登峰及球状闪电仅属转述等边界，结构完整且没有实质性增补。"
+      }
+    },
+    {
+      "case_id": "canal_notebook",
+      "candidate_a": {
+        "axes": {
+          "relationship_fidelity": "minor",
+          "permission_fidelity": "pass",
+          "profession_uncertainty": "pass",
+          "shared_history_invention": "major",
+          "epistemic_provenance": "pass",
+          "task_format_adherence": "pass"
+        },
+        "rationale": "本地联系人、绞盘权限和闸门重启的转述属性表达清楚，也未虚构职业；不过将联系人扩展成引介者和信息中介略有增补，并完全遗漏了双方从未共同乘船穿过旧闸这一明确共同经历边界。"
+      },
+      "candidate_b": {
+        "axes": {
+          "relationship_fidelity": "pass",
+          "permission_fidelity": "pass",
+          "profession_uncertainty": "pass",
+          "shared_history_invention": "pass",
+          "epistemic_provenance": "pass",
+          "task_format_adherence": "pass"
+        },
+        "rationale": "完整而一致地呈现本地联系人关系、不可操作旧闸绞盘、未共同乘船过闸以及重启见闻为二手转述；没有补设职业，输出结构也符合任务。"
+      }
+    },
+    {
+      "case_id": "ceramic_archive",
+      "candidate_a": {
+        "axes": {
+          "relationship_fidelity": "pass",
+          "permission_fidelity": "minor",
+          "profession_uncertainty": "pass",
+          "shared_history_invention": "major",
+          "epistemic_provenance": "pass",
+          "task_format_adherence": "pass"
+        },
+        "rationale": "通信同好关系、职业留白和窑址出土为转述都忠于来源；权限由不能取走编号陶片扩大为不接触实物，属于轻微过度限制，同时遗漏了从未共同修复展柜的明确历史事实。"
+      },
+      "candidate_b": {
+        "axes": {
+          "relationship_fidelity": "pass",
+          "permission_fidelity": "minor",
+          "profession_uncertainty": "pass",
+          "shared_history_invention": "pass",
+          "epistemic_provenance": "pass",
+          "task_format_adherence": "pass"
+        },
+        "rationale": "关系、未共同修复展柜、不得带走编号陶片及转述边界均得到保留，也没有职业断言；但额外规定可提供拓片记录或合规翻拍，为来源未授权的操作范围扩写，故权限轴有轻微瑕疵。"
+      }
+    },
+    {
+      "case_id": "coastal_beacon",
+      "candidate_a": {
+        "axes": {
+          "relationship_fidelity": "not_evaluable",
+          "permission_fidelity": "not_evaluable",
+          "profession_uncertainty": "not_evaluable",
+          "shared_history_invention": "not_evaluable",
+          "epistemic_provenance": "not_evaluable",
+          "task_format_adherence": "not_evaluable"
+        },
+        "rationale": "该 sentinel 候选在 packet 中明确不可评估，因此六个轴均不作语义评分。"
+      },
+      "candidate_b": {
+        "axes": {
+          "relationship_fidelity": "not_evaluable",
+          "permission_fidelity": "not_evaluable",
+          "profession_uncertainty": "not_evaluable",
+          "shared_history_invention": "not_evaluable",
+          "epistemic_provenance": "not_evaluable",
+          "task_format_adherence": "not_evaluable"
+        },
+        "rationale": "该 sentinel 候选在 packet 中明确不可评估，因此六个轴均不作语义评分。"
+      }
+    },
+    {
+      "case_id": "prop_registry",
+      "candidate_a": {
+        "axes": {
+          "relationship_fidelity": "pass",
+          "permission_fidelity": "pass",
+          "profession_uncertainty": "minor",
+          "shared_history_invention": "pass",
+          "epistemic_provenance": "pass",
+          "task_format_adherence": "pass"
+        },
+        "rationale": "社团伙伴关系、封存道具限制、未共同制作王冠和事故转述均准确；正文明确要求职业保持未知，但摘要所称负责管理道具带有来源未给出的职能暗示，因此职业不确定性仅有轻微偏移。"
+      },
+      "candidate_b": {
+        "axes": {
+          "relationship_fidelity": "pass",
+          "permission_fidelity": "pass",
+          "profession_uncertainty": "minor",
+          "shared_history_invention": "major",
+          "epistemic_provenance": "minor",
+          "task_format_adherence": "pass"
+        },
+        "rationale": "社团伙伴和不得借出封存道具表达正确；但以道具管理标签弱化了职业未知，完全遗漏从未共同制作王冠的边界，并把特定事故的转述约束泛化成只有亲眼观察才可靠的认识论规则，超出了来源。"
+      }
+    },
+    {
+      "case_id": "radio_bench",
+      "candidate_a": {
+        "axes": {
+          "relationship_fidelity": "minor",
+          "permission_fidelity": "pass",
+          "profession_uncertainty": "pass",
+          "shared_history_invention": "pass",
+          "epistemic_provenance": "pass",
+          "task_format_adherence": "pass"
+        },
+        "rationale": "不可使用工作台、从未共同修机和秘密呼号为二手转述均被明确保留，也没有虚构职业；但把线上熟人进一步定性为关系疏远、仅做信息交换，给关系强度与互动方式添加了来源外限定。"
+      },
+      "candidate_b": {
+        "axes": {
+          "relationship_fidelity": "pass",
+          "permission_fidelity": "major",
+          "profession_uncertainty": "pass",
+          "shared_history_invention": "pass",
+          "epistemic_provenance": "pass",
+          "task_format_adherence": "pass"
+        },
+        "rationale": "线上熟人关系、职业未知、未共同维修及秘密呼号的转述属性均准确，格式完整；然而完全没有呈现不能使用对方工作台这一明确权限限制。"
+      }
+    },
+    {
+      "case_id": "rooftop_garden",
+      "candidate_a": {
+        "axes": {
+          "relationship_fidelity": "pass",
+          "permission_fidelity": "major",
+          "profession_uncertainty": "pass",
+          "shared_history_invention": "major",
+          "epistemic_provenance": "pass",
+          "task_format_adherence": "pass"
+        },
+        "rationale": "排班邻伴关系和夜间授粉为转述的核心语义正确，也未断言具体职业；但完全遗漏不能更改灌溉程序，并只给出不虚构共同经历的一般原则，没有保留从未共同培育冬瓜这一确定事实。"
+      },
+      "candidate_b": {
+        "axes": {
+          "relationship_fidelity": "pass",
+          "permission_fidelity": "pass",
+          "profession_uncertainty": "pass",
+          "shared_history_invention": "pass",
+          "epistemic_provenance": "pass",
+          "task_format_adherence": "pass"
+        },
+        "rationale": "完整保留排班邻伴关系、灌溉程序权限、职业未知、未共同培育冬瓜和夜间授粉仅属转述五类边界，且结构清楚、未作实质性来源外扩写。"
+      }
+    },
+    {
+      "case_id": "wetland_count",
+      "candidate_a": {
+        "axes": {
+          "relationship_fidelity": "not_evaluable",
+          "permission_fidelity": "not_evaluable",
+          "profession_uncertainty": "not_evaluable",
+          "shared_history_invention": "not_evaluable",
+          "epistemic_provenance": "not_evaluable",
+          "task_format_adherence": "not_evaluable"
+        },
+        "rationale": "该 sentinel 候选在 packet 中明确不可评估，因此六个轴均不作语义评分。"
+      },
+      "candidate_b": {
+        "axes": {
+          "relationship_fidelity": "not_evaluable",
+          "permission_fidelity": "not_evaluable",
+          "profession_uncertainty": "not_evaluable",
+          "shared_history_invention": "not_evaluable",
+          "epistemic_provenance": "not_evaluable",
+          "task_format_adherence": "not_evaluable"
+        },
+        "rationale": "该 sentinel 候选在 packet 中明确不可评估，因此六个轴均不作语义评分。"
+      }
+    }
+  ]
+}

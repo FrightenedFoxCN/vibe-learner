@@ -1,0 +1,207 @@
+{
+  "version": "m3-persona-source-capsule-blind-review-v1",
+  "reviewer_id": "persona-capsule-reviewer-j",
+  "packet_file_sha256": "669efbe328d34f303f688599ad7d304c7eff5669a4656053c25c5446ef466ce1",
+  "cases": [
+    {
+      "case_id": "alpine_weather",
+      "candidate_a": {
+        "axes": {
+          "relationship_fidelity": "minor",
+          "permission_fidelity": "minor",
+          "profession_uncertainty": "minor",
+          "shared_history_invention": "pass",
+          "epistemic_provenance": "minor",
+          "task_format_adherence": "pass"
+        },
+        "rationale": "核心关系、共同经历否定与特定转述属性均可辨认，但将关系扩写为同行、把单一转述事实泛化为缺乏亲历观测经验，并把不可调整参数扩大到不可提供操作建议，形成多处轻度越界。"
+      },
+      "candidate_b": {
+        "axes": {
+          "relationship_fidelity": "pass",
+          "permission_fidelity": "pass",
+          "profession_uncertainty": "pass",
+          "shared_history_invention": "pass",
+          "epistemic_provenance": "pass",
+          "task_format_adherence": "pass"
+        },
+        "rationale": "关系、称呼、权限、职业未知、共同经历否定和特定信息的转述来源均得到明确保留，结构完整且没有实质性新增断言。"
+      }
+    },
+    {
+      "case_id": "canal_notebook",
+      "candidate_a": {
+        "axes": {
+          "relationship_fidelity": "minor",
+          "permission_fidelity": "minor",
+          "profession_uncertainty": "pass",
+          "shared_history_invention": "major",
+          "epistemic_provenance": "pass",
+          "task_format_adherence": "pass"
+        },
+        "rationale": "本地联系人及转述边界保留正确，也未虚构职业；但中介、引介和不带领实践是来源外扩写，且未保留双方从未共同乘船穿闸这一明确共同经历约束。"
+      },
+      "candidate_b": {
+        "axes": {
+          "relationship_fidelity": "pass",
+          "permission_fidelity": "pass",
+          "profession_uncertainty": "pass",
+          "shared_history_invention": "pass",
+          "epistemic_provenance": "pass",
+          "task_format_adherence": "pass"
+        },
+        "rationale": "完整表达本地联系人关系、操作权限限制、职业不确定性、共同经历否定及特定事件为二手转述，格式亦符合任务要求。"
+      }
+    },
+    {
+      "case_id": "ceramic_archive",
+      "candidate_a": {
+        "axes": {
+          "relationship_fidelity": "pass",
+          "permission_fidelity": "major",
+          "profession_uncertainty": "pass",
+          "shared_history_invention": "major",
+          "epistemic_provenance": "pass",
+          "task_format_adherence": "pass"
+        },
+        "rationale": "通信同好、职业留白和窑址信息的转述属性表达准确；然而把不得取走编号陶片扩大为完全不得接触实物，并遗漏从未共同修复展柜的明确约束，均会显著改变来源边界。"
+      },
+      "candidate_b": {
+        "axes": {
+          "relationship_fidelity": "pass",
+          "permission_fidelity": "minor",
+          "profession_uncertainty": "pass",
+          "shared_history_invention": "pass",
+          "epistemic_provenance": "pass",
+          "task_format_adherence": "pass"
+        },
+        "rationale": "主要关系、不得带走实物、无共同修复经历和转述来源均忠实；对可提供材料形式作了来源未给出的轻度限制，但未据此虚构职业或亲历事实。"
+      }
+    },
+    {
+      "case_id": "coastal_beacon",
+      "candidate_a": {
+        "axes": {
+          "relationship_fidelity": "not_evaluable",
+          "permission_fidelity": "not_evaluable",
+          "profession_uncertainty": "not_evaluable",
+          "shared_history_invention": "not_evaluable",
+          "epistemic_provenance": "not_evaluable",
+          "task_format_adherence": "not_evaluable"
+        },
+        "rationale": "该 sentinel 候选没有可供六轴语义评价的 Persona 提案内容。"
+      },
+      "candidate_b": {
+        "axes": {
+          "relationship_fidelity": "not_evaluable",
+          "permission_fidelity": "not_evaluable",
+          "profession_uncertainty": "not_evaluable",
+          "shared_history_invention": "not_evaluable",
+          "epistemic_provenance": "not_evaluable",
+          "task_format_adherence": "not_evaluable"
+        },
+        "rationale": "该 sentinel 候选没有可供六轴语义评价的 Persona 提案内容。"
+      }
+    },
+    {
+      "case_id": "prop_registry",
+      "candidate_a": {
+        "axes": {
+          "relationship_fidelity": "pass",
+          "permission_fidelity": "pass",
+          "profession_uncertainty": "pass",
+          "shared_history_invention": "pass",
+          "epistemic_provenance": "pass",
+          "task_format_adherence": "pass"
+        },
+        "rationale": "社团伙伴关系、封存道具外借限制、职业不得补设、共同制作经历否定以及事故信息为转述均被逐项保存，整体语义和结构完整。"
+      },
+      "candidate_b": {
+        "axes": {
+          "relationship_fidelity": "pass",
+          "permission_fidelity": "major",
+          "profession_uncertainty": "pass",
+          "shared_history_invention": "major",
+          "epistemic_provenance": "major",
+          "task_format_adherence": "pass"
+        },
+        "rationale": "关系和结构可用且未直接指定职业，但把个人无借出权限改写成普遍绝对禁借规则，遗漏从未共同制作王冠，并以通用证据准则替代特定事故转述事实，三个来源边界均未被忠实保留。"
+      }
+    },
+    {
+      "case_id": "radio_bench",
+      "candidate_a": {
+        "axes": {
+          "relationship_fidelity": "minor",
+          "permission_fidelity": "pass",
+          "profession_uncertainty": "pass",
+          "shared_history_invention": "pass",
+          "epistemic_provenance": "pass",
+          "task_format_adherence": "pass"
+        },
+        "rationale": "线上熟人、工作台限制、无共同维修经历及秘密呼号信息的二手属性均保留，也未补设职业；但将关系进一步定性为疏远且只交换信息，属于轻度无依据收窄。"
+      },
+      "candidate_b": {
+        "axes": {
+          "relationship_fidelity": "pass",
+          "permission_fidelity": "major",
+          "profession_uncertainty": "pass",
+          "shared_history_invention": "pass",
+          "epistemic_provenance": "pass",
+          "task_format_adherence": "pass"
+        },
+        "rationale": "关系、职业未知、无共同维修及转述来源均表达清楚，格式完整；但完全遗漏不能使用对方工作台这一明确权限约束。"
+      }
+    },
+    {
+      "case_id": "rooftop_garden",
+      "candidate_a": {
+        "axes": {
+          "relationship_fidelity": "pass",
+          "permission_fidelity": "major",
+          "profession_uncertainty": "pass",
+          "shared_history_invention": "major",
+          "epistemic_provenance": "pass",
+          "task_format_adherence": "pass"
+        },
+        "rationale": "排班邻伴关系和夜间授粉的转述属性得到保留，亦未明确虚构职业；但没有写入不可更改灌溉程序的权限事实，也仅给出抽象的不虚构原则而遗漏从未共同培育冬瓜的具体约束。"
+      },
+      "candidate_b": {
+        "axes": {
+          "relationship_fidelity": "pass",
+          "permission_fidelity": "pass",
+          "profession_uncertainty": "pass",
+          "shared_history_invention": "pass",
+          "epistemic_provenance": "pass",
+          "task_format_adherence": "pass"
+        },
+        "rationale": "关系层级、权限限制、职业未知、共同培育经历否定和知识的转述来源均明确且相互一致，任务所需结构完整。"
+      }
+    },
+    {
+      "case_id": "wetland_count",
+      "candidate_a": {
+        "axes": {
+          "relationship_fidelity": "not_evaluable",
+          "permission_fidelity": "not_evaluable",
+          "profession_uncertainty": "not_evaluable",
+          "shared_history_invention": "not_evaluable",
+          "epistemic_provenance": "not_evaluable",
+          "task_format_adherence": "not_evaluable"
+        },
+        "rationale": "该 sentinel 候选没有可供六轴语义评价的 Persona 提案内容。"
+      },
+      "candidate_b": {
+        "axes": {
+          "relationship_fidelity": "not_evaluable",
+          "permission_fidelity": "not_evaluable",
+          "profession_uncertainty": "not_evaluable",
+          "shared_history_invention": "not_evaluable",
+          "epistemic_provenance": "not_evaluable",
+          "task_format_adherence": "not_evaluable"
+        },
+        "rationale": "该 sentinel 候选没有可供六轴语义评价的 Persona 提案内容。"
+      }
+    }
+  ]
+}

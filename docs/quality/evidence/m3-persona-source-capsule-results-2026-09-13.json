@@ -1,0 +1,54 @@
+{
+  "version": "m3-persona-source-capsule-results-v1",
+  "campaign": "m3-persona-source-capsule-paired-fresh-20260913-v1",
+  "run_anchor_git_commit": "570e84c5bbd7a06925d59e919c9b94e563814a93",
+  "manifest_file_sha256": "2fc949b049ec36f447632f5df835871ef4454d55f8254fb4437ee2e6419328d2",
+  "report_file_sha256": "b65c8d576fbe95dc4ba64341bf070761294bf863489853963d198b921fbe2273",
+  "packet_file_sha256": "669efbe328d34f303f688599ad7d304c7eff5669a4656053c25c5446ef466ce1",
+  "review_aggregate_file": "docs/quality/evidence/m3-persona-source-capsule-paired-review-aggregate-v1.json",
+  "denominator_pairs": 8,
+  "expected_samples": 16,
+  "wire_count": 16,
+  "states": {
+    "completed": 13,
+    "candidate_failed": 2,
+    "uncertain": 1
+  },
+  "failure_owners": {
+    "candidate": 2,
+    "infrastructure": 1
+  },
+  "charged_or_reserved_tokens": 135782,
+  "unknown_usage_requests": 1,
+  "wire_latency_ms": {
+    "p50": 13235,
+    "p95": 90086
+  },
+  "strict_paired_candidates_over_eight": 6,
+  "not_evaluable_pairs": [
+    "coastal_beacon",
+    "wetland_count"
+  ],
+  "shared_major_reductions": [
+    "canal_notebook:shared_history_invention",
+    "prop_registry:shared_history_invention",
+    "rooftop_garden:permission_fidelity",
+    "rooftop_garden:shared_history_invention"
+  ],
+  "candidate_only_majors": [
+    "ceramic_archive:permission_fidelity",
+    "ceramic_archive:shared_history_invention",
+    "radio_bench:permission_fidelity"
+  ],
+  "capsule_relationship_majors_worst_of_two": [],
+  "capsule_permission_majors_worst_of_two": [
+    "ceramic_archive",
+    "radio_bench"
+  ],
+  "exact_marker_success_credit": false,
+  "proposal_commit": "not_applicable",
+  "persona_save": false,
+  "production_registry_modified": false,
+  "tavern_transfer_started": false,
+  "promotion_passed": false
+}
