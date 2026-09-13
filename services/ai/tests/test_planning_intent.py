@@ -496,6 +496,11 @@ class PlanningIntentTests(unittest.TestCase):
         self.assertEqual(resolved.minutes_per_session.value, 30)
         self.assertEqual(resolved.output_language.source, "user_explicit")
         self.assertEqual(resolved.outline_targets.source, "model_inferred")
+        from tests.acceptance.minimax_planning_probe import planning_intent_outcomes
+        intent_validation = planning_intent_outcomes(
+            plan.model_dump(mode="json"), intent.model_dump(mode="json"), [], []
+        )
+        self.assertEqual(intent_validation, {"success": True, "failures": []})
 
 
 if __name__ == "__main__":
