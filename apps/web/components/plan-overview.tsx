@@ -342,7 +342,7 @@ export function PlanOverview({
                         </button>
                       </div>
                     </div>
-                    <span style={styles.scheduleFocus}>{item.focus}</span>
+                    <p style={styles.scheduleFocus}>{item.focus}</p>
                     {item.scheduleChapters.length && expandedScheduleItems[item.id] ? (
                       <div style={styles.subsectionList}>
                         {item.scheduleChapters.map((chapter) => (
@@ -610,9 +610,13 @@ const styles: Record<string, CSSProperties> = {
     color: "var(--ink)",
   },
   scheduleFocus: {
+    margin: 0,
     fontSize: 13,
     lineHeight: 1.6,
     color: "var(--ink-2)",
+    whiteSpace: "pre-wrap",
+    overflowWrap: "anywhere",
+    userSelect: "text",
   },
   questionCard: {
     display: "grid",

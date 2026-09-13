@@ -1,7 +1,7 @@
 "use client";
 
 import type { CSSProperties } from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type {
   PersonaProfile,
 } from "@vibe-learner/shared";
@@ -61,6 +61,7 @@ export function DocumentSetup({
     () => cachedState?.objective ?? "请基于教材结构生成首轮学习计划，先排出清晰、可执行的学习排期。"
   );
   const [showRoundDetails, setShowRoundDetails] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     onCachedStateChange?.({
@@ -111,19 +112,21 @@ export function DocumentSetup({
 
       <section style={styles.card}>
         <div style={styles.formSection}>
-          <label style={styles.field}>
-            <span style={styles.fieldLabel}>教师人格</span>
+          <div style={styles.field}>
+            <label htmlFor="plan-persona" style={styles.fieldLabel}>教师人格</label>
             <PersonaSelector
               personas={personas}
               selectedPersonaId={selectedPersonaId}
               onChange={onSelectPersonaId}
               compact
+              selectId="plan-persona"
             />
-          </label>
+          </div>
 
-          <label style={styles.field}>
-            <span style={styles.fieldLabel}>计划场景</span>
+          <div style={styles.field}>
+            <label htmlFor="plan-scene" style={styles.fieldLabel}>计划场景</label>
             <select
+              id="plan-scene"
               value={selectedSceneLibraryId}
               onChange={(event) => onSelectSceneLibraryId(event.target.value)}
               style={styles.select}
@@ -135,14 +138,15 @@ export function DocumentSetup({
                 </option>
               ))}
             </select>
-          </label>
+          </div>
         </div>
 
         <div style={{ ...styles.formSection, ...styles.formSectionSeparated }}>
           <div style={styles.form}>
-            <label style={styles.field}>
-              <span style={styles.fieldLabel}>创建方式</span>
+            <div style={styles.field}>
+              <label htmlFor="plan-generation-mode" style={styles.fieldLabel}>创建方式</label>
               <select
+                id="plan-generation-mode"
                 value={generationMode}
                 onChange={(event) => setGenerationMode(event.target.value === "goal_only" ? "goal_only" : "document")}
                 style={styles.select}
@@ -150,26 +154,44 @@ export function DocumentSetup({
                 <option value="document">教材 + 目标</option>
                 <option value="goal_only">仅学习目标</option>
               </select>
-            </label>
-            <label style={styles.field}>
-              <span style={styles.fieldLabel}>{file ? "更换教材文件（PDF）" : "教材文件（PDF）"}</span>
+            </div>
+            <div style={styles.field}>
+              <label htmlFor="plan-document-file" style={styles.fieldLabel}>教材文件（PDF）</label>
               <input
+                ref={fileInputRef}
+                id="plan-document-file"
                 type="file"
                 accept=".pdf"
-                style={styles.fileInput}
+                className="plan-file-input"
                 onChange={(event) => setFile(event.target.files?.[0] ?? null)}
                 disabled={generationMode === "goal_only"}
               />
-              {file ? <span style={styles.fieldLabel}>已保留：{file.name}</span> : null}
-            </label>
-            <label style={styles.field}>
-              <span style={styles.fieldLabel}>学习目标</span>
+              <div className="plan-file-selection" aria-live="polite">
+                <button
+                  type="button"
+                  style={{ ...styles.fileButton, ...(generationMode === "goal_only" ? styles.buttonDisabled : {}) }}
+                  disabled={generationMode === "goal_only"}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  {file ? "更换教材" : "选择教材"}
+                </button>
+                <span
+                  className="plan-file-name"
+                  title={file?.name}
+                >
+                  {file?.name ?? (generationMode === "goal_only" ? "仅学习目标，无需教材" : "尚未选择文件")}
+                </span>
+              </div>
+            </div>
+            <div style={styles.field}>
+              <label htmlFor="plan-objective" style={styles.fieldLabel}>学习目标</label>
               <textarea
+                id="plan-objective"
                 value={objective}
                 onChange={(event) => setObjective(event.target.value)}
                 style={styles.textarea}
               />
-            </label>
+            </div>
           </div>
         </div>
 
@@ -349,13 +371,16 @@ const styles: Record<string, CSSProperties> = {
     lineHeight: 1.65,
     color: "var(--ink)"
   },
-  fileInput: {
-    width: "100%",
+  fileButton: {
+    minHeight: 38,
     border: "1px solid color-mix(in srgb, var(--border) 76%, white)",
-    padding: "8px 10px",
+    padding: "0 12px",
     background: "color-mix(in srgb, white 72%, var(--surface))",
     color: "var(--ink)",
-    fontSize: 14
+    fontSize: 13,
+    fontWeight: 600,
+    cursor: "pointer",
+    flexShrink: 0,
   },
   select: {
     width: "100%",

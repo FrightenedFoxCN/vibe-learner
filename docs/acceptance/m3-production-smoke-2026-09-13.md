@@ -28,7 +28,7 @@
 ### Plan Workspace / 视觉一致性
 
 - **UI 问题**：当前桌面宽视口下主体内容只占左侧约一半宽度，右侧留下大片空白；表单和结果纵向堆叠，未利用可用横向空间。需在大屏检查内容最大宽度、双栏策略和阅读行长。
-- **UI 问题**：选中 PDF 后，完整超长文件名在上传按钮和紧邻的“已保留”说明中重复出现，信息冗余并显著拉长控件；建议使用截断名称 + tooltip/详情，并只保留一个权威状态位置。
+- **UI 问题（已修复）**：选中 PDF 后，完整超长文件名曾在上传按钮和紧邻的“已保留”说明中重复出现。Plan Workspace 现使用独立“选择/更换教材”按钮，只在单一状态位置展示省略文件名，并以 `title` 提供完整值；宽屏双栏、长计划文本换行/选择和五项表单显式 label 均由 1440×1000 production Chromium 回归覆盖。
 - **可访问性/自动化问题**：AX 树把“学习目标”显示为有名称的文本框，但按显式 label 定位失败，只能按 textbox role/name 定位；需要核对 `<label for>` / `id` 关联是否真实存在，而不只依赖附近文本或 aria 投影。
 - **通过（流程）**：真实 `Macbeth` PDF（92 个 PDF 页）上传、解析、Planning commit、计划历史读回、自动创建 Study Session 与初始化对话均完成；计划 ID `plan-f6bef29e7c`，Session ID `session-6930469bf0`（隔离数据，仅用于本轮证据）。
 - **工具调用**：Planning 共 3 轮、8 次工具调用、0 个页面报告问题。第 1 轮 5,058 ms，依次调用 3 次 `get_study_unit_detail` 与 1 次 `read_page_range_content`；第 2 轮 2,423 ms，调用 4 次 `read_page_range_content`；第 3 轮无工具，`finish=stop`，耗时 **84,140 ms**。工具选择表现出先取 Study Unit 详情、再补多个页段的合理分解，但最终组织答案占总时延绝大部分。
@@ -235,7 +235,7 @@
 原 smoke 当轮没有修改 TODO；后续将当时未被正式任务承接的体验问题补入根 `TODO.md`：
 
 - Settings scope loading/能力未知说明 → `UX-SETTINGS-PROBES-001`。
-- Plan 宽屏、文件名重复和表单 label → `UX-PLAN-WORKSPACE-LAYOUT-001`。
+- Plan 宽屏、文件名重复和表单 label → `UX-PLAN-WORKSPACE-LAYOUT-001`（已完成：宽屏主结果列保持显著宽于设置列，长文本可换行复制，PDF 名称单点省略并可查看完整值，表单均使用显式 `label for` / `id`）。
 - Study 宽屏、状态来源和表演/回执层级 → `UX-STUDY-PRESENTATION-001`。
 - 刷新首帧 Assistant Turn/radio 可访问名称丢失 → `STUDY-HYDRATION-A11Y-001`（已完成：富文本在服务端与首个客户端 frame 同步渲染，production 刷新门覆盖三个历史 Turn、已提交反馈与 radio 文本名称）。
 - 互动题评分后隐式昂贵续接与半道问题 → `STUDY-ANSWER-CONTINUATION-001`（已完成：评分提交不再自动调用模型；题卡以可取消的费用提示确认显式续接，并约束后续题型必须完整或明确使用普通输入框）。

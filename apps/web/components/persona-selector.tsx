@@ -6,13 +6,15 @@ interface PersonaSelectorProps {
   selectedPersonaId: string;
   onChange: (personaId: string) => void;
   compact?: boolean;
+  selectId?: string;
 }
 
 export function PersonaSelector({
   personas,
   selectedPersonaId,
   onChange,
-  compact = false
+  compact = false,
+  selectId,
 }: PersonaSelectorProps) {
   const selectedPersona = personas.find((persona) => persona.id === selectedPersonaId) ?? personas[0] ?? null;
 
@@ -20,6 +22,7 @@ export function PersonaSelector({
     return (
       <div style={styles.compactWrap}>
         <select
+          id={selectId}
           value={selectedPersonaId}
           onChange={(event) => onChange(event.target.value)}
           style={styles.selectCompact}
@@ -39,6 +42,7 @@ export function PersonaSelector({
     <aside style={styles.wrap}>
       <p style={styles.label}>教师人格</p>
       <select
+        id={selectId}
         value={selectedPersonaId}
         onChange={(event) => onChange(event.target.value)}
         style={styles.select}
