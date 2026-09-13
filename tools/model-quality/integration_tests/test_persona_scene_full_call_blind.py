@@ -94,7 +94,7 @@ class PersonaSceneFullCallBlindTests(unittest.TestCase):
             "started": 1.0, "finished": 2.0, "state": "finished",
             "reserved": 106400, "charged": 106400,
             "metadata": {
-                "call_kind": "persona_generation", "max_tokens": 4096,
+                "call_kind": "generation", "max_tokens": 4096,
                 "http_status": 400, "finish_reason": None,
                 "prompt_tokens": None, "completion_tokens": None, "total_tokens": None,
             },

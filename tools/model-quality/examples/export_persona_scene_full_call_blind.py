@@ -176,7 +176,7 @@ def _validate_wires(report: dict[str, object], expected_sample_ids: set[str]) ->
             or not isinstance(wire.get("reserved"), int) or wire["reserved"] < 0
             or not isinstance(wire.get("charged"), int) or wire["charged"] < 0
             or not isinstance(metadata, dict)
-            or metadata.get("call_kind") not in {"persona_generation", "scene_generation"}
+            or metadata.get("call_kind") != "generation"
             or metadata.get("max_tokens") not in {4096, 6144}
             or (metadata.get("http_status") is not None and not isinstance(metadata.get("http_status"), int))
             or (metadata.get("finish_reason") is not None and metadata.get("finish_reason") not in {"stop", "length", "tool_calls", "content_filter", "function_call"})
@@ -380,14 +380,8 @@ def _load_run(run_root: Path, *, prereg_git_commit: str) -> tuple[Campaign, dict
             audit = evidence.get("wire_payload_audit")
             safe_wires = wires_by_sample[sample_id]
             issued_audit = [item for item in audit if item.get("issued_wire") is True] if isinstance(audit, list) else []
-            audited_shapes = [
-                (item.get("domain"), item.get("max_tokens"))
-                for item in issued_audit
-            ] if isinstance(audit, list) else []
-            wire_shapes = [
-                (item["call_kind"], item["max_tokens"])
-                for item in safe_wires
-            ]
+            audited_shapes = [item.get("max_tokens") for item in issued_audit] if isinstance(audit, list) else []
+            wire_shapes = [item["max_tokens"] for item in safe_wires]
             if (
                 not isinstance(audit, list)
                 or len(audit) > 4

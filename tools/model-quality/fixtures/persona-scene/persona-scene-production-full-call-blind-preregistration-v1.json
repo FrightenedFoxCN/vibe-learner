@@ -7,9 +7,9 @@
     "fixture": "37e8c5c4da6dbb835ec998686dc7c9fb96e6318cb22f6f7eea19a142736faca2",
     "prepare_manifest": "4e4df5d1ea0fbda32be2a481c7979a59394a7ebe76931f310c8336490737d7ee",
     "adapter": "4d995fcf0810620d36066f2dc75ed16b858ffafc640d1040e080987a9d727345",
-    "blind_packet_key_exporter": "e227108c9785669cdaba244245c67e2f5320cacc36324bcb8395969090260a87",
+    "blind_packet_key_exporter": "f2658d850083eacb3032d7023768fdef17eb28e67d864a0b16927412e8867748",
     "strict_two_reviewer_aggregator": "24bfed611c3b8cdacac59d78b86745a958687a7260273f6772ca3ca1f79fa648",
-    "tests": "c18b0b2060947e14ef88408e7d4a113d0114c2fb3dbe59eee5c1f2c96776e672"
+    "tests": "40851aea454b7fd2a4ac43bde6128fad44840b2662606c8d2e1f275d22c6627d"
   },
   "review_bindings": {
     "sealed_review_oracle": "a1d55322eaf318c49703f66531b66e6aaeea925a32d1ff62755fb7b7bf2f9908"
@@ -35,7 +35,7 @@
       "tools/model-quality/integration_tests/test_persona_scene_full_call_blind.py"
     ],
     "path_count": 209,
-    "canonical_manifest_sha256": "f233dd5af53b74f3e93f17b57e3b9c8878f3a589ae2b25df28e7360bbd0626f6"
+    "canonical_manifest_sha256": "048ce7c3e53dddde77f6d3b5b67d6145ed1abcf14e742de7d2a74e0d9d323d03"
   },
   "legacy_reviewed_focus_bindings": {
     "services/ai/app/app_factory.py": "2a901b16e9dbd505690ada616ef87f91cd85452f93e0108094d82f8ae6ff386c",
