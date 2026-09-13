@@ -1,0 +1,119 @@
+{
+  "version": "m3-persona-source-capsule-preregistration-v1",
+  "date": "2026-09-13",
+  "status": "frozen_before_any_live_persona_capsule_wire",
+  "hypothesis": "A manually authored typed source-coordinate capsule appended to the otherwise identical production Persona long-text prompt reduces semantic source-boundary majors without introducing relationship or permission majors.",
+  "implementation": {
+    "commit": "5115ed822c411b6afee1327f74f7b18c542f401c",
+    "base_commit": "b0e58de9d474b06450b8958bf1143e534c3d2741",
+    "fixture_sha256": "bf24f623b4644765133d0a9e94fb24f96984c92252a13323f9584c0e79106a23",
+    "provider_free_policy_sha256": "7bb5c07dee5ab23e495f3382a01833b6d74e5be50dbbdb9e8098adf606a6c10a",
+    "live_adapter_sha256": "f3da606f40a59eb712b837138c6d4c857ed5bd305cffefd8ced94a8d9c3d7a72",
+    "blind_exporter_sha256": "c02d7df9a4c53d5cd3908b19442d4e49c5d6139d72c558082ea22b0e1aaf56bb",
+    "blind_aggregator_sha256": "5b96274ca47139ab1030975982bed4648aa1b0528b371222e465c4adbd886482"
+  },
+  "live_manifest": {
+    "path": "docs/quality/evidence/m3-persona-source-capsule-live-manifest-2026-09-13.json",
+    "file_sha256": "b575efe51aae993697cbb3d4460e13911bf6028f3436618d36a57cc07bb29659",
+    "canonical_campaign_sha256": "c4b4bdf1bcd1a31688c3463502a98feaa521df784be066fbf7a0f6241a5332ea",
+    "campaign_id": "m3-persona-source-capsule-paired-fresh-20260913-v1",
+    "model": "MiniMax-M3",
+    "transport": "minimax",
+    "thinking": "adaptive",
+    "temperature": 0.2,
+    "max_output_tokens": 4096,
+    "timeout_seconds": 90,
+    "sample_deadline_seconds": 300,
+    "concurrency": 2,
+    "seed": 91317,
+    "families": 8,
+    "variants": 2,
+    "maximum_wires": 16,
+    "sample_wire_limit": 1,
+    "retry": false,
+    "web_search": false,
+    "reasoning_fallback": false
+  },
+  "arms": {
+    "baseline": "Exact current production long-text Persona prompt, fresh one-shot.",
+    "candidate": "The same payload plus one source-coordinate capsule appendix, fresh one-shot; it cannot read the baseline draft.",
+    "single_variable_check": "Removing the candidate system-message appendix makes the complete candidate payload byte-value-equivalent to baseline before transport-owned thinking fields.",
+    "appendix_excludes": [
+      "source span or address text duplication",
+      "fixture case-specific forbidden transformation literals",
+      "fixture mutation marker policy",
+      "issue codes",
+      "gold proposal",
+      "mutation objects"
+    ]
+  },
+  "provider_free_calibration": {
+    "pristine_pass": "8/8",
+    "hard_negative_pass": "8/8",
+    "single_pointer_target_hits": "48/48",
+    "full_persona_target_field_classes_covered": 7,
+    "fixture_and_coordinate_tamper_fail_closed": true,
+    "semantic_certification": false,
+    "live_promotion_credit": false
+  },
+  "failure_denominator": {
+    "all_pairs": 8,
+    "candidate_failed_included": true,
+    "data_failed_included": true,
+    "infrastructure_failed_included": true,
+    "uncertain_included": true,
+    "missing_strict_candidate_included": true,
+    "replacement_samples": false,
+    "additional_wires": false,
+    "pre_wire_failure_may_use_zero_wires": true
+  },
+  "blind_manual_review": {
+    "reviewer_count": 2,
+    "reviewers_isolated_from_key_run_code_old_reviews_and_each_other": true,
+    "review_seed": 913719,
+    "campaign_seed_is_distinct": true,
+    "unavailable_pair_projection": "identical two-sided sentinel",
+    "frozen_run_anchor_committed_before_packet_export": true,
+    "axes": [
+      "relationship_fidelity",
+      "permission_fidelity",
+      "profession_uncertainty",
+      "shared_history_invention",
+      "epistemic_provenance",
+      "task_format_adherence"
+    ],
+    "grades": ["pass", "minor", "major", "not_evaluable"],
+    "worst_of_two": true
+  },
+  "promotion_gate": {
+    "denominator_pairs": 8,
+    "minimum_strict_paired_candidates": 7,
+    "minimum_major_reductions_confirmed_by_both_reviewers": 4,
+    "maximum_candidate_only_major_from_either_reviewer": 0,
+    "maximum_capsule_relationship_major_from_either_reviewer": 0,
+    "maximum_capsule_permission_major_from_either_reviewer": 0,
+    "exact_marker_issue_removal_counts_as_semantic_success": false
+  },
+  "boundaries": {
+    "research_only": true,
+    "provider_proposal_only": true,
+    "persona_domain_admission": false,
+    "persona_save": false,
+    "persona_commit_evidence": "not_applicable",
+    "production_registry_change": false,
+    "tavern_transfer_in_scope": false,
+    "automatic_capsule_extraction_authorized": false
+  },
+  "independent_adversarial_review": {
+    "initial_live_harness_review": "three findings fixed: source-marker duplication, open campaign matrix, and missing payload/config digest binding",
+    "live_harness_rereview": "PASS",
+    "initial_blind_tool_review": "three findings fixed: missing external frozen-run anchor, reorderable duplicate review body, and permissive review schema",
+    "blind_tool_rereview": "PASS"
+  },
+  "offline_verification": {
+    "model_quality_integration_tests": "153/153 passed before implementation commit",
+    "persona_targeted_tests_after_review_fixes": "32/32 passed",
+    "fake_campaign": "16/16 completed, exactly 16 fake wires",
+    "live_provider_wires_before_this_preregistration": 0
+  }
+}
