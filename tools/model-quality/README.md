@@ -132,7 +132,7 @@ LITELLM_LOCAL_MODEL_COST_MAP=True uv run --project ../../services/ai python -m m
 
 ## 2026-09-12 并行记忆实验与交付
 
-[完整实验记录与生产交接](../../docs/quality/m3-parallel-memory-results-2026-09-12.md)记录了 96 个真实领域样本、186 次 HTTP 200 请求，以及另行保留的 32 个 DNS 受阻样本。新增命令全部属于实验工具；没有改变生产默认模型、工具解码或写入策略。
+完整实验记录与生产交接由本地 `codex/m3-quality-evidence-archive` 分支保存，其中记录了 96 个真实领域样本、186 次 HTTP 200 请求，以及另行保留的 32 个 DNS 受阻样本。新增命令全部属于实验工具；没有改变生产默认模型、工具解码或写入策略。
 
 准备三种冻结矩阵，仍使用上文的服务依赖环境与 `PYTHONPATH`：
 
@@ -167,7 +167,7 @@ python -m model_quality.export --campaign-dir /absolute/path/completed-run --led
 
 ## 三条优先 lane、摘要评分与源码快照
 
-[并行实验总记录](../../docs/quality/m3-parallel-results-2026-09-12.md)是本轮生产交接入口。引用 24 来源、事件 30 场景、逐字 24 来源共 156 样本在同一调度器中随机交错，仍只有 4 个 worker；这是有界混合调度，不是加权 lane 公平队列。摘要另有 8 场景×2 条件，按事实对象而非字符比较。
+本轮并行实验总记录由本地 `codex/m3-quality-evidence-archive` 分支保存。引用 24 来源、事件 30 场景、逐字 24 来源共 156 样本在同一调度器中随机交错，仍只有 4 个 worker；这是有界混合调度，不是加权 lane 公平队列。摘要另有 8 场景×2 条件，按事实对象而非字符比较。
 
 在本目录、已配置服务环境的 `PYTHONPATH` 下：
 
@@ -219,4 +219,4 @@ PNG 默认单张最多 32768 字节、边长 1024；书页实验可显式提高 
 
 来源区分 `synthetic-authored`、适配器核验许可和摘要的 `public-licensed`、私有的 `user-provided`。公开可下载不等于有再分发许可；书页原图/识别文本与证据留在本地 runs。通用 public evidence export 拒绝含私有或未审查来源的 campaign，不能将其混入公开许可素材包。
 
-定位结果与限制见 [本轮报告](../../docs/quality/m3-grounding-repair-results-2026-09-12.md)。外部视觉模型可复现下载/锁定环境说明见 `integrations/vibe_learner/prepare_visual_grounding_runtime.py --help`，权重无需放入生产依赖。
+定位结果与限制由本地 `codex/m3-quality-evidence-archive` 分支保存。外部视觉模型可复现下载/锁定环境说明见 `integrations/vibe_learner/prepare_visual_grounding_runtime.py --help`，权重无需放入生产依赖。

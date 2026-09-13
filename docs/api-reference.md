@@ -28,9 +28,9 @@ If embeddings are unavailable, the backend falls back to local hashed-vector ret
   through domain-owned fail-closed decoders before rendering. Document and
   Planning live NDJSON plus persisted v1 reports additionally pass the strict
   versioned stream state machine. Subject/draft-revision/field-target fences
-  reject stale async results. Independent real-wire closure, remaining endpoint
-  inventory, Frontend Decoder component registration, and v2/v3 trace
-  forwarding/resource evidence remain tracked under `HRN-WEB-001`.
+  reject stale async results. Frontend Decoder component registration and v2/v3
+  trace forwarding/resource evidence are implemented; remaining native and
+  independent real-wire acceptance is tracked only in the root TODO.
 
 ## Complete operation index
 
@@ -1583,4 +1583,4 @@ still require canonical index/read-back; diagnostics are not a business ledger.
 
 ### Study 原文记忆指令
 
-`POST /study-sessions/{id}/chat` 的 learner `message` 可使用 `/remember-verbatim KEY\n正文\n/end-remember`。必须整条匹配；KEY 为 1–120 个 ASCII 字母、数字、下划线或短横线。正文 1–4000 字符且首尾无空白，不合格指令返回 422。只有模型提出匹配键的有效写入且效果原子提交后才成功；普通消息不自动绑定原文。完整契约、恢复与验收见 [生产更新记录](quality/m3-production-grounding-2026-09-12.md)。
+`POST /study-sessions/{id}/chat` 的 learner `message` 可使用 `/remember-verbatim KEY\n正文\n/end-remember`。必须整条匹配；KEY 为 1–120 个 ASCII 字母、数字、下划线或短横线。正文 1–4000 字符且首尾无空白，不合格指令返回 422。只有模型提出匹配键的有效写入且效果原子提交后才成功；普通消息不自动绑定原文。当前生产边界见[模型运行时质量](model-runtime-quality.md)，实验验收由本地证据归档分支保存。

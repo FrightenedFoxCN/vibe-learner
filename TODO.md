@@ -1,8 +1,6 @@
 # TODO
 
-本文件是产品、Harness 和桌面工作的统一待办入口；仅保留未完成任务；完成事项见[0.3.5 发布记录](docs/releases/0.3.5.md)。运行约束见 `AGENTS.md`，架构见 `docs/`，已完成过程记录通过 Git 历史查询。
-
-已完成的 2026-09-12 实验与修复见[阶段归档](docs/quality/completed-work-2026-09-12.md)；质量未完成项仅由[独立质量 TODO](docs/quality/TODO.md)维护。
+本文件是产品、Harness、模型质量和桌面工作的唯一待办入口；仅保留未完成任务。运行约束见 `AGENTS.md`，架构见 `docs/`，完成事项和实验过程通过发布记录、Git 历史及对应本地实验分支查询。
 
 优先级表示下一阶段排程，不追溯为 v0.2.1 发布缺陷：
 
@@ -28,11 +26,6 @@
   - 重构同步进展：复用/存档区与示例深层树默认折叠，树折叠接入原草稿存储，树操作控件扩大到 44px；删除采用独立模态。完整搜索筛选、错误焦点定位与独立设备复核仍待完成。
   - 生成预览须展示层/物体数量、规则与相对当前树的结构 diff；覆盖当前编辑树前暴露新增物体和约束冲突，不能只显示名称、摘要和节点数。
 
-- [x] `UX-STUDY-PRESENTATION-001` `[P2]` 收口 Study Dialog 的宽屏布局、状态来源和教师正文/表演提示/系统回执层级。
-  - 宽桌面不保留无意义的右侧与 Conversation—Composer 大片空白；首轮回复、待确认效果和输入区保持可连续阅读。
-  - 顶部 action notice、网络同步、Session 状态和模型生成状态各有稳定职责；角色动作、delivery cue、工具回执默认渐进披露，不与教师正文争夺主层级。
-  - 2026-09-13：移除 Conversation 的强制视口高度与内部滚动，把 Composer 紧随 transcript；1440×1000 production Chromium 验证主对话宽度、连续间距和教师正文可见。顶部只承载“操作反馈”，Conversation 内分别投影 Session、记录同步和模型状态，Character Shell 只表达角色状态；动作、表达提示和工具回执默认折叠且可展开。
-
 - [ ] `DOC-USER-001` `[P2]` 补齐并独立走查用户手册。
   - 2026-09-11：新增主页独立入口与 `/manual` 网页手册，简述首次使用、主要操作、恢复、数据及安装；正文统一在网页维护。独立新数据主流程与桌面安装走查仍待验收。
   - 本轮主智能体使用全新临时数据库/真实 mock 后端，走通纯目标生成、自动创建会话、提问与刷新读回；不替代独立完整手册验收。仍需 Settings 首次配置、教材路线、其他领域及桌面安装走查，见[核对报告](docs/plans/acceptance-audit-2026-09-11.md)。
@@ -42,14 +35,14 @@
 
 ### Planning → Study 工作流
 
-本节复现证据见 [2026-09-13 M3 Planning production 配对复测](docs/acceptance/m3-planning-retest-2026-09-13.md)；验收报告保留事实，本节维护工程状态。
+本节已吸收 2026-09-13 M3 Planning production 配对复测中仍未关闭的工程结论；实验明细由本地归档分支保存。
 
 - [ ] `PLAN-NAVIGATION-LIFECYCLE-001` `[P1]` 让 Planning 长任务跨页持续，或在离页前明确提示将取消并展示已发生费用。
   - 当前普通导航会调用 Document/Planning stream cancel；真实请求仍可能完成并计费，但 Learning Plan 不提交。全局 Debug 与返回后的 Plan Workspace 应显示活动、已中断、费用和可恢复状态。
 
 - [ ] `PLAN-PAGE-BOUNDS-001` `[P1]` 将用户显式 PDF 物理页范围变成服务端工具、proposal 与 commit invariant。
   - 用户指定 PDF 100–103 时，取证工具参数、schedule anchor 和 content slices 必须落在该范围；物理页与印刷页分别建模，不能让模型把印刷 70–73 当成物理 70–73 后成功提交。
-  - 本票只负责应用约束；教材语义、公式、旧记号和范围完整性质量由 `docs/quality/TODO.md` 的 `MQ-04` 负责。
+  - 本票只负责应用约束；教材语义、公式、旧记号和范围完整性质量由本文件的 `MQ-04` 负责。
 
 - [ ] `PLAN-OBSERVABILITY-001` `[P1]` 统一一次 Planning operation 的 provider round、工具、repair、token、时延、终态与产物口径。
   - UI/Model Usage/Harness trace 必须包含 schema repair 和失败前的安全字段级证据，并聚合首次失败、中断、重试及自动下游调用；不能再出现 UI 2 calls、审计 3 completions 的分裂。
@@ -76,6 +69,8 @@
   - Tavern 对 Persona/Scene 各请求一次；窗口 focus 与恢复流程不得造成无界重复刷新。
 
 - [ ] `PERF-WEB-BUNDLE-001` `[P2]` 建立 `/`、Settings、Model Usage、Tavern 的 production gzip 基线和 5% 回退门。
+
+- [ ] `PERF-WEB-PROVIDER-SCOPE-001` `[P3]` 将根布局中的 `LearningWorkspaceProvider` 下沉到实际消费者，避免 Settings、Model Usage、Tavern 等无关路由初始化学习工作区状态和请求。
 
 - [ ] `TAV-CANCEL-TRANSPORT-001` `[P2]` 建立 capability-aware provider cancellation。
   - 可取消 adapter 必须中断本地传输并释放连接/worker；不支持时继续使用 commit fencing 和 truthful UI。
@@ -114,13 +109,32 @@
   - macOS sidecar/native dependencies 使用同一 Developer ID Team，验证后开启 hardened runtime；验证 Windows/Linux 安装、退出与校验和。
   - 明确预览版缺少打包 OCR 模型时允许 fallback 还是阻止发布的策略。
 
-## 模型质量复核
+- [ ] `DOC-LAYOUT-LICENSE-001` `[P1]` 在分发或托管启用 DocLayout-YOLO 前完成代码、权重和训练数据许可复核。
+  - 明确 GPL-3.0/AGPL-3.0 组合的源码提供义务，并取得 DocSynth300K 等训练数据的可分发/托管授权证据；项目许可证不能替代数据集许可。
+  - 未关闭前保持外部子进程默认关闭，不把模型权重或相关依赖并入默认安装包。
 
-- [ ] `QG-MODEL-QUALITY-001` `[P2 · 已暂停，待独立复核]` 建立真实模型质量与 held-out 评测基线。
-  - 历史 MiniMax-M3 第 121 轮已按要求停止；本次明确重新授权的并行实验已另行交付。详细未完成事项、证据和关闭标准只维护在[独立质量 TODO](docs/quality/TODO.md)，不自动继续实测。
-  - [已采用运行时行为](docs/model-runtime-quality.md)与[研究接手摘要](docs/quality/research-summary.md)已整理；旧 `QG-002` / `web-strict-decode-adversarial-v1` 不变。
-  - 新增[Agentic design / ACL 研究](docs/quality/agentic-design-research-2026-09-12.md)与[首日 2000M tokens 探索计划](docs/quality/m3-parallel-exploration-2026-09-12.md)：优先引用、写入忠实度、记忆时间关系及独立评审，按需扩容并保留失败证据。
-  - 已完成的确定性注册不重做；模型 grader 需独立人工校准，技术恢复和维护者评审不代替内容质量验收。
+- [ ] `DIAG-INSTALLATION-BUDGET-001` `[P2]` 完成诊断数据的安装级磁盘预算与恢复验收。
+  - 把 event、Harness index、桌面 spool、WAL/SHM/journal、锁文件和文件系统分配开销纳入同一 200 MiB 口径；验证并发桌面写入、外部写入、超限旧库、长读者占用 WAL 及 Windows/macOS/Linux 文件语义。
+  - 给出超限后的可恢复清理/迁移路径和真实工作流开销；只有跨进程、跨平台证据齐全后，导出中的 `disk_size_limit_certified` 才可为 true。
+
+- [ ] `DIAG-NATIVE-EXPORT-001` `[P2]` 独立验收诊断快照的原生保存交接。
+  - 覆盖桌面保存对话框、取消、覆盖、权限/磁盘失败和最终文件校验；浏览器触发下载或前端已生成 Blob 不等于文件已持久化。
+  - 与 `REL-DESKTOP-001` 共用 macOS/Windows/Linux 设备矩阵，但分别记录导出 DTO 正确性和原生文件落盘结果。
+
+## 模型质量复核（已暂停，须重新授权真实模型调用）
+
+以下项目吸收原质量 TODO 和 2026-09-13 Planning 审计的未完成结论。实验原始数据由本地 `codex/m3-quality-evidence-archive` 及各专项实验分支保存；生产已采用边界见[模型运行时质量](docs/model-runtime-quality.md)。旧 `QG-002` / `web-strict-decode-adversarial-v1` 保持不可变。
+
+- [ ] `MQ-01` `[P2]` 独立复核 Study 引用精度与召回：覆盖中英法、多页、否定、无来源和中文整段 token；未提交结果不得计为成功弃引。
+- [ ] `MQ-02` `[P2]` 独立核对原文与写入状态：逐字模式按字符比较，摘要按固定字段语义比较，并用 effect receipt 区分 Turn 持久化、专门记忆写入和模型口头声明。
+- [ ] `MQ-03` `[P2]` 复核长历史记忆检索与时间关系：覆盖中段更新、重新启用、未知时间、多对象、取消/归档及记录时间/事件时间，分开归因检索、读取、写入和载荷失败。
+- [ ] `MQ-04` `[P1]` 建立 Planning 来源、页码、范围、内容、时长与 Persona 活动关系的 held-out 专家门；物理/印刷页、公式、旧记号和完整目标范围必须分别核验。
+- [ ] `MQ-05` `[P1]` 复核 Planning 工具调度、Unit ID/schema repair 与成本：固定输入、摘录和限额，记录首次失败、修复、重试、request tokens、端到端 P50/P95，并核对实际 wire 行为。
+- [ ] `MQ-06` `[P2]` 建立 Persona 权限/事实边界和 Tavern 关系防编造的独立盲测；Persona claim ledger 与 Tavern counterfactual fixture 先校准，再决定是否另行预注册 live shadow。
+- [ ] `MQ-07` `[P2]` 复核 Study 题目、工具效果与视觉定位：题目提交前不得泄漏答案，逐工具核对领域效果；OCR 文本/字符与 Picture/Formula 候选分流，并在页面隔离留出集验收。
+- [ ] `MQ-08` `[P2]` 量化缓存与压缩收益和损失：控制冷暖、前缀、配置与调用顺序，记录真实 `cached_tokens`、摘要/回查总成本和事实保留率，不以 token 减少推导费用或时延改善。
+- [ ] `MQ-09` `[P2]` 完成 OCR 与图片生成的生产接入质量门：从 admission 到 read-back 覆盖语言/版面/平台打包；噪声 OCR 用原页或专家 ground truth 分开评分“不确定性识别”和正文正确性。
+- [ ] `MQ-10` `[P2]` 建立独立、盲测、held-out 的总体质量基线：grader 需独立人工校准，数据/基础设施/评分器/候选失败分母分离，并补真实前端与适用平台验收。
 
 ## Research parking lot（未排期）
 
@@ -135,7 +149,7 @@
 
 ## 持续规则
 
-- 本文件是统一待办索引；已实现的 Harness 基础设施、13 个阶段评测套件、SQLite 恢复和已定义输入上限测试不再列为待办。
+- 本文件是唯一待办索引；其他文档只描述当前契约、限制和复现方式，不维护平行待办。已实现的 Harness 基础设施、13 个阶段评测套件、SQLite 恢复和已定义输入上限测试不再列为待办。
 - 架构见 `docs/harness-architecture.md`，工程约束见 `AGENTS.md`。`QG-002` / `web-strict-decode-adversarial-v1` 保持不可变，扩展使用新版本。
 - Debug 是全局 Overlay，不恢复已删除的 `/debug` 页面。
 - 性能任务必须记录 fixture、环境、raw samples 和 before/after；不得通过放宽既有预算关闭回归。

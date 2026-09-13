@@ -25,14 +25,14 @@
 - 检索记忆保留领域来源、说话者与原始记录时间。学生原文摘录最多 800 字符、助手最多 160 字符，避免助手复述挤掉学习者更新。
 - 原文选择器按查询选择句子邻域、多处窗口及偏移，在总计 800 字符预算内保留证据。这是原文检索，不是模型摘要压缩；远处限定、长句和否定关系仍可能丢失。
 - 词法记忆检索回退使用稳定散列和 Unicode/重音规范化，支持中文 bigram，避免 Python hash seed 改变排序。这不等于语义检索或时间关系正确。
-- 自动教材引用不再为无文档、无 chunk 或零词法匹配编造第 1 页/单元范围。仍保留匹配 chunk 排序与去重；词法命中不能证明蕴含，中文召回和跨语言误引仍在 [质量 TODO](quality/TODO.md) 中。
+- 自动教材引用不再为无文档、无 chunk 或零词法匹配编造第 1 页/单元范围。仍保留匹配 chunk 排序与去重；词法命中不能证明蕴含，中文召回和跨语言误引仍由根 [TODO](../TODO.md) 的 `MQ-01` 跟踪。
 
 ### PDF 图形候选（默认关闭）
 
 - Study Chat 新增纯读工具 `read_projected_pdf_layout_candidates`。它只为当前投射 PDF 的一页返回 `Picture` 和独立 `Formula` 候选；正文、行内公式锚点与单字母继续走 OCR 文本定位。模型选定候选或在 `Picture` 母框内估计局部框后，仍调用既有 `annotate_projected_pdf_region`，没有新增写效果或前端 DTO。
 - 可选实现通过外部 Python 子进程调用 DocLayout-YOLO，对 `Picture` 母框递归一次并做 NMS。内部结果最多 32 个候选；原页、编号候选页和母框 crop 联系表仅作为 provider 图像证据，最多三张，不进入公开结果或 trace。
 - 路径启动时固定，运行时设置不会热切换它。默认 `VIBE_LEARNER_DOCUMENT_LAYOUT_ENGINE=disabled`；启用需设置 `doclayout-yolo`、独立 Python、权重路径及已审核 SHA-256。worker 异常、输出越界、未知标签或权重摘要不匹配均返回类型化不可用结果。
-- Harness 登记为 `study-chat-toolset-v2` 与 `study-visual-grounding-v1`。这表示代码和契约边界已经采用，并不把 8 页开发集的 6/8 结果升级为独立质量认证；页面隔离留出和真实生产 provider acceptance 仍在 [质量 TODO](quality/TODO.md) 中。
+- Harness 登记为 `study-chat-toolset-v2` 与 `study-visual-grounding-v1`。这表示代码和契约边界已经采用，并不把 8 页开发集的 6/8 结果升级为独立质量认证；页面隔离留出和真实生产 provider acceptance 由根 [TODO](../TODO.md) 的 `MQ-07` 跟踪。
 
 配置示例：
 
@@ -59,7 +59,7 @@ VIBE_LEARNER_DOCUMENT_LAYOUT_TIMEOUT_SECONDS=90
 
 长历史 preflight 减少重复序列化，在原预算内寻找可保留的历史后缀，保留全量快路径、空历史错误优先级和最终上下文。预算、Prompt 和事实保留策略未改变。
 
-30 组/长度、共 90 组旧新配对的 messages、retained messages 与 report 完全相等。256 条消息的本地 P50/P95 从 631.49/655.47 ms 降为 41.86/43.43 ms。它是本地预算处理收益，不能推导缓存、模型延迟或早期事实召回改善。[稳定测量基线](quality/evidence/tavern-preflight-comparison-v1.json)保留用于性能回归。
+30 组/长度、共 90 组旧新配对的 messages、retained messages 与 report 完全相等。256 条消息的本地 P50/P95 从 631.49/655.47 ms 降为 41.86/43.43 ms。它是本地预算处理收益，不能推导缓存、模型延迟或早期事实召回改善。原始稳定测量基线由本地 `codex/m3-quality-evidence-archive` 分支保存。
 
 ## 采用记录
 
@@ -103,7 +103,7 @@ VIBE_LEARNER_DOCUMENT_LAYOUT_TIMEOUT_SECONDS=90
 
 ## 验证范围
 
-`0.3.5` 工作树的本地发布门通过：867 项完整后端测试、共享契约、Web reliability、Harness pilots、十个 stage regressions、plan revision eval 与生产 Web 构建均成功。DocLayout-YOLO 路径另有 68 项后端定向测试通过；真实书页 8 任务的 M3 母框内局部框结果为 6/8，详细限制见[书页定位报告](quality/m3-book-grounding-results-2026-09-12.md)。
+`0.3.5` 工作树的本地发布门通过：867 项完整后端测试、共享契约、Web reliability、Harness pilots、十个 stage regressions、plan revision eval 与生产 Web 构建均成功。DocLayout-YOLO 路径另有 68 项后端定向测试通过；真实书页 8 任务的 M3 母框内局部框结果为 6/8，详细实验记录由本地 `codex/m3-quality-evidence-archive` 分支保存，剩余质量门见根 TODO 的 `MQ-07` / `MQ-09`。
 
 `source-minimal-v3` 的采用证据来自开发合成样本和内部人工逐条语义审查，而不是关键词判定。新增的 Study Chat prompt-v2 provider-free deterministic baseline 只验证 tested-system 身份、结构与既有固定案例门禁，并不执行真实模型，也不是文本语义或学习效果认证。该策略尚未经过独立专家复核、真实学习成效研究或生产流量认证，因此不能据此宣称学习效果提升，也不能把该证据外推为 Tavern、Persona/Scene、Harness schema、多模态或其他模型路径的质量结论。
 

@@ -1,6 +1,6 @@
 # 项目文档
 
-未完成工作统一由 [TODO](../TODO.md) 索引；模型质量的详细任务与证据维护在[独立质量 TODO](quality/TODO.md)。本目录保留当前架构、接口、操作手册和可执行预算；历史审计、验收日志及阶段推进记录通过 Git 历史查询。
+未完成工作只由根 [TODO](../TODO.md) 维护。本目录保留当前架构、接口、操作手册、可执行预算和仍待关闭的验收协议；历史审计、实验数据、验收日志及阶段推进记录通过 Git 历史和对应本地实验分支查询。
 
 | 文档 | 用途 |
 | --- | --- |
@@ -25,7 +25,7 @@
 | [后端测试边界](backend-test-boundaries.md) | 领域契约、生命周期、事务与进程中断门 |
 | [场景编辑器](scene-setup.md) | 层级场景和保存结构 |
 
-修改前先阅读对应领域文档及 [AGENTS](../AGENTS.md)。未完成任务由根 TODO 索引，模型质量细项只维护在独立质量 TODO；已完成的阶段计划、逐日进展和重复审查记录通过 Git 历史查询，不在当前目录重复维护。
+修改前先阅读对应领域文档及 [AGENTS](../AGENTS.md)。未完成任务只由根 TODO 维护；已完成的阶段计划、逐日进展、实验原始数据和重复审查记录不在当前目录重复维护。
 
 ## 发布与验收
 
@@ -39,23 +39,4 @@
 - [用户手册验收进度](plans/acceptance-audit-2026-09-11.md)。
 - [诊断测量基线](performance/diagnostic-local-baseline-v1.md)：诊断存储与导出协议。
 
-原始结果保留在 `acceptance/`、`performance/` 和 `plans/acceptance/`；保留证据不等于扩大其模型、平台或独立性范围。
-
-## 模型质量研究
-
-[Agentic design 与 ACL 2025/2026 研究](quality/agentic-design-research-2026-09-12.md)将外部结果对应到现有质量子任务；[M3 高并行探索计划](quality/m3-parallel-exploration-2026-09-12.md)按首日 2000M tokens 上限、最短决策时间安排并发与证据产出。首批[本地诊断](quality/evidence/agentic-preflight-local-2026-09-12.json)已执行，随后已完成[独立实验运行器](../tools/model-quality/README.md)、领域接入预检与[真实容量测量](quality/evidence/m3-live-concurrency-capacity-2026-09-12.json)：4 并发通过，8 并发触发 429；独立质量确认仍待完成。
-
-[研究接手摘要](quality/research-summary.md)说明已采用结论、未采用策略和复现入口；[质量研究索引](quality/minimax-m3-v1.md)保留旧链接。未关闭问题的混合实验与原始失败继续保留，纯已完成过程通过 Git 查询。
-
-- [MiniMax-M3 并行实验与生产交接（2026-09-12）](quality/m3-parallel-results-2026-09-12.md)：三条优先 lane、infra、完整实验包与待审采用建议。
-
-- [M3 候选生产实现与验收（2026-09-12）](quality/m3-production-grounding-2026-09-12.md)
-
-- [M3 智能体交接（2026-09-12）](quality/m3-agent-handoff-2026-09-12.md)
-
-- [M3 数学书页定位、Reflection 与 DocLayout-YOLO（2026-09-12）](quality/m3-book-grounding-results-2026-09-12.md)
-
-## 仓库资料整理
-
-- [2026-09-12 已完成实验与修复归档](quality/completed-work-2026-09-12.md)：完成范围、原始证据和仍未关闭的质量门。
-- [仓库占用与清理记录](repository-inventory-2026-09-12.md)：源码、运行数据、实验资料与构建缓存的区分。
+性能目录只保留当前可重放协议、预算及其必要基线；实验原始结果不作为主线文档长期维护。

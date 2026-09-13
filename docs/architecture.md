@@ -82,7 +82,7 @@ The Learning Workspace is split into:
 - provider-level page-cache persistence in `apps/web/lib/learning-workspace-page-cache.ts`;
 - plan-view mapping in `apps/web/lib/plan-panel-data.ts`.
 
-The root layout still mounts `LearningWorkspaceProvider` on every route. Moving that provider down to only its consumers is tracked by `PERF-001`.
+The root layout still mounts `LearningWorkspaceProvider` on every route. Moving that provider down to only its consumers is tracked by `PERF-WEB-PROVIDER-SCOPE-001` in the root TODO.
 
 Tavern uses a separate client boundary:
 
@@ -165,9 +165,10 @@ database transaction. A failed or interrupted operation records explicit
 `not_committed` truth, and startup recovery terminalizes abandoned `running`
 operations so a process exit cannot strand the Document indefinitely. JSON
 files are best-effort compatibility mirrors after the authoritative database
-commit. This atomic boundary has passed independent fault revalidation;
-extraction/OCR/cleanup v3 trace, protected replay, and eval remain tracked by
-`HRN-DOC-001`.
+commit. This atomic boundary has passed independent fault revalidation. Document
+extraction, OCR and cleanup use the production v3 trace, protected replay and
+eval boundary; remaining OCR recovery and quality acceptance is tracked only in
+the root TODO.
 
 ### 2. Plan generation
 
@@ -203,8 +204,9 @@ snapshot; payload drift, active siblings, stale Document state, and missing
 Debug prerequisites fail closed. Startup recovery terminalizes abandoned work,
 and compatibility JSON files are mirrored only after the authoritative commit.
 This ownership and atomic-commit boundary has passed independent schema/fault
-revalidation. It is not v3 operation evidence; protected replay and workflow
-adoption remain tracked by `HRN-PLAN-001`.
+revalidation. Planning now uses the production v3 operation, protected replay,
+trace and eval boundary; remaining product and quality work is tracked only in
+the root TODO.
 
 ### 3. Scene generation and saves
 
@@ -225,8 +227,8 @@ rebuilds that profile from the validated tree and commits through row CAS;
 stale editors receive `409 scene_revision_conflict`. Legacy records decode with
 revision `0`, and migration `20260824_0011` adds authoritative revision columns.
 This ownership/CAS slice has passed independent model-wire, public-save, and
-concurrency revalidation. Protected context/replay, v3 traces, and eval remain
-tracked by `HRN-SCENE-001`.
+concurrency revalidation. Scene generation now uses the production protected
+context/replay, v3 trace and eval boundary.
 
 ### 4. Study interaction
 
@@ -269,7 +271,7 @@ The browser `Tavern Workspace` implements:
 - `Interaction Composer`;
 - `Reliability Details`.
 
-Tavern functional/state checks cover create/direct/facilitated/recovery paths, authoritative roster/retry derivation, structured recovery/error transport, composition-event fencing, keyboard focus return, and a 390px no-overflow inspection. Recovery lineage, provider-call fencing, mutation errors, badges, and real per-step states have passed a non-implementer live browser/wire matrix. `UX-001` remains open for the no-Persona/no-Room viewport, device-level IME, full focus order, and a fresh 390×844 device-level visual/touch measurement; completed 44px static contracts do not substitute for that device measurement.
+Tavern functional/state checks cover create/direct/facilitated/recovery paths, authoritative roster/retry derivation, structured recovery/error transport, composition-event fencing, keyboard focus return, and a 390px no-overflow inspection. Recovery lineage, provider-call fencing, mutation errors, badges, and real per-step states have passed a non-implementer live browser/wire matrix. `REL-DESKTOP-001` remains open for the no-Persona/no-Room viewport, device-level IME, full focus order, and a fresh 390×844 device-level visual/touch measurement; completed 44px static contracts do not substitute for that device measurement.
 
 ## Character layer
 
