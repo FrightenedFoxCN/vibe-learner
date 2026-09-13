@@ -116,3 +116,58 @@ test("independent question: focus moved to another control stays there after sam
   await expect(page.getByText("Independent answer saved · 已记录", { exact: true })).toBeVisible();
   await expect(other).toBeFocused();
 });
+
+test("independent question: refresh exposes persisted Assistant text and radio names in the first rendered frame", async ({ page }) => {
+  const h = await questionHarness(page);
+  const first = h.session.turns[0];
+  first.assistant_reply = "First persisted Assistant explanation";
+  first.interactive_question!.result = {
+    schema_version: "study-question-result-v1",
+    attempt_id: "attempt-refresh",
+    client_attempt_id: "client-refresh",
+    submitted_answer: "A",
+    is_correct: true,
+    feedback_text: "Refresh answer saved",
+    explanation: "Refresh explanation",
+    before_revision: h.session.revision,
+    committed_revision: h.session.revision + 1,
+    committed_at: "2026-08-24T10:00:01+08:00",
+  };
+  h.session.turns.push(
+    {
+      ...structuredClone(first),
+      id: "turn-refresh-2",
+      sequence: 2,
+      assistant_reply: "Second persisted Assistant explanation",
+      interactive_question: null,
+    },
+    {
+      ...structuredClone(first),
+      id: "turn-refresh-3",
+      sequence: 3,
+      assistant_reply: "Third persisted Assistant explanation",
+      interactive_question: null,
+    }
+  );
+  h.session.revision += 3;
+  h.session.last_turn_sequence = 3;
+
+  const sessionRead = page.waitForResponse(response =>
+    response.url().includes("/study-sessions?") && response.request().method() === "GET"
+  );
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await sessionRead;
+  await page.locator('input[type="radio"]').first().waitFor({ state: "attached" });
+
+  const firstFrame = await page.locator("body").evaluate(body => ({
+    text: body.textContent ?? "",
+    radioNames: [...body.querySelectorAll('input[type="radio"]')].map(input =>
+      input.closest("label")?.textContent?.trim() ?? ""
+    ),
+  }));
+  expect(firstFrame.text).toContain("First persisted Assistant explanation");
+  expect(firstFrame.text).toContain("Second persisted Assistant explanation");
+  expect(firstFrame.text).toContain("Third persisted Assistant explanation");
+  expect(firstFrame.text).toContain("Refresh answer saved · 已记录");
+  expect(firstFrame.radioNames).toEqual(["A. Stable value", "B. Changing value"]);
+});
