@@ -1,0 +1,59 @@
+{
+  "version": "scene-closed-world-live-evidence-v1",
+  "phase": "baseline",
+  "case_id": "scene_closed_world_synthetic_01_observatory",
+  "scope": "Production-shaped Scene proposal only. The deterministic policy is research evidence and commit_evidence remains not_applicable.",
+  "policy": {
+    "version": "scene-closed-world-policy-v1",
+    "root_title": "星图观测室",
+    "direct_children_exact": [
+      "圆顶控制区",
+      "记录台"
+    ],
+    "forbid_deeper_layers": true,
+    "required_root_objects": [],
+    "allowed_root_objects": [],
+    "required_child_objects_by_title": {
+      "圆顶控制区": [
+        "黄铜望远镜",
+        "蓝色转轮"
+      ],
+      "记录台": [
+        "航星日志",
+        "红铅笔"
+      ]
+    },
+    "allowed_child_objects_by_title": {
+      "圆顶控制区": [
+        "黄铜望远镜",
+        "蓝色转轮"
+      ],
+      "记录台": [
+        "航星日志",
+        "红铅笔"
+      ]
+    },
+    "allowed_entrances": [
+      "保持当前层。",
+      "保持当前层",
+      "无入口。",
+      "无入口",
+      "没有入口。",
+      "没有入口",
+      "未指定。",
+      "未指定"
+    ]
+  },
+  "http_status": 500,
+  "provider_calls": 2,
+  "wire_envelopes": [
+    {
+      "finish_reason": "stop",
+      "completion_tokens": 1604,
+      "final_content_present": true
+    }
+  ],
+  "strict_candidate": false,
+  "not_evaluable": true,
+  "api_error_code": "setting_generation_failed"
+}

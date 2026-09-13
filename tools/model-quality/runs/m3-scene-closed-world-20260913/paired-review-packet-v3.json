@@ -1,0 +1,881 @@
+{
+  "version": "m3-scene-closed-world-blinded-paired-review-v1",
+  "scope": "synthetic authoritative source plus blinded Scene proposals only",
+  "review_axes": [
+    "topology_fidelity",
+    "object_fidelity",
+    "supported_detail_deletion",
+    "relationship_and_permission_invention",
+    "epistemic_and_temporal_invention"
+  ],
+  "grading": [
+    "pass",
+    "minor",
+    "major",
+    "not_evaluable"
+  ],
+  "cases": [
+    {
+      "case_id": "scene_closed_world_synthetic_01_observatory",
+      "authoritative_source": "场景标题为星图观测室。星图观测室只包含圆顶控制区和记录台两个直接区域。圆顶控制区内有黄铜望远镜和蓝色转轮。记录台内有航星日志和红铅笔。场景没有其他区域、物件、入口或通路。",
+      "candidate_a": {
+        "not_evaluable": true,
+        "reason": "strict_candidate_unavailable"
+      },
+      "candidate_b": {
+        "not_evaluable": true,
+        "reason": "strict_candidate_unavailable"
+      }
+    },
+    {
+      "case_id": "scene_closed_world_synthetic_02_tea_archive",
+      "authoritative_source": "场景标题为春茶标本馆。春茶标本馆只包含芽叶柜、香气桌和称量台三个直接区域。芽叶柜内有白毫银针罐。香气桌内有桂花嗅闻瓶和竹制闻香杯。称量台内有铜砝码。场景没有其他区域、物件、入口或通路。",
+      "candidate_a": {
+        "schema_name": "scene-tree-proposal",
+        "schema_version": "scene-tree-proposal-v1",
+        "scene_name": "春茶标本馆",
+        "scene_summary": "一座仅由芽叶柜、香气桌与称量台三区并列构成的春茶静态标本陈列空间，无走廊、隔断门或额外通道。",
+        "selected_path": [
+          0,
+          1
+        ],
+        "scene_layers": [
+          {
+            "title": "春茶标本馆",
+            "scope_label": "标本馆整体",
+            "summary": "整体是一个封闭的静态陈列空间，由观、嗅、称三个功能分区并列铺开，三区之间没有通道或门扇，仅以功能差异彼此区分。",
+            "atmosphere": "静谧、克制、博物气息，光线柔和均匀，背景近乎无声。",
+            "rules": "三区独立陈列、互不相通；任何物件不可跨区移动；观者需自行在不同分区前完成观、嗅、称三种体验。",
+            "entrance": "无显式入口，从外部概念整体落入空间即视为入场。",
+            "tags": [
+              "静态陈列",
+              "茶主题",
+              "封闭空间",
+              "无通路",
+              "并列三区"
+            ],
+            "reuse_hint": "保留三区并列、无通道、整体封闭的空间骨架，便于以后增删分区或整体搬迁。",
+            "reusable_node_ref": null,
+            "objects": [],
+            "children": [
+              {
+                "title": "芽叶柜",
+                "scope_label": "标本馆·芽叶陈列柜",
+                "summary": "在整体并列布局中占一侧，是从整体空间进入'观'的功能分区，以玻璃柜体与外部观者形成清晰视觉边界，专存春茶芽叶干样。",
+                "atmosphere": "干燥、轻微草木底色，冷白光，安静。",
+                "rules": "柜内仅供静观；玻璃柜门是观与被观的硬边界，不可开柜取样。",
+                "entrance": "从标本馆整体直接步入柜前，无门槛、无通道切换。",
+                "tags": [
+                  "陈列柜",
+                  "玻璃边界",
+                  "静观",
+                  "芽叶干样"
+                ],
+                "reuse_hint": "保留'单柜—单罐'的极简陈列结构，便于以后替换春茶品类。",
+                "reusable_node_ref": null,
+                "objects": [
+                  {
+                    "name": "白毫银针罐",
+                    "description": "密封瓷罐，存放白毫银针干茶芽叶，位于芽叶柜内正中。",
+                    "interaction": "仅可透过玻璃柜门观看罐体外观与标签，不可开盖取样。",
+                    "tags": [
+                      "密封瓷罐",
+                      "白毫银针",
+                      "静态标本"
+                    ],
+                    "reuse_hint": "保留单罐封装的容器结构，便于替换为其他春茶芽叶标本。",
+                    "reusable_node_ref": null
+                  }
+                ],
+                "children": []
+              },
+              {
+                "title": "香气桌",
+                "scope_label": "标本馆·香气体验桌",
+                "summary": "在整体并列布局中居中，是从'观'切换为'嗅'的功能分区，以桌面作为容器边界，集中提供春茶与配花的嗅觉样本。",
+                "atmosphere": "空气里带有若有若无的花香与茶香，光线偏暖，环境近乎无声。",
+                "rules": "桌面用于短时嗅闻体验，物件可拿起贴近鼻端，但不可带离桌面。",
+                "entrance": "从标本馆整体平移入桌前，仅以桌沿与高度差作为功能边界，无门扇。",
+                "tags": [
+                  "嗅觉体验",
+                  "茶香",
+                  "花香",
+                  "互动桌",
+                  "功能切换"
+                ],
+                "reuse_hint": "保留'观→嗅'的功能切换结构，可替换香气样本种类而不破坏动线。",
+                "reusable_node_ref": null,
+                "objects": [
+                  {
+                    "name": "桂花嗅闻瓶",
+                    "description": "小型玻璃瓶，内置干燥桂花，用于提供配花香的嗅觉对照样本。",
+                    "interaction": "可拔开瓶塞轻嗅，再盖回瓶塞并放回桌面原位。",
+                    "tags": [
+                      "嗅闻瓶",
+                      "桂花",
+                      "对照样本",
+                      "可拿起"
+                    ],
+                    "reuse_hint": "保留嗅闻瓶与配花香气的对照关系，便于以后替换为其他配花。",
+                    "reusable_node_ref": null
+                  },
+                  {
+                    "name": "竹制闻香杯",
+                    "description": "竹质小杯，杯壁留有春茶余香，作为茶香本体的嗅觉样本。",
+                    "interaction": "可端起贴近鼻端闻香，再轻放回桌面。",
+                    "tags": [
+                      "闻香杯",
+                      "竹制",
+                      "茶香样本",
+                      "可拿起"
+                    ],
+                    "reuse_hint": "保留竹杯承载茶香的容器功能，便于以后换装不同茶样。",
+                    "reusable_node_ref": null
+                  }
+                ],
+                "children": []
+              },
+              {
+                "title": "称量台",
+                "scope_label": "标本馆·称量操作台",
+                "summary": "在整体并列布局中占另一侧，是从'看/闻'切换为'称'的功能分区，以台面与砝码提供春茶干样的克重标定操作面。",
+                "atmosphere": "干燥、冷静，金属与石质触感突出，光线明亮而克制。",
+                "rules": "台面仅作短时称量展示，砝码与样品不可带离台面。",
+                "entrance": "从标本馆整体步入台前，仅以台面边沿与高度差作为操作区边界，无门扇。",
+                "tags": [
+                  "称量台",
+                  "操作区",
+                  "金属器具",
+                  "克重标定"
+                ],
+                "reuse_hint": "保留台面+砝码的称量结构，便于以后替换茶样或增配砝码组合。",
+                "reusable_node_ref": null,
+                "objects": [
+                  {
+                    "name": "铜砝码",
+                    "description": "一组黄铜材质小型砝码，整齐排列在称量台面上，用于演示春茶干样的克重。",
+                    "interaction": "可单只拿起比对、再放回台面原位，不可带出台面。",
+                    "tags": [
+                      "铜砝码",
+                      "克重",
+                      "称量工具",
+                      "可拿起"
+                    ],
+                    "reuse_hint": "保留铜质砝码与样品克重的对应关系，便于以后拓展重量组合。",
+                    "reusable_node_ref": null
+                  }
+                ],
+                "children": []
+              }
+            ]
+          }
+        ]
+      },
+      "candidate_b": {
+        "schema_name": "scene-tree-proposal",
+        "schema_version": "scene-tree-proposal-v1",
+        "scene_name": "春茶标本馆",
+        "scene_summary": "一座仅由芽叶柜、香气桌与称量台三区并列构成的春茶静态标本陈列空间，无走廊、隔断门或额外通道。",
+        "selected_path": [
+          0,
+          1
+        ],
+        "scene_layers": [
+          {
+            "title": "春茶标本馆",
+            "scope_label": "标本馆整体",
+            "summary": "整体是一个封闭的静态陈列空间，由观、嗅、称三个功能分区并列铺开，三区之间没有通道或门扇，仅以功能差异彼此区分。",
+            "atmosphere": "静谧、克制、博物气息，光线柔和均匀，背景近乎无声。",
+            "rules": "三区独立陈列、互不相通；任何物件不可跨区移动；观者需自行在不同分区前完成观、嗅、称三种体验。",
+            "entrance": "无入口。",
+            "tags": [
+              "静态陈列",
+              "茶主题",
+              "封闭空间",
+              "无通路",
+              "并列三区"
+            ],
+            "reuse_hint": "保留三区并列、无通道、整体封闭的空间骨架，便于以后增删分区或整体搬迁。",
+            "reusable_node_ref": null,
+            "objects": [],
+            "children": [
+              {
+                "title": "芽叶柜",
+                "scope_label": "标本馆·芽叶陈列柜",
+                "summary": "在整体并列布局中占一侧，是从整体空间进入'观'的功能分区，以玻璃柜体与外部观者形成清晰视觉边界，专存春茶芽叶干样。",
+                "atmosphere": "干燥、轻微草木底色，冷白光，安静。",
+                "rules": "柜内仅供静观；玻璃柜门是观与被观的硬边界，不可开柜取样。",
+                "entrance": "无入口。",
+                "tags": [
+                  "陈列柜",
+                  "玻璃边界",
+                  "静观",
+                  "芽叶干样"
+                ],
+                "reuse_hint": "保留'单柜—单罐'的极简陈列结构，便于以后替换春茶品类。",
+                "reusable_node_ref": null,
+                "objects": [
+                  {
+                    "name": "白毫银针罐",
+                    "description": "密封瓷罐，存放白毫银针干茶芽叶，位于芽叶柜内正中。",
+                    "interaction": "仅可透过玻璃柜门观看罐体外观与标签，不可开盖取样。",
+                    "tags": [
+                      "密封瓷罐",
+                      "白毫银针",
+                      "静态标本"
+                    ],
+                    "reuse_hint": "保留单罐封装的容器结构，便于替换为其他春茶芽叶标本。",
+                    "reusable_node_ref": null
+                  }
+                ],
+                "children": []
+              },
+              {
+                "title": "香气桌",
+                "scope_label": "标本馆·香气体验桌",
+                "summary": "在整体并列布局中居中，是从'观'切换为'嗅'的功能分区，以桌面作为容器边界，集中提供春茶与配花的嗅觉样本。",
+                "atmosphere": "空气里带有若有若无的花香与茶香，光线偏暖，环境近乎无声。",
+                "rules": "桌面用于短时嗅闻体验，物件可拿起贴近鼻端，但不可带离桌面。",
+                "entrance": "无入口。",
+                "tags": [
+                  "嗅觉体验",
+                  "茶香",
+                  "花香",
+                  "互动桌",
+                  "功能切换"
+                ],
+                "reuse_hint": "保留'观→嗅'的功能切换结构，可替换香气样本种类而不破坏动线。",
+                "reusable_node_ref": null,
+                "objects": [
+                  {
+                    "name": "桂花嗅闻瓶",
+                    "description": "小型玻璃瓶，内置干燥桂花，用于提供配花香的嗅觉对照样本。",
+                    "interaction": "可拔开瓶塞轻嗅，再盖回瓶塞并放回桌面原位。",
+                    "tags": [
+                      "嗅闻瓶",
+                      "桂花",
+                      "对照样本",
+                      "可拿起"
+                    ],
+                    "reuse_hint": "保留嗅闻瓶与配花香气的对照关系，便于以后替换为其他配花。",
+                    "reusable_node_ref": null
+                  },
+                  {
+                    "name": "竹制闻香杯",
+                    "description": "竹质小杯，杯壁留有春茶余香，作为茶香本体的嗅觉样本。",
+                    "interaction": "可端起贴近鼻端闻香，再轻放回桌面。",
+                    "tags": [
+                      "闻香杯",
+                      "竹制",
+                      "茶香样本",
+                      "可拿起"
+                    ],
+                    "reuse_hint": "保留竹杯承载茶香的容器功能，便于以后换装不同茶样。",
+                    "reusable_node_ref": null
+                  }
+                ],
+                "children": []
+              },
+              {
+                "title": "称量台",
+                "scope_label": "标本馆·称量操作台",
+                "summary": "在整体并列布局中占另一侧，是从'看/闻'切换为'称'的功能分区，以台面与砝码提供春茶干样的克重标定操作面。",
+                "atmosphere": "干燥、冷静，金属与石质触感突出，光线明亮而克制。",
+                "rules": "台面仅作短时称量展示，砝码与样品不可带离台面。",
+                "entrance": "无入口。",
+                "tags": [
+                  "称量台",
+                  "操作区",
+                  "金属器具",
+                  "克重标定"
+                ],
+                "reuse_hint": "保留台面+砝码的称量结构，便于以后替换茶样或增配砝码组合。",
+                "reusable_node_ref": null,
+                "objects": [
+                  {
+                    "name": "铜砝码",
+                    "description": "一组黄铜材质小型砝码，整齐排列在称量台面上，用于演示春茶干样的克重。",
+                    "interaction": "可单只拿起比对、再放回台面原位，不可带出台面。",
+                    "tags": [
+                      "铜砝码",
+                      "克重",
+                      "称量工具",
+                      "可拿起"
+                    ],
+                    "reuse_hint": "保留铜质砝码与样品克重的对应关系，便于以后拓展重量组合。",
+                    "reusable_node_ref": null
+                  }
+                ],
+                "children": []
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "scene_closed_world_synthetic_03_tide_lab",
+      "authoritative_source": "根场景只包含潮位槽和盐度台两个直接区域。潮位槽内有玻璃浮标和刻度尺。盐度台内有盐度计和黑色记录板。根场景没有其他区域、物件、入口或通路。",
+      "candidate_a": {
+        "schema_name": "scene-tree-proposal",
+        "schema_version": "scene-tree-proposal-v1",
+        "scene_name": "潮位与盐度观测区",
+        "scene_summary": "一个仅含潮位槽与盐度台两个直接区域的紧凑观测空间，分别承担潮位读数与盐度记录功能，两区以功能边界相互区隔。",
+        "selected_path": [
+          0,
+          0
+        ],
+        "scene_layers": [
+          {
+            "title": "观测区总览",
+            "scope_label": "根观测场域",
+            "summary": "根场景由两块相邻但相互独立的测量区域构成，没有墙体或走廊相连，区域之间以功能差异自然区隔。",
+            "atmosphere": "简洁、专注的实验观测氛围，两块区域彼此独立，没有多余装饰。",
+            "rules": "根场景仅包含潮位槽与盐度台两个直接子区，不设其他通道、入口或额外物件。",
+            "entrance": "无入口。",
+            "tags": [
+              "根场景",
+              "观测场域",
+              "双分区"
+            ],
+            "reuse_hint": "保留'两个并列直接子区、根层无独立物件'的整体骨架，便于后续添加第三个并行的测量台。",
+            "reusable_node_ref": null,
+            "objects": [],
+            "children": [
+              {
+                "title": "潮位槽",
+                "scope_label": "潮位观测槽",
+                "summary": "相对根场景新增一条用于观察水位升降的狭长槽体空间，与盐度台以功能边界区隔，无门或通道相连。",
+                "atmosphere": "湿润、刻度清晰的静态观测氛围，光线集中在槽内刻度。",
+                "rules": "潮位槽内仅可放置玻璃浮标与刻度尺，不与盐度台互通。",
+                "entrance": "无入口。",
+                "tags": [
+                  "潮位",
+                  "水槽",
+                  "静态读数"
+                ],
+                "reuse_hint": "保留'狭长槽体 + 浮标 + 刻度尺'的潮位读数结构，可整体复用到其他水文观测场景。",
+                "reusable_node_ref": null,
+                "objects": [
+                  {
+                    "name": "玻璃浮标",
+                    "description": "置于潮位槽水面之上的透明浮标，随水位升降。",
+                    "interaction": "可观察其在刻度尺上的位置以读取潮位高度。",
+                    "tags": [
+                      "浮标",
+                      "水位指示"
+                    ],
+                    "reuse_hint": "通用潮位指示物，可在任何带刻度水尺的槽体中复用。",
+                    "reusable_node_ref": null
+                  },
+                  {
+                    "name": "刻度尺",
+                    "description": "固定在潮位槽侧壁的标尺，用于读取水位刻度。",
+                    "interaction": "配合玻璃浮标读取当前潮位数值。",
+                    "tags": [
+                      "刻度",
+                      "标尺"
+                    ],
+                    "reuse_hint": "通用测量刻度尺，可与任意浮标类指示物搭配复用。",
+                    "reusable_node_ref": null
+                  }
+                ],
+                "children": []
+              },
+              {
+                "title": "盐度台",
+                "scope_label": "盐度测量台",
+                "summary": "相对根场景新增一张用于测定与记录水体盐度的工作台面，与潮位槽以台面边界区隔，没有连通通道。",
+                "atmosphere": "干燥、安静的记录工作氛围，台面整洁。",
+                "rules": "盐度台内仅可放置盐度计与黑色记录板，不与潮位槽互通。",
+                "entrance": "无入口。",
+                "tags": [
+                  "盐度",
+                  "工作台",
+                  "记录"
+                ],
+                "reuse_hint": "保留'台面 + 测量仪 + 记录板'的盐度工作单元结构，便于扩展其他理化指标测量。",
+                "reusable_node_ref": null,
+                "objects": [
+                  {
+                    "name": "盐度计",
+                    "description": "放置在盐度台上的水体盐度测量仪器。",
+                    "interaction": "可对放入的水样进行盐度读数。",
+                    "tags": [
+                      "盐度",
+                      "测量仪"
+                    ],
+                    "reuse_hint": "通用盐度测量仪器，可复用到任意需要盐度数据的台面场景。",
+                    "reusable_node_ref": null
+                  },
+                  {
+                    "name": "黑色记录板",
+                    "description": "放置在盐度台上的深色书写板，用于记录测量结果。",
+                    "interaction": "可记录盐度计的读数及备注。",
+                    "tags": [
+                      "记录",
+                      "书写板"
+                    ],
+                    "reuse_hint": "通用记录板，可搭配任意测量仪器复用。",
+                    "reusable_node_ref": null
+                  }
+                ],
+                "children": []
+              }
+            ]
+          }
+        ]
+      },
+      "candidate_b": {
+        "schema_name": "scene-tree-proposal",
+        "schema_version": "scene-tree-proposal-v1",
+        "scene_name": "潮位与盐度观测区",
+        "scene_summary": "一个仅含潮位槽与盐度台两个直接区域的紧凑观测空间，分别承担潮位读数与盐度记录功能，两区以功能边界相互区隔。",
+        "selected_path": [
+          0,
+          0
+        ],
+        "scene_layers": [
+          {
+            "title": "观测区总览",
+            "scope_label": "根观测场域",
+            "summary": "根场景由两块相邻但相互独立的测量区域构成，没有墙体或走廊相连，区域之间以功能差异自然区隔。",
+            "atmosphere": "简洁、专注的实验观测氛围，两块区域彼此独立，没有多余装饰。",
+            "rules": "根场景仅包含潮位槽与盐度台两个直接子区，不设其他通道、入口或额外物件。",
+            "entrance": "进入根场景即为抵达观测区整体视野，可见潮位槽与盐度台并列分布。",
+            "tags": [
+              "根场景",
+              "观测场域",
+              "双分区"
+            ],
+            "reuse_hint": "保留'两个并列直接子区、根层无独立物件'的整体骨架，便于后续添加第三个并行的测量台。",
+            "reusable_node_ref": null,
+            "objects": [],
+            "children": [
+              {
+                "title": "潮位槽",
+                "scope_label": "潮位观测槽",
+                "summary": "相对根场景新增一条用于观察水位升降的狭长槽体空间，与盐度台以功能边界区隔，无门或通道相连。",
+                "atmosphere": "湿润、刻度清晰的静态观测氛围，光线集中在槽内刻度。",
+                "rules": "潮位槽内仅可放置玻璃浮标与刻度尺，不与盐度台互通。",
+                "entrance": "从根场景平视可见的槽体边界即为入口，跨过槽口即进入潮位槽范围。",
+                "tags": [
+                  "潮位",
+                  "水槽",
+                  "静态读数"
+                ],
+                "reuse_hint": "保留'狭长槽体 + 浮标 + 刻度尺'的潮位读数结构，可整体复用到其他水文观测场景。",
+                "reusable_node_ref": null,
+                "objects": [
+                  {
+                    "name": "玻璃浮标",
+                    "description": "置于潮位槽水面之上的透明浮标，随水位升降。",
+                    "interaction": "可观察其在刻度尺上的位置以读取潮位高度。",
+                    "tags": [
+                      "浮标",
+                      "水位指示"
+                    ],
+                    "reuse_hint": "通用潮位指示物，可在任何带刻度水尺的槽体中复用。",
+                    "reusable_node_ref": null
+                  },
+                  {
+                    "name": "刻度尺",
+                    "description": "固定在潮位槽侧壁的标尺，用于读取水位刻度。",
+                    "interaction": "配合玻璃浮标读取当前潮位数值。",
+                    "tags": [
+                      "刻度",
+                      "标尺"
+                    ],
+                    "reuse_hint": "通用测量刻度尺，可与任意浮标类指示物搭配复用。",
+                    "reusable_node_ref": null
+                  }
+                ],
+                "children": []
+              },
+              {
+                "title": "盐度台",
+                "scope_label": "盐度测量台",
+                "summary": "相对根场景新增一张用于测定与记录水体盐度的工作台面，与潮位槽以台面边界区隔，没有连通通道。",
+                "atmosphere": "干燥、安静的记录工作氛围，台面整洁。",
+                "rules": "盐度台内仅可放置盐度计与黑色记录板，不与潮位槽互通。",
+                "entrance": "从根场景平视可见的台面边缘即为入口，跨过台沿即进入盐度台范围。",
+                "tags": [
+                  "盐度",
+                  "工作台",
+                  "记录"
+                ],
+                "reuse_hint": "保留'台面 + 测量仪 + 记录板'的盐度工作单元结构，便于扩展其他理化指标测量。",
+                "reusable_node_ref": null,
+                "objects": [
+                  {
+                    "name": "盐度计",
+                    "description": "放置在盐度台上的水体盐度测量仪器。",
+                    "interaction": "可对放入的水样进行盐度读数。",
+                    "tags": [
+                      "盐度",
+                      "测量仪"
+                    ],
+                    "reuse_hint": "通用盐度测量仪器，可复用到任意需要盐度数据的台面场景。",
+                    "reusable_node_ref": null
+                  },
+                  {
+                    "name": "黑色记录板",
+                    "description": "放置在盐度台上的深色书写板，用于记录测量结果。",
+                    "interaction": "可记录盐度计的读数及备注。",
+                    "tags": [
+                      "记录",
+                      "书写板"
+                    ],
+                    "reuse_hint": "通用记录板，可搭配任意测量仪器复用。",
+                    "reusable_node_ref": null
+                  }
+                ],
+                "children": []
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "scene_closed_world_synthetic_04_instrument_repair",
+      "authoritative_source": "场景标题为弦乐修复室。弦乐修复室只包含拆弦桌、胶合架和音准席三个直接区域。拆弦桌内有乌木弦轴和细口钳。胶合架内有鱼胶罐和枫木夹板。音准席内有音叉。场景没有其他区域、物件、入口或通路。",
+      "candidate_a": {
+        "schema_name": "scene-tree-proposal",
+        "schema_version": "scene-tree-proposal-v1",
+        "scene_name": "弦乐修复室",
+        "scene_summary": "一间仅由拆弦桌、胶合架、音准席三块功能岛台围合而成的弦乐器修复工作间，没有任何额外通道、入口或附属物件。",
+        "selected_path": [
+          0
+        ],
+        "scene_layers": [
+          {
+            "title": "弦乐修复室",
+            "scope_label": "整体修复工作间",
+            "summary": "作为根空间，限定整间工作室的边界与三区并置的拓扑关系。",
+            "atmosphere": "室内安静、专注，空气中漂浮着松香、鱼胶与淡木香，光线柔和而集中",
+            "rules": "工作室只包含拆弦桌、胶合架、音准席三块直接区域；除此之外不存在任何其他区域、物件、入口或通路。",
+            "entrance": "从外部空间直接踏入工作室，没有过渡走廊或门厅。",
+            "tags": [
+              "修复室",
+              "弦乐器",
+              "工坊",
+              "封闭空间",
+              "三区结构"
+            ],
+            "reuse_hint": "保留'三块直接功能区、零额外通道'的拓扑骨架，便于日后替换三区名称与对应物件。",
+            "reusable_node_ref": null,
+            "objects": [],
+            "children": [
+              {
+                "title": "拆弦桌",
+                "scope_label": "拆解与卸弦操作台",
+                "summary": "相对父层修复室，新增一块专供拆卸琴弦与弦轴的工作台面，是修复流程的最前端。",
+                "atmosphere": "桌面布满细微划痕与松香残留，操作时金属与木料碰触声清脆",
+                "rules": "仅用于拆弦、卸弦轴与初步解构；不得在此区进行粘合或校音。",
+                "entrance": "从修复室中部横向跨过一道低矮的台面边界进入拆弦桌。",
+                "tags": [
+                  "拆解",
+                  "工作台",
+                  "拆弦",
+                  "操作区",
+                  "工位"
+                ],
+                "reuse_hint": "保留拆解类工作台的台面、边界与可操作工具结构，便于复用为其他拆卸工艺区。",
+                "reusable_node_ref": null,
+                "objects": [
+                  {
+                    "name": "乌木弦轴",
+                    "description": "黑色致密的木质弦轴，用于固定或拆卸琴弦头部。",
+                    "interaction": "握住弦轴旋转拧出，或重新嵌入弦轴箱。",
+                    "tags": [
+                      "弦轴",
+                      "乌木",
+                      "旋转件",
+                      "琴头配件"
+                    ],
+                    "reuse_hint": "保留'乌木轴类零件'的对象描述模板，可复用于其他弦类乐器构件。",
+                    "reusable_node_ref": null
+                  },
+                  {
+                    "name": "细口钳",
+                    "description": "钳口细长、咬合面光滑，适合夹持细小弦线与金属丝。",
+                    "interaction": "夹住断弦拔出，或夹持新弦穿入弦轴孔。",
+                    "tags": [
+                      "钳",
+                      "细口",
+                      "拆弦工具",
+                      "精细工具"
+                    ],
+                    "reuse_hint": "保留细口类精细工具的对象结构，便于复用为其他拆线、拆丝工位。",
+                    "reusable_node_ref": null
+                  }
+                ],
+                "children": []
+              },
+              {
+                "title": "胶合架",
+                "scope_label": "粘合与夹板晾置立式架",
+                "summary": "相对父层修复室，新增一块用于涂胶、贴合与夹板固定的立式工作区。",
+                "atmosphere": "弥漫鱼胶特有的腥甜气味，架面湿润偏暖，空气略显黏稠",
+                "rules": "仅用于粘合与夹板固定；禁止在胶合架上操作调音或拆弦。",
+                "entrance": "从修复室地面跨过一块沾有胶渍的脚垫边界进入胶合架。",
+                "tags": [
+                  "胶合",
+                  "立式架",
+                  "粘合区",
+                  "鱼胶",
+                  "加固工位"
+                ],
+                "reuse_hint": "保留胶合类立式架与气味、脚垫边界的描述，便于复用为其他粘合或加固工位。",
+                "reusable_node_ref": null,
+                "objects": [
+                  {
+                    "name": "鱼胶罐",
+                    "description": "盛放鱼胶的小型密封陶瓷罐，罐口覆有一层薄皮。",
+                    "interaction": "揭盖蘸取鱼胶，涂抹于开裂的琴身接缝处。",
+                    "tags": [
+                      "鱼胶",
+                      "胶罐",
+                      "粘合剂",
+                      "天然胶"
+                    ],
+                    "reuse_hint": "保留'天然胶类密封容器'的对象结构，可复用于其他动物胶、植物胶工位。",
+                    "reusable_node_ref": null
+                  },
+                  {
+                    "name": "枫木夹板",
+                    "description": "浅色枫木制成的薄夹板，用于贴合加固开裂的琴身侧板。",
+                    "interaction": "将夹板压在涂胶处，再用卡具夹紧固定等待干燥。",
+                    "tags": [
+                      "枫木",
+                      "夹板",
+                      "加固件",
+                      "木材"
+                    ],
+                    "reuse_hint": "保留木质薄夹板类加固件的对象描述，可复用于其他木器修复工位。",
+                    "reusable_node_ref": null
+                  }
+                ],
+                "children": []
+              },
+              {
+                "title": "音准席",
+                "scope_label": "校音与听音坐姿工位",
+                "summary": "相对父层修复室，新增一块相对隔离、专供听音与校音的坐姿工位。",
+                "atmosphere": "背景极静，空气中几乎无杂音，便于捕捉琴体泛音的细微差异",
+                "rules": "仅用于击音叉比对与调音；不得在音准席上进行拆弦或粘合操作。",
+                "entrance": "从修复室中部横向跨过一道软质地毯边界进入音准席。",
+                "tags": [
+                  "音准",
+                  "听音",
+                  "校音区",
+                  "静区",
+                  "坐姿工位"
+                ],
+                "reuse_hint": "保留'静坐听音'工位的声场与地毯边界描述，便于复用为其他调音或听感比对空间。",
+                "reusable_node_ref": null,
+                "objects": [
+                  {
+                    "name": "音叉",
+                    "description": "标准 A 音金属音叉，柄部细长，叉体锃亮。",
+                    "interaction": "敲击音叉后迅速贴近琴体共鸣箱，比对音高与泛音。",
+                    "tags": [
+                      "音叉",
+                      "A音",
+                      "校音工具",
+                      "金属件"
+                    ],
+                    "reuse_hint": "保留'敲击比对类'校音工具的对象结构，可复用于其他基准音比对工位。",
+                    "reusable_node_ref": null
+                  }
+                ],
+                "children": []
+              }
+            ]
+          }
+        ]
+      },
+      "candidate_b": {
+        "schema_name": "scene-tree-proposal",
+        "schema_version": "scene-tree-proposal-v1",
+        "scene_name": "弦乐修复室",
+        "scene_summary": "一间仅由拆弦桌、胶合架、音准席三块功能岛台围合而成的弦乐器修复工作间，没有任何额外通道、入口或附属物件。",
+        "selected_path": [
+          0
+        ],
+        "scene_layers": [
+          {
+            "title": "弦乐修复室",
+            "scope_label": "整体修复工作间",
+            "summary": "作为根空间，限定整间工作室的边界与三区并置的拓扑关系。",
+            "atmosphere": "室内安静、专注，空气中漂浮着松香、鱼胶与淡木香，光线柔和而集中",
+            "rules": "工作室只包含拆弦桌、胶合架、音准席三块直接区域；除此之外不存在任何其他区域、物件、入口或通路。",
+            "entrance": "无入口。",
+            "tags": [
+              "修复室",
+              "弦乐器",
+              "工坊",
+              "封闭空间",
+              "三区结构"
+            ],
+            "reuse_hint": "保留'三块直接功能区、零额外通道'的拓扑骨架，便于日后替换三区名称与对应物件。",
+            "reusable_node_ref": null,
+            "objects": [],
+            "children": [
+              {
+                "title": "拆弦桌",
+                "scope_label": "拆解与卸弦操作台",
+                "summary": "相对父层修复室，新增一块专供拆卸琴弦与弦轴的工作台面，是修复流程的最前端。",
+                "atmosphere": "桌面布满细微划痕与松香残留，操作时金属与木料碰触声清脆",
+                "rules": "仅用于拆弦、卸弦轴与初步解构；不得在此区进行粘合或校音。",
+                "entrance": "无入口。",
+                "tags": [
+                  "拆解",
+                  "工作台",
+                  "拆弦",
+                  "操作区",
+                  "工位"
+                ],
+                "reuse_hint": "保留拆解类工作台的台面、边界与可操作工具结构，便于复用为其他拆卸工艺区。",
+                "reusable_node_ref": null,
+                "objects": [
+                  {
+                    "name": "乌木弦轴",
+                    "description": "黑色致密的木质弦轴，用于固定或拆卸琴弦头部。",
+                    "interaction": "握住弦轴旋转拧出，或重新嵌入弦轴箱。",
+                    "tags": [
+                      "弦轴",
+                      "乌木",
+                      "旋转件",
+                      "琴头配件"
+                    ],
+                    "reuse_hint": "保留'乌木轴类零件'的对象描述模板，可复用于其他弦类乐器构件。",
+                    "reusable_node_ref": null
+                  },
+                  {
+                    "name": "细口钳",
+                    "description": "钳口细长、咬合面光滑，适合夹持细小弦线与金属丝。",
+                    "interaction": "夹住断弦拔出，或夹持新弦穿入弦轴孔。",
+                    "tags": [
+                      "钳",
+                      "细口",
+                      "拆弦工具",
+                      "精细工具"
+                    ],
+                    "reuse_hint": "保留细口类精细工具的对象结构，便于复用为其他拆线、拆丝工位。",
+                    "reusable_node_ref": null
+                  }
+                ],
+                "children": []
+              },
+              {
+                "title": "胶合架",
+                "scope_label": "粘合与夹板晾置立式架",
+                "summary": "相对父层修复室，新增一块用于涂胶、贴合与夹板固定的立式工作区。",
+                "atmosphere": "弥漫鱼胶特有的腥甜气味，架面湿润偏暖，空气略显黏稠",
+                "rules": "仅用于粘合与夹板固定；禁止在胶合架上操作调音或拆弦。",
+                "entrance": "无入口。",
+                "tags": [
+                  "胶合",
+                  "立式架",
+                  "粘合区",
+                  "鱼胶",
+                  "加固工位"
+                ],
+                "reuse_hint": "保留胶合类立式架与气味、脚垫边界的描述，便于复用为其他粘合或加固工位。",
+                "reusable_node_ref": null,
+                "objects": [
+                  {
+                    "name": "鱼胶罐",
+                    "description": "盛放鱼胶的小型密封陶瓷罐，罐口覆有一层薄皮。",
+                    "interaction": "揭盖蘸取鱼胶，涂抹于开裂的琴身接缝处。",
+                    "tags": [
+                      "鱼胶",
+                      "胶罐",
+                      "粘合剂",
+                      "天然胶"
+                    ],
+                    "reuse_hint": "保留'天然胶类密封容器'的对象结构，可复用于其他动物胶、植物胶工位。",
+                    "reusable_node_ref": null
+                  },
+                  {
+                    "name": "枫木夹板",
+                    "description": "浅色枫木制成的薄夹板，用于贴合加固开裂的琴身侧板。",
+                    "interaction": "将夹板压在涂胶处，再用卡具夹紧固定等待干燥。",
+                    "tags": [
+                      "枫木",
+                      "夹板",
+                      "加固件",
+                      "木材"
+                    ],
+                    "reuse_hint": "保留木质薄夹板类加固件的对象描述，可复用于其他木器修复工位。",
+                    "reusable_node_ref": null
+                  }
+                ],
+                "children": []
+              },
+              {
+                "title": "音准席",
+                "scope_label": "校音与听音坐姿工位",
+                "summary": "相对父层修复室，新增一块相对隔离、专供听音与校音的坐姿工位。",
+                "atmosphere": "背景极静，空气中几乎无杂音，便于捕捉琴体泛音的细微差异",
+                "rules": "仅用于击音叉比对与调音；不得在音准席上进行拆弦或粘合操作。",
+                "entrance": "无入口。",
+                "tags": [
+                  "音准",
+                  "听音",
+                  "校音区",
+                  "静区",
+                  "坐姿工位"
+                ],
+                "reuse_hint": "保留'静坐听音'工位的声场与地毯边界描述，便于复用为其他调音或听感比对空间。",
+                "reusable_node_ref": null,
+                "objects": [
+                  {
+                    "name": "音叉",
+                    "description": "标准 A 音金属音叉，柄部细长，叉体锃亮。",
+                    "interaction": "敲击音叉后迅速贴近琴体共鸣箱，比对音高与泛音。",
+                    "tags": [
+                      "音叉",
+                      "A音",
+                      "校音工具",
+                      "金属件"
+                    ],
+                    "reuse_hint": "保留'敲击比对类'校音工具的对象结构，可复用于其他基准音比对工位。",
+                    "reusable_node_ref": null
+                  }
+                ],
+                "children": []
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "scene_closed_world_synthetic_05_print_workshop",
+      "authoritative_source": "场景标题为木版印刷坊。木版印刷坊只包含刻版案和拓印台两个直接区域。刻版案内有梨木版和月牙刻刀。拓印台内有松烟墨和竹皮刷。场景没有其他区域、物件、入口或通路。",
+      "candidate_a": {
+        "not_evaluable": true,
+        "reason": "strict_candidate_unavailable"
+      },
+      "candidate_b": {
+        "not_evaluable": true,
+        "reason": "strict_candidate_unavailable"
+      }
+    },
+    {
+      "case_id": "scene_closed_world_synthetic_06_seed_archive",
+      "authoritative_source": "根场景只包含谷物柜、豆类柜和登记桌三个直接区域。谷物柜内有红粟种瓶。豆类柜内有青仁豆袋和白扁豆盒。登记桌内有种源卡和日期印章。根场景没有其他区域、物件、入口或通路。",
+      "candidate_a": {
+        "not_evaluable": true,
+        "reason": "strict_candidate_unavailable"
+      },
+      "candidate_b": {
+        "not_evaluable": true,
+        "reason": "strict_candidate_unavailable"
+      }
+    }
+  ]
+}

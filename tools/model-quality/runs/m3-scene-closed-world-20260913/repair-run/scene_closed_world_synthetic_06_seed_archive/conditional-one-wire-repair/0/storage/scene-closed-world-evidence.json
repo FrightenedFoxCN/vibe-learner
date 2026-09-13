@@ -1,0 +1,241 @@
+{
+  "version": "scene-closed-world-live-evidence-v1",
+  "phase": "conditional_repair",
+  "case_id": "scene_closed_world_synthetic_06_seed_archive",
+  "scope": "Research-only Scene proposal replay. It cannot overwrite the baseline, a domain record, or production Harness evidence.",
+  "policy": {
+    "version": "scene-closed-world-policy-v1",
+    "root_title": null,
+    "direct_children_exact": [
+      "谷物柜",
+      "豆类柜",
+      "登记桌"
+    ],
+    "forbid_deeper_layers": true,
+    "required_root_objects": [],
+    "allowed_root_objects": [],
+    "required_child_objects_by_title": {
+      "谷物柜": [
+        "红粟种瓶"
+      ],
+      "豆类柜": [
+        "青仁豆袋",
+        "白扁豆盒"
+      ],
+      "登记桌": [
+        "种源卡",
+        "日期印章"
+      ]
+    },
+    "allowed_child_objects_by_title": {
+      "谷物柜": [
+        "红粟种瓶"
+      ],
+      "豆类柜": [
+        "青仁豆袋",
+        "白扁豆盒"
+      ],
+      "登记桌": [
+        "种源卡",
+        "日期印章"
+      ]
+    },
+    "allowed_entrances": [
+      "保持当前层。",
+      "保持当前层",
+      "无入口。",
+      "无入口",
+      "没有入口。",
+      "没有入口",
+      "未指定。",
+      "未指定"
+    ]
+  },
+  "baseline_strict_candidate": true,
+  "baseline_status": "completed",
+  "baseline_proposal": {
+    "schema_name": "scene-tree-proposal",
+    "schema_version": "scene-tree-proposal-v1",
+    "scene_name": "种源登记室",
+    "scene_summary": "一处紧凑的种源收纳与登记空间，由谷物柜、豆类柜与登记桌三组直接相邻的功能单元构成，整体没有更深的内部分区或通路。",
+    "selected_path": [
+      0,
+      2
+    ],
+    "scene_layers": [
+      {
+        "title": "种源登记室",
+        "scope_label": "根场景",
+        "summary": "由谷物柜、豆类柜与登记桌三组功能单元并列排布的根层级空间，三者之间直接相邻、不设走廊。",
+        "atmosphere": "干燥、安静、分类明确的种源仓储与登记氛围，柜体材质沉稳、桌面整洁。",
+        "rules": "根场景仅含谷物柜、豆类柜、登记桌三个直接区域；除这三个区域之外不再包含任何其他区域、物件、入口或通路。",
+        "entrance": "进入根场景即抵达整个种源登记室，三个分区均直接敞开、无需穿越隔断。",
+        "tags": [
+          "仓储",
+          "登记",
+          "种源",
+          "分区"
+        ],
+        "reuse_hint": "保留“谷物柜 / 豆类柜 / 登记桌”三组并列分区与“无额外通路”的极简结构，便于以后复用为更复杂的种源档案点。",
+        "reusable_node_ref": null,
+        "objects": [],
+        "children": [
+          {
+            "title": "谷物柜",
+            "scope_label": "第一层 · 柜体区",
+            "summary": "相对于根场景，新增一个用于存放谷物种源的封闭柜体单元，内部仅容一只种瓶单独陈列。",
+            "atmosphere": "柜内干燥、避光、狭小，仅有一只玻璃瓶安静摆放。",
+            "rules": "柜内仅含红粟种瓶一件物件，不设抽屉、隔层或其他子分区。",
+            "entrance": "从根场景的敞开地面跨过柜门门槛，进入谷物柜的柜内空间。",
+            "tags": [
+              "柜体",
+              "谷物",
+              "密封",
+              "单件"
+            ],
+            "reuse_hint": "保留“单柜单瓶”的极简收纳结构，便于以后扩展为多瓶多品种的谷物区。",
+            "reusable_node_ref": null,
+            "objects": [
+              {
+                "name": "红粟种瓶",
+                "description": "置于谷物柜内的透明玻璃小瓶，瓶内盛有红色粟米种子。",
+                "interaction": "可从柜中取出观察瓶内种子，也可将其归位放回原处。",
+                "tags": [
+                  "种子",
+                  "谷物",
+                  "玻璃瓶"
+                ],
+                "reuse_hint": "保留“单瓶装单种谷物”的描述骨架，便于替换为其他谷物种瓶。",
+                "reusable_node_ref": null
+              }
+            ],
+            "children": []
+          },
+          {
+            "title": "豆类柜",
+            "scope_label": "第一层 · 柜体区",
+            "summary": "相对于根场景，新增一个用于存放豆类种源的封闭柜体单元，内部以袋装与盒装两种容器并存。",
+            "atmosphere": "柜内干燥、空间略宽于谷物柜，麻布与纸盒气味清淡交织。",
+            "rules": "柜内仅含青仁豆袋与白扁豆盒两件物件，不设隔层或更深子区。",
+            "entrance": "从根场景的敞开地面跨过柜门门槛，进入豆类柜的柜内空间。",
+            "tags": [
+              "柜体",
+              "豆类",
+              "密封",
+              "分装"
+            ],
+            "reuse_hint": "保留“袋装 + 盒装”两种容器并陈的结构，便于扩展为多品类豆类分装区。",
+            "reusable_node_ref": null,
+            "objects": [
+              {
+                "name": "青仁豆袋",
+                "description": "豆类柜内的麻布小袋，袋内装有青仁豆种子。",
+                "interaction": "可解开袋口取出豆种，也可重新系紧袋口归位。",
+                "tags": [
+                  "种子",
+                  "豆类",
+                  "布袋"
+                ],
+                "reuse_hint": "保留布袋分装形态，便于替换为其他豆类种子袋。",
+                "reusable_node_ref": null
+              },
+              {
+                "name": "白扁豆盒",
+                "description": "豆类柜内的方形纸盒，盒内存放白扁豆种子。",
+                "interaction": "可掀开盒盖取出豆种，也可合上盒盖归位。",
+                "tags": [
+                  "种子",
+                  "豆类",
+                  "纸盒"
+                ],
+                "reuse_hint": "保留纸盒分装形态，便于替换为其他豆类种子盒。",
+                "reusable_node_ref": null
+              }
+            ],
+            "children": []
+          },
+          {
+            "title": "登记桌",
+            "scope_label": "第一层 · 桌面区",
+            "summary": "相对于根场景，新增一张用于登记与签注种源信息的办公桌面，承担可操作的签注动作。",
+            "atmosphere": "桌面整洁、纸张与印章并存，空气中带有淡淡的墨香与档案气息。",
+            "rules": "桌面仅含种源卡与日期印章两件可操作物件，不设抽屉、文件柜或更深子区。",
+            "entrance": "从根场景的地面动线跨过桌沿，进入登记桌的桌面作业区。",
+            "tags": [
+              "办公",
+              "登记",
+              "桌面",
+              "签注"
+            ],
+            "reuse_hint": "保留“卡片记录 + 印章签注”的最小登记动作组合，便于扩展出更多档案或签注工具。",
+            "reusable_node_ref": null,
+            "objects": [
+              {
+                "name": "种源卡",
+                "description": "登记桌上的纸质卡片，用于记录种子来源、品名与备注信息。",
+                "interaction": "可翻看、填写内容，也可放置于桌面任意位置。",
+                "tags": [
+                  "登记",
+                  "纸卡",
+                  "档案"
+                ],
+                "reuse_hint": "保留纸质卡片登记的形式，便于扩展为更多档案卡或标签。",
+                "reusable_node_ref": null
+              },
+              {
+                "name": "日期印章",
+                "description": "登记桌上的小型日期印章，用于在种源卡上盖印登记日期。",
+                "interaction": "可拿起印章在卡片上盖印，也可归位放置于桌面。",
+                "tags": [
+                  "印章",
+                  "签注",
+                  "工具"
+                ],
+                "reuse_hint": "保留单枚印章的签注动作，便于扩展为多种印章或编号组合。",
+                "reusable_node_ref": null
+              }
+            ],
+            "children": []
+          }
+        ]
+      }
+    ]
+  },
+  "baseline_issues": [
+    {
+      "code": "unsupported_entrance",
+      "path": "scene_layers[0].entrance",
+      "expected": "保持当前层。 | 保持当前层 | 无入口。 | 无入口 | 没有入口。 | 没有入口 | 未指定。 | 未指定",
+      "observed": "进入根场景即抵达整个种源登记室，三个分区均直接敞开、无需穿越隔断。"
+    },
+    {
+      "code": "unsupported_entrance",
+      "path": "scene_layers[0].children[0].entrance",
+      "expected": "保持当前层。 | 保持当前层 | 无入口。 | 无入口 | 没有入口。 | 没有入口 | 未指定。 | 未指定",
+      "observed": "从根场景的敞开地面跨过柜门门槛，进入谷物柜的柜内空间。"
+    },
+    {
+      "code": "unsupported_entrance",
+      "path": "scene_layers[0].children[1].entrance",
+      "expected": "保持当前层。 | 保持当前层 | 无入口。 | 无入口 | 没有入口。 | 没有入口 | 未指定。 | 未指定",
+      "observed": "从根场景的敞开地面跨过柜门门槛，进入豆类柜的柜内空间。"
+    },
+    {
+      "code": "unsupported_entrance",
+      "path": "scene_layers[0].children[2].entrance",
+      "expected": "保持当前层。 | 保持当前层 | 无入口。 | 无入口 | 没有入口。 | 没有入口 | 未指定。 | 未指定",
+      "observed": "从根场景的地面动线跨过桌沿，进入登记桌的桌面作业区。"
+    }
+  ],
+  "repair_triggered": true,
+  "wire_count_expected": 1,
+  "wire_envelope": {
+    "finish_reason": "stop",
+    "completion_tokens": 1575,
+    "final_content_present": true
+  },
+  "strict_candidate": false,
+  "not_evaluable": true,
+  "error_code": "scene_repair_strict_candidate_invalid",
+  "exception_class": "RuntimeError"
+}

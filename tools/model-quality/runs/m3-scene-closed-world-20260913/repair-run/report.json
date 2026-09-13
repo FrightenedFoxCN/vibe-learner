@@ -1,0 +1,730 @@
+{
+  "wire_latency_ms": {
+    "50": 4877,
+    "95": 24895
+  },
+  "percentile_method": "nearest-rank",
+  "aggregation_source_digest": "448d8db68208af633654378ecf896573ee64449a7fc2305e55bf241fc9e33fb2",
+  "failure_owners": {
+    "infrastructure": 2,
+    "candidate": 1
+  },
+  "version": "quality-report-v1",
+  "campaign": "m3-scene-closed-world-repair-20260913-v1",
+  "transport": "minimax",
+  "scope": "research infrastructure; not Harness evidence or independent quality certification",
+  "expected_samples": 6,
+  "independent_families": 6,
+  "states": {
+    "completed": 3,
+    "infrastructure_failed": 1,
+    "uncertain": 1,
+    "candidate_failed": 1
+  },
+  "pairs": {
+    "scene_closed_world_synthetic_03_tide_lab:0": {
+      "conditional-one-wire-repair": "completed"
+    },
+    "scene_closed_world_synthetic_05_print_workshop:0": {
+      "conditional-one-wire-repair": "infrastructure_failed"
+    },
+    "scene_closed_world_synthetic_01_observatory:0": {
+      "conditional-one-wire-repair": "uncertain"
+    },
+    "scene_closed_world_synthetic_06_seed_archive:0": {
+      "conditional-one-wire-repair": "candidate_failed"
+    },
+    "scene_closed_world_synthetic_04_instrument_repair:0": {
+      "conditional-one-wire-repair": "completed"
+    },
+    "scene_closed_world_synthetic_02_tea_archive:0": {
+      "conditional-one-wire-repair": "completed"
+    }
+  },
+  "samples": [
+    {
+      "campaign": "m3-scene-closed-world-repair-20260913-v1",
+      "case": "scene_closed_world_synthetic_03_tide_lab",
+      "repetition": 0,
+      "variant": "conditional-one-wire-repair",
+      "sample_id": "0978869b09b30cda47417a828292a6ec22ab19a017a1a460faca107b84c89a5f",
+      "family": "scene_closed_world_synthetic_03_tide_lab",
+      "state": "completed",
+      "result": {
+        "error_code": null,
+        "evidence": [
+          {
+            "contract": "scene-closed-world-live-evidence-v1",
+            "path": "scene-closed-world-evidence.json",
+            "sha256": "662dca2bdaeb897600e2e8d414326d6aac1c27915309e9b93aae11750ec71387"
+          }
+        ],
+        "failure_owner": null,
+        "metrics": {
+          "policy_passed": true,
+          "repair_triggered": true,
+          "strict_candidate": true
+        },
+        "pid": 55648,
+        "sample_id": "0978869b09b30cda47417a828292a6ec22ab19a017a1a460faca107b84c89a5f",
+        "scope": "provider-proposal-only; no domain admission, commit or read-back",
+        "status": "completed"
+      },
+      "elapsed_seconds": 4.889527797698975
+    },
+    {
+      "campaign": "m3-scene-closed-world-repair-20260913-v1",
+      "case": "scene_closed_world_synthetic_05_print_workshop",
+      "repetition": 0,
+      "variant": "conditional-one-wire-repair",
+      "sample_id": "30564650f5b445a594bfa06290bdf8b1cdf6f212fe8bcf35dbedc20f31d4e73a",
+      "family": "scene_closed_world_synthetic_05_print_workshop",
+      "state": "infrastructure_failed",
+      "result": {
+        "error_code": null,
+        "evidence": [
+          {
+            "contract": "scene-closed-world-live-evidence-v1",
+            "path": "scene-closed-world-evidence.json",
+            "sha256": "483eccfd47427e7ef9744760941527cfeccc0e1ef4c880f67385b884c3a7514c"
+          }
+        ],
+        "failure_owner": "infrastructure",
+        "metrics": {
+          "repair_triggered": false,
+          "strict_candidate": false
+        },
+        "pid": 55674,
+        "sample_id": "30564650f5b445a594bfa06290bdf8b1cdf6f212fe8bcf35dbedc20f31d4e73a",
+        "scope": "provider-proposal-only; no domain admission, commit or read-back",
+        "status": "infrastructure_failed"
+      },
+      "elapsed_seconds": 0.5752389430999756
+    },
+    {
+      "campaign": "m3-scene-closed-world-repair-20260913-v1",
+      "case": "scene_closed_world_synthetic_01_observatory",
+      "repetition": 0,
+      "variant": "conditional-one-wire-repair",
+      "sample_id": "44b0d7d0959fa81fc7b5bb9d0806e23a83ffbfeebd713cfd38b3ffa2985a6456",
+      "family": "scene_closed_world_synthetic_01_observatory",
+      "state": "uncertain",
+      "result": {
+        "error_code": null,
+        "evidence": [
+          {
+            "contract": "scene-closed-world-live-evidence-v1",
+            "path": "scene-closed-world-evidence.json",
+            "sha256": "6d6c41fd56cc06e9e7052e55494ae640a8f59bd8bd2d7f639fcf12ecf8518ea9"
+          }
+        ],
+        "failure_owner": "infrastructure",
+        "metrics": {
+          "repair_triggered": false,
+          "strict_candidate": false
+        },
+        "pid": 55640,
+        "sample_id": "44b0d7d0959fa81fc7b5bb9d0806e23a83ffbfeebd713cfd38b3ffa2985a6456",
+        "scope": "provider-proposal-only; no domain admission, commit or read-back",
+        "status": "uncertain"
+      },
+      "elapsed_seconds": 0.5606868267059326
+    },
+    {
+      "campaign": "m3-scene-closed-world-repair-20260913-v1",
+      "case": "scene_closed_world_synthetic_06_seed_archive",
+      "repetition": 0,
+      "variant": "conditional-one-wire-repair",
+      "sample_id": "46097c42a61d4fd6013aa8e8138b722e51d8d4b85e9796a1c0c2b1371b4744b8",
+      "family": "scene_closed_world_synthetic_06_seed_archive",
+      "state": "candidate_failed",
+      "result": {
+        "error_code": null,
+        "evidence": [
+          {
+            "contract": "scene-closed-world-live-evidence-v1",
+            "path": "scene-closed-world-evidence.json",
+            "sha256": "c27fdaf127a4802272313ce90592d5f2b9672a0fb0f38ff3a418508d7114d635"
+          }
+        ],
+        "failure_owner": "candidate",
+        "metrics": {
+          "repair_triggered": true,
+          "strict_candidate": false
+        },
+        "pid": 55673,
+        "sample_id": "46097c42a61d4fd6013aa8e8138b722e51d8d4b85e9796a1c0c2b1371b4744b8",
+        "scope": "provider-proposal-only; no domain admission, commit or read-back",
+        "status": "candidate_failed"
+      },
+      "elapsed_seconds": 5.461855888366699
+    },
+    {
+      "campaign": "m3-scene-closed-world-repair-20260913-v1",
+      "case": "scene_closed_world_synthetic_04_instrument_repair",
+      "repetition": 0,
+      "variant": "conditional-one-wire-repair",
+      "sample_id": "afa0c7917a4b2dd17cd0f135c151476b657f58338c597a524312cea5995e966b",
+      "family": "scene_closed_world_synthetic_04_instrument_repair",
+      "state": "completed",
+      "result": {
+        "error_code": null,
+        "evidence": [
+          {
+            "contract": "scene-closed-world-live-evidence-v1",
+            "path": "scene-closed-world-evidence.json",
+            "sha256": "b8c9f14096ffc7a433708e48a93c69ad6c4b906cc2412123ae6dfb359a2f6d0b"
+          }
+        ],
+        "failure_owner": null,
+        "metrics": {
+          "policy_passed": true,
+          "repair_triggered": true,
+          "strict_candidate": true
+        },
+        "pid": 55577,
+        "sample_id": "afa0c7917a4b2dd17cd0f135c151476b657f58338c597a524312cea5995e966b",
+        "scope": "provider-proposal-only; no domain admission, commit or read-back",
+        "status": "completed"
+      },
+      "elapsed_seconds": 20.186128854751587
+    },
+    {
+      "campaign": "m3-scene-closed-world-repair-20260913-v1",
+      "case": "scene_closed_world_synthetic_02_tea_archive",
+      "repetition": 0,
+      "variant": "conditional-one-wire-repair",
+      "sample_id": "e3ff2ce4b6b350d6dd179d4006a0c76c63a9ecc98822e4927c8f7c8910b773ba",
+      "family": "scene_closed_world_synthetic_02_tea_archive",
+      "state": "completed",
+      "result": {
+        "error_code": null,
+        "evidence": [
+          {
+            "contract": "scene-closed-world-live-evidence-v1",
+            "path": "scene-closed-world-evidence.json",
+            "sha256": "527b6afe85f537d2bb10c5c18c9d58536458f1eb41f6d018e9884dd77efa40b2"
+          }
+        ],
+        "failure_owner": null,
+        "metrics": {
+          "policy_passed": true,
+          "repair_triggered": true,
+          "strict_candidate": true
+        },
+        "pid": 55576,
+        "sample_id": "e3ff2ce4b6b350d6dd179d4006a0c76c63a9ecc98822e4927c8f7c8910b773ba",
+        "scope": "provider-proposal-only; no domain admission, commit or read-back",
+        "status": "completed"
+      },
+      "elapsed_seconds": 25.53745198249817
+    }
+  ],
+  "campaign_usage": {
+    "scaling_events": [
+      {
+        "time": 1789193563.8342872,
+        "reason": "initial",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "cooldown_until": 0.0,
+          "current": 2,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789193563.8342872
+        }
+      },
+      {
+        "time": 1789194749.337584,
+        "reason": "capacity_begin",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "capacity_campaign": "m3-capacity-20260912-v1",
+          "cooldown_until": 0.0,
+          "current": 4,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789194749.337525
+        }
+      },
+      {
+        "time": 1789194749.3381288,
+        "reason": "capacity_level_4",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "capacity_campaign": "m3-capacity-20260912-v1",
+          "cooldown_until": 0.0,
+          "current": 4,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789194749.338079
+        }
+      },
+      {
+        "time": 1789194815.017502,
+        "reason": "capacity_restore",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "cooldown_until": 0.0,
+          "current": 2,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789193563.8342872
+        }
+      },
+      {
+        "time": 1789194912.058828,
+        "reason": "capacity_begin",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "capacity_campaign": "m3-capacity-20260912-v2",
+          "cooldown_until": 0.0,
+          "current": 4,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789194912.058772
+        }
+      },
+      {
+        "time": 1789194912.059327,
+        "reason": "capacity_level_4",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "capacity_campaign": "m3-capacity-20260912-v2",
+          "cooldown_until": 0.0,
+          "current": 4,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789194912.059274
+        }
+      },
+      {
+        "time": 1789194959.63645,
+        "reason": "capacity_restore",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "cooldown_until": 0.0,
+          "current": 2,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789193563.8342872
+        }
+      },
+      {
+        "time": 1789195057.4798799,
+        "reason": "capacity_begin",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "capacity_campaign": "m3-capacity-20260912-v3",
+          "cooldown_until": 0.0,
+          "current": 4,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789195057.479805
+        }
+      },
+      {
+        "time": 1789195057.480588,
+        "reason": "capacity_level_4",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "capacity_campaign": "m3-capacity-20260912-v3",
+          "cooldown_until": 0.0,
+          "current": 4,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789195057.480507
+        }
+      },
+      {
+        "time": 1789195183.11363,
+        "reason": "capacity_level_8",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "capacity_campaign": "m3-capacity-20260912-v3",
+          "cooldown_until": 0.0,
+          "current": 8,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789195183.113394
+        }
+      },
+      {
+        "time": 1789195229.955343,
+        "reason": "capacity_restore",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "cooldown_until": 0.0,
+          "current": 2,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789193563.8342872
+        }
+      },
+      {
+        "time": 1789196175.7202592,
+        "reason": "operator_overload_restart",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "cooldown_until": 1789196175.7202592,
+          "current": 4,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789196175.7202592
+        }
+      },
+      {
+        "time": 1789222133.326775,
+        "reason": "operator_overload_restart",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "cooldown_until": 1789222133.326775,
+          "current": 2,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789222133.326775
+        }
+      }
+    ],
+    "stopped": null,
+    "wire_count": 4,
+    "charged_or_reserved_tokens": 19049,
+    "unknown_usage_requests": 0,
+    "wires": [
+      {
+        "id": "66fa50b5f7b049abb8876eea80351e5a",
+        "campaign": "m3-scene-closed-world-repair-20260913-v1",
+        "sample": "afa0c7917a4b2dd17cd0f135c151476b657f58338c597a524312cea5995e966b",
+        "started": 1789254508.024936,
+        "finished": 1789254527.588493,
+        "state": "finished",
+        "reserved": 104096,
+        "charged": 4582,
+        "metadata": {
+          "billing_tokens": null,
+          "cached_tokens": 128,
+          "call_kind": "repair",
+          "completion_tokens": 1597,
+          "elapsed_ms": 19553,
+          "finish_reason": "stop",
+          "http_status": 200,
+          "image_count": 0,
+          "images": [],
+          "max_tokens": 4096,
+          "offered_tools": [],
+          "prompt_tokens": 2985,
+          "reasoning_tokens": 409,
+          "request_bytes": 11750,
+          "response_format_type": "json_object",
+          "response_model": "MiniMax-M3",
+          "temperature": 0.1,
+          "thinking": "adaptive",
+          "tool_call_shapes": [],
+          "tool_choice": null,
+          "tool_count": 0,
+          "total_tokens": 4582
+        }
+      },
+      {
+        "id": "669f2cf475e0422ea2ba8e9e323b4dd1",
+        "campaign": "m3-scene-closed-world-repair-20260913-v1",
+        "sample": "e3ff2ce4b6b350d6dd179d4006a0c76c63a9ecc98822e4927c8f7c8910b773ba",
+        "started": 1789254508.037528,
+        "finished": 1789254532.934165,
+        "state": "finished",
+        "reserved": 104096,
+        "charged": 6295,
+        "metadata": {
+          "billing_tokens": null,
+          "cached_tokens": 128,
+          "call_kind": "repair",
+          "completion_tokens": 3392,
+          "elapsed_ms": 24895,
+          "finish_reason": "stop",
+          "http_status": 200,
+          "image_count": 0,
+          "images": [],
+          "max_tokens": 4096,
+          "offered_tools": [],
+          "prompt_tokens": 2903,
+          "reasoning_tokens": 0,
+          "request_bytes": 11589,
+          "response_format_type": "json_object",
+          "response_model": "MiniMax-M3",
+          "temperature": 0.1,
+          "thinking": "adaptive",
+          "tool_call_shapes": [],
+          "tool_choice": null,
+          "tool_count": 0,
+          "total_tokens": 6295
+        }
+      },
+      {
+        "id": "23acb0d713384a9aacaf9455ad6a2cf7",
+        "campaign": "m3-scene-closed-world-repair-20260913-v1",
+        "sample": "0978869b09b30cda47417a828292a6ec22ab19a017a1a460faca107b84c89a5f",
+        "started": 1789254529.185358,
+        "finished": 1789254533.4935381,
+        "state": "finished",
+        "reserved": 104096,
+        "charged": 3673,
+        "metadata": {
+          "billing_tokens": null,
+          "cached_tokens": 128,
+          "call_kind": "repair",
+          "completion_tokens": 1213,
+          "elapsed_ms": 4306,
+          "finish_reason": "stop",
+          "http_status": 200,
+          "image_count": 0,
+          "images": [],
+          "max_tokens": 4096,
+          "offered_tools": [],
+          "prompt_tokens": 2460,
+          "reasoning_tokens": 383,
+          "request_bytes": 9900,
+          "response_format_type": "json_object",
+          "response_model": "MiniMax-M3",
+          "temperature": 0.1,
+          "thinking": "adaptive",
+          "tool_call_shapes": [],
+          "tool_choice": null,
+          "tool_count": 0,
+          "total_tokens": 3673
+        }
+      },
+      {
+        "id": "42354e8a543b45f9af3f8a21da8143a4",
+        "campaign": "m3-scene-closed-world-repair-20260913-v1",
+        "sample": "46097c42a61d4fd6013aa8e8138b722e51d8d4b85e9796a1c0c2b1371b4744b8",
+        "started": 1789254533.7686038,
+        "finished": 1789254538.647653,
+        "state": "finished",
+        "reserved": 104096,
+        "charged": 4499,
+        "metadata": {
+          "billing_tokens": null,
+          "cached_tokens": 128,
+          "call_kind": "repair",
+          "completion_tokens": 1575,
+          "elapsed_ms": 4877,
+          "finish_reason": "stop",
+          "http_status": 200,
+          "image_count": 0,
+          "images": [],
+          "max_tokens": 4096,
+          "offered_tools": [],
+          "prompt_tokens": 2924,
+          "reasoning_tokens": 442,
+          "request_bytes": 11772,
+          "response_format_type": "json_object",
+          "response_model": "MiniMax-M3",
+          "temperature": 0.1,
+          "thinking": "adaptive",
+          "tool_call_shapes": [],
+          "tool_choice": null,
+          "tool_count": 0,
+          "total_tokens": 4499
+        }
+      }
+    ]
+  },
+  "resource_window_usage": {
+    "scaling_events": [
+      {
+        "time": 1789193563.8342872,
+        "reason": "initial",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "cooldown_until": 0.0,
+          "current": 2,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789193563.8342872
+        }
+      },
+      {
+        "time": 1789194749.337584,
+        "reason": "capacity_begin",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "capacity_campaign": "m3-capacity-20260912-v1",
+          "cooldown_until": 0.0,
+          "current": 4,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789194749.337525
+        }
+      },
+      {
+        "time": 1789194749.3381288,
+        "reason": "capacity_level_4",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "capacity_campaign": "m3-capacity-20260912-v1",
+          "cooldown_until": 0.0,
+          "current": 4,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789194749.338079
+        }
+      },
+      {
+        "time": 1789194815.017502,
+        "reason": "capacity_restore",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "cooldown_until": 0.0,
+          "current": 2,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789193563.8342872
+        }
+      },
+      {
+        "time": 1789194912.058828,
+        "reason": "capacity_begin",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "capacity_campaign": "m3-capacity-20260912-v2",
+          "cooldown_until": 0.0,
+          "current": 4,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789194912.058772
+        }
+      },
+      {
+        "time": 1789194912.059327,
+        "reason": "capacity_level_4",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "capacity_campaign": "m3-capacity-20260912-v2",
+          "cooldown_until": 0.0,
+          "current": 4,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789194912.059274
+        }
+      },
+      {
+        "time": 1789194959.63645,
+        "reason": "capacity_restore",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "cooldown_until": 0.0,
+          "current": 2,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789193563.8342872
+        }
+      },
+      {
+        "time": 1789195057.4798799,
+        "reason": "capacity_begin",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "capacity_campaign": "m3-capacity-20260912-v3",
+          "cooldown_until": 0.0,
+          "current": 4,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789195057.479805
+        }
+      },
+      {
+        "time": 1789195057.480588,
+        "reason": "capacity_level_4",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "capacity_campaign": "m3-capacity-20260912-v3",
+          "cooldown_until": 0.0,
+          "current": 4,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789195057.480507
+        }
+      },
+      {
+        "time": 1789195183.11363,
+        "reason": "capacity_level_8",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "capacity_campaign": "m3-capacity-20260912-v3",
+          "cooldown_until": 0.0,
+          "current": 8,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789195183.113394
+        }
+      },
+      {
+        "time": 1789195229.955343,
+        "reason": "capacity_restore",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "cooldown_until": 0.0,
+          "current": 2,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789193563.8342872
+        }
+      },
+      {
+        "time": 1789196175.7202592,
+        "reason": "operator_overload_restart",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "cooldown_until": 1789196175.7202592,
+          "current": 4,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789196175.7202592
+        }
+      },
+      {
+        "time": 1789222133.326775,
+        "reason": "operator_overload_restart",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "cooldown_until": 1789222133.326775,
+          "current": 2,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789222133.326775
+        }
+      }
+    ],
+    "stopped": null,
+    "wire_count": 1808,
+    "charged_or_reserved_tokens": 11969140,
+    "unknown_usage_requests": 46
+  },
+  "billing_limit_certified": false
+}

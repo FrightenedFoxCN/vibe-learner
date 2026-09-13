@@ -1,0 +1,189 @@
+{
+  "version": "scene-closed-world-live-evidence-v1",
+  "phase": "baseline",
+  "case_id": "scene_closed_world_synthetic_03_tide_lab",
+  "scope": "Production-shaped Scene proposal only. The deterministic policy is research evidence and commit_evidence remains not_applicable.",
+  "policy": {
+    "version": "scene-closed-world-policy-v1",
+    "root_title": null,
+    "direct_children_exact": [
+      "潮位槽",
+      "盐度台"
+    ],
+    "forbid_deeper_layers": true,
+    "required_root_objects": [],
+    "allowed_root_objects": [],
+    "required_child_objects_by_title": {
+      "潮位槽": [
+        "玻璃浮标",
+        "刻度尺"
+      ],
+      "盐度台": [
+        "盐度计",
+        "黑色记录板"
+      ]
+    },
+    "allowed_child_objects_by_title": {
+      "潮位槽": [
+        "玻璃浮标",
+        "刻度尺"
+      ],
+      "盐度台": [
+        "盐度计",
+        "黑色记录板"
+      ]
+    },
+    "allowed_entrances": [
+      "保持当前层。",
+      "保持当前层",
+      "无入口。",
+      "无入口",
+      "没有入口。",
+      "没有入口",
+      "未指定。",
+      "未指定"
+    ]
+  },
+  "http_status": 200,
+  "provider_calls": 1,
+  "wire_envelopes": [
+    {
+      "finish_reason": "stop",
+      "completion_tokens": 2832,
+      "final_content_present": true
+    }
+  ],
+  "strict_candidate": true,
+  "proposal": {
+    "schema_name": "scene-tree-proposal",
+    "schema_version": "scene-tree-proposal-v1",
+    "scene_name": "潮位与盐度观测区",
+    "scene_summary": "一个仅含潮位槽与盐度台两个直接区域的紧凑观测空间，分别承担潮位读数与盐度记录功能，两区以功能边界相互区隔。",
+    "selected_path": [
+      0,
+      0
+    ],
+    "scene_layers": [
+      {
+        "title": "观测区总览",
+        "scope_label": "根观测场域",
+        "summary": "根场景由两块相邻但相互独立的测量区域构成，没有墙体或走廊相连，区域之间以功能差异自然区隔。",
+        "atmosphere": "简洁、专注的实验观测氛围，两块区域彼此独立，没有多余装饰。",
+        "rules": "根场景仅包含潮位槽与盐度台两个直接子区，不设其他通道、入口或额外物件。",
+        "entrance": "进入根场景即为抵达观测区整体视野，可见潮位槽与盐度台并列分布。",
+        "tags": [
+          "根场景",
+          "观测场域",
+          "双分区"
+        ],
+        "reuse_hint": "保留'两个并列直接子区、根层无独立物件'的整体骨架，便于后续添加第三个并行的测量台。",
+        "reusable_node_ref": null,
+        "objects": [],
+        "children": [
+          {
+            "title": "潮位槽",
+            "scope_label": "潮位观测槽",
+            "summary": "相对根场景新增一条用于观察水位升降的狭长槽体空间，与盐度台以功能边界区隔，无门或通道相连。",
+            "atmosphere": "湿润、刻度清晰的静态观测氛围，光线集中在槽内刻度。",
+            "rules": "潮位槽内仅可放置玻璃浮标与刻度尺，不与盐度台互通。",
+            "entrance": "从根场景平视可见的槽体边界即为入口，跨过槽口即进入潮位槽范围。",
+            "tags": [
+              "潮位",
+              "水槽",
+              "静态读数"
+            ],
+            "reuse_hint": "保留'狭长槽体 + 浮标 + 刻度尺'的潮位读数结构，可整体复用到其他水文观测场景。",
+            "reusable_node_ref": null,
+            "objects": [
+              {
+                "name": "玻璃浮标",
+                "description": "置于潮位槽水面之上的透明浮标，随水位升降。",
+                "interaction": "可观察其在刻度尺上的位置以读取潮位高度。",
+                "tags": [
+                  "浮标",
+                  "水位指示"
+                ],
+                "reuse_hint": "通用潮位指示物，可在任何带刻度水尺的槽体中复用。",
+                "reusable_node_ref": null
+              },
+              {
+                "name": "刻度尺",
+                "description": "固定在潮位槽侧壁的标尺，用于读取水位刻度。",
+                "interaction": "配合玻璃浮标读取当前潮位数值。",
+                "tags": [
+                  "刻度",
+                  "标尺"
+                ],
+                "reuse_hint": "通用测量刻度尺，可与任意浮标类指示物搭配复用。",
+                "reusable_node_ref": null
+              }
+            ],
+            "children": []
+          },
+          {
+            "title": "盐度台",
+            "scope_label": "盐度测量台",
+            "summary": "相对根场景新增一张用于测定与记录水体盐度的工作台面，与潮位槽以台面边界区隔，没有连通通道。",
+            "atmosphere": "干燥、安静的记录工作氛围，台面整洁。",
+            "rules": "盐度台内仅可放置盐度计与黑色记录板，不与潮位槽互通。",
+            "entrance": "从根场景平视可见的台面边缘即为入口，跨过台沿即进入盐度台范围。",
+            "tags": [
+              "盐度",
+              "工作台",
+              "记录"
+            ],
+            "reuse_hint": "保留'台面 + 测量仪 + 记录板'的盐度工作单元结构，便于扩展其他理化指标测量。",
+            "reusable_node_ref": null,
+            "objects": [
+              {
+                "name": "盐度计",
+                "description": "放置在盐度台上的水体盐度测量仪器。",
+                "interaction": "可对放入的水样进行盐度读数。",
+                "tags": [
+                  "盐度",
+                  "测量仪"
+                ],
+                "reuse_hint": "通用盐度测量仪器，可复用到任意需要盐度数据的台面场景。",
+                "reusable_node_ref": null
+              },
+              {
+                "name": "黑色记录板",
+                "description": "放置在盐度台上的深色书写板，用于记录测量结果。",
+                "interaction": "可记录盐度计的读数及备注。",
+                "tags": [
+                  "记录",
+                  "书写板"
+                ],
+                "reuse_hint": "通用记录板，可搭配任意测量仪器复用。",
+                "reusable_node_ref": null
+              }
+            ],
+            "children": []
+          }
+        ]
+      }
+    ]
+  },
+  "issues": [
+    {
+      "code": "unsupported_entrance",
+      "path": "scene_layers[0].entrance",
+      "expected": "保持当前层。 | 保持当前层 | 无入口。 | 无入口 | 没有入口。 | 没有入口 | 未指定。 | 未指定",
+      "observed": "进入根场景即为抵达观测区整体视野，可见潮位槽与盐度台并列分布。"
+    },
+    {
+      "code": "unsupported_entrance",
+      "path": "scene_layers[0].children[0].entrance",
+      "expected": "保持当前层。 | 保持当前层 | 无入口。 | 无入口 | 没有入口。 | 没有入口 | 未指定。 | 未指定",
+      "observed": "从根场景平视可见的槽体边界即为入口，跨过槽口即进入潮位槽范围。"
+    },
+    {
+      "code": "unsupported_entrance",
+      "path": "scene_layers[0].children[1].entrance",
+      "expected": "保持当前层。 | 保持当前层 | 无入口。 | 无入口 | 没有入口。 | 没有入口 | 未指定。 | 未指定",
+      "observed": "从根场景平视可见的台面边缘即为入口，跨过台沿即进入盐度台范围。"
+    }
+  ],
+  "policy_passed": false,
+  "production_trace_proposal": true
+}

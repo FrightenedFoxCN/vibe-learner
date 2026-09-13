@@ -1,0 +1,248 @@
+{
+  "version": "scene-closed-world-live-evidence-v1",
+  "phase": "baseline",
+  "case_id": "scene_closed_world_synthetic_04_instrument_repair",
+  "scope": "Production-shaped Scene proposal only. The deterministic policy is research evidence and commit_evidence remains not_applicable.",
+  "policy": {
+    "version": "scene-closed-world-policy-v1",
+    "root_title": "弦乐修复室",
+    "direct_children_exact": [
+      "拆弦桌",
+      "胶合架",
+      "音准席"
+    ],
+    "forbid_deeper_layers": true,
+    "required_root_objects": [],
+    "allowed_root_objects": [],
+    "required_child_objects_by_title": {
+      "拆弦桌": [
+        "乌木弦轴",
+        "细口钳"
+      ],
+      "胶合架": [
+        "鱼胶罐",
+        "枫木夹板"
+      ],
+      "音准席": [
+        "音叉"
+      ]
+    },
+    "allowed_child_objects_by_title": {
+      "拆弦桌": [
+        "乌木弦轴",
+        "细口钳"
+      ],
+      "胶合架": [
+        "鱼胶罐",
+        "枫木夹板"
+      ],
+      "音准席": [
+        "音叉"
+      ]
+    },
+    "allowed_entrances": [
+      "保持当前层。",
+      "保持当前层",
+      "无入口。",
+      "无入口",
+      "没有入口。",
+      "没有入口",
+      "未指定。",
+      "未指定"
+    ]
+  },
+  "http_status": 200,
+  "provider_calls": 1,
+  "wire_envelopes": [
+    {
+      "finish_reason": "stop",
+      "completion_tokens": 2972,
+      "final_content_present": true
+    }
+  ],
+  "strict_candidate": true,
+  "proposal": {
+    "schema_name": "scene-tree-proposal",
+    "schema_version": "scene-tree-proposal-v1",
+    "scene_name": "弦乐修复室",
+    "scene_summary": "一间仅由拆弦桌、胶合架、音准席三块功能岛台围合而成的弦乐器修复工作间，没有任何额外通道、入口或附属物件。",
+    "selected_path": [
+      0
+    ],
+    "scene_layers": [
+      {
+        "title": "弦乐修复室",
+        "scope_label": "整体修复工作间",
+        "summary": "作为根空间，限定整间工作室的边界与三区并置的拓扑关系。",
+        "atmosphere": "室内安静、专注，空气中漂浮着松香、鱼胶与淡木香，光线柔和而集中",
+        "rules": "工作室只包含拆弦桌、胶合架、音准席三块直接区域；除此之外不存在任何其他区域、物件、入口或通路。",
+        "entrance": "从外部空间直接踏入工作室，没有过渡走廊或门厅。",
+        "tags": [
+          "修复室",
+          "弦乐器",
+          "工坊",
+          "封闭空间",
+          "三区结构"
+        ],
+        "reuse_hint": "保留'三块直接功能区、零额外通道'的拓扑骨架，便于日后替换三区名称与对应物件。",
+        "reusable_node_ref": null,
+        "objects": [],
+        "children": [
+          {
+            "title": "拆弦桌",
+            "scope_label": "拆解与卸弦操作台",
+            "summary": "相对父层修复室，新增一块专供拆卸琴弦与弦轴的工作台面，是修复流程的最前端。",
+            "atmosphere": "桌面布满细微划痕与松香残留，操作时金属与木料碰触声清脆",
+            "rules": "仅用于拆弦、卸弦轴与初步解构；不得在此区进行粘合或校音。",
+            "entrance": "从修复室中部横向跨过一道低矮的台面边界进入拆弦桌。",
+            "tags": [
+              "拆解",
+              "工作台",
+              "拆弦",
+              "操作区",
+              "工位"
+            ],
+            "reuse_hint": "保留拆解类工作台的台面、边界与可操作工具结构，便于复用为其他拆卸工艺区。",
+            "reusable_node_ref": null,
+            "objects": [
+              {
+                "name": "乌木弦轴",
+                "description": "黑色致密的木质弦轴，用于固定或拆卸琴弦头部。",
+                "interaction": "握住弦轴旋转拧出，或重新嵌入弦轴箱。",
+                "tags": [
+                  "弦轴",
+                  "乌木",
+                  "旋转件",
+                  "琴头配件"
+                ],
+                "reuse_hint": "保留'乌木轴类零件'的对象描述模板，可复用于其他弦类乐器构件。",
+                "reusable_node_ref": null
+              },
+              {
+                "name": "细口钳",
+                "description": "钳口细长、咬合面光滑，适合夹持细小弦线与金属丝。",
+                "interaction": "夹住断弦拔出，或夹持新弦穿入弦轴孔。",
+                "tags": [
+                  "钳",
+                  "细口",
+                  "拆弦工具",
+                  "精细工具"
+                ],
+                "reuse_hint": "保留细口类精细工具的对象结构，便于复用为其他拆线、拆丝工位。",
+                "reusable_node_ref": null
+              }
+            ],
+            "children": []
+          },
+          {
+            "title": "胶合架",
+            "scope_label": "粘合与夹板晾置立式架",
+            "summary": "相对父层修复室，新增一块用于涂胶、贴合与夹板固定的立式工作区。",
+            "atmosphere": "弥漫鱼胶特有的腥甜气味，架面湿润偏暖，空气略显黏稠",
+            "rules": "仅用于粘合与夹板固定；禁止在胶合架上操作调音或拆弦。",
+            "entrance": "从修复室地面跨过一块沾有胶渍的脚垫边界进入胶合架。",
+            "tags": [
+              "胶合",
+              "立式架",
+              "粘合区",
+              "鱼胶",
+              "加固工位"
+            ],
+            "reuse_hint": "保留胶合类立式架与气味、脚垫边界的描述，便于复用为其他粘合或加固工位。",
+            "reusable_node_ref": null,
+            "objects": [
+              {
+                "name": "鱼胶罐",
+                "description": "盛放鱼胶的小型密封陶瓷罐，罐口覆有一层薄皮。",
+                "interaction": "揭盖蘸取鱼胶，涂抹于开裂的琴身接缝处。",
+                "tags": [
+                  "鱼胶",
+                  "胶罐",
+                  "粘合剂",
+                  "天然胶"
+                ],
+                "reuse_hint": "保留'天然胶类密封容器'的对象结构，可复用于其他动物胶、植物胶工位。",
+                "reusable_node_ref": null
+              },
+              {
+                "name": "枫木夹板",
+                "description": "浅色枫木制成的薄夹板，用于贴合加固开裂的琴身侧板。",
+                "interaction": "将夹板压在涂胶处，再用卡具夹紧固定等待干燥。",
+                "tags": [
+                  "枫木",
+                  "夹板",
+                  "加固件",
+                  "木材"
+                ],
+                "reuse_hint": "保留木质薄夹板类加固件的对象描述，可复用于其他木器修复工位。",
+                "reusable_node_ref": null
+              }
+            ],
+            "children": []
+          },
+          {
+            "title": "音准席",
+            "scope_label": "校音与听音坐姿工位",
+            "summary": "相对父层修复室，新增一块相对隔离、专供听音与校音的坐姿工位。",
+            "atmosphere": "背景极静，空气中几乎无杂音，便于捕捉琴体泛音的细微差异",
+            "rules": "仅用于击音叉比对与调音；不得在音准席上进行拆弦或粘合操作。",
+            "entrance": "从修复室中部横向跨过一道软质地毯边界进入音准席。",
+            "tags": [
+              "音准",
+              "听音",
+              "校音区",
+              "静区",
+              "坐姿工位"
+            ],
+            "reuse_hint": "保留'静坐听音'工位的声场与地毯边界描述，便于复用为其他调音或听感比对空间。",
+            "reusable_node_ref": null,
+            "objects": [
+              {
+                "name": "音叉",
+                "description": "标准 A 音金属音叉，柄部细长，叉体锃亮。",
+                "interaction": "敲击音叉后迅速贴近琴体共鸣箱，比对音高与泛音。",
+                "tags": [
+                  "音叉",
+                  "A音",
+                  "校音工具",
+                  "金属件"
+                ],
+                "reuse_hint": "保留'敲击比对类'校音工具的对象结构，可复用于其他基准音比对工位。",
+                "reusable_node_ref": null
+              }
+            ],
+            "children": []
+          }
+        ]
+      }
+    ]
+  },
+  "issues": [
+    {
+      "code": "unsupported_entrance",
+      "path": "scene_layers[0].entrance",
+      "expected": "保持当前层。 | 保持当前层 | 无入口。 | 无入口 | 没有入口。 | 没有入口 | 未指定。 | 未指定",
+      "observed": "从外部空间直接踏入工作室，没有过渡走廊或门厅。"
+    },
+    {
+      "code": "unsupported_entrance",
+      "path": "scene_layers[0].children[0].entrance",
+      "expected": "保持当前层。 | 保持当前层 | 无入口。 | 无入口 | 没有入口。 | 没有入口 | 未指定。 | 未指定",
+      "observed": "从修复室中部横向跨过一道低矮的台面边界进入拆弦桌。"
+    },
+    {
+      "code": "unsupported_entrance",
+      "path": "scene_layers[0].children[1].entrance",
+      "expected": "保持当前层。 | 保持当前层 | 无入口。 | 无入口 | 没有入口。 | 没有入口 | 未指定。 | 未指定",
+      "observed": "从修复室地面跨过一块沾有胶渍的脚垫边界进入胶合架。"
+    },
+    {
+      "code": "unsupported_entrance",
+      "path": "scene_layers[0].children[2].entrance",
+      "expected": "保持当前层。 | 保持当前层 | 无入口。 | 无入口 | 没有入口。 | 没有入口 | 未指定。 | 未指定",
+      "observed": "从修复室中部横向跨过一道软质地毯边界进入音准席。"
+    }
+  ],
+  "policy_passed": false,
+  "production_trace_proposal": true
+}

@@ -1,0 +1,372 @@
+{
+  "version": "scene-closed-world-live-evidence-v1",
+  "phase": "conditional_repair",
+  "case_id": "scene_closed_world_synthetic_02_tea_archive",
+  "scope": "Research-only Scene proposal replay. It cannot overwrite the baseline, a domain record, or production Harness evidence.",
+  "policy": {
+    "version": "scene-closed-world-policy-v1",
+    "root_title": "春茶标本馆",
+    "direct_children_exact": [
+      "芽叶柜",
+      "香气桌",
+      "称量台"
+    ],
+    "forbid_deeper_layers": true,
+    "required_root_objects": [],
+    "allowed_root_objects": [],
+    "required_child_objects_by_title": {
+      "芽叶柜": [
+        "白毫银针罐"
+      ],
+      "香气桌": [
+        "桂花嗅闻瓶",
+        "竹制闻香杯"
+      ],
+      "称量台": [
+        "铜砝码"
+      ]
+    },
+    "allowed_child_objects_by_title": {
+      "芽叶柜": [
+        "白毫银针罐"
+      ],
+      "香气桌": [
+        "桂花嗅闻瓶",
+        "竹制闻香杯"
+      ],
+      "称量台": [
+        "铜砝码"
+      ]
+    },
+    "allowed_entrances": [
+      "保持当前层。",
+      "保持当前层",
+      "无入口。",
+      "无入口",
+      "没有入口。",
+      "没有入口",
+      "未指定。",
+      "未指定"
+    ]
+  },
+  "baseline_strict_candidate": true,
+  "baseline_status": "completed",
+  "baseline_proposal": {
+    "schema_name": "scene-tree-proposal",
+    "schema_version": "scene-tree-proposal-v1",
+    "scene_name": "春茶标本馆",
+    "scene_summary": "一座仅由芽叶柜、香气桌与称量台三区并列构成的春茶静态标本陈列空间，无走廊、隔断门或额外通道。",
+    "selected_path": [
+      0,
+      1
+    ],
+    "scene_layers": [
+      {
+        "title": "春茶标本馆",
+        "scope_label": "标本馆整体",
+        "summary": "整体是一个封闭的静态陈列空间，由观、嗅、称三个功能分区并列铺开，三区之间没有通道或门扇，仅以功能差异彼此区分。",
+        "atmosphere": "静谧、克制、博物气息，光线柔和均匀，背景近乎无声。",
+        "rules": "三区独立陈列、互不相通；任何物件不可跨区移动；观者需自行在不同分区前完成观、嗅、称三种体验。",
+        "entrance": "无显式入口，从外部概念整体落入空间即视为入场。",
+        "tags": [
+          "静态陈列",
+          "茶主题",
+          "封闭空间",
+          "无通路",
+          "并列三区"
+        ],
+        "reuse_hint": "保留三区并列、无通道、整体封闭的空间骨架，便于以后增删分区或整体搬迁。",
+        "reusable_node_ref": null,
+        "objects": [],
+        "children": [
+          {
+            "title": "芽叶柜",
+            "scope_label": "标本馆·芽叶陈列柜",
+            "summary": "在整体并列布局中占一侧，是从整体空间进入'观'的功能分区，以玻璃柜体与外部观者形成清晰视觉边界，专存春茶芽叶干样。",
+            "atmosphere": "干燥、轻微草木底色，冷白光，安静。",
+            "rules": "柜内仅供静观；玻璃柜门是观与被观的硬边界，不可开柜取样。",
+            "entrance": "从标本馆整体直接步入柜前，无门槛、无通道切换。",
+            "tags": [
+              "陈列柜",
+              "玻璃边界",
+              "静观",
+              "芽叶干样"
+            ],
+            "reuse_hint": "保留'单柜—单罐'的极简陈列结构，便于以后替换春茶品类。",
+            "reusable_node_ref": null,
+            "objects": [
+              {
+                "name": "白毫银针罐",
+                "description": "密封瓷罐，存放白毫银针干茶芽叶，位于芽叶柜内正中。",
+                "interaction": "仅可透过玻璃柜门观看罐体外观与标签，不可开盖取样。",
+                "tags": [
+                  "密封瓷罐",
+                  "白毫银针",
+                  "静态标本"
+                ],
+                "reuse_hint": "保留单罐封装的容器结构，便于替换为其他春茶芽叶标本。",
+                "reusable_node_ref": null
+              }
+            ],
+            "children": []
+          },
+          {
+            "title": "香气桌",
+            "scope_label": "标本馆·香气体验桌",
+            "summary": "在整体并列布局中居中，是从'观'切换为'嗅'的功能分区，以桌面作为容器边界，集中提供春茶与配花的嗅觉样本。",
+            "atmosphere": "空气里带有若有若无的花香与茶香，光线偏暖，环境近乎无声。",
+            "rules": "桌面用于短时嗅闻体验，物件可拿起贴近鼻端，但不可带离桌面。",
+            "entrance": "从标本馆整体平移入桌前，仅以桌沿与高度差作为功能边界，无门扇。",
+            "tags": [
+              "嗅觉体验",
+              "茶香",
+              "花香",
+              "互动桌",
+              "功能切换"
+            ],
+            "reuse_hint": "保留'观→嗅'的功能切换结构，可替换香气样本种类而不破坏动线。",
+            "reusable_node_ref": null,
+            "objects": [
+              {
+                "name": "桂花嗅闻瓶",
+                "description": "小型玻璃瓶，内置干燥桂花，用于提供配花香的嗅觉对照样本。",
+                "interaction": "可拔开瓶塞轻嗅，再盖回瓶塞并放回桌面原位。",
+                "tags": [
+                  "嗅闻瓶",
+                  "桂花",
+                  "对照样本",
+                  "可拿起"
+                ],
+                "reuse_hint": "保留嗅闻瓶与配花香气的对照关系，便于以后替换为其他配花。",
+                "reusable_node_ref": null
+              },
+              {
+                "name": "竹制闻香杯",
+                "description": "竹质小杯，杯壁留有春茶余香，作为茶香本体的嗅觉样本。",
+                "interaction": "可端起贴近鼻端闻香，再轻放回桌面。",
+                "tags": [
+                  "闻香杯",
+                  "竹制",
+                  "茶香样本",
+                  "可拿起"
+                ],
+                "reuse_hint": "保留竹杯承载茶香的容器功能，便于以后换装不同茶样。",
+                "reusable_node_ref": null
+              }
+            ],
+            "children": []
+          },
+          {
+            "title": "称量台",
+            "scope_label": "标本馆·称量操作台",
+            "summary": "在整体并列布局中占另一侧，是从'看/闻'切换为'称'的功能分区，以台面与砝码提供春茶干样的克重标定操作面。",
+            "atmosphere": "干燥、冷静，金属与石质触感突出，光线明亮而克制。",
+            "rules": "台面仅作短时称量展示，砝码与样品不可带离台面。",
+            "entrance": "从标本馆整体步入台前，仅以台面边沿与高度差作为操作区边界，无门扇。",
+            "tags": [
+              "称量台",
+              "操作区",
+              "金属器具",
+              "克重标定"
+            ],
+            "reuse_hint": "保留台面+砝码的称量结构，便于以后替换茶样或增配砝码组合。",
+            "reusable_node_ref": null,
+            "objects": [
+              {
+                "name": "铜砝码",
+                "description": "一组黄铜材质小型砝码，整齐排列在称量台面上，用于演示春茶干样的克重。",
+                "interaction": "可单只拿起比对、再放回台面原位，不可带出台面。",
+                "tags": [
+                  "铜砝码",
+                  "克重",
+                  "称量工具",
+                  "可拿起"
+                ],
+                "reuse_hint": "保留铜质砝码与样品克重的对应关系，便于以后拓展重量组合。",
+                "reusable_node_ref": null
+              }
+            ],
+            "children": []
+          }
+        ]
+      }
+    ]
+  },
+  "baseline_issues": [
+    {
+      "code": "unsupported_entrance",
+      "path": "scene_layers[0].entrance",
+      "expected": "保持当前层。 | 保持当前层 | 无入口。 | 无入口 | 没有入口。 | 没有入口 | 未指定。 | 未指定",
+      "observed": "无显式入口，从外部概念整体落入空间即视为入场。"
+    },
+    {
+      "code": "unsupported_entrance",
+      "path": "scene_layers[0].children[0].entrance",
+      "expected": "保持当前层。 | 保持当前层 | 无入口。 | 无入口 | 没有入口。 | 没有入口 | 未指定。 | 未指定",
+      "observed": "从标本馆整体直接步入柜前，无门槛、无通道切换。"
+    },
+    {
+      "code": "unsupported_entrance",
+      "path": "scene_layers[0].children[1].entrance",
+      "expected": "保持当前层。 | 保持当前层 | 无入口。 | 无入口 | 没有入口。 | 没有入口 | 未指定。 | 未指定",
+      "observed": "从标本馆整体平移入桌前，仅以桌沿与高度差作为功能边界，无门扇。"
+    },
+    {
+      "code": "unsupported_entrance",
+      "path": "scene_layers[0].children[2].entrance",
+      "expected": "保持当前层。 | 保持当前层 | 无入口。 | 无入口 | 没有入口。 | 没有入口 | 未指定。 | 未指定",
+      "observed": "从标本馆整体步入台前，仅以台面边沿与高度差作为操作区边界，无门扇。"
+    }
+  ],
+  "repair_triggered": true,
+  "wire_count_expected": 1,
+  "wire_envelope": {
+    "finish_reason": "stop",
+    "completion_tokens": 3392,
+    "final_content_present": true
+  },
+  "strict_candidate": true,
+  "final_proposal": {
+    "schema_name": "scene-tree-proposal",
+    "schema_version": "scene-tree-proposal-v1",
+    "scene_name": "春茶标本馆",
+    "scene_summary": "一座仅由芽叶柜、香气桌与称量台三区并列构成的春茶静态标本陈列空间，无走廊、隔断门或额外通道。",
+    "selected_path": [
+      0,
+      1
+    ],
+    "scene_layers": [
+      {
+        "title": "春茶标本馆",
+        "scope_label": "标本馆整体",
+        "summary": "整体是一个封闭的静态陈列空间，由观、嗅、称三个功能分区并列铺开，三区之间没有通道或门扇，仅以功能差异彼此区分。",
+        "atmosphere": "静谧、克制、博物气息，光线柔和均匀，背景近乎无声。",
+        "rules": "三区独立陈列、互不相通；任何物件不可跨区移动；观者需自行在不同分区前完成观、嗅、称三种体验。",
+        "entrance": "无入口。",
+        "tags": [
+          "静态陈列",
+          "茶主题",
+          "封闭空间",
+          "无通路",
+          "并列三区"
+        ],
+        "reuse_hint": "保留三区并列、无通道、整体封闭的空间骨架，便于以后增删分区或整体搬迁。",
+        "reusable_node_ref": null,
+        "objects": [],
+        "children": [
+          {
+            "title": "芽叶柜",
+            "scope_label": "标本馆·芽叶陈列柜",
+            "summary": "在整体并列布局中占一侧，是从整体空间进入'观'的功能分区，以玻璃柜体与外部观者形成清晰视觉边界，专存春茶芽叶干样。",
+            "atmosphere": "干燥、轻微草木底色，冷白光，安静。",
+            "rules": "柜内仅供静观；玻璃柜门是观与被观的硬边界，不可开柜取样。",
+            "entrance": "无入口。",
+            "tags": [
+              "陈列柜",
+              "玻璃边界",
+              "静观",
+              "芽叶干样"
+            ],
+            "reuse_hint": "保留'单柜—单罐'的极简陈列结构，便于以后替换春茶品类。",
+            "reusable_node_ref": null,
+            "objects": [
+              {
+                "name": "白毫银针罐",
+                "description": "密封瓷罐，存放白毫银针干茶芽叶，位于芽叶柜内正中。",
+                "interaction": "仅可透过玻璃柜门观看罐体外观与标签，不可开盖取样。",
+                "tags": [
+                  "密封瓷罐",
+                  "白毫银针",
+                  "静态标本"
+                ],
+                "reuse_hint": "保留单罐封装的容器结构，便于替换为其他春茶芽叶标本。",
+                "reusable_node_ref": null
+              }
+            ],
+            "children": []
+          },
+          {
+            "title": "香气桌",
+            "scope_label": "标本馆·香气体验桌",
+            "summary": "在整体并列布局中居中，是从'观'切换为'嗅'的功能分区，以桌面作为容器边界，集中提供春茶与配花的嗅觉样本。",
+            "atmosphere": "空气里带有若有若无的花香与茶香，光线偏暖，环境近乎无声。",
+            "rules": "桌面用于短时嗅闻体验，物件可拿起贴近鼻端，但不可带离桌面。",
+            "entrance": "无入口。",
+            "tags": [
+              "嗅觉体验",
+              "茶香",
+              "花香",
+              "互动桌",
+              "功能切换"
+            ],
+            "reuse_hint": "保留'观→嗅'的功能切换结构，可替换香气样本种类而不破坏动线。",
+            "reusable_node_ref": null,
+            "objects": [
+              {
+                "name": "桂花嗅闻瓶",
+                "description": "小型玻璃瓶，内置干燥桂花，用于提供配花香的嗅觉对照样本。",
+                "interaction": "可拔开瓶塞轻嗅，再盖回瓶塞并放回桌面原位。",
+                "tags": [
+                  "嗅闻瓶",
+                  "桂花",
+                  "对照样本",
+                  "可拿起"
+                ],
+                "reuse_hint": "保留嗅闻瓶与配花香气的对照关系，便于以后替换为其他配花。",
+                "reusable_node_ref": null
+              },
+              {
+                "name": "竹制闻香杯",
+                "description": "竹质小杯，杯壁留有春茶余香，作为茶香本体的嗅觉样本。",
+                "interaction": "可端起贴近鼻端闻香，再轻放回桌面。",
+                "tags": [
+                  "闻香杯",
+                  "竹制",
+                  "茶香样本",
+                  "可拿起"
+                ],
+                "reuse_hint": "保留竹杯承载茶香的容器功能，便于以后换装不同茶样。",
+                "reusable_node_ref": null
+              }
+            ],
+            "children": []
+          },
+          {
+            "title": "称量台",
+            "scope_label": "标本馆·称量操作台",
+            "summary": "在整体并列布局中占另一侧，是从'看/闻'切换为'称'的功能分区，以台面与砝码提供春茶干样的克重标定操作面。",
+            "atmosphere": "干燥、冷静，金属与石质触感突出，光线明亮而克制。",
+            "rules": "台面仅作短时称量展示，砝码与样品不可带离台面。",
+            "entrance": "无入口。",
+            "tags": [
+              "称量台",
+              "操作区",
+              "金属器具",
+              "克重标定"
+            ],
+            "reuse_hint": "保留台面+砝码的称量结构，便于以后替换茶样或增配砝码组合。",
+            "reusable_node_ref": null,
+            "objects": [
+              {
+                "name": "铜砝码",
+                "description": "一组黄铜材质小型砝码，整齐排列在称量台面上，用于演示春茶干样的克重。",
+                "interaction": "可单只拿起比对、再放回台面原位，不可带出台面。",
+                "tags": [
+                  "铜砝码",
+                  "克重",
+                  "称量工具",
+                  "可拿起"
+                ],
+                "reuse_hint": "保留铜质砝码与样品克重的对应关系，便于以后拓展重量组合。",
+                "reusable_node_ref": null
+              }
+            ],
+            "children": []
+          }
+        ]
+      }
+    ]
+  },
+  "final_issues": [],
+  "policy_passed": true
+}

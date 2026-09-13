@@ -1,0 +1,66 @@
+{
+  "version": "m3-scene-closed-world-paired-review-aggregate-v1",
+  "packet_file": "tools/model-quality/runs/m3-scene-closed-world-20260913/paired-review-packet-v3.json",
+  "packet_file_sha256": "b2bead05e92d6c80fef2d9926f16a06f5858d52310dfba0a3f6e941a473550de",
+  "packet_canonical_sha256": "884fe8b6dd44ec9cf8f34f552fb8347d0427426aca3e01136e4c41b1a6be9748",
+  "key_file": "tools/model-quality/runs/m3-scene-closed-world-20260913/paired-review-key-v3.json",
+  "key_file_sha256": "321b7771b4dedaffb56d0f0a75f70c720829741664362ca21513c36103cb1fe9",
+  "strict_repaired_candidates_over_six": 3,
+  "reviewers": [
+    {
+      "reviewer_id": "scene-blind-reviewer-g",
+      "review_file": "docs/quality/evidence/m3-scene-closed-world-blind-review-g.json",
+      "review_file_sha256": "0a874c7bb5799136eec09a9d36204d4c51c024ece857e7212b08552d252cc192",
+      "evaluable_pairs": 3,
+      "not_evaluable_pairs": 3,
+      "initial_axes": {
+        "major": 10,
+        "minor": 2,
+        "pass": 3
+      },
+      "repair_axes": {
+        "major": 7,
+        "minor": 5,
+        "pass": 3
+      },
+      "major_reductions": [
+        "scene_closed_world_synthetic_02_tea_archive:topology_fidelity",
+        "scene_closed_world_synthetic_03_tide_lab:topology_fidelity",
+        "scene_closed_world_synthetic_04_instrument_repair:topology_fidelity"
+      ],
+      "new_major_regressions": []
+    },
+    {
+      "reviewer_id": "scene-blind-reviewer-h",
+      "review_file": "docs/quality/evidence/m3-scene-closed-world-blind-review-h.json",
+      "review_file_sha256": "bf499d8fa595a45129b6053c0d69b3b29c7fe00704e32a3d30ff46dc983c90a0",
+      "evaluable_pairs": 3,
+      "not_evaluable_pairs": 3,
+      "initial_axes": {
+        "major": 10,
+        "minor": 2,
+        "pass": 3
+      },
+      "repair_axes": {
+        "major": 7,
+        "minor": 5,
+        "pass": 3
+      },
+      "major_reductions": [
+        "scene_closed_world_synthetic_02_tea_archive:topology_fidelity",
+        "scene_closed_world_synthetic_03_tide_lab:topology_fidelity",
+        "scene_closed_world_synthetic_04_instrument_repair:topology_fidelity"
+      ],
+      "new_major_regressions": []
+    }
+  ],
+  "shared_major_reductions": [
+    "scene_closed_world_synthetic_02_tea_archive:topology_fidelity",
+    "scene_closed_world_synthetic_03_tide_lab:topology_fidelity",
+    "scene_closed_world_synthetic_04_instrument_repair:topology_fidelity"
+  ],
+  "any_new_major_regressions": [],
+  "decision_rule_status": "preregistered",
+  "reviewer_independence_evidence": "external isolated-agent orchestration; duplicate reviewer ids and identical review bodies rejected here",
+  "promotion_passed": false
+}

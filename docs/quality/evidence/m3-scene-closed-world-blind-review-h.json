@@ -1,0 +1,145 @@
+{
+  "version": "m3-scene-closed-world-blind-review-v1",
+  "reviewer_id": "scene-blind-reviewer-h",
+  "packet_file_sha256": "b2bead05e92d6c80fef2d9926f16a06f5858d52310dfba0a3f6e941a473550de",
+  "cases": [
+    {
+      "case_id": "scene_closed_world_synthetic_01_observatory",
+      "candidate_a": {
+        "axes": {
+          "topology_fidelity": "not_evaluable",
+          "object_fidelity": "not_evaluable",
+          "supported_detail_deletion": "not_evaluable",
+          "relationship_and_permission_invention": "not_evaluable",
+          "epistemic_and_temporal_invention": "not_evaluable"
+        },
+        "rationale": "候选内容为 unavailable sentinel，没有可与权威来源核对的场景结构或细节；五轴均不可评价。"
+      },
+      "candidate_b": {
+        "axes": {
+          "topology_fidelity": "not_evaluable",
+          "object_fidelity": "not_evaluable",
+          "supported_detail_deletion": "not_evaluable",
+          "relationship_and_permission_invention": "not_evaluable",
+          "epistemic_and_temporal_invention": "not_evaluable"
+        },
+        "rationale": "候选内容为 unavailable sentinel，没有可与权威来源核对的场景结构或细节；五轴均不可评价。"
+      }
+    },
+    {
+      "case_id": "scene_closed_world_synthetic_02_tea_archive",
+      "candidate_a": {
+        "axes": {
+          "topology_fidelity": "major",
+          "object_fidelity": "minor",
+          "supported_detail_deletion": "pass",
+          "relationship_and_permission_invention": "major",
+          "epistemic_and_temporal_invention": "major"
+        },
+        "rationale": "三区及四件物品的层级和归属齐全，但在权威来源明确无入口、无通路时仍写入整体入场、步入柜前、平移入桌前等进入方式，并擅定三区并列及居中/两侧位置。物品主体未缺失或错放，不过瓷罐、标签、干燥桂花、余香和样品等属性或附属内容无来源。大量新增仅可观看/可拿起/不可带离等权限，以及观→嗅→称顺序、光线、气味、静默和短时体验等状态与过程，均缺乏依据。"
+      },
+      "candidate_b": {
+        "axes": {
+          "topology_fidelity": "minor",
+          "object_fidelity": "minor",
+          "supported_detail_deletion": "pass",
+          "relationship_and_permission_invention": "major",
+          "epistemic_and_temporal_invention": "major"
+        },
+        "rationale": "根层、三个直接区域、物品归属及无入口均被保留；但并列布局、香气桌居中及另两区位于两侧等空间关系不是权威事实，因此拓扑仍有轻度扩写。物品清单完整且位置正确，但瓷质、玻璃瓶内物、标签、杯中余香与额外样品等细节无来源。对开柜、拿取、嗅闻、称量和带离的成套许可/禁止规则，以及光照、气味、声响与观→嗅→称流程，构成广泛的关系、权限、状态和时间性发明。"
+      }
+    },
+    {
+      "case_id": "scene_closed_world_synthetic_03_tide_lab",
+      "candidate_a": {
+        "axes": {
+          "topology_fidelity": "minor",
+          "object_fidelity": "minor",
+          "supported_detail_deletion": "pass",
+          "relationship_and_permission_invention": "major",
+          "epistemic_and_temporal_invention": "major"
+        },
+        "rationale": "两个直接区域及各自两件物品均完整保留，并明确无入口；但又断言两区相邻、彼此独立、以功能边界区隔且不互通，这些区域间关系并未由来源给出。物品未缺失或错放，不过水面、槽侧壁、水样、读数和备注等附加对象或属性无依据。仅可放置、可观察、可记录等规则擅自定义关系和权限；浮标随水位升降、固定标尺、当前潮位、集中光线与台面状态等则是明显的状态及时间过程发明。"
+      },
+      "candidate_b": {
+        "axes": {
+          "topology_fidelity": "major",
+          "object_fidelity": "minor",
+          "supported_detail_deletion": "pass",
+          "relationship_and_permission_invention": "major",
+          "epistemic_and_temporal_invention": "major"
+        },
+        "rationale": "区域和物品层级完整，但权威来源明确根场景无入口或通路，候选却写入抵达整体视野、跨过槽口进入潮位槽、跨过台沿进入盐度台，形成直接冲突；相邻和边界关系同样无来源。核心物品均正确归属，仅其水面、侧壁、水样、读数等扩展细节无依据。候选还自行规定可观察、可测量、可记录及区域不互通，并虚构水位升降、当前读数、光照和整洁状态，关系/权限及状态/时间性问题均广泛存在。"
+      }
+    },
+    {
+      "case_id": "scene_closed_world_synthetic_04_instrument_repair",
+      "candidate_a": {
+        "axes": {
+          "topology_fidelity": "major",
+          "object_fidelity": "major",
+          "supported_detail_deletion": "pass",
+          "relationship_and_permission_invention": "major",
+          "epistemic_and_temporal_invention": "major"
+        },
+        "rationale": "三个直接区域及五件指定物品均出现，但来源明确无入口或通路，候选却新增从外部踏入、跨台面边界、跨胶渍脚垫及跨地毯进入各区，严重背离闭世界拓扑。除扩写既有物品材质和形态外，还引入琴弦、弦轴箱、琴身、卡具、脚垫和地毯等未列物件，物件保真问题显著。拆弦/粘合/校音的专属分工和禁止事项全属自创；流程先后、等待干燥、当前划痕胶渍、气味、湿度、光线与声场等状态或时间断言也毫无来源。"
+      },
+      "candidate_b": {
+        "axes": {
+          "topology_fidelity": "minor",
+          "object_fidelity": "major",
+          "supported_detail_deletion": "pass",
+          "relationship_and_permission_invention": "major",
+          "epistemic_and_temporal_invention": "major"
+        },
+        "rationale": "候选保留根场景、三个直接区域并将入口均置为无，但仍擅称三区为围合岛台、并置且音准席相对隔离，故有轻度空间关系扩写。五件指定物品虽未缺失或错放，正文却增加琴弦、弦轴箱、琴身、卡具等多件未授权对象，并赋予标准 A 音、密封陶罐等大量属性，物件保真严重受损。各区用途排他规则和所有操作许可均为发明；修复流程先后、等待干燥、残留/胶皮、气味、湿度、光照和声响等状态与时间过程同样广泛超出来源。"
+      }
+    },
+    {
+      "case_id": "scene_closed_world_synthetic_05_print_workshop",
+      "candidate_a": {
+        "axes": {
+          "topology_fidelity": "not_evaluable",
+          "object_fidelity": "not_evaluable",
+          "supported_detail_deletion": "not_evaluable",
+          "relationship_and_permission_invention": "not_evaluable",
+          "epistemic_and_temporal_invention": "not_evaluable"
+        },
+        "rationale": "候选内容为 unavailable sentinel，没有可与权威来源核对的场景结构或细节；五轴均不可评价。"
+      },
+      "candidate_b": {
+        "axes": {
+          "topology_fidelity": "not_evaluable",
+          "object_fidelity": "not_evaluable",
+          "supported_detail_deletion": "not_evaluable",
+          "relationship_and_permission_invention": "not_evaluable",
+          "epistemic_and_temporal_invention": "not_evaluable"
+        },
+        "rationale": "候选内容为 unavailable sentinel，没有可与权威来源核对的场景结构或细节；五轴均不可评价。"
+      }
+    },
+    {
+      "case_id": "scene_closed_world_synthetic_06_seed_archive",
+      "candidate_a": {
+        "axes": {
+          "topology_fidelity": "not_evaluable",
+          "object_fidelity": "not_evaluable",
+          "supported_detail_deletion": "not_evaluable",
+          "relationship_and_permission_invention": "not_evaluable",
+          "epistemic_and_temporal_invention": "not_evaluable"
+        },
+        "rationale": "候选内容为 unavailable sentinel，没有可与权威来源核对的场景结构或细节；五轴均不可评价。"
+      },
+      "candidate_b": {
+        "axes": {
+          "topology_fidelity": "not_evaluable",
+          "object_fidelity": "not_evaluable",
+          "supported_detail_deletion": "not_evaluable",
+          "relationship_and_permission_invention": "not_evaluable",
+          "epistemic_and_temporal_invention": "not_evaluable"
+        },
+        "rationale": "候选内容为 unavailable sentinel，没有可与权威来源核对的场景结构或细节；五轴均不可评价。"
+      }
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "fixture": "persona-scene-tavern-shadow-v1",
+  "case_id": "meteorologist-clouded-observatory",
+  "strategy": {
+    "operational": "production-v3",
+    "semantic": "research-shadow-ledger-v1",
+    "review": "independent-manual-required"
+  },
+  "generation_http": {
+    "persona": 200,
+    "scene": 502
+  },
+  "version": "vibe-domain-readback-v1",
+  "metrics": {
+    "generation_completed": false
+  },
+  "scope": "Synthetic project adapter. Primary output lifecycle and specified rubric only; no independent quality certification."
+}

@@ -1,0 +1,52 @@
+{
+  "version": "scene-closed-world-live-evidence-v1",
+  "phase": "conditional_repair",
+  "case_id": "scene_closed_world_synthetic_01_observatory",
+  "scope": "Research-only Scene proposal replay. It cannot overwrite the baseline, a domain record, or production Harness evidence.",
+  "policy": {
+    "version": "scene-closed-world-policy-v1",
+    "root_title": "星图观测室",
+    "direct_children_exact": [
+      "圆顶控制区",
+      "记录台"
+    ],
+    "forbid_deeper_layers": true,
+    "required_root_objects": [],
+    "allowed_root_objects": [],
+    "required_child_objects_by_title": {
+      "圆顶控制区": [
+        "黄铜望远镜",
+        "蓝色转轮"
+      ],
+      "记录台": [
+        "航星日志",
+        "红铅笔"
+      ]
+    },
+    "allowed_child_objects_by_title": {
+      "圆顶控制区": [
+        "黄铜望远镜",
+        "蓝色转轮"
+      ],
+      "记录台": [
+        "航星日志",
+        "红铅笔"
+      ]
+    },
+    "allowed_entrances": [
+      "保持当前层。",
+      "保持当前层",
+      "无入口。",
+      "无入口",
+      "没有入口。",
+      "没有入口",
+      "未指定。",
+      "未指定"
+    ]
+  },
+  "baseline_strict_candidate": false,
+  "baseline_status": "uncertain",
+  "repair_triggered": false,
+  "strict_candidate": false,
+  "not_evaluable": true
+}

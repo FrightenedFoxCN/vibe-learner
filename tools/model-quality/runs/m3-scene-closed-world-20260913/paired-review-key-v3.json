@@ -1,0 +1,90 @@
+{
+  "version": "m3-scene-closed-world-blinded-paired-review-key-v2",
+  "packet_canonical_sha256": "884fe8b6dd44ec9cf8f34f552fb8347d0427426aca3e01136e4c41b1a6be9748",
+  "seed": 913613,
+  "baseline_config_digest": "318a772204666bdacfe844108844e06423d96463ac957811b08f6647368bbeea",
+  "repair_config_digest": "926cbab7537996b88fda60402d7029cfdcb79703ae876731f956c4e9f5512196",
+  "baseline_report_sha256": "530cbe72d72480957e07f81d5c835b22cefeae97d90d556284e471b89a36ecfd",
+  "repair_report_sha256": "672199ae7eac8610aea2d62a529673a20c45e3212c20b4d272a5061bc41a7791",
+  "fixture_sha256": "3eb06390ff87b93a59d388489b6aca51a64aee7ecfd3f544fc90a0fa9b558cb1",
+  "cases": [
+    {
+      "case_id": "scene_closed_world_synthetic_01_observatory",
+      "labels": {
+        "candidate_a": "initial",
+        "candidate_b": "repair_failed"
+      },
+      "source_sha256": "c413829f80e3446b6d18bd9835413608f6525b1339d4c5251a09820e86634c6a",
+      "candidate_a_sha256": "7c50395525941372cde72d66520cb9a5bbb4031e37e770b387f424c00dc33729",
+      "candidate_b_sha256": "7c50395525941372cde72d66520cb9a5bbb4031e37e770b387f424c00dc33729",
+      "baseline_evidence_sha256": "bf2aee9ef2e766b8e77454def889613d147d13aa3ff90be3b537da9410664e97",
+      "repair_evidence_sha256": "6d6c41fd56cc06e9e7052e55494ae640a8f59bd8bd2d7f639fcf12ecf8518ea9",
+      "repair_candidate_available": false
+    },
+    {
+      "case_id": "scene_closed_world_synthetic_02_tea_archive",
+      "labels": {
+        "candidate_a": "initial",
+        "candidate_b": "final"
+      },
+      "source_sha256": "24ace3a90552b1cbb613350fd3038bd486f15cd9bc0a2a59648611bf26d5379a",
+      "candidate_a_sha256": "9dcef7e1ef5323f13709d07d424dcc0a755b0da0e306a302c1f9ffa8d479623a",
+      "candidate_b_sha256": "5278d11d4bffaccf2352e6f05b63410e1eaf7e1606a25a2e6cc776bbaee17119",
+      "baseline_evidence_sha256": "7a833567afb474704362241e27a9e1fe5ec1c7c8d1c255993abfe179102ad568",
+      "repair_evidence_sha256": "527b6afe85f537d2bb10c5c18c9d58536458f1eb41f6d018e9884dd77efa40b2",
+      "repair_candidate_available": true
+    },
+    {
+      "case_id": "scene_closed_world_synthetic_03_tide_lab",
+      "labels": {
+        "candidate_a": "final",
+        "candidate_b": "initial"
+      },
+      "source_sha256": "0f53b09d8e9c21270f1a10658344e2e0c060c42fbab61f61657fc15ae7ac6af0",
+      "candidate_a_sha256": "cf5a2244c1ada81a4700d4edbd2ea3d4c278ade819fb49b29e35b78a44f1ad0e",
+      "candidate_b_sha256": "8e33098de64eda0d6e2855dd19c9eefdf185bd01e690c79868b490798dc4fcc7",
+      "baseline_evidence_sha256": "7949e92bf391e20ec2897ce28d6e03f2ccd693ef4f34bbab432663d0ff9737fd",
+      "repair_evidence_sha256": "662dca2bdaeb897600e2e8d414326d6aac1c27915309e9b93aae11750ec71387",
+      "repair_candidate_available": true
+    },
+    {
+      "case_id": "scene_closed_world_synthetic_04_instrument_repair",
+      "labels": {
+        "candidate_a": "initial",
+        "candidate_b": "final"
+      },
+      "source_sha256": "1e04c2f904a922f8e64a6c04732a2667cf819c389e725a8fe11981b8b6586b3e",
+      "candidate_a_sha256": "70bbebbe8e7da312ede0c9e1faade6ca6419fa2c90b79dd29274d2b46e7c9144",
+      "candidate_b_sha256": "ad99efc100379a75664d4494cf2d5a02206a47da334c7a5da6f4d56775b0ad49",
+      "baseline_evidence_sha256": "dbe849a611a68d46fcc92db2438918ebf0c9b3953c66ba29f9b01673c01fba32",
+      "repair_evidence_sha256": "b8c9f14096ffc7a433708e48a93c69ad6c4b906cc2412123ae6dfb359a2f6d0b",
+      "repair_candidate_available": true
+    },
+    {
+      "case_id": "scene_closed_world_synthetic_05_print_workshop",
+      "labels": {
+        "candidate_a": "repair_failed",
+        "candidate_b": "initial"
+      },
+      "source_sha256": "7f5f95942e128a772de8a5005680f34a1b2d6ecbc29ca8428b626022a3971db7",
+      "candidate_a_sha256": "7c50395525941372cde72d66520cb9a5bbb4031e37e770b387f424c00dc33729",
+      "candidate_b_sha256": "7c50395525941372cde72d66520cb9a5bbb4031e37e770b387f424c00dc33729",
+      "baseline_evidence_sha256": "971d9cbdd3ebe2477e6664418dcc9b13567d5182d026707a643c339b46d81296",
+      "repair_evidence_sha256": "483eccfd47427e7ef9744760941527cfeccc0e1ef4c880f67385b884c3a7514c",
+      "repair_candidate_available": false
+    },
+    {
+      "case_id": "scene_closed_world_synthetic_06_seed_archive",
+      "labels": {
+        "candidate_a": "repair_failed",
+        "candidate_b": "initial"
+      },
+      "source_sha256": "1a5082f702353e485ed1e43047d2dae11d2a37c01032195ad5c1dcc897f3f590",
+      "candidate_a_sha256": "7c50395525941372cde72d66520cb9a5bbb4031e37e770b387f424c00dc33729",
+      "candidate_b_sha256": "7c50395525941372cde72d66520cb9a5bbb4031e37e770b387f424c00dc33729",
+      "baseline_evidence_sha256": "1c2f483988127a96986615d70333f5dd4429fad03997c29b44a03726f42461c1",
+      "repair_evidence_sha256": "c27fdaf127a4802272313ce90592d5f2b9672a0fb0f38ff3a418508d7114d635",
+      "repair_candidate_available": false
+    }
+  ]
+}

@@ -1,0 +1,795 @@
+{
+  "wire_latency_ms": {
+    "50": 14009,
+    "95": 21874
+  },
+  "percentile_method": "nearest-rank",
+  "aggregation_source_digest": "448d8db68208af633654378ecf896573ee64449a7fc2305e55bf241fc9e33fb2",
+  "failure_owners": {
+    "infrastructure": 2
+  },
+  "version": "quality-report-v1",
+  "campaign": "m3-scene-closed-world-baseline-20260913-v1",
+  "transport": "minimax",
+  "scope": "research infrastructure; not Harness evidence or independent quality certification",
+  "expected_samples": 6,
+  "independent_families": 6,
+  "states": {
+    "uncertain": 1,
+    "completed": 4,
+    "infrastructure_failed": 1
+  },
+  "pairs": {
+    "scene_closed_world_synthetic_01_observatory:0": {
+      "production-shaped-baseline": "uncertain"
+    },
+    "scene_closed_world_synthetic_04_instrument_repair:0": {
+      "production-shaped-baseline": "completed"
+    },
+    "scene_closed_world_synthetic_06_seed_archive:0": {
+      "production-shaped-baseline": "completed"
+    },
+    "scene_closed_world_synthetic_03_tide_lab:0": {
+      "production-shaped-baseline": "completed"
+    },
+    "scene_closed_world_synthetic_05_print_workshop:0": {
+      "production-shaped-baseline": "infrastructure_failed"
+    },
+    "scene_closed_world_synthetic_02_tea_archive:0": {
+      "production-shaped-baseline": "completed"
+    }
+  },
+  "samples": [
+    {
+      "campaign": "m3-scene-closed-world-baseline-20260913-v1",
+      "case": "scene_closed_world_synthetic_01_observatory",
+      "repetition": 0,
+      "variant": "production-shaped-baseline",
+      "sample_id": "26adc98e3c74360008f4ec7a104b24f2cfaf3ce5e439d78050e86a404a267844",
+      "family": "scene_closed_world_synthetic_01_observatory",
+      "state": "uncertain",
+      "result": {
+        "error_code": null,
+        "evidence": [
+          {
+            "contract": "scene-closed-world-live-evidence-v1",
+            "path": "scene-closed-world-evidence.json",
+            "sha256": "bf2aee9ef2e766b8e77454def889613d147d13aa3ff90be3b537da9410664e97"
+          }
+        ],
+        "failure_owner": "infrastructure",
+        "metrics": {
+          "strict_candidate": false
+        },
+        "pid": 52400,
+        "sample_id": "26adc98e3c74360008f4ec7a104b24f2cfaf3ce5e439d78050e86a404a267844",
+        "scope": "domain-admitted-proposal; no product projection commit or read-back",
+        "status": "uncertain"
+      },
+      "elapsed_seconds": 23.289305925369263
+    },
+    {
+      "campaign": "m3-scene-closed-world-baseline-20260913-v1",
+      "case": "scene_closed_world_synthetic_04_instrument_repair",
+      "repetition": 0,
+      "variant": "production-shaped-baseline",
+      "sample_id": "3e1b48553d1fc7e65ef6d5541b12a7c1d14193cd139178b42555c7505139bed9",
+      "family": "scene_closed_world_synthetic_04_instrument_repair",
+      "state": "completed",
+      "result": {
+        "error_code": null,
+        "evidence": [
+          {
+            "contract": "scene-closed-world-live-evidence-v1",
+            "path": "scene-closed-world-evidence.json",
+            "sha256": "dbe849a611a68d46fcc92db2438918ebf0c9b3953c66ba29f9b01673c01fba32"
+          }
+        ],
+        "failure_owner": null,
+        "metrics": {
+          "policy_passed": false,
+          "production_trace_proposal": true,
+          "strict_candidate": true
+        },
+        "pid": 52340,
+        "sample_id": "3e1b48553d1fc7e65ef6d5541b12a7c1d14193cd139178b42555c7505139bed9",
+        "scope": "domain-admitted-proposal; no product projection commit or read-back",
+        "status": "completed"
+      },
+      "elapsed_seconds": 17.109540939331055
+    },
+    {
+      "campaign": "m3-scene-closed-world-baseline-20260913-v1",
+      "case": "scene_closed_world_synthetic_06_seed_archive",
+      "repetition": 0,
+      "variant": "production-shaped-baseline",
+      "sample_id": "4df00bfc44d50d5eb19dd27752e199662b81878f4c0361f1d21f670fd050d70c",
+      "family": "scene_closed_world_synthetic_06_seed_archive",
+      "state": "completed",
+      "result": {
+        "error_code": null,
+        "evidence": [
+          {
+            "contract": "scene-closed-world-live-evidence-v1",
+            "path": "scene-closed-world-evidence.json",
+            "sha256": "1c2f483988127a96986615d70333f5dd4429fad03997c29b44a03726f42461c1"
+          }
+        ],
+        "failure_owner": null,
+        "metrics": {
+          "policy_passed": false,
+          "production_trace_proposal": true,
+          "strict_candidate": true
+        },
+        "pid": 52341,
+        "sample_id": "4df00bfc44d50d5eb19dd27752e199662b81878f4c0361f1d21f670fd050d70c",
+        "scope": "domain-admitted-proposal; no product projection commit or read-back",
+        "status": "completed"
+      },
+      "elapsed_seconds": 16.75899887084961
+    },
+    {
+      "campaign": "m3-scene-closed-world-baseline-20260913-v1",
+      "case": "scene_closed_world_synthetic_03_tide_lab",
+      "repetition": 0,
+      "variant": "production-shaped-baseline",
+      "sample_id": "6e11fdc54700db23137cf8a28b15f52a4dc916bb40959e80c0d59d33b0b96b4f",
+      "family": "scene_closed_world_synthetic_03_tide_lab",
+      "state": "completed",
+      "result": {
+        "error_code": null,
+        "evidence": [
+          {
+            "contract": "scene-closed-world-live-evidence-v1",
+            "path": "scene-closed-world-evidence.json",
+            "sha256": "7949e92bf391e20ec2897ce28d6e03f2ccd693ef4f34bbab432663d0ff9737fd"
+          }
+        ],
+        "failure_owner": null,
+        "metrics": {
+          "policy_passed": false,
+          "production_trace_proposal": true,
+          "strict_candidate": true
+        },
+        "pid": 52455,
+        "sample_id": "6e11fdc54700db23137cf8a28b15f52a4dc916bb40959e80c0d59d33b0b96b4f",
+        "scope": "domain-admitted-proposal; no product projection commit or read-back",
+        "status": "completed"
+      },
+      "elapsed_seconds": 10.814439058303833
+    },
+    {
+      "campaign": "m3-scene-closed-world-baseline-20260913-v1",
+      "case": "scene_closed_world_synthetic_05_print_workshop",
+      "repetition": 0,
+      "variant": "production-shaped-baseline",
+      "sample_id": "94798cb23f037c98d6a70916a6ddb6d38f7a54f9fb71d25c5897028d76f7f38c",
+      "family": "scene_closed_world_synthetic_05_print_workshop",
+      "state": "infrastructure_failed",
+      "result": {
+        "error_code": null,
+        "evidence": [
+          {
+            "contract": "scene-closed-world-live-evidence-v1",
+            "path": "scene-closed-world-evidence.json",
+            "sha256": "971d9cbdd3ebe2477e6664418dcc9b13567d5182d026707a643c339b46d81296"
+          }
+        ],
+        "failure_owner": "infrastructure",
+        "metrics": {
+          "strict_candidate": false
+        },
+        "pid": 52401,
+        "sample_id": "94798cb23f037c98d6a70916a6ddb6d38f7a54f9fb71d25c5897028d76f7f38c",
+        "scope": "domain-admitted-proposal; no product projection commit or read-back",
+        "status": "infrastructure_failed"
+      },
+      "elapsed_seconds": 13.55910611152649
+    },
+    {
+      "campaign": "m3-scene-closed-world-baseline-20260913-v1",
+      "case": "scene_closed_world_synthetic_02_tea_archive",
+      "repetition": 0,
+      "variant": "production-shaped-baseline",
+      "sample_id": "b1457fdd9fe04be5a9637aa3898ebbc2aecaf022bd557ff0d8c33fadda9980a6",
+      "family": "scene_closed_world_synthetic_02_tea_archive",
+      "state": "completed",
+      "result": {
+        "error_code": null,
+        "evidence": [
+          {
+            "contract": "scene-closed-world-live-evidence-v1",
+            "path": "scene-closed-world-evidence.json",
+            "sha256": "7a833567afb474704362241e27a9e1fe5ec1c7c8d1c255993abfe179102ad568"
+          }
+        ],
+        "failure_owner": null,
+        "metrics": {
+          "policy_passed": false,
+          "production_trace_proposal": true,
+          "strict_candidate": true
+        },
+        "pid": 52497,
+        "sample_id": "b1457fdd9fe04be5a9637aa3898ebbc2aecaf022bd557ff0d8c33fadda9980a6",
+        "scope": "domain-admitted-proposal; no product projection commit or read-back",
+        "status": "completed"
+      },
+      "elapsed_seconds": 15.345458984375
+    }
+  ],
+  "campaign_usage": {
+    "scaling_events": [
+      {
+        "time": 1789193563.8342872,
+        "reason": "initial",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "cooldown_until": 0.0,
+          "current": 2,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789193563.8342872
+        }
+      },
+      {
+        "time": 1789194749.337584,
+        "reason": "capacity_begin",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "capacity_campaign": "m3-capacity-20260912-v1",
+          "cooldown_until": 0.0,
+          "current": 4,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789194749.337525
+        }
+      },
+      {
+        "time": 1789194749.3381288,
+        "reason": "capacity_level_4",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "capacity_campaign": "m3-capacity-20260912-v1",
+          "cooldown_until": 0.0,
+          "current": 4,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789194749.338079
+        }
+      },
+      {
+        "time": 1789194815.017502,
+        "reason": "capacity_restore",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "cooldown_until": 0.0,
+          "current": 2,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789193563.8342872
+        }
+      },
+      {
+        "time": 1789194912.058828,
+        "reason": "capacity_begin",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "capacity_campaign": "m3-capacity-20260912-v2",
+          "cooldown_until": 0.0,
+          "current": 4,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789194912.058772
+        }
+      },
+      {
+        "time": 1789194912.059327,
+        "reason": "capacity_level_4",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "capacity_campaign": "m3-capacity-20260912-v2",
+          "cooldown_until": 0.0,
+          "current": 4,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789194912.059274
+        }
+      },
+      {
+        "time": 1789194959.63645,
+        "reason": "capacity_restore",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "cooldown_until": 0.0,
+          "current": 2,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789193563.8342872
+        }
+      },
+      {
+        "time": 1789195057.4798799,
+        "reason": "capacity_begin",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "capacity_campaign": "m3-capacity-20260912-v3",
+          "cooldown_until": 0.0,
+          "current": 4,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789195057.479805
+        }
+      },
+      {
+        "time": 1789195057.480588,
+        "reason": "capacity_level_4",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "capacity_campaign": "m3-capacity-20260912-v3",
+          "cooldown_until": 0.0,
+          "current": 4,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789195057.480507
+        }
+      },
+      {
+        "time": 1789195183.11363,
+        "reason": "capacity_level_8",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "capacity_campaign": "m3-capacity-20260912-v3",
+          "cooldown_until": 0.0,
+          "current": 8,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789195183.113394
+        }
+      },
+      {
+        "time": 1789195229.955343,
+        "reason": "capacity_restore",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "cooldown_until": 0.0,
+          "current": 2,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789193563.8342872
+        }
+      },
+      {
+        "time": 1789196175.7202592,
+        "reason": "operator_overload_restart",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "cooldown_until": 1789196175.7202592,
+          "current": 4,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789196175.7202592
+        }
+      },
+      {
+        "time": 1789222133.326775,
+        "reason": "operator_overload_restart",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "cooldown_until": 1789222133.326775,
+          "current": 2,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789222133.326775
+        }
+      }
+    ],
+    "stopped": null,
+    "wire_count": 6,
+    "charged_or_reserved_tokens": 23388,
+    "unknown_usage_requests": 0,
+    "wires": [
+      {
+        "id": "8296e44c31be482c93656e6e6e1c2479",
+        "campaign": "m3-scene-closed-world-baseline-20260913-v1",
+        "sample": "3e1b48553d1fc7e65ef6d5541b12a7c1d14193cd139178b42555c7505139bed9",
+        "started": 1789253596.333766,
+        "finished": 1789253612.031424,
+        "state": "finished",
+        "reserved": 104096,
+        "charged": 3843,
+        "metadata": {
+          "billing_tokens": null,
+          "cached_tokens": 128,
+          "call_kind": "generation",
+          "completion_tokens": 2972,
+          "elapsed_ms": 15688,
+          "finish_reason": "stop",
+          "http_status": 200,
+          "image_count": 0,
+          "images": [],
+          "max_tokens": 4096,
+          "offered_tools": [],
+          "prompt_tokens": 871,
+          "reasoning_tokens": null,
+          "request_bytes": 3392,
+          "response_format_type": "json_object",
+          "response_model": "MiniMax-M3",
+          "temperature": 0.2,
+          "thinking": "adaptive",
+          "tool_call_shapes": [],
+          "tool_choice": null,
+          "tool_count": 0,
+          "total_tokens": 3843
+        }
+      },
+      {
+        "id": "f377b9884e3d4525bc12778c86a2abd8",
+        "campaign": "m3-scene-closed-world-baseline-20260913-v1",
+        "sample": "4df00bfc44d50d5eb19dd27752e199662b81878f4c0361f1d21f670fd050d70c",
+        "started": 1789253596.3458529,
+        "finished": 1789253611.66061,
+        "state": "finished",
+        "reserved": 104096,
+        "charged": 4886,
+        "metadata": {
+          "billing_tokens": null,
+          "cached_tokens": 128,
+          "call_kind": "generation",
+          "completion_tokens": 4027,
+          "elapsed_ms": 15313,
+          "finish_reason": "stop",
+          "http_status": 200,
+          "image_count": 0,
+          "images": [],
+          "max_tokens": 4096,
+          "offered_tools": [],
+          "prompt_tokens": 859,
+          "reasoning_tokens": 2793,
+          "request_bytes": 3365,
+          "response_format_type": "json_object",
+          "response_model": "MiniMax-M3",
+          "temperature": 0.2,
+          "thinking": "adaptive",
+          "tool_call_shapes": [],
+          "tool_choice": null,
+          "tool_count": 0,
+          "total_tokens": 4886
+        }
+      },
+      {
+        "id": "24c57c3689b145a498f9879892402485",
+        "campaign": "m3-scene-closed-world-baseline-20260913-v1",
+        "sample": "26adc98e3c74360008f4ec7a104b24f2cfaf3ce5e439d78050e86a404a267844",
+        "started": 1789253613.515567,
+        "finished": 1789253635.391849,
+        "state": "finished",
+        "reserved": 104096,
+        "charged": 2460,
+        "metadata": {
+          "billing_tokens": null,
+          "cached_tokens": 512,
+          "call_kind": "generation",
+          "completion_tokens": 1604,
+          "elapsed_ms": 21874,
+          "finish_reason": "stop",
+          "http_status": 200,
+          "image_count": 0,
+          "images": [],
+          "max_tokens": 4096,
+          "offered_tools": [],
+          "prompt_tokens": 856,
+          "reasoning_tokens": 0,
+          "request_bytes": 3374,
+          "response_format_type": "json_object",
+          "response_model": "MiniMax-M3",
+          "temperature": 0.2,
+          "thinking": "adaptive",
+          "tool_call_shapes": [],
+          "tool_choice": null,
+          "tool_count": 0,
+          "total_tokens": 2460
+        }
+      },
+      {
+        "id": "2d0b0864f9a34635b90acdd59f58a793",
+        "campaign": "m3-scene-closed-world-baseline-20260913-v1",
+        "sample": "94798cb23f037c98d6a70916a6ddb6d38f7a54f9fb71d25c5897028d76f7f38c",
+        "started": 1789253613.8098261,
+        "finished": 1789253625.9589372,
+        "state": "finished",
+        "reserved": 104096,
+        "charged": 4029,
+        "metadata": {
+          "billing_tokens": null,
+          "cached_tokens": 128,
+          "call_kind": "generation",
+          "completion_tokens": 3171,
+          "elapsed_ms": 12147,
+          "finish_reason": "stop",
+          "http_status": 200,
+          "image_count": 0,
+          "images": [],
+          "max_tokens": 4096,
+          "offered_tools": [],
+          "prompt_tokens": 858,
+          "reasoning_tokens": 2159,
+          "request_bytes": 3353,
+          "response_format_type": "json_object",
+          "response_model": "MiniMax-M3",
+          "temperature": 0.2,
+          "thinking": "adaptive",
+          "tool_call_shapes": [],
+          "tool_choice": null,
+          "tool_count": 0,
+          "total_tokens": 4029
+        }
+      },
+      {
+        "id": "ad31de35df824146b255af08205cfd7b",
+        "campaign": "m3-scene-closed-world-baseline-20260913-v1",
+        "sample": "6e11fdc54700db23137cf8a28b15f52a4dc916bb40959e80c0d59d33b0b96b4f",
+        "started": 1789253627.683393,
+        "finished": 1789253637.202112,
+        "state": "finished",
+        "reserved": 104096,
+        "charged": 3681,
+        "metadata": {
+          "billing_tokens": null,
+          "cached_tokens": 128,
+          "call_kind": "generation",
+          "completion_tokens": 2832,
+          "elapsed_ms": 9517,
+          "finish_reason": "stop",
+          "http_status": 200,
+          "image_count": 0,
+          "images": [],
+          "max_tokens": 4096,
+          "offered_tools": [],
+          "prompt_tokens": 849,
+          "reasoning_tokens": 1881,
+          "request_bytes": 3323,
+          "response_format_type": "json_object",
+          "response_model": "MiniMax-M3",
+          "temperature": 0.2,
+          "thinking": "adaptive",
+          "tool_call_shapes": [],
+          "tool_choice": null,
+          "tool_count": 0,
+          "total_tokens": 3681
+        }
+      },
+      {
+        "id": "b1cea73f4b7847aaa0a1e336a141901c",
+        "campaign": "m3-scene-closed-world-baseline-20260913-v1",
+        "sample": "b1457fdd9fe04be5a9637aa3898ebbc2aecaf022bd557ff0d8c33fadda9980a6",
+        "started": 1789253637.1838331,
+        "finished": 1789253651.194797,
+        "state": "finished",
+        "reserved": 104096,
+        "charged": 4489,
+        "metadata": {
+          "billing_tokens": null,
+          "cached_tokens": 128,
+          "call_kind": "generation",
+          "completion_tokens": 3620,
+          "elapsed_ms": 14009,
+          "finish_reason": "stop",
+          "http_status": 200,
+          "image_count": 0,
+          "images": [],
+          "max_tokens": 4096,
+          "offered_tools": [],
+          "prompt_tokens": 869,
+          "reasoning_tokens": 2498,
+          "request_bytes": 3395,
+          "response_format_type": "json_object",
+          "response_model": "MiniMax-M3",
+          "temperature": 0.2,
+          "thinking": "adaptive",
+          "tool_call_shapes": [],
+          "tool_choice": null,
+          "tool_count": 0,
+          "total_tokens": 4489
+        }
+      }
+    ]
+  },
+  "resource_window_usage": {
+    "scaling_events": [
+      {
+        "time": 1789193563.8342872,
+        "reason": "initial",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "cooldown_until": 0.0,
+          "current": 2,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789193563.8342872
+        }
+      },
+      {
+        "time": 1789194749.337584,
+        "reason": "capacity_begin",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "capacity_campaign": "m3-capacity-20260912-v1",
+          "cooldown_until": 0.0,
+          "current": 4,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789194749.337525
+        }
+      },
+      {
+        "time": 1789194749.3381288,
+        "reason": "capacity_level_4",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "capacity_campaign": "m3-capacity-20260912-v1",
+          "cooldown_until": 0.0,
+          "current": 4,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789194749.338079
+        }
+      },
+      {
+        "time": 1789194815.017502,
+        "reason": "capacity_restore",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "cooldown_until": 0.0,
+          "current": 2,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789193563.8342872
+        }
+      },
+      {
+        "time": 1789194912.058828,
+        "reason": "capacity_begin",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "capacity_campaign": "m3-capacity-20260912-v2",
+          "cooldown_until": 0.0,
+          "current": 4,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789194912.058772
+        }
+      },
+      {
+        "time": 1789194912.059327,
+        "reason": "capacity_level_4",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "capacity_campaign": "m3-capacity-20260912-v2",
+          "cooldown_until": 0.0,
+          "current": 4,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789194912.059274
+        }
+      },
+      {
+        "time": 1789194959.63645,
+        "reason": "capacity_restore",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "cooldown_until": 0.0,
+          "current": 2,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789193563.8342872
+        }
+      },
+      {
+        "time": 1789195057.4798799,
+        "reason": "capacity_begin",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "capacity_campaign": "m3-capacity-20260912-v3",
+          "cooldown_until": 0.0,
+          "current": 4,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789195057.479805
+        }
+      },
+      {
+        "time": 1789195057.480588,
+        "reason": "capacity_level_4",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "capacity_campaign": "m3-capacity-20260912-v3",
+          "cooldown_until": 0.0,
+          "current": 4,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789195057.480507
+        }
+      },
+      {
+        "time": 1789195183.11363,
+        "reason": "capacity_level_8",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "capacity_campaign": "m3-capacity-20260912-v3",
+          "cooldown_until": 0.0,
+          "current": 8,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789195183.113394
+        }
+      },
+      {
+        "time": 1789195229.955343,
+        "reason": "capacity_restore",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "cooldown_until": 0.0,
+          "current": 2,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789193563.8342872
+        }
+      },
+      {
+        "time": 1789196175.7202592,
+        "reason": "operator_overload_restart",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "cooldown_until": 1789196175.7202592,
+          "current": 4,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789196175.7202592
+        }
+      },
+      {
+        "time": 1789222133.326775,
+        "reason": "operator_overload_restart",
+        "state": {
+          "bad_windows": 0,
+          "baseline_p95_ms": null,
+          "cooldown_until": 1789222133.326775,
+          "current": 2,
+          "healthy_windows": 0,
+          "rate_factor": 1.0,
+          "window_started": 1789222133.326775
+        }
+      }
+    ],
+    "stopped": null,
+    "wire_count": 1804,
+    "charged_or_reserved_tokens": 11950091,
+    "unknown_usage_requests": 46
+  },
+  "billing_limit_certified": false
+}

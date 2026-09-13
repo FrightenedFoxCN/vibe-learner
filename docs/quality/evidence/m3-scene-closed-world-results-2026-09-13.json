@@ -1,0 +1,79 @@
+{
+  "version": "m3-scene-closed-world-results-v1",
+  "date": "2026-09-13",
+  "scope": {
+    "baseline": "domain-admitted-proposal; no product projection commit or read-back",
+    "repair": "provider-proposal-only; no domain admission, commit or read-back",
+    "scene_commit_evidence": "not_applicable",
+    "production_registry_changed": false,
+    "research_policy_is_semantic_certification": false
+  },
+  "historical_502_diagnosis": {
+    "campaign": "m3-persona-scene-tavern-shadow-20260913-v2",
+    "report": "tools/model-quality/runs/m3-persona-scene-tavern-20260913/run-v2/report.json",
+    "report_sha256": "26798c856617dd749c08cefde7be198a7d2bef6a6434b4b382e560f47e0610ce",
+    "scene_api_http_502_cases": 4,
+    "scene_provider_wires": 8,
+    "provider_http_200_wires": 8,
+    "finish_reason_length": 7,
+    "finish_reason_stop": 1,
+    "initial_max_tokens": 1400,
+    "repair_max_tokens": 2200,
+    "self_contained_conclusion": "the four local Scene API 502 responses were not upstream HTTP 502 responses on the eight retained provider wires",
+    "historical_local_trace_diagnosis": [
+      "three terminal traces recorded setting_model_invalid_json",
+      "one terminal trace recorded setting_scene_proposal_invalid:scene_layers.0.reuse_hint:string_type"
+    ],
+    "historical_trace_replayable_from_committed_package": false,
+    "historical_trace_limit": "the source SQLite databases include protected snapshots and are intentionally not committed; the 3+1 split is a locally rechecked diagnosis, not a self-contained independent certification",
+    "api_mapping": "local setting_model_invalid_json and setting_scene_proposal_invalid:* are mapped to HTTP 502",
+    "upstream_http_502_observed": false
+  },
+  "fixture": {
+    "path": "tools/model-quality/fixtures/persona-scene/scene-closed-world-v1.json",
+    "sha256": "3eb06390ff87b93a59d388489b6aca51a64aee7ecfd3f544fc90a0fa9b558cb1",
+    "families": 6
+  },
+  "baseline": {
+    "campaign": "m3-scene-closed-world-baseline-20260913-v1",
+    "manifest_sha256": "96c358e40729c8c78fd3516bee8808a1cafd7015897e63865a17480e40b81dac",
+    "report_sha256": "530cbe72d72480957e07f81d5c835b22cefeae97d90d556284e471b89a36ecfd",
+    "states": {"completed": 4, "infrastructure_failed": 1, "uncertain": 1},
+    "wire_count": 6,
+    "charged_or_reserved_tokens": 23388,
+    "unknown_usage_requests": 0,
+    "wire_latency_ms": {"50": 14009, "95": 21874},
+    "all_upstream_http_200": true
+  },
+  "repair": {
+    "campaign": "m3-scene-closed-world-repair-20260913-v1",
+    "manifest_sha256": "e543fcd327974ce989b357f6398b943ecd750af388ed2b6c59318ddaf2d4ab79",
+    "report_sha256": "672199ae7eac8610aea2d62a529673a20c45e3212c20b4d272a5061bc41a7791",
+    "states": {"completed": 3, "candidate_failed": 1, "infrastructure_failed": 1, "uncertain": 1},
+    "wire_count": 4,
+    "charged_or_reserved_tokens": 19049,
+    "unknown_usage_requests": 0,
+    "wire_latency_ms": {"50": 4877, "95": 24895},
+    "all_upstream_http_200": true,
+    "strict_repaired_candidates_over_six": 3
+  },
+  "blind_review": {
+    "packet_sha256": "b2bead05e92d6c80fef2d9926f16a06f5858d52310dfba0a3f6e941a473550de",
+    "key_sha256": "321b7771b4dedaffb56d0f0a75f70c720829741664362ca21513c36103cb1fe9",
+    "review_g_sha256": "0a874c7bb5799136eec09a9d36204d4c51c024ece857e7212b08552d252cc192",
+    "review_h_sha256": "bf499d8fa595a45129b6053c0d69b3b29c7fe00704e32a3d30ff46dc983c90a0",
+    "aggregate_sha256": "12313167bacad7e742ba809381e6ff0a67dba572c5cb3cda6697053cce8ee214",
+    "evaluable_pairs": 3,
+    "not_evaluable_pairs": 3,
+    "shared_major_reductions": 3,
+    "new_major_regressions": 0,
+    "excluded_old_reviews": ["reviewer-e", "reviewer-f", "paired-review-aggregate-v1"]
+  },
+  "promotion_gate": {
+    "minimum_strict_repaired_candidates": 5,
+    "minimum_shared_major_reductions": 3,
+    "requires_no_new_major_regressions": true,
+    "promotion_passed": false,
+    "additional_samples_or_repair_wires_added": false
+  }
+}
