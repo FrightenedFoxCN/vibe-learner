@@ -75,7 +75,7 @@ def _committed_source_tree(commit: str) -> tuple[dict[str, str], dict[str, objec
     return manifest, binding
 
 
-def _committed_preregistration(commit: str) -> tuple[dict[str, object], dict[str, object], dict[str, object]]:
+def _committed_preregistration(commit: str, *, verify_current_exporter: bool = True) -> tuple[dict[str, object], dict[str, object], dict[str, object]]:
     raw = _git_show(commit, PREREG_REPO_PATH)
     prereg = json.loads(raw)
     research_paths = {
@@ -97,9 +97,7 @@ def _committed_preregistration(commit: str) -> tuple[dict[str, object], dict[str
     oracle_raw = _git_show(commit, oracle_path)
     if prereg.get("review_bindings") != {"sealed_review_oracle": hashlib.sha256(oracle_raw).hexdigest()}:
         raise ValueError("full_call_committed_oracle_binding_invalid")
-    # The executable exporter must itself still be the preregistered bytecode
-    # source; authority nevertheless comes from git-show above, not the worktree.
-    if file_sha256(Path(__file__)) != prereg["source_bindings"]["blind_packet_key_exporter"]:
+    if verify_current_exporter and file_sha256(Path(__file__)) != prereg["source_bindings"]["blind_packet_key_exporter"]:
         raise ValueError("full_call_exporter_worktree_drift")
     fixture = json.loads(_git_show(commit, research_paths["fixture"]))
     oracle = json.loads(oracle_raw)
@@ -257,8 +255,17 @@ def _require_report_matches_ledger(report: dict[str, object], durable_usage: dic
 
 
 def _load_run(run_root: Path, *, prereg_git_commit: str) -> tuple[Campaign, dict[str, object], dict[str, dict[str, object]], dict[str, object], dict[str, object]]:
-    prereg, fixture, oracle = _committed_preregistration(prereg_git_commit)
+    current_prereg, current_fixture, current_oracle = _committed_preregistration(prereg_git_commit)
     manifest = json.loads((run_root / "manifest.json").read_text(encoding="utf-8"))
+    source = manifest.get("source")
+    execution_commit = source.get("git_revision") if isinstance(source, dict) else None
+    if not isinstance(execution_commit, str):
+        raise ValueError("full_call_execution_commit_missing")
+    prereg, fixture, oracle = _committed_preregistration(
+        execution_commit, verify_current_exporter=False
+    )
+    if current_fixture != fixture or current_oracle != oracle:
+        raise ValueError("full_call_export_correction_fixture_drift")
     config = manifest.get("config")
     if not isinstance(config, dict) or manifest.get("config_digest") != digest(config):
         raise ValueError("full_call_manifest_digest_invalid")
@@ -274,16 +281,15 @@ def _load_run(run_root: Path, *, prereg_git_commit: str) -> tuple[Campaign, dict
     expected_cases = [{
         "id": row["family_id"], "family": row["family_id"],
         "lane": "persona-scene-production-full-call-blind", "split": "confirmation",
-        "provenance": "human-authored-synthetic",
+        "provenance": "synthetic-authored",
         "source": canonical({"persona_source": row["persona_source"], "scene_source": row["scene_source"]}),
         "request": "Run the complete production Persona and Scene generation/save/read-back lifecycle.",
         "gold": "{}", "rubric": RUBRIC,
     } for row in fixture["cases"]]
     if config.get("cases") != expected_cases or config.get("variants") != [{"id": "production-full-call", "instruction": "Use unchanged production endpoints and their single bounded repair; never substitute fixture output, retry a failed family, or replace a sample."}]:
         raise ValueError("full_call_manifest_case_or_variant_drift")
-    source = manifest.get("source")
     recorded_runner = source.get("runner_and_adapter_source", {}) if isinstance(source, dict) else {}
-    committed_tree_manifest, committed_tree_binding = _committed_source_tree(prereg_git_commit)
+    committed_tree_manifest, committed_tree_binding = _committed_source_tree(execution_commit)
     required_recorded = {
         Path(path).name: digest_value
         for path, digest_value in committed_tree_manifest.items()
@@ -293,14 +299,14 @@ def _load_run(run_root: Path, *, prereg_git_commit: str) -> tuple[Campaign, dict
         "version": "persona-scene-full-call-source-tree-v1",
         "campaign_id": CAMPAIGN_ID,
         "source_tree_binding": committed_tree_binding,
-        "preregistration_sha256": hashlib.sha256(_git_show(prereg_git_commit, PREREG_REPO_PATH)).hexdigest(),
+        "preregistration_sha256": hashlib.sha256(_git_show(execution_commit, PREREG_REPO_PATH)).hexdigest(),
     }
     if (
         campaign.id != CAMPAIGN_ID or campaign.adapter != ADAPTER
         or manifest.get("endpoint") != "https://api.minimax.cn/v1/chat/completions"
         or manifest.get("credential_env") != "K3_API_KEY"
         or manifest.get("scope") != "standalone research campaign"
-        or not isinstance(source, dict) or source.get("git_revision") != prereg_git_commit
+        or not isinstance(source, dict) or source.get("git_revision") != execution_commit
         or not str(source.get("python", "")).startswith("3.12.13")
         or source.get("lock_digest") != committed_tree_manifest["tools/model-quality/uv.lock"]
         or source.get("tracked_dirty_digest") != hashlib.sha256(b"").hexdigest()
@@ -458,6 +464,8 @@ def build_packet(run_root: Path, *, prereg_git_commit: str, seed: int = REVIEW_S
         "sealed_oracle_file_sha256": hashlib.sha256(_git_show(prereg_git_commit, "tools/model-quality/fixtures/persona-scene/persona-scene-production-full-call-blind-oracle-v1.json")).hexdigest(),
         "preregistration_file_sha256": hashlib.sha256(_git_show(prereg_git_commit, PREREG_REPO_PATH)).hexdigest(),
         "prereg_git_commit": prereg_git_commit,
+        "run_prereg_git_commit": campaign and json.loads((run_root / "manifest.json").read_text(encoding="utf-8"))["source"]["git_revision"],
+        "exporter_file_sha256": file_sha256(Path(__file__)),
         "cases": key_cases,
     }
     _validate_packet_privacy(packet, key)

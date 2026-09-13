@@ -81,10 +81,10 @@ def load_run(run_root: Path) -> tuple[Campaign, dict[str, object], dict[str, dic
     if not isinstance(config, dict) or manifest.get("config_digest") != digest(config):
         raise ValueError("tavern_full_call_config_digest_invalid")
     campaign = Campaign.model_validate(config, strict=True)
-    expected = build_manifest(
+    expected = Campaign.model_validate(build_manifest(
         budget_document={"budget": campaign.budget.model_dump(mode="json")},
         transport="minimax",
-    )
+    )).model_dump(mode="json")
     if config != expected or campaign.id != CAMPAIGN_ID or campaign.transport != "minimax":
         raise ValueError("tavern_full_call_campaign_invalid")
     report = json.loads((run_root / "report.json").read_text(encoding="utf-8"))
