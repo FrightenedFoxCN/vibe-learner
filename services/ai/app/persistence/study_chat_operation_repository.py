@@ -155,6 +155,7 @@ class StudyChatOperationRepository:
                     committed_turn_sequence=None,
                     response_schema_version="",
                     response_payload=None,
+                    diagnostic_payload=None,
                     harness_trace=None,
                     response_digest="",
                     error_code="",
@@ -381,6 +382,7 @@ class StudyChatOperationRepository:
         operation_id: str,
         execution_token: str,
         error_code: str,
+        diagnostic_payload: dict[str, object] | None = None,
         harness_trace: HarnessTraceV3 | None = None,
     ) -> StudyChatOperationRecord:
         with self.database.session() as session:
@@ -401,6 +403,7 @@ class StudyChatOperationRepository:
                 "status": StudyChatOperationStatus.UNCERTAIN.value,
                 "active_slot": None,
                 "error_code": error_code,
+                "diagnostic_payload": diagnostic_payload,
                 "completed_at": now,
                 "updated_at": now,
             }
@@ -430,6 +433,7 @@ class StudyChatOperationRepository:
         operation_id: str,
         execution_token: str,
         error_code: str,
+        diagnostic_payload: dict[str, object] | None = None,
         harness_trace: HarnessTraceV3 | None = None,
     ) -> StudyChatOperationRecord:
         """Close a claimed operation when the provider deterministically rejected the request.
@@ -450,6 +454,7 @@ class StudyChatOperationRepository:
                 "execution_deadline_at": "",
                 "heartbeat_at": "",
                 "error_code": error_code,
+                "diagnostic_payload": diagnostic_payload,
                 "completed_at": now,
                 "updated_at": now,
             }
@@ -576,6 +581,7 @@ def _from_row(
         committed_turn_sequence=row.committed_turn_sequence,
         response_schema_version=row.response_schema_version,
         response_payload=row.response_payload,
+        diagnostic_payload=row.diagnostic_payload,
         harness_trace=row.harness_trace,
         response_digest=row.response_digest,
         error_code=row.error_code,

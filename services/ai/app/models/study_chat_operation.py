@@ -98,6 +98,7 @@ class StudyChatOperationRecord(BaseModel):
     committed_turn_sequence: int | None = Field(default=None, ge=1)
     response_schema_version: str = ""
     response_payload: dict[str, Any] | None = None
+    diagnostic_payload: dict[str, Any] | None = None
     harness_trace: HarnessTraceV3 | None = None
     response_digest: str = ""
     error_code: str = ""

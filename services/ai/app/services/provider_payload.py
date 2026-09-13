@@ -10,6 +10,14 @@ from app.core.logging import get_logger
 logger = get_logger("vibe_learner.model_provider")
 
 
+class StudyChatModelOutputError(RuntimeError):
+    """A provider response was received but could not become a Study reply."""
+
+    def __init__(self, detail: str, payload: dict[str, Any] | None = None) -> None:
+        super().__init__(detail)
+        self.payload = payload
+
+
 def _extract_json_payload(
     content: str,
     *,

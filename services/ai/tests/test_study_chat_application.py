@@ -10,7 +10,7 @@ from tests.support.study_chat_samples import study_persona, raw_chat_reply
 
 
 class StudyChatApplicationTests(StudyChatOperationTestCase):
-    def test_repair_failure_marks_operation_uncertain_and_commits_no_turn(self) -> None:
+    def test_invalid_provider_payload_marks_operation_not_committed_and_commits_no_turn(self) -> None:
         provider = OpenAIModelProvider(
             api_key="test-key",
             base_url="https://api.openai.test/v1",
@@ -69,8 +69,9 @@ class StudyChatApplicationTests(StudyChatOperationTestCase):
                 )
 
         self.assertEqual(request.call_count, 2)
-        self.assertEqual(receipt.status, "uncertain")
-        self.assertFalse(receipt.safe_to_retry)
+        self.assertEqual(receipt.status, "not_committed")
+        self.assertTrue(receipt.safe_to_retry)
+        self.assertEqual(receipt.error_code, "study_chat_not_committed_chat_model_invalid_payload")
         self.assertIsNone(receipt.result)
         session = self.sessions.require("session-invalid-reply")
         self.assertEqual(session.revision, 0)

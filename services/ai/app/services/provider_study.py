@@ -10,7 +10,7 @@ from app.core.model_runtime_limits import (
 from dataclasses import dataclass
 from app.services.provider_capabilities import StudyModelCapability
 from app.services.provider_capabilities import ModelReply
-from app.services.provider_payload import _extract_choice_content, _extract_choice_diagnostics
+from app.services.provider_payload import StudyChatModelOutputError, _extract_choice_content, _extract_choice_diagnostics
 import json
 import re
 from typing import Callable
@@ -320,13 +320,18 @@ class RemoteStudyProvider(StudyModelCapability):
                 request_kind="chat",
                 model=self.chat_model,
             )
-            recovered = _parse_chat_model_reply(
-                raw_payload=recovery_raw_payload,
-                tool_results=last_tool_results,
-                application_tool_results=last_application_tool_results,
-                fallback_memory_trace=memory_trace_hits or [],
-                tool_traces=tool_call_traces,
-            )
+            try:
+                recovered = _parse_chat_model_reply(
+                    raw_payload=recovery_raw_payload,
+                    tool_results=last_tool_results,
+                    application_tool_results=last_application_tool_results,
+                    fallback_memory_trace=memory_trace_hits or [],
+                    tool_traces=tool_call_traces,
+                )
+            except RuntimeError as exc:
+                if str(exc) in {"chat_model_invalid_payload", "chat_model_content_filter"}:
+                    raise StudyChatModelOutputError(str(exc), recovery_raw_payload) from exc
+                raise
             record_model_recovery(
                 category="semantic_retry",
                 reason=recovery_reason,

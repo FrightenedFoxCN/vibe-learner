@@ -176,6 +176,10 @@ class Database:
                     connection.exec_driver_sql(
                         "ALTER TABLE study_chat_operations ADD COLUMN harness_trace JSON"
                     )
+                if operation_table == "study_chat_operations" and "diagnostic_payload" not in operation_columns:
+                    connection.exec_driver_sql(
+                        "ALTER TABLE study_chat_operations ADD COLUMN diagnostic_payload JSON"
+                    )
 
             for scene_table in ("scene_setup_states", "scene_library_entries"):
                 if scene_table not in table_names:

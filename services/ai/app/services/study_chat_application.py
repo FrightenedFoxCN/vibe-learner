@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+import json
 from fastapi import HTTPException
 from app.models.harness import (
     HarnessCommitEvidenceV3,
@@ -273,7 +274,7 @@ def _admit_and_run_study_chat(
     except Exception as exc:
         error_code = _study_chat_uncertain_error_code(exc)
         harness_trace = _study_chat_terminal_harness_trace(operation.operation_id, dependencies=dependencies)
-        if _is_deterministic_provider_rejection(exc):
+        if _is_non_committing_provider_outcome(exc):
             error_code = _study_chat_not_committed_error_code(exc)
             terminal = dependencies.study_chat_operation_repository.mark_not_committed_after_provider_rejection(
                 operation_id=operation.operation_id,
@@ -341,9 +342,45 @@ def _is_deterministic_provider_rejection(exc: Exception) -> bool:
     return isinstance(exc, ModelRequestError) and str(exc.status_code) == "400"
 
 
-def _study_chat_not_committed_error_code(exc: ModelRequestError) -> str:
-    upstream = exc.upstream_code or "bad_request"
-    return f"study_chat_not_committed_chat_model_upstream_error:400:{upstream}"[:128]
+def _is_non_committing_provider_outcome(exc: Exception) -> bool:
+    if _is_deterministic_provider_rejection(exc):
+        return True
+    if str(exc) in {
+        "chat_model_content_filter",
+        "chat_model_empty_response",
+        "chat_model_invalid_payload",
+    }:
+        return True
+    if not isinstance(exc, (HTTPException, StudyChatApplicationError)):
+        return False
+    detail = exc.detail if isinstance(exc.detail, str) else ""
+    return detail in {
+        "chat_model_content_filter",
+        "chat_model_empty_response",
+        "chat_model_invalid_payload",
+    }
+
+
+def _provider_diagnostic_payload(exc: Exception) -> dict[str, object] | None:
+    payload = getattr(exc, "diagnostic_payload", None)
+    if not isinstance(payload, dict):
+        return None
+    encoded = json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
+    if len(encoded) <= 64_000:
+        return payload
+    return {
+        "_truncated": True,
+        "size_bytes": len(encoded.encode("utf-8")),
+        "preview": encoded[:64_000],
+    }
+
+
+def _study_chat_not_committed_error_code(exc: Exception) -> str:
+    if isinstance(exc, ModelRequestError):
+        upstream = exc.upstream_code or "bad_request"
+        return f"study_chat_not_committed_chat_model_upstream_error:400:{upstream}"[:128]
+    detail = exc.detail if isinstance(exc, (HTTPException, StudyChatApplicationError)) else str(exc)
+    return f"study_chat_not_committed_{detail}"[:128]
 
 
 def _study_chat_terminal_harness_trace(operation_id: str, *, dependencies: StudyChatDependencies):

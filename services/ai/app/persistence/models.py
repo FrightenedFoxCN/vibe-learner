@@ -833,6 +833,9 @@ class StudyChatOperationRow(Base):
         NULLABLE_JSON_PAYLOAD,
         nullable=True,
     )
+    diagnostic_payload: Mapped[dict[str, Any] | None] = mapped_column(
+        NULLABLE_JSON_PAYLOAD, nullable=True
+    )
     harness_trace: Mapped[dict[str, Any] | None] = mapped_column(
         NULLABLE_JSON_PAYLOAD, nullable=True
     )

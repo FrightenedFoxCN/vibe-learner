@@ -40,5 +40,7 @@ def map_chat_generation_error(exc: RuntimeError) -> StudyChatApplicationError:
     if detail == "chat_model_empty_response":
         return StudyChatApplicationError(status_code=502, detail="chat_model_empty_response")
     if detail == "chat_model_invalid_payload":
-        return StudyChatApplicationError(status_code=502, detail="chat_model_invalid_payload")
+        error = StudyChatApplicationError(status_code=502, detail="chat_model_invalid_payload")
+        error.diagnostic_payload = getattr(exc, "payload", None)
+        return error
     return StudyChatApplicationError(status_code=500, detail="chat_generation_failed")
