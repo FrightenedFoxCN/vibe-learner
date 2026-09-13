@@ -17,6 +17,8 @@ from app.models.domain import (
 from app.models.planning import (
     LEARNING_PLAN_OPERATION_FINGERPRINT_LEGACY_VERSION,
     LearningPlanOperationRequestV1,
+    PlanContentSliceProposalV1,
+    PlanScheduleChapterProposalV1,
     learning_plan_request_fingerprint,
 )
 from app.services.plan_tool_runtime import build_plan_tool_runtime
@@ -29,6 +31,7 @@ from app.services.local_store import LocalJsonStore
 from app.services.model_provider import MockModelProvider
 from app.services.plans import LearningPlanService
 from app.services.planning_intent import select_study_units_for_intent
+from app.services.provider_capabilities import PlanModelReply, PlanScheduleItem
 from app.services.study_arrangement import StudyArrangementService
 from app.services.provider_planning import (
     PlanningProposalDecodeError,
@@ -378,6 +381,121 @@ class PlanningIntentTests(unittest.TestCase):
         self.assertEqual(resolved.session_count.value, len(plan.schedule))
         self.assertEqual(resolved.minutes_per_session.value, 45)
         self.assertEqual(resolved.output_language.value, plan.output_language)
+
+    def test_smoke_regression_rejects_70_73_and_commits_100_103(self) -> None:
+        document = planning_document(document_id="doc-french-smoke")
+        document.page_count = 736
+        unit = document.study_units[0]
+        unit.title = "Groupes algébriques"
+        unit.page_start = 70
+        unit.page_end = 110
+        intent = PlanningIntentV1.model_validate({
+            "pdf_page_ranges": {
+                "status": "user_explicit",
+                "value": [{"page_start": 100, "page_end": 103}],
+            },
+            "session_count": {"status": "user_explicit", "value": 2},
+            "minutes_per_session": {"status": "user_explicit", "value": 30},
+            "output_language": {"status": "user_explicit", "value": "fr"},
+        })
+
+        wrong = valid_proposal_payload()
+        wrong["output_language"] = "fr"
+        wrong_item = wrong["schedule"][0]
+        wrong_item["duration_minutes"] = 30
+        wrong_chapter = wrong_item["schedule_chapters"][0]
+        wrong_chapter.update({
+            "anchor_page_start": 70,
+            "anchor_page_end": 73,
+            "source_section_ids": ["raw-1"],
+        })
+        wrong_chapter["content_slices"] = [{
+            "page_start": 70,
+            "page_end": 73,
+            "source_section_ids": ["raw-1"],
+        }]
+        wrong["schedule"] = [wrong_item, json.loads(json.dumps(wrong_item))]
+        with self.assertRaises(PlanningProposalDecodeError) as raised:
+            _validate_learning_plan_proposal_refs(
+                _decode_learning_plan_proposal(json.dumps(wrong)),
+                [unit],
+                intent,
+            )
+        self.assertEqual(raised.exception.reason, "outside_explicit_scope")
+
+        def chapter(start: int, end: int, title: str) -> PlanScheduleChapterProposalV1:
+            return PlanScheduleChapterProposalV1(
+                title=title,
+                anchor_page_start=start,
+                anchor_page_end=end,
+                source_section_ids=["raw-1"],
+                content_slices=[PlanContentSliceProposalV1(
+                    page_start=start,
+                    page_end=end,
+                    source_section_ids=["raw-1"],
+                )],
+            )
+
+        class ExactProvider:
+            def generate_learning_plan(self, **_: object) -> PlanModelReply:
+                return PlanModelReply(
+                    course_title="Groupes algébriques — pages 100 à 103",
+                    overview="Deux séances ancrées dans les pages demandées.",
+                    output_language="fr",
+                    today_tasks=["Lire les définitions et propositions indiquées."],
+                    schedule=[
+                        PlanScheduleItem(
+                            unit_id=unit.id,
+                            title="Définitions",
+                            focus="Lire et reformuler les définitions.",
+                            activity_type="learn",
+                            duration_minutes=30,
+                            schedule_chapters=[chapter(100, 101, "Définitions")],
+                        ),
+                        PlanScheduleItem(
+                            unit_id=unit.id,
+                            title="Propositions",
+                            focus="Comparer les propositions et le corollaire.",
+                            activity_type="review",
+                            duration_minutes=30,
+                            schedule_chapters=[chapter(102, 103, "Propositions")],
+                        ),
+                    ],
+                )
+
+        service = LearningPlanService(
+            self.store, StudyArrangementService(), ExactProvider()
+        )
+        goal = LearningGoalInput(
+            document_id=document.id,
+            persona_id="persona-1",
+            objective="Étudier précisément les pages demandées",
+            planning_intent=intent,
+        )
+        plan, _, _, _ = service._build_plan_candidate(
+            goal=goal,
+            document=document,
+            persona_name="Mentor",
+            persona=planning_persona(),
+            debug_report=planning_debug(document),
+        )
+        self.assertEqual(len(plan.schedule), 2)
+        self.assertEqual([item.duration_minutes for item in plan.schedule], [30, 30])
+        self.assertEqual(
+            [(chapter.anchor_page_start, chapter.anchor_page_end)
+             for item in plan.schedule for chapter in item.schedule_chapters],
+            [(100, 101), (102, 103)],
+        )
+        self.assertEqual(plan.output_language, "fr")
+        self.assertEqual(plan.planning_intent.outline_targets.status, "unknown")
+        resolved = plan.resolved_planning_intent
+        self.assertIsNotNone(resolved)
+        assert resolved is not None
+        self.assertEqual(resolved.pdf_page_ranges.source, "user_explicit")
+        self.assertEqual(resolved.session_count.value, 2)
+        self.assertEqual(resolved.minutes_per_session.value, 30)
+        self.assertEqual(resolved.output_language.source, "user_explicit")
+        self.assertEqual(resolved.outline_targets.source, "model_inferred")
 
 
 if __name__ == "__main__":
