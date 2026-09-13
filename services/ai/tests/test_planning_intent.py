@@ -8,13 +8,23 @@ from tempfile import TemporaryDirectory
 
 from pydantic import ValidationError
 
-from app.models.domain import LearningGoalInput, PlanningIntentV1, StudyUnitRecord
+from app.models.domain import (
+    DocumentChunkRecord,
+    LearningGoalInput,
+    PlanningIntentV1,
+    StudyUnitRecord,
+)
 from app.models.planning import (
     LEARNING_PLAN_OPERATION_FINGERPRINT_LEGACY_VERSION,
     LearningPlanOperationRequestV1,
     learning_plan_request_fingerprint,
 )
 from app.services.plan_tool_runtime import build_plan_tool_runtime
+from app.services.plan_prompt import (
+    build_learning_plan_context,
+    build_learning_plan_messages,
+    read_page_range_content,
+)
 from app.services.local_store import LocalJsonStore
 from app.services.model_provider import MockModelProvider
 from app.services.plans import LearningPlanService
@@ -113,6 +123,71 @@ class PlanningIntentTests(unittest.TestCase):
         self.assertFalse(execution.result["ok"])
         self.assertEqual(execution.result["error"], "outside_explicit_scope")
 
+    def test_explicit_page_scope_removes_outside_and_boundary_text_evidence(self) -> None:
+        document = planning_document()
+        debug = planning_debug(document)
+        debug.chunks = [
+            DocumentChunkRecord(
+                id="inside", document_id=document.id, section_id="raw-1",
+                page_start=3, page_end=4, char_count=11,
+                text_preview="inside only", content="inside only",
+            ),
+            DocumentChunkRecord(
+                id="outside", document_id=document.id, section_id="raw-1",
+                page_start=8, page_end=9, char_count=12,
+                text_preview="outside text", content="outside text",
+            ),
+            DocumentChunkRecord(
+                id="boundary", document_id=document.id, section_id="raw-1",
+                page_start=2, page_end=3, char_count=13,
+                text_preview="boundary text", content="boundary text",
+            ),
+        ]
+        intent = PlanningIntentV1.model_validate({
+            "pdf_page_ranges": {
+                "status": "user_explicit",
+                "value": [{"page_start": 3, "page_end": 4}],
+            }
+        })
+        context = build_learning_plan_context(
+            study_units=document.study_units,
+            debug_report=debug,
+            planning_intent=intent,
+        )
+        detail = context["detail_map"][document.study_units[0].id]
+        self.assertEqual(
+            [item["chunk_id"] for item in detail["chunk_excerpts"]],
+            ["inside"],
+        )
+        goal = LearningGoalInput(
+            document_id=document.id,
+            persona_id="persona-1",
+            objective="Study the requested pages",
+            planning_intent=intent,
+        )
+        messages = build_learning_plan_messages(
+            persona=planning_persona(),
+            document_title=document.title,
+            goal=goal,
+            study_units=document.study_units,
+            debug_report=debug,
+        )
+        payload = json.loads(messages[1]["content"])
+        excerpts = payload["study_units"][0]["source_evidence_excerpts"]
+        self.assertEqual(
+            [(item["page_start"], item["page_end"]) for item in excerpts],
+            [(3, 4)],
+        )
+        page_read = read_page_range_content(
+            debug_report=debug,
+            page_start=3,
+            page_end=4,
+            max_chars=500,
+            require_containment=True,
+        )
+        self.assertEqual(page_read["content"], "inside only")
+        self.assertEqual(page_read["chunk_count"], 1)
+
     def test_final_proposal_enforces_page_count_and_duration(self) -> None:
         proposal = _decode_learning_plan_proposal(json.dumps(valid_proposal_payload()))
         units = [StudyUnitRecord(
@@ -174,6 +249,24 @@ class PlanningIntentTests(unittest.TestCase):
             }),
         )
         self.assertEqual([unit.id for unit in selected], ["unit-2"])
+
+        mixed_unit = StudyUnitRecord(
+            id="unit-mixed", document_id="doc-1", title="Mixed",
+            page_start=1, page_end=2,
+            source_section_ids=["section-a", "section-b"],
+        )
+        explicit_b = PlanningIntentV1.model_validate({
+            "outline_targets": {
+                "status": "user_explicit", "value": ["section-b"],
+            }
+        })
+        context = build_learning_plan_context(
+            study_units=[mixed_unit], planning_intent=explicit_b,
+        )
+        self.assertEqual(
+            context["study_units"][0]["source_section_ids"],
+            ["section-b"],
+        )
 
     def test_explicit_outline_target_constrains_final_source_refs(self) -> None:
         payload = valid_proposal_payload()

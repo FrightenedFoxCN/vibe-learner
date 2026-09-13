@@ -84,6 +84,7 @@ class RemotePlanningProvider(PlanningModelCapability):
         planning_context = build_learning_plan_context(
             study_units=study_units,
             debug_report=debug_report,
+            planning_intent=goal.planning_intent,
         )
         messages = build_learning_plan_messages(
             persona=persona,
@@ -218,7 +219,9 @@ class RemotePlanningProvider(PlanningModelCapability):
                     tool_runtime=self._build_plan_tool_runtime(
                         study_units=repair_units,
                         detail_map=build_learning_plan_context(
-                            study_units=repair_units, debug_report=debug_report,
+                            study_units=repair_units,
+                            debug_report=debug_report,
+                            planning_intent=goal.planning_intent,
                         )["detail_map"],
                         debug_report=debug_report, document_path=document_path, tools_enabled=False,
                         planning_questions=active_tool_runtime.current_planning_questions(),

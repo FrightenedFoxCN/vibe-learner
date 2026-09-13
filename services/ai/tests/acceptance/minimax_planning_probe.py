@@ -105,7 +105,8 @@ def run(root, repetitions, budget_candidate=False, selected_case=None, detail_pa
         prepared_source_root=None, transcription_file=None, redact_tool_error_evidence=False,
         tool_recovery_hint_candidate=False, page_evidence_dpi=100, persona_method=None, prepared_document_id=None,
         finalize_after_tool_rounds=None, finalization_tool_policy='omit',
-        transcription_source='experimental_model_transcription', structure_fidelity_candidate=False):
+        transcription_source='experimental_model_transcription', structure_fidelity_candidate=False,
+        planning_intent=None):
     if transcription_source not in {'experimental_model_transcription', 'experimental_native_vision_ocr'}:
         raise ValueError('Unknown supplementary transcription source')
     if finalization_tool_policy not in {'omit', 'none'}:
@@ -399,6 +400,8 @@ def run(root, repetitions, budget_candidate=False, selected_case=None, detail_pa
                     if prepared_row is not None:
                         request_id += f"-{root.name}"
                     payload = {"client_request_id": request_id, "persona_id": persona_id, "objective": objective}
+                    if planning_intent is not None:
+                        payload["planning_intent"] = planning_intent
                     admitted_unit_count = None
                     if case_id != "goal_only":
                         current_document = client.get(f"/documents/{document_id}/status")
@@ -409,6 +412,7 @@ def run(root, repetitions, budget_candidate=False, selected_case=None, detail_pa
                     row = {"scope": "live_planning_admission_commit_readback", "fixture_version": "planning-quality-v1",
                         "git_revision": revision, "case_id": case_id, "repetition": repetition,
                         "model": "MiniMax-M3", "objective": objective, "calls": calls, "boundary_success": False}
+                    row["planning_intent"] = planning_intent
                     row["source_document"] = source_report
                     row["detail_evidence_reads"] = detail_reads
                     row["page_content_reads"] = page_content_reads
@@ -524,11 +528,21 @@ if __name__ == "__main__":
     parser.add_argument("--finalize-after-tool-rounds", type=int)
     parser.add_argument("--finalization-tool-policy", choices=("omit", "none"), default="omit")
     parser.add_argument("--structure-fidelity-candidate", action="store_true")
+    parser.add_argument("--planning-intent-json")
     args = parser.parse_args()
     if not 1 <= args.repetitions <= 20:
         parser.error("repetitions must be between 1 and 20")
+    planning_intent = None
+    if args.planning_intent_json:
+        try:
+            planning_intent = json.loads(args.planning_intent_json)
+        except json.JSONDecodeError as exc:
+            parser.error(f"--planning-intent-json must be valid JSON: {exc.msg}")
+        if not isinstance(planning_intent, dict):
+            parser.error("--planning-intent-json must decode to an object")
     run(args.root.resolve(), args.repetitions, args.budget_candidate, args.case, args.detail_parallel_candidate,
         args.pdf, args.objective, args.ocr_engine, args.multimodal, args.persona_variant, args.initial_evidence_tool, args.page_evidence, args.grounding_candidate, args.page_evidence_page, args.persona_domain, args.controlled_page_evidence, args.prepared_source_root, args.transcription_file, args.redact_tool_error_evidence, args.tool_recovery_hint_candidate, args.page_evidence_dpi, prepared_document_id=args.prepared_document_id,
         finalize_after_tool_rounds=args.finalize_after_tool_rounds,
         finalization_tool_policy=args.finalization_tool_policy,
-        structure_fidelity_candidate=args.structure_fidelity_candidate)
+        structure_fidelity_candidate=args.structure_fidelity_candidate,
+        planning_intent=planning_intent)

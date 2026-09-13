@@ -616,6 +616,10 @@ def _execute_read_page_range_content(
                 page_start=page_start,
                 page_end=page_end,
                 max_chars=max_chars,
+                require_containment=(
+                    context.planning_intent.pdf_page_ranges.status
+                    == "user_explicit"
+                ),
             ),
         },
         trace_summary=f"已读取第 {page_start}-{page_end} 页文本",
