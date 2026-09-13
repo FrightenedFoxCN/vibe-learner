@@ -58,13 +58,15 @@ class PlanningProviderTests(unittest.TestCase):
             payload = valid_proposal_payload()
             if len(calls) == 1:
                 kwargs["tool_runtime"].context.study_units[:] = [revised]
+                payload["schedule"][0]["unit_index"] = 1
             else:
                 context = json.loads(kwargs["messages"][1]["content"])
-                self.assertEqual(context["allowed_units"][0]["unit_id"], revised.id)
+                self.assertEqual(context["allowed_units"][0]["unit_index"], 0)
+                self.assertEqual(context["allowed_units"][0]["detail_tool_target_id"], revised.id)
                 self.assertIn("candidate_output", context)
                 self.assertFalse(kwargs["tool_runtime"].has_tools())
                 self.assertEqual(len(kwargs["messages"]), 2)
-                payload["schedule"][0]["unit_id"] = revised.id
+                payload["schedule"][0]["unit_index"] = 0
             return SimpleNamespace(content=json.dumps(payload), tool_messages=evidence, trace=PlanGenerationTraceRecord(
                 document_id="doc-1", model="test", created_at="2026-09-09T00:00:00+00:00"))
 

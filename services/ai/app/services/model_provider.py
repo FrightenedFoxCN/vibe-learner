@@ -64,7 +64,6 @@ from app.models.domain import (
     persona_sorted_slots,
 )
 from app.models.planning import (
-    LearningPlanProposalV1,
     PlanContentSliceProposalV1,
     PlanScheduleChapterProposalV1,
 )

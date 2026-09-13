@@ -31,7 +31,7 @@ PLAN_SNAPSHOT_CONTRACT = HarnessContractRef(
 
 
 PLAN_PROMPT_CONTRACT = HarnessContractRef(
-    name="LearningPlanPrompt", version="planning-prompt-v4"
+    name="LearningPlanPrompt", version="planning-prompt-v5"
 )
 
 

@@ -3,7 +3,16 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
-from app.models.domain import PlanningIntentV1, StudyUnitRecord
+from app.models.domain import (
+    PlanningIntentV1,
+    PlanningPageRangeV1,
+    PlanningResolvedIntegerV1,
+    PlanningResolvedIntentV1,
+    PlanningResolvedLanguageV1,
+    PlanningResolvedOutlineTargetsV1,
+    PlanningResolvedPageRangesV1,
+    StudyUnitRecord,
+)
 
 
 def explicit_page_ranges(intent: PlanningIntentV1) -> list[tuple[int, int]]:
@@ -73,15 +82,28 @@ def validate_schedule_against_intent(*, schedule: list[object], intent: Planning
         if intent.minutes_per_session.status == "user_explicit"
         else None
     )
+    inferred_durations: set[int] = set()
+    explicit_targets = explicit_outline_targets(intent)
     covered_pages: set[int] = set()
     for index, item in enumerate(schedule):
         duration = getattr(item, "duration_minutes", None)
+        if not isinstance(duration, int):
+            raise RuntimeError(
+                f"plan_proposal_invariant_failed:schedule.{index}.duration_minutes:required"
+            )
+        inferred_durations.add(duration)
         if expected_minutes is not None and duration != expected_minutes:
             raise RuntimeError(
                 f"plan_proposal_invariant_failed:schedule.{index}.duration_minutes:"
                 "explicit_minutes_mismatch"
             )
         for chapter_index, chapter in enumerate(getattr(item, "schedule_chapters", [])):
+            chapter_sources = set(chapter.source_section_ids)
+            if explicit_targets and not chapter_sources.issubset(explicit_targets):
+                raise RuntimeError(
+                    f"plan_proposal_invariant_failed:schedule.{index}.schedule_chapters."
+                    f"{chapter_index}.source_section_ids:outside_explicit_scope"
+                )
             if not range_is_within_explicit_scope(
                 page_start=chapter.anchor_page_start,
                 page_end=chapter.anchor_page_end,
@@ -92,6 +114,13 @@ def validate_schedule_against_intent(*, schedule: list[object], intent: Planning
                     f"{chapter_index}.anchor_page_start:outside_explicit_scope"
                 )
             for slice_index, content_slice in enumerate(chapter.content_slices):
+                slice_sources = set(content_slice.source_section_ids)
+                if explicit_targets and not slice_sources.issubset(explicit_targets):
+                    raise RuntimeError(
+                        f"plan_proposal_invariant_failed:schedule.{index}.schedule_chapters."
+                        f"{chapter_index}.content_slices.{slice_index}.source_section_ids:"
+                        "outside_explicit_scope"
+                    )
                 if not range_is_within_explicit_scope(
                     page_start=content_slice.page_start,
                     page_end=content_slice.page_end,
@@ -114,3 +143,90 @@ def validate_schedule_against_intent(*, schedule: list[object], intent: Planning
         raise RuntimeError(
             "plan_proposal_invariant_failed:schedule:explicit_page_scope_incomplete"
         )
+    if expected_minutes is None and len(inferred_durations) != 1:
+        raise RuntimeError(
+            "plan_proposal_invariant_failed:schedule:inferred_minutes_not_uniform"
+        )
+
+
+def resolve_planning_intent(
+    *, schedule: list[object], intent: PlanningIntentV1, output_language: str
+) -> PlanningResolvedIntentV1:
+    page_spans = sorted({
+        (content_slice.page_start, content_slice.page_end)
+        for item in schedule
+        for chapter in getattr(item, "schedule_chapters", [])
+        for content_slice in chapter.content_slices
+    })
+    merged_spans: list[tuple[int, int]] = []
+    for start, end in page_spans:
+        if merged_spans and start <= merged_spans[-1][1] + 1:
+            merged_spans[-1] = (merged_spans[-1][0], max(merged_spans[-1][1], end))
+        else:
+            merged_spans.append((start, end))
+    if not merged_spans:
+        raise RuntimeError("planning_resolved_intent_missing:pdf_page_ranges")
+    durations = {getattr(item, "duration_minutes", None) for item in schedule}
+    if len(durations) != 1 or None in durations:
+        raise RuntimeError("planning_resolved_intent_missing:minutes_per_session")
+    source_ids = sorted({
+        source_id
+        for item in schedule
+        for chapter in getattr(item, "schedule_chapters", [])
+        for source_id in chapter.source_section_ids
+    })
+    explicit_pages = intent.pdf_page_ranges.value or []
+    explicit_outline = intent.outline_targets.value or []
+    return PlanningResolvedIntentV1(
+        pdf_page_ranges=PlanningResolvedPageRangesV1(
+            source=(
+                "user_explicit"
+                if intent.pdf_page_ranges.status == "user_explicit"
+                else "model_inferred"
+            ),
+            value=(
+                list(explicit_pages)
+                if intent.pdf_page_ranges.status == "user_explicit"
+                else [
+                    PlanningPageRangeV1(page_start=start, page_end=end)
+                    for start, end in merged_spans
+                ]
+            ),
+        ),
+        outline_targets=PlanningResolvedOutlineTargetsV1(
+            source=(
+                "user_explicit"
+                if intent.outline_targets.status == "user_explicit"
+                else "model_inferred"
+            ),
+            value=(
+                list(explicit_outline)
+                if intent.outline_targets.status == "user_explicit"
+                else source_ids
+            ),
+        ),
+        session_count=PlanningResolvedIntegerV1(
+            source=(
+                "user_explicit"
+                if intent.session_count.status == "user_explicit"
+                else "model_inferred"
+            ),
+            value=len(schedule),
+        ),
+        minutes_per_session=PlanningResolvedIntegerV1(
+            source=(
+                "user_explicit"
+                if intent.minutes_per_session.status == "user_explicit"
+                else "model_inferred"
+            ),
+            value=next(iter(durations)),
+        ),
+        output_language=PlanningResolvedLanguageV1(
+            source=(
+                "user_explicit"
+                if intent.output_language.status == "user_explicit"
+                else "model_inferred"
+            ),
+            value=output_language,
+        ),
+    )

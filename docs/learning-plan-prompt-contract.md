@@ -25,7 +25,7 @@ Current required sections:
 Current schema string:
 
 ```text
-{"schema_name": "learning-plan-proposal", "schema_version": "learning-plan-proposal-v1", "course_title": string, "overview": string, "today_tasks": string[], "schedule": [{"unit_id": string, "title": string, "focus": string, "activity_type": "learn" | "review", "schedule_chapters": [{"title": string, "anchor_page_start": integer, "anchor_page_end": integer, "source_section_ids": string[], "content_slices": [{"page_start": integer, "page_end": integer, "source_section_ids": string[]}]}]}]}.
+{"schema_name": "learning-plan-proposal", "schema_version": "learning-plan-proposal-v2", "course_title": string, "overview": string, "output_language": string, "today_tasks": string[], "schedule": [{"unit_index": integer, "title": string, "focus": string, "activity_type": "learn" | "review", "duration_minutes": integer, "schedule_chapters": [{"title": string, "anchor_page_start": integer, "anchor_page_end": integer, "source_section_ids": string[], "content_slices": [{"page_start": integer, "page_end": integer, "source_section_ids": string[]}]}]}]}.
 ```
 
 There is no top-level `study_chapters` field anymore.
@@ -73,14 +73,15 @@ The user payload is therefore sent as a pretty-printed JSON string, not as nativ
 
 ## Output Contract
 
-The planner must return a single JSON object that strictly decodes as `LearningPlanProposalV1` (`extra="forbid"`, strict primitive types). The runner permits at most one bounded schema-repair attempt before failure.
+The planner must return a single JSON object that strictly decodes as `LearningPlanProposalV2` (`extra="forbid"`, strict primitive types). The runner permits at most one bounded schema-repair attempt before failure.
 
 Required semantic rules:
 
 - `course_title` is the learner-facing plan header.
 - `overview` is a short summary paragraph.
 - `today_tasks` is the current actionable task list.
-- `schedule[].unit_id` must point to an existing `study_unit.id`.
+- `schedule[].unit_index` must be an in-range request-local index into the current Study Unit snapshot. Application-owned Study Unit IDs are not part of the model proposal.
+- `schedule[].duration_minutes` and `output_language` are required model-resolved values. They never overwrite an `unknown` field in the original user intent; the committed resolved-intent projection records their `model_inferred` provenance.
 - `schedule[].schedule_chapters[]` is required for every schedule item.
 - `schedule[].schedule_chapters[]` must stay inside the parent study unit's page range and content scope.
 - `schedule[].schedule_chapters[].title` should name concrete chapter or subchapter content, not abstract themes.
@@ -98,7 +99,7 @@ Required semantic rules:
 
 This wording policy does not transfer application-owned identity, revisions, timestamps, progress, or effects into the model proposal. Existing strict decode, invariant validation, tool authorization, and commit boundaries remain authoritative.
 
-The reviewed Planning behavior is registered as `LearningPlanPrompt@planning-prompt-v4`; the corresponding Study Chat behavior is registered as `StudyChatPrompt@study-chat-prompt-v2`. Planning v4 retains the v3 bounded evidence rules and adds provenance-aware Planning intent: every unspecified structured field stays `unknown`, only `user_explicit` values are hard constraints, and model-inferred scope, count, duration, and language remain distinct from user input. Historical v1/v2/v3 traces and archived experiment evidence remain unchanged.
+The reviewed Planning behavior is registered as `LearningPlanPrompt@planning-prompt-v5`; the corresponding Study Chat behavior is registered as `StudyChatPrompt@study-chat-prompt-v2`. Planning v5 retains the v4 provenance-aware intent rules and upgrades the model output to `LearningPlanProposalV2`: schedules use request-local `unit_index` values instead of application-owned Study Unit IDs, and every proposal resolves a concrete language plus a duration for each session. Committed resolution remains separate from the original intent, so every unspecified user field stays `unknown`. Historical v1/v2/v3/v4 traces and archived experiment evidence remain unchanged.
 
 The same strategy is separately adopted for Study Chat, including the rule that a tool effect may be described as completed only after successful execution. This document does not otherwise define the Study Chat contract. The adoption does not change Tavern, Persona/Scene generation, Harness schemas, or multimodal defaults.
 

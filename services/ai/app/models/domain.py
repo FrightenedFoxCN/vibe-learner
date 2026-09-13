@@ -366,6 +366,47 @@ class PlanningIntentV1(_StrictPlanningIntentModel):
         return self
 
 
+class PlanningResolvedPageRangesV1(_StrictPlanningIntentModel):
+    source: Literal["user_explicit", "model_inferred"]
+    value: list[PlanningPageRangeV1] = Field(min_length=1, max_length=64)
+
+
+class PlanningResolvedOutlineTargetsV1(_StrictPlanningIntentModel):
+    source: Literal["user_explicit", "model_inferred"]
+    value: list[str] = Field(max_length=64)
+
+
+class PlanningResolvedIntegerV1(_StrictPlanningIntentModel):
+    source: Literal["user_explicit", "model_inferred"]
+    value: int = Field(ge=1, le=480)
+
+
+class PlanningResolvedLanguageV1(_StrictPlanningIntentModel):
+    source: Literal["user_explicit", "model_inferred"]
+    value: str = Field(
+        min_length=2,
+        max_length=35,
+        pattern=r"^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$",
+    )
+
+    @model_validator(mode="after")
+    def reject_unresolved_sentinel(self) -> "PlanningResolvedLanguageV1":
+        if self.value.casefold() == "unknown":
+            raise ValueError("resolved_language_must_be_concrete")
+        return self
+
+
+class PlanningResolvedIntentV1(_StrictPlanningIntentModel):
+    schema_version: Literal["planning-resolved-intent-v1"] = (
+        "planning-resolved-intent-v1"
+    )
+    pdf_page_ranges: PlanningResolvedPageRangesV1
+    outline_targets: PlanningResolvedOutlineTargetsV1
+    session_count: PlanningResolvedIntegerV1
+    minutes_per_session: PlanningResolvedIntegerV1
+    output_language: PlanningResolvedLanguageV1
+
+
 class LearningGoalInput(BaseModel):
     document_id: str = ""
     persona_id: str
@@ -651,6 +692,7 @@ class LearningPlanRecord(BaseModel):
     scene_profile_summary: str = ""
     scene_profile: SceneProfileRecord | None = None
     planning_intent: PlanningIntentV1 = Field(default_factory=PlanningIntentV1)
+    resolved_planning_intent: PlanningResolvedIntentV1 | None = None
     output_language: str = Field(default="unknown", min_length=2, max_length=35)
     overview: str = Field(
         description=(

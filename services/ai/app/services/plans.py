@@ -28,6 +28,7 @@ from app.models.harness import canonical_harness_digest
 from app.models.planning import PlanScheduleChapterProposalV1
 from app.services.planning_chapter_validation import find_chapter_violation
 from app.services.planning_intent import (
+    resolve_planning_intent,
     select_study_units_for_intent,
     validate_intent_against_document,
     validate_schedule_against_intent,
@@ -513,10 +514,6 @@ class LearningPlanService:
                     debug_report.study_units = model_plan.revised_study_units
         unit_by_id = {unit.id: unit for unit in plan.study_units}
         filtered_schedule: list[StudyScheduleRecord] = []
-        validate_schedule_against_intent(
-            schedule=model_plan.schedule,
-            intent=goal.planning_intent,
-        )
         for index, item in enumerate(model_plan.schedule):
             unit = unit_by_id.get(item.unit_id)
             if unit is None:
@@ -539,6 +536,19 @@ class LearningPlanService:
         plan.scene_profile = goal.scene_profile
         if filtered_schedule:
             plan.schedule = filtered_schedule
+        validate_schedule_against_intent(
+            schedule=list(plan.schedule),
+            intent=goal.planning_intent,
+        )
+        plan.resolved_planning_intent = (
+            resolve_planning_intent(
+                schedule=list(plan.schedule),
+                intent=goal.planning_intent,
+                output_language=plan.output_language,
+            )
+            if plan.output_language.casefold() != "unknown"
+            else None
+        )
         _emit_progress(
             progress_callback,
             "model_plan_applied",

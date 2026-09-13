@@ -12,7 +12,7 @@ from app.models.domain import LearningGoalInput, PersonaProfile, SceneProfileRec
 from app.models.planning import (
     LEARNING_PLAN_PROPOSAL_SCHEMA_NAME,
     LEARNING_PLAN_PROPOSAL_SCHEMA_VERSION,
-    LearningPlanProposalV1,
+    LearningPlanProposalV2,
     PlanContentSliceProposalV1,
     PlanScheduleChapterProposalV1,
 )
@@ -47,7 +47,7 @@ class PlanningContractTests(unittest.TestCase):
         payload = _valid_proposal_payload()
         payload["schedule"].append(dict(payload["schedule"][0]))
         proposal = _decode_learning_plan_proposal(json.dumps(payload))
-        self.assertEqual([item.unit_id for item in proposal.schedule], ["unit-1", "unit-1"])
+        self.assertEqual([item.unit_index for item in proposal.schedule], [0, 0])
 
     def test_goal_only_prompt_and_projection_use_empty_section_allowlist(self) -> None:
         from app.services.plan_prompt import build_learning_plan_messages
@@ -60,7 +60,7 @@ class PlanningContractTests(unittest.TestCase):
         unit = units[0]
         chapter = PlanScheduleChapterProposalV1(title="Basics", anchor_page_start=1, anchor_page_end=1,
             source_section_ids=[], content_slices=[PlanContentSliceProposalV1(page_start=1, page_end=1, source_section_ids=[])])
-        item = PlanScheduleItem(unit_id=unit.id, title="Learn", focus="Basics", activity_type="learn", schedule_chapters=[chapter])
+        item = PlanScheduleItem(unit_id=unit.id, title="Learn", focus="Basics", activity_type="learn", duration_minutes=45, schedule_chapters=[chapter])
         self.assertEqual(service._build_schedule_record(index=0, item=item, unit=unit).schedule_chapters[0].source_section_ids, [])
         chapter.source_section_ids = [unit.id]
         with self.assertRaisesRegex(RuntimeError, "source_section_ids:unknown_ref"):
@@ -140,10 +140,21 @@ class PlanningContractTests(unittest.TestCase):
 
     def test_plan_proposal_rejects_application_ids_and_coerced_numbers(self) -> None:
         payload = _valid_proposal_payload()
+        payload["schedule"][0]["unit_id"] = "unit-1"
+
+        with self.assertRaises(ValidationError) as unit_id:
+            LearningPlanProposalV2.model_validate(payload)
+
+        self.assertEqual(
+            unit_id.exception.errors(include_url=False)[0]["loc"],
+            ("schedule", 0, "unit_id"),
+        )
+
+        payload = _valid_proposal_payload()
         payload["schedule"][0]["schedule_chapters"][0]["id"] = "forged-id"
 
         with self.assertRaises(ValidationError) as forged:
-            LearningPlanProposalV1.model_validate(payload)
+            LearningPlanProposalV2.model_validate(payload)
 
         self.assertEqual(
             forged.exception.errors(include_url=False)[0]["loc"],
@@ -153,7 +164,7 @@ class PlanningContractTests(unittest.TestCase):
         payload = _valid_proposal_payload()
         payload["schedule"][0]["schedule_chapters"][0]["anchor_page_start"] = "1"
         with self.assertRaises(ValidationError) as coerced:
-            LearningPlanProposalV1.model_validate(payload)
+            LearningPlanProposalV2.model_validate(payload)
         self.assertEqual(
             coerced.exception.errors(include_url=False)[0]["loc"],
             ("schedule", 0, "schedule_chapters", 0, "anchor_page_start"),
@@ -161,13 +172,13 @@ class PlanningContractTests(unittest.TestCase):
 
     def test_model_proposal_decode_preserves_typed_failure_path(self) -> None:
         payload = _valid_proposal_payload()
-        payload["schedule"][0]["unit_id"] = 123
+        payload["schedule"][0]["unit_index"] = "0"
 
         with self.assertRaises(PlanningProposalDecodeError) as raised:
             _decode_learning_plan_proposal(json.dumps(payload))
 
-        self.assertEqual(raised.exception.path, "schedule.0.unit_id")
-        self.assertEqual(raised.exception.reason, "string_type")
+        self.assertEqual(raised.exception.path, "schedule.0.unit_index")
+        self.assertEqual(raised.exception.reason, "int_type")
 
     def test_model_proposal_repair_is_bounded_to_one_retry(self) -> None:
         provider = OpenAIModelProvider(
@@ -236,6 +247,7 @@ class PlanningContractTests(unittest.TestCase):
             title="精读",
             focus="掌握基础概念",
             activity_type="learn",
+            duration_minutes=45,
             schedule_chapters=[
                 PlanScheduleChapterProposalV1(
                     title="1.1 基础",
@@ -311,6 +323,7 @@ class PlanningContractTests(unittest.TestCase):
             title="精读",
             focus="掌握基础概念",
             activity_type="learn",
+            duration_minutes=45,
             schedule_chapters=[
                 PlanScheduleChapterProposalV1(
                     title="越界章节",

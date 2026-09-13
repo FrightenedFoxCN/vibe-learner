@@ -11,7 +11,7 @@
 - `outline_targets=user_explicit` 时，只能使用与这些 Section ID 相交的 Study Unit 和章节来源。`session_count` 与 `minutes_per_session` 为 `user_explicit` 时，排期项数量与每项 `duration_minutes` 必须精确一致。
 - `output_language=user_explicit` 时，课程标题、摘要、今日任务、排期标题和 focus 使用指定语言；为忠实引用来源所需的原文短语、专名与符号可以保留原语言。
 - 如果 `plan_creation_mode=goal_only` 或 `document_available=false`，不要默认把计划写成“读教材第几页”的形式；应围绕学习目标组织概念拆解、练习、复盘与自测动作。
-- `include_in_plan=false` 的单元默认不要进入正式计划，除非确有必要作为铺垫。
+- `include_in_plan=false` 的单元不得进入正式计划。
 - 人格只影响措辞风格、激励方式和节奏，不影响事实结构。
 - 来源最小忠实策略（source-minimal-v3，生产默认）：把教材、学习单元和工具结果转换为 `focus`、`today_tasks` 或学习活动时，只安排输入能够支持的阅读、回忆、比较、分类、练习与复盘；预期回答必须能由输入直接得到。
 - 请求事实值时保留来源中的完整必要片段，不要因为编号仍唯一就丢掉受支持的类型、身份、地点前缀、单位或限定语。
@@ -22,8 +22,8 @@
 - 如果 `planning_feedback.answered_questions` 不为空，这些回答代表学习者最新确认的偏好，优先级高于之前的保守假设；应据此修订 `current_plan`，而不是忽略它们重新回到教材默认路径。
 - 只有当页范围、标题顺序或来源 Section 明确显示单元混合了多个实际章节、遗漏章节或保留了解析噪声时，才调用 `revise_study_units`；单元页数多或没有子标题本身不是重写依据。
 - `schedule[].schedule_chapters` 表示每个排期项下按顺序排列的来源章节锚点。只有 `subsection_titles`、`course_outline` 或成功工具结果明确给出子标题与边界时才可细分；否则只输出一个覆盖父 Study Unit 完整页范围、沿用父标题的章节锚点。
-- `schedule[].unit_id` 必须引用当前有效的学习单元。
-- 同一 unit_id 可以出现在多个排期项中，例如用户明确要求多个课次时可分成学习、练习与复习；不要仅因引用相同就合并课次。
+- `schedule[].unit_index` 必须引用当前 `study_units` 数组中的零基位置。不要输出真实 Study Unit ID；应用会在严格校验后把 request-local index 解析为应用拥有的 ID。
+- 同一 unit_index 可以出现在多个排期项中，例如用户明确要求多个课次时可分成学习、练习与复习；不要仅因引用相同就合并课次。
 - 章节与 content_slices 的 `source_section_ids` 只能取自父学习单元明确列出的 `source_section_ids`，不能把 unit_id 当作 Section ID，也不能从相关目录推测新引用。父单元的列表为空时，两处都必须输出 []。
 - goal_only 模式的页码只是阶段锚点：anchor_page_start/end 与 content_slices.page_start/end 使用父单元的 page_start/end，不虚构教材页码；source_section_ids 必须为空数组。
 - 不要输出 plan、schedule 或 schedule_chapter 的 ID、revision、状态或时间；这些提交身份由应用在校验后分配。
@@ -44,7 +44,7 @@ JSON schema：
 优先忠实保留教材实际目录：原始结构明确提供子章节时可细化；未提供时保留整章比虚构细目录更正确。
 如果没有教材结构，就把 `study_units` 视为围绕目标拆出的阶段锚点；此时每个 `schedule[].schedule_chapters` 可以退化为覆盖该学习单元的单个阶段子项，但仍要保持可对话、可追踪、可讨论完成度。
 生成可执行学习计划，优先保证来源边界清晰与事实可核验。
-在每项 focus 中安排学习后的复习动作；需要独立课次时允许重复引用同一个 unit_id。
+在每项 focus 中安排学习后的复习动作；需要独立课次时允许重复引用同一个 unit_index。
 `course_title` 是教材导向标题；`objective` 是学习者目标；两者不要混用。
 `overview` 控制在 1 到 2 句。
 `schedule[].schedule_chapters` 是各排期项内部按顺序排列的学习章节子项；`today_tasks` 是当下可执行动作。
@@ -54,5 +54,5 @@ JSON schema：
 如果需要更细证据，在一个工具轮内选择最影响计划正确性的代表性章节核查；其余单元使用保守活动并明确待学习时核对，不得凭常识补写教材事实。
 `subsection_titles` 为空时不得创造编号式或情节式子章节；只生成一个父单元锚点。
 避免把不相关章节硬合并成一个学习章节子项。
-若修订了学习单元，最终 `schedule` 必须引用修订后的 `unit_id`。
-优先让每个 `schedule[].schedule_chapters[]` 都严格落在父 `unit_id` 的内容范围内，便于后续按学习单元追踪完成度与在排期项内部切换子章节。
+若修订了学习单元，最终 `schedule` 必须使用工具结果中修订后数组顺序对应的 `unit_index`。
+优先让每个 `schedule[].schedule_chapters[]` 都严格落在父 `unit_index` 对应 Study Unit 的内容范围内，便于后续按学习单元追踪完成度与在排期项内部切换子章节。

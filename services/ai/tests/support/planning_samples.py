@@ -27,7 +27,7 @@ def valid_proposal_payload() -> dict:
         "today_tasks": ["阅读第一章并整理定义。"],
         "schedule": [
             {
-                "unit_id": "unit-1",
+                "unit_index": 0,
                 "title": "第一章精读",
                 "focus": "理解集合与命题逻辑。",
                 "activity_type": "learn",

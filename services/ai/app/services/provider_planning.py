@@ -13,7 +13,7 @@ from app.models.domain import (
     DocumentDebugRecord, LearningGoalInput, LearningPlanRecord, PersonaProfile,
     PlanningIntentV1, PlanningQuestionRecord, PlanGenerationTraceRecord, StudyUnitRecord,
 )
-from app.models.planning import LearningPlanProposalV1
+from app.models.planning import LearningPlanProposalV2
 from app.services.model_recovery import record_model_recovery
 from app.services.model_tool_config import PLAN_STAGE, TOOL_CATALOG
 from app.services.openai_plan_runner import OpenAIPlanRunner
@@ -192,9 +192,10 @@ class RemotePlanningProvider(PlanningModelCapability):
                     "strategy": "strict_contract_repair", "path": first_error.path,
                 })
                 allowed_units = [
-                    {"unit_id": unit.id, "title": unit.title, "page_start": unit.page_start,
+                    {"unit_index": index, "detail_tool_target_id": unit.id,
+                     "title": unit.title, "page_start": unit.page_start,
                      "page_end": unit.page_end, "source_section_ids": list(unit.source_section_ids)}
-                    for unit in repair_units
+                    for index, unit in enumerate(repair_units)
                 ]
                 repair_messages = [
                     {"role": "system", "content": (
@@ -253,9 +254,10 @@ class RemotePlanningProvider(PlanningModelCapability):
                     final_trace.rounds[-1] = last_round.model_copy(update={
                         "recoveries": [*last_round.recoveries, recovery],
                     })
+        active_study_units = active_tool_runtime.current_study_units() or study_units
         schedule_items = [
             PlanScheduleItem(
-                unit_id=item.unit_id,
+                unit_id=active_study_units[item.unit_index].id,
                 title=item.title,
                 focus=item.focus,
                 activity_type=item.activity_type,
@@ -264,7 +266,6 @@ class RemotePlanningProvider(PlanningModelCapability):
             )
             for item in proposal.schedule
         ]
-        active_study_units = active_tool_runtime.current_study_units() or study_units
         planning_questions = active_tool_runtime.current_planning_questions()
         return PlanModelReply(
             course_title=proposal.course_title,
@@ -356,17 +357,22 @@ class PlanningProposalDecodeError(RuntimeError):
 
 
 def _validate_learning_plan_proposal_refs(
-    proposal: LearningPlanProposalV1,
+    proposal: LearningPlanProposalV2,
     study_units: list[StudyUnitRecord],
     planning_intent: PlanningIntentV1 | None = None,
 ) -> None:
     """Check references and chapter geometry against the post-tool snapshot before repair."""
-    units = {unit.id: unit for unit in study_units}
     for index, item in enumerate(proposal.schedule):
         path = f"schedule.{index}"
-        unit = units.get(item.unit_id)
-        if unit is None:
-            raise PlanningProposalDecodeError(path=f"{path}.unit_id", reason="unknown_ref")
+        if item.unit_index >= len(study_units):
+            raise PlanningProposalDecodeError(
+                path=f"{path}.unit_index", reason="unknown_ref"
+            )
+        unit = study_units[item.unit_index]
+        if not unit.include_in_plan:
+            raise PlanningProposalDecodeError(
+                path=f"{path}.unit_index", reason="excluded_ref"
+            )
         previous_anchor_start = 0
         for chapter_index, chapter in enumerate(item.schedule_chapters):
             chapter_path = f"{path}.schedule_chapters.{chapter_index}"
@@ -398,7 +404,7 @@ def _validate_learning_plan_proposal_refs(
 
 def _decode_learning_plan_proposal(
     content: str, *, allow_json_repair: bool = False,
-) -> LearningPlanProposalV1:
+) -> LearningPlanProposalV2:
     try:
         payload = _extract_json_payload(content)
     except RuntimeError as exc:
@@ -419,7 +425,7 @@ def _decode_learning_plan_proposal(
                 path="$", reason="plan_model_json_repair_not_object",
             )
     try:
-        return LearningPlanProposalV1.model_validate(payload)
+        return LearningPlanProposalV2.model_validate(payload)
     except ValidationError as exc:
         first_error = exc.errors(include_url=False)[0]
         path = ".".join(str(item) for item in first_error.get("loc", ())) or "$"

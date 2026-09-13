@@ -157,6 +157,17 @@ export interface PlanningIntent {
   outputLanguage: PlanningIntentValue<string>;
 }
 
+export type PlanningResolvedSource = "user_explicit" | "model_inferred";
+
+export interface PlanningResolvedIntent {
+  schemaVersion: "planning-resolved-intent-v1";
+  pdfPageRanges: { source: PlanningResolvedSource; value: PlanningPageRange[] };
+  outlineTargets: { source: PlanningResolvedSource; value: string[] };
+  sessionCount: { source: PlanningResolvedSource; value: number };
+  minutesPerSession: { source: PlanningResolvedSource; value: number };
+  outputLanguage: { source: PlanningResolvedSource; value: string };
+}
+
 export interface SceneProfile {
   sceneName: string;
   sceneId: string;
@@ -208,6 +219,8 @@ export interface LearningPlan {
   // Optional structured scene profile captured at plan creation time.
   sceneProfile?: SceneProfile;
   planningIntent: PlanningIntent;
+  // Legacy persisted plans may not have this projection. New plans always do.
+  resolvedPlanningIntent?: PlanningResolvedIntent;
   // Model-resolved language tag; remains separate from user-explicit intent provenance.
   outputLanguage: string;
   // One or two sentence learner-facing summary of the plan. This is not a title.

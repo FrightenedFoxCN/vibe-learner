@@ -20,7 +20,7 @@ from app.models.domain import (
 PLANNING_TOOL_ARGUMENT_CONTRACT_VERSION = "planning-tool-arguments-v1"
 PLANNING_TOOL_RESULT_CONTRACT_VERSION = "planning-tool-result-v1"
 LEARNING_PLAN_PROPOSAL_SCHEMA_NAME = "learning-plan-proposal"
-LEARNING_PLAN_PROPOSAL_SCHEMA_VERSION = "learning-plan-proposal-v1"
+LEARNING_PLAN_PROPOSAL_SCHEMA_VERSION = "learning-plan-proposal-v2"
 LEARNING_PLAN_OPERATION_REQUEST_SCHEMA_VERSION = "learning-plan-operation-request-v1"
 LEARNING_PLAN_OPERATION_FINGERPRINT_LEGACY_VERSION = "learning-plan-operation-fingerprint-v1"
 LEARNING_PLAN_OPERATION_FINGERPRINT_VERSION = "learning-plan-operation-fingerprint-v2"
@@ -272,23 +272,27 @@ class PlanScheduleChapterProposalV1(_StrictPlanningModel):
         return self
 
 
-class PlanScheduleItemProposalV1(_StrictPlanningModel):
-    unit_id: str = Field(min_length=1, max_length=128)
+class PlanScheduleItemProposalV2(_StrictPlanningModel):
+    unit_index: int = Field(ge=0, le=23)
     title: ShortText
     focus: Annotated[str, Field(min_length=1, max_length=2000)]
     activity_type: Literal["learn", "review"]
-    duration_minutes: int | None = Field(default=None, ge=1, le=480)
+    duration_minutes: int = Field(ge=1, le=480)
     schedule_chapters: list[PlanScheduleChapterProposalV1] = Field(min_length=1, max_length=24)
 
 
-class LearningPlanProposalV1(_StrictPlanningModel):
+class LearningPlanProposalV2(_StrictPlanningModel):
     schema_name: Literal["learning-plan-proposal"]
-    schema_version: Literal["learning-plan-proposal-v1"]
+    schema_version: Literal["learning-plan-proposal-v2"]
     course_title: ShortText
     overview: LongText
-    output_language: str = Field(default="unknown", min_length=2, max_length=35)
+    output_language: str = Field(
+        min_length=2,
+        max_length=35,
+        pattern=r"^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$",
+    )
     today_tasks: list[ShortText] = Field(min_length=1, max_length=12)
-    schedule: list[PlanScheduleItemProposalV1] = Field(min_length=1, max_length=24)
+    schedule: list[PlanScheduleItemProposalV2] = Field(min_length=1, max_length=24)
 
 PLANNING_TOOL_ARGUMENT_MODELS: dict[str, type[_StrictPlanningModel]] = {
     "get_study_unit_detail": GetStudyUnitDetailArgumentsV1,

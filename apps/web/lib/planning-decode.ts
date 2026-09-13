@@ -9,6 +9,7 @@ import type {
   PlanningChunkExcerpt,
   PlanningIntent,
   PlanningIntentValue,
+  PlanningResolvedIntent,
   PlanningOutlineNode,
   PlanningSectionRef,
   PlanningStudyUnitContext,
@@ -153,6 +154,178 @@ function unknownPlanningIntent(): PlanningIntent {
     sessionCount: { status: "unknown", value: null },
     minutesPerSession: { status: "unknown", value: null },
     outputLanguage: { status: "unknown", value: null },
+  };
+}
+
+function decodeResolvedPlanningIntent(
+  raw: unknown,
+  path: string,
+  intent: PlanningIntent,
+  schedule: StudyScheduleItem[],
+  outputLanguage: string,
+): PlanningResolvedIntent {
+  const value = decoder.record(raw, path);
+  const source = (field: string) => {
+    const entryPath = `${path}.${field}`;
+    const entry = decoder.record(decoder.field(value, field, path), entryPath);
+    return {
+      entry,
+      source: decoder.enumeration(
+        decoder.field(entry, "source", entryPath),
+        ["user_explicit", "model_inferred"] as const,
+        `${entryPath}.source`,
+      ),
+      entryPath,
+    };
+  };
+  const pageEntry = source("pdf_page_ranges");
+  const pdfPageRanges = decoder.array(
+    decoder.field(pageEntry.entry, "value", pageEntry.entryPath),
+    `${pageEntry.entryPath}.value`,
+    (rawRange, rangePath) => {
+      const range = decoder.record(rawRange, rangePath);
+      const pageStart = decoder.integer(
+        decoder.field(range, "page_start", rangePath), `${rangePath}.page_start`, 1,
+      );
+      const pageEnd = decoder.integer(
+        decoder.field(range, "page_end", rangePath), `${rangePath}.page_end`, 1,
+      );
+      decoder.range(pageStart, pageEnd, rangePath);
+      return { pageStart, pageEnd };
+    },
+  );
+  if (pdfPageRanges.length === 0) {
+    throw new PlanningDecodeError(`${pageEntry.entryPath}.value`, "expected_non_empty_array");
+  }
+  const outlineEntry = source("outline_targets");
+  const outlineTargets = decoder.stringArray(
+    decoder.field(outlineEntry.entry, "value", outlineEntry.entryPath),
+    `${outlineEntry.entryPath}.value`,
+    true,
+  );
+  decoder.unique(outlineTargets, `${outlineEntry.entryPath}.value`);
+  const sessionEntry = source("session_count");
+  const sessionCount = decoder.integer(
+    decoder.field(sessionEntry.entry, "value", sessionEntry.entryPath),
+    `${sessionEntry.entryPath}.value`, 1, 24,
+  );
+  const minutesEntry = source("minutes_per_session");
+  const minutesPerSession = decoder.integer(
+    decoder.field(minutesEntry.entry, "value", minutesEntry.entryPath),
+    `${minutesEntry.entryPath}.value`, 1, 480,
+  );
+  const languageEntry = source("output_language");
+  const resolvedLanguage = decoder.string(
+    decoder.field(languageEntry.entry, "value", languageEntry.entryPath),
+    `${languageEntry.entryPath}.value`,
+  );
+
+  const assertSource = (
+    intentValue: PlanningIntentValue<unknown>,
+    resolvedSource: "user_explicit" | "model_inferred",
+    sourcePath: string,
+  ) => {
+    const expected = intentValue.status === "user_explicit" ? "user_explicit" : "model_inferred";
+    if (resolvedSource !== expected) {
+      throw new PlanningDecodeError(sourcePath, "resolved_intent_source_mismatch");
+    }
+  };
+  assertSource(intent.pdfPageRanges, pageEntry.source, `${pageEntry.entryPath}.source`);
+  assertSource(intent.outlineTargets, outlineEntry.source, `${outlineEntry.entryPath}.source`);
+  assertSource(intent.sessionCount, sessionEntry.source, `${sessionEntry.entryPath}.source`);
+  assertSource(intent.minutesPerSession, minutesEntry.source, `${minutesEntry.entryPath}.source`);
+  assertSource(intent.outputLanguage, languageEntry.source, `${languageEntry.entryPath}.source`);
+
+  const sameJson = (left: unknown, right: unknown) => JSON.stringify(left) === JSON.stringify(right);
+  if (intent.pdfPageRanges.status === "user_explicit" && !sameJson(pdfPageRanges, intent.pdfPageRanges.value)) {
+    throw new PlanningDecodeError(`${pageEntry.entryPath}.value`, "explicit_resolved_value_mismatch");
+  }
+  if (intent.outlineTargets.status === "user_explicit" && !sameJson(outlineTargets, intent.outlineTargets.value)) {
+    throw new PlanningDecodeError(`${outlineEntry.entryPath}.value`, "explicit_resolved_value_mismatch");
+  }
+  if (intent.sessionCount.status === "user_explicit" && sessionCount !== intent.sessionCount.value) {
+    throw new PlanningDecodeError(`${sessionEntry.entryPath}.value`, "explicit_resolved_value_mismatch");
+  }
+  if (intent.minutesPerSession.status === "user_explicit" && minutesPerSession !== intent.minutesPerSession.value) {
+    throw new PlanningDecodeError(`${minutesEntry.entryPath}.value`, "explicit_resolved_value_mismatch");
+  }
+  if (
+    intent.outputLanguage.status === "user_explicit"
+    && resolvedLanguage.toLocaleLowerCase() !== intent.outputLanguage.value.toLocaleLowerCase()
+  ) {
+    throw new PlanningDecodeError(`${languageEntry.entryPath}.value`, "explicit_resolved_value_mismatch");
+  }
+  if (sessionCount !== schedule.length) {
+    throw new PlanningDecodeError(`${sessionEntry.entryPath}.value`, "resolved_session_count_mismatch");
+  }
+  const durations = new Set(schedule.map((item) => item.durationMinutes));
+  if (durations.size !== 1 || durations.has(undefined) || !durations.has(minutesPerSession)) {
+    throw new PlanningDecodeError(`${minutesEntry.entryPath}.value`, "resolved_minutes_mismatch");
+  }
+  if (resolvedLanguage.toLocaleLowerCase() !== outputLanguage.toLocaleLowerCase()) {
+    throw new PlanningDecodeError(`${languageEntry.entryPath}.value`, "resolved_language_mismatch");
+  }
+  if (intent.pdfPageRanges.status === "user_explicit") {
+    const requestedPages = new Set(intent.pdfPageRanges.value.flatMap((range) =>
+      Array.from({ length: range.pageEnd - range.pageStart + 1 }, (_, offset) => range.pageStart + offset)));
+    const coveredPages = new Set<number>();
+    for (const slice of schedule.flatMap((item) => item.scheduleChapters)
+      .flatMap((chapter) => chapter.contentSlices)) {
+      if (!intent.pdfPageRanges.value.some((range) =>
+        slice.pageStart >= range.pageStart && slice.pageEnd <= range.pageEnd)) {
+        throw new PlanningDecodeError(`${pageEntry.entryPath}.value`, "schedule_outside_explicit_page_scope");
+      }
+      for (let page = slice.pageStart; page <= slice.pageEnd; page += 1) coveredPages.add(page);
+    }
+    if ([...requestedPages].some((page) => !coveredPages.has(page))) {
+      throw new PlanningDecodeError(`${pageEntry.entryPath}.value`, "explicit_page_scope_incomplete");
+    }
+  }
+  if (intent.outlineTargets.status === "user_explicit") {
+    const allowedTargets = new Set(intent.outlineTargets.value);
+    const scheduleTargets = schedule.flatMap((item) => item.scheduleChapters)
+      .flatMap((chapter) => [
+        ...chapter.sourceSectionIds,
+        ...chapter.contentSlices.flatMap((slice) => slice.sourceSectionIds),
+      ]);
+    if (scheduleTargets.some((target) => !allowedTargets.has(target))) {
+      throw new PlanningDecodeError(`${outlineEntry.entryPath}.value`, "schedule_outside_explicit_outline_scope");
+    }
+  }
+  if (pageEntry.source === "model_inferred") {
+    const spans = schedule
+      .flatMap((item) => item.scheduleChapters)
+      .flatMap((chapter) => chapter.contentSlices)
+      .map((slice) => [slice.pageStart, slice.pageEnd] as [number, number])
+      .sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+    const merged: Array<{ pageStart: number; pageEnd: number }> = [];
+    for (const [pageStart, pageEnd] of spans) {
+      const previous = merged.at(-1);
+      if (previous && pageStart <= previous.pageEnd + 1) previous.pageEnd = Math.max(previous.pageEnd, pageEnd);
+      else merged.push({ pageStart, pageEnd });
+    }
+    if (!sameJson(pdfPageRanges, merged)) {
+      throw new PlanningDecodeError(`${pageEntry.entryPath}.value`, "resolved_page_ranges_mismatch");
+    }
+  }
+  if (outlineEntry.source === "model_inferred") {
+    const actual = [...new Set(schedule.flatMap((item) => item.scheduleChapters)
+      .flatMap((chapter) => chapter.sourceSectionIds))].sort();
+    if (!sameJson(outlineTargets, actual)) {
+      throw new PlanningDecodeError(`${outlineEntry.entryPath}.value`, "resolved_outline_targets_mismatch");
+    }
+  }
+  return {
+    schemaVersion: decoder.enumeration(
+      decoder.field(value, "schema_version", path),
+      ["planning-resolved-intent-v1"] as const,
+      `${path}.schema_version`,
+    ),
+    pdfPageRanges: { source: pageEntry.source, value: pdfPageRanges },
+    outlineTargets: { source: outlineEntry.source, value: outlineTargets },
+    sessionCount: { source: sessionEntry.source, value: sessionCount },
+    minutesPerSession: { source: minutesEntry.source, value: minutesPerSession },
+    outputLanguage: { source: languageEntry.source, value: resolvedLanguage },
   };
 }
 
@@ -1228,6 +1401,16 @@ export function decodeLearningPlan(
       "explicit_language_projection_mismatch",
     );
   }
+  const resolvedPlanningIntent = value.resolved_planning_intent === undefined
+    || value.resolved_planning_intent === null
+    ? undefined
+    : decodeResolvedPlanningIntent(
+      value.resolved_planning_intent,
+      `${path}.resolved_planning_intent`,
+      planningIntent,
+      schedule,
+      outputLanguage,
+    );
   return {
     id,
     revision: value.revision === undefined ? 0 : decoder.integer(value.revision, `${path}.revision`, 0),
@@ -1249,6 +1432,7 @@ export function decodeLearningPlan(
     ),
     ...(sceneProfile === null ? {} : { sceneProfile }),
     planningIntent,
+    ...(resolvedPlanningIntent ? { resolvedPlanningIntent } : {}),
     outputLanguage,
     overview: decoder.string(decoder.field(value, "overview", path), `${path}.overview`),
     todayTasks: decoder.stringArray(

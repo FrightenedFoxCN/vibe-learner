@@ -87,6 +87,7 @@ def planning_reply(document: DocumentRecord) -> PlanModelReply:
                 title="Vectors deep read",
                 focus="Definitions and examples.",
                 activity_type="learn",
+                duration_minutes=45,
                 schedule_chapters=[
                     PlanScheduleChapterProposalV1(
                         title="Vectors",
@@ -111,4 +112,3 @@ def planning_reply(document: DocumentRecord) -> PlanModelReply:
             rounds=[],
         ),
     )
-

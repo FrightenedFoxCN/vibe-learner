@@ -21,18 +21,18 @@ from app.services.prompt_loader import load_prompt_template
 PLAN_JSON_SCHEMA = (
     "{"
     '"schema_name": "learning-plan-proposal", '
-    '"schema_version": "learning-plan-proposal-v1", '
+    '"schema_version": "learning-plan-proposal-v2", '
     '"course_title": string, '
     '"overview": string, '
     '"output_language": string, '
     '"today_tasks": string[], '
     '"schedule": ['
     "{"
-    '"unit_id": string, '
+    '"unit_index": integer, '
     '"title": string, '
     '"focus": string, '
     '"activity_type": "learn" | "review", '
-    '"duration_minutes": integer | null, '
+    '"duration_minutes": integer, '
     '"schedule_chapters": ['
     "{"
     '"title": string, '
@@ -75,10 +75,10 @@ def build_learning_plan_messages(
     # One bounded excerpt per unit gives the planner a content cue for every
     # admitted boundary.  This is deliberately much smaller than page-range
     # tool output; tools remain available for targeted verification.
-    unit_by_id = {unit.id: unit for unit in study_units}
     for unit_payload in planning_context["study_units"]:
+        unit_index = unit_payload["unit_index"]
         unit_payload["source_evidence_excerpts"] = _representative_unit_excerpts(
-            unit=unit_by_id[unit_payload["unit_id"]],
+            unit=study_units[unit_index],
             debug_report=debug_report,
         )
     segmentation_hints = _build_segmentation_hints(
@@ -180,11 +180,11 @@ def build_learning_plan_context(
         study_units=study_units,
         debug_report=debug_report,
     )
-    for unit in study_units:
+    for unit_index, unit in enumerate(study_units):
         detail = detail_map[unit.id]
         study_unit_payload.append(
             {
-                "unit_id": unit.id,
+                "unit_index": unit_index,
                 "title": unit.title,
                 "page_start": unit.page_start,
                 "page_end": unit.page_end,

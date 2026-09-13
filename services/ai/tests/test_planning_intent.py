@@ -175,6 +175,28 @@ class PlanningIntentTests(unittest.TestCase):
         )
         self.assertEqual([unit.id for unit in selected], ["unit-2"])
 
+    def test_explicit_outline_target_constrains_final_source_refs(self) -> None:
+        payload = valid_proposal_payload()
+        payload["schedule"][0]["schedule_chapters"][0]["source_section_ids"] = [
+            "section-b"
+        ]
+        payload["schedule"][0]["schedule_chapters"][0]["content_slices"][0][
+            "source_section_ids"
+        ] = ["section-b"]
+        proposal = _decode_learning_plan_proposal(json.dumps(payload))
+        unit = StudyUnitRecord(
+            id="unit-1", document_id="doc-1", title="Unit", page_start=1,
+            page_end=5, source_section_ids=["section-a", "section-b"],
+        )
+        intent = PlanningIntentV1.model_validate({
+            "outline_targets": {
+                "status": "user_explicit", "value": ["section-a"],
+            }
+        })
+        with self.assertRaises(PlanningProposalDecodeError) as raised:
+            _validate_learning_plan_proposal_refs(proposal, [unit], intent)
+        self.assertEqual(raised.exception.reason, "outside_explicit_scope")
+
     def test_committed_candidate_preserves_four_by_forty_five_and_page_scope(self) -> None:
         document = planning_document()
         document.debug_ready = False
@@ -213,6 +235,56 @@ class PlanningIntentTests(unittest.TestCase):
             {(1, 5)},
         )
         self.assertEqual(plan.planning_intent.session_count.status, "user_explicit")
+        resolved = plan.resolved_planning_intent
+        self.assertIsNotNone(resolved)
+        assert resolved is not None
+        self.assertEqual((resolved.pdf_page_ranges.source,
+                          [(r.page_start, r.page_end) for r in resolved.pdf_page_ranges.value]),
+                         ("user_explicit", [(1, 5)]))
+        self.assertEqual((resolved.session_count.source, resolved.session_count.value),
+                         ("user_explicit", 4))
+        self.assertEqual((resolved.minutes_per_session.source, resolved.minutes_per_session.value),
+                         ("user_explicit", 45))
+        self.assertEqual(resolved.output_language.source, "model_inferred")
+        self.assertEqual(plan.planning_intent.output_language.status, "unknown")
+
+    def test_unknown_intent_stays_unknown_while_resolution_is_model_inferred(self) -> None:
+        document = planning_document()
+        service = LearningPlanService(
+            self.store, StudyArrangementService(), MockModelProvider()
+        )
+        goal = LearningGoalInput(
+            document_id=document.id,
+            persona_id="persona-1",
+            objective="Infer a useful plan",
+        )
+        plan, _, _, _ = service._build_plan_candidate(
+            goal=goal,
+            document=document,
+            persona_name="Test Mentor",
+            persona=planning_persona(),
+            debug_report=planning_debug(document),
+        )
+        self.assertTrue(all(
+            getattr(plan.planning_intent, field).status == "unknown"
+            for field in (
+                "pdf_page_ranges", "outline_targets", "session_count",
+                "minutes_per_session", "output_language",
+            )
+        ))
+        resolved = plan.resolved_planning_intent
+        self.assertIsNotNone(resolved)
+        assert resolved is not None
+        self.assertTrue(all(
+            getattr(resolved, field).source == "model_inferred"
+            for field in (
+                "pdf_page_ranges", "outline_targets", "session_count",
+                "minutes_per_session", "output_language",
+            )
+        ))
+        self.assertEqual(resolved.session_count.value, len(plan.schedule))
+        self.assertEqual(resolved.minutes_per_session.value, 45)
+        self.assertEqual(resolved.output_language.value, plan.output_language)
 
 
 if __name__ == "__main__":

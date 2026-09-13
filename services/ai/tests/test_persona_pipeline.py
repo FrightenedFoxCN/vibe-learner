@@ -3300,16 +3300,18 @@ class PersonaPipelineTests(ContainerTestCase):
                                 "content": json.dumps(
                                     {
                                         "schema_name": "learning-plan-proposal",
-                                        "schema_version": "learning-plan-proposal-v1",
+                                        "schema_version": "learning-plan-proposal-v2",
                                         "course_title": "Discrete Mathematics / Chapter 1 Foundations",
                                         "overview": "LLM plan overview",
+                                        "output_language": "en",
                                         "today_tasks": ["Read Chapter 1 carefully."],
                                         "schedule": [
                                             {
-                                                "unit_id": "unit-1",
+                                                "unit_index": 0,
                                                 "title": "Chapter 1 Foundations 精读",
                                                 "focus": "理解定义与例题。",
                                                 "activity_type": "learn",
+                                                "duration_minutes": 45,
                                                 "schedule_chapters": [
                                                     _plan_proposal_schedule_chapter(
                                                         title="Chapter 1 Foundations",
@@ -3461,16 +3463,18 @@ class PersonaPipelineTests(ContainerTestCase):
                                 "content": json.dumps(
                                     {
                                         "schema_name": "learning-plan-proposal",
-                                        "schema_version": "learning-plan-proposal-v1",
+                                        "schema_version": "learning-plan-proposal-v2",
                                         "course_title": "Discrete Mathematics / Chapter 1 Foundations",
                                         "overview": "Tool-assisted plan overview",
+                                        "output_language": "en",
                                         "today_tasks": ["Read sets and extensionality."],
                                         "schedule": [
                                             {
-                                                "unit_id": "unit-1",
+                                                "unit_index": 0,
                                                 "title": "Chapter 1 Foundations 精读",
                                                 "focus": "Cover sets, subsets, and extensionality.",
                                                 "activity_type": "learn",
+                                                "duration_minutes": 45,
                                                 "schedule_chapters": [
                                                     _plan_proposal_schedule_chapter(
                                                         title="1.1 Sets",
@@ -3639,16 +3643,18 @@ class PersonaPipelineTests(ContainerTestCase):
                                 "content": json.dumps(
                                     {
                                         "schema_name": "learning-plan-proposal",
-                                        "schema_version": "learning-plan-proposal-v1",
+                                        "schema_version": "learning-plan-proposal-v2",
                                         "course_title": "Discrete Mathematics / Chapter 1 Foundations",
                                         "overview": "Recovered after transparent regeneration.",
+                                        "output_language": "en",
                                         "today_tasks": ["Read sets and extensionality."],
                                         "schedule": [
                                             {
-                                                "unit_id": "unit-1",
+                                                "unit_index": 0,
                                                 "title": "Chapter 1 Foundations 精读",
                                                 "focus": "Cover sets, subsets, and extensionality.",
                                                 "activity_type": "learn",
+                                                "duration_minutes": 45,
                                                 "schedule_chapters": [
                                                     _plan_proposal_schedule_chapter(
                                                         title="Chapter 1 Foundations",
@@ -3798,16 +3804,18 @@ class PersonaPipelineTests(ContainerTestCase):
                                 "content": json.dumps(
                                     {
                                         "schema_name": "learning-plan-proposal",
-                                        "schema_version": "learning-plan-proposal-v1",
+                                        "schema_version": "learning-plan-proposal-v2",
                                         "course_title": "Discrete Mathematics / Revised",
                                         "overview": "Use the revised segmentation.",
+                                        "output_language": "en",
                                         "today_tasks": ["Start with the corrected first chapter."],
                                         "schedule": [
                                             {
-                                                "unit_id": "doc-1:study-unit:llm:1",
+                                                "unit_index": 0,
                                                 "title": "Chapter 1 Foundations 精读",
                                                 "focus": "Study the corrected first chapter.",
                                                 "activity_type": "learn",
+                                                "duration_minutes": 45,
                                                 "schedule_chapters": [
                                                     _plan_proposal_schedule_chapter(
                                                         title="Chapter 1 Foundations",
@@ -3903,16 +3911,18 @@ class PersonaPipelineTests(ContainerTestCase):
                                 "content": json.dumps(
                                     {
                                         "schema_name": "learning-plan-proposal",
-                                        "schema_version": "learning-plan-proposal-v1",
+                                        "schema_version": "learning-plan-proposal-v2",
                                         "course_title": "Physics / Chapter 2 Graphs",
                                         "overview": "Use the page image to understand the diagram-heavy unit.",
+                                        "output_language": "en",
                                         "today_tasks": ["Inspect the textbook figure and summarize it."],
                                         "schedule": [
                                             {
-                                                "unit_id": "unit-graph",
+                                                "unit_index": 0,
                                                 "title": "Chapter 2 Graphs 精读",
                                                 "focus": "Interpret the chart and connect it with the surrounding explanation.",
                                                 "activity_type": "learn",
+                                                "duration_minutes": 45,
                                                 "schedule_chapters": [
                                                     _plan_proposal_schedule_chapter(
                                                         title="Chapter 2 Graphs",
@@ -4161,6 +4171,7 @@ class PersonaPipelineTests(ContainerTestCase):
                         title="Chapter 1 Vectors 精读",
                         focus="完成向量定义与例题梳理。",
                         activity_type="learn",
+                        duration_minutes=45,
                         schedule_chapters=[
                             _schedule_chapter_record(
                                 chapter_id="doc-plan:study-unit:1:chapter-1",
@@ -4261,6 +4272,7 @@ class PersonaPipelineTests(ContainerTestCase):
                         title="Chapter 1 Foundations 精读",
                         focus="修正后的第一章。",
                         activity_type="learn",
+                        duration_minutes=45,
                         schedule_chapters=[
                             _schedule_chapter_record(
                                 chapter_id="doc-revise:study-unit:llm:1:chapter-1",

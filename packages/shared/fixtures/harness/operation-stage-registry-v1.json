@@ -71,7 +71,7 @@
       "owner_module": "app.services.plan_prompt",
       "contract": {
         "name": "planning_prompt",
-        "version": "planning-prompt-v4"
+        "version": "planning-prompt-v5"
       }
     },
     {

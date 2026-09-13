@@ -266,18 +266,20 @@
       "scenario": "valid",
       "input": {
         "schema_name": "learning-plan-proposal",
-        "schema_version": "learning-plan-proposal-v1",
+        "schema_version": "learning-plan-proposal-v2",
         "course_title": "Vectors",
         "overview": "Build a basis then examine linear maps.",
+        "output_language": "en",
         "today_tasks": [
           "Read the first example."
         ],
         "schedule": [
           {
-            "unit_id": "u1",
+            "unit_index": 0,
             "title": "Vectors",
             "focus": "Find a basis",
             "activity_type": "learn",
+            "duration_minutes": 45,
             "schedule_chapters": [
               {
                 "title": "Basis",
@@ -311,18 +313,20 @@
       "scenario": "foreign_unit",
       "input": {
         "schema_name": "learning-plan-proposal",
-        "schema_version": "learning-plan-proposal-v1",
+        "schema_version": "learning-plan-proposal-v2",
         "course_title": "Vectors",
         "overview": "Build a basis then examine linear maps.",
+        "output_language": "en",
         "today_tasks": [
           "Read the first example."
         ],
         "schedule": [
           {
-            "unit_id": "foreign",
+            "unit_index": 99,
             "title": "Vectors",
             "focus": "Find a basis",
             "activity_type": "learn",
+            "duration_minutes": 45,
             "schedule_chapters": [
               {
                 "title": "Basis",
@@ -356,18 +360,20 @@
       "scenario": "foreign_section",
       "input": {
         "schema_name": "learning-plan-proposal",
-        "schema_version": "learning-plan-proposal-v1",
+        "schema_version": "learning-plan-proposal-v2",
         "course_title": "Vectors",
         "overview": "Build a basis then examine linear maps.",
+        "output_language": "en",
         "today_tasks": [
           "Read the first example."
         ],
         "schedule": [
           {
-            "unit_id": "u1",
+            "unit_index": 0,
             "title": "Vectors",
             "focus": "Find a basis",
             "activity_type": "learn",
+            "duration_minutes": 45,
             "schedule_chapters": [
               {
                 "title": "Basis",
@@ -401,18 +407,20 @@
       "scenario": "foreign_slice",
       "input": {
         "schema_name": "learning-plan-proposal",
-        "schema_version": "learning-plan-proposal-v1",
+        "schema_version": "learning-plan-proposal-v2",
         "course_title": "Vectors",
         "overview": "Build a basis then examine linear maps.",
+        "output_language": "en",
         "today_tasks": [
           "Read the first example."
         ],
         "schedule": [
           {
-            "unit_id": "u1",
+            "unit_index": 0,
             "title": "Vectors",
             "focus": "Find a basis",
             "activity_type": "learn",
+            "duration_minutes": 45,
             "schedule_chapters": [
               {
                 "title": "Basis",
@@ -446,18 +454,20 @@
       "scenario": "multi_session_same_unit",
       "input": {
         "schema_name": "learning-plan-proposal",
-        "schema_version": "learning-plan-proposal-v1",
+        "schema_version": "learning-plan-proposal-v2",
         "course_title": "Vectors",
         "overview": "Build a basis then examine linear maps.",
+        "output_language": "en",
         "today_tasks": [
           "Read the first example."
         ],
         "schedule": [
           {
-            "unit_id": "u1",
+            "unit_index": 0,
             "title": "Vectors",
             "focus": "Find a basis",
             "activity_type": "learn",
+            "duration_minutes": 45,
             "schedule_chapters": [
               {
                 "title": "Basis",
@@ -479,10 +489,11 @@
             ]
           },
           {
-            "unit_id": "u1",
+            "unit_index": 0,
             "title": "Vectors",
             "focus": "Find a basis",
             "activity_type": "learn",
+            "duration_minutes": 45,
             "schedule_chapters": [
               {
                 "title": "Basis",
@@ -516,18 +527,20 @@
       "scenario": "owned_id",
       "input": {
         "schema_name": "learning-plan-proposal",
-        "schema_version": "learning-plan-proposal-v1",
+        "schema_version": "learning-plan-proposal-v2",
         "course_title": "Vectors",
         "overview": "Build a basis then examine linear maps.",
+        "output_language": "en",
         "today_tasks": [
           "Read the first example."
         ],
         "schedule": [
           {
-            "unit_id": "u1",
+            "unit_index": 0,
             "title": "Vectors",
             "focus": "Find a basis",
             "activity_type": "learn",
+            "duration_minutes": 45,
             "schedule_chapters": [
               {
                 "title": "Basis",
@@ -562,18 +575,20 @@
       "scenario": "reverse_range",
       "input": {
         "schema_name": "learning-plan-proposal",
-        "schema_version": "learning-plan-proposal-v1",
+        "schema_version": "learning-plan-proposal-v2",
         "course_title": "Vectors",
         "overview": "Build a basis then examine linear maps.",
+        "output_language": "en",
         "today_tasks": [
           "Read the first example."
         ],
         "schedule": [
           {
-            "unit_id": "u1",
+            "unit_index": 0,
             "title": "Vectors",
             "focus": "Find a basis",
             "activity_type": "learn",
+            "duration_minutes": 45,
             "schedule_chapters": [
               {
                 "title": "Basis",
@@ -607,18 +622,20 @@
       "scenario": "goal_only",
       "input": {
         "schema_name": "learning-plan-proposal",
-        "schema_version": "learning-plan-proposal-v1",
+        "schema_version": "learning-plan-proposal-v2",
         "course_title": "Vectors",
         "overview": "Build a basis then examine linear maps.",
+        "output_language": "en",
         "today_tasks": [
           "Read the first example."
         ],
         "schedule": [
           {
-            "unit_id": "u1",
+            "unit_index": 0,
             "title": "Vectors",
             "focus": "Find a basis",
             "activity_type": "learn",
+            "duration_minutes": 45,
             "schedule_chapters": [
               {
                 "title": "Basis",
