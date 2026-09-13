@@ -32,6 +32,8 @@ def valid_proposal_payload() -> dict:
                 "focus": "理解集合与命题逻辑。",
                 "activity_type": "learn",
                 "duration_minutes": 45,
+                "coverage_mode": "complete",
+                "workload_rationale": "",
                 "schedule_chapters": [
                     {
                         "title": "1.1 集合",

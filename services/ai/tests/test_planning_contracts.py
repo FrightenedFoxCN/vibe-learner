@@ -12,7 +12,7 @@ from app.models.domain import LearningGoalInput, PersonaProfile, SceneProfileRec
 from app.models.planning import (
     LEARNING_PLAN_PROPOSAL_SCHEMA_NAME,
     LEARNING_PLAN_PROPOSAL_SCHEMA_VERSION,
-    LearningPlanProposalV2,
+    LearningPlanProposalV2, LearningPlanProposalV3,
     PlanContentSliceProposalV1,
     PlanScheduleChapterProposalV1,
 )
@@ -48,6 +48,22 @@ class PlanningContractTests(unittest.TestCase):
         payload["schedule"].append(dict(payload["schedule"][0]))
         proposal = _decode_learning_plan_proposal(json.dumps(payload))
         self.assertEqual([item.unit_index for item in proposal.schedule], [0, 0])
+
+    def test_legacy_v2_requires_an_explicit_decode_only_opt_in(self) -> None:
+        payload = _valid_proposal_payload()
+        payload["schema_version"] = "learning-plan-proposal-v2"
+        for item in payload["schedule"]:
+            item.pop("coverage_mode")
+            item.pop("workload_rationale")
+
+        with self.assertRaises(PlanningProposalDecodeError) as raised:
+            _decode_learning_plan_proposal(json.dumps(payload))
+        self.assertEqual(raised.exception.path, "schema_version")
+
+        historical = _decode_learning_plan_proposal(
+            json.dumps(payload), allow_legacy_v2=True,
+        )
+        self.assertIsInstance(historical, LearningPlanProposalV2)
 
     def test_goal_only_prompt_and_projection_use_empty_section_allowlist(self) -> None:
         from app.services.plan_prompt import build_learning_plan_messages
@@ -143,7 +159,7 @@ class PlanningContractTests(unittest.TestCase):
         payload["schedule"][0]["unit_id"] = "unit-1"
 
         with self.assertRaises(ValidationError) as unit_id:
-            LearningPlanProposalV2.model_validate(payload)
+            LearningPlanProposalV3.model_validate(payload)
 
         self.assertEqual(
             unit_id.exception.errors(include_url=False)[0]["loc"],
@@ -154,7 +170,7 @@ class PlanningContractTests(unittest.TestCase):
         payload["schedule"][0]["schedule_chapters"][0]["id"] = "forged-id"
 
         with self.assertRaises(ValidationError) as forged:
-            LearningPlanProposalV2.model_validate(payload)
+            LearningPlanProposalV3.model_validate(payload)
 
         self.assertEqual(
             forged.exception.errors(include_url=False)[0]["loc"],
@@ -164,7 +180,7 @@ class PlanningContractTests(unittest.TestCase):
         payload = _valid_proposal_payload()
         payload["schedule"][0]["schedule_chapters"][0]["anchor_page_start"] = "1"
         with self.assertRaises(ValidationError) as coerced:
-            LearningPlanProposalV2.model_validate(payload)
+            LearningPlanProposalV3.model_validate(payload)
         self.assertEqual(
             coerced.exception.errors(include_url=False)[0]["loc"],
             ("schedule", 0, "schedule_chapters", 0, "anchor_page_start"),
@@ -179,6 +195,15 @@ class PlanningContractTests(unittest.TestCase):
 
         self.assertEqual(raised.exception.path, "schedule.0.unit_index")
         self.assertEqual(raised.exception.reason, "int_type")
+
+    def test_selective_coverage_requires_a_sufficient_reason(self) -> None:
+        payload = _valid_proposal_payload()
+        payload["schedule"][0]["coverage_mode"] = "selective"
+        payload["schedule"][0]["workload_rationale"] = "Skim it."
+        with self.assertRaises(PlanningProposalDecodeError) as raised:
+            _decode_learning_plan_proposal(json.dumps(payload))
+        self.assertEqual(raised.exception.path, "schedule.0")
+        self.assertEqual(raised.exception.reason, "coverage_rationale_too_short")
 
     def test_model_proposal_repair_is_bounded_to_one_retry(self) -> None:
         provider = OpenAIModelProvider(

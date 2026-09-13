@@ -162,6 +162,57 @@ def planning_intent_outcomes(plan, intent, detail_reads, page_content_reads):
     return {"success": not failures, "failures": failures}
 
 
+def planning_workload_outcomes(plan):
+    """Check the auditable workload boundary without grading rationale prose."""
+    failures = []
+    outcomes = []
+    schedule = plan.get("schedule") if isinstance(plan.get("schedule"), list) else []
+    for index, item in enumerate(schedule):
+        if not isinstance(item, dict):
+            failures.append(f"schedule_{index}_invalid")
+            continue
+        pages = set()
+        chapters = item.get("schedule_chapters", [])
+        if not isinstance(chapters, list):
+            failures.append(f"schedule_{index}_chapters_invalid")
+            chapters = []
+        for chapter in chapters:
+            if not isinstance(chapter, dict):
+                continue
+            content_slices = chapter.get("content_slices", [])
+            if not isinstance(content_slices, list):
+                continue
+            for content_slice in content_slices:
+                if not isinstance(content_slice, dict):
+                    continue
+                page_start = content_slice.get("page_start")
+                page_end = content_slice.get("page_end")
+                if type(page_start) is not int or type(page_end) is not int:
+                    continue
+                if page_end >= page_start:
+                    pages.update(range(page_start, page_end + 1))
+        duration = item.get("duration_minutes")
+        minutes_per_page = 1 if item.get("activity_type") == "review" else 3
+        capacity = max(1, duration // minutes_per_page) if type(duration) is int else 0
+        overloaded = len(pages) > capacity
+        mode = item.get("coverage_mode")
+        rationale = item.get("workload_rationale")
+        rationale_chars = len(rationale.strip()) if isinstance(rationale, str) else 0
+        if overloaded and mode not in {"selective", "overview"}:
+            failures.append(f"schedule_{index}_overload_mode_missing")
+        if overloaded and rationale_chars < 40:
+            failures.append(f"schedule_{index}_overload_rationale_insufficient")
+        outcomes.append({
+            "schedule_index": index,
+            "scheduled_pages": len(pages),
+            "page_capacity": capacity,
+            "overloaded": overloaded,
+            "coverage_mode": mode,
+            "rationale_characters": rationale_chars,
+        })
+    return {"success": not failures, "failures": failures, "schedule": outcomes}
+
+
 def _request_shape(payload):
     """Return content-safe request size diagnostics for experiment comparison."""
     messages = payload.get("messages") or []
@@ -617,6 +668,13 @@ def run(root, repetitions, budget_candidate=False, selected_case=None, detail_pa
                                     row["boundary_success"]
                                     and row["intent_validation"]["success"]
                                 )
+                            row["workload_validation"] = planning_workload_outcomes(
+                                row.get("result", {})
+                            )
+                            row["boundary_success"] = (
+                                bool(row["boundary_success"])
+                                and row["workload_validation"]["success"]
+                            )
                     except Exception as exc:
                         row["error_class"] = type(exc).__name__
                     row["elapsed_ms"] = round((time.perf_counter() - start) * 1000)

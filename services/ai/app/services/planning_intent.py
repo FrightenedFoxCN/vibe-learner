@@ -15,6 +15,20 @@ from app.models.domain import (
 )
 
 
+LEARN_MINUTES_PER_PAGE = 3
+REVIEW_MINUTES_PER_PAGE = 1
+
+
+def _scheduled_page_count(item: object) -> int:
+    pages = {
+        page
+        for chapter in getattr(item, "schedule_chapters", [])
+        for content_slice in chapter.content_slices
+        for page in range(content_slice.page_start, content_slice.page_end + 1)
+    }
+    return len(pages)
+
+
 def explicit_page_ranges(intent: PlanningIntentV1) -> list[tuple[int, int]]:
     if intent.pdf_page_ranges.status != "user_explicit":
         return []
@@ -97,6 +111,27 @@ def validate_schedule_against_intent(*, schedule: list[object], intent: Planning
                 f"plan_proposal_invariant_failed:schedule.{index}.duration_minutes:"
                 "explicit_minutes_mismatch"
             )
+        activity_type = getattr(item, "activity_type", None)
+        minutes_per_page = (
+            REVIEW_MINUTES_PER_PAGE
+            if activity_type == "review"
+            else LEARN_MINUTES_PER_PAGE
+        )
+        scheduled_pages = _scheduled_page_count(item)
+        page_capacity = max(1, duration // minutes_per_page)
+        coverage_mode = getattr(item, "coverage_mode", None)
+        if scheduled_pages > page_capacity and coverage_mode is not None:
+            if coverage_mode not in {"selective", "overview"}:
+                raise RuntimeError(
+                    f"plan_proposal_invariant_failed:schedule.{index}.coverage_mode:"
+                    "overload_requires_selective_or_overview"
+                )
+            rationale = getattr(item, "workload_rationale", "")
+            if not isinstance(rationale, str) or len(rationale.strip()) < 40:
+                raise RuntimeError(
+                    f"plan_proposal_invariant_failed:schedule.{index}.workload_rationale:"
+                    "overload_requires_sufficient_rationale"
+                )
         for chapter_index, chapter in enumerate(getattr(item, "schedule_chapters", [])):
             chapter_sources = set(chapter.source_section_ids)
             if explicit_targets and not chapter_sources.issubset(explicit_targets):

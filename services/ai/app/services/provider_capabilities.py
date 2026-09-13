@@ -45,6 +45,8 @@ class PlanScheduleItem:
     activity_type: str
     schedule_chapters: list[PlanScheduleChapterProposalV1]
     duration_minutes: int | None = None
+    coverage_mode: Literal["complete", "selective", "overview"] | None = None
+    workload_rationale: str = ""
 
 
 @dataclass

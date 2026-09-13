@@ -2251,10 +2251,14 @@ class PersonaPipelineTests(ContainerTestCase):
 
         self.assertIn("必须严格输出单个 JSON 对象", template.system_prompt)
         self.assertIn('"course_title": string', template.system_prompt)
+        self.assertIn('"schema_version": "learning-plan-proposal-v3"', template.system_prompt)
+        self.assertIn('"coverage_mode": "complete" | "selective" | "overview"', template.system_prompt)
         self.assertIn("source-minimal-v3，生产默认", template.system_prompt)
         self.assertIn("只保留来源记录时点的该状态", template.system_prompt)
         self.assertIn("学习时长只约束学习活动", template.system_prompt)
         self.assertIn("完整必要片段", template.system_prompt)
+        self.assertIn("尚未核验的 p.X-Y", template.system_prompt)
+        self.assertIn("不得预告其具体概念、论证或例题", template.system_prompt)
         self.assertGreaterEqual(len(template.user_instructions), 3)
         self.assertIn("study_units", template.user_instructions[0])
 
@@ -3300,7 +3304,7 @@ class PersonaPipelineTests(ContainerTestCase):
                                 "content": json.dumps(
                                     {
                                         "schema_name": "learning-plan-proposal",
-                                        "schema_version": "learning-plan-proposal-v2",
+                                        "schema_version": "learning-plan-proposal-v3",
                                         "course_title": "Discrete Mathematics / Chapter 1 Foundations",
                                         "overview": "LLM plan overview",
                                         "output_language": "en",
@@ -3312,6 +3316,11 @@ class PersonaPipelineTests(ContainerTestCase):
                                                 "focus": "理解定义与例题。",
                                                 "activity_type": "learn",
                                                 "duration_minutes": 45,
+                                                "coverage_mode": "selective",
+                                                "workload_rationale": (
+                                                    "Use this session for representative definitions and examples; "
+                                                    "defer the remaining pages to the next close-reading session."
+                                                ),
                                                 "schedule_chapters": [
                                                     _plan_proposal_schedule_chapter(
                                                         title="Chapter 1 Foundations",
@@ -3463,7 +3472,7 @@ class PersonaPipelineTests(ContainerTestCase):
                                 "content": json.dumps(
                                     {
                                         "schema_name": "learning-plan-proposal",
-                                        "schema_version": "learning-plan-proposal-v2",
+                                        "schema_version": "learning-plan-proposal-v3",
                                         "course_title": "Discrete Mathematics / Chapter 1 Foundations",
                                         "overview": "Tool-assisted plan overview",
                                         "output_language": "en",
@@ -3475,6 +3484,8 @@ class PersonaPipelineTests(ContainerTestCase):
                                                 "focus": "Cover sets, subsets, and extensionality.",
                                                 "activity_type": "learn",
                                                 "duration_minutes": 45,
+                                                "coverage_mode": "complete",
+                                                "workload_rationale": "",
                                                 "schedule_chapters": [
                                                     _plan_proposal_schedule_chapter(
                                                         title="1.1 Sets",
@@ -3643,7 +3654,7 @@ class PersonaPipelineTests(ContainerTestCase):
                                 "content": json.dumps(
                                     {
                                         "schema_name": "learning-plan-proposal",
-                                        "schema_version": "learning-plan-proposal-v2",
+                                        "schema_version": "learning-plan-proposal-v3",
                                         "course_title": "Discrete Mathematics / Chapter 1 Foundations",
                                         "overview": "Recovered after transparent regeneration.",
                                         "output_language": "en",
@@ -3655,6 +3666,11 @@ class PersonaPipelineTests(ContainerTestCase):
                                                 "focus": "Cover sets, subsets, and extensionality.",
                                                 "activity_type": "learn",
                                                 "duration_minutes": 45,
+                                                "coverage_mode": "selective",
+                                                "workload_rationale": (
+                                                    "Use this session for representative definitions and examples; "
+                                                    "defer the remaining pages to the next close-reading session."
+                                                ),
                                                 "schedule_chapters": [
                                                     _plan_proposal_schedule_chapter(
                                                         title="Chapter 1 Foundations",
@@ -3804,7 +3820,7 @@ class PersonaPipelineTests(ContainerTestCase):
                                 "content": json.dumps(
                                     {
                                         "schema_name": "learning-plan-proposal",
-                                        "schema_version": "learning-plan-proposal-v2",
+                                        "schema_version": "learning-plan-proposal-v3",
                                         "course_title": "Discrete Mathematics / Revised",
                                         "overview": "Use the revised segmentation.",
                                         "output_language": "en",
@@ -3816,6 +3832,8 @@ class PersonaPipelineTests(ContainerTestCase):
                                                 "focus": "Study the corrected first chapter.",
                                                 "activity_type": "learn",
                                                 "duration_minutes": 45,
+                                                "coverage_mode": "complete",
+                                                "workload_rationale": "",
                                                 "schedule_chapters": [
                                                     _plan_proposal_schedule_chapter(
                                                         title="Chapter 1 Foundations",
@@ -3911,7 +3929,7 @@ class PersonaPipelineTests(ContainerTestCase):
                                 "content": json.dumps(
                                     {
                                         "schema_name": "learning-plan-proposal",
-                                        "schema_version": "learning-plan-proposal-v2",
+                                        "schema_version": "learning-plan-proposal-v3",
                                         "course_title": "Physics / Chapter 2 Graphs",
                                         "overview": "Use the page image to understand the diagram-heavy unit.",
                                         "output_language": "en",
@@ -3923,6 +3941,8 @@ class PersonaPipelineTests(ContainerTestCase):
                                                 "focus": "Interpret the chart and connect it with the surrounding explanation.",
                                                 "activity_type": "learn",
                                                 "duration_minutes": 45,
+                                                "coverage_mode": "complete",
+                                                "workload_rationale": "",
                                                 "schedule_chapters": [
                                                     _plan_proposal_schedule_chapter(
                                                         title="Chapter 2 Graphs",

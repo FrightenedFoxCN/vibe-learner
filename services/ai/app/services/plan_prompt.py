@@ -23,7 +23,7 @@ from app.services.prompt_loader import load_prompt_template
 PLAN_JSON_SCHEMA = (
     "{"
     '"schema_name": "learning-plan-proposal", '
-    '"schema_version": "learning-plan-proposal-v2", '
+    '"schema_version": "learning-plan-proposal-v3", '
     '"course_title": string, '
     '"overview": string, '
     '"output_language": string, '
@@ -35,6 +35,8 @@ PLAN_JSON_SCHEMA = (
     '"focus": string, '
     '"activity_type": "learn" | "review", '
     '"duration_minutes": integer, '
+    '"coverage_mode": "complete" | "selective" | "overview", '
+    '"workload_rationale": string, '
     '"schedule_chapters": ['
     "{"
     '"title": string, '

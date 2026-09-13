@@ -732,6 +732,8 @@ export interface StudyScheduleItem {
   focus: string;
   activityType: string;
   durationMinutes?: number;
+  coverageMode?: "complete" | "selective" | "overview";
+  workloadRationale?: string;
   status: string;
   scheduleChapters: ScheduleChapter[];
 }

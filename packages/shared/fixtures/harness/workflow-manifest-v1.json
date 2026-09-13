@@ -843,7 +843,7 @@
             "status": "registered",
             "contract": {
               "name": "planning_prompt",
-              "version": "planning-prompt-v5"
+              "version": "planning-prompt-v6"
             }
           }
         },
@@ -862,7 +862,7 @@
         "status": "registered",
         "contract": {
           "name": "LearningPlanPrompt",
-          "version": "planning-prompt-v5"
+          "version": "planning-prompt-v6"
         }
       },
       "policy_contract": {

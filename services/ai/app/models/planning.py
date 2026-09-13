@@ -20,7 +20,7 @@ from app.models.domain import (
 PLANNING_TOOL_ARGUMENT_CONTRACT_VERSION = "planning-tool-arguments-v1"
 PLANNING_TOOL_RESULT_CONTRACT_VERSION = "planning-tool-result-v1"
 LEARNING_PLAN_PROPOSAL_SCHEMA_NAME = "learning-plan-proposal"
-LEARNING_PLAN_PROPOSAL_SCHEMA_VERSION = "learning-plan-proposal-v2"
+LEARNING_PLAN_PROPOSAL_SCHEMA_VERSION = "learning-plan-proposal-v3"
 LEARNING_PLAN_OPERATION_REQUEST_SCHEMA_VERSION = "learning-plan-operation-request-v1"
 LEARNING_PLAN_OPERATION_FINGERPRINT_LEGACY_VERSION = "learning-plan-operation-fingerprint-v1"
 LEARNING_PLAN_OPERATION_FINGERPRINT_VERSION = "learning-plan-operation-fingerprint-v2"
@@ -293,6 +293,34 @@ class LearningPlanProposalV2(_StrictPlanningModel):
     )
     today_tasks: list[ShortText] = Field(min_length=1, max_length=12)
     schedule: list[PlanScheduleItemProposalV2] = Field(min_length=1, max_length=24)
+
+
+class PlanScheduleItemProposalV3(PlanScheduleItemProposalV2):
+    coverage_mode: Literal["complete", "selective", "overview"]
+    workload_rationale: Annotated[str, Field(max_length=1000)] = ""
+
+    @model_validator(mode="after")
+    def validate_workload_rationale(self) -> "PlanScheduleItemProposalV3":
+        if (
+            self.coverage_mode in {"selective", "overview"}
+            and len(self.workload_rationale.strip()) < 40
+        ):
+            raise ValueError("coverage_rationale_too_short")
+        return self
+
+
+class LearningPlanProposalV3(_StrictPlanningModel):
+    schema_name: Literal["learning-plan-proposal"]
+    schema_version: Literal["learning-plan-proposal-v3"]
+    course_title: ShortText
+    overview: LongText
+    output_language: str = Field(
+        min_length=2,
+        max_length=35,
+        pattern=r"^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$",
+    )
+    today_tasks: list[ShortText] = Field(min_length=1, max_length=12)
+    schedule: list[PlanScheduleItemProposalV3] = Field(min_length=1, max_length=24)
 
 PLANNING_TOOL_ARGUMENT_MODELS: dict[str, type[_StrictPlanningModel]] = {
     "get_study_unit_detail": GetStudyUnitDetailArgumentsV1,

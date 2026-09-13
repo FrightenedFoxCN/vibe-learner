@@ -6,7 +6,7 @@ from tests.support.scene_proposals import layer, scene
 import copy
 import unittest
 
-from app.models.planning import LearningPlanOperationRequestV1, LearningPlanProposalV2
+from app.models.planning import LearningPlanOperationRequestV1, LearningPlanProposalV3
 from app.models.scene import SceneTreeProposalV1, project_scene_tree_proposal
 from app.models.study_chat_operation import StudyChatOperationRequestPayload
 from app.models.tavern import CreateTavernRoomRequest, TavernTurnRequest
@@ -238,18 +238,20 @@ class Wave45InputLimitTests(unittest.TestCase):
             focus="f" * 2000,
             activity_type="learn",
             duration_minutes=45,
+            coverage_mode="complete",
+            workload_rationale="",
             schedule_chapters=[copy.deepcopy(chapter) for _ in range(24)],
         )
         payload = dict(
             schema_name="learning-plan-proposal",
-            schema_version="learning-plan-proposal-v2",
+            schema_version="learning-plan-proposal-v3",
             course_title="c" * 500,
             overview="o" * 4000,
             output_language="en",
             today_tasks=["t" * 500] * 12,
             schedule=[dict(item, unit_index=i) for i in range(24)],
         )
-        parsed = LearningPlanProposalV2.model_validate(payload)
+        parsed = LearningPlanProposalV3.model_validate(payload)
         self.assertEqual(
             sum(
                 len(c.content_slices)
@@ -279,7 +281,7 @@ class Wave45InputLimitTests(unittest.TestCase):
                 else copy.deepcopy(target[field][0])
             )
             with self.subTest(field=field), self.assertRaises(ValidationError):
-                LearningPlanProposalV2.model_validate(broken)
+                LearningPlanProposalV3.model_validate(broken)
 
     def test_document_256_page_stress_commits_and_preserves_anchors(self):
         import io

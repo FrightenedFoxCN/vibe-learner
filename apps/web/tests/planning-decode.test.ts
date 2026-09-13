@@ -116,7 +116,35 @@ test("Planning decoder accepts a coherent plan and list envelope", () => {
     expectedDocumentId: "document-1",
   });
   assert.equal(plan.schedule[0]?.scheduleChapters[0]?.anchorPageEnd, 2);
+  assert.equal(plan.schedule[0]?.coverageMode, "complete");
   assert.deepEqual(decodeLearningPlanList({ items: [wirePlan()] }), [plan]);
+});
+
+test("Planning decoder requires an auditable reason for selective or overview coverage", () => {
+  const base = wirePlan();
+  const schedule = base.schedule[0];
+  const accepted = decodeLearningPlan({
+    ...base,
+    schedule: [{
+      ...schedule,
+      coverage_mode: "overview",
+      workload_rationale: "This session maps the chapter, skips line-by-line proofs, and defers exercises to the next close-reading session.",
+    }],
+  });
+  assert.equal(accepted.schedule[0]?.coverageMode, "overview");
+
+  assert.throws(
+    () => decodeLearningPlan({
+      ...base,
+      schedule: [{
+        ...schedule,
+        coverage_mode: "selective",
+        workload_rationale: "Skim it.",
+      }],
+    }),
+    (error: unknown) => error instanceof PlanningDecodeError
+      && error.reason === "overload_requires_sufficient_rationale",
+  );
 });
 
 test("Planning decoder keeps unknown intent separate from model-inferred resolution", () => {

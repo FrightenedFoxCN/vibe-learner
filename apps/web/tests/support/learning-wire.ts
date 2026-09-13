@@ -48,6 +48,8 @@ export function wirePlan() {
         title: "Learn unit",
         focus: "Concepts",
         activity_type: "learn",
+        coverage_mode: "complete",
+        workload_rationale: "",
         status: "planned",
         schedule_chapters: [wireChapter()],
       },

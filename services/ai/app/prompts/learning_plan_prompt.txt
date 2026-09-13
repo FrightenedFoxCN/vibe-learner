@@ -21,13 +21,13 @@
 - 当学习目标和教材结构存在缺口时，先区分“目标与教材不匹配”和“目录确实解析错误”；前者应提问或保守安排，不能重写教材结构来迎合目标。
 - 如果 `planning_feedback.answered_questions` 不为空，这些回答代表学习者最新确认的偏好，优先级高于之前的保守假设；应据此修订 `current_plan`，而不是忽略它们重新回到教材默认路径。
 - 只有当页范围、标题顺序或来源 Section 明确显示单元混合了多个实际章节、遗漏章节或保留了解析噪声时，才调用 `revise_study_units`；单元页数多或没有子标题本身不是重写依据。
-- `schedule[].schedule_chapters` 表示每个排期项下按顺序排列的来源章节锚点。只有 `subsection_titles`、`course_outline` 或成功工具结果明确给出子标题与边界时才可细分；否则只输出一个覆盖父 Study Unit 完整页范围、沿用父标题的章节锚点。
+- `schedule[].schedule_chapters` 表示每个排期项下按顺序排列的来源章节锚点。只有 `subsection_titles`、`course_outline` 或成功工具结果明确给出子标题与边界时才可细分；否则只输出一个沿用父标题的章节锚点。章节锚点可以保留完整来源范围，但 `content_slices` 只标记本课实际阅读或回读的页，不得为了覆盖父单元而把整章机械复制成课次负载。
 - `schedule[].unit_index` 必须引用当前 `study_units` 数组中的零基位置。不要输出真实 Study Unit ID；应用会在严格校验后把 request-local index 解析为应用拥有的 ID。
 - 同一 unit_index 可以出现在多个排期项中，例如用户明确要求多个课次时可分成学习、练习与复习；不要仅因引用相同就合并课次。
 - 章节与 content_slices 的 `source_section_ids` 只能取自父学习单元明确列出的 `source_section_ids`，不能把 unit_id 当作 Section ID，也不能从相关目录推测新引用。父单元的列表为空时，两处都必须输出 []。
 - goal_only 模式的页码只是阶段锚点：anchor_page_start/end 与 content_slices.page_start/end 使用父单元的 page_start/end，不虚构教材页码；source_section_ids 必须为空数组。
 - 不要输出 plan、schedule 或 schedule_chapter 的 ID、revision、状态或时间；这些提交身份由应用在校验后分配。
-- 每个排期项都输出 `duration_minutes`。用户未指定时，根据材料范围、活动类型和目标自行给出 1 到 480 分钟的合理值；用户明确指定时精确复用该值。
+- 每个排期项都输出 `duration_minutes`、`coverage_mode` 和 `workload_rationale`。用户未指定时，根据材料范围、活动类型和目标自行给出 1 到 480 分钟的合理时长；用户明确指定时精确复用。按物理页保守估算常规负载：`learn` 每页至少 3 分钟，`review` 每页至少 1 分钟；同一课重叠页只计一次。未超出时使用 `complete`，理由可为空。超出时不得伪装成完整精读：必须使用 `selective` 或 `overview`，并在不少于 40 个字符的理由中同时说明为何适合跳读/导览、本课采用什么压缩方式或省略哪些已知范围、后续如何补回；也可以缩小 `content_slices` 或增加课次。理由只解释教学取舍，不承担教材内容摘要：没有出现在 `source_evidence_excerpts` 或成功工具结果里的页，只能称为“尚未核验的 p.X-Y / 剩余页”，不得预告其具体概念、论证或例题。
 - `today_tasks` 输出 3 到 5 项；每个 `focus` 控制在 260 个字符以内，用 1 到 3 句说明阅读/练习、证据边界和复盘动作。不要在 JSON 字符串里使用未转义的英文双引号，引用教材短语时优先使用中文引号或单引号。
 - `source_evidence_excerpts` 是每个 Study Unit 的受限代表性正文片段，只能支持片段中实际出现的事实；它不是完整章节摘要。需要更多事实时，在一个工具轮内并行核查最关键的独立缺口，然后收束输出。
 - 工具结果若带 `truncated=true`，只把 `content_page_start` 到 `content_page_end` 视为已读范围；不得把请求的整个 page_start-page_end 当作已核验。只有确有必要时才从 `next_page_start` 继续窄范围读取。
@@ -52,7 +52,7 @@ JSON schema：
 如果给出了 `current_plan`，默认把它当作待修订草稿：尽量保留已合理的章节骨架，只在学习者回答、目标覆盖或目录细度要求下做必要改动。
 仅当 `segmentation_hints` 与实际标题、页范围或 Section 证据共同表明切分错误时才调用 `revise_study_units`。
 如果需要更细证据，在一个工具轮内选择最影响计划正确性的代表性章节核查；其余单元使用保守活动并明确待学习时核对，不得凭常识补写教材事实。
-`subsection_titles` 为空时不得创造编号式或情节式子章节；只生成一个父单元锚点。
+`subsection_titles` 为空时不得创造编号式或情节式子章节；只生成一个父单元锚点，但按本课可完成的负载缩小 `content_slices`。
 避免把不相关章节硬合并成一个学习章节子项。
 若修订了学习单元，最终 `schedule` 必须使用工具结果中修订后数组顺序对应的 `unit_index`。
 优先让每个 `schedule[].schedule_chapters[]` 都严格落在父 `unit_index` 对应 Study Unit 的内容范围内，便于后续按学习单元追踪完成度与在排期项内部切换子章节。

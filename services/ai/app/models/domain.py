@@ -594,6 +594,8 @@ class StudyScheduleRecord(BaseModel):
     focus: str
     activity_type: str
     duration_minutes: int | None = Field(default=None, ge=1, le=480)
+    coverage_mode: Literal["complete", "selective", "overview"] | None = None
+    workload_rationale: str = Field(default="", max_length=1000)
     status: str = "planned"
     schedule_chapters: list[ScheduleChapterRecord] = Field(default_factory=list)
 

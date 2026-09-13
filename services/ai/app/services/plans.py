@@ -811,6 +811,8 @@ class LearningPlanService:
             focus=item.focus,
             activity_type=item.activity_type,
             duration_minutes=getattr(item, "duration_minutes", None),
+            coverage_mode=getattr(item, "coverage_mode", None),
+            workload_rationale=getattr(item, "workload_rationale", ""),
             status="planned",
             schedule_chapters=schedule_chapters,
         )

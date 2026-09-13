@@ -13,7 +13,7 @@ from app.models.domain import (
     DocumentDebugRecord, LearningGoalInput, LearningPlanRecord, PersonaProfile,
     PlanningIntentV1, PlanningQuestionRecord, PlanGenerationTraceRecord, StudyUnitRecord,
 )
-from app.models.planning import LearningPlanProposalV2
+from app.models.planning import LearningPlanProposalV2, LearningPlanProposalV3
 from app.services.model_recovery import record_model_recovery
 from app.services.model_tool_config import PLAN_STAGE, TOOL_CATALOG
 from app.services.openai_plan_runner import OpenAIPlanRunner
@@ -202,6 +202,11 @@ class RemotePlanningProvider(PlanningModelCapability):
                     {"role": "system", "content": (
                         "你是 JSON 语法与严格契约修复器，不重新制定学习计划。"
                         "保留候选计划的语义和顺序，只修复 JSON 转义、缺失/多余字段、类型、引用和页范围。"
+                        "若错误指向超载，learn 每页按至少 3 分钟、review 每页按至少 1 分钟核算。"
+                        "可以缩小 content_slices；也可以把 coverage_mode 改为 selective 或 overview，"
+                        "并用不少于 40 个字符的 workload_rationale 说明跳读/导览理由、具体省略内容和后续补回方式。"
+                        "未出现在候选已有证据中的页只能按页码称为尚未核验的剩余页，"
+                        "不得在修复理由中新增对这些页的概念、论证或例题摘要。"
                         "不得增加候选中没有的教材事实，不得输出 markdown 或解释。"
                         "英文双引号若出现在字符串内容中必须转义，或替换为中文引号/单引号。"
                         f"输出必须符合：{PLAN_JSON_SCHEMA}"
@@ -266,6 +271,8 @@ class RemotePlanningProvider(PlanningModelCapability):
                 activity_type=item.activity_type,
                 schedule_chapters=list(item.schedule_chapters),
                 duration_minutes=item.duration_minutes,
+                coverage_mode=getattr(item, "coverage_mode", None),
+                workload_rationale=getattr(item, "workload_rationale", ""),
             )
             for item in proposal.schedule
         ]
@@ -360,7 +367,7 @@ class PlanningProposalDecodeError(RuntimeError):
 
 
 def _validate_learning_plan_proposal_refs(
-    proposal: LearningPlanProposalV2,
+    proposal: LearningPlanProposalV2 | LearningPlanProposalV3,
     study_units: list[StudyUnitRecord],
     planning_intent: PlanningIntentV1 | None = None,
 ) -> None:
@@ -406,8 +413,8 @@ def _validate_learning_plan_proposal_refs(
 
 
 def _decode_learning_plan_proposal(
-    content: str, *, allow_json_repair: bool = False,
-) -> LearningPlanProposalV2:
+    content: str, *, allow_json_repair: bool = False, allow_legacy_v2: bool = False,
+) -> LearningPlanProposalV2 | LearningPlanProposalV3:
     try:
         payload = _extract_json_payload(content)
     except RuntimeError as exc:
@@ -428,7 +435,10 @@ def _decode_learning_plan_proposal(
                 path="$", reason="plan_model_json_repair_not_object",
             )
     try:
-        return LearningPlanProposalV2.model_validate(payload)
+        proposal_type = LearningPlanProposalV3
+        if payload.get("schema_version") == "learning-plan-proposal-v2" and allow_legacy_v2:
+            proposal_type = LearningPlanProposalV2
+        return proposal_type.model_validate(payload)
     except ValidationError as exc:
         first_error = exc.errors(include_url=False)[0]
         path = ".".join(str(item) for item in first_error.get("loc", ())) or "$"
@@ -437,6 +447,7 @@ def _decode_learning_plan_proposal(
         if invariant in {
             "duplicate_schedule_unit_ref", "duplicate_source_section_id",
             "page_end_before_page_start", "anchor_page_end_before_start",
+            "coverage_rationale_too_short",
         }:
             reason = invariant
         raise PlanningProposalDecodeError(path=path, reason=reason) from exc

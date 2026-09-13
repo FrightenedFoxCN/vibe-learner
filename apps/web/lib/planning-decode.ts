@@ -865,6 +865,22 @@ function decodeScheduleItem(
     scheduleChapters.map((chapter) => chapter.anchorPageStart),
     `${path}.schedule_chapters.anchor_page_start`,
   );
+  const coverageMode = value.coverage_mode === null || value.coverage_mode === undefined
+    ? undefined
+    : decoder.enumeration(
+        value.coverage_mode,
+        ["complete", "selective", "overview"] as const,
+        `${path}.coverage_mode`,
+      );
+  const workloadRationale = value.workload_rationale === null || value.workload_rationale === undefined
+    ? undefined
+    : decoder.string(value.workload_rationale, `${path}.workload_rationale`, true);
+  if (coverageMode && coverageMode !== "complete" && (workloadRationale?.trim().length ?? 0) < 40) {
+    throw new PlanningDecodeError(
+      `${path}.workload_rationale`,
+      "overload_requires_sufficient_rationale",
+    );
+  }
   return {
     id: decoder.string(decoder.field(value, "id", path), `${path}.id`),
     unitId,
@@ -878,6 +894,8 @@ function decodeScheduleItem(
     ...(value.duration_minutes === null || value.duration_minutes === undefined
       ? {}
       : { durationMinutes: decoder.integer(value.duration_minutes, `${path}.duration_minutes`, 1, 480) }),
+    ...(coverageMode ? { coverageMode } : {}),
+    ...(workloadRationale === undefined ? {} : { workloadRationale }),
     status: decoder.enumeration(
       decoder.field(value, "status", path),
       SCHEDULE_STATUSES,

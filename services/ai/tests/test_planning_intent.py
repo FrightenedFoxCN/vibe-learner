@@ -229,6 +229,73 @@ class PlanningIntentTests(unittest.TestCase):
             _validate_learning_plan_proposal_refs(proposal, units, french_intent)
         self.assertEqual(raised.exception.reason, "explicit_language_mismatch")
 
+    def test_overloaded_proposal_requires_auditable_selective_or_overview_reason(self) -> None:
+        units = [StudyUnitRecord(
+            id="unit-1", document_id="doc-1", title="Wide unit", page_start=1,
+            page_end=120, source_section_ids=["section-1"],
+        )]
+        overloaded = valid_proposal_payload()
+        overloaded["schedule"][0]["duration_minutes"] = 90
+        overloaded["schedule"][0]["schedule_chapters"][0].update({
+            "anchor_page_start": 1,
+            "anchor_page_end": 110,
+            "content_slices": [{
+                "page_start": 1,
+                "page_end": 110,
+                "source_section_ids": ["section-1"],
+            }],
+        })
+        with self.assertRaises(PlanningProposalDecodeError) as raised:
+            _validate_learning_plan_proposal_refs(
+                _decode_learning_plan_proposal(json.dumps(overloaded)),
+                units,
+            )
+        self.assertEqual(raised.exception.path, "schedule.0.coverage_mode")
+        self.assertEqual(
+            raised.exception.reason,
+            "overload_requires_selective_or_overview",
+        )
+
+        justified = json.loads(json.dumps(overloaded))
+        justified["schedule"][0]["coverage_mode"] = "overview"
+        justified["schedule"][0]["workload_rationale"] = (
+            "本课只建立全章地图并快速介绍标题层级，省略逐段论证与例题，"
+            "后续课次再按主题回到原页完成精读和练习。"
+        )
+        _validate_learning_plan_proposal_refs(
+            _decode_learning_plan_proposal(json.dumps(justified)),
+            units,
+        )
+
+        bounded = json.loads(json.dumps(overloaded))
+        bounded["schedule"][0]["schedule_chapters"][0]["content_slices"] = [{
+            "page_start": 1,
+            "page_end": 30,
+            "source_section_ids": ["section-1"],
+        }]
+        _validate_learning_plan_proposal_refs(
+            _decode_learning_plan_proposal(json.dumps(bounded)),
+            units,
+        )
+
+        review = json.loads(json.dumps(overloaded))
+        review["schedule"][0]["activity_type"] = "review"
+        review["schedule"][0]["duration_minutes"] = 25
+        review["schedule"][0]["schedule_chapters"][0]["content_slices"] = [{
+            "page_start": 1,
+            "page_end": 31,
+            "source_section_ids": ["section-1"],
+        }]
+        with self.assertRaises(PlanningProposalDecodeError) as raised:
+            _validate_learning_plan_proposal_refs(
+                _decode_learning_plan_proposal(json.dumps(review)),
+                units,
+            )
+        self.assertEqual(
+            raised.exception.reason,
+            "overload_requires_selective_or_overview",
+        )
+
     def test_explicit_outline_target_scopes_units_while_unknown_keeps_all(self) -> None:
         units = [
             StudyUnitRecord(
@@ -501,6 +568,30 @@ class PlanningIntentTests(unittest.TestCase):
             plan.model_dump(mode="json"), intent.model_dump(mode="json"), [], []
         )
         self.assertEqual(intent_validation, {"success": True, "failures": []})
+
+    def test_acceptance_probe_reports_explained_overload_without_grading_prose(self) -> None:
+        from tests.acceptance.minimax_planning_probe import planning_workload_outcomes
+
+        plan = valid_proposal_payload()
+        item = plan["schedule"][0]
+        item["duration_minutes"] = 12
+        item["coverage_mode"] = "overview"
+        item["workload_rationale"] = (
+            "本课只建立章节地图并快速介绍关键术语，跳过逐段证明、旁支材料与完整例题，"
+            "后续课次将回到原页完成精读、练习、错因检查与自测。"
+        )
+        outcome = planning_workload_outcomes(plan)
+        self.assertTrue(outcome["success"])
+        self.assertTrue(outcome["schedule"][0]["overloaded"])
+        self.assertEqual(outcome["schedule"][0]["scheduled_pages"], 5)
+
+        item["workload_rationale"] = "快速看完。"
+        outcome = planning_workload_outcomes(plan)
+        self.assertFalse(outcome["success"])
+        self.assertEqual(
+            outcome["failures"],
+            ["schedule_0_overload_rationale_insufficient"],
+        )
 
 
 if __name__ == "__main__":
