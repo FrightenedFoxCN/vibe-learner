@@ -543,7 +543,7 @@ _TAVERN_ENTRY = HarnessWorkflowManifestEntryV1(
     owner_module="app.services.tavern",
     owner_adapter=_registered_contract(
         "TavernActorWorkflowAdapter",
-        "tavern-actor-workflow-adapter-v1",
+        "tavern-actor-workflow-adapter-v2",
     ),
     input_contract=_registered_contract(
         "TavernActorInputManifest",

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from copy import deepcopy
 from datetime import datetime, timedelta, timezone
 import hashlib
 import json
@@ -110,9 +111,11 @@ from app.services.tavern_prompt import (
 )
 from app.services.tavern_v3 import (
     TAVERN_PROTECTED_SNAPSHOT_CONTRACT,
+    TavernActorProtectedSnapshotV2,
     TavernHarnessArtifactResolver,
     build_tavern_actor_context,
     build_tavern_actor_stage_adapter,
+    require_authorized_message_suffix,
     serialize_tavern_protected_snapshot,
     snapshot_ref_from_registration,
 )
@@ -463,11 +466,7 @@ class TavernService:
         run, created = self._begin_run(run=run, user_message=user_message)
         if not created:
             return self._replay_run(run)
-        return self._execute_run(
-            run=run,
-            detail=detail,
-            input_content=input_content,
-        )
+        return self._execute_run(run=run)
 
     def retry_run(
         self,
@@ -552,13 +551,6 @@ class TavernService:
         root = self.repository.get_run(source.root_run_id or source.id)
         if root is None:
             raise HTTPException(status_code=409, detail="tavern_retry_root_missing")
-        input_content = ""
-        if root.input_message_id:
-            input_message = self.repository.get_message(root.input_message_id)
-            if input_message is None:
-                raise HTTPException(status_code=409, detail="tavern_run_input_message_missing")
-            input_content = input_message.content
-
         now = _now()
         run = self._new_run(
             run_id=f"tavern-run-{uuid4().hex[:12]}",
@@ -580,7 +572,7 @@ class TavernService:
         run, created = self._begin_run(run=run, user_message=None)
         if not created:
             return self._replay_run(run)
-        return self._execute_run(run=run, detail=detail, input_content=input_content)
+        return self._execute_run(run=run)
 
     def _new_run(
         self,
@@ -655,13 +647,20 @@ class TavernService:
         self,
         *,
         run: TavernRunRecord,
-        detail: TavernRoomDetail,
-        input_content: str,
     ) -> TavernTurnResponse:
         persisted = self.repository.get_run(run.id)
         if persisted is None:
             raise HTTPException(status_code=404, detail="tavern_run_not_found")
         run = persisted
+        root = self.repository.get_run(run.root_run_id or run.id)
+        if root is None:
+            raise HTTPException(status_code=409, detail="tavern_retry_root_missing")
+        input_content = ""
+        if root.input_message_id:
+            input_message = self.repository.get_message(root.input_message_id)
+            if input_message is None:
+                raise HTTPException(status_code=409, detail="tavern_run_input_message_missing")
+            input_content = input_message.content
         try:
             operation_binding = self.repository.require_harness_operation(run.id)
         except HarnessOperationLegacyUnbound as exc:
@@ -700,6 +699,7 @@ class TavernService:
             prepared_runtime: HarnessRuntimePreparedOutput | None = None
             step_runtime: HarnessOperationRuntime | None = None
             execution_stage = "step_claim"
+            expected_claim_count = persisted_step.claim_count + 1
             try:
                 step = self.repository.claim_step(
                     run_id=run.id,
@@ -721,20 +721,34 @@ class TavernService:
                     run_id=run.id,
                     step_index=index,
                     lease_owner=execution_owner,
-                    claim_count=step.claim_count,
+                    claim_count=expected_claim_count,
                     lease_seconds=self.step_lease_seconds,
                 ) as heartbeat:
                     execution_stage = "context_load"
+                    # A prior facilitated step advances the transcript sequence
+                    # without changing the admitted Room revision.  Refresh the
+                    # Room/roster projection so the protected snapshot and its
+                    # recent-message sequence point come from one current read.
+                    detail = self.require_room(run.room_id, limit=1)
+                    participant_map = {
+                        item.persona_id: item for item in detail.participants
+                    }
+                    actor = participant_map[actor_id]
                     recent_messages = self.repository.list_recent_messages(
                         run.room_id,
                         limit=detail.room.harness_policy.context_message_limit,
                         exclude_message_id=run.input_message_id or "",
                     )
-                    anchor_message = self.repository.get_message(step.reply_to_message_id)
+                    # The Run schedule, not the mutable claimed-step return
+                    # object, owns the anchor used to construct the protected
+                    # projection.  The adapter binds the claim back to it in
+                    # the v3 generate phase before prompt/provider work.
+                    anchor_message = self.repository.get_message(reply_anchor_id)
+                    if anchor_message is None:
+                        raise LookupError("tavern_actor_reply_anchor_not_found")
                     required_target_id = (
                         anchor_message.persona_id
-                        if anchor_message is not None
-                        and anchor_message.author_kind == TavernAuthorKind.PERSONA
+                        if anchor_message.author_kind == TavernAuthorKind.PERSONA
                         and anchor_message.persona_id != actor.persona_id
                         else ""
                     )
@@ -744,7 +758,7 @@ class TavernService:
                         run=run,
                         step_index=index,
                         trace_slot=(
-                            index * self.max_step_claims + step.claim_count - 1
+                            index * self.max_step_claims + expected_claim_count - 1
                         ),
                         operation_binding=operation_binding,
                         actor=actor,
@@ -752,6 +766,9 @@ class TavernService:
                         recent_messages=recent_messages,
                         input_content=input_content,
                         required_target_id=required_target_id,
+                        reply_anchor=anchor_message,
+                        step=step,
+                        expected_claim_count=expected_claim_count,
                         should_continue=heartbeat.should_continue,
                         )
                     )
@@ -839,7 +856,7 @@ class TavernService:
                         completed_at=_now(),
                         finalize_run=index == len(run.scheduled_participant_ids) - 1,
                         lease_owner=execution_owner,
-                        claim_count=step.claim_count,
+                        claim_count=expected_claim_count,
                         runtime_commit=commit_runtime,
                     )
             except TavernActorExecutionError as exc:
@@ -851,7 +868,7 @@ class TavernService:
                         completed_at=_now(),
                         harness_trace=exc.trace,
                         lease_owner=execution_owner,
-                        claim_count=step.claim_count,
+                        claim_count=expected_claim_count,
                     )
                 except TavernStepClaimConflict as conflict:
                     raise self._step_conflict_response(run.id, conflict) from conflict
@@ -945,7 +962,7 @@ class TavernService:
                         completed_at=_now(),
                         harness_trace=failure_trace,
                         lease_owner=execution_owner,
-                        claim_count=step.claim_count,
+                        claim_count=expected_claim_count,
                         runtime_failure=runtime_failure,
                     )
                 except TavernStepClaimConflict as conflict:
@@ -992,6 +1009,9 @@ class TavernService:
         recent_messages: list[TavernMessageRecord],
         input_content: str,
         required_target_id: str,
+        reply_anchor: TavernMessageRecord,
+        step: TavernSpeakerStepRecord,
+        expected_claim_count: int,
         should_continue: Callable[[], bool] | None = None,
     ) -> tuple[TavernMessageRecord, HarnessRuntimePreparedOutput, HarnessOperationRuntime]:
         """Resolve protected context and validate one actor output before commit."""
@@ -1000,13 +1020,28 @@ class TavernService:
         # Prompt preflight runs inside the runtime's generate phase, so a
         # budget rejection also receives durable v3 failure evidence while
         # still making zero provider calls.
-        bounded_messages = list(recent_messages)
-        protected_content = serialize_tavern_protected_snapshot(
-            detail=detail,
+        authoritative_context_digest = _room_context_digest(detail)
+        expected_snapshot = TavernActorProtectedSnapshotV2(
+            schema_name="TavernActorProtectedSnapshot",
+            schema_version="tavern-actor-protected-snapshot-v2",
+            run_id=run.id,
+            run_context_digest=run.context_digest,
+            scheduled_participant_ids=list(run.scheduled_participant_ids),
+            step_index=step_index,
+            room=detail.room,
+            participants=list(detail.participants),
             actor=actor,
-            recent_messages=recent_messages,
+            recent_messages=list(recent_messages),
+            transcript_last_sequence=detail.room.last_sequence,
             user_message=input_content,
             guidance=run.guidance,
+            turn_kind=run.trigger_kind.value,
+            required_target_id=required_target_id,
+            reply_anchor=reply_anchor,
+        )
+        bounded_messages = list(expected_snapshot.recent_messages)
+        protected_content = serialize_tavern_protected_snapshot(
+            expected_snapshot.model_copy(deep=True)
         )
         registration = self.harness_artifacts.register_artifact(
             artifact_type=HarnessArtifactType.TAVERN_ROOM_SNAPSHOT,
@@ -1031,7 +1066,6 @@ class TavernService:
             mode=run.mode.value,
             target_ids=run.scheduled_participant_ids,
             anchor_present=bool(run.anchor_message_id),
-            context_digest=run.context_digest,
             snapshot_ref=snapshot_ref_from_registration(registration),
         )
         resolver = TavernHarnessArtifactResolver(
@@ -1045,38 +1079,68 @@ class TavernService:
         reset_model_recovery_state()
         model_recoveries = []
 
-        def generate_from_authorized_snapshot():
+        def generate_from_authorized_snapshot(
+            snapshot: TavernActorProtectedSnapshotV2,
+            _authorized_actor: TavernParticipantRecord,
+        ):
             try:
+                # Pydantic records remain mutable after strict decode.  Keep an
+                # independent authoritative baseline so prompt preflight cannot
+                # mutate both sides of any authorization comparison in place.
+                authorized_snapshot = snapshot.model_copy(deep=True)
+                preflight_snapshot = snapshot.model_copy(deep=True)
+                authorized_messages = authorized_snapshot.recent_messages
                 prompt_preflight = preflight_tavern_actor_prompt(
-                    persona=actor.persona_snapshot,
-                    participants=detail.participants,
-                    scene_profile=detail.room.scene_profile,
-                    recent_messages=recent_messages,
-                    user_message=input_content,
-                    guidance=run.guidance,
+                    persona=preflight_snapshot.actor.persona_snapshot,
+                    participants=preflight_snapshot.participants,
+                    scene_profile=preflight_snapshot.room.scene_profile,
+                    recent_messages=preflight_snapshot.recent_messages,
+                    user_message=preflight_snapshot.user_message,
+                    guidance=preflight_snapshot.guidance,
                     allowed_target_ids=[
-                        item.persona_id for item in detail.participants
+                        item.persona_id for item in preflight_snapshot.participants
                     ],
                     actor_reply_schema=json.dumps(
                         TavernActorReply.transport_json_schema(),
                         ensure_ascii=False,
                         sort_keys=True,
                     ),
-                    turn_kind=run.trigger_kind.value,
-                    required_target_id=required_target_id,
+                    turn_kind=preflight_snapshot.turn_kind,
+                    required_target_id=preflight_snapshot.required_target_id,
                 )
-                bounded_messages[:] = prompt_preflight.recent_messages
+                if preflight_snapshot.model_dump(
+                    mode="json", exclude_none=False
+                ) != authorized_snapshot.model_dump(mode="json", exclude_none=False):
+                    raise ValueError("tavern_snapshot_preflight_input_mutated")
+                preflight_messages = require_authorized_message_suffix(
+                    authorized_messages=authorized_messages,
+                    candidate_messages=prompt_preflight.recent_messages,
+                )
+                bounded_messages[:] = deepcopy(preflight_messages)
+                provider_messages = deepcopy(preflight_messages)
                 reply = self._generate_actor_reply(
                     run=run,
-                    actor=actor,
-                    detail=detail,
-                    recent_messages=bounded_messages,
-                    input_content=input_content,
-                    required_target_id=required_target_id,
+                    actor=authorized_snapshot.actor.model_copy(deep=True),
+                    detail=TavernRoomDetail(
+                        room=authorized_snapshot.room.model_copy(deep=True),
+                        participants=deepcopy(authorized_snapshot.participants),
+                        messages=deepcopy(authorized_snapshot.recent_messages),
+                        message_count=len(authorized_snapshot.recent_messages),
+                    ),
+                    recent_messages=provider_messages,
+                    input_content=authorized_snapshot.user_message,
+                    guidance=authorized_snapshot.guidance,
+                    required_target_id=authorized_snapshot.required_target_id,
                     should_continue=should_continue,
                 )
+                # A provider adapter is not allowed to rewrite the projection
+                # later consumed by semantic validation either.
+                validated_messages = require_authorized_message_suffix(
+                    authorized_messages=authorized_messages,
+                    candidate_messages=provider_messages,
+                )
                 model_recoveries.extend(consume_model_recovery_state())
-                return reply
+                return reply, deepcopy(validated_messages), prompt_preflight.report
             except TavernPromptBudgetError as exc:
                 consume_model_recovery_state()
                 raise HarnessRuntimeGenerationError(
@@ -1117,14 +1181,15 @@ class TavernService:
                 ) from exc
 
         adapter = build_tavern_actor_stage_adapter(
-            actor=actor,
-            participants=detail.participants,
-            recent_messages=bounded_messages,
-            user_message=input_content,
-            guidance=run.guidance,
-            required_target_id=required_target_id,
-            allowed_target_ids=[item.persona_id for item in detail.participants],
-            policy=detail.room.harness_policy,
+            snapshot_artifact_id=registration.artifact_id,
+            expected_snapshot=expected_snapshot,
+            authoritative_context_digest=authoritative_context_digest,
+            expected_run_status=run.status,
+            claimed_step=step,
+            expected_claim_count=expected_claim_count,
+            expected_step_prompt_hash=(
+                run.speaker_steps[step_index].participant_prompt_hash
+            ),
             generate=generate_from_authorized_snapshot,
             commit=lambda _output: (_ for _ in ()).throw(
                 RuntimeError("tavern_commit_owned_by_repository_transaction")
@@ -1350,7 +1415,8 @@ class TavernService:
             recent_messages = prompt_preflight.recent_messages
             raw_reply = self._generate_actor_reply(
                 run=run, actor=actor, detail=detail, recent_messages=recent_messages,
-                input_content=input_content, required_target_id=required_target_id,
+                input_content=input_content, guidance=run.guidance,
+                required_target_id=required_target_id,
                 should_continue=should_continue,
             )
             model_recoveries = consume_model_recovery_state()
@@ -1437,7 +1503,7 @@ class TavernService:
     def _generate_actor_reply(
         self, *, run: TavernRunRecord, actor: TavernParticipantRecord,
         detail: TavernRoomDetail, recent_messages: list[TavernMessageRecord],
-        input_content: str, required_target_id: str,
+        input_content: str, guidance: str, required_target_id: str,
         should_continue: Callable[[], bool] | None = None,
     ) -> TavernActorReply:
         """Single provider boundary, kept separate from semantic validation."""
@@ -1447,7 +1513,7 @@ class TavernService:
             scene_profile=detail.room.scene_profile,
             recent_messages=recent_messages,
             user_message=input_content,
-            guidance=run.guidance,
+            guidance=guidance,
             allowed_target_ids=[item.persona_id for item in detail.participants],
             turn_kind=run.trigger_kind.value,
             required_target_id=required_target_id,
@@ -1495,20 +1561,9 @@ class TavernService:
             for step in run.speaker_steps
         ):
             raise HTTPException(status_code=409, detail="tavern_run_participant_changed")
-        root = self.repository.get_run(run.root_run_id or run.id)
-        if root is None:
-            raise HTTPException(status_code=409, detail="tavern_retry_root_missing")
-        input_content = ""
-        if root.input_message_id:
-            input_message = self.repository.get_message(root.input_message_id)
-            if input_message is None:
-                raise HTTPException(status_code=409, detail="tavern_run_input_message_missing")
-            input_content = input_message.content
         try:
             return self._execute_run(
                 run=run,
-                detail=detail,
-                input_content=input_content,
             )
         except TavernStepClaimConflict as exc:
             raise HTTPException(

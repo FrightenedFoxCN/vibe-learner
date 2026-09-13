@@ -1,10 +1,12 @@
 from tests.support.api import ContainerTestCase, isolated_client
 
 from concurrent.futures import ThreadPoolExecutor
+from dataclasses import replace
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from threading import Barrier
 from types import SimpleNamespace
+import json
 import unittest
 from unittest.mock import patch
 
@@ -25,7 +27,9 @@ from app.models.tavern import (
     TavernMessageRecord,
     TavernRunRecord,
     TavernRunStatus,
+    TavernRoomDetail,
     TavernSpeakerStepRecord,
+    TavernSpeakerStepStatus,
     TavernTurnRequest,
     build_tavern_persona_message_committed_projection,
 )
@@ -41,7 +45,9 @@ from app.services.local_store import LocalJsonStore
 from app.services.model_provider import ModelRequestError, MockModelProvider, OpenAIModelProvider
 from app.services.persona import PersonaEngine
 from app.services.tavern import TavernService
+from app.services.tavern_harness import persona_prompt_hash
 from app.services.tavern_prompt import build_tavern_actor_messages
+from app.services.tavern_v3 import require_authorized_message_suffix
 
 
 class LeakyMockProvider(MockModelProvider):
@@ -86,9 +92,15 @@ class GuidanceLeakyMockProvider(MockModelProvider):
 class CapturingMockProvider(MockModelProvider):
     def __init__(self) -> None:
         self.recent_messages = []
+        self.user_message = ""
+        self.guidance = ""
+        self.calls = 0
 
     def generate_tavern_actor_reply(self, **kwargs) -> TavernActorReply:
+        self.calls += 1
         self.recent_messages = list(kwargs["recent_messages"])
+        self.user_message = kwargs["user_message"]
+        self.guidance = kwargs["guidance"]
         return super().generate_tavern_actor_reply(**kwargs)
 
 
@@ -725,6 +737,636 @@ class TavernApiTests(ContainerTestCase):
         )
         self.assertEqual(response.status_code, 200, response.text)
         self.assertEqual(provider.recent_messages, [])
+
+    def test_resolved_snapshot_cannot_replace_admitted_input_or_guidance(self) -> None:
+        created = self._create_room(creation_key="create-room-authorized-snapshot")
+        provider = CapturingMockProvider()
+        self.service.model_provider = provider
+        original_serializer = tavern_service_module.serialize_tavern_protected_snapshot
+
+        def substitute_unadmitted_values(snapshot):
+            message = "unadmitted snapshot message"
+            return original_serializer(
+                snapshot.model_copy(
+                    update={
+                        "user_message": message,
+                        "guidance": "unadmitted snapshot guidance",
+                        "reply_anchor": snapshot.reply_anchor.model_copy(
+                            update={"content": message}
+                        ),
+                    }
+                )
+            )
+
+        with patch.object(
+            tavern_service_module,
+            "serialize_tavern_protected_snapshot",
+            substitute_unadmitted_values,
+        ):
+            response = self.client.post(
+                f"/tavern/rooms/{created['room']['id']}/turns",
+                json={
+                    "input": {"kind": "user_message", "content": "closure message"},
+                    "mode": "direct",
+                    "target_persona_ids": [self.persona.id],
+                    "guidance": "closure guidance",
+                    "idempotency_key": "turn-authorized-snapshot",
+                    "expected_room_revision": 0,
+                },
+            )
+
+        self.assertEqual(response.status_code, 502, response.text)
+        self.assertEqual(provider.calls, 0)
+        run = self.repository.get_run_by_idempotency_key(
+            room_id=created["room"]["id"],
+            idempotency_key="turn-authorized-snapshot",
+        )
+        self.assertIsNotNone(run)
+        assert run is not None
+        self.assertEqual(
+            run.speaker_steps[0].error_code,
+            "tavern_snapshot_authoritative_projection_mismatch",
+        )
+
+    def test_noncanonical_resolved_snapshot_fails_before_provider(self) -> None:
+        created = self._create_room(creation_key="create-room-noncanonical-snapshot")
+        provider = CapturingMockProvider()
+        self.service.model_provider = provider
+        original_serializer = tavern_service_module.serialize_tavern_protected_snapshot
+
+        def add_unbound_whitespace(snapshot):
+            return original_serializer(snapshot) + b" "
+
+        with patch.object(
+            tavern_service_module,
+            "serialize_tavern_protected_snapshot",
+            add_unbound_whitespace,
+        ):
+            response = self.client.post(
+                f"/tavern/rooms/{created['room']['id']}/turns",
+                json={
+                    "input": {"kind": "user_message", "content": "hello"},
+                    "mode": "direct",
+                    "target_persona_ids": [self.persona.id],
+                    "idempotency_key": "turn-noncanonical-snapshot",
+                    "expected_room_revision": 0,
+                },
+            )
+
+        self.assertEqual(response.status_code, 502, response.text)
+        self.assertEqual(provider.calls, 0)
+        run = self.repository.get_run_by_idempotency_key(
+            room_id=created["room"]["id"],
+            idempotency_key="turn-noncanonical-snapshot",
+        )
+        self.assertIsNotNone(run)
+        assert run is not None
+        self.assertEqual(
+            run.speaker_steps[0].error_code,
+            "tavern_snapshot_noncanonical_payload",
+        )
+
+    def test_serializer_cannot_mutate_authoritative_snapshot_in_place(self) -> None:
+        created = self._create_room(creation_key="snapshot-serializer-mutation-room")
+        provider = CapturingMockProvider()
+        self.service.model_provider = provider
+        original_serializer = tavern_service_module.serialize_tavern_protected_snapshot
+
+        def mutate_snapshot(snapshot):
+            snapshot.user_message = "UNAUTHORIZED-SERIALIZER-MUTATION"
+            snapshot.guidance = "UNAUTHORIZED-GUIDANCE"
+            snapshot.reply_anchor.content = snapshot.user_message
+            return original_serializer(snapshot)
+
+        with patch.object(
+            tavern_service_module,
+            "serialize_tavern_protected_snapshot",
+            mutate_snapshot,
+        ):
+            response = self.client.post(
+                f"/tavern/rooms/{created['room']['id']}/turns",
+                json={
+                    "input": {"kind": "user_message", "content": "请回应。"},
+                    "mode": "direct",
+                    "target_persona_ids": [self.persona.id],
+                    "idempotency_key": "snapshot-serializer-mutation-turn",
+                    "expected_room_revision": 0,
+                },
+            )
+        self.assertEqual(response.status_code, 502, response.text)
+        self.assertEqual(provider.calls, 0)
+        run = self.repository.get_run_by_idempotency_key(
+            room_id=created["room"]["id"],
+            idempotency_key="snapshot-serializer-mutation-turn",
+        )
+        assert run is not None
+        trace = run.speaker_steps[0].harness_trace
+        assert trace is not None
+        self.assertEqual(
+            trace.model_dump(mode="json")["trace_schema_version"],
+            "harness-trace-v3",
+        )
+
+    def test_canonical_snapshot_mutations_are_bound_to_run_and_step(self) -> None:
+        second = self.persona_engine.create_persona(
+            CreatePersonaRequest(
+                name="柏舟",
+                summary="谨慎记录事实。",
+                relationship="同行者",
+                learner_address="你",
+                system_prompt="不扩大权限。",
+                slots=[],
+            )
+        )
+
+        def mutate_persona(snapshot):
+            persona = snapshot.actor.persona_snapshot.model_copy(
+                update={"summary": "未准入的替换人格"}
+            )
+            actor = snapshot.actor.model_copy(
+                update={
+                    "persona_snapshot": persona,
+                    "prompt_hash": persona_prompt_hash(persona.model_dump(mode="json")),
+                }
+            )
+            participants = [
+                actor if item.persona_id == actor.persona_id else item
+                for item in snapshot.participants
+            ]
+            detail = TavernRoomDetail(
+                room=snapshot.room,
+                participants=participants,
+                messages=snapshot.recent_messages,
+                message_count=len(snapshot.recent_messages),
+            )
+            return snapshot.model_copy(
+                update={
+                    "actor": actor,
+                    "participants": participants,
+                    "run_context_digest": tavern_service_module._room_context_digest(detail),
+                }
+            )
+
+        def mutate_policy(snapshot):
+            policy = snapshot.room.harness_policy.model_copy(
+                update={"max_reply_characters": 1300}
+            )
+            room = snapshot.room.model_copy(update={"harness_policy": policy})
+            detail = TavernRoomDetail(
+                room=room,
+                participants=snapshot.participants,
+                messages=snapshot.recent_messages,
+                message_count=len(snapshot.recent_messages),
+            )
+            return snapshot.model_copy(
+                update={
+                    "room": room,
+                    "run_context_digest": tavern_service_module._room_context_digest(detail),
+                }
+            )
+
+        def reorder_roster(snapshot):
+            first, other = snapshot.participants
+            reordered = [
+                other.model_copy(update={"display_order": 0}),
+                first.model_copy(update={"display_order": 1}),
+            ]
+            actor = reordered[1]
+            detail = TavernRoomDetail(
+                room=snapshot.room,
+                participants=reordered,
+                messages=snapshot.recent_messages,
+                message_count=len(snapshot.recent_messages),
+            )
+            return snapshot.model_copy(
+                update={
+                    "actor": actor,
+                    "participants": reordered,
+                    "run_context_digest": tavern_service_module._room_context_digest(detail),
+                }
+            )
+
+        def expand_schedule(snapshot):
+            return snapshot.model_copy(
+                update={
+                    "scheduled_participant_ids": [self.persona.id, second.id],
+                }
+            )
+
+        for index, mutate in enumerate(
+            (mutate_persona, mutate_policy, reorder_roster, expand_schedule)
+        ):
+            with self.subTest(mutation=mutate.__name__):
+                created = self.client.post(
+                    "/tavern/rooms",
+                    json={
+                        "title": "绑定测试",
+                        "persona_ids": [self.persona.id, second.id],
+                        "opening_prompt": "",
+                        "idempotency_key": f"snapshot-binding-room-{index}",
+                    },
+                ).json()
+                provider = CapturingMockProvider()
+                self.service.model_provider = provider
+                original_serializer = tavern_service_module.serialize_tavern_protected_snapshot
+
+                def substitute(snapshot, *, _mutate=mutate):
+                    return original_serializer(_mutate(snapshot))
+
+                with patch.object(
+                    tavern_service_module,
+                    "serialize_tavern_protected_snapshot",
+                    substitute,
+                ):
+                    response = self.client.post(
+                        f"/tavern/rooms/{created['room']['id']}/turns",
+                        json={
+                            "input": {"kind": "user_message", "content": "请回应。"},
+                            "mode": "direct",
+                            "target_persona_ids": [self.persona.id],
+                            "idempotency_key": f"snapshot-binding-turn-{index}",
+                            "expected_room_revision": 0,
+                        },
+                    )
+                self.assertEqual(response.status_code, 502, response.text)
+                self.assertEqual(provider.calls, 0)
+                run = self.repository.get_run_by_idempotency_key(
+                    room_id=created["room"]["id"],
+                    idempotency_key=f"snapshot-binding-turn-{index}",
+                )
+                assert run is not None
+                self.assertEqual(run.status, TavernRunStatus.FAILED)
+                self.assertEqual(
+                    run.speaker_steps[0].status,
+                    TavernSpeakerStepStatus.FAILED,
+                )
+                self.assertEqual(
+                    run.speaker_steps[0].error_code,
+                    "tavern_snapshot_authoritative_projection_mismatch",
+                )
+
+    def test_persona_reply_anchor_cannot_be_removed_from_snapshot_tail(self) -> None:
+        created = self._create_room(creation_key="snapshot-anchor-room")
+        room_id = created["room"]["id"]
+        provider = CapturingMockProvider()
+        self.service.model_provider = provider
+        initial = self.client.post(
+            f"/tavern/rooms/{room_id}/turns",
+            json={
+                "input": {"kind": "user_message", "content": "先回应一次。"},
+                "mode": "direct",
+                "target_persona_ids": [self.persona.id],
+                "idempotency_key": "snapshot-anchor-initial",
+                "expected_room_revision": 0,
+            },
+        )
+        self.assertEqual(initial.status_code, 200, initial.text)
+        anchor = initial.json()["generated_messages"][0]
+        provider.calls = 0
+        original_serializer = tavern_service_module.serialize_tavern_protected_snapshot
+
+        def omit_anchor(snapshot):
+            return original_serializer(snapshot.model_copy(update={"recent_messages": []}))
+
+        with patch.object(
+            tavern_service_module,
+            "serialize_tavern_protected_snapshot",
+            omit_anchor,
+        ):
+            continued = self.client.post(
+                f"/tavern/rooms/{room_id}/turns",
+                json={
+                    "input": {"kind": "continue", "anchor_message_id": anchor["id"]},
+                    "mode": "direct",
+                    "target_persona_ids": [self.persona.id],
+                    "idempotency_key": "snapshot-anchor-continued",
+                    "expected_room_revision": 1,
+                },
+            )
+        self.assertEqual(continued.status_code, 502, continued.text)
+        self.assertEqual(provider.calls, 0)
+
+    def test_claimed_step_prompt_hash_is_checked_before_provider(self) -> None:
+        created = self._create_room(creation_key="snapshot-step-hash-room")
+        provider = CapturingMockProvider()
+        self.service.model_provider = provider
+        original_claim = self.repository.claim_step
+
+        def return_mismatched_claim(**kwargs):
+            claimed = original_claim(**kwargs)
+            return claimed.model_copy(update={"participant_prompt_hash": "wrong-hash"})
+
+        with patch.object(
+            self.repository,
+            "claim_step",
+            return_mismatched_claim,
+        ):
+            response = self.client.post(
+                f"/tavern/rooms/{created['room']['id']}/turns",
+                json={
+                    "input": {"kind": "user_message", "content": "请回应。"},
+                    "mode": "direct",
+                    "target_persona_ids": [self.persona.id],
+                    "idempotency_key": "snapshot-step-hash-turn",
+                    "expected_room_revision": 0,
+                },
+            )
+        self.assertEqual(response.status_code, 502, response.text)
+        self.assertEqual(provider.calls, 0)
+        run = self.repository.get_run_by_idempotency_key(
+            room_id=created["room"]["id"],
+            idempotency_key="snapshot-step-hash-turn",
+        )
+        assert run is not None
+        self.assertEqual(
+            run.speaker_steps[0].error_code,
+            "tavern_snapshot_step_prompt_hash_mismatch",
+        )
+
+    def test_claimed_step_run_and_generating_status_are_checked_before_provider(self) -> None:
+        mutations = (
+            {"run_id": "wrong-run"},
+            {"status": TavernSpeakerStepStatus.PENDING},
+            {"claim_count": 2},
+        )
+        for index, mutation in enumerate(mutations):
+            with self.subTest(mutation=mutation):
+                created = self._create_room(
+                    creation_key=f"snapshot-step-identity-room-{index}"
+                )
+                provider = CapturingMockProvider()
+                self.service.model_provider = provider
+                original_claim = self.repository.claim_step
+
+                def return_mismatched_claim(**kwargs):
+                    claimed = original_claim(**kwargs)
+                    return claimed.model_copy(update=mutation)
+
+                with patch.object(
+                    self.repository,
+                    "claim_step",
+                    return_mismatched_claim,
+                ):
+                    response = self.client.post(
+                        f"/tavern/rooms/{created['room']['id']}/turns",
+                        json={
+                            "input": {"kind": "user_message", "content": "请回应。"},
+                            "mode": "direct",
+                            "target_persona_ids": [self.persona.id],
+                            "idempotency_key": f"snapshot-step-identity-turn-{index}",
+                            "expected_room_revision": 0,
+                        },
+                    )
+                self.assertEqual(response.status_code, 502, response.text)
+                self.assertEqual(provider.calls, 0)
+                run = self.repository.get_run_by_idempotency_key(
+                    room_id=created["room"]["id"],
+                    idempotency_key=f"snapshot-step-identity-turn-{index}",
+                )
+                assert run is not None
+                self.assertEqual(
+                    run.speaker_steps[0].error_code,
+                    "tavern_snapshot_step_identity_mismatch",
+                )
+                trace = run.speaker_steps[0].harness_trace
+                assert trace is not None
+                trace_data = trace.model_dump(mode="json")
+                self.assertEqual(trace_data["trace_schema_version"], "harness-trace-v3")
+                self.assertEqual(
+                    trace_data["commit_evidence"]["status"],
+                    "not_committed",
+                )
+
+    def test_stale_transcript_sequence_fails_before_provider(self) -> None:
+        created = self._create_room(creation_key="snapshot-stale-sequence-room")
+        provider = CapturingMockProvider()
+        self.service.model_provider = provider
+        original_serializer = tavern_service_module.serialize_tavern_protected_snapshot
+
+        def stale_sequence(snapshot):
+            room = snapshot.room.model_copy(
+                update={"last_sequence": snapshot.room.last_sequence - 1}
+            )
+            return original_serializer(
+                snapshot.model_copy(
+                    update={
+                        "room": room,
+                        "transcript_last_sequence": room.last_sequence,
+                    }
+                )
+            )
+
+        with patch.object(
+            tavern_service_module,
+            "serialize_tavern_protected_snapshot",
+            stale_sequence,
+        ):
+            response = self.client.post(
+                f"/tavern/rooms/{created['room']['id']}/turns",
+                json={
+                    "input": {"kind": "user_message", "content": "请回应。"},
+                    "mode": "direct",
+                    "target_persona_ids": [self.persona.id],
+                    "idempotency_key": "snapshot-stale-sequence-turn",
+                    "expected_room_revision": 0,
+                },
+            )
+        self.assertEqual(response.status_code, 502, response.text)
+        self.assertEqual(provider.calls, 0)
+
+    def test_prompt_preflight_cannot_inject_validation_messages(self) -> None:
+        created = self._create_room(creation_key="snapshot-preflight-room")
+        room_id = created["room"]["id"]
+        provider = CapturingMockProvider()
+        self.service.model_provider = provider
+        initial = self.client.post(
+            f"/tavern/rooms/{room_id}/turns",
+            json={
+                "input": {"kind": "user_message", "content": "先回应一次。"},
+                "mode": "direct",
+                "target_persona_ids": [self.persona.id],
+                "idempotency_key": "snapshot-preflight-initial",
+                "expected_room_revision": 0,
+            },
+        )
+        self.assertEqual(initial.status_code, 200, initial.text)
+        anchor = initial.json()["generated_messages"][0]
+        provider.calls = 0
+        original_preflight = tavern_service_module.preflight_tavern_actor_prompt
+
+        def inject_message(**kwargs):
+            result = original_preflight(**kwargs)
+            injected = result.recent_messages[-1].model_copy(
+                update={"id": "untrusted-message", "content": "未授权语义材料"}
+            )
+            return replace(result, recent_messages=[*result.recent_messages, injected])
+
+        with patch.object(
+            tavern_service_module,
+            "preflight_tavern_actor_prompt",
+            inject_message,
+        ):
+            continued = self.client.post(
+                f"/tavern/rooms/{room_id}/turns",
+                json={
+                    "input": {"kind": "continue", "anchor_message_id": anchor["id"]},
+                    "mode": "direct",
+                    "target_persona_ids": [self.persona.id],
+                    "idempotency_key": "snapshot-preflight-continued",
+                    "expected_room_revision": 1,
+                },
+            )
+        self.assertEqual(continued.status_code, 502, continued.text)
+        self.assertEqual(provider.calls, 0)
+
+    def test_prompt_preflight_cannot_mutate_authorized_message_in_place(self) -> None:
+        created = self._create_room(creation_key="snapshot-preflight-mutation-room")
+        room_id = created["room"]["id"]
+        provider = CapturingMockProvider()
+        self.service.model_provider = provider
+        initial = self.client.post(
+            f"/tavern/rooms/{room_id}/turns",
+            json={
+                "input": {"kind": "user_message", "content": "先回应一次。"},
+                "mode": "direct",
+                "target_persona_ids": [self.persona.id],
+                "idempotency_key": "snapshot-preflight-mutation-initial",
+                "expected_room_revision": 0,
+            },
+        )
+        self.assertEqual(initial.status_code, 200, initial.text)
+        anchor = initial.json()["generated_messages"][0]
+        provider.calls = 0
+        original_preflight = tavern_service_module.preflight_tavern_actor_prompt
+
+        def mutate_message(**kwargs):
+            result = original_preflight(**kwargs)
+            result.recent_messages[-1].content = "UNAUTHORIZED-MUTATION"
+            return result
+
+        with patch.object(
+            tavern_service_module,
+            "preflight_tavern_actor_prompt",
+            mutate_message,
+        ):
+            continued = self.client.post(
+                f"/tavern/rooms/{room_id}/turns",
+                json={
+                    "input": {"kind": "continue", "anchor_message_id": anchor["id"]},
+                    "mode": "direct",
+                    "target_persona_ids": [self.persona.id],
+                    "idempotency_key": "snapshot-preflight-mutation-continued",
+                    "expected_room_revision": 1,
+                },
+            )
+        self.assertEqual(continued.status_code, 502, continued.text)
+        self.assertEqual(provider.calls, 0)
+
+    def test_prompt_preflight_cannot_mutate_authorized_persona_in_place(self) -> None:
+        created = self._create_room(creation_key="snapshot-preflight-persona-room")
+        provider = CapturingMockProvider()
+        self.service.model_provider = provider
+        original_preflight = tavern_service_module.preflight_tavern_actor_prompt
+
+        def mutate_persona(**kwargs):
+            kwargs["persona"].summary = "UNAUTHORIZED-PERSONA-MUTATION"
+            return original_preflight(**kwargs)
+
+        with patch.object(
+            tavern_service_module,
+            "preflight_tavern_actor_prompt",
+            mutate_persona,
+        ):
+            response = self.client.post(
+                f"/tavern/rooms/{created['room']['id']}/turns",
+                json={
+                    "input": {"kind": "user_message", "content": "请回应。"},
+                    "mode": "direct",
+                    "target_persona_ids": [self.persona.id],
+                    "idempotency_key": "snapshot-preflight-persona-turn",
+                    "expected_room_revision": 0,
+                },
+            )
+        self.assertEqual(response.status_code, 502, response.text)
+        self.assertEqual(provider.calls, 0)
+
+    def test_authorized_validation_messages_allow_only_an_oldest_prefix_drop(self) -> None:
+        messages = [
+            TavernMessageRecord(
+                id=f"message-{index}",
+                room_id="room-1",
+                sequence=index,
+                author_kind="persona",
+                persona_id="persona-1",
+                content=f"message {index}",
+                created_at="2026-09-13T00:00:00+00:00",
+            )
+            for index in range(1, 4)
+        ]
+        self.assertEqual(
+            require_authorized_message_suffix(
+                authorized_messages=messages,
+                candidate_messages=messages[1:],
+            ),
+            messages[1:],
+        )
+        for invalid in (
+            [messages[1], messages[0]],
+            [messages[0].model_copy(update={"content": "changed"}), *messages[1:]],
+            [*messages, messages[-1]],
+        ):
+            with self.subTest(invalid=invalid):
+                with self.assertRaisesRegex(
+                    ValueError,
+                    "tavern_snapshot_validation_messages_not_suffix",
+                ):
+                    require_authorized_message_suffix(
+                        authorized_messages=messages,
+                        candidate_messages=invalid,
+                    )
+
+    def test_nested_snapshot_coercion_and_extra_fields_fail_before_provider(self) -> None:
+        for index, mutate in enumerate(("coercion", "extra")):
+            with self.subTest(mutation=mutate):
+                created = self._create_room(
+                    creation_key=f"snapshot-nested-room-{index}"
+                )
+                provider = CapturingMockProvider()
+                self.service.model_provider = provider
+                original_serializer = tavern_service_module.serialize_tavern_protected_snapshot
+
+                def corrupt_nested(snapshot, *, _mutate=mutate):
+                    payload = json.loads(original_serializer(snapshot).decode("utf-8"))
+                    if _mutate == "coercion":
+                        payload["room"]["last_sequence"] = str(
+                            payload["room"]["last_sequence"]
+                        )
+                    else:
+                        payload["participants"][0]["unexpected"] = True
+                    return json.dumps(
+                        payload,
+                        ensure_ascii=False,
+                        sort_keys=True,
+                        separators=(",", ":"),
+                    ).encode("utf-8")
+
+                with patch.object(
+                    tavern_service_module,
+                    "serialize_tavern_protected_snapshot",
+                    corrupt_nested,
+                ):
+                    response = self.client.post(
+                        f"/tavern/rooms/{created['room']['id']}/turns",
+                        json={
+                            "input": {"kind": "user_message", "content": "请回应。"},
+                            "mode": "direct",
+                            "target_persona_ids": [self.persona.id],
+                            "idempotency_key": f"snapshot-nested-turn-{index}",
+                            "expected_room_revision": 0,
+                        },
+                    )
+                self.assertEqual(response.status_code, 502, response.text)
+                self.assertEqual(provider.calls, 0)
 
     def test_tavern_prompt_keeps_untrusted_text_out_of_system_layer(self) -> None:
         room = self.service.create_room(

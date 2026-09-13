@@ -1598,7 +1598,7 @@
         "status": "registered",
         "contract": {
           "name": "TavernActorWorkflowAdapter",
-          "version": "tavern-actor-workflow-adapter-v1"
+          "version": "tavern-actor-workflow-adapter-v2"
         }
       },
       "input_contract": {

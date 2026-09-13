@@ -32,7 +32,7 @@ from app.services.harness_runtime import (
 
 ADAPTER_CONTRACT = HarnessContractRef(
     name="TavernActorWorkflowAdapter",
-    version="tavern-actor-workflow-adapter-v1",
+    version="tavern-actor-workflow-adapter-v2",
 )
 TRACE_CONTRACT = HarnessContractRef(
     name="TavernActorReply",
@@ -149,4 +149,3 @@ class HarnessRuntimeFixture:
             decode=decode,
             validate=validate,
         )
-

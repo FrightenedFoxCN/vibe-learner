@@ -15,6 +15,7 @@ from unittest.mock import patch
 from fastapi import FastAPI, HTTPException
 
 from app.api import tavern_routes
+import app.services.tavern as tavern_service_module
 from app.models.api import CreatePersonaRequest
 from app.models.harness_operation import HarnessOperationResolutionStatus
 from app.models.tavern import RetryTavernRunRequest, TavernTurnRequest
@@ -179,10 +180,136 @@ class TavernFacilitatedApiTests(ContainerTestCase):
         self.assertEqual(messages[1]["addressed_participant_ids"], [self.personas[0].id])
         self.assertEqual(messages[2]["addressed_participant_ids"], [self.personas[1].id])
         self.assertEqual(messages[1]["harness_trace"]["status"], "repaired")
+        for message in messages:
+            trace = message["harness_trace"]
+            self.assertEqual(
+                trace["context"]["snapshot_refs"][0]["contract"]["version"],
+                "tavern-actor-protected-snapshot-v2",
+            )
+            self.assertTrue(
+                any(
+                    check["code"] == "tavern_authorized_snapshot_binding_valid"
+                    for check in trace["checks"]
+                )
+            )
+            prompt_budget_checks = [
+                check for check in trace["checks"]
+                if check["name"] == "prompt_budget"
+            ]
+            self.assertEqual(len(prompt_budget_checks), 1)
+            self.assertIn(
+                "tavern-prompt-budget-v1",
+                prompt_budget_checks[0]["message"],
+            )
         self.assertIn(
             "restore_scheduled_reply_target",
             messages[1]["harness_trace"]["recovery_strategy"],
         )
+
+    def test_second_actor_rejects_internally_consistent_wrong_reply_anchor(self) -> None:
+        created = self._create_room()
+        room_id = created["room"]["id"]
+        original_serializer = tavern_service_module.serialize_tavern_protected_snapshot
+
+        def replace_second_anchor(snapshot):
+            if snapshot.step_index == 0:
+                return original_serializer(snapshot)
+            wrong_anchor = snapshot.reply_anchor.model_copy(
+                update={
+                    "persona_id": self.personas[2].id,
+                    "persona_name": self.personas[2].name,
+                }
+            )
+            recent = [
+                wrong_anchor if item.id == snapshot.reply_anchor.id else item
+                for item in snapshot.recent_messages
+            ]
+            return original_serializer(
+                snapshot.model_copy(
+                    update={
+                        "reply_anchor": wrong_anchor,
+                        "recent_messages": recent,
+                        "required_target_id": self.personas[2].id,
+                    }
+                )
+            )
+
+        with patch.object(
+            tavern_service_module,
+            "serialize_tavern_protected_snapshot",
+            replace_second_anchor,
+        ):
+            response = self.client.post(
+                f"/tavern/rooms/{room_id}/turns",
+                json=self._facilitated_payload(
+                    key="facilitated-wrong-anchor",
+                    revision=0,
+                ),
+            )
+        self.assertEqual(response.status_code, 502, response.text)
+        self.assertEqual(len(self.provider.calls), 1)
+        run = self.repository.get_run_by_idempotency_key(
+            room_id=room_id,
+            idempotency_key="facilitated-wrong-anchor",
+        )
+        assert run is not None
+        self.assertEqual(run.status.value, "partial")
+        self.assertEqual(
+            run.speaker_steps[1].error_code,
+            "tavern_snapshot_authoritative_projection_mismatch",
+        )
+
+    def test_claimed_step_cannot_replace_run_owned_reply_anchor(self) -> None:
+        created = self._create_room()
+        room_id = created["room"]["id"]
+        initial = self.client.post(
+            f"/tavern/rooms/{room_id}/turns",
+            json=self._facilitated_payload(
+                key="facilitated-authoritative-anchor-initial",
+                revision=0,
+            ),
+        )
+        self.assertEqual(initial.status_code, 200, initial.text)
+        initial_messages = initial.json()["generated_messages"]
+        provider_calls_before = len(self.provider.calls)
+        original_claim = self.repository.claim_step
+
+        def return_wrong_anchor(**kwargs):
+            claimed = original_claim(**kwargs)
+            if kwargs["step_index"] == 0:
+                return claimed.model_copy(
+                    update={"reply_to_message_id": initial_messages[0]["id"]}
+                )
+            return claimed
+
+        with patch.object(self.repository, "claim_step", return_wrong_anchor):
+            continued = self.client.post(
+                f"/tavern/rooms/{room_id}/turns",
+                json=self._facilitated_payload(
+                    key="facilitated-authoritative-anchor-continued",
+                    revision=1,
+                    trigger={
+                        "kind": "continue",
+                        "anchor_message_id": initial_messages[-1]["id"],
+                    },
+                ),
+            )
+        self.assertEqual(continued.status_code, 502, continued.text)
+        self.assertEqual(len(self.provider.calls), provider_calls_before)
+        run = self.repository.get_run_by_idempotency_key(
+            room_id=room_id,
+            idempotency_key="facilitated-authoritative-anchor-continued",
+        )
+        assert run is not None
+        self.assertEqual(
+            run.speaker_steps[0].error_code,
+            "tavern_snapshot_step_reply_anchor_mismatch",
+        )
+        trace = run.speaker_steps[0].harness_trace
+        assert trace is not None
+        trace_data = trace.model_dump(mode="json")
+        self.assertEqual(trace_data["trace_schema_version"], "harness-trace-v3")
+        self.assertEqual(trace_data["commit_evidence"]["status"], "not_committed")
 
     def test_continue_uses_latest_anchor_without_fabricating_a_user_message(self) -> None:
         created = self._create_room()
