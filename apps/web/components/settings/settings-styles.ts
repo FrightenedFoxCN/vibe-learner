@@ -67,7 +67,8 @@ export const settingsStyles: Record<string, CSSProperties> = {
     background: "var(--bg)",
     padding: "14px 14px 12px",
     display: "grid",
-    gap: 10
+    gap: 10,
+    alignContent: "start"
   },
   subCardHeader: {
     display: "grid",

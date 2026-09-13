@@ -12,10 +12,6 @@
 
 ## UX 与文档
 
-- [ ] `UX-SETTINGS-MODEL-CARDS-001` `[P2]` 修复 Settings“连接与模型分配”三张模型卡的标题/描述基线错位。
-  - 2026-09-13 production 实测中，“计划生成”卡相对“学习对话”“设定辅助”卡的描述基线低约 2.54 px，标题加描述块高约 5.08 px；DOM 字号与 grid gap 声明相同，优先排查浏览器 text autosizing 与容器上下文。
-  - 在相同 production viewport、至少一个 Chromium 浏览器和桌面壳复测三卡 layout rect 与视觉基线；不要用改文案或固定卡片高度掩盖字体度量差异。
-
 - [ ] `UX-PLAN-SCHEDULE-001` `[P2]` 将多次课程投影为可独立开始、完成和复盘的进度原子。
   - 2026-09-13 M3 复测中，`4 × 45` 分钟和 `2 × 30` 分钟均被压进一个 schedule/focus，UI 只能显示 `0 / 1`；应明确每次课的时长、范围与 today task，并改善长 focus 的扫描性。
 

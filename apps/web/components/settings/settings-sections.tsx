@@ -594,7 +594,7 @@ function ScopeModelCard({
         : settings.openaiChatApiKeyConfigured;
 
   return (
-    <section style={styles.subCard}>
+    <section style={styles.subCard} data-model-scope={config.scope}>
       <div style={styles.subCardHeader}>
         <h3 style={styles.subTitle}>{config.title}</h3>
         <p style={styles.tip}>{config.description}</p>
