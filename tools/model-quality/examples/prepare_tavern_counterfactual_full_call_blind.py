@@ -77,7 +77,7 @@ def build_manifest(*, budget_document: dict[str, object], transport: str) -> dic
             "family": row["family_id"],
             "lane": "tavern-counterfactual-production-full-call-blind",
             "split": "confirmation",
-            "provenance": "synthetic-authored-counterfactual-twin",
+            "provenance": "synthetic-authored",
             "source": json.dumps(public, ensure_ascii=False, sort_keys=True, separators=(",", ":")),
             "request": "Perform one production Tavern direct turn against the committed snapshot.",
             "gold": json.dumps({

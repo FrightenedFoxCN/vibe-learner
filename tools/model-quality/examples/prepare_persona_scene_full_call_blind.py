@@ -129,7 +129,7 @@ def build_manifest(*, budget_document: dict[str, object], transport: str) -> dic
             "family": row["family_id"],
             "lane": "persona-scene-production-full-call-blind",
             "split": "confirmation",
-            "provenance": "human-authored-synthetic",
+            "provenance": "synthetic-authored",
             "source": canonical(public_source),
             "request": "Run the complete production Persona and Scene generation/save/read-back lifecycle.",
             "gold": "{}",
