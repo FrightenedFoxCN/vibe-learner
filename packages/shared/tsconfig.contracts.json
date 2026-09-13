@@ -17,7 +17,8 @@
     "src/harness-artifact-access.ts",
     "src/harness-eval.ts",
     "src/harness-manifest.ts",
-    "src/tool-manifest.ts"
+    "src/tool-manifest.ts",
+    "src/model-runtime-config.ts"
   ],
   "exclude": ["tests/**/*.ts"]
 }

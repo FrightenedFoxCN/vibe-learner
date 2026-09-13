@@ -1,14 +1,22 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import test from "node:test";
 
 import { decodeStudyChatOperationReceipt } from "../lib/study-chat-operation-decode.ts";
 import { decodeStudyChatExchange } from "../lib/study-session-decode.ts";
 
-const rows = readFileSync(new URL("../../../docs/quality/evidence/minimax-study-baseline-v1.jsonl", import.meta.url), "utf8")
-  .trim().split("\n").map(line => JSON.parse(line));
+const fixtureUrl = new URL(
+  "../../../docs/quality/evidence/minimax-study-baseline-v1.jsonl",
+  import.meta.url,
+);
+const fixtureAvailable = existsSync(fixtureUrl);
+const rows = fixtureAvailable
+  ? readFileSync(fixtureUrl, "utf8").trim().split("\n").map(line => JSON.parse(line))
+  : [];
 
-test("strict frontend decoders accept twelve frozen real M3 Study receipts", () => {
+test("strict frontend decoders accept twelve frozen real M3 Study receipts", {
+  skip: fixtureAvailable ? false : "optional live-provider evidence is not checked out",
+}, () => {
   assert.equal(rows.length, 12);
   for (const row of rows) {
     const raw = row.receipt;
@@ -24,7 +32,9 @@ test("strict frontend decoders accept twelve frozen real M3 Study receipts", () 
   }
 });
 
-test("M3 code examples remain real multiline rich blocks", () => {
+test("M3 code examples remain real multiline rich blocks", {
+  skip: fixtureAvailable ? false : "optional live-provider evidence is not checked out",
+}, () => {
   const examples = rows.filter(row => row.case_id === "code_and_math");
   assert.equal(examples.length, 3);
   for (const row of examples) {

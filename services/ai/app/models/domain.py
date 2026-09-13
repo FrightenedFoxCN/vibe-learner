@@ -5,6 +5,18 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from app.core.model_runtime_limits import (
+    DEFAULT_CHAT_HISTORY_MESSAGES,
+    DEFAULT_CHAT_MAX_TOKENS,
+    DEFAULT_CHAT_TEMPERATURE,
+    DEFAULT_CHAT_TOOL_MAX_ROUNDS,
+    DEFAULT_EMBEDDING_MODEL,
+    DEFAULT_MODEL_NAME,
+    DEFAULT_PROVIDER_TIMEOUT_SECONDS,
+    DEFAULT_SETTING_MAX_TOKENS,
+    DEFAULT_SETTING_TEMPERATURE,
+)
+
 from app.models.study_question import (
     StudyInteractiveQuestionRecordV2 as InteractiveQuestion,
     StudyQuestionOptionV1 as InteractiveQuestionOption,
@@ -894,6 +906,9 @@ class TokenUsageRecord(BaseModel):
     id: str
     feature: str
     model: str
+    operation_id: str = ""
+    workflow: str = ""
+    stage: str = ""
     prompt_tokens: int = 0
     completion_tokens: int = 0
     total_tokens: int = 0
@@ -908,23 +923,23 @@ class RuntimeSettingsRecord(BaseModel):
     openai_base_url: str = "https://api.openai.com/v1"
     openai_plan_api_key: str = ""
     openai_plan_base_url: str = ""
-    openai_plan_model: str = "gpt-4.1-mini"
+    openai_plan_model: str = DEFAULT_MODEL_NAME
     openai_setting_api_key: str = ""
     openai_setting_base_url: str = ""
-    openai_setting_model: str = "gpt-4.1-mini"
+    openai_setting_model: str = DEFAULT_MODEL_NAME
     openai_setting_web_search_enabled: bool = True
     openai_chat_api_key: str = ""
     openai_chat_base_url: str = ""
-    openai_chat_model: str = "gpt-4.1-mini"
-    openai_chat_temperature: float = 0.35
-    openai_setting_temperature: float = 0.4
-    openai_setting_max_tokens: int = 900
-    openai_chat_max_tokens: int = 800
-    openai_chat_history_messages: int = 8
-    openai_chat_tool_max_rounds: int = 4
-    openai_embedding_model: str = "text-embedding-3-small"
+    openai_chat_model: str = DEFAULT_MODEL_NAME
+    openai_chat_temperature: float = DEFAULT_CHAT_TEMPERATURE
+    openai_setting_temperature: float = DEFAULT_SETTING_TEMPERATURE
+    openai_setting_max_tokens: int = DEFAULT_SETTING_MAX_TOKENS
+    openai_chat_max_tokens: int = DEFAULT_CHAT_MAX_TOKENS
+    openai_chat_history_messages: int = DEFAULT_CHAT_HISTORY_MESSAGES
+    openai_chat_tool_max_rounds: int = DEFAULT_CHAT_TOOL_MAX_ROUNDS
+    openai_embedding_model: str = DEFAULT_EMBEDDING_MODEL
     openai_chat_model_multimodal: bool = False
-    openai_timeout_seconds: int = 30
+    openai_timeout_seconds: int = DEFAULT_PROVIDER_TIMEOUT_SECONDS
     openai_plan_model_multimodal: bool = False
     openai_plan_fallback_model: str = ""
     openai_plan_fallback_disable_tools: bool = True

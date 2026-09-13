@@ -918,6 +918,9 @@ class TokenUsageCallRecord(BaseModel):
     created_at: str
     feature: str
     model: str
+    operation_id: str = ""
+    workflow: str = ""
+    stage: str = ""
     prompt_tokens: int
     completion_tokens: int
     total_tokens: int

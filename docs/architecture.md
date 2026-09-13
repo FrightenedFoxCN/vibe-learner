@@ -129,7 +129,7 @@ Harness Engineering is a repository-wide lifecycle, not a Tavern synonym:
 7. atomically commit validated effects or persist terminal failure evidence;
 8. emit trace/eval evidence.
 
-Document/OCR/Study Unit, Planning, Persona/Scene, Study and Tavern use production v3 lifecycle boundaries. Frontend strict decoders and all 13 stage eval registrations are implemented. The shared flow is shown in [Harness architecture](harness-architecture.md); remaining acceptance and product work lives only in [TODO](../TODO.md).
+Document/OCR/Study Unit, Planning, Persona/Scene, Study and Tavern use production v3 lifecycle boundaries. Frontend strict decoders and all 14 stage eval registrations are implemented. The shared flow is shown in the [Harness engineering guide](harness/README.md); remaining acceptance and product work lives only in [TODO](../TODO.md).
 
 Learning-plan text uses a stable cross-layer contract:
 
@@ -319,7 +319,7 @@ Runtime settings in the configured database are authoritative. A legacy JSON mir
 - tool-enabled model calls increase provider latency and timeout pressure;
 - Document processing has durable admission, atomic Document/Debug projection commit, digest read-back, and startup recovery, and v3 evidence for extraction/OCR/cleanup stages;
 - Study Chat has production v3 context, trace, protected replay, deterministic eval, durable request admission, transactional Session/Scene database effects, and operation-owned attachment staging/read-back, while provider uncertainty remains explicit;
-- current production lifecycle coverage is shown in `harness-architecture.md`; deterministic implementation gates do not certify independent quality or every platform;
+- current production lifecycle coverage is shown in `harness/README.md`; deterministic implementation gates do not certify independent quality or every platform;
 - Tavern prompt/token/scene-depth budgets and deterministic evals are enforced; representative provider performance and billing acceptance remain in `TODO.md`;
 - `npm run check` runs shared/Web reliability and type gates; `npm run check:release` adds the full backend suite and production Web build. `npm run lint:web` is only a compatibility alias.
 

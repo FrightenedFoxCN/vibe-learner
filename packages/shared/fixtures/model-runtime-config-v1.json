@@ -1,0 +1,12 @@
+{
+  "schema_version": "model-runtime-config-v1",
+  "default_model_name": "gpt-4.1-mini",
+  "default_embedding_model": "text-embedding-3-small",
+  "timeout_seconds": { "min": 5, "max": 300, "default": 30 },
+  "setting_temperature": { "min": 0, "max": 2, "default": 0.4 },
+  "chat_temperature": { "min": 0, "max": 2, "default": 0.35 },
+  "setting_max_tokens": { "min": 64, "max": 16384, "default": 900 },
+  "chat_max_tokens": { "min": 64, "max": 16384, "default": 800 },
+  "chat_history_messages": { "min": 1, "max": 40, "default": 8 },
+  "chat_tool_max_rounds": { "min": 1, "max": 12, "default": 4 }
+}

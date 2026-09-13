@@ -5,6 +5,7 @@ from app.core.execution_budget import (
     check_execution_budget,
     execution_call_timeout_seconds,
 )
+from app.core.model_runtime_limits import LITELLM_TRANSIENT_RETRY_COUNT
 
 import json
 import time
@@ -17,7 +18,6 @@ from app.services.model_recovery import record_model_recovery
 
 logger = get_logger("vibe_learner.provider_transport")
 
-LITELLM_TRANSIENT_RETRY_COUNT = 2
 LITELLM_TRANSIENT_RETRYABLE_STATUS_CODES = frozenset({"408", "409", "425", "500", "502", "503", "504"})
 
 

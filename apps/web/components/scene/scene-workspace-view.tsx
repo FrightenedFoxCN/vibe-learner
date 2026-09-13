@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { AsyncFeedback } from "../async-feedback";
 import { MaterialIcon } from "../../components/material-icon";
 import { ModelFallbackNotice } from "../../components/model-fallback-notice";
@@ -12,6 +12,7 @@ import {
   canDeleteLayerSafely,
   findLayerById,
 } from "../../lib/scene-editor-model";
+import { SceneProposalPreview } from "./scene-proposal-preview";
 import { SceneDeleteDialog } from "./scene-delete-dialog";
 import { TopNav } from "../../components/top-nav";
 
@@ -36,6 +37,8 @@ function formatDate(value: string) {
 }
 
 export function SceneWorkspaceView({ controller }: { controller: SceneWorkspaceController }) {
+  const [savedQuery, setSavedQuery] = useState("");
+  const [nodeType, setNodeType] = useState("");
   const {
     savedScenes,
     selectedSavedSceneId,
@@ -114,6 +117,8 @@ export function SceneWorkspaceView({ controller }: { controller: SceneWorkspaceC
     toggleObjectEditor,
     handleSelectLayer,
   } = controller;
+  const visibleScenes = savedScenes.filter(item => [item.sceneName, item.sceneSummary].join(" ").toLocaleLowerCase().includes(savedQuery.trim().toLocaleLowerCase()));
+  const visibleNodes = filteredReusableNodes.filter(item => !nodeType || item.nodeType === nodeType);
   const feedbackRef = useRef<HTMLDivElement>(null);
   const actionTriggerRef = useRef<Element | null>(null);
   const actionPending = Boolean(sceneIoPending || sceneGeneratePending || rewritePendingKey || reusableActionPendingId);
@@ -123,7 +128,7 @@ export function SceneWorkspaceView({ controller }: { controller: SceneWorkspaceC
     // Synchronous validation may be batched without rendering a pending state.
     // Background library failures are deliberately excluded from this focus path.
     if (userError && userError !== previousUserError.current && document.activeElement === actionTriggerRef.current && document.activeElement !== document.body) {
-      feedbackRef.current?.querySelector<HTMLElement>('[role="alert"]')?.focus();
+      feedbackRef.current?.querySelector<HTMLElement>('[role="alert"]')?.focus({ preventScroll: true });
     }
     previousUserError.current = userError;
   }, [userError]);
@@ -595,6 +600,7 @@ export function SceneWorkspaceView({ controller }: { controller: SceneWorkspaceC
                       {generatedSceneCandidate.usedModel || "unknown"} ·
                       {countSceneNodes(generatedSceneCandidate.sceneLayers.map((layer) => normalizeSceneTreeNodeForProfile(layer)))} 节点
                     </p>
+                    <SceneProposalPreview current={sceneLayers} proposed={generatedSceneCandidate.sceneLayers} />
                     <div style={styles.sidebarActionRow}>
                       <button
                         style={styles.sidebarIconButton}
@@ -629,8 +635,10 @@ export function SceneWorkspaceView({ controller }: { controller: SceneWorkspaceC
                   />
                 </label>
 
+                <select className="library-filter" aria-label="筛选节点类型" value={nodeType} onChange={event => setNodeType(event.target.value)}><option value="">全部节点</option><option value="layer">层级</option><option value="object">物体</option></select>
+                <p role="status" style={styles.sidebarHint}>{visibleNodes.length} 个节点</p>
                 <div style={styles.reusableNodeList}>
-                  {filteredReusableNodes.length ? filteredReusableNodes.map((item) => (
+                  {visibleNodes.length ? visibleNodes.map((item) => (
                     <article key={item.nodeId} style={styles.reusableNodeCard}>
                       <div style={styles.savedSceneTitleRow}>
                         <strong style={styles.savedSceneTitle}>{item.title}</strong>
@@ -652,7 +660,7 @@ export function SceneWorkspaceView({ controller }: { controller: SceneWorkspaceC
                         >
                           <MaterialIcon name="input" size={14} />
                         </button>
-                        <button
+                        <details className="secondary-actions"><summary>删除操作</summary><button
                           style={styles.sidebarIconButton}
                           type="button"
                           disabled={reusableActionPendingId === item.nodeId}
@@ -661,11 +669,11 @@ export function SceneWorkspaceView({ controller }: { controller: SceneWorkspaceC
                           aria-label={reusableActionPendingId === item.nodeId ? "删除中" : "删除复用节点"}
                         >
                           <MaterialIcon name={reusableActionPendingId === item.nodeId ? "hourglass_top" : "delete"} size={14} />
-                        </button>
+                        </button></details>
                       </div>
                     </article>
                   )) : (
-                    <p style={styles.sidebarHint}>节点库还是空的。</p>
+                    <p style={styles.sidebarHint}>没有匹配的节点，请调整搜索或筛选。</p>
                   )}
                 </div>
               </div>
@@ -679,9 +687,12 @@ export function SceneWorkspaceView({ controller }: { controller: SceneWorkspaceC
             </button>
             {!collapsedSidebarSections.includes("saved") ? (
               <div style={styles.sidebarSectionBody}>
-                {savedScenes.length ? (
+                <input type="search" style={styles.input} aria-label="搜索已保存场景" value={savedQuery} onChange={event => setSavedQuery(event.target.value)} placeholder="搜索场景名称或摘要" />
+                <p role="status" style={styles.sidebarHint}>{visibleScenes.length} 个场景</p>
+                {!visibleScenes.length ? <p style={styles.sidebarHint}>没有匹配的场景。</p> : null}
+                {visibleScenes.length ? (
                   <div style={styles.savedSceneList}>
-                    {savedScenes.map((item) => {
+                    {visibleScenes.map((item) => {
                       const isSelected = selectedSavedSceneId === item.sceneId;
                       return (
                         <div key={item.sceneId} style={{ ...styles.savedSceneItem, ...(isSelected ? styles.savedSceneItemSelected : {}) }}>
@@ -716,7 +727,7 @@ export function SceneWorkspaceView({ controller }: { controller: SceneWorkspaceC
                             >
                               <MaterialIcon name="check_circle" size={14} />
                             </button>
-                            <button
+                            <details className="secondary-actions"><summary>删除操作</summary><button
                               style={styles.sidebarIconButton}
                               type="button"
                               onClick={() => void deleteSavedScene(item.sceneId)}
@@ -724,7 +735,7 @@ export function SceneWorkspaceView({ controller }: { controller: SceneWorkspaceC
                               aria-label="删除已保存场景"
                             >
                               <MaterialIcon name="delete" size={14} />
-                            </button>
+                            </button></details>
                           </div>
                         </div>
                       );

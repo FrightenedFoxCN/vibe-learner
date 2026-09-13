@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+import time
 from collections import Counter
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -96,6 +97,7 @@ class DocumentParser:
         interrupt_check: Callable[[], None] | None = None,
     ) -> DocumentDebugRecord:
         _call_interrupt(interrupt_check)
+        parse_started_at = time.perf_counter()
         pdf = fitz.open(stored_path)
         parsed_pages: list[ParsedPage] = []
         pages: list[DocumentPageRecord] = []
@@ -119,6 +121,7 @@ class DocumentParser:
                 "page_count": pdf.page_count,
                 "force_ocr": force_ocr,
                 "toc_section_count": len(toc_sections),
+                "elapsed_ms": 0,
             },
         )
 
@@ -145,6 +148,7 @@ class DocumentParser:
                             "extraction_source": parsed_page.extraction_source,
                             "used_ocr": parsed_page.used_ocr,
                             "warning_count": len(parsed_page.warnings),
+                            "elapsed_ms": int((time.perf_counter() - parse_started_at) * 1000),
                         },
                     )
 

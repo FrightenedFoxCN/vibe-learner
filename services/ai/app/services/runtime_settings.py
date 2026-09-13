@@ -4,6 +4,20 @@ from datetime import datetime, timezone
 from typing import Any
 
 from app.core.settings import Settings
+from app.core.model_runtime_limits import (
+    CHAT_HISTORY_MESSAGES_MAX,
+    CHAT_HISTORY_MESSAGES_MIN,
+    CHAT_TOOL_MAX_ROUNDS_MAX,
+    CHAT_TOOL_MAX_ROUNDS_MIN,
+    DEFAULT_EMBEDDING_MODEL,
+    DEFAULT_MODEL_NAME,
+    MODEL_MAX_TOKENS_MAX,
+    MODEL_MAX_TOKENS_MIN,
+    MODEL_TEMPERATURE_MAX,
+    MODEL_TEMPERATURE_MIN,
+    PROVIDER_TIMEOUT_SECONDS_MAX,
+    PROVIDER_TIMEOUT_SECONDS_MIN,
+)
 from app.models.domain import RuntimeSettingsRecord
 from app.services.local_store import LocalJsonStore
 
@@ -131,10 +145,10 @@ class RuntimeSettingsService:
 
         openai_plan_model = str(
             updates.get("openai_plan_model", self._record.openai_plan_model)
-        ).strip() or "gpt-4.1-mini"
+        ).strip() or DEFAULT_MODEL_NAME
         openai_setting_model = str(
             updates.get("openai_setting_model", self._record.openai_setting_model)
-        ).strip() or "gpt-4.1-mini"
+        ).strip() or DEFAULT_MODEL_NAME
         openai_setting_web_search_enabled = _normalize_bool(
             updates.get(
                 "openai_setting_web_search_enabled",
@@ -144,46 +158,46 @@ class RuntimeSettingsService:
         )
         openai_chat_model = str(
             updates.get("openai_chat_model", self._record.openai_chat_model)
-        ).strip() or "gpt-4.1-mini"
+        ).strip() or DEFAULT_MODEL_NAME
         openai_embedding_model = str(
             updates.get("openai_embedding_model", self._record.openai_embedding_model)
-        ).strip() or "text-embedding-3-small"
+        ).strip() or DEFAULT_EMBEDDING_MODEL
 
         openai_chat_temperature = _normalize_float(
             updates.get("openai_chat_temperature", self._record.openai_chat_temperature),
             code="invalid_openai_chat_temperature",
-            min_value=0.0,
-            max_value=2.0,
+            min_value=MODEL_TEMPERATURE_MIN,
+            max_value=MODEL_TEMPERATURE_MAX,
         )
         openai_setting_temperature = _normalize_float(
             updates.get("openai_setting_temperature", self._record.openai_setting_temperature),
             code="invalid_openai_setting_temperature",
-            min_value=0.0,
-            max_value=2.0,
+            min_value=MODEL_TEMPERATURE_MIN,
+            max_value=MODEL_TEMPERATURE_MAX,
         )
         openai_setting_max_tokens = _normalize_int(
             updates.get("openai_setting_max_tokens", self._record.openai_setting_max_tokens),
             code="invalid_openai_setting_max_tokens",
-            min_value=64,
-            max_value=16384,
+            min_value=MODEL_MAX_TOKENS_MIN,
+            max_value=MODEL_MAX_TOKENS_MAX,
         )
         openai_chat_max_tokens = _normalize_int(
             updates.get("openai_chat_max_tokens", self._record.openai_chat_max_tokens),
             code="invalid_openai_chat_max_tokens",
-            min_value=64,
-            max_value=16384,
+            min_value=MODEL_MAX_TOKENS_MIN,
+            max_value=MODEL_MAX_TOKENS_MAX,
         )
         openai_chat_history_messages = _normalize_int(
             updates.get("openai_chat_history_messages", self._record.openai_chat_history_messages),
             code="invalid_openai_chat_history_messages",
-            min_value=1,
-            max_value=40,
+            min_value=CHAT_HISTORY_MESSAGES_MIN,
+            max_value=CHAT_HISTORY_MESSAGES_MAX,
         )
         openai_chat_tool_max_rounds = _normalize_int(
             updates.get("openai_chat_tool_max_rounds", self._record.openai_chat_tool_max_rounds),
             code="invalid_openai_chat_tool_max_rounds",
-            min_value=1,
-            max_value=12,
+            min_value=CHAT_TOOL_MAX_ROUNDS_MIN,
+            max_value=CHAT_TOOL_MAX_ROUNDS_MAX,
         )
         openai_chat_model_multimodal = _normalize_bool(
             updates.get("openai_chat_model_multimodal", self._record.openai_chat_model_multimodal),
@@ -209,7 +223,7 @@ class RuntimeSettingsService:
             openai_timeout_seconds = int(timeout_value)
         except (TypeError, ValueError) as exc:
             raise ValueError("invalid_openai_timeout_seconds") from exc
-        if openai_timeout_seconds < 5 or openai_timeout_seconds > 300:
+        if not PROVIDER_TIMEOUT_SECONDS_MIN <= openai_timeout_seconds <= PROVIDER_TIMEOUT_SECONDS_MAX:
             raise ValueError("invalid_openai_timeout_seconds")
 
         show_debug_info = updates.get("show_debug_info", self._record.show_debug_info)

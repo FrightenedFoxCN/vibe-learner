@@ -6,7 +6,7 @@
 | --- | --- |
 | [用户手册](user_manual.md) | 页面功能与使用流程 |
 | [系统架构](architecture.md) | Web、AI、共享契约、桌面与存储边界 |
-| [Harness 架构图](harness-architecture.md) | 可靠性生命周期、制品/效果边界与代码入口 |
+| [Harness 工程手册](harness/README.md) | 按用户工作流整理的生命周期、数据库、模型约束、恢复与预算 |
 | [Tavern 架构](tavern-architecture.md) | 房间、消息、调度、事务和恢复 |
 | [API 参考](api-reference.md) | HTTP 和流式协议 |
 | [诊断审计统计](diagnostic-audit.md) | 统计分组、分位数、去重与未知数据语义 |

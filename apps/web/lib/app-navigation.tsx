@@ -19,6 +19,13 @@ export type AppRoutePath =
   | "/settings"
   | "/model-usage";
 
+export const ACTIVE_PLAN_GENERATION_KEY = "vibe-learner:active-plan-generation:v1";
+
+function confirmPlanGenerationNavigation(): boolean {
+  if (typeof window === "undefined" || !window.localStorage.getItem(ACTIVE_PLAN_GENERATION_KEY)) return true;
+  return window.confirm("当前计划仍在生成。离开此页会中断任务；已发生的 Token/费用不会撤销，实际费用以服务商账单为准。仍要离开吗？");
+}
+
 type AppRouteQueryValue = string | number | boolean | null | undefined;
 
 export type AppRouteQuery = Record<string, AppRouteQueryValue>;
@@ -103,6 +110,10 @@ export function AppLink({
       return;
     }
     if (event.defaultPrevented) {
+      return;
+    }
+    if (!confirmPlanGenerationNavigation()) {
+      event.preventDefault();
       return;
     }
     if (!shouldHandleClientNavigation(event, target, download)) {

@@ -32,7 +32,7 @@ This repository was last materially updated on 2026-09-10. The codebase is a mon
 - Harness eval contracts: `services/ai/app/models/harness_eval.py`, `packages/shared/src/harness-eval.ts`, and the eval contract/taxonomy fixtures under `packages/shared/fixtures/harness/`.
 - Harness eval execution: `services/ai/app/services/harness_eval_runner.py`; use `npm run eval:harness` with an explicit registry and selected suite, or its `:pr`, `:manual`, and `:nightly` profile aliases. `eval:harness:pr` runs all 14 suites; `eval:harness:stages` runs the ten stage regressions. `npm run test:acceptance:recovery-limits` covers process-crash, size and frontend recovery regressions.
 - Operation commit contracts: `services/ai/app/models/tavern_commit.py` and `packages/shared/fixtures/harness/operation-commit-policies-v1.json`.
-- Harness architecture and source ownership map: `docs/harness-architecture.md`
+- Harness engineering guide and source ownership map: `docs/harness/README.md`
 - Unified active backlog: `TODO.md`
 - Versioned performance gates: `docs/performance-budgets-v1.md`
 - Harness Wave 5 performance gates: `docs/performance-budgets-v1.md`; run `npm run bench:harness -- --samples 30 --output /tmp/harness-local.json` for provider-free local measurements. Remaining independent review and representative live-provider gates are tracked in `TODO.md`; deterministic stage and SQLite crash/size gates are implemented.
@@ -75,7 +75,7 @@ The frontend consumes structured chat replies with citations and `character_even
 
 Tavern is a separate domain from Study Session. Its normalized schema uses `tavern_rooms`, `tavern_participants`, `tavern_messages`, `tavern_runs`, and `tavern_run_steps`; messages are append-only and use a per-room sequence. Direct and facilitated runs are active. Facilitated targets are a set; the server schedules them by participant `display_order`, commits each validated actor separately, and records partial/failed/blocked steps for scoped child retry. Generating steps use database-clock leases, heartbeat renewal, owner/claim fencing, and at most three claims. Cancel immediately fences persistence and later recovery calls; an already-issued synchronous provider request is best-effort and may run until its own timeout. Do not add Tavern fields to `StudySessionRecord`.
 
-Read `docs/harness-architecture.md` and the ownership rules in this file before modifying any reliability or model-owned schema boundary. Also read `docs/tavern-architecture.md` for Tavern changes.
+Read `docs/harness/README.md` and the ownership rules in this file before modifying any reliability or model-owned schema boundary. Also read `docs/harness/tavern.md` and `docs/tavern-architecture.md` for Tavern changes.
 
 ## Local Development Commands
 
@@ -275,7 +275,7 @@ Use the following standard names when discussing frontend pages and page blocks.
 - Docs index: `docs/README.md`
 - Architecture: `docs/architecture.md`
 - API reference: `docs/api-reference.md`
-- Harness architecture and source ownership map: `docs/harness-architecture.md`
+- Harness engineering guide and source ownership map: `docs/harness/README.md`
 - Unified active backlog: `TODO.md`
 - Tavern architecture: `docs/tavern-architecture.md`
 

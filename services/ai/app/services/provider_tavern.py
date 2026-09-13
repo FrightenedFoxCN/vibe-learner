@@ -6,6 +6,7 @@ import json
 from typing import Any, Callable, Protocol
 
 from app.core.logging import get_logger
+from app.core.model_runtime_limits import TAVERN_ACTOR_RECOVERY_MIN_TOKENS
 from app.models.domain import PersonaProfile, SceneProfileRecord
 from app.models.tavern import TavernActorReply, TavernMessageRecord, TavernParticipantRecord
 from app.services.model_recovery import record_model_recovery
@@ -122,7 +123,10 @@ class RemoteTavernProvider(TavernModelCapability):
             recovery_payload: dict[str, Any] = {
                 "model": self.chat_model,
                 "temperature": min(self.chat_temperature, 0.2),
-                "max_tokens": max(self.chat_max_tokens, 900),
+                "max_tokens": max(
+                    self.chat_max_tokens,
+                    TAVERN_ACTOR_RECOVERY_MIN_TOKENS,
+                ),
                 "messages": [
                     *messages,
                     {

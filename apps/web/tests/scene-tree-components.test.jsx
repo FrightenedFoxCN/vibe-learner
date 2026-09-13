@@ -2,6 +2,7 @@ import { dom } from "./support/dom.js";
 import assert from "node:assert/strict";
 import { after, afterEach, test } from "node:test";
 import { cleanup, fireEvent, render, within } from "@testing-library/react";
+import { SceneProposalPreview } from "../components/scene/scene-proposal-preview.tsx";
 import { SceneLayerCard } from "../components/scene/scene-tree-components.tsx";
 import { INITIAL_SCENE } from "../lib/scene-editor-model.ts";
 
@@ -54,4 +55,18 @@ test("controlled tree disclosure hides descendants without selecting or deleting
   assert.deepEqual(h.calls, []);
   h.rerender(<SceneLayerCard {...h.props} collapsedLayerIds={[]} />);
   assert.ok(h.queryByRole("heading", { name: layer.children[0].title, exact: true }));
+});
+
+
+test("scene proposal review exposes removed hierarchy, rule changes and added objects without equating generated IDs", () => {
+  const current = [{ ...INITIAL_SCENE[0], id: "old", title: "教室", rules: "保持安静", children: [], objects: [] }];
+  const proposed = [{ ...current[0], id: "new", rules: "允许讨论", objects: [{ id: "desk", name: "实验桌", description: "耐热桌面", interaction: "放置试管" }] }, { ...current[0], id: "hall", title: "走廊" }];
+  const view = render(<SceneProposalPreview current={current} proposed={proposed} />);
+  assert.match(view.container.textContent, /层级：1 → 2；物体：0 → 1/);
+  assert.match(view.container.textContent, /保留路径：1. 教室/);
+  assert.match(view.container.textContent, /新增层级：2. 走廊/);
+  assert.match(view.container.textContent, /保持安静.*允许讨论/);
+  assert.match(view.container.textContent, /实验桌：耐热桌面；交互：放置试管/);
+  view.rerender(<SceneProposalPreview current={proposed} proposed={current} />);
+  assert.match(view.container.textContent, /移除：2. 走廊/);
 });

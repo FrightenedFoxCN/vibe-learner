@@ -8,6 +8,7 @@ import { AsyncResultFence, type AsyncResultScope, type AsyncResultTicket } from 
 import { isApiHttpError } from "../lib/http-error";
 import { buildDraftWithInsertedCards, collectReferenceHintsFromCards } from "../lib/persona-editor-model";
 import { clearPersonaDraftForGeneratedBackfill, mergeReferenceHints, type PersonaDraft } from "../lib/persona-draft";
+import { humanizeSettingGenerationError } from "../lib/generation-error-copy";
 
 interface GeneratedPersonaMeta {
   summary: string;
@@ -56,13 +57,13 @@ export function usePersonaCardGeneration({ draft, updatePersonaDraft, currentPer
   function applyGeneratedCardsToDraft() {
     if (!generatedCards.length && !generatedPersonaMeta.summary && !generatedPersonaMeta.relationship && !generatedPersonaMeta.learnerAddress) {
       setCardError("当前没有可回填的生成人格内容。");
-      return;
+      return false;
     }
     if (
       clearBeforeBackfill &&
       !window.confirm("应用后会清空现有摘要、关系、称呼、参考提示和全部插槽。是否继续？")
     ) {
-      return;
+      return false;
     }
     setCardError("");
     setCardMessage("");
@@ -91,6 +92,7 @@ export function usePersonaCardGeneration({ draft, updatePersonaDraft, currentPer
       insertion.insertedCount ? `并插入 ${insertion.insertedCount} 张卡片` : generatedCards.length ? "卡片已存在，未重复插入" : "",
     ].filter(Boolean).join("，");
     setCardMessage(summary || "已将本轮生成内容应用到当前编辑区。");
+    return true;
   }
 
   function insertCardsIntoDraft(cards: PersonaCard[], insertIndex?: number) {
@@ -226,9 +228,11 @@ function humanizePersonaCardGenerationError(error: unknown): string {
   if (code === "keyword_generation_requires_openai") {
     return "当前提供器暂不支持关键词生成，请切换提供器或使用长文本提取。";
   }
+  if (code === "setting_model_output_truncated") {
+    return humanizeSettingGenerationError(error, "人格卡片");
+  }
   if (error.status === 422) {
     return "生成条件未通过校验，请检查关键词和精确卡片数量。";
   }
   return "人格卡片生成失败，请稍后重试。";
 }
-

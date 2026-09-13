@@ -1,3 +1,4 @@
+import { MODEL_RUNTIME_CONFIG } from "@vibe-learner/shared/model-runtime-config";
 import type {
   RuntimeCapabilitySignal,
   RuntimeModelCapability,
@@ -63,13 +64,13 @@ export const EMPTY_PROBE_STATE: ScopeProbeState = {
 };
 
 export const NUMERIC_SETTING_CONFIGS: Record<NumericSettingKey, NumericSettingConfig> = {
-  openaiTimeoutSeconds: { min: 5, max: 300, fallback: 30, integer: true },
-  openaiSettingTemperature: { min: 0, max: 2, fallback: 0.4, integer: false },
-  openaiChatTemperature: { min: 0, max: 2, fallback: 0.35, integer: false },
-  openaiSettingMaxTokens: { min: 64, max: 16384, fallback: 900, integer: true },
-  openaiChatMaxTokens: { min: 64, max: 16384, fallback: 800, integer: true },
-  openaiChatHistoryMessages: { min: 1, max: 40, fallback: 8, integer: true },
-  openaiChatToolMaxRounds: { min: 1, max: 12, fallback: 4, integer: true }
+  openaiTimeoutSeconds: { ...MODEL_RUNTIME_CONFIG.timeoutSeconds, fallback: MODEL_RUNTIME_CONFIG.timeoutSeconds.default, integer: true },
+  openaiSettingTemperature: { ...MODEL_RUNTIME_CONFIG.settingTemperature, fallback: MODEL_RUNTIME_CONFIG.settingTemperature.default, integer: false },
+  openaiChatTemperature: { ...MODEL_RUNTIME_CONFIG.chatTemperature, fallback: MODEL_RUNTIME_CONFIG.chatTemperature.default, integer: false },
+  openaiSettingMaxTokens: { ...MODEL_RUNTIME_CONFIG.settingMaxTokens, fallback: MODEL_RUNTIME_CONFIG.settingMaxTokens.default, integer: true },
+  openaiChatMaxTokens: { ...MODEL_RUNTIME_CONFIG.chatMaxTokens, fallback: MODEL_RUNTIME_CONFIG.chatMaxTokens.default, integer: true },
+  openaiChatHistoryMessages: { ...MODEL_RUNTIME_CONFIG.chatHistoryMessages, fallback: MODEL_RUNTIME_CONFIG.chatHistoryMessages.default, integer: true },
+  openaiChatToolMaxRounds: { ...MODEL_RUNTIME_CONFIG.chatToolMaxRounds, fallback: MODEL_RUNTIME_CONFIG.chatToolMaxRounds.default, integer: true }
 };
 
 export const CAPABILITY_AUDIT_CONFIGS: CapabilityAuditConfig[] = [

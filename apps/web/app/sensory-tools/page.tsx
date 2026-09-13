@@ -9,6 +9,11 @@ import { usePageDebugSnapshot } from "../../components/page-debug-context";
 import { getModelToolConfig, updateModelToolConfig } from "../../lib/data/model-tools";
 
 export default function SensoryToolsPage() {
+  const [query, setQuery] = useState("");
+  const [stageFilter, setStageFilter] = useState("");
+  const [availability, setAvailability] = useState("");
+  const [showDescriptions, setShowDescriptions] = useState(false);
+  const [batchMode, setBatchMode] = useState(false);
   const [config, setConfig] = useState<ModelToolConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const [savingKey, setSavingKey] = useState("");
@@ -121,6 +126,12 @@ export default function SensoryToolsPage() {
     );
   }
 
+  const matchesTool = (tool: ModelToolConfigItem) =>
+    [tool.label, tool.name, tool.description, tool.categoryLabel].join(" ").toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()) &&
+    (!availability || (availability === "available" ? tool.available : !tool.available));
+  const visibleStages = config?.stages.filter(stage => !stageFilter || stage.name === stageFilter) ?? [];
+  const visibleCount = visibleStages.reduce((count, stage) => count + stage.tools.filter(matchesTool).length, 0);
+
   return (
     <main onClickCapture={(event) => { feedbackAction.current = (event.target as Element).closest("button, input"); }} className="with-app-nav sensory-tools-page" style={styles.page}>
       <TopNav currentPath="/sensory-tools" />
@@ -130,12 +141,23 @@ export default function SensoryToolsPage() {
       </header>
 
       <AsyncFeedback actionRef={feedbackAction} pending={Boolean(savingKey)} error={error ? `配置操作失败：${error}` : ""}
-        message={loading ? "正在加载工具配置…" : savingKey ? "正在保存工具配置…" : saveMessage} />
+        message={loading ? "正在加载工具配置…" : savingKey ? "正在保存工具配置…" : saveMessage || "更改后自动保存。"} />
 
       {!loading && config ? (
         <section style={styles.stageList}>
-          {config.stages.map((stage) => (
-            <article key={stage.name} style={styles.stageCard}>
+          <div className="library-toolbar">
+            <label>搜索工具<input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="名称、用途或分类" /></label>
+            <label>工作阶段<select value={stageFilter} onChange={event => setStageFilter(event.target.value)}><option value="">全部阶段</option>{config.stages.map(stage => <option key={stage.name} value={stage.name}>{stage.label}</option>)}</select></label>
+            <label>可用性<select value={availability} onChange={event => setAvailability(event.target.value)}><option value="">全部工具</option><option value="available">可用</option><option value="unavailable">不可用</option></select></label>
+            <label className="library-inline-option"><input className="sensory-checkbox" type="checkbox" checked={showDescriptions} onChange={event => setShowDescriptions(event.target.checked)} />展开用途说明</label>
+            <button type="button" aria-pressed={batchMode} onClick={() => setBatchMode(value => !value)}>批量管理</button>
+            <p role="status">找到 {visibleCount} 个工具</p>
+          </div>
+          {batchMode ? <p className="library-hint">批量操作仅影响当前筛选结果中的可用工具；阶段关闭时，启用工具不会开启阶段。</p> : null}
+          {!visibleCount ? <p className="library-empty">没有匹配的工具，请调整搜索或筛选。</p> : null}
+          {visibleStages.map((stage) => (
+
+            <article key={stage.name} hidden={!stage.tools.some(matchesTool)} style={{ ...styles.stageCard, ...(!stage.tools.some(matchesTool) ? { display: "none" } : {}) }}>
               <div style={styles.stageHeader}>
                 <div>
                   <h2 style={styles.stageTitle}>
@@ -149,53 +171,57 @@ export default function SensoryToolsPage() {
 
               <div className="sensory-category-grid" style={styles.categoryWrap}>
                 {groupByCategory(stage.tools).map((group) => (
-                  <div key={`${stage.name}:${group.category}`} style={styles.categoryCard}>
+                  <div key={`${stage.name}:${group.category}`} style={{ ...styles.categoryCard, ...(!group.tools.some(matchesTool) ? { display: "none" } : {}) }}>
                     <div style={styles.categoryHeader}>
                       <div style={styles.categoryTitle}>{group.label}</div>
-                      <div style={styles.categoryActions}>
+                      {batchMode ? <div style={styles.categoryActions}>
                         <button
                           type="button"
                           style={styles.categoryActionBtn}
                           disabled={Boolean(savingKey)}
                           onClick={() =>
-                            handleCategoryToggle(stage, group.tools, true)
+                            handleCategoryToggle(stage, group.tools.filter(matchesTool), true)
                           }
                         >
-                          全开
+                          启用筛选结果
                         </button>
                         <button
                           type="button"
                           style={styles.categoryActionBtn}
                           disabled={Boolean(savingKey)}
                           onClick={() =>
-                            handleCategoryToggle(stage, group.tools, false)
+                            handleCategoryToggle(stage, group.tools.filter(matchesTool), false)
                           }
                         >
-                          全关
+                          停用筛选结果
                         </button>
-                      </div>
+                      </div> : null}
                     </div>
                     <div style={styles.toolList}>
                       {group.tools.map((tool) => {
                         const itemKey = `${stage.name}:${tool.name}`;
                         const busy = savingKey === itemKey;
                         return (
-                          <label key={itemKey} style={styles.toolItem}>
+                          <div key={itemKey} style={{ ...styles.toolItem, ...(!matchesTool(tool) ? { display: "none" } : {}) }}>
                             <div style={styles.toolMeta}>
                               <div style={styles.toolName}>{tool.label}</div>
-                              <div style={styles.toolDesc}>{tool.description}</div>
+                              <details open={showDescriptions || undefined} className="tool-description"><summary>用途说明</summary><p style={styles.toolDesc}>{tool.description}</p></details>
                               {!tool.available ? (
                                 <div style={styles.unavailable}>不可用：{tool.unavailableReason || "当前环境不支持"}</div>
                               ) : null}
                             </div>
+                            <label className="sensory-toggle">
                             <input
+                              className="sensory-checkbox"
                               type="checkbox"
                               aria-label={tool.label}
                               checked={tool.enabled}
-                              disabled={!tool.available || busy}
+                              disabled={!tool.available}
+                              aria-busy={busy}
                               onChange={(event) => handleToggle(stage, tool, event.target.checked)}
                             />
-                          </label>
+                            </label>
+                          </div>
                         );
                       })}
                     </div>
@@ -464,7 +490,8 @@ const styles: Record<string, CSSProperties> = {
     background: "transparent",
     color: "var(--ink)",
     fontSize: 12,
-    padding: "2px 8px",
+    minHeight: 44,
+    padding: "6px 8px",
     cursor: "pointer"
   },
   toolList: {

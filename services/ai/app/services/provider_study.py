@@ -2,6 +2,10 @@
 from __future__ import annotations
 
 from app.core.diagnostic_tool import observe_tool_call
+from app.core.model_runtime_limits import (
+    STUDY_CHAT_EXEMPT_TOOL_EXTRA_ROUNDS,
+    STUDY_CHAT_RECOVERY_MIN_TOKENS,
+)
 
 from dataclasses import dataclass
 from app.services.provider_capabilities import StudyModelCapability
@@ -140,7 +144,7 @@ class RemoteStudyProvider(StudyModelCapability):
         limited_rounds_used = 0
         total_rounds = 0
         max_total_rounds = max(
-            self.chat_tool_max_rounds + CHAT_EXEMPT_TOOL_EXTRA_ROUNDS,
+            self.chat_tool_max_rounds + STUDY_CHAT_EXEMPT_TOOL_EXTRA_ROUNDS,
             self.chat_tool_max_rounds * 3,
         )
         while total_rounds < max_total_rounds:
@@ -307,7 +311,7 @@ class RemoteStudyProvider(StudyModelCapability):
             recovery_payload: dict[str, Any] = {
                 "model": self.chat_model,
                 "temperature": min(self.chat_temperature, 0.2),
-                "max_tokens": max(self.chat_max_tokens, 1600),
+                "max_tokens": max(self.chat_max_tokens, STUDY_CHAT_RECOVERY_MIN_TOKENS),
                 "messages": recovery_messages,
                 "response_format": {"type": "json_object"},
             }
@@ -446,7 +450,7 @@ CHAT_EXEMPT_TOOL_NAMES = frozenset(
 
 
 
-CHAT_EXEMPT_TOOL_EXTRA_ROUNDS = 12
+CHAT_EXEMPT_TOOL_EXTRA_ROUNDS = STUDY_CHAT_EXEMPT_TOOL_EXTRA_ROUNDS
 
 
 

@@ -23,7 +23,7 @@ export function AsyncFeedback({ pending, error, message, actionRef, synchronousE
       const active = document.activeElement;
       const origin = wasPending.current ? trigger.current : actionRef?.current;
       if (origin && origin !== document.body && (active === origin || (active === document.body && wasPending.current && !focusMoved.current))) {
-        errorRef.current?.focus();
+        errorRef.current?.focus({ preventScroll: true });
       }
     }
     previousError.current = error;

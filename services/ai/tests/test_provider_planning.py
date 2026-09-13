@@ -5,6 +5,7 @@ from types import SimpleNamespace
 from unittest.mock import Mock
 
 from app.models.domain import LearningGoalInput, PlanGenerationTraceRecord, StudyUnitRecord
+from app.core.model_runtime_limits import PLANNING_MAX_TOKENS
 from app.services.provider_planning import RemotePlanningProvider
 from tests.support.planning_samples import planning_persona, valid_proposal_payload
 
@@ -32,6 +33,10 @@ class PlanningProviderTests(unittest.TestCase):
         self.assertEqual(result.course_title, plan.course_title)
         self.assertEqual(request.call_count, 1)
         self.assertNotIn("tools", request.call_args.args[0])
+        self.assertEqual(
+            request.call_args.args[0]["max_tokens"],
+            PLANNING_MAX_TOKENS,
+        )
         for content in ('{"revision": 99}', 'not json'):
             request.reset_mock()
             request.return_value = ({"choices": [{"message": {"content": content}}]}, 1)

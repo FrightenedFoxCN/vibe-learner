@@ -324,6 +324,8 @@ def _map_setting_generation_error(exc: RuntimeError) -> HTTPException:
         return HTTPException(status_code=502, detail="setting_model_content_filter")
     if detail == "setting_model_empty_response":
         return HTTPException(status_code=502, detail="setting_model_empty_response")
+    if detail == "setting_model_output_truncated":
+        return HTTPException(status_code=502, detail="setting_model_output_truncated")
     if detail == "setting_model_invalid_json":
         return HTTPException(status_code=502, detail="setting_model_invalid_json")
     if detail == "setting_model_invalid_payload":
@@ -2140,8 +2142,19 @@ def grade_submission(payload: SubmissionGradeRequest, *, container: Container = 
 
 
 @router.get("/model-usage/stats", response_model=TokenUsageStatsResponse)
-def get_model_usage_stats(*, container: Container = Depends(get_container)) -> TokenUsageStatsResponse:
+def get_model_usage_stats(
+    workflow: str = "",
+    operation_id: str = "",
+    date_from: str = "",
+    date_to: str = "",
+    *, container: Container = Depends(get_container)
+) -> TokenUsageStatsResponse:
     records = container.token_usage_service.load_all()
+    records = [record for record in records if
+        (not workflow or record.workflow == workflow) and
+        (not operation_id or record.operation_id == operation_id) and
+        (not date_from or record.created_at[:10] >= date_from) and
+        (not date_to or record.created_at[:10] <= date_to)]
     buckets_map: dict[tuple[str, str, str], TokenUsageDailyBucket] = {}
     call_records: list[TokenUsageCallRecord] = []
     total_prompt = 0
@@ -2155,6 +2168,9 @@ def get_model_usage_stats(*, container: Container = Depends(get_container)) -> T
                 created_at=rec.created_at,
                 feature=rec.feature,
                 model=rec.model,
+                operation_id=rec.operation_id,
+                workflow=rec.workflow,
+                stage=rec.stage,
                 prompt_tokens=rec.prompt_tokens,
                 completion_tokens=rec.completion_tokens,
                 total_tokens=rec.total_tokens,

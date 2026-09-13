@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useRef } from "react";
+import { Fragment, useRef, useState } from "react";
 import { PERSONA_SLOT_KIND_LABELS, PERSONA_SLOT_KINDS, type PersonaCard, type PersonaProfile, type PersonaSlotKind } from "@vibe-learner/shared";
 import { AsyncFeedback } from "../async-feedback";
 import { TopNav } from "../../components/top-nav";
@@ -24,6 +24,8 @@ const SLOT_KIND_HINTS: Record<string, string> = {
 };
 
 export function PersonaWorkspaceView({ controller }: { controller: PersonaWorkspaceController }) {
+  const [cardKind, setCardKind] = useState("");
+  const [personaSource, setPersonaSource] = useState("");
   const feedbackAction = useRef<Element | null>(null);
   const {
     activateLibraryPersona,
@@ -123,6 +125,9 @@ export function PersonaWorkspaceView({ controller }: { controller: PersonaWorksp
     toggleSidebarSection,
     handleDeletePersonaCard,
   } = controller;
+  const visibleCards = filteredPersonaCards.filter(card => !cardKind || card.kind === cardKind);
+  const visibleBuiltin = personaSource === "user" ? [] : builtinPersonas;
+  const visibleUser = personaSource === "builtin" ? [] : userPersonas;
   const renderPersonaCard = (card: PersonaCard) => <PersonaCardView
     key={card.id} card={card} dragging={draggingPersonaCardId === card.id}
     deletePending={cardDeletePendingId === card.id} onDragStart={handlePersonaCardDragStart}
@@ -387,9 +392,9 @@ return (
               <div style={styles.panelHeader}>
                 <span style={styles.panelTitle}>人格插槽</span>
                 <div style={styles.panelHeaderActions}>
-                  <button type="button" style={styles.ghostBtn} onClick={handleClearSlots} disabled={!draft.slots.length}>清空</button>
+                  <details className="secondary-actions"><summary>批量操作</summary><button type="button" style={styles.ghostBtn} onClick={() => { if (window.confirm(`将清空当前 ${draft.slots.length} 个插槽，是否继续？`)) handleClearSlots(); }} disabled={!draft.slots.length}>清空全部插槽</button><button type="button" style={styles.ghostBtn} onClick={handleSortSlotsByPriority}>按优先级整理</button></details>
                   <button type="button" style={styles.ghostBtn} onClick={() => handleAddSlot("custom")}>添加</button>
-                  <button type="button" style={styles.ghostBtn} onClick={handleSortSlotsByPriority}>按优先级整理</button>
+
                 </div>
               </div>
               <div style={styles.panelBody}>
@@ -626,14 +631,6 @@ return (
                     placeholder="留空由模型决定，填写后精确生成 1–24 张"
                   />
                 </label>
-                <label style={styles.checkboxRow}>
-                  <input
-                    type="checkbox"
-                    checked={clearBeforeBackfill}
-                    onChange={(event) => setClearBeforeBackfill(event.target.checked)}
-                  />
-                  <span style={styles.checkboxLabel}>应用前清空摘要、关系、称呼、参考提示和全部插槽</span>
-                </label>
                 <div style={styles.modeSwitchRow}>
                   <div style={styles.modeSwitch}>
                     <button
@@ -715,16 +712,32 @@ return (
                           <li key={card.id} style={styles.generatedCardPreviewItem}>
                             <strong>{card.title}</strong>
                             <span>{card.label}：{card.content}</span>
+                            <button type="button" style={styles.ghostBtn} onClick={() => insertCardsIntoDraft([card])}>仅合并这张卡片</button>
                           </li>
                         ))}
                       </ul>
                     ) : null}
+                    <div className="proposal-diff">
+                      {!draft.name.trim() ? <p role="note">名称尚未填写：应用后请填写名称再保存。</p> : null}
+                      {([['摘要', draft.summary, generatedPersonaMeta.summary], ['关系', draft.relationship, generatedPersonaMeta.relationship], ['称呼', draft.learnerAddress, generatedPersonaMeta.learnerAddress]] as const).map(([label, before, proposed]) => <p key={label}><strong>{label}</strong><br /><del>{before || '空'}</del> → <ins>{proposed || (clearBeforeBackfill ? '将清空' : before || '保持为空')}</ins></p>)}
+                      <p>插槽：{clearBeforeBackfill ? `删除现有 ${draft.slots.length} 个，再插入候选卡片` : '保留现有插槽，合并候选卡片（自动去重）'}。参考提示：{clearBeforeBackfill ? '清空现有提示后从候选卡片收集' : '保留并合并'}。</p>
+                    </div>
+                    <details className="secondary-actions"><summary>替换选项（会清空当前内容）</summary>
+                <label style={styles.checkboxRow}>
+                  <input
+                    type="checkbox"
+                    checked={clearBeforeBackfill}
+                    onChange={(event) => setClearBeforeBackfill(event.target.checked)}
+                  />
+                  <span style={styles.checkboxLabel}>应用前清空摘要、关系、称呼、参考提示和全部插槽</span>
+                </label>
+                    </details>
                     <div style={styles.sidebarActionRow}>
                       <button
                         style={styles.sidebarIconButton}
                         type="button"
                         disabled={!(generatedCards.length || generatedPersonaMeta.summary || generatedPersonaMeta.relationship || generatedPersonaMeta.learnerAddress)}
-                        onClick={applyGeneratedCardsToDraft}
+                        onClick={() => { const applied = applyGeneratedCardsToDraft(); if (applied && !draft.name.trim()) document.getElementById("persona-draft-name")?.focus(); }}
                         title="应用到当前编辑区"
                         aria-label="应用到当前编辑区"
                       >
@@ -751,11 +764,13 @@ return (
                   onChange={(e) => setCardSearchQuery(e.target.value)}
                   placeholder="搜索标题、内容、标签、关键词"
                 />
-                {filteredPersonaCards.length ? (
+                <select className="library-filter" aria-label="筛选卡片类型" value={cardKind} onChange={event => setCardKind(event.target.value)}><option value="">全部类型</option>{PERSONA_SLOT_KINDS.map(kind => <option key={kind} value={kind}>{PERSONA_SLOT_KIND_LABELS[kind]}</option>)}</select>
+                <p role="status" style={styles.sidebarHint}>{visibleCards.length} 张卡片</p>
+                {visibleCards.length ? (
                   <div style={styles.cardList}>
-                    {filteredPersonaCards.map((card) => renderPersonaCard(card))}
+                    {visibleCards.map((card) => renderPersonaCard(card))}
                   </div>
-                ) : null}
+                ) : <p style={styles.sidebarHint}>没有匹配的卡片，请调整搜索或筛选。</p>}
               </div>
             ) : null}
           </div>
@@ -774,18 +789,21 @@ return (
                   onChange={(e) => setPersonaLibraryQuery(e.target.value)}
                   placeholder="搜索人格名称、摘要、关系或称呼"
                 />
+                <select className="library-filter" aria-label="筛选人格来源" value={personaSource} onChange={event => setPersonaSource(event.target.value)}><option value="">全部来源</option><option value="builtin">内置人格</option><option value="user">用户人格</option></select>
+                <p role="status" style={styles.sidebarHint}>{visibleBuiltin.length + visibleUser.length} 个人格</p>
+                {!visibleBuiltin.length && !visibleUser.length ? <p style={styles.sidebarHint}>没有匹配的人格，请调整搜索或筛选。</p> : null}
                 {personaLibraryMessage ? <p role="status" style={styles.sidebarHint}>{personaLibraryMessage}</p> : null}
                 {personaLibraryError ? <p style={styles.errorText}>{personaLibraryError}</p> : null}
 
-                {builtinPersonas.length ? (
+                {visibleBuiltin.length ? (
                   <div style={styles.cardList}>
-                    {builtinPersonas.map(renderPersonaLibraryCard)}
+                    {visibleBuiltin.map(renderPersonaLibraryCard)}
                   </div>
                 ) : null}
 
-                {userPersonas.length ? (
+                {visibleUser.length ? (
                   <div style={styles.cardList}>
-                    {userPersonas.map(renderPersonaLibraryCard)}
+                    {visibleUser.map(renderPersonaLibraryCard)}
                   </div>
                 ) : null}
               </div>

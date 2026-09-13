@@ -52,7 +52,7 @@ export function PersonaCardView({ card, dragging, deletePending, onDragStart, on
           >
             <MaterialIcon name="input" size={16} />
           </button>
-          <button
+          <details className="secondary-actions"><summary>删除操作</summary><button
             data-card-action="true"
             style={styles.sidebarIconButton}
             type="button"
@@ -62,7 +62,7 @@ export function PersonaCardView({ card, dragging, deletePending, onDragStart, on
             aria-label={deletePending ? "删除中" : "删除"}
           >
             <MaterialIcon name={deletePending ? "hourglass_top" : "delete"} size={16} />
-          </button>
+          </button></details>
         </div>
       </article>
     );
@@ -105,7 +105,7 @@ export function PersonaProfileCard({ persona, isSelected, deletePending, onActiv
             <MaterialIcon name={isSelected ? "check_circle" : "file_open"} size={16} />
           </button>
           {persona.source === "user" ? (
-            <button
+            <details className="secondary-actions"><summary>删除操作</summary><button
               type="button"
               style={styles.sidebarIconButton}
               disabled={deletePending}
@@ -114,7 +114,7 @@ export function PersonaProfileCard({ persona, isSelected, deletePending, onActiv
               aria-label={deletePending ? "删除中" : "删除"}
             >
               <MaterialIcon name={deletePending ? "hourglass_top" : "delete"} size={16} />
-            </button>
+            </button></details>
           ) : null}
         </div>
       </article>

@@ -14,9 +14,16 @@ from app.models.domain import (
 from app.services.model_recovery import get_model_recovery_state, record_model_recovery
 from app.services.plan_tool_runtime import PlanToolRuntime
 from app.services.prompt_loader import load_prompt_template
+from app.core.model_runtime_limits import (
+    PLANNING_MAX_CONTENT_FILTER_RETRIES,
+    PLANNING_MAX_EMPTY_RESPONSE_RETRIES,
+    PLANNING_MAX_ROUNDS,
+    PLANNING_MAX_TOKENS,
+    PLANNING_MAX_TOOL_PROBE_RETRIES,
+    PLANNING_MAX_TOOL_ROUNDS,
+    PLANNING_MAX_UNOFFERED_TOOL_RETRIES,
+)
 
-
-PLANNING_MAX_TOKENS = 8192
 
 
 @dataclass(frozen=True)
@@ -57,12 +64,12 @@ class OpenAIPlanRunner:
             created_at=_now(),
             rounds=[],
         )
-        max_rounds = 24
-        max_tool_rounds = 1
-        max_content_filter_retries = 2
-        max_empty_response_retries = 1
+        max_rounds = PLANNING_MAX_ROUNDS
+        max_tool_rounds = PLANNING_MAX_TOOL_ROUNDS
+        max_content_filter_retries = PLANNING_MAX_CONTENT_FILTER_RETRIES
+        max_empty_response_retries = PLANNING_MAX_EMPTY_RESPONSE_RETRIES
         empty_response_retries = 0
-        max_tool_probe_retries = 3
+        max_tool_probe_retries = PLANNING_MAX_TOOL_PROBE_RETRIES
         tool_probe_retries = 0
         unoffered_tool_retries = 0
         round_index = 0
@@ -116,7 +123,7 @@ class OpenAIPlanRunner:
                         "error": "plan_model_unoffered_tool_call",
                     },
                 )
-                if unoffered_tool_retries >= 1:
+                if unoffered_tool_retries >= PLANNING_MAX_UNOFFERED_TOOL_RETRIES:
                     raise RuntimeError("plan_model_unoffered_tool_call")
                 unoffered_tool_retries += 1
                 pending_recoveries.append(

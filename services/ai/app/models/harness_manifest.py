@@ -21,6 +21,7 @@ from app.models.harness import (
 )
 from app.models.harness_eval import HARNESS_EVAL_CASE_SCHEMA_VERSION
 from app.models.tool_manifest import TOOL_MANIFEST_SCHEMA_VERSION
+from app.core.model_runtime_limits import STRUCTURED_GENERATION_MAX_TOKENS
 
 
 HARNESS_WORKFLOW_MANIFEST_SCHEMA_VERSION = "harness-workflow-manifest-v1"
@@ -385,7 +386,7 @@ _DEFAULT_BUDGET = HarnessManifestExecutionBudgetV1(
     max_provider_calls=3,
     max_tool_calls=16,
     max_input_tokens=64_000,
-    max_output_tokens=8_000,
+    max_output_tokens=STRUCTURED_GENERATION_MAX_TOKENS,
     max_wall_time_ms=180_000,
     per_call_timeout_ms=120_000,
 )

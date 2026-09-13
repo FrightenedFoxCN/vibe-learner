@@ -5,6 +5,7 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./character": "./src/character.ts"
+    "./character": "./src/character.ts",
+    "./model-runtime-config": "./src/model-runtime-config.ts"
   }
 }

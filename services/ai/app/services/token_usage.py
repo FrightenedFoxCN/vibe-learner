@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 from uuid import uuid4
 
 from app.models.domain import TokenUsageRecord
+from app.core.diagnostics import active_harness
 from app.persistence.database import Database
 from app.persistence.models import TokenUsageRow
 
@@ -27,6 +28,11 @@ class TokenUsageService:
             id=uuid4().hex,
             feature=feature,
             model=model,
+            operation_id=active_harness.get().operation_id if active_harness.get() else "",
+            workflow=(active_harness.get().workflow if active_harness.get() else {
+                "plan": "planning", "chat": "study_chat", "setting": "settings", "embedding": "embedding",
+            }.get(feature, "other")),
+            stage=active_harness.get().stage if active_harness.get() else "",
             prompt_tokens=prompt_tokens,
             completion_tokens=completion_tokens,
             total_tokens=total_tokens,

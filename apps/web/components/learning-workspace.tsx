@@ -36,6 +36,8 @@ export function LearningWorkspace() {
     isSnapshotRefreshing,
     planStreamEvents,
     planStreamStatus,
+    processStreamEvents,
+    processStreamStatus,
     sceneLibraryItems,
     selectedSceneLibraryId,
     setSelectedSceneLibraryId,
@@ -133,6 +135,8 @@ export function LearningWorkspace() {
             onInterruptGeneration={() => { void cancelPlanGeneration(); }}
             planStreamEvents={planStreamEvents}
             planStreamStatus={planStreamStatus}
+            processStreamEvents={processStreamEvents}
+            processStreamStatus={processStreamStatus}
             canInterruptGeneration={isGeneratingPlan}
             isInterruptingGeneration={isInterruptingPlan}
             generationBlockedReason={planGenerationBlockedReason}

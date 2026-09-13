@@ -1481,4 +1481,26 @@ textarea {
 @media (max-width: 760px) {
   .sensory-tools-page .sensory-category-grid { grid-template-columns: minmax(0, 1fr) !important; }
 }
-.sensory-tools-page input[type="checkbox"] { width: 18px !important; height: 18px !important; min-width: 18px !important; min-height: 18px !important; margin: 0; accent-color: var(--accent); }
+
+/* Library controls share the existing neutral panels and teal action palette. */
+.library-toolbar { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; padding: 12px; border: 1px solid var(--border); background: var(--panel); }
+.library-toolbar label { display: grid; gap: 4px; font-size: 12px; color: var(--muted); min-width: 0; }
+.library-toolbar input[type="search"], .library-toolbar select, .library-toolbar button, .library-filter { min-height: 44px; max-width: 100%; border: 1px solid var(--border); padding: 8px 10px; background: var(--bg); color: var(--ink); font: inherit; }
+.library-toolbar input[type="search"] { width: 260px; }
+.library-toolbar .library-inline-option { display: flex; align-items: center; min-height: 44px; }
+.library-toolbar button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); }
+.library-toolbar p, .library-hint, .library-empty { margin: 0; font-size: 13px; color: var(--muted); }
+.library-empty { padding: 16px 0; }
+.tool-description summary, .secondary-actions > summary { cursor: pointer; min-height: 32px; padding: 6px 0; color: var(--muted); font-size: 12px; }
+.tool-description p { margin: 4px 0; }
+.secondary-actions { border-top: 1px solid var(--border); margin-top: 8px; padding-top: 4px; }
+.secondary-actions button { min-height: 44px; }
+.proposal-diff { display: grid; gap: 8px; font-size: 12px; overflow-wrap: anywhere; }
+.proposal-diff p { margin: 0; }
+.proposal-diff del { color: var(--muted); }
+.proposal-diff ins { color: var(--accent); text-decoration: none; }
+@media (max-width: 640px) { .library-toolbar > label { flex: 1 1 100%; } .library-toolbar input[type="search"] { width: 100%; } }
+
+.sensory-toggle { display: grid; place-items: center; width: 44px; height: 44px; cursor: pointer; }
+.sensory-tools-page input.sensory-checkbox[type="checkbox"] { width: 18px !important; height: 18px !important; min-width: 18px !important; min-height: 18px !important; margin: 0; flex: 0 0 18px; accent-color: var(--accent); }
+.library-inline-option { gap: 8px; }

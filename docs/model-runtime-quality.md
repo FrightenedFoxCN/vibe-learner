@@ -1,6 +1,6 @@
 # 模型运行时质量与边界
 
-本文记录 `0.3.5` 已采用的运行时行为，适用于 Planning、Study、Persona、Document、Tavern 及其共享 Provider/Harness。MiniMax-M3 是发现问题的实测模型；这些修复不构成其他模型、平台或全部内容质量的认证。生命周期和身份归属仍以 [Harness 架构](harness-architecture.md) 为准。
+本文记录 `0.3.5` 已采用的运行时行为，适用于 Planning、Study、Persona、Document、Tavern 及其共享 Provider/Harness。MiniMax-M3 是发现问题的实测模型；这些修复不构成其他模型、平台或全部内容质量的认证。生命周期和身份归属仍以 [Harness 工程手册](harness/README.md) 为准。
 
 ## Planning
 

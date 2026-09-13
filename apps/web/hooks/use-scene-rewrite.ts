@@ -6,6 +6,7 @@ import { diagnosticContext } from "../lib/diagnostics";
 import { assistPersonaSlot } from "../lib/data/personas";
 import { AsyncResultFence, type AsyncResultScope, type AsyncResultTicket } from "../lib/async-result-fence";
 import { findLayerById, type SceneLayer, type SceneObject } from "../lib/scene-editor-model";
+import { humanizeSettingGenerationError } from "../lib/generation-error-copy";
 
 export type RewriteUndoEntry =
   | {
@@ -140,7 +141,7 @@ export function useSceneRewrite({ sceneLayers, currentSceneAsyncScope, setSceneF
       });
     } catch (error) {
       if (canApply(ticket)) {
-        setRewriteError(String(error));
+        setRewriteError(humanizeSettingGenerationError(error, "场景字段"));
       }
     } finally {
       if (rewriteFenceRef.current.settle(ticket)) {
@@ -201,7 +202,7 @@ export function useSceneRewrite({ sceneLayers, currentSceneAsyncScope, setSceneF
       });
     } catch (error) {
       if (canApply(ticket)) {
-        setRewriteError(String(error));
+        setRewriteError(humanizeSettingGenerationError(error, "场景字段"));
       }
     } finally {
       if (rewriteFenceRef.current.settle(ticket)) {

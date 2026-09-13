@@ -1,6 +1,7 @@
 import { decodePlanRevision } from "./plan-revision-decode";
 import { studyDiagnosticContext } from "./study-diagnostic-context";
 import { createDiagnosticId, diagnosticContext, diagnosticDecode, recordDecodeFailure, diagnosticFetch, type DiagnosticContext } from "./diagnostics";
+import { MODEL_RUNTIME_CONFIG } from "@vibe-learner/shared/model-runtime-config";
 import type {
   CreatePersonaInput,
   CreatePersonaCardInput,
@@ -560,23 +561,31 @@ function normalizeRuntimeSettings(record: any): RuntimeSettings {
     openaiPlanApiKey: String(record.openai_plan_api_key ?? ""),
     openaiPlanApiKeyConfigured: Boolean(record.openai_plan_api_key_configured),
     openaiPlanBaseUrl: String(record.openai_plan_base_url ?? "https://api.openai.com/v1"),
-    openaiPlanModel: String(record.openai_plan_model ?? "gpt-4.1-mini"),
+    openaiPlanModel: String(record.openai_plan_model ?? MODEL_RUNTIME_CONFIG.defaultModelName),
     openaiSettingApiKey: String(record.openai_setting_api_key ?? ""),
     openaiSettingApiKeyConfigured: Boolean(record.openai_setting_api_key_configured),
     openaiSettingBaseUrl: String(record.openai_setting_base_url ?? "https://api.openai.com/v1"),
-    openaiSettingModel: String(record.openai_setting_model ?? "gpt-4.1-mini"),
+    openaiSettingModel: String(record.openai_setting_model ?? MODEL_RUNTIME_CONFIG.defaultModelName),
     openaiSettingWebSearchEnabled: Boolean(record.openai_setting_web_search_enabled ?? true),
     openaiChatApiKey: String(record.openai_chat_api_key ?? ""),
     openaiChatApiKeyConfigured: Boolean(record.openai_chat_api_key_configured),
     openaiChatBaseUrl: String(record.openai_chat_base_url ?? "https://api.openai.com/v1"),
-    openaiChatModel: String(record.openai_chat_model ?? "gpt-4.1-mini"),
+    openaiChatModel: String(record.openai_chat_model ?? MODEL_RUNTIME_CONFIG.defaultModelName),
     openaiChatTemperature: Number(record.openai_chat_temperature ?? 0.35),
     openaiSettingTemperature: Number(record.openai_setting_temperature ?? 0.4),
-    openaiSettingMaxTokens: Number(record.openai_setting_max_tokens ?? 900),
-    openaiChatMaxTokens: Number(record.openai_chat_max_tokens ?? 800),
+    openaiSettingMaxTokens: Number(
+      record.openai_setting_max_tokens ?? MODEL_RUNTIME_CONFIG.settingMaxTokens.default,
+    ),
+    openaiChatMaxTokens: Number(
+      record.openai_chat_max_tokens ?? MODEL_RUNTIME_CONFIG.chatMaxTokens.default,
+    ),
     openaiChatHistoryMessages: Number(record.openai_chat_history_messages ?? 8),
-    openaiChatToolMaxRounds: Number(record.openai_chat_tool_max_rounds ?? 4),
-    openaiEmbeddingModel: String(record.openai_embedding_model ?? "text-embedding-3-small"),
+    openaiChatToolMaxRounds: Number(
+      record.openai_chat_tool_max_rounds ?? MODEL_RUNTIME_CONFIG.chatToolMaxRounds.default,
+    ),
+    openaiEmbeddingModel: String(
+      record.openai_embedding_model ?? MODEL_RUNTIME_CONFIG.defaultEmbeddingModel,
+    ),
     openaiChatModelMultimodal: Boolean(record.openai_chat_model_multimodal),
     openaiTimeoutSeconds: Number(record.openai_timeout_seconds ?? 30),
     openaiPlanModelMultimodal: Boolean(record.openai_plan_model_multimodal),
@@ -2020,6 +2029,9 @@ export async function getModelUsageStats(): Promise<TokenUsageStats> {
       createdAt: String(item.created_at ?? ""),
       feature: String(item.feature ?? ""),
       model: String(item.model ?? ""),
+      operationId: String(item.operation_id ?? ""),
+      workflow: String(item.workflow ?? ""),
+      stage: String(item.stage ?? ""),
       promptTokens: Number(item.prompt_tokens ?? 0),
       completionTokens: Number(item.completion_tokens ?? 0),
       totalTokens: Number(item.total_tokens ?? 0),

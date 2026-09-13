@@ -9,6 +9,7 @@ import { createStudyChatRequestId } from "../lib/client-request-id";
 import { compactPreviewValue } from "../lib/preview";
 import { logWorkspaceError, logWorkspaceInfo } from "../lib/learning-workspace-telemetry";
 import { PLAN_GENERATED_NOTICE } from "../lib/learning-workspace-copy";
+import { ACTIVE_PLAN_GENERATION_KEY } from "../lib/app-navigation";
 
 export interface GeneratePlanInput {
   mode: "document" | "goal_only";
@@ -49,6 +50,7 @@ export function usePlanGeneration(options: PlanGenerationOptions, port: PlanGene
   const generationAbortControllerRef = useRef<AbortController | null>(null);
   const processStreamIdRef = useRef("");
   const planStreamIdRef = useRef("");
+  const processingCompletedRef = useRef(false);
   const mountedRef = useRef(true);
   const ownsOperation = (controller: AbortController) => mountedRef.current && generationAbortControllerRef.current === controller;
 
@@ -69,6 +71,16 @@ export function usePlanGeneration(options: PlanGenerationOptions, port: PlanGene
       generationDiagnosticRef.current = null;
     };
   }, []);
+
+  useEffect(() => {
+    if (!isGeneratingPlan) return;
+    const warnBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", warnBeforeUnload);
+    return () => window.removeEventListener("beforeunload", warnBeforeUnload);
+  }, [isGeneratingPlan]);
 
   const cancelPlanGeneration = async () => {
     if (!generationAbortControllerRef.current) return;
@@ -92,11 +104,13 @@ export function usePlanGeneration(options: PlanGenerationOptions, port: PlanGene
     planStreamIdRef.current = "";
     setIsInterruptingPlan(false);
     setIsGeneratingPlan(true);
+    try { localStorage.setItem(ACTIVE_PLAN_GENERATION_KEY, JSON.stringify({ startedAt: new Date().toISOString(), mode: input.mode })); } catch { /* storage is optional */ }
     options.onStarted();
     setProcessStreamEvents([]);
     setPlanStreamEvents([]);
     setProcessStreamStatus(input.mode === "document" ? "running" : "idle");
     setPlanStreamStatus("idle");
+    processingCompletedRef.current = input.mode !== "document";
     try {
       const selectedScene = options.resolveSceneProfile();
       const sceneProfile = selectedScene ? structuredClone(selectedScene) : undefined;
@@ -159,6 +173,7 @@ export function usePlanGeneration(options: PlanGenerationOptions, port: PlanGene
           ocrStatus: nextDocument.ocrStatus
         });
         options.onDocument(nextDocument);
+        processingCompletedRef.current = true;
         options.onNotice("教材解析完成，正在生成计划。");
       } else {
         setProcessStreamDocumentId("");
@@ -227,7 +242,10 @@ export function usePlanGeneration(options: PlanGenerationOptions, port: PlanGene
       }
       setProcessStreamStatus((current) => (current === "running" ? "error" : current));
       setPlanStreamStatus((current) => (current === "running" ? "error" : current));
-      options.onNotice(`${input.mode === "document" ? "教材处理失败" : "目标计划生成失败"}：${String(error)}`);
+      const failurePrefix = input.mode === "document"
+        ? (processingCompletedRef.current ? "计划生成失败（教材解析已完成）" : "教材解析 / OCR 失败")
+        : "目标计划生成失败";
+      options.onNotice(`${failurePrefix}：${String(error)}。可根据上方进度查看失败阶段并重试。`);
       logWorkspaceError("workflow:upload:error", error);
     } finally {
       if (ownsOperation(abortController)) {
@@ -238,6 +256,7 @@ export function usePlanGeneration(options: PlanGenerationOptions, port: PlanGene
         setIsInterruptingPlan(false);
         options.onFinished();
         setIsGeneratingPlan(false);
+        try { localStorage.removeItem(ACTIVE_PLAN_GENERATION_KEY); } catch { /* storage is optional */ }
       }
     }
   };

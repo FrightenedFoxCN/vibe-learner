@@ -369,11 +369,12 @@ const DEFAULT_ATTEMPTS: HarnessManifestAttemptCeilingV1 = {
   max_attempts: 3,
   max_repair_attempts: 2,
 };
+export const HARNESS_STRUCTURED_GENERATION_MAX_OUTPUT_TOKENS = 8_192;
 const DEFAULT_BUDGET: HarnessManifestExecutionBudgetV1 = {
   max_provider_calls: 3,
   max_tool_calls: 16,
   max_input_tokens: 64_000,
-  max_output_tokens: 8_000,
+  max_output_tokens: HARNESS_STRUCTURED_GENERATION_MAX_OUTPUT_TOKENS,
   max_wall_time_ms: 180_000,
   per_call_timeout_ms: 120_000,
 };

@@ -883,6 +883,9 @@ export interface TokenUsageCallRecord {
   createdAt: string;
   feature: string;
   model: string;
+  operationId: string;
+  workflow: string;
+  stage: string;
   promptTokens: number;
   completionTokens: number;
   totalTokens: number;

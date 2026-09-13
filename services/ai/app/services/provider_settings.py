@@ -14,9 +14,12 @@ from app.models.scene import decode_scene_tree_proposal, project_scene_tree_prop
 from app.services.model_recovery import record_model_recovery
 from app.models.persona_generation import PersonaCardBatchContentProposalV1, PersonaSlotContentProposalV1
 from app.services.prompt_loader import load_prompt_template
+from app.core.model_runtime_limits import (
+    SETTING_GENERATION_MAX_TOKENS,
+    SETTING_REPAIR_TOKEN_INCREMENT,
+    SETTING_REPAIR_TOKEN_MULTIPLIER,
+)
 
-
-SETTING_GENERATION_MAX_TOKENS = 8192
 
 
 @dataclass(frozen=True)
@@ -455,6 +458,8 @@ class RemoteSettingsProvider(PersonaModelCapability, SceneModelCapability):
             finish_reason, _, _ = _extract_choice_diagnostics(raw_payload)
             if finish_reason == "content_filter":
                 raise RuntimeError("setting_model_content_filter")
+            if finish_reason in {"length", "max_tokens", "max_output_tokens"}:
+                raise RuntimeError("setting_model_output_truncated")
             content = _extract_choice_content(raw_payload).strip()
             if not content:
                 raise RuntimeError("setting_model_empty_response")
@@ -473,6 +478,7 @@ class RemoteSettingsProvider(PersonaModelCapability, SceneModelCapability):
                 "setting_model_invalid_payload",
                 "setting_model_content_filter",
                 "setting_model_empty_response",
+                "setting_model_output_truncated",
             } and not recovery_reason.startswith("setting_scene_proposal_invalid:"):
                 raise
             logger.warning(
@@ -497,7 +503,10 @@ class RemoteSettingsProvider(PersonaModelCapability, SceneModelCapability):
             retry_payload["max_tokens"] = max(
                 existing_max_tokens,
                 min(
-                    max(existing_max_tokens + 800, int(existing_max_tokens * 1.5)),
+                    max(
+                        existing_max_tokens + SETTING_REPAIR_TOKEN_INCREMENT,
+                        int(existing_max_tokens * SETTING_REPAIR_TOKEN_MULTIPLIER),
+                    ),
                     SETTING_GENERATION_MAX_TOKENS,
                 ),
             )
@@ -509,6 +518,8 @@ class RemoteSettingsProvider(PersonaModelCapability, SceneModelCapability):
             retry_finish_reason, _, _ = _extract_choice_diagnostics(retry_raw_payload)
             if retry_finish_reason == "content_filter":
                 raise RuntimeError("setting_model_content_filter")
+            if retry_finish_reason in {"length", "max_tokens", "max_output_tokens"}:
+                raise RuntimeError("setting_model_output_truncated")
             retry_content = _extract_choice_content(retry_raw_payload).strip()
             if not retry_content:
                 raise RuntimeError("setting_model_empty_response")
@@ -541,6 +552,11 @@ class RemoteSettingsProvider(PersonaModelCapability, SceneModelCapability):
             model=self.setting_model,
         )
         try:
+            if str(raw_payload.get("status") or "").lower() == "incomplete":
+                details = raw_payload.get("incomplete_details")
+                reason = details.get("reason") if isinstance(details, dict) else ""
+                if str(reason).lower() in {"max_output_tokens", "max_tokens", "length"}:
+                    raise RuntimeError("setting_model_output_truncated")
             content = _extract_response_output_text(raw_payload).strip()
             if not content:
                 raise RuntimeError("setting_model_empty_response")
@@ -558,6 +574,7 @@ class RemoteSettingsProvider(PersonaModelCapability, SceneModelCapability):
                 "setting_model_invalid_json",
                 "setting_model_invalid_payload",
                 "setting_model_empty_response",
+                "setting_model_output_truncated",
             } and not recovery_reason.startswith("setting_scene_proposal_invalid:"):
                 raise
             retry_payload = dict(payload)
@@ -579,6 +596,11 @@ class RemoteSettingsProvider(PersonaModelCapability, SceneModelCapability):
                 request_kind="setting",
                 model=self.setting_model,
             )
+            if str(raw_retry_payload.get("status") or "").lower() == "incomplete":
+                details = raw_retry_payload.get("incomplete_details")
+                reason = details.get("reason") if isinstance(details, dict) else ""
+                if str(reason).lower() in {"max_output_tokens", "max_tokens", "length"}:
+                    raise RuntimeError("setting_model_output_truncated")
             retry_content = _extract_response_output_text(raw_retry_payload).strip()
             if not retry_content:
                 raise RuntimeError("setting_model_empty_response")
@@ -733,6 +755,8 @@ SCENE_TREE_GENERATION_SCHEMA = (
 
 
 def _build_setting_retry_instruction(*, reason: str, retry_instruction: str) -> str:
+    if reason == "setting_model_output_truncated":
+        return "上一次输出触及上限，JSON 不完整。请压缩文字、保留必需字段，并一次性输出完整合法 JSON。\n\n" + retry_instruction
     if reason == "setting_model_content_filter":
         return (
             "上一次输出被内容过滤截断。请改为更中性、更克制的结构化表达，只输出符合要求的 JSON 对象。\n\n"

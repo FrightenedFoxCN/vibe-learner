@@ -6,6 +6,7 @@ import { diagnosticContext } from "../lib/diagnostics";
 import { generateSceneTree } from "../lib/data/scenes";
 import { AsyncResultFence, type AsyncResultScope, type AsyncResultTicket } from "../lib/async-result-fence";
 import { parseSceneImportPayload, countSceneNodes, normalizeSceneTreeNodeForProfile, type SceneLayer } from "../lib/scene-editor-model";
+import { humanizeSettingGenerationError } from "../lib/generation-error-copy";
 
 export function useSceneGeneration(currentSceneAsyncScope: (fieldTarget?: string) => AsyncResultScope, generate = generateSceneTree, beginDiagnosticAction = diagnosticContext) {
   const [sceneKeywordInput, setSceneKeywordInput] = useState("");
@@ -108,7 +109,7 @@ export function useSceneGeneration(currentSceneAsyncScope: (fieldTarget?: string
       );
     } catch (error) {
       if (canApply(ticket)) {
-        setSceneGenerateError(String(error));
+        setSceneGenerateError(humanizeSettingGenerationError(error, "场景"));
       }
     } finally {
       if (sceneGenerationFenceRef.current.settle(ticket)) {

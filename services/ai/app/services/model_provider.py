@@ -43,6 +43,19 @@ from fastapi import HTTPException
 from pydantic import ValidationError
 
 from app.core.logging import get_logger
+from app.core.model_runtime_limits import (
+    DEFAULT_CHAT_HISTORY_MESSAGES,
+    DEFAULT_CHAT_MAX_TOKENS,
+    DEFAULT_CHAT_TEMPERATURE,
+    DEFAULT_CHAT_TOOL_MAX_ROUNDS,
+    DEFAULT_EMBEDDING_MODEL,
+    DEFAULT_PROVIDER_TIMEOUT_SECONDS,
+    DEFAULT_SETTING_MAX_TOKENS,
+    DEFAULT_SETTING_TEMPERATURE,
+    FEATURE_PROBE_JSON_MAX_TOKENS,
+    FEATURE_PROBE_TAVERN_MAX_TOKENS,
+    FEATURE_PROBE_TOOL_MAX_TOKENS,
+)
 from app.models.harness import HarnessStage, HarnessWorkflow
 from app.models.domain import (
     ChatToolCallTraceRecord,
@@ -123,7 +136,7 @@ def _feature_probe_tools_payload(model: str) -> dict[str, Any]:
     return {
         "model": model,
         "temperature": 0.2,
-        "max_tokens": 32,
+        "max_tokens": FEATURE_PROBE_TOOL_MAX_TOKENS,
         "messages": [
             {"role": "system", "content": "Return a brief acknowledgement."},
             {"role": "user", "content": "Compatibility probe."},
@@ -150,7 +163,7 @@ def _feature_probe_json_payload(model: str) -> dict[str, Any]:
     return {
         "model": model,
         "temperature": 0.4,
-        "max_tokens": 48,
+        "max_tokens": FEATURE_PROBE_JSON_MAX_TOKENS,
         "messages": [
             {"role": "system", "content": "Return only a JSON object."},
             {"role": "user", "content": 'Return {"ok":true}.'},
@@ -163,7 +176,7 @@ def _feature_probe_tavern_payload(model: str) -> dict[str, Any]:
     return {
         "model": model,
         "temperature": 0.35,
-        "max_tokens": 48,
+        "max_tokens": FEATURE_PROBE_TAVERN_MAX_TOKENS,
         "messages": [
             {"role": "system", "content": "Return the requested JSON object."},
             {"role": "user", "content": "Return a short compatibility acknowledgement."},
@@ -687,17 +700,17 @@ class OpenAIModelProvider(ModelProvider):
         chat_api_key: str = "",
         chat_base_url: str = "",
         chat_model: str | None = None,
-        chat_temperature: float = 0.35,
-        setting_temperature: float = 0.4,
-        setting_max_tokens: int = 900,
-        chat_max_tokens: int = 800,
-        chat_history_messages: int = 8,
-        chat_tool_max_rounds: int = 4,
+        chat_temperature: float = DEFAULT_CHAT_TEMPERATURE,
+        setting_temperature: float = DEFAULT_SETTING_TEMPERATURE,
+        setting_max_tokens: int = DEFAULT_SETTING_MAX_TOKENS,
+        chat_max_tokens: int = DEFAULT_CHAT_MAX_TOKENS,
+        chat_history_messages: int = DEFAULT_CHAT_HISTORY_MESSAGES,
+        chat_tool_max_rounds: int = DEFAULT_CHAT_TOOL_MAX_ROUNDS,
         chat_tools_enabled: bool = True,
         chat_memory_tool_enabled: bool = True,
         chat_multimodal_enabled: bool = False,
-        embedding_model: str = "text-embedding-3-small",
-        timeout_seconds: int = 30,
+        embedding_model: str = DEFAULT_EMBEDDING_MODEL,
+        timeout_seconds: int = DEFAULT_PROVIDER_TIMEOUT_SECONDS,
         multimodal_enabled: bool = False,
         plan_tools_enabled: bool = True,
         fallback_plan_model: str = "",
