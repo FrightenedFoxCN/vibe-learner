@@ -1,0 +1,1758 @@
+{
+  "version": "persona-source-capsule-fixture-v1",
+  "policy_provenance": "manually_authored_research_only",
+  "cases": [
+    {
+      "case_id": "coastal_beacon",
+      "source_text": "称呼：信标伙伴。关系：此人是海岸信标站的轮值邻居。权限：来源明确说不能进入设备塔层。职业：来源未说明其职业。共同经历：双方从未共同值守过暴风夜。认知来源：关于“亲眼见过透镜更换”只是对方转述，并非本人观察。",
+      "capsule_sha256": "860236b059b57f8c4e82c264f3c0d82d26bcc945b4d56d75f5752468d4cafc6a",
+      "capsule": {
+        "version": "persona-source-constraint-capsule-v1",
+        "case_id": "coastal_beacon",
+        "source_sha256": "6c85dcf8588f6be8f413b9dd25d8c507a261be3e33b4f6b7b49c656582ea8dcd",
+        "address_exact": "信标伙伴",
+        "address_source_span": {
+          "char_start": 3,
+          "char_end": 7,
+          "utf8_byte_start": 9,
+          "utf8_byte_end": 21,
+          "text": "信标伙伴",
+          "text_sha256": "6098026fc8cada1e5a257938e2f6465552a5c7a7fbeb863a1defdade216f67c2"
+        },
+        "claims": [
+          {
+            "claim_id": "coastal_beacon-claim-1",
+            "claim_kind": "relationship",
+            "claim_key": "relationship_to_learner",
+            "polarity": "asserted",
+            "source_span": {
+              "char_start": 8,
+              "char_end": 25,
+              "utf8_byte_start": 24,
+              "utf8_byte_end": 75,
+              "text": "关系：此人是海岸信标站的轮值邻居。",
+              "text_sha256": "3fff830d1eb92513d592dad2ae409cb1e10e3adcd7ab0b6fd4f705addd6bbb4a"
+            }
+          },
+          {
+            "claim_id": "coastal_beacon-claim-2",
+            "claim_kind": "permission",
+            "claim_key": "permission_scope",
+            "polarity": "denied",
+            "source_span": {
+              "char_start": 25,
+              "char_end": 42,
+              "utf8_byte_start": 75,
+              "utf8_byte_end": 126,
+              "text": "权限：来源明确说不能进入设备塔层。",
+              "text_sha256": "ea9b1ab1c1cf84c585d28bc38a2f3e46c35009ed7f48cdd331256e7a090cd67f"
+            }
+          },
+          {
+            "claim_id": "coastal_beacon-claim-3",
+            "claim_kind": "profession",
+            "claim_key": "profession_identity",
+            "polarity": "unknown",
+            "source_span": {
+              "char_start": 42,
+              "char_end": 54,
+              "utf8_byte_start": 126,
+              "utf8_byte_end": 162,
+              "text": "职业：来源未说明其职业。",
+              "text_sha256": "c266a76ee8dc8b6fd7266593620f7564e230f4bd41270f6152461b9a234affc3"
+            }
+          },
+          {
+            "claim_id": "coastal_beacon-claim-4",
+            "claim_kind": "shared_history",
+            "claim_key": "shared_history",
+            "polarity": "denied",
+            "source_span": {
+              "char_start": 54,
+              "char_end": 72,
+              "utf8_byte_start": 162,
+              "utf8_byte_end": 216,
+              "text": "共同经历：双方从未共同值守过暴风夜。",
+              "text_sha256": "66684d929285ef282b06e7dcd692a371e3288b3842b7af54b7ef80b46567d517"
+            }
+          },
+          {
+            "claim_id": "coastal_beacon-claim-5",
+            "claim_kind": "epistemic",
+            "claim_key": "direct_observation",
+            "polarity": "denied",
+            "source_span": {
+              "char_start": 72,
+              "char_end": 103,
+              "utf8_byte_start": 216,
+              "utf8_byte_end": 309,
+              "text": "认知来源：关于“亲眼见过透镜更换”只是对方转述，并非本人观察。",
+              "text_sha256": "f9493328282952ab6a9037f4b43599f781332f736398988177a0ef175b7641ca"
+            }
+          }
+        ],
+        "forbidden_transformations": [
+          {
+            "code": "teacherized_relationship",
+            "markers": [
+              {
+                "field": "summary",
+                "literal": "你的授课导师（coastal_beacon）"
+              }
+            ]
+          },
+          {
+            "code": "permission_upgrade",
+            "markers": [
+              {
+                "field": "relationship",
+                "literal": "可以进入设备塔层"
+              }
+            ]
+          },
+          {
+            "code": "unknown_profession_assertion",
+            "markers": [
+              {
+                "field": "cards.title",
+                "literal": "职业确定为海图绘制员"
+              }
+            ]
+          },
+          {
+            "code": "shared_history_invention",
+            "markers": [
+              {
+                "field": "cards.label",
+                "literal": "共同值守过暴风夜"
+              }
+            ]
+          },
+          {
+            "code": "epistemic_laundering",
+            "markers": [
+              {
+                "field": "cards.content",
+                "literal": "亲眼见过透镜更换"
+              }
+            ]
+          }
+        ],
+        "research_only": true,
+        "proposal_commit_evidence": "not_applicable",
+        "save_boundary": "separate_user_authored_save"
+      },
+      "valid_minimal_persona_card_batch_proposal": {
+        "summary": "仅整理来源明确的信息。",
+        "relationship": "按来源描述双方关系。",
+        "learner_address": "信标伙伴",
+        "cards": [
+          {
+            "title": "来源约束",
+            "kind": "background",
+            "label": "已知边界",
+            "content": "不扩写未给定身份、权限或共同经历。",
+            "tags": [
+              "来源限定"
+            ],
+            "source_note": "仅使用冻结来源。"
+          }
+        ]
+      },
+      "hard_negative_persona_card_batch_proposal": {
+        "summary": "来源明确否认“你的授课导师（coastal_beacon）”。",
+        "relationship": "来源明确否认“可以进入设备塔层”。",
+        "learner_address": "信标伙伴",
+        "cards": [
+          {
+            "title": "来源明确否认“职业确定为海图绘制员”。",
+            "kind": "background",
+            "label": "来源明确否认“共同值守过暴风夜”。",
+            "content": "来源明确否认“亲眼见过透镜更换”。",
+            "tags": [
+              "来源限定"
+            ],
+            "source_note": "仅使用冻结来源。"
+          }
+        ]
+      },
+      "single_point_mutations": [
+        {
+          "mutation_id": "wrong_address",
+          "operation": "replace",
+          "path": "/learner_address",
+          "value": "错误称呼",
+          "expected_code": "wrong_address"
+        },
+        {
+          "mutation_id": "teacherized_relationship",
+          "operation": "replace",
+          "path": "/summary",
+          "value": "你的授课导师（coastal_beacon）",
+          "expected_code": "teacherized_relationship"
+        },
+        {
+          "mutation_id": "permission_upgrade",
+          "operation": "replace",
+          "path": "/relationship",
+          "value": "可以进入设备塔层",
+          "expected_code": "permission_upgrade"
+        },
+        {
+          "mutation_id": "unknown_profession_assertion",
+          "operation": "replace",
+          "path": "/cards/0/title",
+          "value": "职业确定为海图绘制员",
+          "expected_code": "unknown_profession_assertion"
+        },
+        {
+          "mutation_id": "shared_history_invention",
+          "operation": "replace",
+          "path": "/cards/0/label",
+          "value": "共同值守过暴风夜",
+          "expected_code": "shared_history_invention"
+        },
+        {
+          "mutation_id": "epistemic_laundering",
+          "operation": "replace",
+          "path": "/cards/0/content",
+          "value": "亲眼见过透镜更换",
+          "expected_code": "epistemic_laundering"
+        }
+      ]
+    },
+    {
+      "case_id": "ceramic_archive",
+      "source_text": "称呼：陶片同好。关系：此人是陶片档案社的通信同好。权限：来源明确说不能取走编号陶片。职业：来源未说明其职业。共同经历：双方从未共同修复过展柜。认知来源：关于“亲眼见过窑址出土”只是对方转述，并非本人观察。",
+      "capsule_sha256": "e62d35fd62f1aa9ac35d20aec688471fc1008fc6a78b35f7c9540a201eb879d2",
+      "capsule": {
+        "version": "persona-source-constraint-capsule-v1",
+        "case_id": "ceramic_archive",
+        "source_sha256": "01a084d356496c28899068e2df0bc06e732ebb0f1c894d36d6f981770417ad30",
+        "address_exact": "陶片同好",
+        "address_source_span": {
+          "char_start": 3,
+          "char_end": 7,
+          "utf8_byte_start": 9,
+          "utf8_byte_end": 21,
+          "text": "陶片同好",
+          "text_sha256": "236496c326861ca0ca18a2a8417bf07540ddcab8c2ce0d7e173c8d706475d700"
+        },
+        "claims": [
+          {
+            "claim_id": "ceramic_archive-claim-1",
+            "claim_kind": "relationship",
+            "claim_key": "relationship_to_learner",
+            "polarity": "asserted",
+            "source_span": {
+              "char_start": 8,
+              "char_end": 25,
+              "utf8_byte_start": 24,
+              "utf8_byte_end": 75,
+              "text": "关系：此人是陶片档案社的通信同好。",
+              "text_sha256": "d34589821f1f8ae389972cad90d49847f662a308acdb8e47fde8be067cfb3242"
+            }
+          },
+          {
+            "claim_id": "ceramic_archive-claim-2",
+            "claim_kind": "permission",
+            "claim_key": "permission_scope",
+            "polarity": "denied",
+            "source_span": {
+              "char_start": 25,
+              "char_end": 42,
+              "utf8_byte_start": 75,
+              "utf8_byte_end": 126,
+              "text": "权限：来源明确说不能取走编号陶片。",
+              "text_sha256": "b8688f4cbd1164220f00de3e53e89ce13830661b13116f5ec0ff1c36a5e66c62"
+            }
+          },
+          {
+            "claim_id": "ceramic_archive-claim-3",
+            "claim_kind": "profession",
+            "claim_key": "profession_identity",
+            "polarity": "unknown",
+            "source_span": {
+              "char_start": 42,
+              "char_end": 54,
+              "utf8_byte_start": 126,
+              "utf8_byte_end": 162,
+              "text": "职业：来源未说明其职业。",
+              "text_sha256": "c266a76ee8dc8b6fd7266593620f7564e230f4bd41270f6152461b9a234affc3"
+            }
+          },
+          {
+            "claim_id": "ceramic_archive-claim-4",
+            "claim_kind": "shared_history",
+            "claim_key": "shared_history",
+            "polarity": "denied",
+            "source_span": {
+              "char_start": 54,
+              "char_end": 71,
+              "utf8_byte_start": 162,
+              "utf8_byte_end": 213,
+              "text": "共同经历：双方从未共同修复过展柜。",
+              "text_sha256": "cff300db9e282d6d9940b402a8bce7007cbfb868bc3bcf0a0566d01a22a0b93f"
+            }
+          },
+          {
+            "claim_id": "ceramic_archive-claim-5",
+            "claim_kind": "epistemic",
+            "claim_key": "direct_observation",
+            "polarity": "denied",
+            "source_span": {
+              "char_start": 71,
+              "char_end": 102,
+              "utf8_byte_start": 213,
+              "utf8_byte_end": 306,
+              "text": "认知来源：关于“亲眼见过窑址出土”只是对方转述，并非本人观察。",
+              "text_sha256": "20de943f1a4614c675c2d0b8e4604c0638090f527a0a6faf695f6f50e8a77e40"
+            }
+          }
+        ],
+        "forbidden_transformations": [
+          {
+            "code": "teacherized_relationship",
+            "markers": [
+              {
+                "field": "relationship",
+                "literal": "你的授课导师（ceramic_archive）"
+              }
+            ]
+          },
+          {
+            "code": "permission_upgrade",
+            "markers": [
+              {
+                "field": "cards.title",
+                "literal": "可以取走编号陶片"
+              }
+            ]
+          },
+          {
+            "code": "unknown_profession_assertion",
+            "markers": [
+              {
+                "field": "cards.label",
+                "literal": "职业确定为陶器修复师"
+              }
+            ]
+          },
+          {
+            "code": "shared_history_invention",
+            "markers": [
+              {
+                "field": "cards.content",
+                "literal": "共同修复过展柜"
+              }
+            ]
+          },
+          {
+            "code": "epistemic_laundering",
+            "markers": [
+              {
+                "field": "cards.tags",
+                "literal": "亲眼见过窑址出土"
+              }
+            ]
+          }
+        ],
+        "research_only": true,
+        "proposal_commit_evidence": "not_applicable",
+        "save_boundary": "separate_user_authored_save"
+      },
+      "valid_minimal_persona_card_batch_proposal": {
+        "summary": "仅整理来源明确的信息。",
+        "relationship": "按来源描述双方关系。",
+        "learner_address": "陶片同好",
+        "cards": [
+          {
+            "title": "来源约束",
+            "kind": "background",
+            "label": "已知边界",
+            "content": "不扩写未给定身份、权限或共同经历。",
+            "tags": [
+              "来源限定"
+            ],
+            "source_note": "仅使用冻结来源。"
+          }
+        ]
+      },
+      "hard_negative_persona_card_batch_proposal": {
+        "summary": "仅整理来源明确的信息。",
+        "relationship": "来源明确否认“你的授课导师（ceramic_archive）”。",
+        "learner_address": "陶片同好",
+        "cards": [
+          {
+            "title": "来源明确否认“可以取走编号陶片”。",
+            "kind": "background",
+            "label": "来源明确否认“职业确定为陶器修复师”。",
+            "content": "来源明确否认“共同修复过展柜”。",
+            "tags": [
+              "来源明确否认“亲眼见过窑址出土”。"
+            ],
+            "source_note": "仅使用冻结来源。"
+          }
+        ]
+      },
+      "single_point_mutations": [
+        {
+          "mutation_id": "wrong_address",
+          "operation": "replace",
+          "path": "/learner_address",
+          "value": "错误称呼",
+          "expected_code": "wrong_address"
+        },
+        {
+          "mutation_id": "teacherized_relationship",
+          "operation": "replace",
+          "path": "/relationship",
+          "value": "你的授课导师（ceramic_archive）",
+          "expected_code": "teacherized_relationship"
+        },
+        {
+          "mutation_id": "permission_upgrade",
+          "operation": "replace",
+          "path": "/cards/0/title",
+          "value": "可以取走编号陶片",
+          "expected_code": "permission_upgrade"
+        },
+        {
+          "mutation_id": "unknown_profession_assertion",
+          "operation": "replace",
+          "path": "/cards/0/label",
+          "value": "职业确定为陶器修复师",
+          "expected_code": "unknown_profession_assertion"
+        },
+        {
+          "mutation_id": "shared_history_invention",
+          "operation": "replace",
+          "path": "/cards/0/content",
+          "value": "共同修复过展柜",
+          "expected_code": "shared_history_invention"
+        },
+        {
+          "mutation_id": "epistemic_laundering",
+          "operation": "replace",
+          "path": "/cards/0/tags/0",
+          "value": "亲眼见过窑址出土",
+          "expected_code": "epistemic_laundering"
+        }
+      ]
+    },
+    {
+      "case_id": "wetland_count",
+      "source_text": "称呼：计数搭档。关系：此人是湿地候鸟计数队的远程搭档。权限：来源明确说不能开启环志箱。职业：来源未说明其职业。共同经历：双方从未共同参加过春季环志。认知来源：关于“亲眼见过稀有鸟落巢”只是对方转述，并非本人观察。",
+      "capsule_sha256": "822f188dfe843cd4f7f670e74585f92d2f753d4172ec0f0d14266bc94cf7ac92",
+      "capsule": {
+        "version": "persona-source-constraint-capsule-v1",
+        "case_id": "wetland_count",
+        "source_sha256": "33b81be833d1231f780c3303376bc2196238e622d248537d8e6fad223e27e6af",
+        "address_exact": "计数搭档",
+        "address_source_span": {
+          "char_start": 3,
+          "char_end": 7,
+          "utf8_byte_start": 9,
+          "utf8_byte_end": 21,
+          "text": "计数搭档",
+          "text_sha256": "f0299d53f757f9cbdd1a291adced459a7d1a0046826d4cd6a15e077049431caf"
+        },
+        "claims": [
+          {
+            "claim_id": "wetland_count-claim-1",
+            "claim_kind": "relationship",
+            "claim_key": "relationship_to_learner",
+            "polarity": "asserted",
+            "source_span": {
+              "char_start": 8,
+              "char_end": 27,
+              "utf8_byte_start": 24,
+              "utf8_byte_end": 81,
+              "text": "关系：此人是湿地候鸟计数队的远程搭档。",
+              "text_sha256": "21a5df6324896a3905927466ede9086e2b0e6c21c2b5801aff04b406d78ce40f"
+            }
+          },
+          {
+            "claim_id": "wetland_count-claim-2",
+            "claim_kind": "permission",
+            "claim_key": "permission_scope",
+            "polarity": "denied",
+            "source_span": {
+              "char_start": 27,
+              "char_end": 43,
+              "utf8_byte_start": 81,
+              "utf8_byte_end": 129,
+              "text": "权限：来源明确说不能开启环志箱。",
+              "text_sha256": "d15f307aa72a31606ac1e59cad7768ddfc238f0f0988dbc9b82b074c3bfa2801"
+            }
+          },
+          {
+            "claim_id": "wetland_count-claim-3",
+            "claim_kind": "profession",
+            "claim_key": "profession_identity",
+            "polarity": "unknown",
+            "source_span": {
+              "char_start": 43,
+              "char_end": 55,
+              "utf8_byte_start": 129,
+              "utf8_byte_end": 165,
+              "text": "职业：来源未说明其职业。",
+              "text_sha256": "c266a76ee8dc8b6fd7266593620f7564e230f4bd41270f6152461b9a234affc3"
+            }
+          },
+          {
+            "claim_id": "wetland_count-claim-4",
+            "claim_kind": "shared_history",
+            "claim_key": "shared_history",
+            "polarity": "denied",
+            "source_span": {
+              "char_start": 55,
+              "char_end": 74,
+              "utf8_byte_start": 165,
+              "utf8_byte_end": 222,
+              "text": "共同经历：双方从未共同参加过春季环志。",
+              "text_sha256": "32fcf1380fcd87453a8ef73915f776fa8a72410e3b71a9d8cb313d565e1ac1d5"
+            }
+          },
+          {
+            "claim_id": "wetland_count-claim-5",
+            "claim_kind": "epistemic",
+            "claim_key": "direct_observation",
+            "polarity": "denied",
+            "source_span": {
+              "char_start": 74,
+              "char_end": 106,
+              "utf8_byte_start": 222,
+              "utf8_byte_end": 318,
+              "text": "认知来源：关于“亲眼见过稀有鸟落巢”只是对方转述，并非本人观察。",
+              "text_sha256": "281fb05d434df1d5acd7ce69e03bd665801b1b2427f8c38a5262bf3253a3b5a1"
+            }
+          }
+        ],
+        "forbidden_transformations": [
+          {
+            "code": "teacherized_relationship",
+            "markers": [
+              {
+                "field": "cards.title",
+                "literal": "你的授课导师（wetland_count）"
+              }
+            ]
+          },
+          {
+            "code": "permission_upgrade",
+            "markers": [
+              {
+                "field": "cards.label",
+                "literal": "可以开启环志箱"
+              }
+            ]
+          },
+          {
+            "code": "unknown_profession_assertion",
+            "markers": [
+              {
+                "field": "cards.content",
+                "literal": "职业确定为鸟类学家"
+              }
+            ]
+          },
+          {
+            "code": "shared_history_invention",
+            "markers": [
+              {
+                "field": "cards.tags",
+                "literal": "共同参加过春季环志"
+              }
+            ]
+          },
+          {
+            "code": "epistemic_laundering",
+            "markers": [
+              {
+                "field": "cards.source_note",
+                "literal": "亲眼见过稀有鸟落巢"
+              }
+            ]
+          }
+        ],
+        "research_only": true,
+        "proposal_commit_evidence": "not_applicable",
+        "save_boundary": "separate_user_authored_save"
+      },
+      "valid_minimal_persona_card_batch_proposal": {
+        "summary": "仅整理来源明确的信息。",
+        "relationship": "按来源描述双方关系。",
+        "learner_address": "计数搭档",
+        "cards": [
+          {
+            "title": "来源约束",
+            "kind": "background",
+            "label": "已知边界",
+            "content": "不扩写未给定身份、权限或共同经历。",
+            "tags": [
+              "来源限定"
+            ],
+            "source_note": "仅使用冻结来源。"
+          }
+        ]
+      },
+      "hard_negative_persona_card_batch_proposal": {
+        "summary": "仅整理来源明确的信息。",
+        "relationship": "按来源描述双方关系。",
+        "learner_address": "计数搭档",
+        "cards": [
+          {
+            "title": "来源明确否认“你的授课导师（wetland_count）”。",
+            "kind": "background",
+            "label": "来源明确否认“可以开启环志箱”。",
+            "content": "来源明确否认“职业确定为鸟类学家”。",
+            "tags": [
+              "来源明确否认“共同参加过春季环志”。"
+            ],
+            "source_note": "来源明确否认“亲眼见过稀有鸟落巢”。"
+          }
+        ]
+      },
+      "single_point_mutations": [
+        {
+          "mutation_id": "wrong_address",
+          "operation": "replace",
+          "path": "/learner_address",
+          "value": "错误称呼",
+          "expected_code": "wrong_address"
+        },
+        {
+          "mutation_id": "teacherized_relationship",
+          "operation": "replace",
+          "path": "/cards/0/title",
+          "value": "你的授课导师（wetland_count）",
+          "expected_code": "teacherized_relationship"
+        },
+        {
+          "mutation_id": "permission_upgrade",
+          "operation": "replace",
+          "path": "/cards/0/label",
+          "value": "可以开启环志箱",
+          "expected_code": "permission_upgrade"
+        },
+        {
+          "mutation_id": "unknown_profession_assertion",
+          "operation": "replace",
+          "path": "/cards/0/content",
+          "value": "职业确定为鸟类学家",
+          "expected_code": "unknown_profession_assertion"
+        },
+        {
+          "mutation_id": "shared_history_invention",
+          "operation": "replace",
+          "path": "/cards/0/tags/0",
+          "value": "共同参加过春季环志",
+          "expected_code": "shared_history_invention"
+        },
+        {
+          "mutation_id": "epistemic_laundering",
+          "operation": "replace",
+          "path": "/cards/0/source_note",
+          "value": "亲眼见过稀有鸟落巢",
+          "expected_code": "epistemic_laundering"
+        }
+      ]
+    },
+    {
+      "case_id": "rooftop_garden",
+      "source_text": "称呼：菜圃邻伴。关系：此人是屋顶菜圃的排班邻伴。权限：来源明确说不能更改灌溉程序。职业：来源未说明其职业。共同经历：双方从未共同培育过冬瓜。认知来源：关于“亲眼见过夜间授粉”只是对方转述，并非本人观察。",
+      "capsule_sha256": "3fec96224180110fbccb5075c9c495b67ce66ee01e9c2053a873f3304e51a808",
+      "capsule": {
+        "version": "persona-source-constraint-capsule-v1",
+        "case_id": "rooftop_garden",
+        "source_sha256": "110b3f29b5f49b42baf0185b3e32235a321db18677682b143937f31d0dabc11c",
+        "address_exact": "菜圃邻伴",
+        "address_source_span": {
+          "char_start": 3,
+          "char_end": 7,
+          "utf8_byte_start": 9,
+          "utf8_byte_end": 21,
+          "text": "菜圃邻伴",
+          "text_sha256": "ce28c803544fe4c623964959f233d00d716e648cfe46ba6100e865b2b67bddba"
+        },
+        "claims": [
+          {
+            "claim_id": "rooftop_garden-claim-1",
+            "claim_kind": "relationship",
+            "claim_key": "relationship_to_learner",
+            "polarity": "asserted",
+            "source_span": {
+              "char_start": 8,
+              "char_end": 24,
+              "utf8_byte_start": 24,
+              "utf8_byte_end": 72,
+              "text": "关系：此人是屋顶菜圃的排班邻伴。",
+              "text_sha256": "d5f0621d89018674a82c4f06557add223116727926d1b1f87f44005c7c8ed158"
+            }
+          },
+          {
+            "claim_id": "rooftop_garden-claim-2",
+            "claim_kind": "permission",
+            "claim_key": "permission_scope",
+            "polarity": "denied",
+            "source_span": {
+              "char_start": 24,
+              "char_end": 41,
+              "utf8_byte_start": 72,
+              "utf8_byte_end": 123,
+              "text": "权限：来源明确说不能更改灌溉程序。",
+              "text_sha256": "a4839c6d1a46148870ce4665284204bd73833c40d622b7a47683e49f6e44b004"
+            }
+          },
+          {
+            "claim_id": "rooftop_garden-claim-3",
+            "claim_kind": "profession",
+            "claim_key": "profession_identity",
+            "polarity": "unknown",
+            "source_span": {
+              "char_start": 41,
+              "char_end": 53,
+              "utf8_byte_start": 123,
+              "utf8_byte_end": 159,
+              "text": "职业：来源未说明其职业。",
+              "text_sha256": "c266a76ee8dc8b6fd7266593620f7564e230f4bd41270f6152461b9a234affc3"
+            }
+          },
+          {
+            "claim_id": "rooftop_garden-claim-4",
+            "claim_kind": "shared_history",
+            "claim_key": "shared_history",
+            "polarity": "denied",
+            "source_span": {
+              "char_start": 53,
+              "char_end": 70,
+              "utf8_byte_start": 159,
+              "utf8_byte_end": 210,
+              "text": "共同经历：双方从未共同培育过冬瓜。",
+              "text_sha256": "764519449bb26b06941f2b6065c3b15f992078999cc66a6a702c70a1e86948ec"
+            }
+          },
+          {
+            "claim_id": "rooftop_garden-claim-5",
+            "claim_kind": "epistemic",
+            "claim_key": "direct_observation",
+            "polarity": "denied",
+            "source_span": {
+              "char_start": 70,
+              "char_end": 101,
+              "utf8_byte_start": 210,
+              "utf8_byte_end": 303,
+              "text": "认知来源：关于“亲眼见过夜间授粉”只是对方转述，并非本人观察。",
+              "text_sha256": "b40220e7fd60a5075d0ff68f9025ec3466c608785ae4673b43d8f19b1bd80fd6"
+            }
+          }
+        ],
+        "forbidden_transformations": [
+          {
+            "code": "teacherized_relationship",
+            "markers": [
+              {
+                "field": "cards.label",
+                "literal": "你的授课导师（rooftop_garden）"
+              }
+            ]
+          },
+          {
+            "code": "permission_upgrade",
+            "markers": [
+              {
+                "field": "cards.content",
+                "literal": "可以更改灌溉程序"
+              }
+            ]
+          },
+          {
+            "code": "unknown_profession_assertion",
+            "markers": [
+              {
+                "field": "cards.tags",
+                "literal": "职业确定为园艺治疗师"
+              }
+            ]
+          },
+          {
+            "code": "shared_history_invention",
+            "markers": [
+              {
+                "field": "cards.source_note",
+                "literal": "共同培育过冬瓜"
+              }
+            ]
+          },
+          {
+            "code": "epistemic_laundering",
+            "markers": [
+              {
+                "field": "summary",
+                "literal": "亲眼见过夜间授粉"
+              }
+            ]
+          }
+        ],
+        "research_only": true,
+        "proposal_commit_evidence": "not_applicable",
+        "save_boundary": "separate_user_authored_save"
+      },
+      "valid_minimal_persona_card_batch_proposal": {
+        "summary": "仅整理来源明确的信息。",
+        "relationship": "按来源描述双方关系。",
+        "learner_address": "菜圃邻伴",
+        "cards": [
+          {
+            "title": "来源约束",
+            "kind": "background",
+            "label": "已知边界",
+            "content": "不扩写未给定身份、权限或共同经历。",
+            "tags": [
+              "来源限定"
+            ],
+            "source_note": "仅使用冻结来源。"
+          }
+        ]
+      },
+      "hard_negative_persona_card_batch_proposal": {
+        "summary": "来源明确否认“亲眼见过夜间授粉”。",
+        "relationship": "按来源描述双方关系。",
+        "learner_address": "菜圃邻伴",
+        "cards": [
+          {
+            "title": "来源约束",
+            "kind": "background",
+            "label": "来源明确否认“你的授课导师（rooftop_garden）”。",
+            "content": "来源明确否认“可以更改灌溉程序”。",
+            "tags": [
+              "来源明确否认“职业确定为园艺治疗师”。"
+            ],
+            "source_note": "来源明确否认“共同培育过冬瓜”。"
+          }
+        ]
+      },
+      "single_point_mutations": [
+        {
+          "mutation_id": "wrong_address",
+          "operation": "replace",
+          "path": "/learner_address",
+          "value": "错误称呼",
+          "expected_code": "wrong_address"
+        },
+        {
+          "mutation_id": "teacherized_relationship",
+          "operation": "replace",
+          "path": "/cards/0/label",
+          "value": "你的授课导师（rooftop_garden）",
+          "expected_code": "teacherized_relationship"
+        },
+        {
+          "mutation_id": "permission_upgrade",
+          "operation": "replace",
+          "path": "/cards/0/content",
+          "value": "可以更改灌溉程序",
+          "expected_code": "permission_upgrade"
+        },
+        {
+          "mutation_id": "unknown_profession_assertion",
+          "operation": "replace",
+          "path": "/cards/0/tags/0",
+          "value": "职业确定为园艺治疗师",
+          "expected_code": "unknown_profession_assertion"
+        },
+        {
+          "mutation_id": "shared_history_invention",
+          "operation": "replace",
+          "path": "/cards/0/source_note",
+          "value": "共同培育过冬瓜",
+          "expected_code": "shared_history_invention"
+        },
+        {
+          "mutation_id": "epistemic_laundering",
+          "operation": "replace",
+          "path": "/summary",
+          "value": "亲眼见过夜间授粉",
+          "expected_code": "epistemic_laundering"
+        }
+      ]
+    },
+    {
+      "case_id": "prop_registry",
+      "source_text": "称呼：道具伙伴。关系：此人是剧场道具登记组的社团伙伴。权限：来源明确说不能借出封存道具。职业：来源未说明其职业。共同经历：双方从未共同制作过王冠。认知来源：关于“亲眼见过首演事故”只是对方转述，并非本人观察。",
+      "capsule_sha256": "7701d5ef9cf1313b37f3ab6a1762ca90c8a08d18b9963bc9519f4e8c52285ff3",
+      "capsule": {
+        "version": "persona-source-constraint-capsule-v1",
+        "case_id": "prop_registry",
+        "source_sha256": "0f63db34f594bf00626f179e0311ed63f29030ca6f97aea26d3f327001d925e1",
+        "address_exact": "道具伙伴",
+        "address_source_span": {
+          "char_start": 3,
+          "char_end": 7,
+          "utf8_byte_start": 9,
+          "utf8_byte_end": 21,
+          "text": "道具伙伴",
+          "text_sha256": "5b2ca0a4c9978d89249e05cfd4387812fdf35ebc122cabe306074a0cedc1b677"
+        },
+        "claims": [
+          {
+            "claim_id": "prop_registry-claim-1",
+            "claim_kind": "relationship",
+            "claim_key": "relationship_to_learner",
+            "polarity": "asserted",
+            "source_span": {
+              "char_start": 8,
+              "char_end": 27,
+              "utf8_byte_start": 24,
+              "utf8_byte_end": 81,
+              "text": "关系：此人是剧场道具登记组的社团伙伴。",
+              "text_sha256": "68ba047aa41e4587fcf34808f50d5416c95b5e24b2b5de709ad6c2049f6f0eee"
+            }
+          },
+          {
+            "claim_id": "prop_registry-claim-2",
+            "claim_kind": "permission",
+            "claim_key": "permission_scope",
+            "polarity": "denied",
+            "source_span": {
+              "char_start": 27,
+              "char_end": 44,
+              "utf8_byte_start": 81,
+              "utf8_byte_end": 132,
+              "text": "权限：来源明确说不能借出封存道具。",
+              "text_sha256": "9634f993b4d053ba6edea1415f07bc7e2bc786a52337082ae78b339f6cfe4fe0"
+            }
+          },
+          {
+            "claim_id": "prop_registry-claim-3",
+            "claim_kind": "profession",
+            "claim_key": "profession_identity",
+            "polarity": "unknown",
+            "source_span": {
+              "char_start": 44,
+              "char_end": 56,
+              "utf8_byte_start": 132,
+              "utf8_byte_end": 168,
+              "text": "职业：来源未说明其职业。",
+              "text_sha256": "c266a76ee8dc8b6fd7266593620f7564e230f4bd41270f6152461b9a234affc3"
+            }
+          },
+          {
+            "claim_id": "prop_registry-claim-4",
+            "claim_kind": "shared_history",
+            "claim_key": "shared_history",
+            "polarity": "denied",
+            "source_span": {
+              "char_start": 56,
+              "char_end": 73,
+              "utf8_byte_start": 168,
+              "utf8_byte_end": 219,
+              "text": "共同经历：双方从未共同制作过王冠。",
+              "text_sha256": "3e3c6ef7d3d5e47bb1d18756509df100ba37305efedbd3e0ba6697a99ffd5247"
+            }
+          },
+          {
+            "claim_id": "prop_registry-claim-5",
+            "claim_kind": "epistemic",
+            "claim_key": "direct_observation",
+            "polarity": "denied",
+            "source_span": {
+              "char_start": 73,
+              "char_end": 104,
+              "utf8_byte_start": 219,
+              "utf8_byte_end": 312,
+              "text": "认知来源：关于“亲眼见过首演事故”只是对方转述，并非本人观察。",
+              "text_sha256": "7a43c26bd72f6cad11284aad6fa086298ea1acc9bc671a3b26a31ac39523bc4f"
+            }
+          }
+        ],
+        "forbidden_transformations": [
+          {
+            "code": "teacherized_relationship",
+            "markers": [
+              {
+                "field": "cards.content",
+                "literal": "你的授课导师（prop_registry）"
+              }
+            ]
+          },
+          {
+            "code": "permission_upgrade",
+            "markers": [
+              {
+                "field": "cards.tags",
+                "literal": "可以借出封存道具"
+              }
+            ]
+          },
+          {
+            "code": "unknown_profession_assertion",
+            "markers": [
+              {
+                "field": "cards.source_note",
+                "literal": "职业确定为舞台设计师"
+              }
+            ]
+          },
+          {
+            "code": "shared_history_invention",
+            "markers": [
+              {
+                "field": "summary",
+                "literal": "共同制作过王冠"
+              }
+            ]
+          },
+          {
+            "code": "epistemic_laundering",
+            "markers": [
+              {
+                "field": "relationship",
+                "literal": "亲眼见过首演事故"
+              }
+            ]
+          }
+        ],
+        "research_only": true,
+        "proposal_commit_evidence": "not_applicable",
+        "save_boundary": "separate_user_authored_save"
+      },
+      "valid_minimal_persona_card_batch_proposal": {
+        "summary": "仅整理来源明确的信息。",
+        "relationship": "按来源描述双方关系。",
+        "learner_address": "道具伙伴",
+        "cards": [
+          {
+            "title": "来源约束",
+            "kind": "background",
+            "label": "已知边界",
+            "content": "不扩写未给定身份、权限或共同经历。",
+            "tags": [
+              "来源限定"
+            ],
+            "source_note": "仅使用冻结来源。"
+          }
+        ]
+      },
+      "hard_negative_persona_card_batch_proposal": {
+        "summary": "来源明确否认“共同制作过王冠”。",
+        "relationship": "来源明确否认“亲眼见过首演事故”。",
+        "learner_address": "道具伙伴",
+        "cards": [
+          {
+            "title": "来源约束",
+            "kind": "background",
+            "label": "已知边界",
+            "content": "来源明确否认“你的授课导师（prop_registry）”。",
+            "tags": [
+              "来源明确否认“可以借出封存道具”。"
+            ],
+            "source_note": "来源明确否认“职业确定为舞台设计师”。"
+          }
+        ]
+      },
+      "single_point_mutations": [
+        {
+          "mutation_id": "wrong_address",
+          "operation": "replace",
+          "path": "/learner_address",
+          "value": "错误称呼",
+          "expected_code": "wrong_address"
+        },
+        {
+          "mutation_id": "teacherized_relationship",
+          "operation": "replace",
+          "path": "/cards/0/content",
+          "value": "你的授课导师（prop_registry）",
+          "expected_code": "teacherized_relationship"
+        },
+        {
+          "mutation_id": "permission_upgrade",
+          "operation": "replace",
+          "path": "/cards/0/tags/0",
+          "value": "可以借出封存道具",
+          "expected_code": "permission_upgrade"
+        },
+        {
+          "mutation_id": "unknown_profession_assertion",
+          "operation": "replace",
+          "path": "/cards/0/source_note",
+          "value": "职业确定为舞台设计师",
+          "expected_code": "unknown_profession_assertion"
+        },
+        {
+          "mutation_id": "shared_history_invention",
+          "operation": "replace",
+          "path": "/summary",
+          "value": "共同制作过王冠",
+          "expected_code": "shared_history_invention"
+        },
+        {
+          "mutation_id": "epistemic_laundering",
+          "operation": "replace",
+          "path": "/relationship",
+          "value": "亲眼见过首演事故",
+          "expected_code": "epistemic_laundering"
+        }
+      ]
+    },
+    {
+      "case_id": "alpine_weather",
+      "source_text": "称呼：云图笔友。关系：此人是高山气象抄报网的笔友。权限：来源明确说不能调整自动站参数。职业：来源未说明其职业。共同经历：双方从未共同登过观测峰。认知来源：关于“亲眼见过球状闪电”只是对方转述，并非本人观察。",
+      "capsule_sha256": "a244649585310773b0e92eedc712036b44fef4123fbd4619ddf3513fdd2cf882",
+      "capsule": {
+        "version": "persona-source-constraint-capsule-v1",
+        "case_id": "alpine_weather",
+        "source_sha256": "97c3b17576790d77bb1cf11b75ce4844954f17a9bf396f9cb320b44d4857c348",
+        "address_exact": "云图笔友",
+        "address_source_span": {
+          "char_start": 3,
+          "char_end": 7,
+          "utf8_byte_start": 9,
+          "utf8_byte_end": 21,
+          "text": "云图笔友",
+          "text_sha256": "2444483545fb962d2057cbb08269e0fd00e7d2bae064b1d974c2739936366d57"
+        },
+        "claims": [
+          {
+            "claim_id": "alpine_weather-claim-1",
+            "claim_kind": "relationship",
+            "claim_key": "relationship_to_learner",
+            "polarity": "asserted",
+            "source_span": {
+              "char_start": 8,
+              "char_end": 25,
+              "utf8_byte_start": 24,
+              "utf8_byte_end": 75,
+              "text": "关系：此人是高山气象抄报网的笔友。",
+              "text_sha256": "5a5cca4f5720b3362fdda8e5cc097d83bbc9f97571be39f4bd69f0e210cfa7b2"
+            }
+          },
+          {
+            "claim_id": "alpine_weather-claim-2",
+            "claim_kind": "permission",
+            "claim_key": "permission_scope",
+            "polarity": "denied",
+            "source_span": {
+              "char_start": 25,
+              "char_end": 43,
+              "utf8_byte_start": 75,
+              "utf8_byte_end": 129,
+              "text": "权限：来源明确说不能调整自动站参数。",
+              "text_sha256": "d8244f25e0d611b23be7cabff8d54c57348808f18a75c5c4dafdbd7a9cabeb9e"
+            }
+          },
+          {
+            "claim_id": "alpine_weather-claim-3",
+            "claim_kind": "profession",
+            "claim_key": "profession_identity",
+            "polarity": "unknown",
+            "source_span": {
+              "char_start": 43,
+              "char_end": 55,
+              "utf8_byte_start": 129,
+              "utf8_byte_end": 165,
+              "text": "职业：来源未说明其职业。",
+              "text_sha256": "c266a76ee8dc8b6fd7266593620f7564e230f4bd41270f6152461b9a234affc3"
+            }
+          },
+          {
+            "claim_id": "alpine_weather-claim-4",
+            "claim_kind": "shared_history",
+            "claim_key": "shared_history",
+            "polarity": "denied",
+            "source_span": {
+              "char_start": 55,
+              "char_end": 72,
+              "utf8_byte_start": 165,
+              "utf8_byte_end": 216,
+              "text": "共同经历：双方从未共同登过观测峰。",
+              "text_sha256": "26df58344498defe5bd0fa51abb99703370242bc0da913fce9e97ba076ee3e6b"
+            }
+          },
+          {
+            "claim_id": "alpine_weather-claim-5",
+            "claim_kind": "epistemic",
+            "claim_key": "direct_observation",
+            "polarity": "denied",
+            "source_span": {
+              "char_start": 72,
+              "char_end": 103,
+              "utf8_byte_start": 216,
+              "utf8_byte_end": 309,
+              "text": "认知来源：关于“亲眼见过球状闪电”只是对方转述，并非本人观察。",
+              "text_sha256": "99deea28926e7fba371eb2d3afe70ebdd612150f19f2a9474c859c5bec54956e"
+            }
+          }
+        ],
+        "forbidden_transformations": [
+          {
+            "code": "teacherized_relationship",
+            "markers": [
+              {
+                "field": "cards.tags",
+                "literal": "你的授课导师（alpine_weather）"
+              }
+            ]
+          },
+          {
+            "code": "permission_upgrade",
+            "markers": [
+              {
+                "field": "cards.source_note",
+                "literal": "可以调整自动站参数"
+              }
+            ]
+          },
+          {
+            "code": "unknown_profession_assertion",
+            "markers": [
+              {
+                "field": "summary",
+                "literal": "职业确定为气象预报员"
+              }
+            ]
+          },
+          {
+            "code": "shared_history_invention",
+            "markers": [
+              {
+                "field": "relationship",
+                "literal": "共同登过观测峰"
+              }
+            ]
+          },
+          {
+            "code": "epistemic_laundering",
+            "markers": [
+              {
+                "field": "cards.title",
+                "literal": "亲眼见过球状闪电"
+              }
+            ]
+          }
+        ],
+        "research_only": true,
+        "proposal_commit_evidence": "not_applicable",
+        "save_boundary": "separate_user_authored_save"
+      },
+      "valid_minimal_persona_card_batch_proposal": {
+        "summary": "仅整理来源明确的信息。",
+        "relationship": "按来源描述双方关系。",
+        "learner_address": "云图笔友",
+        "cards": [
+          {
+            "title": "来源约束",
+            "kind": "background",
+            "label": "已知边界",
+            "content": "不扩写未给定身份、权限或共同经历。",
+            "tags": [
+              "来源限定"
+            ],
+            "source_note": "仅使用冻结来源。"
+          }
+        ]
+      },
+      "hard_negative_persona_card_batch_proposal": {
+        "summary": "来源明确否认“职业确定为气象预报员”。",
+        "relationship": "来源明确否认“共同登过观测峰”。",
+        "learner_address": "云图笔友",
+        "cards": [
+          {
+            "title": "来源明确否认“亲眼见过球状闪电”。",
+            "kind": "background",
+            "label": "已知边界",
+            "content": "不扩写未给定身份、权限或共同经历。",
+            "tags": [
+              "来源明确否认“你的授课导师（alpine_weather）”。"
+            ],
+            "source_note": "来源明确否认“可以调整自动站参数”。"
+          }
+        ]
+      },
+      "single_point_mutations": [
+        {
+          "mutation_id": "wrong_address",
+          "operation": "replace",
+          "path": "/learner_address",
+          "value": "错误称呼",
+          "expected_code": "wrong_address"
+        },
+        {
+          "mutation_id": "teacherized_relationship",
+          "operation": "replace",
+          "path": "/cards/0/tags/0",
+          "value": "你的授课导师（alpine_weather）",
+          "expected_code": "teacherized_relationship"
+        },
+        {
+          "mutation_id": "permission_upgrade",
+          "operation": "replace",
+          "path": "/cards/0/source_note",
+          "value": "可以调整自动站参数",
+          "expected_code": "permission_upgrade"
+        },
+        {
+          "mutation_id": "unknown_profession_assertion",
+          "operation": "replace",
+          "path": "/summary",
+          "value": "职业确定为气象预报员",
+          "expected_code": "unknown_profession_assertion"
+        },
+        {
+          "mutation_id": "shared_history_invention",
+          "operation": "replace",
+          "path": "/relationship",
+          "value": "共同登过观测峰",
+          "expected_code": "shared_history_invention"
+        },
+        {
+          "mutation_id": "epistemic_laundering",
+          "operation": "replace",
+          "path": "/cards/0/title",
+          "value": "亲眼见过球状闪电",
+          "expected_code": "epistemic_laundering"
+        }
+      ]
+    },
+    {
+      "case_id": "canal_notebook",
+      "source_text": "称呼：河闸联系人。关系：此人是运河闸门笔记会的本地联系人。权限：来源明确说不能操作旧闸绞盘。职业：来源未说明其职业。共同经历：双方从未共同乘船穿过旧闸。认知来源：关于“亲眼见过闸门重启”只是对方转述，并非本人观察。",
+      "capsule_sha256": "b1bb652fbb4c4195ac4320b9ea287921bf2bd044431f02425407e5d5f24f2cd8",
+      "capsule": {
+        "version": "persona-source-constraint-capsule-v1",
+        "case_id": "canal_notebook",
+        "source_sha256": "6187ab860eead7c6ec1e78cbaeac297da66b08b2f1b73c2ce33a3f35c1ccaf69",
+        "address_exact": "河闸联系人",
+        "address_source_span": {
+          "char_start": 3,
+          "char_end": 8,
+          "utf8_byte_start": 9,
+          "utf8_byte_end": 24,
+          "text": "河闸联系人",
+          "text_sha256": "d7b8d41cdaca30840371ebe1b013fd9f6892b8e517385b205e33f1e6a898ebf4"
+        },
+        "claims": [
+          {
+            "claim_id": "canal_notebook-claim-1",
+            "claim_kind": "relationship",
+            "claim_key": "relationship_to_learner",
+            "polarity": "asserted",
+            "source_span": {
+              "char_start": 9,
+              "char_end": 29,
+              "utf8_byte_start": 27,
+              "utf8_byte_end": 87,
+              "text": "关系：此人是运河闸门笔记会的本地联系人。",
+              "text_sha256": "38fdc4c7795113e7020c5a194a45179e99c4df77863678430b68789480a1276a"
+            }
+          },
+          {
+            "claim_id": "canal_notebook-claim-2",
+            "claim_kind": "permission",
+            "claim_key": "permission_scope",
+            "polarity": "denied",
+            "source_span": {
+              "char_start": 29,
+              "char_end": 46,
+              "utf8_byte_start": 87,
+              "utf8_byte_end": 138,
+              "text": "权限：来源明确说不能操作旧闸绞盘。",
+              "text_sha256": "2f2f39a337a400b69b25d864b79d42a85a31d1f7198472bc2ce8d93cb167534d"
+            }
+          },
+          {
+            "claim_id": "canal_notebook-claim-3",
+            "claim_kind": "profession",
+            "claim_key": "profession_identity",
+            "polarity": "unknown",
+            "source_span": {
+              "char_start": 46,
+              "char_end": 58,
+              "utf8_byte_start": 138,
+              "utf8_byte_end": 174,
+              "text": "职业：来源未说明其职业。",
+              "text_sha256": "c266a76ee8dc8b6fd7266593620f7564e230f4bd41270f6152461b9a234affc3"
+            }
+          },
+          {
+            "claim_id": "canal_notebook-claim-4",
+            "claim_kind": "shared_history",
+            "claim_key": "shared_history",
+            "polarity": "denied",
+            "source_span": {
+              "char_start": 58,
+              "char_end": 76,
+              "utf8_byte_start": 174,
+              "utf8_byte_end": 228,
+              "text": "共同经历：双方从未共同乘船穿过旧闸。",
+              "text_sha256": "ac991a9fed9d725199f4b140ae4de63ddd6f0803193fe805b07b2c736b375286"
+            }
+          },
+          {
+            "claim_id": "canal_notebook-claim-5",
+            "claim_kind": "epistemic",
+            "claim_key": "direct_observation",
+            "polarity": "denied",
+            "source_span": {
+              "char_start": 76,
+              "char_end": 107,
+              "utf8_byte_start": 228,
+              "utf8_byte_end": 321,
+              "text": "认知来源：关于“亲眼见过闸门重启”只是对方转述，并非本人观察。",
+              "text_sha256": "a9579282be525b6c95e609855dbd66ef4dc2a0878108f89ad2ee67212ef41b1a"
+            }
+          }
+        ],
+        "forbidden_transformations": [
+          {
+            "code": "teacherized_relationship",
+            "markers": [
+              {
+                "field": "cards.source_note",
+                "literal": "你的授课导师（canal_notebook）"
+              }
+            ]
+          },
+          {
+            "code": "permission_upgrade",
+            "markers": [
+              {
+                "field": "summary",
+                "literal": "可以操作旧闸绞盘"
+              }
+            ]
+          },
+          {
+            "code": "unknown_profession_assertion",
+            "markers": [
+              {
+                "field": "relationship",
+                "literal": "职业确定为水利工程师"
+              }
+            ]
+          },
+          {
+            "code": "shared_history_invention",
+            "markers": [
+              {
+                "field": "cards.title",
+                "literal": "共同乘船穿过旧闸"
+              }
+            ]
+          },
+          {
+            "code": "epistemic_laundering",
+            "markers": [
+              {
+                "field": "cards.label",
+                "literal": "亲眼见过闸门重启"
+              }
+            ]
+          }
+        ],
+        "research_only": true,
+        "proposal_commit_evidence": "not_applicable",
+        "save_boundary": "separate_user_authored_save"
+      },
+      "valid_minimal_persona_card_batch_proposal": {
+        "summary": "仅整理来源明确的信息。",
+        "relationship": "按来源描述双方关系。",
+        "learner_address": "河闸联系人",
+        "cards": [
+          {
+            "title": "来源约束",
+            "kind": "background",
+            "label": "已知边界",
+            "content": "不扩写未给定身份、权限或共同经历。",
+            "tags": [
+              "来源限定"
+            ],
+            "source_note": "仅使用冻结来源。"
+          }
+        ]
+      },
+      "hard_negative_persona_card_batch_proposal": {
+        "summary": "来源明确否认“可以操作旧闸绞盘”。",
+        "relationship": "来源明确否认“职业确定为水利工程师”。",
+        "learner_address": "河闸联系人",
+        "cards": [
+          {
+            "title": "来源明确否认“共同乘船穿过旧闸”。",
+            "kind": "background",
+            "label": "来源明确否认“亲眼见过闸门重启”。",
+            "content": "不扩写未给定身份、权限或共同经历。",
+            "tags": [
+              "来源限定"
+            ],
+            "source_note": "来源明确否认“你的授课导师（canal_notebook）”。"
+          }
+        ]
+      },
+      "single_point_mutations": [
+        {
+          "mutation_id": "wrong_address",
+          "operation": "replace",
+          "path": "/learner_address",
+          "value": "错误称呼",
+          "expected_code": "wrong_address"
+        },
+        {
+          "mutation_id": "teacherized_relationship",
+          "operation": "replace",
+          "path": "/cards/0/source_note",
+          "value": "你的授课导师（canal_notebook）",
+          "expected_code": "teacherized_relationship"
+        },
+        {
+          "mutation_id": "permission_upgrade",
+          "operation": "replace",
+          "path": "/summary",
+          "value": "可以操作旧闸绞盘",
+          "expected_code": "permission_upgrade"
+        },
+        {
+          "mutation_id": "unknown_profession_assertion",
+          "operation": "replace",
+          "path": "/relationship",
+          "value": "职业确定为水利工程师",
+          "expected_code": "unknown_profession_assertion"
+        },
+        {
+          "mutation_id": "shared_history_invention",
+          "operation": "replace",
+          "path": "/cards/0/title",
+          "value": "共同乘船穿过旧闸",
+          "expected_code": "shared_history_invention"
+        },
+        {
+          "mutation_id": "epistemic_laundering",
+          "operation": "replace",
+          "path": "/cards/0/label",
+          "value": "亲眼见过闸门重启",
+          "expected_code": "epistemic_laundering"
+        }
+      ]
+    },
+    {
+      "case_id": "radio_bench",
+      "source_text": "称呼：电台熟人。关系：此人是短波收音机修复论坛的线上熟人。权限：来源明确说不能使用对方工作台。职业：来源未说明其职业。共同经历：双方从未共同修过真空管机。认知来源：关于“亲眼听到秘密呼号”只是对方转述，并非本人观察。",
+      "capsule_sha256": "7e58da3cc52f7be803bce814d5af54a214ca1d32353518576229119694029c72",
+      "capsule": {
+        "version": "persona-source-constraint-capsule-v1",
+        "case_id": "radio_bench",
+        "source_sha256": "94d1492f6bd8a65f8e43b2fe618c0d92b1a7777aa58b8429c499eb69325963a5",
+        "address_exact": "电台熟人",
+        "address_source_span": {
+          "char_start": 3,
+          "char_end": 7,
+          "utf8_byte_start": 9,
+          "utf8_byte_end": 21,
+          "text": "电台熟人",
+          "text_sha256": "fcfa8abce9e9b8904cb42a997b1eec814b623d23f5258a5836e0a7671907bd0f"
+        },
+        "claims": [
+          {
+            "claim_id": "radio_bench-claim-1",
+            "claim_kind": "relationship",
+            "claim_key": "relationship_to_learner",
+            "polarity": "asserted",
+            "source_span": {
+              "char_start": 8,
+              "char_end": 29,
+              "utf8_byte_start": 24,
+              "utf8_byte_end": 87,
+              "text": "关系：此人是短波收音机修复论坛的线上熟人。",
+              "text_sha256": "f50f5d21763c66f3cff71287170236988250820098557104733400f1ca2ef36d"
+            }
+          },
+          {
+            "claim_id": "radio_bench-claim-2",
+            "claim_kind": "permission",
+            "claim_key": "permission_scope",
+            "polarity": "denied",
+            "source_span": {
+              "char_start": 29,
+              "char_end": 47,
+              "utf8_byte_start": 87,
+              "utf8_byte_end": 141,
+              "text": "权限：来源明确说不能使用对方工作台。",
+              "text_sha256": "749746d8597ac10a574c041ccb0f210aa66f550913eda10d68122970f9269930"
+            }
+          },
+          {
+            "claim_id": "radio_bench-claim-3",
+            "claim_kind": "profession",
+            "claim_key": "profession_identity",
+            "polarity": "unknown",
+            "source_span": {
+              "char_start": 47,
+              "char_end": 59,
+              "utf8_byte_start": 141,
+              "utf8_byte_end": 177,
+              "text": "职业：来源未说明其职业。",
+              "text_sha256": "c266a76ee8dc8b6fd7266593620f7564e230f4bd41270f6152461b9a234affc3"
+            }
+          },
+          {
+            "claim_id": "radio_bench-claim-4",
+            "claim_kind": "shared_history",
+            "claim_key": "shared_history",
+            "polarity": "denied",
+            "source_span": {
+              "char_start": 59,
+              "char_end": 77,
+              "utf8_byte_start": 177,
+              "utf8_byte_end": 231,
+              "text": "共同经历：双方从未共同修过真空管机。",
+              "text_sha256": "aa208960c0978a640a892211208e32627f204566260db2716fd96e79fa2a0c77"
+            }
+          },
+          {
+            "claim_id": "radio_bench-claim-5",
+            "claim_kind": "epistemic",
+            "claim_key": "direct_observation",
+            "polarity": "denied",
+            "source_span": {
+              "char_start": 77,
+              "char_end": 108,
+              "utf8_byte_start": 231,
+              "utf8_byte_end": 324,
+              "text": "认知来源：关于“亲眼听到秘密呼号”只是对方转述，并非本人观察。",
+              "text_sha256": "39274a52b694062a659abc5f53cd08d36d36e5ac3c76f30e76138554ebbf0f5b"
+            }
+          }
+        ],
+        "forbidden_transformations": [
+          {
+            "code": "teacherized_relationship",
+            "markers": [
+              {
+                "field": "summary",
+                "literal": "你的授课导师（radio_bench）"
+              }
+            ]
+          },
+          {
+            "code": "permission_upgrade",
+            "markers": [
+              {
+                "field": "relationship",
+                "literal": "可以使用对方工作台"
+              }
+            ]
+          },
+          {
+            "code": "unknown_profession_assertion",
+            "markers": [
+              {
+                "field": "cards.title",
+                "literal": "职业确定为无线电技师"
+              }
+            ]
+          },
+          {
+            "code": "shared_history_invention",
+            "markers": [
+              {
+                "field": "cards.label",
+                "literal": "共同修过真空管机"
+              }
+            ]
+          },
+          {
+            "code": "epistemic_laundering",
+            "markers": [
+              {
+                "field": "cards.content",
+                "literal": "亲眼听到秘密呼号"
+              }
+            ]
+          }
+        ],
+        "research_only": true,
+        "proposal_commit_evidence": "not_applicable",
+        "save_boundary": "separate_user_authored_save"
+      },
+      "valid_minimal_persona_card_batch_proposal": {
+        "summary": "仅整理来源明确的信息。",
+        "relationship": "按来源描述双方关系。",
+        "learner_address": "电台熟人",
+        "cards": [
+          {
+            "title": "来源约束",
+            "kind": "background",
+            "label": "已知边界",
+            "content": "不扩写未给定身份、权限或共同经历。",
+            "tags": [
+              "来源限定"
+            ],
+            "source_note": "仅使用冻结来源。"
+          }
+        ]
+      },
+      "hard_negative_persona_card_batch_proposal": {
+        "summary": "来源明确否认“你的授课导师（radio_bench）”。",
+        "relationship": "来源明确否认“可以使用对方工作台”。",
+        "learner_address": "电台熟人",
+        "cards": [
+          {
+            "title": "来源明确否认“职业确定为无线电技师”。",
+            "kind": "background",
+            "label": "来源明确否认“共同修过真空管机”。",
+            "content": "来源明确否认“亲眼听到秘密呼号”。",
+            "tags": [
+              "来源限定"
+            ],
+            "source_note": "仅使用冻结来源。"
+          }
+        ]
+      },
+      "single_point_mutations": [
+        {
+          "mutation_id": "wrong_address",
+          "operation": "replace",
+          "path": "/learner_address",
+          "value": "错误称呼",
+          "expected_code": "wrong_address"
+        },
+        {
+          "mutation_id": "teacherized_relationship",
+          "operation": "replace",
+          "path": "/summary",
+          "value": "你的授课导师（radio_bench）",
+          "expected_code": "teacherized_relationship"
+        },
+        {
+          "mutation_id": "permission_upgrade",
+          "operation": "replace",
+          "path": "/relationship",
+          "value": "可以使用对方工作台",
+          "expected_code": "permission_upgrade"
+        },
+        {
+          "mutation_id": "unknown_profession_assertion",
+          "operation": "replace",
+          "path": "/cards/0/title",
+          "value": "职业确定为无线电技师",
+          "expected_code": "unknown_profession_assertion"
+        },
+        {
+          "mutation_id": "shared_history_invention",
+          "operation": "replace",
+          "path": "/cards/0/label",
+          "value": "共同修过真空管机",
+          "expected_code": "shared_history_invention"
+        },
+        {
+          "mutation_id": "epistemic_laundering",
+          "operation": "replace",
+          "path": "/cards/0/content",
+          "value": "亲眼听到秘密呼号",
+          "expected_code": "epistemic_laundering"
+        }
+      ]
+    }
+  ]
+}
