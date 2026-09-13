@@ -6,6 +6,7 @@ import type {
   DocumentRecord,
   LearningPlan,
   SceneProfile,
+  StudyScheduleItem,
   StudyUnit,
 } from "@vibe-learner/shared";
 import { formatOcrStatus } from "../lib/ocr-status";
@@ -56,6 +57,7 @@ export function PlanOverview({
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState("");
   const [planningAnswerDrafts, setPlanningAnswerDrafts] = useState<Record<string, string>>({});
+  const [reviewDrafts, setReviewDrafts] = useState<Record<string, string>>({});
   const [showScheduleDetails, setShowScheduleDetails] = useState(false);
   const [expandedScheduleItems, setExpandedScheduleItems] = useState<Record<string, boolean>>({});
 
@@ -64,6 +66,7 @@ export function PlanOverview({
     setIsEditingTitle(false);
     setShowScheduleDetails(false);
     setExpandedScheduleItems({});
+    setReviewDrafts({});
   }, [plan?.courseTitle, plan?.id]);
 
   useEffect(() => {
@@ -182,6 +185,18 @@ export function PlanOverview({
             ))}
           </div>
 
+          <div style={styles.todayTaskCard}>
+            <div style={styles.sectionHeadMeta}>
+              <span style={styles.sectionLabel}>今日行动</span>
+              <span style={styles.count}>{plan.todayTasks.length} 项</span>
+            </div>
+            <ol style={styles.todayTaskList}>
+              {plan.todayTasks.map((task, index) => (
+                <li key={`${index}:${task}`} style={styles.todayTask}>{task}</li>
+              ))}
+            </ol>
+          </div>
+
           {plan.planningQuestions.length ? (
             <div style={styles.questionCard}>
               <div style={styles.sectionHead}>
@@ -266,10 +281,13 @@ export function PlanOverview({
                 <p style={styles.startNotice}>
                   点击“开始”会创建或打开对应学习会话，并调用模型准备该 Study Unit；这会产生模型用量。
                 </p>
-                {visibleScheduleItems.map((item) => (
-                  <div key={item.id} style={styles.scheduleItem}>
+                {visibleScheduleItems.map((item, index) => (
+                  <div key={item.id} style={styles.scheduleItem} data-plan-schedule={item.id}>
                     <div style={styles.scheduleHeader}>
-                      <span style={styles.scheduleTitle}>{item.title}</span>
+                      <div style={styles.scheduleTitleBlock}>
+                        <span style={styles.scheduleIndex}>第 {index + 1} 课</span>
+                        <span style={styles.scheduleTitle}>{item.title}</span>
+                      </div>
                       <div style={styles.scheduleHeaderActions}>
                         <span style={scheduleStatusStyle(item.status)}>{formatScheduleStatus(item.status)}</span>
                         {item.scheduleChapters.length ? (
@@ -278,6 +296,7 @@ export function PlanOverview({
                             style={styles.inlineButton}
                             disabled={isBusy}
                             aria-expanded={expandedScheduleItems[item.id] ? "true" : "false"}
+                            aria-label={`${expandedScheduleItems[item.id] ? "收起" : "展开"}第 ${index + 1} 课章节`}
                             onClick={() =>
                               setExpandedScheduleItems((current) => ({
                                 ...current,
@@ -294,6 +313,7 @@ export function PlanOverview({
                           type="button"
                           style={styles.ghostButton}
                           disabled={isBusy || item.status === "in_progress"}
+                          aria-label={`开始第 ${index + 1} 课：${item.title}`}
                           onClick={() => {
                             const studyUnit = resolveStudyUnitById(plan, item.unitId);
                             if (!studyUnit) {
@@ -316,6 +336,7 @@ export function PlanOverview({
                           type="button"
                           style={styles.primaryButton}
                           disabled={isBusy || item.status === "completed"}
+                          aria-label={`完成第 ${index + 1} 课：${item.title}`}
                           onClick={() => {
                             void onUpdatePlanProgress({
                               planId: plan.id,
@@ -330,6 +351,7 @@ export function PlanOverview({
                           type="button"
                           style={styles.ghostButton}
                           disabled={isBusy || item.status === "planned"}
+                          aria-label={`重置第 ${index + 1} 课：${item.title}`}
                           onClick={() => {
                             void onUpdatePlanProgress({
                               planId: plan.id,
@@ -342,7 +364,17 @@ export function PlanOverview({
                         </button>
                       </div>
                     </div>
-                    <p style={styles.scheduleFocus}>{item.focus}</p>
+                    <div style={styles.scheduleMeta}>
+                      <span style={styles.scheduleMetaItem}>
+                        时长 {item.durationMinutes ? `${item.durationMinutes} 分钟` : "未记录"}
+                      </span>
+                      <span style={styles.scheduleMetaItem}>范围 {formatScheduleScope(item)}</span>
+                      <span style={styles.scheduleMetaItem}>方式 {formatActivityType(item.activityType)}</span>
+                    </div>
+                    <div style={styles.scheduleTaskBlock}>
+                      <span style={styles.scheduleTaskLabel}>本次任务</span>
+                      <p style={styles.scheduleFocus}>{item.focus}</p>
+                    </div>
                     {item.coverageMode && item.coverageMode !== "complete" && item.workloadRationale ? (
                       <p style={styles.scheduleFocus}>
                         {item.coverageMode === "overview" ? "导览说明" : "选读说明"}：
@@ -361,6 +393,60 @@ export function PlanOverview({
                         ))}
                       </div>
                     ) : null}
+                    <details style={styles.reviewDetails}>
+                      <summary style={styles.reviewSummary}>
+                        复盘与进度记录 · {reviewEventsForSchedule(plan, item.id).length}
+                      </summary>
+                      <div style={styles.reviewBody}>
+                        <label style={styles.reviewLabel}>
+                          <span>第 {index + 1} 课复盘</span>
+                          <textarea
+                            value={reviewDrafts[item.id] ?? ""}
+                            onChange={(event) =>
+                              setReviewDrafts((current) => ({
+                                ...current,
+                                [item.id]: event.target.value,
+                              }))
+                            }
+                            style={styles.reviewTextarea}
+                            placeholder="记录掌握情况、疑问或下次要补回的内容"
+                            disabled={isBusy}
+                          />
+                        </label>
+                        <button
+                          type="button"
+                          style={styles.ghostButton}
+                          disabled={isBusy || !(reviewDrafts[item.id] ?? "").trim()}
+                          onClick={async () => {
+                            const didSave = await onUpdatePlanProgress({
+                              planId: plan.id,
+                              scheduleIds: [item.id],
+                              status: item.status,
+                              note: reviewDrafts[item.id] ?? "",
+                            });
+                            if (didSave) {
+                              setReviewDrafts((current) => ({ ...current, [item.id]: "" }));
+                            }
+                          }}
+                        >
+                          保存本课复盘
+                        </button>
+                        {reviewEventsForSchedule(plan, item.id).length ? (
+                          <ol style={styles.reviewList}>
+                            {reviewEventsForSchedule(plan, item.id).map((event) => (
+                              <li key={event.id} style={styles.reviewEntry}>
+                                <span>{event.note}</span>
+                                <span style={styles.reviewMeta}>
+                                  {formatDate(event.createdAt)} · {formatScheduleStatus(event.status)}
+                                </span>
+                              </li>
+                            ))}
+                          </ol>
+                        ) : (
+                          <p style={styles.reviewEmpty}>尚无复盘记录。</p>
+                        )}
+                      </div>
+                    </details>
                   </div>
                 ))}
                 {hasCollapsedScheduleItems ? (
@@ -472,6 +558,24 @@ const styles: Record<string, CSSProperties> = {
     fontSize: 11,
     display: "inline-flex",
     alignItems: "center",
+  },
+  todayTaskCard: {
+    display: "grid",
+    gap: 8,
+    padding: "12px 14px",
+    border: "1px solid color-mix(in srgb, var(--border) 72%, white)",
+    background: "color-mix(in srgb, white 84%, var(--surface))",
+  },
+  todayTaskList: {
+    display: "grid",
+    gap: 6,
+    margin: 0,
+    paddingLeft: 22,
+  },
+  todayTask: {
+    color: "var(--ink-2)",
+    fontSize: 13,
+    lineHeight: 1.6,
   },
   primaryButton: {
     border: "none",
@@ -599,6 +703,18 @@ const styles: Record<string, CSSProperties> = {
     gap: 6,
     flexWrap: "wrap",
   },
+  scheduleTitleBlock: {
+    display: "flex",
+    alignItems: "baseline",
+    gap: 8,
+    minWidth: 0,
+  },
+  scheduleIndex: {
+    color: "var(--accent)",
+    fontSize: 11,
+    fontWeight: 700,
+    whiteSpace: "nowrap",
+  },
   scheduleToggle: {
     minHeight: 42,
     border: "none",
@@ -614,6 +730,29 @@ const styles: Record<string, CSSProperties> = {
     fontSize: 14,
     fontWeight: 600,
     color: "var(--ink)",
+  },
+  scheduleMeta: {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: 6,
+  },
+  scheduleMetaItem: {
+    padding: "3px 7px",
+    background: "color-mix(in srgb, white 70%, var(--surface))",
+    color: "var(--muted)",
+    fontSize: 11,
+  },
+  scheduleTaskBlock: {
+    display: "grid",
+    gridTemplateColumns: "64px minmax(0, 1fr)",
+    gap: 8,
+    alignItems: "start",
+  },
+  scheduleTaskLabel: {
+    paddingTop: 2,
+    color: "var(--muted)",
+    fontSize: 11,
+    fontWeight: 600,
   },
   scheduleFocus: {
     margin: 0,
@@ -715,6 +854,67 @@ const styles: Record<string, CSSProperties> = {
     whiteSpace: "nowrap",
     flexShrink: 0,
   },
+  reviewDetails: {
+    marginTop: 4,
+    borderTop: "1px dashed color-mix(in srgb, var(--border) 72%, white)",
+    paddingTop: 8,
+  },
+  reviewSummary: {
+    width: "fit-content",
+    cursor: "pointer",
+    color: "var(--muted)",
+    fontSize: 12,
+    fontWeight: 600,
+  },
+  reviewBody: {
+    display: "grid",
+    justifyItems: "start",
+    gap: 8,
+    marginTop: 10,
+  },
+  reviewLabel: {
+    display: "grid",
+    gap: 5,
+    width: "100%",
+    color: "var(--ink-2)",
+    fontSize: 12,
+    fontWeight: 600,
+  },
+  reviewTextarea: {
+    width: "100%",
+    minHeight: 72,
+    boxSizing: "border-box",
+    border: "1px solid var(--border)",
+    padding: "8px 10px",
+    background: "white",
+    color: "var(--ink)",
+    fontSize: 13,
+    lineHeight: 1.6,
+    resize: "vertical",
+  },
+  reviewList: {
+    display: "grid",
+    gap: 8,
+    width: "100%",
+    margin: 0,
+    paddingLeft: 20,
+  },
+  reviewEntry: {
+    display: "grid",
+    gap: 2,
+    color: "var(--ink-2)",
+    fontSize: 12,
+    lineHeight: 1.55,
+  },
+  reviewMeta: {
+    color: "var(--muted)",
+    fontSize: 10,
+  },
+  reviewEmpty: {
+    margin: 0,
+    color: "var(--muted)",
+    fontSize: 12,
+  },
   emptyState: {
     paddingTop: 4,
   },
@@ -753,6 +953,43 @@ function formatScheduleStatus(status: string) {
     default:
       return "待开始";
   }
+}
+
+function formatActivityType(activityType: string) {
+  if (activityType === "review") return "复习";
+  if (activityType === "learn") return "学习";
+  return activityType || "未记录";
+}
+
+function formatScheduleScope(item: StudyScheduleItem) {
+  const ranges = item.scheduleChapters.flatMap((chapter) =>
+    chapter.contentSlices.length
+      ? chapter.contentSlices.map((slice) => [slice.pageStart, slice.pageEnd] as const)
+      : [[chapter.anchorPageStart, chapter.anchorPageEnd] as const]
+  );
+  if (!ranges.length) return "未记录";
+  const ordered = ranges
+    .filter(([start, end]) => start > 0 && end >= start)
+    .sort(([left], [right]) => left - right);
+  const merged: Array<[number, number]> = [];
+  ordered.forEach(([start, end]) => {
+    const previous = merged.at(-1);
+    if (previous && start <= previous[1] + 1) {
+      previous[1] = Math.max(previous[1], end);
+    } else {
+      merged.push([start, end]);
+    }
+  });
+  return merged.length
+    ? merged.map(([start, end]) => start === end ? `p.${start}` : `p.${start}–${end}`).join("、")
+    : "未记录";
+}
+
+function reviewEventsForSchedule(plan: LearningPlan, scheduleId: string) {
+  return plan.progressEvents
+    .filter((event) => event.scheduleIds.includes(scheduleId) && event.note.trim())
+    .slice(-3)
+    .reverse();
 }
 
 function scheduleStatusStyle(status: string): CSSProperties {

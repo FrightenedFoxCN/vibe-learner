@@ -35,7 +35,7 @@
 - **§1.1 范围仍被错误截短**：计划 overview 声称“仅覆盖 §1.1”，唯一 schedule chapter 却锚定 PDF 12–25、content slice 12–15，并写“§1.1 确切终止页与 §1.1.2 标题待学习时回查”。原页显示 §1.1 从 PDF 13 / 印刷 2 开始，§1.1.2 从 PDF 22 开始，而 §1.2 到 PDF 37 / 印刷 26 才开始；因此 PDF 26–36 的 §1.1 内容被漏掉，Exercise 1.1.23（PDF 30）也不在锚点范围内。bounded evidence 避免了虚构细分，但会在关键范围未核实的情况下提交“覆盖 §1.1”的不完整计划。
 - **起始页偏移一页**：today task 把“§1.1 引言”写为 PDF 12–15 / 印刷 1–4；原页视觉核对显示 PDF 12 只是 Chapter 1 标题页（印刷 1），§1.1 正文从 PDF 13 / 印刷 2 开始。计划同时正确指出 PDF 14 页眉为印刷 3，说明不是整本偏移未知，而是锚点选择不精确。
 - **公式命名较旧版改善**：计划把 (1.1) 作为渐近等分布定义相关公式，没有再错误称为 Weyl equation；PDF 14 原页确认 (1.1) 是 vague convergence 的定义式。关于 Exercise 1.1.23 的 ε 依赖、旧版“四格/五节点”问题，本计划因范围截短而没有覆盖，不能算修复通过。
-- **四次课仍投影为一个任务**：API/UI 只有 1 个 schedule、1 个 schedule chapter、进度 `0 / 1`；四次 45 分钟只在标题/focus 中用自然语言概括，不能逐次开始、完成或复盘。`today_tasks` 只细化第一次学习，后 3 次没有独立任务与时长边界。
+- **四次课仍投影为一个任务（历史实测；工程展示缺口已修复）**：本轮真实返回的 API/UI 只有 1 个 schedule、1 个 schedule chapter、进度 `0 / 1`；四次 45 分钟只在标题/focus 中用自然语言概括。后续工程改动已要求 proposal/commit 中显式课次数与统一时长严格匹配 schedule，并让 Plan Workspace 按 schedule 独立展示课次、时长、物理页范围、任务、开始/完成/重置与持久化复盘。production Chromium 以 resolved `4 × 45` fixture 验证 4 个独立进度原子；真实 provider 是否稳定生成四项仍属于独立模型质量验证，不能由 UI 回归代替。
 - **显式“不使用场景”未生效**：Plan Workspace 选择器显示“不使用场景库场景”，提交计划却绑定了完整“深夜山顶天文台 / 观测室” scene profile，UI 也显示“场景 观测室”；随后自动创建的 Study Session 继续继承该场景。这不是模型风格选择，而是用户选择与提交投影不一致。
 - 核对点：首次成功率、时延、provider calls/tokens、工具选择、是否调用 `revise_study_units`、repair/trace 可见性；Exercise 1.1.1、公式 (1.1)、§1.1.2、Exercise 1.1.23 的 ε 依赖、四格/五节点、四次 45 分钟投影。
 
@@ -87,7 +87,7 @@
 ### P2：信息架构、视觉一致性与可发现性
 
 1. 同级功能卡片的标题—描述间距不一致，尤其“计划生成”卡与另外两卡。
-2. 多次课程被藏在一段 `focus` 中而只显示一个进度原子；宽屏利用和长文本扫描性不足。
+2. 多次课程进度原子与长文本扫描性。（已修复：每个 schedule 独立显示课次、时长、物理页范围和任务，并提供独立操作与持久化复盘；resolved `4 × 45` production Chromium 回归通过。）
 3. Persona Spectrum、Scene Setup、Sensory Settings 的密度、筛选与危险动作层级。
 4. Model Usage 的时区、分类、筛选、导出，以及 Manual 与当前实现不一致。
 
