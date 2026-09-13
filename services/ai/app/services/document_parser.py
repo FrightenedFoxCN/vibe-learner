@@ -282,14 +282,23 @@ class DocumentParser:
         ocr_unavailable = any(result.status == "unavailable" for result in ocr_results)
         ocr_failed = any(result.status == "failed" for result in ocr_results)
 
-        if force_ocr and ocr_applied:
+        ocr_degraded = ocr_unavailable or ocr_failed
+        has_usable_text = bool(chunks)
+
+        if force_ocr and ocr_applied and ocr_degraded:
+            ocr_status = "partial"
+        elif force_ocr and ocr_applied:
             ocr_status = "forced"
         elif force_ocr and ocr_unavailable:
             ocr_status = "unavailable"
         elif force_ocr and ocr_failed:
             ocr_status = "failed"
+        elif ocr_applied and ocr_degraded:
+            ocr_status = "partial"
         elif ocr_applied:
             ocr_status = "fallback_used"
+        elif low_density_detected and ocr_degraded and has_usable_text:
+            ocr_status = "partial"
         elif low_density_detected and ocr_unavailable:
             ocr_status = "unavailable"
         elif low_density_detected and ocr_failed:
@@ -297,7 +306,7 @@ class DocumentParser:
         elif low_density_detected:
             ocr_status = "required"
         else:
-            ocr_status = "completed"
+            ocr_status = "not_required"
 
         extraction_method = "ocr_forced" if force_ocr else "text_with_ocr_fallback" if ocr_applied else "page_text_dict"
         logger.info(

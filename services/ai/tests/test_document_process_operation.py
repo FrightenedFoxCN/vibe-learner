@@ -1,6 +1,12 @@
 from __future__ import annotations
 
-from tests.support.document_operations import FakeDocumentParser, FakeStudyArrangement, UnavailableOcrParser, create_document
+from tests.support.document_operations import (
+    FakeDocumentParser,
+    FakeStudyArrangement,
+    PartialOcrParser,
+    UnavailableOcrParser,
+    create_document,
+)
 import io
 import unittest
 from unittest.mock import patch
@@ -114,6 +120,15 @@ class DocumentProcessOperationTests(unittest.TestCase):
         document = create_document(service, "ocr-unavailable.pdf")
 
         with self.assertRaisesRegex(RuntimeError, "document_ocr_unavailable"):
+            service.process_document(document.id, force_ocr=True)
+
+        self._assert_failed_without_debug(service, document.id)
+
+    def test_forced_ocr_partial_result_does_not_commit_as_success(self) -> None:
+        service = self._service(parser=PartialOcrParser())
+        document = create_document(service, "ocr-partial.pdf")
+
+        with self.assertRaisesRegex(RuntimeError, "document_ocr_partial"):
             service.process_document(document.id, force_ocr=True)
 
         self._assert_failed_without_debug(service, document.id)

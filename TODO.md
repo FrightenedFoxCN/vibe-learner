@@ -125,9 +125,6 @@
 - [ ] `DOC-INPUT-BOUNDS-001` `[P2]` 定义文档上传字节/页数上限与可恢复的拒绝行为。
   - 当前上传没有硬性上限；256 页压力测试已通过。明确单个不可分割文本块的策略，不能把 chunk packing target 当作硬上限。
 
-- [ ] `DOC-OCR-STATUS-001` `[P2]` 区分 OCR 未需要、未运行、成功、部分降级与失败。
-  - 全文本文档在 Document 成功且 `used_ocr=false` 时不得返回 `ocr_status=failed`；API、Debug 与 Plan Workspace 使用同一状态词和解释。
-
 - [ ] `OCR-STRESS-001` `[P2]` 完成真实 OCR 多语言、大型扫描件和失败恢复测试。
   - 复用已实现的 CPU fallback；测量内存、时延及错误状态，区分压力样本与正式支持上限。
 

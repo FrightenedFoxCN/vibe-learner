@@ -11,6 +11,50 @@ from app.services.ocr_engine import OcrPageResult
 
 
 class DocumentStageMetricsTests(TestCase):
+    def test_text_document_reports_ocr_not_required(self):
+        with TemporaryDirectory() as directory:
+            path = Path(directory) / "text.pdf"
+            with fitz.open() as pdf:
+                page = pdf.new_page()
+                page.insert_text(
+                    (72, 72),
+                    "Chapter 1 A complete text page with enough source material for planning.",
+                )
+                pdf.save(path)
+
+            report = DocumentParser(ocr_engine_name="disabled").parse(
+                document_id="text-document",
+                title="Text Document",
+                stored_path=str(path),
+            )
+
+        self.assertEqual(report.ocr_status, "not_required")
+        self.assertFalse(report.ocr_applied)
+        self.assertTrue(report.chunks)
+
+    def test_isolated_unavailable_fallback_reports_partial_document_degradation(self):
+        with TemporaryDirectory() as directory:
+            path = Path(directory) / "partial.pdf"
+            with fitz.open() as pdf:
+                page = pdf.new_page()
+                page.insert_text(
+                    (72, 72),
+                    "Chapter 1 A complete text page with enough source material for planning.",
+                )
+                pdf.new_page()
+                pdf.save(path)
+
+            report = DocumentParser(ocr_engine_name="disabled").parse(
+                document_id="partial-document",
+                title="Partial Document",
+                stored_path=str(path),
+            )
+
+        self.assertEqual(report.ocr_status, "partial")
+        self.assertFalse(report.ocr_applied)
+        self.assertTrue(report.chunks)
+        self.assertTrue(any(item.code == "ocr_unavailable" for item in report.warnings))
+
     def test_ocr_language_comes_from_engine_evidence(self):
         with TemporaryDirectory() as directory:
             path = Path(directory) / 'input.pdf'

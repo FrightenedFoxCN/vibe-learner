@@ -241,7 +241,7 @@
 - 互动题评分后隐式昂贵续接与半道问题 → `STUDY-ANSWER-CONTINUATION-001`。
 - Planning 工具隐式替换共享 Study Units → `PLAN-STUDY-UNIT-REVISION-001`。
 - 长 OCR 进度、终态和可行动错误 → `OCR-PROGRESS-UX-001`。
-- 全文本文档把未使用 OCR 表达为失败 → `DOC-OCR-STATUS-001`。
+- 全文本文档把未使用 OCR 表达为失败 → `DOC-OCR-STATUS-001`（已完成：API、Document Debug Console 与 Plan Workspace 现统一区分未需要、部分降级与失败）。
 - 输出语言混杂与缺少显式偏好 → `UX-OUTPUT-LANGUAGE-001`。
 
 Persona 选择性应用/名称缺失与 Scene 结构 diff 继续归入既有 `UX-DENSITY-PERSONA-001`、`UX-DENSITY-SCENE-001`，Model Usage 的 Settings 请求遗漏、分页和成本口径归入 `UX-MODEL-USAGE-001`，避免重复建票。模型语义、OCR 内容忠实度与独立质量判断仍只由 `docs/quality/TODO.md` 管理，本次不接手或验收 MQ。

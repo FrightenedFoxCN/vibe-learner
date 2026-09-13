@@ -16,10 +16,12 @@ import { decodeHarnessTraceV3 } from "./harness-trace-decode.ts";
 const DOCUMENT_STATUSES = ["uploaded", "processing", "processed", "failed"] as const;
 const OCR_STATUSES = [
   "pending",
+  "not_required",
   "completed",
   "fallback_used",
   "forced",
   "required",
+  "partial",
   "unavailable",
   "failed",
 ] as const satisfies readonly OcrStatus[];

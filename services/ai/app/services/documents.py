@@ -184,7 +184,7 @@ class DocumentService:
                     except fitz.FileDataError as error:
                         raise RuntimeError("document_process_invalid_pdf") from error
                     units = []
-                    if not (source_force_ocr and report.ocr_status in {"unavailable", "failed"}):
+                    if not (source_force_ocr and report.ocr_status in {"unavailable", "failed", "partial"}):
                         cleanup_started_at = time.perf_counter()
                         cleanup_metrics["attempt_count"] += 1
                         try:
@@ -358,7 +358,7 @@ class DocumentService:
                         else "unavailable"
                         if debug_report.ocr_status == "unavailable"
                         else "failed"
-                        if debug_report.ocr_status == "failed"
+                        if debug_report.ocr_status in {"failed", "partial"}
                         else "not_needed"
                     ),
                     item_count=debug_report.page_count,
@@ -403,7 +403,7 @@ class DocumentService:
             )
             if cleanup_trace.status.value == "failed":
                 raise RuntimeError(cleanup_trace.error_code or "document_study_unit_cleanup_stage_failed")
-            if force_ocr and debug_report.ocr_status in {"unavailable", "failed"}:
+            if force_ocr and debug_report.ocr_status in {"unavailable", "failed", "partial"}:
                 raise RuntimeError(f"document_ocr_{debug_report.ocr_status}")
             self.process_repository.commit_success(
                 operation_id=operation.operation_id,

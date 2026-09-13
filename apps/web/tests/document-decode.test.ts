@@ -7,6 +7,20 @@ import {
   decodeDocumentRecord,
   DocumentDecodeError,
 } from "../lib/document-decode.ts";
+import { formatOcrStatus } from "../lib/ocr-status.ts";
+
+test("Document OCR statuses distinguish no OCR from partial degradation", () => {
+  for (const [status, label] of [
+    ["not_required", "不需要 OCR"],
+    ["partial", "部分页面 OCR 降级"],
+  ] as const) {
+    const document = decodeDocumentRecord({ ...wireDocument(), ocr_status: status });
+    const debug = decodeDocumentDebugRecord({ ...wireDebug(), ocr_status: status });
+    assert.equal(document.ocrStatus, status);
+    assert.equal(debug.ocrStatus, status);
+    assert.equal(formatOcrStatus(status), label);
+  }
+});
 
 function wireSection(id = "section-1", pageStart = 1, pageEnd = 2) {
   return {

@@ -798,10 +798,12 @@ export interface ParseWarning {
 
 export type OcrStatus =
   | "pending"
+  | "not_required"
   | "completed"
   | "fallback_used"
   | "forced"
   | "required"
+  | "partial"
   | "unavailable"
   | "failed";
 

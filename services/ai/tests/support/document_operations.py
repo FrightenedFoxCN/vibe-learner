@@ -55,6 +55,19 @@ class UnavailableOcrParser(FakeDocumentParser):
         )
 
 
+class PartialOcrParser(FakeDocumentParser):
+    def parse(self, **kwargs: object) -> DocumentDebugRecord:
+        self.force_ocr_calls.append(bool(kwargs["force_ocr"]))
+        return document_debug_report(str(kwargs["document_id"])).model_copy(
+            update={
+                "ocr_status": "partial",
+                "ocr_applied": True,
+                "ocr_applied_page_count": 1,
+                "ocr_warnings": ["one_page_failed"],
+            }
+        )
+
+
 def document_debug_report(document_id: str) -> DocumentDebugRecord:
     return DocumentDebugRecord(
         document_id=document_id,
@@ -102,4 +115,3 @@ def create_document(service: DocumentService, filename: str):
             headers={"content-type": "application/pdf"},
         )
     )
-

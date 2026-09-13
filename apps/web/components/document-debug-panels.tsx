@@ -8,6 +8,7 @@ import type {
   ModelToolConfig,
   StreamReport
 } from "@vibe-learner/shared";
+import { formatOcrStatus } from "../lib/ocr-status";
 import type { CSSProperties } from "react";
 
 type LiveStreamEvent = {
@@ -106,13 +107,9 @@ export function DocumentDebugPanels({
           <SummaryItem label="Extraction" value={debugRecord?.extractionMethod ?? "-"} />
           <SummaryItem
             label="OCR"
-            value={
-              debugRecord
-                ? debugRecord.ocrApplied
-                  ? `yes${debugRecord.ocrLanguage ? ` (${debugRecord.ocrLanguage})` : ""}`
-                  : "no"
-                : document.ocrStatus
-            }
+            value={`${formatOcrStatus(debugRecord?.ocrStatus ?? document.ocrStatus)}${
+              debugRecord?.ocrLanguage ? `（${debugRecord.ocrLanguage}）` : ""
+            }`}
           />
         </div>
       </section>

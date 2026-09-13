@@ -8,6 +8,7 @@ import type {
   SceneProfile,
   StudyUnit,
 } from "@vibe-learner/shared";
+import { formatOcrStatus } from "../lib/ocr-status";
 
 interface PlanOverviewProps {
   plan: LearningPlan | null;
@@ -99,6 +100,9 @@ export function PlanOverview({
   const metaItems = plan
     ? [
         `教材 ${plan.creationMode === "goal_only" ? "仅学习目标" : documentTitle}`,
+        plan.creationMode === "document" && document
+          ? `OCR ${formatOcrStatus(document.ocrStatus)}`
+          : "",
         `人格 ${personaName}`,
         sceneProfile || plan.sceneProfileSummary
           ? `场景 ${sceneProfile?.title || sceneProfile?.sceneName || plan.sceneProfileSummary}`
