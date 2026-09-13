@@ -5,6 +5,7 @@ import { settingsStyles as styles } from "./settings-styles";
 import {
   CAPABILITY_AUDIT_CONFIGS,
   capabilitySignalToBoolean,
+  formatCapabilityDecisionNote,
   formatCapabilitySource,
   formatCapabilityStatus,
   formatProbeHint,
@@ -259,6 +260,8 @@ export function ConnectionModelsCard({
         <div style={styles.probeRow}>
           <button
             type="button"
+            data-probe-scope="global"
+            data-probe-action="models"
             style={styles.secondaryBtn}
             disabled={controller.probeState.global.loading || desktopManagedSecrets}
             onClick={() => void controller.probeScope("global")}
@@ -351,7 +354,9 @@ export function CapabilityAuditCard({
                   />
                   {mismatch ? <StatusBadge label="开关与检测不一致" tone="negative" /> : null}
                 </div>
-                {signal.note ? <p style={styles.capabilityNote}>{signal.note}</p> : null}
+                {formatCapabilityDecisionNote(signal) ? (
+                  <p style={styles.capabilityNote}>{formatCapabilityDecisionNote(signal)}</p>
+                ) : null}
                 {showModalities ? (
                   <div style={styles.ruleText}>
                     输入模态：{capability?.inputModalities?.join(", ") || "-"}
@@ -643,6 +648,8 @@ function ScopeModelCard({
       <div style={styles.probeRow}>
         <button
           type="button"
+          data-probe-scope={config.scope}
+          data-probe-action="models"
           style={styles.secondaryBtn}
           disabled={probe.loading || desktopManagedSecrets}
           onClick={() => void controller.probeScope(config.scope)}

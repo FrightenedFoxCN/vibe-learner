@@ -182,6 +182,19 @@ export function buildProbeEndpointKey(endpoint: { apiKey: string; baseUrl: strin
   return `${baseUrl}::${apiKey}`;
 }
 
+export function resolveProbeConflictScopes(
+  settings: RuntimeSettings,
+  requestedScope: ProbeScope,
+): ProbeScope[] {
+  const requestedKey = buildProbeEndpointKey(resolveScopeEndpoint(settings, requestedScope));
+  if (!requestedKey) {
+    return [requestedScope];
+  }
+  return (["global", "plan", "setting", "chat"] as const).filter(
+    (scope) => buildProbeEndpointKey(resolveScopeEndpoint(settings, scope)) === requestedKey,
+  );
+}
+
 export function uniqueWithCurrent(models: string[], current: string): string[] {
   const set = new Set<string>();
   const list: string[] = [];
@@ -265,6 +278,15 @@ export function formatCapabilityStatus(signal: RuntimeCapabilitySignal): string 
     return "未支持";
   }
   return "未知";
+}
+
+export function formatCapabilityDecisionNote(signal: RuntimeCapabilitySignal): string {
+  if (signal.note) {
+    return signal.note;
+  }
+  return signal.status === "unknown"
+    ? "“未知”不代表支持或不支持。请按实际 provider 能力手工决定；错误开启可能导致请求失败。"
+    : "";
 }
 
 export function formatCapabilitySource(signal: RuntimeCapabilitySignal): string {

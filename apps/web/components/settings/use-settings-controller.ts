@@ -37,6 +37,7 @@ import {
   parseNumericSetting,
   type ProbeScope,
   resolveCapabilitySignal,
+  resolveProbeConflictScopes,
   resolveScopeEndpoint,
   serializeSettings,
   type ScopeProbeState,
@@ -287,10 +288,7 @@ export function useSettingsController(): SettingsController {
 
     setProbeState((prev) => {
       const next = { ...prev };
-      for (const candidate of PROBE_SCOPES) {
-        if (buildProbeEndpointKey(resolveScopeEndpoint(settings, candidate)) !== endpointKey) {
-          continue;
-        }
+      for (const candidate of resolveProbeConflictScopes(settings, scope)) {
         next[candidate] = {
           ...prev[candidate],
           loading: true,
@@ -323,20 +321,23 @@ export function useSettingsController(): SettingsController {
       probeCacheRef.current.set(endpointKey, nextCached);
       syncProbeScopesFromCache(settingsRef.current ?? settings, endpointKey, nextCached);
     } catch (err) {
-      setProbeState((prev) => ({
-        ...prev,
-        [scope]: {
-          ...prev[scope],
-          loading: false,
-          available: false,
-          models: [],
-          capabilities: {},
-          featureReadiness: prev[scope].featureReadiness,
-          error: String(err),
-          endpointKey,
-          sharedFromScope: null
+      setProbeState((prev) => {
+        const next = { ...prev };
+        for (const candidate of resolveProbeConflictScopes(settingsRef.current ?? settings, scope)) {
+          next[candidate] = {
+            ...prev[candidate],
+            loading: false,
+            available: false,
+            models: [],
+            capabilities: {},
+            featureReadiness: prev[candidate].featureReadiness,
+            error: String(err),
+            endpointKey,
+            sharedFromScope: candidate === scope ? null : scope,
+          };
         }
-      }));
+        return next;
+      });
     }
   }
 

@@ -66,3 +66,37 @@ test("Settings model-card headings keep one font metric and baseline", async ({ 
     ).toBeLessThan(0.25);
   }
 });
+
+test("Settings probes lock only a shared connection and explain unknown capability", async ({ page }) => {
+  await observeRequests(page);
+  await page.route(`${api}/runtime-settings`, route => route.fulfill({ json: {
+    plan_provider: "litellm",
+    openai_api_key: "shared-key", openai_base_url: "https://shared.example/v1",
+    openai_plan_model: "MiniMax-M3", openai_plan_base_url: "",
+    openai_chat_model: "MiniMax-M3", openai_chat_base_url: "",
+    openai_setting_model: "MiniMax-M3", openai_setting_api_key: "setting-key",
+    openai_setting_base_url: "https://setting.example/v1",
+  } }));
+  let release!: () => void;
+  const waiting = new Promise<void>(resolve => { release = resolve; });
+  await page.route(`${api}/runtime-settings/check-openai-models`, async route => {
+    await waiting;
+    await route.fulfill({ json: { available: false, models: [], capabilities: {}, feature_readiness: {}, error: "unavailable" } });
+  });
+  await page.goto("/settings", { waitUntil: "networkidle" });
+
+  await expect(page.getByText(/“未知”不代表支持或不支持/)).toHaveCount(3);
+  const globalProbe = page.locator('[data-probe-scope="global"][data-probe-action="models"]');
+  const planProbe = page.locator('[data-probe-scope="plan"][data-probe-action="models"]');
+  const chatProbe = page.locator('[data-probe-scope="chat"][data-probe-action="models"]');
+  const settingProbe = page.locator('[data-probe-scope="setting"][data-probe-action="models"]');
+  await planProbe.click();
+  await expect(planProbe).toBeDisabled();
+  await expect(chatProbe).toBeDisabled();
+  await expect(globalProbe).toBeDisabled();
+  await expect(settingProbe).toBeEnabled();
+  release();
+  await expect(planProbe).toBeEnabled();
+  await expect(chatProbe).toBeEnabled();
+  await expect(globalProbe).toBeEnabled();
+});
