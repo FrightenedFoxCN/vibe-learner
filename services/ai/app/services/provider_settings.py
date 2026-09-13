@@ -16,6 +16,9 @@ from app.models.persona_generation import PersonaCardBatchContentProposalV1, Per
 from app.services.prompt_loader import load_prompt_template
 
 
+SETTING_GENERATION_MAX_TOKENS = 8192
+
+
 @dataclass(frozen=True)
 class RemoteSettingsProvider(PersonaModelCapability, SceneModelCapability):
     """Persona/Scene content generation with one captured setting-model configuration."""
@@ -178,7 +181,10 @@ class RemoteSettingsProvider(PersonaModelCapability, SceneModelCapability):
             payload: dict[str, Any] = {
                 "model": self.setting_model,
                 "temperature": self.setting_temperature,
-                "max_output_tokens": max(self.setting_max_tokens, 1200),
+                "max_output_tokens": max(
+                    self.setting_max_tokens,
+                    SETTING_GENERATION_MAX_TOKENS,
+                ),
                 "instructions": prompt_sections["generate_keywords_system"]
                 .replace("{{PERSONA_CARD_SCHEMA}}", PERSONA_CARD_GENERATION_SCHEMA)
                 .replace("{{CARD_COUNT}}", card_count_hint),
@@ -249,7 +255,10 @@ class RemoteSettingsProvider(PersonaModelCapability, SceneModelCapability):
         payload: dict[str, Any] = {
             "model": self.setting_model,
             "temperature": self.setting_temperature,
-            "max_tokens": max(self.setting_max_tokens, 1200),
+            "max_tokens": max(
+                self.setting_max_tokens,
+                SETTING_GENERATION_MAX_TOKENS,
+            ),
             "response_format": {"type": "json_object"},
             "messages": [
                 {
@@ -296,7 +305,10 @@ class RemoteSettingsProvider(PersonaModelCapability, SceneModelCapability):
             payload: dict[str, Any] = {
                 "model": self.setting_model,
                 "temperature": self.setting_temperature,
-                "max_output_tokens": max(self.setting_max_tokens, 1400),
+                "max_output_tokens": max(
+                    self.setting_max_tokens,
+                    SETTING_GENERATION_MAX_TOKENS,
+                ),
                 "instructions": prompt_sections["generate_scene_keywords_system"]
                 .replace("{{SCENE_TREE_SCHEMA}}", SCENE_TREE_GENERATION_SCHEMA)
                 .replace("{{LAYER_COUNT}}", layer_count_hint),
@@ -355,7 +367,10 @@ class RemoteSettingsProvider(PersonaModelCapability, SceneModelCapability):
         payload = {
             "model": self.setting_model,
             "temperature": self.setting_temperature,
-            "max_tokens": max(self.setting_max_tokens, 1200),
+            "max_tokens": max(
+                self.setting_max_tokens,
+                SETTING_GENERATION_MAX_TOKENS,
+            ),
             "response_format": {"type": "json_object"},
             "messages": [
                 {
@@ -393,7 +408,10 @@ class RemoteSettingsProvider(PersonaModelCapability, SceneModelCapability):
         payload = {
             "model": self.setting_model,
             "temperature": self.setting_temperature,
-            "max_tokens": max(self.setting_max_tokens, 1400),
+            "max_tokens": max(
+                self.setting_max_tokens,
+                SETTING_GENERATION_MAX_TOKENS,
+            ),
             "response_format": {"type": "json_object"},
             "messages": [
                 {
@@ -476,9 +494,12 @@ class RemoteSettingsProvider(PersonaModelCapability, SceneModelCapability):
             retry_payload["messages"] = retry_messages
             retry_payload["temperature"] = min(float(payload.get("temperature") or self.setting_temperature), 0.2)
             existing_max_tokens = int(payload.get("max_tokens") or self.setting_max_tokens)
-            retry_payload["max_tokens"] = min(
-                max(existing_max_tokens + 800, int(existing_max_tokens * 1.5)),
-                6400,
+            retry_payload["max_tokens"] = max(
+                existing_max_tokens,
+                min(
+                    max(existing_max_tokens + 800, int(existing_max_tokens * 1.5)),
+                    SETTING_GENERATION_MAX_TOKENS,
+                ),
             )
             retry_raw_payload, _ = self.request_chat(
                 retry_payload,
@@ -588,7 +609,10 @@ class RemoteSettingsProvider(PersonaModelCapability, SceneModelCapability):
         payload: dict[str, Any] = {
             "model": self.setting_model,
             "temperature": self.setting_temperature,
-            "max_tokens": max(self.setting_max_tokens, 1400),
+            "max_tokens": max(
+                self.setting_max_tokens,
+                SETTING_GENERATION_MAX_TOKENS,
+            ),
             "response_format": {"type": "json_object"},
             "messages": [
                 {

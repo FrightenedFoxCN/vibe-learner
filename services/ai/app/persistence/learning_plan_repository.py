@@ -7,13 +7,20 @@ from fastapi import HTTPException
 from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError, OperationalError
 
-from app.models.domain import VersionedLearningPlanRecord as LearningPlanRecord, StudySessionRecord
+from app.models.domain import (
+    VersionedLearningPlanRecord as LearningPlanRecord,
+    StudySessionRecord,
+    repair_legacy_duplicate_schedule_chapter_ids,
+    validate_schedule_chapter_identity,
+)
 from app.persistence.database import Database
 from app.persistence.models import LearningPlanRow, LearningPlanRevisionRow, StudySessionRow
 
 
 def plan_from_row(row: LearningPlanRow) -> LearningPlanRecord:
-    record = LearningPlanRecord.model_validate(deepcopy(row.payload))
+    record = LearningPlanRecord.model_validate(
+        repair_legacy_duplicate_schedule_chapter_ids(deepcopy(row.payload))
+    )
     if record.id != row.id or record.revision != row.revision:
         raise ValueError("learning_plan_projection_identity_mismatch")
     return record
@@ -53,6 +60,7 @@ class LearningPlanRepository:
         with self.database.session() as session:
             for record in records:
                 record = LearningPlanRecord.model_validate(record.model_dump(mode="json"))
+                validate_schedule_chapter_identity(record)
                 row = session.get(LearningPlanRow, record.id)
                 if row is not None:
                     if row.deleted or plan_from_row(row) != record:
@@ -85,6 +93,7 @@ class LearningPlanRepository:
                             raise ValueError(f"learning_plan_owned_field_changed:{field}")
                     after.revision = before.revision + 1
                     after = LearningPlanRecord.model_validate(after.model_dump(mode="json"))
+                    validate_schedule_chapter_identity(after)
                     changed = session.execute(update(LearningPlanRow).where(
                         LearningPlanRow.id == plan_id, LearningPlanRow.revision == before.revision,
                         LearningPlanRow.deleted == 0,

@@ -1,7 +1,10 @@
 """Shared, injectable provider transport policy; no model/SDK import required."""
 from __future__ import annotations
 
-from app.core.execution_budget import check_execution_budget
+from app.core.execution_budget import (
+    check_execution_budget,
+    execution_call_timeout_seconds,
+)
 
 import json
 import time
@@ -51,7 +54,11 @@ class ProviderTransport:
         model: str,
         invoke: Callable[[], Any],
     ) -> tuple[dict[str, Any], int]:
-        observation = ProviderObservation(request_kind, model, self.timeout_seconds)
+        observation = ProviderObservation(
+            request_kind,
+            model,
+            execution_call_timeout_seconds(self.timeout_seconds),
+        )
         started_at = self.clock()
         attempt = 0
         while True:
@@ -63,6 +70,9 @@ class ProviderTransport:
                 observation.finish(failed=True)
                 raise
             attempt += 1
+            observation.timeout = execution_call_timeout_seconds(
+                self.timeout_seconds
+            )
             observation.begin_attempt(attempt)
             try:
                 raw_result = invoke()

@@ -19,6 +19,7 @@ class PersonaProviderTests(unittest.TestCase):
         result = provider.generate_persona_cards_from_keywords(keywords='结构化导师', count=2)
         self.assertEqual(len(result['cards']), 2)
         prompt_payload = request.call_args.args[0]
+        self.assertEqual(prompt_payload["max_tokens"], 8192)
         prompt_text = '\n'.join((str(message['content']) for message in prompt_payload['messages']))
         self.assertIn('card_count_hint: 2', prompt_text)
         self.assertIn('`cards` 必须恰好生成该数量', prompt_text)
@@ -38,7 +39,7 @@ class PersonaProviderTests(unittest.TestCase):
             self.provider(request_chat=request).generate_persona_cards_from_text(text="mentor", count=1)
         self.assertEqual(request.call_count, 2)
         self.assertEqual(request.call_args.args[0]["temperature"], 0.2)
-        self.assertLessEqual(request.call_args.args[0]["max_tokens"], 6400)
+        self.assertEqual(request.call_args.args[0]["max_tokens"], 8192)
 
     def test_missing_nested_kind_repairs_within_the_existing_chat_budget(self):
         # MiniMax live samples stopped normally but omitted kind on every card.
@@ -76,6 +77,7 @@ class PersonaProviderTests(unittest.TestCase):
         chat = Mock(side_effect=AssertionError("schema failure must not switch transport"))
         result = self.provider(request_response=request, request_chat=chat, setting_web_search_enabled=True).generate_persona_cards_from_keywords(keywords="朋友", count=1)
         self.assertEqual(request.call_count, 2)
+        self.assertTrue(all(call.args[0]["max_output_tokens"] == 8192 for call in request.call_args_list))
         self.assertTrue(result["used_web_search"])
         chat.assert_not_called()
 

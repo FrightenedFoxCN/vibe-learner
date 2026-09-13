@@ -528,9 +528,83 @@ class ScheduleChapterRecord(BaseModel):
     content_slices: list[ScheduleChapterContentSliceRecord] = Field(default_factory=list)
 
 
+def build_schedule_chapter_id(
+    *, unit_id: str, schedule_id: str, chapter_index: int
+) -> str:
+    return f"{unit_id}:{schedule_id}:schedule-chapter:{chapter_index}"
+
+
+def repair_legacy_duplicate_schedule_chapter_ids(
+    payload: dict[str, Any],
+) -> dict[str, Any]:
+    """Repair only collisions produced by the former unit-scoped ID formula."""
+    raw_schedule = payload.get("schedule")
+    if not isinstance(raw_schedule, list):
+        return payload
+    chapter_id_uses: dict[str, int] = {}
+    for raw_item in raw_schedule:
+        if not isinstance(raw_item, dict):
+            continue
+        raw_chapters = raw_item.get("schedule_chapters")
+        if not isinstance(raw_chapters, list):
+            continue
+        for raw_chapter in raw_chapters:
+            if not isinstance(raw_chapter, dict):
+                continue
+            chapter_id = str(raw_chapter.get("id") or "").strip()
+            if chapter_id:
+                chapter_id_uses[chapter_id] = chapter_id_uses.get(chapter_id, 0) + 1
+    duplicate_chapter_ids = {
+        chapter_id for chapter_id, uses in chapter_id_uses.items() if uses > 1
+    }
+    if not duplicate_chapter_ids:
+        return payload
+    next_schedule: list[Any] = []
+    for schedule_index, raw_item in enumerate(raw_schedule, start=1):
+        if not isinstance(raw_item, dict):
+            next_schedule.append(raw_item)
+            continue
+        schedule_id = str(raw_item.get("id") or f"schedule-{schedule_index}").strip()
+        unit_id = str(raw_item.get("unit_id") or "").strip()
+        raw_chapters = raw_item.get("schedule_chapters")
+        if not isinstance(raw_chapters, list):
+            next_schedule.append(raw_item)
+            continue
+        next_chapters: list[Any] = []
+        for chapter_index, raw_chapter in enumerate(raw_chapters, start=1):
+            if not isinstance(raw_chapter, dict):
+                next_chapters.append(raw_chapter)
+                continue
+            chapter_id = str(raw_chapter.get("id") or "").strip()
+            legacy_id = f"{unit_id}:schedule-chapter:{chapter_index}"
+            if chapter_id in duplicate_chapter_ids and chapter_id == legacy_id:
+                raw_chapter = {
+                    **raw_chapter,
+                    "id": build_schedule_chapter_id(
+                        unit_id=unit_id,
+                        schedule_id=schedule_id,
+                        chapter_index=chapter_index,
+                    ),
+                }
+            next_chapters.append(raw_chapter)
+        next_schedule.append({**raw_item, "schedule_chapters": next_chapters})
+    return {**payload, "schedule": next_schedule}
+
+
+def validate_schedule_chapter_identity(plan: "LearningPlanRecord") -> None:
+    chapter_ids = [
+        chapter.id
+        for schedule_item in plan.schedule
+        for chapter in schedule_item.schedule_chapters
+    ]
+    if len(chapter_ids) != len(set(chapter_ids)):
+        raise ValueError("duplicate_schedule_chapter_id")
+
+
 def _normalize_schedule_chapter_payload(
     *,
     unit_id: str,
+    schedule_id: str,
     title: str,
     page_start: int,
     page_end: int,
@@ -538,7 +612,11 @@ def _normalize_schedule_chapter_payload(
 ) -> dict[str, Any]:
     normalized_sources = [str(item).strip() for item in source_section_ids if str(item).strip()]
     return {
-        "id": f"{unit_id}:schedule-chapter:1",
+        "id": build_schedule_chapter_id(
+            unit_id=unit_id,
+            schedule_id=schedule_id,
+            chapter_index=1,
+        ),
         "title": title.strip() or unit_id,
         "anchor_page_start": page_start,
         "anchor_page_end": page_end,
@@ -624,6 +702,7 @@ class StudyScheduleRecord(BaseModel):
         value["schedule_chapters"] = [
             _normalize_schedule_chapter_payload(
                 unit_id=unit_id,
+                schedule_id=str(value.get("id") or "schedule-1").strip() or "schedule-1",
                 title=fallback_title,
                 page_start=page_start,
                 page_end=page_end,

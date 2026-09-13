@@ -23,6 +23,9 @@ from app.models.domain import (
     StudyScheduleRecord,
     StudyUnitProgressRecord,
     StudyUnitRecord,
+    build_schedule_chapter_id,
+    repair_legacy_duplicate_schedule_chapter_ids,
+    validate_schedule_chapter_identity,
 )
 from app.models.harness import canonical_harness_digest
 from app.models.planning import PlanScheduleChapterProposalV1
@@ -161,7 +164,11 @@ class LearningPlanService:
             projection = operation.committed_projection
             if projection is None:
                 raise RuntimeError("learning_plan_committed_projection_missing")
-            return projection.plan.model_copy(deep=True)
+            return projection.plan.__class__.model_validate(
+                repair_legacy_duplicate_schedule_chapter_ids(
+                    projection.plan.model_dump(mode="json")
+                )
+            )
 
         provider_started = False
         candidate_built = False
@@ -536,6 +543,7 @@ class LearningPlanService:
         plan.scene_profile = goal.scene_profile
         if filtered_schedule:
             plan.schedule = filtered_schedule
+        validate_schedule_chapter_identity(plan)
         validate_schedule_against_intent(
             schedule=list(plan.schedule),
             intent=goal.planning_intent,
@@ -800,12 +808,14 @@ class LearningPlanService:
         item,
         unit: StudyUnitRecord,
     ) -> StudyScheduleRecord:
+        schedule_id = f"schedule-{index + 1}"
         schedule_chapters = self._normalize_schedule_chapters(
             raw_schedule_chapters=getattr(item, "schedule_chapters", None),
             unit=unit,
+            schedule_id=schedule_id,
         )
         return StudyScheduleRecord(
-            id=f"schedule-{index + 1}",
+            id=schedule_id,
             unit_id=item.unit_id,
             title=item.title,
             focus=item.focus,
@@ -827,6 +837,7 @@ class LearningPlanService:
             | None
         ),
         unit: StudyUnitRecord,
+        schedule_id: str,
     ) -> list[ScheduleChapterRecord]:
         chapters = list(raw_schedule_chapters or [])
         normalized: list[ScheduleChapterRecord] = []
@@ -846,6 +857,7 @@ class LearningPlanService:
             validated_chapter = self._validate_schedule_chapter(
                 chapter=chapter,
                 unit=unit,
+                schedule_id=schedule_id,
                 index=index,
                 previous_anchor_start=previous_anchor_start,
             )
@@ -856,7 +868,11 @@ class LearningPlanService:
         normalized_sources = [str(item).strip() for item in unit.source_section_ids if str(item).strip()]
         return [
             ScheduleChapterRecord(
-                id=f"{unit.id}:schedule-chapter:1",
+                id=build_schedule_chapter_id(
+                    unit_id=unit.id,
+                    schedule_id=schedule_id,
+                    chapter_index=1,
+                ),
                 title=unit.title,
                 anchor_page_start=unit.page_start,
                 anchor_page_end=unit.page_end,
@@ -876,6 +892,7 @@ class LearningPlanService:
         *,
         chapter: PlanScheduleChapterProposalV1,
         unit: StudyUnitRecord,
+        schedule_id: str,
         index: int,
         previous_anchor_start: int,
     ) -> ScheduleChapterRecord:
@@ -895,7 +912,11 @@ class LearningPlanService:
                 )
             )
         return ScheduleChapterRecord(
-            id=f"{unit.id}:schedule-chapter:{index}",
+            id=build_schedule_chapter_id(
+                unit_id=unit.id,
+                schedule_id=schedule_id,
+                chapter_index=index,
+            ),
             title=chapter.title,
             anchor_page_start=chapter.anchor_page_start,
             anchor_page_end=chapter.anchor_page_end,

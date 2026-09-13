@@ -83,6 +83,14 @@
 
 ## 可靠性、部署与输入边界
 
+- [ ] `SETTING-GENERATION-OUTPUT-001` `[P1]` 收口 Persona/Scene 生成的输出预算、截断恢复与错误可观测性。
+  - 2026-09-13 桌面应用证据：关键词 Scene 连续三次以 `setting_model_invalid_json` 失败，Persona 一次同类失败，provider 输出均贴近当时 1200/1400 token 上限；另一次 Scene 修复请求连续超时。临时缓解已将 Persona/Scene 生成有效上限提到 8192，不将此作为长期预算设计。
+  - 识别 Responses/Chat 的权威 finish reason、`incomplete_details` 和 token 上限命中，将截断映射为独立、可行动的错误；结构化重试必须增加或至少保持预算，不得在重试时降低上限。
+  - 对不支持 web search、输出截断、结构修复失败和超时分别定义有界降级政策；仅在安全且预算允许时切到无联网生成，并保留真实 `used_web_search`/recovery 证据。
+  - 统一 `max_tokens` / `max_output_tokens` 与 `per_call_timeout_ms` 的配置真源、命名、各 workflow 有效值与重试规则；Settings、运行时与诊断导出应能便捷查询“用户配置或非 Harness fallback / workflow manifest 声明 / 本次实际值”，避免分散硬编码或让全局 timeout 文案误导 Harness 工作流。
+  - FastAPI `detail` 字符串必须被前端保留为稳定 error code；Persona/Scene 显示超时、截断、schema 与 provider 错误的可行动文案，Diagnostic/Harness/Model Usage 可按同一 request/operation 关联原因、各次输出预算和终态。
+  - 增加输出恰好命中上限、Responses 不完整终态、重试不降预算、web-search 降级、HTTP 错误文案及真实 MiniMax/Gemini 代表请求的回归门。
+
 - [ ] `REL-DESKTOP-001` `[P2]` 完成真实桌面/浏览器恢复验收。
   - 覆盖慢网、断网、刷新/离页、Settings 未保存变更、编辑器异步返回、删除/归档组合、桌面安装/退出；覆盖 Tavern 无 Persona/无 Room、设备级 IME 和完整焦点顺序。
   - 已有进程退出、事务回滚、HTTP 重启读回测试作为回归门；不得重复列为待实现。Study 文案由 `STUDY-OP-RECOVERY-UX-001` 负责。

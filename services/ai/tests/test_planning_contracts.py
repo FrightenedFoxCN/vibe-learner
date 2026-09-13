@@ -8,7 +8,15 @@ from unittest.mock import patch
 
 from pydantic import ValidationError
 
-from app.models.domain import LearningGoalInput, PersonaProfile, SceneProfileRecord, StudyUnitRecord
+from app.models.domain import (
+    LearningGoalInput,
+    LearningPlanRecord,
+    PersonaProfile,
+    SceneProfileRecord,
+    StudyUnitRecord,
+    repair_legacy_duplicate_schedule_chapter_ids,
+    validate_schedule_chapter_identity,
+)
 from app.models.planning import (
     LEARNING_PLAN_PROPOSAL_SCHEMA_NAME,
     LEARNING_PLAN_PROPOSAL_SCHEMA_VERSION,
@@ -295,8 +303,121 @@ class PlanningContractTests(unittest.TestCase):
         self.assertEqual(committed.id, "schedule-1")
         self.assertEqual(
             committed.schedule_chapters[0].id,
-            "doc-1:study-unit:1:schedule-chapter:1",
+            "doc-1:study-unit:1:schedule-1:schedule-chapter:1",
         )
+
+    def test_repeated_unit_schedule_chapter_ids_include_parent_schedule(self) -> None:
+        service = LearningPlanService(
+            self.store,
+            StudyArrangementService(),
+            MockModelProvider(),
+        )
+        unit = StudyUnitRecord(
+            id="doc-1:study-unit:1",
+            document_id="doc-1",
+            title="Foundations",
+            page_start=1,
+            page_end=5,
+            source_section_ids=["section-1"],
+        )
+        chapter = PlanScheduleChapterProposalV1(
+            title="1.1 基础",
+            anchor_page_start=1,
+            anchor_page_end=5,
+            source_section_ids=["section-1"],
+            content_slices=[
+                PlanContentSliceProposalV1(
+                    page_start=1,
+                    page_end=5,
+                    source_section_ids=["section-1"],
+                )
+            ],
+        )
+        item = PlanScheduleItem(
+            unit_id=unit.id,
+            title="精读",
+            focus="掌握基础概念",
+            activity_type="learn",
+            duration_minutes=45,
+            schedule_chapters=[chapter],
+        )
+
+        schedule = [
+            service._build_schedule_record(index=index, item=item, unit=unit)
+            for index in range(2)
+        ]
+
+        self.assertEqual(
+            [entry.schedule_chapters[0].id for entry in schedule],
+            [
+                "doc-1:study-unit:1:schedule-1:schedule-chapter:1",
+                "doc-1:study-unit:1:schedule-2:schedule-chapter:1",
+            ],
+        )
+
+    def test_legacy_duplicate_chapter_ids_are_repaired_but_unknown_duplicates_fail(self) -> None:
+        unit = StudyUnitRecord(
+            id="doc-1:study-unit:1",
+            document_id="doc-1",
+            title="Foundations",
+            page_start=1,
+            page_end=5,
+            source_section_ids=["section-1"],
+        )
+        legacy_chapter = {
+            "id": "doc-1:study-unit:1:schedule-chapter:1",
+            "title": "1.1 基础",
+            "anchor_page_start": 1,
+            "anchor_page_end": 5,
+            "source_section_ids": ["section-1"],
+            "content_slices": [
+                {
+                    "page_start": 1,
+                    "page_end": 5,
+                    "source_section_ids": ["section-1"],
+                }
+            ],
+        }
+        payload = {
+            "id": "plan-1",
+            "document_id": "doc-1",
+            "persona_id": "persona-1",
+            "course_title": "Foundations",
+            "objective": "Learn",
+            "overview": "Learn foundations.",
+            "today_tasks": ["Read"],
+            "study_units": [unit.model_dump(mode="json")],
+            "schedule": [
+                {
+                    "id": f"schedule-{index}",
+                    "unit_id": unit.id,
+                    "title": "精读",
+                    "focus": "掌握基础概念",
+                    "activity_type": "learn",
+                    "schedule_chapters": [dict(legacy_chapter)],
+                }
+                for index in (1, 2)
+            ],
+            "created_at": "2026-09-13T00:00:00+00:00",
+        }
+
+        repaired = LearningPlanRecord.model_validate(
+            repair_legacy_duplicate_schedule_chapter_ids(payload)
+        )
+        self.assertEqual(
+            [entry.schedule_chapters[0].id for entry in repaired.schedule],
+            [
+                "doc-1:study-unit:1:schedule-1:schedule-chapter:1",
+                "doc-1:study-unit:1:schedule-2:schedule-chapter:1",
+            ],
+        )
+
+        malformed = json.loads(json.dumps(payload))
+        for entry in malformed["schedule"]:
+            entry["schedule_chapters"][0]["id"] = "duplicate-unknown-id"
+        malformed_plan = LearningPlanRecord.model_validate(malformed)
+        with self.assertRaisesRegex(ValueError, "duplicate_schedule_chapter_id"):
+            validate_schedule_chapter_identity(malformed_plan)
 
     def test_explicit_no_scene_overwrites_any_candidate_scene_projection(self) -> None:
         arrangement = StudyArrangementService()

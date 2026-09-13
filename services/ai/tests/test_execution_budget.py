@@ -1,6 +1,10 @@
 import unittest
 
-from app.core.execution_budget import check_execution_budget, execution_budget_scope
+from app.core.execution_budget import (
+    check_execution_budget,
+    execution_budget_scope,
+    execution_call_timeout_seconds,
+)
 from app.services.provider_transport import ProviderTransport
 
 
@@ -15,6 +19,14 @@ class ExecutionBudgetTests(unittest.TestCase):
                 check_execution_budget()
         self.assertEqual(calls, ["parent"])
         check_execution_budget()
+
+    def test_nested_scope_uses_narrowest_declared_call_timeout_and_resets(self):
+        self.assertEqual(execution_call_timeout_seconds(30), 30)
+        with execution_budget_scope(None, call_timeout_seconds=lambda: 120):
+            self.assertEqual(execution_call_timeout_seconds(30), 120)
+            with execution_budget_scope(None, call_timeout_seconds=lambda: 45):
+                self.assertEqual(execution_call_timeout_seconds(30), 45)
+        self.assertEqual(execution_call_timeout_seconds(30), 30)
 
     def test_transport_retry_checks_budget_before_issuing_sdk_call(self):
         from unittest.mock import patch

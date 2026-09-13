@@ -253,6 +253,7 @@ class HarnessOperationRuntime:
                 lease_seconds,
                 lambda: adapter.generate(request.context, artifacts),
                 deadline=deadline,
+                per_call_timeout_ms=manifest.execution_budget.per_call_timeout_ms,
             )
             self._record_attempt(
                 claim,
@@ -325,6 +326,7 @@ class HarnessOperationRuntime:
                     repair_index=repair_count,
                     lease_seconds=lease_seconds,
                     deadline=deadline,
+                    per_call_timeout_ms=manifest.execution_budget.per_call_timeout_ms,
                 )
                 repaired = True
                 continue
@@ -400,6 +402,7 @@ class HarnessOperationRuntime:
                     repair_index=repair_count,
                     lease_seconds=lease_seconds,
                     deadline=deadline,
+                    per_call_timeout_ms=manifest.execution_budget.per_call_timeout_ms,
                 )
                 repaired = True
                 continue
@@ -746,6 +749,7 @@ class HarnessOperationRuntime:
         repair_index: int,
         lease_seconds: int,
         deadline: datetime,
+        per_call_timeout_ms: int,
     ) -> object:
         started = self.clock()
         assert adapter.repair is not None
@@ -755,6 +759,7 @@ class HarnessOperationRuntime:
                 lease_seconds,
                 lambda: adapter.repair(raw, error_code, repair_index),
                 deadline=deadline,
+                per_call_timeout_ms=per_call_timeout_ms,
             )
             self._record_attempt(
                 claim,
@@ -780,6 +785,7 @@ class HarnessOperationRuntime:
         lease_seconds: int,
         callback: Callable[[], object],
         deadline: datetime | None = None,
+        per_call_timeout_ms: int | None = None,
     ) -> object:
         # A previous phase may consume the remaining deadline. Never start a
         # provider/worker/commit callback after that deadline has already passed.
@@ -796,8 +802,22 @@ class HarnessOperationRuntime:
                 "checks": [c.model_dump(mode="json") for c in current.checks],
             }), performance_budget.RUNTIME_MAX_EVIDENCE_BYTES,
         )
+
+        def resolve_call_timeout_seconds() -> int:
+            assert per_call_timeout_ms is not None
+            declared_seconds = max(1, per_call_timeout_ms // 1000)
+            if deadline is None:
+                return declared_seconds
+            remaining_seconds = int((deadline - self.clock()).total_seconds())
+            return max(1, min(declared_seconds, remaining_seconds))
+
         with _HarnessLeaseHeartbeat(self.repository, claim, lease_seconds) as heartbeat, execution_budget_scope(
-            (lambda: self._ensure_within_budget(deadline)) if deadline is not None else None
+            (lambda: self._ensure_within_budget(deadline)) if deadline is not None else None,
+            call_timeout_seconds=(
+                resolve_call_timeout_seconds
+                if per_call_timeout_ms is not None
+                else None
+            ),
         ):
             result = callback()
         heartbeat.raise_if_failed()

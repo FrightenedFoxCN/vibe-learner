@@ -54,14 +54,21 @@ class PlanningGeometryRepairTests(unittest.TestCase):
                     _validate_learning_plan_proposal_refs(proposal, [unit()])
                 self.assertEqual(error.exception.reason, reason)
                 with self.assertRaisesRegex(RuntimeError, reason):
-                    service._normalize_schedule_chapters(raw_schedule_chapters=proposal.schedule[0].schedule_chapters, unit=unit())
+                    service._normalize_schedule_chapters(
+                        raw_schedule_chapters=proposal.schedule[0].schedule_chapters,
+                        unit=unit(),
+                        schedule_id="schedule-1",
+                    )
 
     def test_same_page_chapters_remain_allowed(self):
         proposal = LearningPlanProposalV3.model_validate(two_chapters([1,1]))
         _validate_learning_plan_proposal_refs(proposal, [unit()])
         service = object.__new__(LearningPlanService)
         chapters = service._normalize_schedule_chapters(
-            raw_schedule_chapters=proposal.schedule[0].schedule_chapters, unit=unit())
+            raw_schedule_chapters=proposal.schedule[0].schedule_chapters,
+            unit=unit(),
+            schedule_id="schedule-1",
+        )
         self.assertEqual([c.anchor_page_start for c in chapters], [1,1])
 
     def generate(self, responses):

@@ -13,6 +13,7 @@ from app.models.domain import (
     DocumentRecord,
     LearningPlanRecord,
     PlanGenerationTraceRecord,
+    validate_schedule_chapter_identity,
 )
 from app.models.harness_operation import (
     HarnessDomainOperationKind,
@@ -795,6 +796,7 @@ def _apply_trace_row(
 
 
 def _apply_plan_row(row: LearningPlanRow, plan: LearningPlanRecord) -> None:
+    validate_schedule_chapter_identity(plan)
     row.id = plan.id
     row.revision = getattr(plan, "revision", 0)
     row.deleted = 0

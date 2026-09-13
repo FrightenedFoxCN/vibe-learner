@@ -20,6 +20,7 @@ class SceneProviderTests(unittest.TestCase):
         self.assertEqual(result["used_model"], "setting")
         self.assertTrue(result["scene_layers"][0]["id"].startswith("scene-layer-"))
         self.assertEqual(request.call_args.args[0]["tools"], [{"type": "web_search"}])
+        self.assertEqual(request.call_args.args[0]["max_output_tokens"], 8192)
 
     def test_unsupported_search_falls_back_and_reports_no_search(self):
         response = Mock(side_effect=RuntimeError("openai_setting_request_failed:400:unsupported"))
@@ -28,6 +29,7 @@ class SceneProviderTests(unittest.TestCase):
         self.assertFalse(result["used_web_search"])
         self.assertEqual(response.call_count, 1)
         self.assertEqual(chat.call_count, 1)
+        self.assertEqual(chat.call_args.args[0]["max_tokens"], 8192)
 
     def test_model_owned_scene_cannot_forge_committed_identity(self):
         proposal = scene_proposal_payload()
@@ -48,6 +50,7 @@ class SceneProviderTests(unittest.TestCase):
         )
 
         self.assertEqual(chat.call_count, 2)
+        self.assertTrue(all(call.args[0]["max_tokens"] == 8192 for call in chat.call_args_list))
         self.assertTrue(result["scene_layers"][0]["reuse_hint"])
         retry_messages = chat.call_args_list[1].args[0]["messages"]
         self.assertIn("严格只输出一个 JSON 对象", retry_messages[-1]["content"])
@@ -74,4 +77,5 @@ class SceneProviderTests(unittest.TestCase):
                 keywords="room", layer_count=1
             )
             self.assertEqual(responses.call_count, 2)
+            self.assertTrue(all(call.args[0]["max_output_tokens"] == 8192 for call in responses.call_args_list))
             self.assertTrue(result["used_web_search"])

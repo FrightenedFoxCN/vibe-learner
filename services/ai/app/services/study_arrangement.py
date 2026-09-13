@@ -15,6 +15,7 @@ from app.models.domain import (
     ScheduleChapterRecord,
     StudyScheduleRecord,
     StudyUnitRecord,
+    build_schedule_chapter_id,
 )
 
 
@@ -540,31 +541,39 @@ class StudyArrangementService:
         schedule: list[StudyScheduleRecord] = []
 
         for index, unit in enumerate(units, start=1):
-            schedule_chapters = self._build_schedule_chapters_for_unit(
+            learn_schedule_id = f"schedule-{index * 2 - 1}"
+            review_schedule_id = f"schedule-{index * 2}"
+            learn_schedule_chapters = self._build_schedule_chapters_for_unit(
                 unit=unit,
                 debug_report=debug_report,
+                schedule_id=learn_schedule_id,
+            )
+            review_schedule_chapters = self._build_schedule_chapters_for_unit(
+                unit=unit,
+                debug_report=debug_report,
+                schedule_id=review_schedule_id,
             )
             schedule.append(
                 StudyScheduleRecord(
-                    id=f"schedule-{index * 2 - 1}",
+                    id=learn_schedule_id,
                     unit_id=unit.id,
                     title=f"{unit.title} 精读",
                     focus=f"完成 {unit.title} 的首轮理解，标出定义、定理与例子。",
                     activity_type="learn",
                     duration_minutes=45,
-                    schedule_chapters=schedule_chapters,
+                    schedule_chapters=learn_schedule_chapters,
                 )
             )
 
             schedule.append(
                 StudyScheduleRecord(
-                    id=f"schedule-{index * 2}",
+                    id=review_schedule_id,
                     unit_id=unit.id,
                     title=f"{unit.title} 回顾",
                     focus=f"复述 {unit.title}，补一条错因或例题笔记。",
                     activity_type="review",
                     duration_minutes=45,
-                    schedule_chapters=schedule_chapters,
+                    schedule_chapters=review_schedule_chapters,
                 )
             )
 
@@ -575,9 +584,16 @@ class StudyArrangementService:
         *,
         unit: StudyUnitRecord,
         debug_report: DocumentDebugRecord | None,
+        schedule_id: str,
     ) -> list[ScheduleChapterRecord]:
         if debug_report is None:
-            return [self._fallback_schedule_chapter(unit=unit, title=unit.title)]
+            return [
+                self._fallback_schedule_chapter(
+                    unit=unit,
+                    title=unit.title,
+                    schedule_id=schedule_id,
+                )
+            ]
 
         related_sections = sorted(
             [
@@ -589,7 +605,13 @@ class StudyArrangementService:
             key=lambda section: (section.page_start, section.level, section.page_end, section.id),
         )
         if not related_sections:
-            return [self._fallback_schedule_chapter(unit=unit, title=unit.title)]
+            return [
+                self._fallback_schedule_chapter(
+                    unit=unit,
+                    title=unit.title,
+                    schedule_id=schedule_id,
+                )
+            ]
 
         grouped: list[dict[str, object]] = []
         for section in related_sections:
@@ -623,7 +645,11 @@ class StudyArrangementService:
         for index, group in enumerate(grouped, start=1):
             chapters.append(
                 ScheduleChapterRecord(
-                    id=f"{unit.id}:schedule-chapter:{index}",
+                    id=build_schedule_chapter_id(
+                        unit_id=unit.id,
+                        schedule_id=schedule_id,
+                        chapter_index=index,
+                    ),
                     title=str(group["title"]),
                     anchor_page_start=int(group["anchor_page_start"]),
                     anchor_page_end=int(group["anchor_page_end"]),
@@ -631,18 +657,29 @@ class StudyArrangementService:
                     content_slices=list(group["content_slices"]),
                 )
             )
-        return chapters or [self._fallback_schedule_chapter(unit=unit, title=unit.title)]
+        return chapters or [
+            self._fallback_schedule_chapter(
+                unit=unit,
+                title=unit.title,
+                schedule_id=schedule_id,
+            )
+        ]
 
     def _fallback_schedule_chapter(
         self,
         *,
         unit: StudyUnitRecord,
         title: str,
+        schedule_id: str,
     ) -> ScheduleChapterRecord:
         normalized_title = title.strip() or unit.title
         normalized_sources = [str(item).strip() for item in unit.source_section_ids if str(item).strip()]
         return ScheduleChapterRecord(
-            id=f"{unit.id}:schedule-chapter:1",
+            id=build_schedule_chapter_id(
+                unit_id=unit.id,
+                schedule_id=schedule_id,
+                chapter_index=1,
+            ),
             title=normalized_title,
             anchor_page_start=unit.page_start,
             anchor_page_end=unit.page_end,

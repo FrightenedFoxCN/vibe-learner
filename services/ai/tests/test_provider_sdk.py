@@ -4,6 +4,7 @@ import sys
 import unittest
 from unittest.mock import Mock
 
+from app.core.execution_budget import execution_budget_scope
 from app.services.provider_sdk import ProviderRequestAdapter
 from app.services.provider_transport import ProviderTransport
 
@@ -43,6 +44,16 @@ assert "app.services.model_provider" not in sys.modules
                 self.assertEqual(call["max_completion_tokens"], 32)
                 self.assertNotIn("temperature", call)
                 self.assertIn("temperature", payload)
+
+    def test_harness_call_timeout_overrides_global_runtime_timeout(self):
+        completion = Mock(return_value={"choices": []})
+        with execution_budget_scope(None, call_timeout_seconds=lambda: 120):
+            self.adapter(completion=completion).request_chat_completion(
+                {"model": "gpt-5-mini", "messages": []},
+                request_kind="setting",
+                model="gpt-5-mini",
+            )
+        self.assertEqual(completion.call_args.kwargs["timeout"], 120)
 
     def test_responses_converts_messages_and_records_response_usage(self):
         usage = Mock()

@@ -208,6 +208,38 @@ class HarnessRuntimeTests(unittest.TestCase):
         self.assertEqual(result.terminal_trace.error_code, "harness_runtime_wall_time_budget_exceeded")
         check_execution_budget()  # The expired scope must not leak to a later operation.
 
+    def test_generation_call_timeout_uses_manifest_and_remaining_wall_time(self) -> None:
+        from app.core.execution_budget import execution_call_timeout_seconds
+
+        current = [datetime(2026, 9, 3, tzinfo=UTC)]
+        observed_timeouts = []
+
+        def generate(_context, _artifacts):
+            observed_timeouts.append(execution_call_timeout_seconds(30))
+            current[0] += timedelta(seconds=130)
+            observed_timeouts.append(execution_call_timeout_seconds(30))
+            return {"value": "valid"}
+
+        base = self.fixture.adapter()
+        result = HarnessOperationRuntime(
+            repository=self.fixture.repository,
+            clock=lambda: current[0],
+        ).execute(
+            request=self.fixture.request,
+            adapter=HarnessRuntimeStageAdapter(
+                adapter_contract=base.adapter_contract,
+                trace_contract=base.trace_contract,
+                generate=generate,
+                decode=base.decode,
+                validate=base.validate,
+            ),
+            claim_owner="worker-a",
+        )
+
+        self.assertEqual(observed_timeouts, [120, 50])
+        assert result.terminal_trace is not None
+        self.assertEqual(result.terminal_trace.status, HarnessStatus.PASSED)
+
     def test_forged_terminal_trace_is_rejected(self) -> None:
         prepared = self.fixture.repository.prepare(operation_binding=self.fixture.binding, stage=HarnessStage.TAVERN_ACTOR_REPLY, trace_slot=0, adapter_contract=ADAPTER_CONTRACT, trace_contract=TRACE_CONTRACT, context=self.fixture.context)
         claim = self.fixture.repository.claim(trace_id=prepared.trace_id, claim_owner="worker-a")

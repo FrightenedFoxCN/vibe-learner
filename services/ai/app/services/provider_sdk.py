@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 import re
 from typing import Any, Callable
 
+from app.core.execution_budget import execution_call_timeout_seconds
 from app.core.logging import get_logger
 from app.services.provider_transport import ProviderTransport
 
@@ -210,7 +211,7 @@ class ProviderRequestAdapter:
         model: str,
     ) -> dict[str, Any]:
         kwargs: dict[str, Any] = {
-            "timeout": self.timeout_seconds,
+            "timeout": execution_call_timeout_seconds(self.timeout_seconds),
         }
         if api_base:
             kwargs["api_base"] = api_base

@@ -565,11 +565,19 @@ class DocumentStudyUnitUpdateResponse(BaseModel):
     plans: list["LearningPlanResponse"]
 
 
-from app.models.domain import VersionedLearningPlanRecord
+from app.models.domain import (
+    VersionedLearningPlanRecord,
+    repair_legacy_duplicate_schedule_chapter_ids,
+)
 
 
 class LearningPlanResponse(VersionedLearningPlanRecord):
-    pass
+    @model_validator(mode="before")
+    @classmethod
+    def repair_legacy_chapter_identity(cls, value):
+        if not isinstance(value, dict):
+            return value
+        return repair_legacy_duplicate_schedule_chapter_ids(value)
 
 
 class LearningPlanCreateResponse(LearningPlanResponse):
