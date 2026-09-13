@@ -6,8 +6,6 @@ import { createPlanRevision, decidePlanRevision, getPlanRevision, listPlanRevisi
 
 import { isApiHttpError } from "../lib/http-error";
 
-const button = { minHeight: 44, padding: "8px 16px", borderRadius: 8, cursor: "pointer" } as const;
-const cell = { padding: 10, borderBottom: "1px solid #ddd", verticalAlign: "top", whiteSpace: "pre-wrap", overflowWrap: "anywhere" } as const;
 const copy: Record<PlanRevision["status"], string> = {
   generating: "正在生成修订预览，可离页后回来查询。",
   ready: "修订预览已保存。请检查差异，再选择接受或拒绝。",
@@ -123,42 +121,45 @@ export function PlanRevisionPanel({ plan, onRefresh }: { plan: LearningPlan; onR
       return [`排期：${before.title}`, `${before.title}\n${before.focus}`, `${item.title}\n${item.focus}`];
     }),
   ] : [];
-  return <details open={open} onToggle={event => setOpen(event.currentTarget.open)} style={{ background: "white", border: "1px solid #ddd", borderRadius: 12, padding: 16 }}>
-    <summary style={{ minHeight: 44, cursor: "pointer" }}>修订计划 · 版本 {plan.revision}</summary>
-    <section aria-label="计划修订" aria-busy={busy} style={{ display: "grid", gap: 12 }}>
-      <p>可调整标题、概览、今日任务及现有排期的顺序与重点。教材章节和学习记录会保留。</p>
-      <label>修订要求<textarea value={instruction} onChange={event => setInstruction(event.target.value)} maxLength={8000}
-        placeholder="例如：先复习基础，再加强例题练习" style={{ display: "block", width: "100%", minHeight: 96, boxSizing: "border-box" }} /></label>
-      <button type="button" style={button} disabled={busy || unresolved || !instruction.trim()} onClick={() => void generate()}>生成修订预览</button>
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-        <label>历史版本 <select value={rollback} onChange={event => setRollback(event.target.value)} style={{ minHeight: 44 }}>
+  return <details className="plan-revision-panel" open={open} onToggle={event => setOpen(event.currentTarget.open)}>
+    <summary>修订计划 <span>版本 {plan.revision}</span></summary>
+    <section aria-label="计划修订" aria-busy={busy} className="plan-revision-content">
+      <p className="plan-revision-intro">可调整标题、概览、今日任务及现有排期的顺序与重点。教材章节和学习记录会保留。</p>
+      <label className="plan-revision-field">修订要求<textarea value={instruction} onChange={event => setInstruction(event.target.value)} maxLength={8000}
+        placeholder="例如：先复习基础，再加强例题练习" /></label>
+      <div className="plan-revision-actions">
+        <button type="button" className="plan-revision-primary" disabled={busy || unresolved || !instruction.trim()} onClick={() => void generate()}>生成修订预览</button>
+      </div>
+      <div className="plan-revision-rollback">
+        <label className="plan-revision-field">历史版本 <select value={rollback} onChange={event => setRollback(event.target.value)}>
           <option value="">选择回滚内容的版本</option>
           {history.filter(value => value < plan.revision).map(value => <option key={value} value={value}>版本 {value}</option>)}
         </select></label>
-        <button type="button" style={button} disabled={busy || unresolved || rollback === ""} onClick={() => void generate(Number(rollback))}>预览回滚</button>
+        <button type="button" className="plan-revision-secondary" disabled={busy || unresolved || rollback === ""} onClick={() => void generate(Number(rollback))}>预览回滚</button>
       </div>
-      <p>回滚会建立新版本，仅恢复计划内容和顺序，保留当前进度。</p>
+      <p className="plan-revision-hint">回滚会建立新版本，仅恢复计划内容和顺序，保留当前进度。</p>
       <p role="status" aria-live="polite">{notice}</p>
-      {!!requestId && <button type="button" style={button} disabled={busy} onClick={() => void query()}>查询本次修订结果</button>}
-      {missingRecord && <button type="button" style={button} disabled={busy} onClick={() => {
+      {!!requestId && <button type="button" className="plan-revision-secondary" disabled={busy} onClick={() => void query()}>查询本次修订结果</button>}
+      {missingRecord && <button type="button" className="plan-revision-secondary" disabled={busy} onClick={() => {
         try { localStorage.removeItem(storageKey); } catch { setNotice("无法清除本地恢复记录，请恢复本地存储后重试。"); return; }
         setRequestId(""); setRecord(null); setOutcomeUnknown(false); setMissingRecord(false);
         setNotice("已清除本地恢复记录。请刷新当前计划，再主动生成新预览。");
       }}>清除未找到的恢复记录</button>}
       {proposal && <>
-        <p>{proposal.explanation}</p>
-        <p>基于版本 {record!.baseRevision}；当前版本 {plan.revision}。</p>
-        <table style={{ width: "100%", tableLayout: "fixed", borderCollapse: "collapse" }}>
-          <caption>修订差异</caption><thead><tr>{["项目", "修订前", "修订后"].map(label => <th scope="col" key={label} style={cell}>{label}</th>)}</tr></thead>
-          <tbody>{rows.map(([label, before, after], index) => <tr key={index}><th scope="row" style={cell}>{label}</th><td style={cell}>{before}</td><td style={cell}>{after === before ? "未修改" : after}</td></tr>)}</tbody>
+        <p className="plan-revision-explanation">{proposal.explanation}</p>
+        <p className="plan-revision-meta">基于版本 {record!.baseRevision}；当前版本 {plan.revision}。</p>
+        <div className="plan-revision-table-wrap"><table>
+          <caption>修订差异</caption><thead><tr>{["项目", "修订前", "修订后"].map(label => <th scope="col" key={label}>{label}</th>)}</tr></thead>
+          <tbody>{rows.map(([label, before, after], index) => <tr key={index}><th scope="row">{label}</th><td>{before}</td><td>{after === before ? "未修改" : after}</td></tr>)}</tbody>
         </table>
+        </div>
       </>}
-      {record?.status === "ready" && <div style={{ display: "flex", gap: 8 }}>
-        <button type="button" style={button} disabled={busy || outcomeUnknown || plan.revision !== record.baseRevision} onClick={() => void decide("accept")}>接受修订</button>
-        <button type="button" style={button} disabled={busy || outcomeUnknown} onClick={() => void decide("reject")}>拒绝修订</button>
+      {record?.status === "ready" && <div className="plan-revision-decision-actions">
+        <button type="button" className="plan-revision-primary" disabled={busy || outcomeUnknown || plan.revision !== record.baseRevision} onClick={() => void decide("accept")}>接受修订</button>
+        <button type="button" className="plan-revision-secondary" disabled={busy || outcomeUnknown} onClick={() => void decide("reject")}>拒绝修订</button>
       </div>}
       {(record?.status === "conflict" || (record?.status === "ready" && plan.revision !== record.baseRevision)) && <p role="alert">计划版本已变化，旧预览不能应用。请刷新计划并拒绝旧预览，再重新生成。</p>}
-      <button type="button" style={button} disabled={busy} onClick={() => void refresh.current()}>刷新当前计划</button>
+      <button type="button" className="plan-revision-secondary" disabled={busy} onClick={() => void refresh.current()}>刷新当前计划</button>
     </section>
   </details>;
 }

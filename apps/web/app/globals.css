@@ -1028,6 +1028,113 @@ textarea {
   width: min(100%, 1040px);
 }
 
+/* Secondary help inside Study Dialog follows the same compact, neutral disclosure
+ * treatment as other reliability/details blocks. The composer remains the primary
+ * action surface, so this never competes with the textarea or send controls. */
+.study-memory-help {
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--ink-2);
+}
+
+.study-memory-help > summary {
+  min-height: 36px;
+  padding: 8px 10px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  color: var(--ink-2);
+  font-size: 12px;
+  font-weight: 600;
+  list-style: none;
+}
+
+.study-memory-help > summary::-webkit-details-marker { display: none; }
+.study-memory-help > summary::before { content: "＋"; width: 18px; color: var(--accent); }
+.study-memory-help[open] > summary::before { content: "−"; }
+.study-memory-help > p { margin: 0; padding: 0 10px 8px; font-size: 12px; line-height: 1.6; }
+.study-memory-help-code {
+  margin: 0 10px 10px;
+  padding: 9px 10px;
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--ink);
+  font: 11px/1.6 var(--font-mono);
+}
+
+/* Plan revision uses the shared page tokens and button hierarchy. Keep the
+ * proposal table readable without introducing a second visual language. */
+.plan-revision-panel {
+  border: 1px solid var(--border);
+  background: var(--bg);
+}
+.plan-revision-panel > summary {
+  min-height: 52px;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  list-style: none;
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 700;
+}
+.plan-revision-panel > summary::-webkit-details-marker { display: none; }
+.plan-revision-panel > summary::before { content: "＋"; width: 18px; color: var(--accent); font-weight: 400; }
+.plan-revision-panel[open] > summary::before { content: "−"; }
+.plan-revision-panel > summary span { color: var(--muted); font-size: 12px; font-weight: 500; }
+.plan-revision-content { display: grid; gap: 12px; padding: 0 16px 16px; }
+.plan-revision-content > p { margin: 0; color: var(--ink-2); font-size: 13px; line-height: 1.6; }
+.plan-revision-intro { padding-top: 2px; }
+.plan-revision-field { display: grid; gap: 5px; color: var(--ink-2); font-size: 12px; font-weight: 600; }
+.plan-revision-field textarea,
+.plan-revision-field select {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid var(--border);
+  border-radius: 0;
+  padding: 9px 10px;
+  background: var(--bg);
+  color: var(--ink);
+}
+.plan-revision-field textarea { min-height: 96px; resize: vertical; line-height: 1.6; }
+.plan-revision-field textarea:focus,
+.plan-revision-field select:focus { border-color: var(--accent); outline: 2px solid color-mix(in srgb, var(--accent) 18%, transparent); outline-offset: 0; }
+.plan-revision-actions,
+.plan-revision-rollback,
+.plan-revision-decision-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: end; }
+.plan-revision-rollback .plan-revision-field { flex: 1 1 240px; }
+.plan-revision-primary,
+.plan-revision-secondary {
+  min-height: 44px;
+  padding: 8px 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: 0;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+}
+.plan-revision-primary { border-color: var(--accent); background: var(--accent); color: white; }
+.plan-revision-secondary { background: var(--bg); color: var(--ink-2); }
+.plan-revision-primary:hover:not(:disabled) { background: var(--accent-hover); }
+.plan-revision-secondary:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+.plan-revision-primary:disabled,
+.plan-revision-secondary:disabled { opacity: .5; cursor: not-allowed; }
+.plan-revision-hint,
+.plan-revision-meta { color: var(--muted) !important; font-size: 12px !important; }
+.plan-revision-content [role="status"] { min-height: 24px; color: var(--muted); }
+.plan-revision-content [role="alert"] { padding: 10px; border: 1px solid color-mix(in srgb, var(--negative) 35%, var(--border)); background: color-mix(in srgb, var(--negative) 5%, var(--bg)); color: var(--negative) !important; }
+.plan-revision-explanation { padding: 10px; border-left: 3px solid var(--accent); background: var(--accent-soft); }
+.plan-revision-table-wrap { overflow-x: auto; border: 1px solid var(--border); }
+.plan-revision-table-wrap table { width: 100%; min-width: 620px; table-layout: fixed; border-collapse: collapse; font-size: 12px; }
+.plan-revision-table-wrap caption { padding: 10px; text-align: left; color: var(--ink); font-weight: 700; }
+.plan-revision-table-wrap th,
+.plan-revision-table-wrap td { padding: 10px; border-top: 1px solid var(--border); vertical-align: top; white-space: pre-wrap; overflow-wrap: anywhere; text-align: left; }
+.plan-revision-table-wrap th { color: var(--ink-2); background: var(--panel); font-weight: 600; }
+.plan-revision-table-wrap td:last-child { color: var(--accent); }
+
 .study-console-companion-card {
   display: grid;
   grid-template-columns: minmax(260px, 1.15fr) minmax(280px, 0.85fr);
@@ -1374,3 +1481,4 @@ textarea {
 @media (max-width: 760px) {
   .sensory-tools-page .sensory-category-grid { grid-template-columns: minmax(0, 1fr) !important; }
 }
+.sensory-tools-page input[type="checkbox"] { width: 18px !important; height: 18px !important; min-width: 18px !important; min-height: 18px !important; margin: 0; accent-color: var(--accent); }
