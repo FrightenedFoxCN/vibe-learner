@@ -1018,7 +1018,14 @@ textarea {
 /* Study dialog layout */
 .study-console-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1.75fr) minmax(320px, 0.82fr);
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 18px !important;
+  align-items: start;
+}
+
+.study-transcript,
+.study-composer {
+  width: min(100%, 1040px);
 }
 
 .study-console-companion-card {

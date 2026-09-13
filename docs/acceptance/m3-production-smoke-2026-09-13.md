@@ -236,7 +236,7 @@
 
 - Settings scope loading/能力未知说明 → `UX-SETTINGS-PROBES-001`（已完成：只锁定相同连接的冲突 scope，共享失败完整释放；未知能力保留手工决定并提示误开风险）。
 - Plan 宽屏、文件名重复和表单 label → `UX-PLAN-WORKSPACE-LAYOUT-001`（已完成：宽屏主结果列保持显著宽于设置列，长文本可换行复制，PDF 名称单点省略并可查看完整值，表单均使用显式 `label for` / `id`）。
-- Study 宽屏、状态来源和表演/回执层级 → `UX-STUDY-PRESENTATION-001`。
+- Study 宽屏、状态来源和表演/回执层级 → `UX-STUDY-PRESENTATION-001`（已完成：移除强制视口高度，Composer 紧随 transcript；操作反馈、Session、记录同步、模型与角色状态分责，表演/工具详情默认折叠）。
 - 刷新首帧 Assistant Turn/radio 可访问名称丢失 → `STUDY-HYDRATION-A11Y-001`（已完成：富文本在服务端与首个客户端 frame 同步渲染，production 刷新门覆盖三个历史 Turn、已提交反馈与 radio 文本名称）。
 - 互动题评分后隐式昂贵续接与半道问题 → `STUDY-ANSWER-CONTINUATION-001`（已完成：评分提交不再自动调用模型；题卡以可取消的费用提示确认显式续接，并约束后续题型必须完整或明确使用普通输入框）。
 - 后端已 committed Turn 因新 Study 工具名被前端拒绝 → `STUDY-COMMITTED-READBACK-001`（已完成：Session decoder 与共享 Tool Manifest 同源，诊断事件保留 content-free contract 与字段路径）。

@@ -474,7 +474,12 @@ export function StudyDialogPage() {
         <div style={styles.headingRow}>
           <h1 style={styles.pageTitle}>章节对话</h1>
           <ProviderTruth scope="study" />
-          {notice ? <div style={styles.notice}>{notice}</div> : null}
+          {notice ? (
+            <div style={styles.notice} role="status" aria-live="polite" data-study-action-notice>
+              <span style={styles.noticeLabel}>操作反馈</span>
+              <span>{notice}</span>
+            </div>
+          ) : null}
         </div>
       </div>
 
@@ -811,9 +816,17 @@ const styles: Record<string, CSSProperties> = {
     background: "color-mix(in srgb, white 72%, var(--accent-soft))",
     color: "var(--ink-2)",
     fontSize: 12,
-    lineHeight: 1,
+    lineHeight: 1.4,
     display: "inline-flex",
     alignItems: "center",
+    gap: 6,
+  },
+  noticeLabel: {
+    color: "var(--muted)",
+    fontSize: 10,
+    fontWeight: 700,
+    letterSpacing: "0.06em",
+    textTransform: "uppercase",
   },
   mainStage: {
     minWidth: 0,

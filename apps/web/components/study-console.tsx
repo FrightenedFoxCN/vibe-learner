@@ -188,8 +188,17 @@ export function StudyConsole({
   return (
     <div style={styles.wrap}>
       <div className="study-console-layout" style={styles.consoleCard}>
-        <section style={styles.chatPanel}>
-          <div style={styles.transcript}>
+        <section style={styles.chatPanel} aria-label="学习对话">
+          <div className="study-status-strip" style={styles.statusStrip} aria-label="会话状态">
+            <StudyStatusItem label="会话" value={disabled ? "未创建" : "已建立"} kind="session" />
+            <StudyStatusItem
+              label="记录同步"
+              value={chatErrorMessage ? "需要确认" : isPending ? "等待结果" : disabled ? "未开始" : "已同步"}
+              kind="sync"
+            />
+            <StudyStatusItem label="模型" value={isPending ? "生成中" : "空闲"} kind="model" />
+          </div>
+          <div className="study-transcript" style={styles.transcript}>
             {turns.length ? (
               <div ref={transcriptRef} style={styles.turnList}>
                 {sortedTurns.map((turn) => (
@@ -226,7 +235,7 @@ export function StudyConsole({
                           content={buildRenderableReply(turn.assistantReply, turn.richBlocks)}
                           style={styles.aiMessage}
                         />
-                        <CharacterEventInline events={turn.characterEvents} />
+                        <CharacterEventDetails events={turn.characterEvents} />
                       {turn.interactiveQuestion ? (
                         <div style={styles.questionWrap}>
                             <InteractiveQuestionCard {...{
@@ -288,7 +297,7 @@ export function StudyConsole({
                         content={buildRenderableReply(session.reply, session.richBlocks)}
                         style={styles.aiMessage}
                       />
-                      <CharacterEventInline events={session.characterEvents} />
+                      <CharacterEventDetails events={session.characterEvents} />
                       {session.citations.length ? (
                         <div style={styles.citations}>
                           {session.citations.map((citation, index) => (
@@ -409,7 +418,7 @@ export function StudyConsole({
             </div>
           ) : null}
 
-          <div style={styles.inputArea}>
+          <div className="study-composer" style={styles.inputArea}>
             <div style={styles.inputStack}>
               <textarea
                 ref={textareaRef}
@@ -654,20 +663,44 @@ const styles: Record<string, CSSProperties> = {
   },
   consoleCard: {
     display: "grid",
-    gridTemplateColumns: "minmax(0, 1fr) 280px",
-    gap: 10,
+    gridTemplateColumns: "minmax(0, 1fr) 300px",
+    gap: 18,
     alignItems: "start",
     width: "100%",
   },
   chatPanel: {
     display: "grid",
-    gridTemplateRows: "minmax(0, 1fr) auto auto",
+    gridTemplateRows: "auto auto auto auto",
     gap: 12,
     minWidth: 0,
     width: "100%",
-    minHeight: "calc(100vh - 220px)",
     padding: 0,
     background: "transparent",
+  },
+  statusStrip: {
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    flexWrap: "wrap",
+    padding: "8px 10px",
+    border: "1px solid var(--border)",
+    background: "color-mix(in srgb, white 84%, var(--panel))",
+  },
+  statusItem: {
+    display: "inline-flex",
+    alignItems: "baseline",
+    gap: 5,
+    minWidth: 0,
+  },
+  statusLabel: {
+    color: "var(--muted)",
+    fontSize: 11,
+    fontWeight: 600,
+  },
+  statusValue: {
+    color: "var(--ink)",
+    fontSize: 12,
+    fontWeight: 700,
   },
   controlStack: {
     display: "grid",
@@ -686,8 +719,8 @@ const styles: Record<string, CSSProperties> = {
   },
   sidebar: {
     minWidth: 0,
-    width: 280,
-    maxWidth: 280,
+    width: 300,
+    maxWidth: 300,
     position: "sticky",
     top: "calc(var(--study-heading-offset, 112px) + 18px)",
   },
@@ -1056,19 +1089,18 @@ const styles: Record<string, CSSProperties> = {
   },
   transcript: {
     display: "grid",
-    gridTemplateRows: "auto minmax(0, 1fr)",
     gap: 12,
     padding: "8px 0 6px",
     background: "transparent",
     minHeight: 0,
-    overflow: "hidden",
+    overflow: "visible",
     width: "100%",
     minWidth: 0,
   },
   turnList: {
     display: "grid",
     gap: 16,
-    overflowY: "auto",
+    overflowY: "visible",
     paddingRight: 0,
     alignContent: "start",
     width: "100%",
@@ -1169,10 +1201,20 @@ const styles: Record<string, CSSProperties> = {
     display: "grid",
     gap: 4,
     minWidth: 0,
+    borderTop: "1px solid color-mix(in srgb, var(--border) 72%, white)",
+    paddingTop: 8,
+  },
+  eventSummary: {
+    cursor: "pointer",
+    width: "fit-content",
+    color: "var(--muted)",
+    fontSize: 11,
+    fontWeight: 600,
   },
   eventNotes: {
     display: "grid",
-    gap: 4,
+    gap: 6,
+    marginTop: 8,
   },
   eventNoteText: {
     margin: 0,
@@ -1180,6 +1222,13 @@ const styles: Record<string, CSSProperties> = {
     lineHeight: 1.6,
     color: "var(--muted)",
     wordBreak: "break-word",
+  },
+  eventNoteLabel: {
+    display: "inline-block",
+    minWidth: 56,
+    marginRight: 6,
+    color: "var(--ink-2)",
+    fontWeight: 700,
   },
   questionWrap: {
     display: "grid",
@@ -1533,47 +1582,68 @@ function buildRenderableReply(
   return `${normalizedReply}${appendix}`;
 }
 
-function CharacterEventInline({ events }: { events: CharacterStateEvent[] }) {
+function StudyStatusItem({
+  label,
+  value,
+  kind,
+}: {
+  label: string;
+  value: string;
+  kind: "session" | "sync" | "model";
+}) {
+  return (
+    <span style={styles.statusItem} data-study-status={kind}>
+      <span style={styles.statusLabel}>{label}</span>
+      <span style={styles.statusValue}>{value}</span>
+    </span>
+  );
+}
+
+function CharacterEventDetails({ events }: { events: CharacterStateEvent[] }) {
   if (!events.length) {
     return null;
   }
 
-  const descriptionLines = collectEventDescriptions(events);
-  if (!descriptionLines.length) {
+  const detailItems = collectEventDetails(events);
+  if (!detailItems.length) {
     return null;
   }
 
   return (
-    <div style={styles.eventInline}>
+    <details style={styles.eventInline} data-study-event-details>
+      <summary style={styles.eventSummary}>表演与工具详情 · {detailItems.length} 项</summary>
       <div style={styles.eventNotes}>
-        {descriptionLines.map((line, index) => (
-          <p key={`${line}:${index}`} style={styles.eventNoteText}>{line}</p>
+        {detailItems.map((item, index) => (
+          <p key={`${item.label}:${item.text}:${index}`} style={styles.eventNoteText}>
+            <span style={styles.eventNoteLabel}>{item.label}</span>
+            {item.text}
+          </p>
         ))}
       </div>
-    </div>
+    </details>
   );
 }
 
-function collectEventDescriptions(events: CharacterStateEvent[]) {
-  const lines: string[] = [];
+function collectEventDetails(events: CharacterStateEvent[]) {
+  const items: Array<{ label: "角色动作" | "表达提示" | "工具回执"; text: string }> = [];
   const seen = new Set<string>();
 
   events.forEach((event) => {
     [
-      formatActionDescription(event.action),
-      event.deliveryCue,
-      event.toolSummary
+      { label: "角色动作" as const, text: formatActionDescription(event.action) },
+      { label: "表达提示" as const, text: event.deliveryCue },
+      { label: "工具回执" as const, text: event.toolSummary },
     ].forEach((item) => {
-      const text = String(item ?? "").trim();
+      const text = String(item.text ?? "").trim();
       if (!text || text.length < 6 || seen.has(text)) {
         return;
       }
       seen.add(text);
-      lines.push(text);
+      items.push({ label: item.label, text });
     });
   });
 
-  return lines.slice(0, 3);
+  return items.slice(0, 6);
 }
 
 function formatActionDescription(value: string) {

@@ -43,8 +43,8 @@ export function CharacterShell({
 
       <div style={styles.infoList}>
         <InfoRow
-          label="状态"
-          value={pending ? "更新中" : currentEvent ? "已同步" : "待开始"}
+          label="角色状态"
+          value={currentEvent ? "表演状态已就绪" : pending ? "等待表演状态" : "待开始"}
         />
         <InfoRow label="对话" value={formatTurnCount(turnCount)} />
         <InfoRow label="情绪" value={formatEmotionLabel(currentEvent?.emotion ?? "calm")} />
