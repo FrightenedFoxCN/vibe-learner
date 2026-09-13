@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 import sqlite3
 from tempfile import TemporaryDirectory
+from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
@@ -20,6 +21,7 @@ from examples.export_persona_scene_full_call_blind import (
 )
 from examples.prepare_persona_scene_full_call_blind import CAMPAIGN_ID, FIXTURE, build_manifest
 from model_quality.protocol import digest
+from vibe_learner.persona_scene_full_call_blind import AuditedBridge
 
 
 BUDGET = {
@@ -34,6 +36,26 @@ BUDGET = {
 
 
 class PersonaSceneFullCallBlindTests(unittest.TestCase):
+    def test_audit_domain_does_not_escape_transport_call_kind_catalog(self):
+        observed: dict[str, object] = {}
+
+        class Transport:
+            campaign = SimpleNamespace(transport="minimax")
+
+            def request(self, payload, *, call_kind, fake_response):
+                observed["call_kind"] = call_kind
+                return {
+                    "model": "MiniMax-M3",
+                    "choices": [{"message": {"role": "assistant", "content": "{}"}, "finish_reason": "stop"}],
+                    "usage": {"prompt_tokens": 1, "completion_tokens": 1, "total_tokens": 2},
+                }
+
+        bridge = AuditedBridge(SimpleNamespace(transport=Transport()))
+        bridge.audit_domain = "persona_generation"
+        bridge.request(None, {"max_tokens": 4096}, request_kind="setting", model="MiniMax-M3")
+        self.assertEqual(observed["call_kind"], "generation")
+        self.assertEqual(bridge.payload_audit[0]["domain"], "persona_generation")
+
     def test_fresh_fixture_reuses_persona_claim_sources_but_has_authored_scene_sources(self):
         fixture = json.loads(FIXTURE.read_text(encoding="utf-8"))
         public = json.loads((FIXTURE.parent / "persona-claim-ledger-generator-public-v1.json").read_text(encoding="utf-8"))

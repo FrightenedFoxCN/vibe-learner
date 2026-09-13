@@ -53,11 +53,12 @@ class AuditedBridge(Bridge):
     def __init__(self, context: Any):
         super().__init__(context, lambda _payload: (_ for _ in ()).throw(GateClosed("fake_output_forbidden")))
         self.payload_audit: list[dict[str, object]] = []
+        self.audit_domain = "generation"
 
     def request(self, adapter, payload, *, request_kind, model):
         serialized = _canonical(payload)
         audit = {
-            "domain": self.call_kind,
+            "domain": self.audit_domain,
             "max_tokens": payload.get("max_tokens") if isinstance(payload, dict) else None,
             "payload_sha256": _sha256_bytes(serialized.encode("utf-8")),
             "sealed_control_marker_hits": [marker for marker in SEALED_CONTROL_MARKERS if marker in serialized],
@@ -332,7 +333,7 @@ def run_sample(context: Any, case: Any, variant: Any) -> dict[str, object]:
             with TestClient(app) as client:
                 persona_before = bridge.calls
                 bridge.failure = None
-                bridge.call_kind = "persona_generation"
+                bridge.audit_domain = "persona_generation"
                 persona = evidence["persona"]
                 assert isinstance(persona, dict)
                 try:
@@ -375,7 +376,7 @@ def run_sample(context: Any, case: Any, variant: Any) -> dict[str, object]:
 
                 scene_before = bridge.calls
                 bridge.failure = None
-                bridge.call_kind = "scene_generation"
+                bridge.audit_domain = "scene_generation"
                 scene = evidence["scene"]
                 assert isinstance(scene, dict)
                 try:
