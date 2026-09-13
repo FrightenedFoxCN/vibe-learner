@@ -335,7 +335,6 @@ export function useLearningWorkspaceController({
       dispatch({ type: "study_session_set", studySession, clearResponse: false });
     },
     onPlan: (plan) => dispatch({ type: "plan_updated", plan }),
-    onCommittedQuestion: (session, input) => continuation.triggerInteractiveQuestionCallback(session, input),
     onNotice: (notice) => dispatch({ type: "notice_set", notice }),
   });
 
@@ -349,6 +348,11 @@ export function useLearningWorkspaceController({
     onNotice: (notice) => dispatch({ type: "notice_set", notice }),
   });
   const { triggerSessionPrelude, interruptDialogue, isDialogueInterrupted, isContinuing } = continuation;
+  const continueAfterInteractiveQuestion = (turnId: string) => {
+    const session = studyViewFenceRef.current.session;
+    if (!session) return Promise.resolve(false);
+    return continuation.triggerInteractiveQuestionCallback(session, { turnId });
+  };
 
   useEffect(() => {
     void syncWorkspaceSnapshot({
@@ -427,6 +431,7 @@ export function useLearningWorkspaceController({
     retryFailedAsk,
     refreshStudySessionAfterRejectedAdmission,
     handleSubmitQuestionAttempt,
+    continueAfterInteractiveQuestion,
     handleResolvePlanConfirmation,
     interruptDialogue,
     refreshPlanSnapshot: () =>

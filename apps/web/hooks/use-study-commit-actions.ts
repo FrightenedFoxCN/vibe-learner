@@ -15,7 +15,6 @@ interface StudyCommitOptions {
   forgetAutomaticStudyRequest: (key: string) => void;
   onSession: (session: StudySessionRecord) => void;
   onPlan: (plan: LearningPlan) => void;
-  onCommittedQuestion: (session: StudySessionRecord, input: { turnId: string; diagnosticFlowId?: string | null }) => Promise<void>;
   onNotice: (notice: string) => void;
 }
 export interface StudyCommitPort {
@@ -83,10 +82,7 @@ export function useStudyCommitActions(options: StudyCommitOptions, port: StudyCo
           ? latestSession
           : null;
       if (mounted.current && authoritativeSession) {
-        void latest.current.onCommittedQuestion(authoritativeSession, {
-          turnId: input.turnId,
-          diagnosticFlowId: context.flow_id,
-        });
+        latest.current.onNotice("答案已记录。需要进一步讲解时，可选择“生成答题讲解”。");
       }
       latest.current.forgetAutomaticStudyRequest(
         attemptKey,

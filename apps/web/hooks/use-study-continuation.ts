@@ -104,27 +104,29 @@ export function useStudyContinuation(options: ContinuationOptions, port: StudyCo
     return session ? runPrelude(session, { ...input, sectionTitle: input.sectionTitle || session.studyUnitTitle || session.studyUnitId, themeHint: input.themeHint ?? session.themeHint ?? "", force: true }) : false;
   }
   async function triggerInteractiveQuestionCallback(session: StudySessionRecord, input: { turnId: string; diagnosticFlowId?: string | null }) {
-    if (!current(session)) return;
+    if (!current(session)) return false;
     const question = session.turns.find(turn => turn.id === input.turnId)?.interactiveQuestion;
-    if (!question?.callBack) return;
+    if (!question?.callBack) return false;
     const result = question.result;
     if (!result?.submittedAnswer || typeof result.isCorrect !== "boolean" || !result.feedbackText.trim()) {
-      logWorkspaceError("workflow:study_attempt:callback_read_back_missing", new Error("study_question_attempt_callback_read_back_missing")); return;
+      logWorkspaceError("workflow:study_attempt:callback_read_back_missing", new Error("study_question_attempt_callback_read_back_missing")); return false;
     }
     const message = buildInteractiveCallbackMessage({ questionType: question.questionType, prompt: question.prompt, topic: question.topic,
       submittedAnswer: result.submittedAnswer, isCorrect: result.isCorrect, explanation: result.explanation });
     if (isDialogueInterruptedForSession(session.id) || port.hasPendingOperation(session.id)) {
       port.appendDeferredInteractiveCallback(session.id, message);
       if (!isDialogueInterruptedForSession(session.id)) pause(session.id);
-      latest.current.onNotice("答案已记录；已暂停自动续接，会在你下次主动发言前补入答题结果。"); return;
+      latest.current.onNotice("答案已记录；已暂停自动续接，会在你下次主动发言前补入答题结果。"); return false;
     }
     begin(); const revision = latest.current.view.viewRevision;
     try {
       const operationKey = `callback:${session.id}:${input.turnId}:${session.revision}`;
-      await latest.current.sendHiddenSessionMessage({ session, operationKey, ...latest.current.automaticStudyRequest(operationKey, "callback"), message, messageKind: "interactive_callback", diagnosticFlowId: input.diagnosticFlowId });
+      const receipt = await latest.current.sendHiddenSessionMessage({ session, operationKey, ...latest.current.automaticStudyRequest(operationKey, "callback"), message, messageKind: "interactive_callback", diagnosticFlowId: input.diagnosticFlowId });
+      return receipt !== null;
     } catch (error) {
       if (current(session, revision)) latest.current.onNotice(resolveStudySessionErrorNotice(error, `答案已记录，续问失败：${String(error)}`, "response"));
       logWorkspaceError("workflow:study_attempt:callback_error", error);
+      return false;
     } finally { finish(); }
   }
   async function interruptDialogue() {

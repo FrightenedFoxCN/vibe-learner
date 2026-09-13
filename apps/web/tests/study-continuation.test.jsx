@@ -4,6 +4,7 @@ import { after, afterEach, test } from "node:test";
 import { act, cleanup, renderHook } from "@testing-library/react";
 import { useStudyContinuation } from "../hooks/use-study-continuation.ts";
 import { StudyAsyncViewFence } from "../lib/async-result-fence.ts";
+import { buildInteractiveCallbackMessage } from "../lib/study-continuation-messages.ts";
 import { session as questionSession, attempt, commitAttempt } from "./support/study-attempts.ts";
 
 afterEach(cleanup);
@@ -110,6 +111,20 @@ test("active answer callback sends the committed result and never invents missin
   assert.equal(h.messages[0].input.operationKey, "callback:session-1:turn-1:5");
   assert.equal(h.messages[0].input.diagnosticFlowId, "answer-flow");
   await act(async () => { h.messages[0].resolve({ status: "committed" }); await send; });
+});
+
+test("explicit answer continuation forbids an incomplete follow-up question", () => {
+  const message = buildInteractiveCallbackMessage({
+    questionType: "multiple_choice",
+    prompt: "Pick one",
+    topic: "topic",
+    submittedAnswer: "A",
+    isCorrect: true,
+    explanation: "Because A",
+  });
+  assert.match(message, /完整 interactive_question/);
+  assert.match(message, /普通输入框自由回答/);
+  assert.match(message, /不要写成缺少作答方式的半道题目/);
 });
 
 

@@ -238,7 +238,7 @@
 - Plan 宽屏、文件名重复和表单 label → `UX-PLAN-WORKSPACE-LAYOUT-001`。
 - Study 宽屏、状态来源和表演/回执层级 → `UX-STUDY-PRESENTATION-001`。
 - 刷新首帧 Assistant Turn/radio 可访问名称丢失 → `STUDY-HYDRATION-A11Y-001`。
-- 互动题评分后隐式昂贵续接与半道问题 → `STUDY-ANSWER-CONTINUATION-001`。
+- 互动题评分后隐式昂贵续接与半道问题 → `STUDY-ANSWER-CONTINUATION-001`（已完成：评分提交不再自动调用模型；题卡以可取消的费用提示确认显式续接，并约束后续题型必须完整或明确使用普通输入框）。
 - Planning 工具隐式替换共享 Study Units → `PLAN-STUDY-UNIT-REVISION-001`。
 - 长 OCR 进度、终态和可行动错误 → `OCR-PROGRESS-UX-001`。
 - 全文本文档把未使用 OCR 表达为失败 → `DOC-OCR-STATUS-001`（已完成：API、Document Debug Console 与 Plan Workspace 现统一区分未需要、部分降级与失败）。

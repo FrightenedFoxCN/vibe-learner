@@ -15,7 +15,7 @@ function deferred() {
 }
 function fixture() {
   const view = new StudyAsyncViewFence({ session: session() });
-  const writes = [], applied = [], callbacks = [], forgotten = [], notices = [];
+  const writes = [], applied = [], forgotten = [], notices = [];
   const port = Object.fromEntries(["submitStudyQuestionAttempt", "resolveStudyPlanConfirmation"].map(name => [name, (input, context) => {
     const pending = deferred(); writes.push({ name, input, context, ...pending }); return pending.promise;
   }]));
@@ -24,35 +24,33 @@ function fixture() {
     forgetAutomaticStudyRequest: key => forgotten.push(key),
     onSession: value => { applied.push(["session", value]); view.activateSession(value); },
     onPlan: value => applied.push(["plan", value]),
-    onCommittedQuestion: async (value, input) => { callbacks.push({ value, input }); }, onNotice: value => notices.push(value),
+    onNotice: value => notices.push(value),
   }, port));
   function committed() { const next = session(), receipt = attempt(); commitAttempt(next, receipt); return { session: next, attempt: receipt }; }
-  return { ...h, view, writes, applied, callbacks, forgotten, notices, committed };
+  return { ...h, view, writes, applied, forgotten, notices, committed };
 }
 const answer = { turnId: "turn-1", submittedAnswer: "A" };
 
-test("answer submission deduplicates a Turn and calls back only from matching persisted read-back", async () => {
+test("answer submission deduplicates a Turn and stops after matching persisted read-back", async () => {
   const h = fixture(); let save;
   act(() => { save = h.result.current.handleSubmitQuestionAttempt(answer); });
   await act(async () => { assert.equal(await h.result.current.handleSubmitQuestionAttempt(answer), false); });
   assert.equal(h.writes.length, 1);
   assert.deepEqual(h.writes[0].input, { sessionId: "session-1", turnId: "turn-1", expectedSessionRevision: 4, clientAttemptId: "client-attempt-1", submittedAnswer: "A" });
-  assert.equal(h.callbacks.length, 0);
   const committed = h.committed();
   await act(async () => { h.writes[0].resolve(committed); assert.equal(await save, true); });
-  assert.equal(h.callbacks[0].value, committed.session);
   assert.ok(h.writes[0].context.flow_id);
-  assert.deepEqual(h.callbacks[0].input, { turnId: "turn-1", diagnosticFlowId: h.writes[0].context.flow_id });
+  assert.deepEqual(h.notices, ["答案已记录。需要进一步讲解时，可选择“生成答题讲解”。"]);
   assert.equal(h.forgotten.length, 1);
 });
 
-test("mismatched result never projects an answer or triggers a follow-up", async () => {
+test("mismatched result never projects an answer or offers continuation", async () => {
   const h = fixture(); let save;
   act(() => { save = h.result.current.handleSubmitQuestionAttempt(answer); });
   const committed = h.committed(); committed.session.turns[0].interactiveQuestion.result.submittedAnswer = "B";
   await act(async () => { h.writes[0].resolve(committed); assert.equal(await save, false); });
   assert.deepEqual(h.applied, []);
-  assert.deepEqual(h.callbacks, []);
+  assert.match(h.notices[0], /记录答案失败/);
   assert.equal(h.forgotten.length, 0);
 });
 
@@ -63,16 +61,15 @@ test("a committed answer in a previous Session remains persisted without changin
   await act(async () => { h.writes[0].resolve(h.committed()); assert.equal(await save, true); });
   assert.equal(h.view.session.id, "other");
   assert.deepEqual(h.applied, []);
-  assert.deepEqual(h.callbacks, []);
+  assert.deepEqual(h.notices, []);
 });
 
-test("unmount suppresses answer callbacks and confirmation projection", async () => {
+test("unmount suppresses answer notices and confirmation projection", async () => {
   const h = fixture(); let answerSave, confirmation;
   act(() => { answerSave = h.result.current.handleSubmitQuestionAttempt(answer); confirmation = h.result.current.handleResolvePlanConfirmation({ confirmationId: "c", decision: "approve" }); });
   h.unmount();
   await act(async () => { h.writes[0].resolve(h.committed()); h.writes[1].resolve({ session: session(), plan: { id: "p" } }); await Promise.all([answerSave, confirmation]); });
   assert.deepEqual(h.applied, []);
-  assert.deepEqual(h.callbacks, []);
   assert.deepEqual(h.notices, []);
 });
 
@@ -105,20 +102,19 @@ test("switching Study Unit within the same Session prevents the old answer from 
   await act(async () => { h.writes[0].resolve(h.committed()); assert.equal(await save, true); });
   assert.equal(h.view.session.studyUnitId, "next-unit");
   assert.deepEqual(h.applied, []);
-  assert.deepEqual(h.callbacks, []);
+  assert.deepEqual(h.notices, []);
 });
 
 
-test("diagnostic ID failure does not change a committed answer or suppress its callback", async () => {
+test("diagnostic ID failure does not change a committed answer or its explicit continuation notice", async () => {
   const h = fixture(); let save;
   const descriptor = Object.getOwnPropertyDescriptor(globalThis, "crypto");
   try {
     Object.defineProperty(globalThis, "crypto", { configurable: true, value: { randomUUID() { throw Error("diagnostic entropy denied"); } } });
     act(() => { save = h.result.current.handleSubmitQuestionAttempt(answer); });
     await act(async () => { h.writes[0].resolve(h.committed()); assert.equal(await save, true); });
-    assert.equal(h.callbacks.length, 1);
-    assert.equal(h.callbacks[0].input.diagnosticFlowId, null);
     assert.equal(h.applied.length, 1);
+    assert.deepEqual(h.notices, ["答案已记录。需要进一步讲解时，可选择“生成答题讲解”。"]);
   } finally {
     if (descriptor) Object.defineProperty(globalThis, "crypto", descriptor);
     else delete globalThis.crypto;

@@ -16,7 +16,8 @@ export function buildInteractiveCallbackMessage(input: {
     input.explanation ? `解析：${input.explanation}` : "",
     input.isCorrect
       ? "请基于这次正确作答继续推进下一步讲解或追问。"
-      : "请先针对错误点做纠正，再继续推进下一步讲解或追问。"
+      : "请先针对错误点做纠正，再继续推进下一步讲解或追问。",
+    "如果提出新的选择题或填空题，必须返回完整 interactive_question（包括题型、题干、选项或填空要求）；否则请明确说明学习者应在普通输入框自由回答，不要写成缺少作答方式的半道题目。"
   ].filter(Boolean).join("\n");
 }
 

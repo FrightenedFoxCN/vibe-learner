@@ -56,6 +56,7 @@ export function StudyDialogPage() {
     refreshStudySessionAfterRejectedAdmission,
     handleSwitchSection,
     handleSubmitQuestionAttempt,
+    continueAfterInteractiveQuestion,
     handleResolvePlanConfirmation,
     interruptDialogue,
     getPageCache,
@@ -503,6 +504,7 @@ export function StudyDialogPage() {
             showCreateSession={!studySession && Boolean(activePlan)}
             onAsk={handleAskByCurrentChapter}
             onSubmitQuestionAttempt={handleSubmitQuestionAttempt}
+            onContinueAfterQuestion={continueAfterInteractiveQuestion}
             onChangeSchedule={handleScheduleChange}
             onOpenCitation={handleOpenCitation}
             onJumpToScheduleStart={handleJumpToScheduleStart}

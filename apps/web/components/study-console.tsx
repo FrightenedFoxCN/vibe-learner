@@ -33,6 +33,7 @@ interface StudyConsoleProps {
     turnId: string;
     submittedAnswer: string;
   }) => boolean | Promise<boolean>;
+  onContinueAfterQuestion?: (turnId: string) => boolean | Promise<boolean>;
   onChangeSchedule: (scheduleId: string) => void;
   onOpenCitation?: (citation: Citation) => void;
   onJumpToScheduleStart?: () => void;
@@ -82,6 +83,7 @@ export function StudyConsole({
   showCreateSession = false,
   onAsk,
   onSubmitQuestionAttempt,
+  onContinueAfterQuestion,
   onChangeSchedule,
   onOpenCitation,
   onJumpToScheduleStart,
@@ -248,6 +250,7 @@ export function StudyConsole({
                               setExpandedExplanation,
                               onAsk,
                               onSubmitQuestionAttempt,
+                              onContinueAfterQuestion,
                               disabled: Boolean(disabled || isPending)
                             }} />
                           </div>
@@ -1352,6 +1355,7 @@ function InteractiveQuestionCard(input: {
     turnId: string;
     submittedAnswer: string;
   }) => boolean | Promise<boolean>;
+  onContinueAfterQuestion?: (turnId: string) => boolean | Promise<boolean>;
   disabled: boolean;
 }) {
   const {
@@ -1368,12 +1372,14 @@ function InteractiveQuestionCard(input: {
     setExpandedExplanation,
     onAsk,
     onSubmitQuestionAttempt,
+    onContinueAfterQuestion,
     disabled
   } = input;
   const id = useId();
   const root = useRef<HTMLDivElement>(null);
   const feedback = useRef<HTMLParagraphElement>(null);
   const restoreFocus = useRef(false);
+  const [showContinuationConfirm, setShowContinuationConfirm] = useState(false);
   const isLocked = question.result !== null;
   const isSubmitting = attemptState === "submitting";
   const isChoice = question.questionType === "multiple_choice";
@@ -1450,13 +1456,44 @@ function InteractiveQuestionCard(input: {
             onClick={() => setExpandedExplanation(current => ({ ...current, [turnKey]: !current[turnKey] }))}>
             {explanationVisible ? "收起解析" : "查看解析"}
           </button>}
+          {isLocked && question.callBack && onContinueAfterQuestion ? (
+            <button type="button" style={{ ...styles.inlineGhostBtn, minHeight: 44, height: "auto" }}
+              disabled={disabled || isSubmitting}
+              aria-expanded={showContinuationConfirm}
+              aria-controls={`${id}-continuation-confirm`}
+              onClick={() => setShowContinuationConfirm(true)}>
+              生成答题讲解
+            </button>
+          ) : null}
           <button type="button" style={{ ...styles.inlineGhostBtn, minHeight: 44, height: "auto" }}
             disabled={disabled || isSubmitting}
             onClick={() => { void onAsk(`请围绕${question.topic || "本章节核心概念"}再出一道同难度${isChoice ? "选择题" : "填空题"}。`, []); }}>
-            再来一题
+            再来一题（调用模型）
           </button>
         </div>
       </fieldset>
+      {showContinuationConfirm ? (
+        <div id={`${id}-continuation-confirm`} role="status" style={styles.explanationBox}>
+          <p style={{ margin: 0 }}>
+            继续会调用学习模型，可能产生费用并需要等待；答案已经记录，取消不会影响评分结果。
+          </p>
+          <div style={styles.questionActions}>
+            <button type="button" style={{ ...styles.checkButton, minHeight: 44, height: "auto" }}
+              disabled={disabled}
+              onClick={() => {
+                setShowContinuationConfirm(false);
+                void onContinueAfterQuestion?.(turnKey);
+              }}>
+              继续生成（调用模型）
+            </button>
+            <button type="button" style={{ ...styles.inlineGhostBtn, minHeight: 44, height: "auto" }}
+              disabled={disabled}
+              onClick={() => setShowContinuationConfirm(false)}>
+              取消
+            </button>
+          </div>
+        </div>
+      ) : null}
       <p id={`${id}-feedback`} ref={feedback} tabIndex={-1}
         role={attemptState === "failed" && !question.result ? "alert" : "status"} aria-atomic="true"
         style={{ margin: 0, ...(question.result?.isCorrect ? styles.feedbackOk : attemptState === "failed" || question.result ? styles.feedbackBad : styles.questionPending) }}>
