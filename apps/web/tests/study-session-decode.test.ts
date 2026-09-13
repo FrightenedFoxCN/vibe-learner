@@ -2,6 +2,7 @@ import { fullWireTurn, fullWireSession, fullChatExchange, createdAt, committedAt
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import { STUDY_CHAT_TRACE_TOOL_NAMES } from "../../../packages/shared/src/tool-manifest.ts";
 import type { DialogueTurnRecord, LearningPlan } from "@vibe-learner/shared";
 
 import {
@@ -199,6 +200,29 @@ test("Character Events and tool traces are closed and cross-referenced", () => {
     result_json: '{"ok":true}',
   }];
   assert.throws(() => decodeStudySession(malformedToolJson), StudySessionDecodeError);
+});
+
+test("Study Session read-back accepts every shared Study tool trace name", () => {
+  assert.ok(STUDY_CHAT_TRACE_TOOL_NAMES.includes("read_projected_pdf_layout_candidates"));
+  const session = structuredClone(fullWireSession());
+  session.turns[0]!.tool_calls = STUDY_CHAT_TRACE_TOOL_NAMES.map((toolName, index) => ({
+    tool_call_id: `call-${index + 1}`,
+    tool_name: toolName,
+    arguments_json: "{}",
+    result_summary: "Content-free tool result",
+    result_json: "{}",
+  }));
+  assert.deepEqual(
+    decodeStudySession(session).turns?.at(0)?.toolCalls?.map((item) => item.toolName),
+    STUDY_CHAT_TRACE_TOOL_NAMES,
+  );
+
+  session.turns[0]!.tool_calls[0]!.tool_name = "unknown_future_tool";
+  assert.throws(
+    () => decodeStudySession(session),
+    (error: unknown) => error instanceof StudySessionDecodeError &&
+      error.path === "study_session.turns[0].tool_calls[0].tool_name",
+  );
 });
 
 test("interactive question decoder rejects grading leaks and partial result evidence", () => {

@@ -68,7 +68,7 @@
 ### P0：数据已提交但用户状态分裂，或昂贵长任务结果整体丢失
 
 1. **自动 Study prelude / 重入重试会在无用户显式开始时产生高额费用且可能提交错误状态**：Tao 自动发生 4 calls / 48,736 tokens 后仍 0 Turn；法文自动发生 2 calls / 21,002 tokens，并把计划的 `study-unit:4` 错绑为 Session `study-unit:2`、提交了目录段 Turn；旧版还复现 uncertain 后重入以不同 operation key 再次触发。
-2. Study Chat 后端已 committed 的 Turn 被前端 decoder 拒绝，导致服务端/用户可见状态分裂。
+2. Study Chat 后端已 committed 的 Turn 被前端 decoder 拒绝，导致服务端/用户可见状态分裂。（已修复：Session decoder 现读取共享 Study Tool Manifest 名称，字段级失败位置进入 content-free 诊断。）
 3. 297/297 页 OCR 已完成后才命中总 wall-time，全部解析产物不可读、不可恢复。
 
 ### P1：教材可信度、Planning 可靠性与费用控制
@@ -101,7 +101,7 @@
 ## 建议实施顺序
 
 1. **P0-1：禁止未显式开始的 Study provider 调用**；生成计划只提交 Plan，不自动创建/调用 Session。若产品坚持 prelude，必须由用户动作触发、绑定计划唯一 schedule Unit、显示预计成本，并对 same-key recovery 做单一状态机。
-2. **P0-2：修复 Study committed/read-back 与前端 decoder 的状态一致性**，然后再开放自动恢复；否则不要让前端以新 operation key重发。
+2. **P0-2（已完成）：修复 Study committed/read-back 与前端 decoder 的状态一致性**；自动恢复仍须遵守原 operation 的 query-only 边界。
 3. **P0-3：让长 OCR 在阶段性产物上可恢复**，总 wall-time 不能在 297/297 后抹掉全部结果。
 4. **P1-1：把物理 PDF 页范围变成服务端约束**：用户显式 PDF 100–103 时，工具参数、schedule anchor/content slice 必须落在 100–103；模型输出 70–73 应 invariant fail，而不是 committed。
 5. **P1-2：建立原页视觉/专家语义 gate**：先覆盖数学边界与公式、法文旧记号/箭头/定义，schema success 不能算教材成功；OCR 文本重读不得当作独立核验。

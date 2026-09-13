@@ -1749,7 +1749,7 @@ export async function createStudySession(input: {
     expectedPersonaId: input.personaId,
     expectedPlanId: input.planId ?? null,
     expectedStudyUnitId: input.studyUnitId,
-  }));
+  }), "study-session-public-v1");
 }
 
 export async function cancelStreamRun(streamId: string, context?: DiagnosticContext): Promise<void> {
@@ -1782,13 +1782,17 @@ export async function listStudySessions(input: {
     ...(input.personaId ? { expectedPersonaId: input.personaId } : {}),
     ...(input.planId ? { expectedPlanId: input.planId } : {}),
     ...(input.studyUnitId ? { expectedStudyUnitId: input.studyUnitId } : {}),
-  }));
+  }), "study-session-public-v1");
 }
 
 export async function getStudySession(sessionId: string, context?: DiagnosticContext): Promise<StudySessionRecord> {
   const diagnosticResponse = await request(`${AI_BASE_URL()}/study-sessions/${sessionId}`, undefined, context);
   const payload = await readJson<unknown>(diagnosticResponse);
-  return diagnosticDecode(diagnosticResponse, () => decodeStudySession(payload, { expectedSessionId: sessionId }));
+  return diagnosticDecode(
+    diagnosticResponse,
+    () => decodeStudySession(payload, { expectedSessionId: sessionId }),
+    "study-session-public-v1",
+  );
 }
 
 export async function updateStudySessionStudyUnit(input: {

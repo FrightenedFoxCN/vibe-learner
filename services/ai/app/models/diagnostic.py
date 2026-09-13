@@ -143,6 +143,10 @@ class DiagnosticEventV1(BaseModel):
     method: Literal["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"] | None = None
     # Reviewed route templates only; raw paths, query strings and bodies are excluded.
     route: Annotated[str, Field(max_length=160, pattern=r"^/[a-zA-Z0-9_/{\}-]*$")] | None = None
+    # Content-free decoder identity and rejected field location. Raw values and
+    # decoder exception text are deliberately excluded.
+    decode_contract: Annotated[str, Field(max_length=96, pattern=r"^[a-zA-Z0-9_.-]+$")] | None = None
+    decode_path: Annotated[str, Field(max_length=500, pattern=r"^[a-zA-Z0-9_.\[\]-]+$")] | None = None
 
 
 class DiagnosticOperationLinkV1(BaseModel):

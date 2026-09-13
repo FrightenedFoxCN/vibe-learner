@@ -202,7 +202,7 @@
 - **uncertain UI 首段表现较好**：进入 Study 后先显示“回复校验失败，已停止更新页面以保护会话记录”，随后显示“本次对话需要确认”“请查询本次请求，不要重复执行”，Composer 禁用。点击查询后仍诚实显示“暂时无法确认……请稍后继续查询，不要重新发送”，没有把失败内容当成功 Turn。
 - **严重恢复冲突/额外费用**：离开 Study 再返回时，前端却在同一个空 Session 上自动发起新的 `study-prelude-*` operation；它绕过了仍为 terminal `uncertain / safe_to_retry=false` 的原请求，以相同 admitted revision=0 成功提交 revision=1。自动 prelude 又调用 M3 两次、约 **21.9K tokens**。即用户遵守“不要重复发送”，页面恢复本身仍产生新的 provider side effect 与费用，operation fencing 只挡 same-key replay，没有挡同 Session 的不同 key 自动续接。
 - **错误传播为权威陈述**：自动 prelude 从错误 plan theme 继承 `Spec k` 与 `X ×_g Y′`，再次告诉用户“`Sp k` 其实应当是 `Spec k`”，并用两条 citation 支撑。原页视觉检查证明书中就是 `Sp k`、纤维积下标为基底 `Y`；Planning 阶段的 OCR 误判进入 committed Plan 后被 Session system prompt 和后续教师回复反复放大，形成跨工作流的高置信错误链。
-- **前后端契约/恢复严重问题**：prelude 在后端已 committed，API 可读回 revision=1、Turn sequence=1、两个工具调用和两条 citation；但返回 Study 页面时前端报“历史学习会话格式异常，已停止载入以保护记录”，显示“创建会话”并完全隐藏这条已提交 Turn。Debug 只有 `GET 200` 后的 `decode_failed`，route=null、无字段路径/decoder contract/response 摘要，无法定位是哪一投影不兼容。由此形成“后端有已提交对话，前端认为暂无会话”的分裂状态。
+- **前后端契约/恢复严重问题（已修复）**：prelude 在后端已 committed，API 可读回 revision=1、Turn sequence=1、两个工具调用和两条 citation；但返回 Study 页面时前端报“历史学习会话格式异常，已停止载入以保护记录”，显示“创建会话”并完全隐藏这条已提交 Turn。根因是前端私有清单仍只有旧 31 个 Study 工具，拒绝了 Tool Manifest 已登记的 `read_projected_pdf_layout_candidates`。Session read-back 现从共享 Tool Manifest 接受全部 Study trace 名称（含 retired 历史别名），未知名称仍 fail closed；`decode_failed` 同时记录受约束的 `study-session-public-v1` contract 与字段路径，不记录响应正文、枚举原值或教材内容。
 - **累计审计**：完成法文 Study 失败与自动 prelude 后，Model Usage 从 34 次 / 463.0K 上升为 **39 次 / 519.3K**；五次新调用合计约 56.3K，全都归类为“章节对话”，但审计无法区分一次失败用户请求和一次页面恢复自动请求。
 
 ## 待继续覆盖
@@ -239,6 +239,7 @@
 - Study 宽屏、状态来源和表演/回执层级 → `UX-STUDY-PRESENTATION-001`。
 - 刷新首帧 Assistant Turn/radio 可访问名称丢失 → `STUDY-HYDRATION-A11Y-001`（已完成：富文本在服务端与首个客户端 frame 同步渲染，production 刷新门覆盖三个历史 Turn、已提交反馈与 radio 文本名称）。
 - 互动题评分后隐式昂贵续接与半道问题 → `STUDY-ANSWER-CONTINUATION-001`（已完成：评分提交不再自动调用模型；题卡以可取消的费用提示确认显式续接，并约束后续题型必须完整或明确使用普通输入框）。
+- 后端已 committed Turn 因新 Study 工具名被前端拒绝 → `STUDY-COMMITTED-READBACK-001`（已完成：Session decoder 与共享 Tool Manifest 同源，诊断事件保留 content-free contract 与字段路径）。
 - Planning 工具隐式替换共享 Study Units → `PLAN-STUDY-UNIT-REVISION-001`。
 - 长 OCR 进度、终态和可行动错误 → `OCR-PROGRESS-UX-001`。
 - 全文本文档把未使用 OCR 表达为失败 → `DOC-OCR-STATUS-001`（已完成：API、Document Debug Console 与 Plan Workspace 现统一区分未需要、部分降级与失败）。

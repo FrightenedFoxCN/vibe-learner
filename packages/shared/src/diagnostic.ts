@@ -31,6 +31,9 @@ export interface DiagnosticEventV1 {
   status_code: number | null;
   method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE" | "OPTIONS" | "HEAD" | null;
   route: string | null;
+  /** Content-free decoder identity and rejected field location. */
+  decode_contract?: string | null;
+  decode_path?: string | null;
 }
 
 export const DIAGNOSTIC_EVENT_CATALOG = {

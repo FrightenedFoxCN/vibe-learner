@@ -16,6 +16,7 @@ import type {
   StudyChatResponse,
   StudySessionRecord,
 } from "@vibe-learner/shared";
+import { STUDY_CHAT_TRACE_TOOL_NAMES } from "../../../packages/shared/src/tool-manifest.ts";
 
 import { compactPreviewString } from "./preview.ts";
 import { StrictResponseDecoder } from "./strict-response-decode.ts";
@@ -41,19 +42,6 @@ const PROJECTED_SOURCE_KINDS = [
   "document", "attachment_pdf", "attachment_image", "generated_image",
 ] as const;
 const PROJECTED_OVERLAY_KINDS = ["text_highlight", "region_box"] as const;
-const CHAT_TOOL_NAMES = [
-  "ask_multiple_choice_question", "ask_fill_blank_question", "retrieve_memory_context",
-  "read_session_memory", "write_session_memory", "read_system_time",
-  "schedule_session_follow_up", "read_affinity_state", "update_affinity_state",
-  "read_learning_plan_progress", "update_learning_plan", "update_learning_plan_progress",
-  "read_page_range_content", "read_page_range_images", "project_uploaded_pdf",
-  "project_uploaded_image", "generate_projected_image", "read_projected_pdf_content",
-  "read_projected_pdf_images", "focus_projected_pdf_page", "highlight_projected_pdf_text",
-  "annotate_projected_pdf_region", "clear_projected_pdf_overlays",
-  "annotate_projected_image_region", "clear_projected_image_overlays",
-  "read_scene_overview", "add_scene", "move_to_scene", "add_object",
-  "update_object_description", "delete_object",
-] as const;
 
 const SCENE_MAX_DEPTH = 8;
 const SCENE_MAX_LAYER_COUNT = 64;
@@ -453,7 +441,7 @@ function decodeToolCalls(raw: unknown, path: string): ChatToolCallTrace[] {
     jsonObjectString(resultJson, `${itemPath}.result_json`);
     return {
       toolCallId: identity(decoder.field(value, "tool_call_id", itemPath), `${itemPath}.tool_call_id`),
-      toolName: decoder.enumeration(decoder.field(value, "tool_name", itemPath), CHAT_TOOL_NAMES, `${itemPath}.tool_name`),
+      toolName: decoder.enumeration(decoder.field(value, "tool_name", itemPath), STUDY_CHAT_TRACE_TOOL_NAMES, `${itemPath}.tool_name`),
       argumentsJson: compactPreviewString(argumentsJson, 800),
       resultSummary: compactPreviewString(
         textValue(decoder.field(value, "result_summary", itemPath), `${itemPath}.result_summary`, { allowEmpty: true, maximum: 10_000 }), 240,

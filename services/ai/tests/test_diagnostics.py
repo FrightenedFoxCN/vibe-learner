@@ -118,6 +118,19 @@ class DiagnosticTests(unittest.TestCase):
             with self.assertRaises(ValidationError):
                 DiagnosticEventV1(**safe, **extra)
 
+    def test_decode_diagnostics_accept_only_content_free_contract_and_path(self):
+        event = DiagnosticEventV1(
+            event_id="decode", source="browser", name="decode_failed", timestamp="2026-09-10",
+            decode_contract="study-session-public-v1",
+            decode_path="study_session.turns[0].tool_calls[1].tool_name",
+        )
+        self.assertEqual(event.decode_contract, "study-session-public-v1")
+        self.assertEqual(event.decode_path, "study_session.turns[0].tool_calls[1].tool_name")
+        safe = dict(event_id="decode", source="browser", name="decode_failed", timestamp="2026-09-10")
+        for extra in ({"decode_contract": "private contract"}, {"decode_path": "study_session.private value"}):
+            with self.assertRaises(ValidationError):
+                DiagnosticEventV1(**safe, **extra)
+
     def test_queue_is_bounded_and_disk_failure_is_isolated(self):
         with TemporaryDirectory() as directory:
             store = DiagnosticStore(Path(directory), capacity=1)  # directory is not a DB file

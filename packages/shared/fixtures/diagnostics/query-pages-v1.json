@@ -30,7 +30,9 @@
           "duration_ms": null,
           "status_code": null,
           "method": null,
-          "route": null
+          "route": null,
+          "decode_contract": null,
+          "decode_path": null
         }
       }
     ],
@@ -161,7 +163,9 @@
       "duration_ms": null,
       "status_code": null,
       "method": null,
-      "route": null
+      "route": null,
+      "decode_contract": null,
+      "decode_path": null
     },
     {
       "schema_version": "diagnostic-event-v1",
@@ -204,7 +208,9 @@
       "duration_ms": null,
       "status_code": null,
       "method": null,
-      "route": null
+      "route": null,
+      "decode_contract": null,
+      "decode_path": null
     },
     {
       "schema_version": "diagnostic-event-v1",
@@ -242,7 +248,9 @@
       "duration_ms": null,
       "status_code": null,
       "method": null,
-      "route": null
+      "route": null,
+      "decode_contract": null,
+      "decode_path": null
     },
     {
       "schema_version": "diagnostic-event-v1",
@@ -276,7 +284,9 @@
       "duration_ms": null,
       "status_code": null,
       "method": null,
-      "route": null
+      "route": null,
+      "decode_contract": null,
+      "decode_path": null
     }
   ],
   "writers": {

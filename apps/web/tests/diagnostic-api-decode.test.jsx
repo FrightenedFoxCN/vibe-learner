@@ -63,6 +63,36 @@ test("response-owned decoding preserves error identity and captured context afte
   } finally { globalThis.fetch = original; old.dispose(); }
 });
 
+test("decode diagnostics retain only reviewed contract and field path", async () => {
+  const context = diagnosticContext("decode-flow");
+  const original = globalThis.fetch;
+  try {
+    globalThis.fetch = async () => Response.json({}, { headers: { "X-Request-ID": "decode-path" } });
+    const response = await diagnosticFetch("http://service/private", undefined, context);
+    const error = Object.assign(new Error("PRIVATE_RESPONSE_VALUE"), {
+      path: "study_session.turns[0].tool_calls[1].tool_name",
+    });
+    assert.throws(
+      () => diagnosticDecode(response, () => { throw error; }, "study-session-public-v1"),
+      thrown => thrown === error,
+    );
+    const event = diagnosticSnapshot().events.find(item => item.request_id === "decode-path" && item.name === "decode_failed");
+    assert.equal(event.decode_contract, "study-session-public-v1");
+    assert.equal(event.decode_path, "study_session.turns[0].tool_calls[1].tool_name");
+    assert.ok(!JSON.stringify(event).includes("PRIVATE"));
+
+    const unsafeResponse = await diagnosticFetch("http://service/private", undefined, context);
+    assert.throws(() => diagnosticDecode(
+      unsafeResponse,
+      () => { throw Object.assign(new Error("hidden"), { path: "study_session.secret value" }); },
+      "private contract value",
+    ));
+    const unsafeEvent = diagnosticSnapshot().events.filter(item => item.request_id === "decode-path" && item.name === "decode_failed").at(-1);
+    assert.equal(unsafeEvent.decode_contract, null);
+    assert.equal(unsafeEvent.decode_path, null);
+  } finally { globalThis.fetch = original; }
+});
+
 
 test("Tavern terminal replay keeps exact request and attributes decoder rejection to replay response", async () => {
   const original = globalThis.fetch;

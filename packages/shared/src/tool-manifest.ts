@@ -163,6 +163,18 @@ export const TOOL_MANIFEST_BY_KEY: Readonly<Record<string, ToolManifestEntryV1>>
     ),
   );
 
+/**
+ * Public Study Session traces can outlive a tool's provider lifecycle. Keep
+ * canonical names and historical aliases readable even after a tool retires.
+ */
+export const STUDY_CHAT_TRACE_TOOL_NAMES: readonly string[] = Object.freeze(
+  Array.from(new Set(
+    TOOL_MANIFEST_REGISTRY.tools
+      .filter((entry) => entry.workflow === "study_chat")
+      .flatMap((entry) => [entry.canonical_name, ...entry.aliases]),
+  )),
+);
+
 export function resolveToolManifestReference(input: {
   workflow: ToolManifestWorkflow;
   offeredInStage: ToolManifestOfferedStage;

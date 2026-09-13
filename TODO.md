@@ -58,9 +58,6 @@
 - [ ] `PLAN-NAVIGATION-LIFECYCLE-001` `[P1]` 让 Planning 长任务跨页持续，或在离页前明确提示将取消并展示已发生费用。
   - 当前普通导航会调用 Document/Planning stream cancel；真实请求仍可能完成并计费，但 Learning Plan 不提交。全局 Debug 与返回后的 Plan Workspace 应显示活动、已中断、费用和可恢复状态。
 
-- [ ] `STUDY-COMMITTED-READBACK-001` `[P1]` 消除后端已 committed Turn 被前端 strict decoder 拒绝造成的状态分裂。
-  - 以持久化 Session read-back 为唯一用户投影；decoder 错误须给出字段路径，禁止因 UI 未接纳 committed 结果而自动换 operation key 重发。
-
 - [ ] `PLAN-PAGE-BOUNDS-001` `[P1]` 将用户显式 PDF 物理页范围变成服务端工具、proposal 与 commit invariant。
   - 用户指定 PDF 100–103 时，取证工具参数、schedule anchor 和 content slices 必须落在该范围；物理页与印刷页分别建模，不能让模型把印刷 70–73 当成物理 70–73 后成功提交。
   - 本票只负责应用约束；教材语义、公式、旧记号和范围完整性质量由 `docs/quality/TODO.md` 的 `MQ-04` 负责。

@@ -1376,6 +1376,34 @@
           ],
           "default": null,
           "title": "Route"
+        },
+        "decode_contract": {
+          "anyOf": [
+            {
+              "maxLength": 96,
+              "pattern": "^[a-zA-Z0-9_.-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Decode Contract"
+        },
+        "decode_path": {
+          "anyOf": [
+            {
+              "maxLength": 500,
+              "pattern": "^[a-zA-Z0-9_.\\[\\]-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Decode Path"
         }
       },
       "required": [

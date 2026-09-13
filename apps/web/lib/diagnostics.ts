@@ -18,22 +18,33 @@ function notifyPage() { for (const listener of pageListeners) listener(); }
 let uploading = false;
 const responseContexts = new WeakMap<Response, { context: DiagnosticContext; method: DiagnosticEventV1["method"] }>();
 
-export function diagnosticDecode<T>(response: Response, decode: () => T): T {
+export function diagnosticDecode<T>(response: Response, decode: () => T, decodeContract?: string): T {
   const started = performance.now();
   try { return decode(); }
   catch (error) {
-    recordDecodeFailure(response, performance.now() - started);
+    recordDecodeFailure(response, performance.now() - started, error, decodeContract);
     throw error;
   }
 }
 
-export function recordDecodeFailure(response: Response, duration: number) {
+function reviewedDecodeField(value: unknown, maximum: number): string | null {
+  return typeof value === "string" && value.length <= maximum && /^[a-zA-Z0-9_.\[\]-]+$/.test(value)
+    ? value
+    : null;
+}
+
+export function recordDecodeFailure(response: Response, duration: number, error?: unknown, decodeContract?: string) {
   try {
     const captured = responseContexts.get(response);
     if (!captured) return;
     emitDiagnostic("decode_failed", captured.context, {
       request_id: response.headers.get("X-Request-ID"), status_code: response.status,
       method: captured.method, duration_ms: duration,
+      decode_contract: reviewedDecodeField(decodeContract, 96),
+      decode_path: reviewedDecodeField(
+        typeof error === "object" && error !== null && "path" in error ? error.path : null,
+        500,
+      ),
     });
   } catch { /* Telemetry never replaces the original decoder error. */ }
 }
@@ -76,7 +87,7 @@ export function diagnosticSnapshot() {
 }
 
 export function emitDiagnostic(name: DiagnosticEventV1["name"], context: DiagnosticContext,
-  fields: Pick<DiagnosticEventV1, "request_id" | "duration_ms" | "status_code" | "method"> & Partial<Pick<DiagnosticEventV1, "action_name" | "span_id" | "parent_span_id">>) {
+  fields: Pick<DiagnosticEventV1, "request_id" | "duration_ms" | "status_code" | "method"> & Partial<Pick<DiagnosticEventV1, "action_name" | "span_id" | "parent_span_id" | "decode_contract" | "decode_path">>) {
   const eventId = createDiagnosticId();
   if (!eventId) { dropped += 1; return; }
   // Explicit projection: no URLs, bodies, exception strings or arbitrary object spreads.
@@ -89,6 +100,8 @@ export function emitDiagnostic(name: DiagnosticEventV1["name"], context: Diagnos
     flow_id: context.flow_id, action_id: context.action_id,
     request_id: fields.request_id, duration_ms: fields.duration_ms,
     status_code: fields.status_code, method: fields.method,
+    decode_contract: fields.decode_contract ?? null,
+    decode_path: fields.decode_path ?? null,
   };
   events.push(event);
   if (events.length > CAPACITY) events.shift();
