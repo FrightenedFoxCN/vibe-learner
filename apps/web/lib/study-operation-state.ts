@@ -60,7 +60,22 @@ export function presentStudyChatOperation(receipt: StudyChatOperationResponse): 
         canResend: false,
       };
     case "not_committed":
-      if (receipt.errorCode.includes("chat_model_upstream_error:400")) {
+      const errorCode = receipt.errorCode ?? "";
+      if (errorCode.includes("chat_model_invalid_payload")) {
+        return {
+          detail: "上游已返回模型结果，但结果未通过 Study Chat 结构校验；本次没有写入会话。可以重新发送，系统会使用新的请求身份。",
+          canQuery: false,
+          canResend: receipt.safeToRetry,
+        };
+      }
+      if (errorCode.includes("chat_model_empty_response")) {
+        return {
+          detail: "上游没有返回可用的模型内容，本次没有写入会话。可以重新发送，系统会使用新的请求身份。",
+          canQuery: false,
+          canResend: receipt.safeToRetry,
+        };
+      }
+      if (errorCode.includes("chat_model_upstream_error:400")) {
         return {
           detail: "上游拒绝了本次工具参数（400），本次没有写入会话。修复模型/工具配置后，可以用新的请求身份重新发送。",
           canQuery: false,

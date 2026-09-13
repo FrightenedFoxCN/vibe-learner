@@ -54,3 +54,14 @@ test("retry eligibility requires explicit not-committed evidence", () => {
   assert.equal(presentStudyChatOperation({ status: "not_committed", safeToRetry: false }).canResend, false);
   assert.equal(presentStudyChatOperation({ status: "not_committed", safeToRetry: true }).canResend, true);
 });
+
+test("provider output schema failure is retryable and explains that no turn was written", () => {
+  const presented = presentStudyChatOperation({
+    status: "not_committed",
+    safeToRetry: true,
+    errorCode: "study_chat_not_committed_chat_model_invalid_payload",
+  });
+  assert.equal(presented.canQuery, false);
+  assert.equal(presented.canResend, true);
+  assert.match(presented.detail, /未通过 Study Chat 结构校验/);
+});
