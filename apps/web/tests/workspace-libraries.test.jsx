@@ -12,12 +12,31 @@ function deferred() {
   const promise = new Promise((yes, no) => { resolve = yes; reject = no; });
   return { promise, resolve, reject };
 }
-function fixture() {
+function fixture(optionOverrides = {}) {
   const scenes = [], personas = [], applied = [];
   const port = { listSceneLibrary: () => { const pending = deferred(); scenes.push(pending); return pending.promise; }, listPersonas: () => { const pending = deferred(); personas.push(pending); return pending.promise; } };
-  const options = { initialSceneId: "selected", onPersonas: value => applied.push(value) };
+  const options = { initialSceneId: "selected", onPersonas: value => applied.push(value), ...optionOverrides };
   return { ...renderHook(props => useWorkspaceLibraries(props, port), { initialProps: options }), scenes, personas, applied, options };
 }
+
+test("an explicit no-Scene selection survives refresh and plan projection changes", async () => {
+  const planScene = { sceneName: "Default room" };
+  const h = fixture({ initialSceneId: undefined, planScene });
+  await act(async () => { h.scenes[0].resolve([{ sceneId: "default", sceneName: "Default room" }]); });
+  assert.equal(h.result.current.selectedSceneLibraryId, "default");
+  act(() => h.result.current.setSelectedSceneLibraryId(""));
+  h.rerender({ ...h.options, planScene: { sceneName: "Default room", summary: "changed" } });
+  let refresh;
+  act(() => { refresh = h.result.current.refreshSceneLibrary(); });
+  await act(async () => { h.scenes[1].resolve([{ sceneId: "default", sceneName: "Default room" }]); await refresh; });
+  assert.equal(h.result.current.selectedSceneLibraryId, "");
+});
+
+test("an empty library selection does not silently choose the first Scene", async () => {
+  const h = fixture({ initialSceneId: undefined });
+  await act(async () => { h.scenes[0].resolve([{ sceneId: "first" }, { sceneId: "second" }]); });
+  assert.equal(h.result.current.selectedSceneLibraryId, "");
+});
 
 test("newer Scene refresh wins and selection uses the latest user choice", async () => {
   const h = fixture(); let refresh;

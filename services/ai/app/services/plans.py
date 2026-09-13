@@ -497,8 +497,10 @@ class LearningPlanService:
             plan.overview = model_plan.overview
         if model_plan.today_tasks:
             plan.today_tasks = model_plan.today_tasks
-        if goal.scene_profile is not None:
-            plan.scene_profile = goal.scene_profile
+        # The selected Scene is application-owned request state.  Assign it
+        # unconditionally so an explicit "no Scene" choice cannot inherit a
+        # heuristic, model-owned, or previously selected projection.
+        plan.scene_profile = goal.scene_profile
         if filtered_schedule:
             plan.schedule = filtered_schedule
         _emit_progress(

@@ -36,7 +36,6 @@ import {
   resolveWorkspaceSnapshot,
   type WorkspaceSnapshot,
 } from "../lib/learning-workspace-state";
-import { readSceneProfileFromLocalStorage } from "../lib/scene-profile";
 import {
   createInitialLearningWorkspaceState,
   learningWorkspaceReducer
@@ -125,7 +124,7 @@ export function useLearningWorkspaceController({
     [sceneLibraryItems, selectedSceneLibraryId]
   );
 
-  const resolveActiveSceneProfile = () => selectedSceneProfile ?? readSceneProfileFromLocalStorage();
+  const resolveActiveSceneProfile = () => selectedSceneProfile;
   const transitionStudyView = (fieldTarget: string, clearSession = false) => {
     studyViewFenceRef.current.transition(fieldTarget, clearSession);
     resetStudyRecovery();

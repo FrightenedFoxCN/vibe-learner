@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { PersonaProfile, SceneProfile } from "@vibe-learner/shared";
 import { listPersonas } from "../lib/data/personas";
 import { listSceneLibrary, type SceneLibraryItemPayload } from "../lib/data/scenes";
@@ -23,6 +23,7 @@ export function useWorkspaceLibraries(options: WorkspaceLibraryOptions, port: Wo
   const [selectedSceneLibraryId, setSelectedSceneLibraryId] = useState(options.initialSceneId ?? "");
   const callbacks = useRef(options); callbacks.current = options;
   const mounted = useRef(false);
+  const sceneSelectionTouched = useRef(Boolean(options.initialSceneId));
   const personaSequence = useRef(0), sceneSequence = useRef(0);
 
   async function refreshPersonaLibrary() {
@@ -42,7 +43,7 @@ export function useWorkspaceLibraries(options: WorkspaceLibraryOptions, port: Wo
       const items = await port.listSceneLibrary();
       if (!mounted.current || sequence !== sceneSequence.current) return;
       setSceneLibraryItems(items);
-      setSelectedSceneLibraryId(current => current && items.some(item => item.sceneId === current) ? current : items[0]?.sceneId ?? "");
+      setSelectedSceneLibraryId(current => current && items.some(item => item.sceneId === current) ? current : "");
     } catch (error) {
       if (mounted.current && sequence === sceneSequence.current) logWorkspaceError("workflow:scene_library:refresh_error", error);
     }
@@ -61,9 +62,13 @@ export function useWorkspaceLibraries(options: WorkspaceLibraryOptions, port: Wo
     };
   }, []);
   useEffect(() => {
-    if (!options.planScene || selectedSceneLibraryId) return;
+    if (!options.planScene || selectedSceneLibraryId || sceneSelectionTouched.current) return;
     const matched = sceneLibraryItems.find(item => item.sceneName === options.planScene?.sceneName);
     if (matched) setSelectedSceneLibraryId(matched.sceneId);
   }, [options.planScene, sceneLibraryItems, selectedSceneLibraryId]);
-  return { sceneLibraryItems, selectedSceneLibraryId, setSelectedSceneLibraryId, refreshPersonaLibrary, refreshSceneLibrary };
+  const selectSceneLibraryId = useCallback((sceneId: string) => {
+    sceneSelectionTouched.current = true;
+    setSelectedSceneLibraryId(sceneId);
+  }, []);
+  return { sceneLibraryItems, selectedSceneLibraryId, setSelectedSceneLibraryId: selectSceneLibraryId, refreshPersonaLibrary, refreshSceneLibrary };
 }

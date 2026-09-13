@@ -8,7 +8,7 @@ from unittest.mock import patch
 
 from pydantic import ValidationError
 
-from app.models.domain import LearningGoalInput, PersonaProfile, StudyUnitRecord
+from app.models.domain import LearningGoalInput, PersonaProfile, SceneProfileRecord, StudyUnitRecord
 from app.models.planning import (
     LEARNING_PLAN_PROPOSAL_SCHEMA_NAME,
     LEARNING_PLAN_PROPOSAL_SCHEMA_VERSION,
@@ -261,6 +261,38 @@ class PlanningContractTests(unittest.TestCase):
             committed.schedule_chapters[0].id,
             "doc-1:study-unit:1:schedule-chapter:1",
         )
+
+    def test_explicit_no_scene_overwrites_any_candidate_scene_projection(self) -> None:
+        arrangement = StudyArrangementService()
+        original = arrangement.build_goal_only_plan
+        leaked_scene = SceneProfileRecord(
+            scene_id="stale-scene",
+            scene_name="Stale room",
+            title="Stale room",
+            summary="Must not survive an explicit no-Scene request.",
+        )
+
+        def build_with_stale_scene(**kwargs):
+            candidate = original(**kwargs)
+            candidate.scene_profile = leaked_scene
+            return candidate
+
+        service = LearningPlanService(self.store, arrangement, MockModelProvider())
+        goal = LearningGoalInput(
+            document_id="",
+            persona_id="mentor-aurora",
+            objective="Learn the basics",
+            scene_profile=None,
+        )
+        with patch.object(arrangement, "build_goal_only_plan", side_effect=build_with_stale_scene):
+            candidate, _, _, _ = service._build_plan_candidate(
+                goal=goal,
+                document=None,
+                persona_name="Aurora",
+                persona=_persona(),
+            )
+
+        self.assertIsNone(candidate.scene_profile)
 
     def test_out_of_unit_chapter_fails_instead_of_silently_disappearing(self) -> None:
         service = LearningPlanService(

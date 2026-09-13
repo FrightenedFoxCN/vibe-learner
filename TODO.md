@@ -53,9 +53,6 @@
   - UI/Model Usage/Harness trace 必须包含 schema repair 和失败前的安全字段级证据，并聚合首次失败、中断、重试及自动下游调用；不能再出现 UI 2 calls、审计 3 completions 的分裂。
   - 重新界定 Planning trace 的留存、脱敏与访问政策；在 `provider_reasoning_committed=false`、`raw_book_text_committed=false` 时，不得从 API/Debug 暴露完整 thinking 或原始教材输出。
 
-- [ ] `PLAN-SCENE-BINDING-001` `[P1]` 让 Plan Workspace 的“无场景”选择约束 committed Plan 与后续 Study Session 投影。
-  - 提交前以应用 invariant 校验选择值、Plan scene 与 Session scene；不要把“无场景”降为模型可忽略的提示。
-
 - [ ] `OCR-CHECKPOINT-RECOVERY-001` `[P1]` 让长 OCR 在阶段完成后可读、可续跑。
   - 总 wall-time 在全部页面处理完成后耗尽时，不得抹掉已完成页和 Study Unit；保存有界 checkpoint，并验证重启、超时和重复请求的 read-back/续跑语义。
 
