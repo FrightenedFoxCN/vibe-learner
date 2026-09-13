@@ -355,7 +355,10 @@ def run_sample(context: Any, case: Any, variant: Any) -> dict[str, object]:
                 saved_persona: dict[str, object] | None = None
                 if persona_http is not None and persona_http.status_code == 200:
                     try:
-                        decoded = PersonaCardGenerateResponse.model_validate_json(persona_http.content, strict=True)
+                        # The API DTO contains ISO-serialized Harness timestamps. Decode
+                        # that application-owned wire shape normally, then apply strict
+                        # validation to the model-owned proposal below.
+                        decoded = PersonaCardGenerateResponse.model_validate_json(persona_http.content)
                         proposal = _persona_proposal(decoded)
                         persona.update(strict_response=True, proposal=proposal, v3_proposal=_trace_is_strict_proposal(persona_http.json().get("harness_trace")))
                         if not persona["v3_proposal"]:
@@ -398,7 +401,7 @@ def run_sample(context: Any, case: Any, variant: Any) -> dict[str, object]:
                 saved_scene: dict[str, object] | None = None
                 if scene_http is not None and scene_http.status_code == 200:
                     try:
-                        decoded_scene = SceneTreeGenerateResponse.model_validate_json(scene_http.content, strict=True)
+                        decoded_scene = SceneTreeGenerateResponse.model_validate_json(scene_http.content)
                         projection = _scene_projection(decoded_scene)
                         scene.update(strict_response=True, proposal=projection, v3_proposal=_trace_is_strict_proposal(scene_http.json().get("harness_trace")))
                         if not scene["v3_proposal"]:

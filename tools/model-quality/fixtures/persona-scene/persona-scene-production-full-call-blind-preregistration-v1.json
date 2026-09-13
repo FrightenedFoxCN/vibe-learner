@@ -6,7 +6,7 @@
   "source_bindings": {
     "fixture": "37e8c5c4da6dbb835ec998686dc7c9fb96e6318cb22f6f7eea19a142736faca2",
     "prepare_manifest": "4e4df5d1ea0fbda32be2a481c7979a59394a7ebe76931f310c8336490737d7ee",
-    "adapter": "eb2da4f745ce38438cb4746f12e0d35252e87fa7156cc62b3a3f7a966dab8072",
+    "adapter": "4d995fcf0810620d36066f2dc75ed16b858ffafc640d1040e080987a9d727345",
     "blind_packet_key_exporter": "f1ef246e314cea1857ed7d4b4c23a42dc0d99c52e169d9f840ad7d8905307b23",
     "strict_two_reviewer_aggregator": "24bfed611c3b8cdacac59d78b86745a958687a7260273f6772ca3ca1f79fa648",
     "tests": "c18b0b2060947e14ef88408e7d4a113d0114c2fb3dbe59eee5c1f2c96776e672"
@@ -35,7 +35,7 @@
       "tools/model-quality/integration_tests/test_persona_scene_full_call_blind.py"
     ],
     "path_count": 208,
-    "canonical_manifest_sha256": "c05f37098fb9c3c129a9e66db2db9fa99188309e7b14bdc2a17e91831a48ff47"
+    "canonical_manifest_sha256": "8be3b2b7349fb20fc7f10cdf61eb467280f74056272e59ada0b53a01314dfbd7"
   },
   "legacy_reviewed_focus_bindings": {
     "services/ai/app/app_factory.py": "2a901b16e9dbd505690ada616ef87f91cd85452f93e0108094d82f8ae6ff386c",
