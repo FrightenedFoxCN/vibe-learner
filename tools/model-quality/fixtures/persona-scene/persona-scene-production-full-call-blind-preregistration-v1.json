@@ -1,0 +1,160 @@
+{
+  "version": "persona-scene-production-full-call-blind-preregistration-v1",
+  "campaign_id": "m3-persona-scene-production-full-call-blind-20260913-v1",
+  "registration_kind": "ordinary_git_preregistration",
+  "state": "prepared_not_run",
+  "source_bindings": {
+    "fixture": "37e8c5c4da6dbb835ec998686dc7c9fb96e6318cb22f6f7eea19a142736faca2",
+    "prepare_manifest": "c6bac6a1f64435694b4c49358b57f6e7e2863e1be6f71577e1ef9f68c8181992",
+    "adapter": "b89372f1d868573b734965d366bf7ec723cbe46374b0565286375bd36052beca",
+    "blind_packet_key_exporter": "f1ef246e314cea1857ed7d4b4c23a42dc0d99c52e169d9f840ad7d8905307b23",
+    "strict_two_reviewer_aggregator": "24bfed611c3b8cdacac59d78b86745a958687a7260273f6772ca3ca1f79fa648",
+    "tests": "b13d91fe7ad7b7096532e9a738ca5614096adc022f365697bcdc2c13d26747fe"
+  },
+  "review_bindings": {
+    "sealed_review_oracle": "a1d55322eaf318c49703f66531b66e6aaeea925a32d1ff62755fb7b7bf2f9908"
+  },
+  "source_tree_binding": {
+    "rules": [
+      "services/ai/app/**/*.py",
+      "services/ai/app/prompts/**/*.txt",
+      "tools/model-quality/model_quality/**/*.py"
+    ],
+    "exact_paths": [
+      "services/ai/pyproject.toml",
+      "services/ai/uv.lock",
+      "tools/model-quality/pyproject.toml",
+      "tools/model-quality/uv.lock",
+      "tools/model-quality/integrations/vibe_learner/common.py",
+      "tools/model-quality/fixtures/persona-scene/persona-scene-production-full-call-blind-v1.json",
+      "tools/model-quality/fixtures/persona-scene/persona-scene-production-full-call-blind-oracle-v1.json",
+      "tools/model-quality/examples/prepare_persona_scene_full_call_blind.py",
+      "tools/model-quality/integrations/vibe_learner/persona_scene_full_call_blind.py",
+      "tools/model-quality/examples/export_persona_scene_full_call_blind.py",
+      "tools/model-quality/examples/aggregate_persona_scene_full_call_blind.py",
+      "tools/model-quality/integration_tests/test_persona_scene_full_call_blind.py"
+    ],
+    "path_count": 208,
+    "canonical_manifest_sha256": "b3cf1f3ea1794019ae342d856ccf05bb77b54dc4eeb9e620f4354846e6507586"
+  },
+  "legacy_reviewed_focus_bindings": {
+    "services/ai/app/app_factory.py": "2a901b16e9dbd505690ada616ef87f91cd85452f93e0108094d82f8ae6ff386c",
+    "services/ai/app/api/routes.py": "78d60bd1594aaada2c10e05fa8ce194e36b4501f169ae5cf90f9a6831a2b83ce",
+    "services/ai/app/core/bootstrap.py": "e621b552acc9e4ff246157acda7a2e8dfa57f2a65ec20439b0bb450af1579300",
+    "services/ai/app/core/settings.py": "3fe9b824e1650ab4be5e95854b3a2d37e29c77a46ef61ceb3ec7932e3804bffe",
+    "services/ai/app/models/api.py": "9c20ad9e878a2300bcb8d0b43d0236bc98bbe175e87a14813e5940aca5f7e98f",
+    "services/ai/app/models/domain.py": "84b3132eb3dd7947d7cdcb0e3f25c07f66cb67fdc5421bc775ae03f4a3986002",
+    "services/ai/app/models/harness.py": "76c07286e540ad0833784e0db2c4f6cc8aed08f8f2660c5083b2774b18ebf0d0",
+    "services/ai/app/models/harness_manifest.py": "5977ddd4e34c5bab4037f0f61ddb97382f9494856872471c972c33b0196188e8",
+    "services/ai/app/models/harness_operation.py": "e48f6129c751ae9a10f7832902f4771f8c4ced8ceef6432938aa228219af676e",
+    "services/ai/app/models/persona_generation.py": "1415afbace50d1297143b2c680629379406d96d7dc2e34ca893ba82a33d0d347",
+    "services/ai/app/models/scene.py": "9314b28685fbb94a18502130b374f6545d83377c35c7811d91bab127a2904004",
+    "services/ai/app/models/scene_generation.py": "053f0eef6d4bddab3dc8167ef1cb88a83a6e99ca5f882dcca6f96a846b26e1b8",
+    "services/ai/app/persistence/database.py": "b2a55089ce5d89b9e9bb6fb30c6a0cbf94b2ba3d0c9ddc34be7007722961d2c4",
+    "services/ai/app/persistence/harness_operation_repository.py": "71ca217a27bd5e15d3a242fb80abeedf3a2b8a16198eb9a3b99a697dd91c1f29",
+    "services/ai/app/persistence/harness_runtime_repository.py": "68a72485be752ce7055e5b76a68a77a4949c5ca718428983034566189112d22a",
+    "services/ai/app/persistence/models.py": "1c6c5e4fa2529ef8a6b9f928316a4608465d0ffe15ef22ee0d8ac41b619cfb6b",
+    "services/ai/app/persistence/storage.py": "27aa579b5dc067fb29a0bb8b796361212da39acc25092e08f326027b457b5c86",
+    "services/ai/app/prompts/openai_setting_prompt.txt": "c4199e57cd86afac2cccdbb1f0e92191dcb15049c7ae7c19d6683d0db6f3c976",
+    "services/ai/app/services/harness_broad_adoption.py": "eb74cb6b4e9e82c3149370212a864eb4c518afb230f4b5f496f2a56950b6dd01",
+    "services/ai/app/services/local_store.py": "e85a5033d821762bce1644aa3c0da13ff60554faa13e236f8f1ea716325d7c78",
+    "services/ai/app/services/model_provider.py": "bd0f7d9ee7f4488f8b903c21c05f07be5d20addcef88cf94d27641a56e7f68f2",
+    "services/ai/app/services/persona.py": "4872c253e552dc328e80eb7633e00a5b1dbe217c1ff06a9e6fb8b19de7ffeb4d",
+    "services/ai/app/services/persona_cards.py": "3329358fb44d4de9f0e09f877f5e23aca9b9dae661d945d81dc7aa513aab19b6",
+    "services/ai/app/services/persona_harness_adapter.py": "fa9c6d937b1691568b72dcd12db60f3e19d39c3c966afe076eb10a58ff64c341",
+    "services/ai/app/services/persona_runtime.py": "3f909293f5d450683e1d3e10e546a404f3b107dcf24502abeaeeb850217d5128",
+    "services/ai/app/services/prompt_loader.py": "e20e1b676e9fe2e57eb2de46ce6ea32c95eee2a5cb59e7c31fb173de17b69b67",
+    "services/ai/app/services/provider_payload.py": "e46f177d2a2d80a3eca6b3709d8a82a3e4f43c23c5ed2ba4ad50b81caf659f9e",
+    "services/ai/app/services/provider_sdk.py": "e6cb4a281cd2ba704c85c0449b7c2af1b3e9a32f932e9e99cf19e4c5ae9ede89",
+    "services/ai/app/services/provider_settings.py": "5dc0832ebf8d393c736aa4548bece83fadd12828326691330bf8b33e18a0d89c",
+    "services/ai/app/services/provider_transport.py": "71f9b93ca048d70e7c50b7aa171f5abb46fcf54560d3df32482a910cf91a57a2",
+    "services/ai/app/services/scene_harness_adapter.py": "48ba5a12872e1b8c81edd84dfc137fa0fb3e2f626ee557e41cd802740c7b14b3",
+    "services/ai/app/services/scene_library.py": "a384bcfc2ff501ff11a0885d92d2350d9b7d9e2d5348b6971bd1a6238ce50c26",
+    "services/ai/pyproject.toml": "ffa7b610c3efc4094df65e09252dac0f06f3e449a61f8613fc71ccb8ec36dc19",
+    "services/ai/uv.lock": "b1f53f8b8856a60ceba6871ae6affec35e1c75da8c0864f50ed76f4970a80f28",
+    "tools/model-quality/pyproject.toml": "f6b055c5f108aaa76f4ac3e962418d6185e66bca2d0a85d8fa581b2353c63fad",
+    "tools/model-quality/uv.lock": "ea30cf0b09b3f9b100a9c5db49a1c721cf3b8d10f748d7c9cff9c3bfb4598779",
+    "tools/model-quality/model_quality/__main__.py": "7f719a647def26dac001a9fca766de78c605b63d5c0f66eecb5917dbbc7fe5a9",
+    "tools/model-quality/model_quality/ledger.py": "e8683c9afb1679673490a9122d213a17789b7fbb080290ab8dc8ca165104b2b8",
+    "tools/model-quality/model_quality/protocol.py": "f60d5cd8690f7375a29c21c35816fe8756f60c58710ed81876b428c95be2e1ff",
+    "tools/model-quality/model_quality/runner.py": "448d8db68208af633654378ecf896573ee64449a7fc2305e55bf241fc9e33fb2",
+    "tools/model-quality/model_quality/transport.py": "0f3c34d54ff65828de63ed6d936eddb2e79e57acb7f47e3ead80904bbdc28392",
+    "tools/model-quality/integrations/vibe_learner/common.py": "1f51996ea30ce127dc5e3e15be6fa4940076def6836da9d1a5afe5ccdfa27f6b"
+  },
+  "runtime_binding": {
+    "interpreter": "CPython 3.12.13",
+    "interpreter_build": "main, Mar 25 2026, 03:16:06; Clang 22.1.1",
+    "dependency_locks": {
+      "services/ai/uv.lock": "b1f53f8b8856a60ceba6871ae6affec35e1c75da8c0864f50ed76f4970a80f28",
+      "tools/model-quality/uv.lock": "ea30cf0b09b3f9b100a9c5db49a1c721cf3b8d10f748d7c9cff9c3bfb4598779"
+    },
+    "model": "MiniMax-M3",
+    "provider_base_url": "https://api.minimax.cn/v1",
+    "transport": "minimax",
+    "thinking": "adaptive",
+    "temperature": 0.2,
+    "max_output_tokens": 6400,
+    "production_initial_max_tokens": 4096,
+    "production_repair_max_tokens": 6144,
+    "timeout_seconds": 90,
+    "sample_deadline_seconds": 600,
+    "concurrency": 1,
+    "repetitions": 1,
+    "seed": 91341,
+    "variant": "production-full-call",
+    "sample_wire_limit": 4,
+    "persona_wire_limit_per_family": 2,
+    "scene_wire_limit_per_family": 2,
+    "campaign_wire_limit": 32,
+    "environment_allowlist": ["K3_API_KEY"],
+    "file_read_allowlist": [
+      "manifest.json",
+      "tools/model-quality/fixtures/persona-scene/persona-scene-production-full-call-blind-v1.json",
+      "tools/model-quality/fixtures/persona-scene/persona-scene-production-full-call-blind-preregistration-v1.json",
+      "bound Python source files and services/ai/uv.lock"
+    ],
+    "network_allowlist": ["https://api.minimax.cn/v1/chat/completions"]
+  },
+  "entrypoints": {
+    "prepare": "cd services/ai && PYTHONPATH=../../tools/model-quality:../../tools/model-quality/integrations:. uv run python ../../tools/model-quality/examples/prepare_persona_scene_full_call_blind.py --budget-from <budget.json> --transport minimax --output <manifest.json>",
+    "run": "cd services/ai && PYTHONPATH=../../tools/model-quality:../../tools/model-quality/integrations:. uv run python -m model_quality --manifest <manifest.json> --output <run-directory> --ledger <absolute-ledger.sqlite3>",
+    "export": "cd services/ai && PYTHONPATH=../../tools/model-quality:../../tools/model-quality/integrations:. uv run python ../../tools/model-quality/examples/export_persona_scene_full_call_blind.py --run <run-directory> --prereg-git-commit <40-hex-commit> --packet <packet.json> --key <key.json>",
+    "aggregate": "cd services/ai && PYTHONPATH=../../tools/model-quality:../../tools/model-quality/integrations:. uv run python ../../tools/model-quality/examples/aggregate_persona_scene_full_call_blind.py --run <run-directory> --prereg-git-commit <40-hex-commit> --packet <packet.json> --key <key.json> --review <review-a.json> --review <review-b.json> --output <aggregate.json>"
+  },
+  "denominators": {
+    "persona": 8,
+    "scene": 8,
+    "joint": 8
+  },
+  "decision_rule": {
+    "persona": "at least 7/8 strict production v3 plus save/immediate/restart read-back, and neither reviewer assigns major on relationship, permission, profession, shared history, or epistemic fidelity",
+    "scene": "at least 7/8 strict production v3 plus save/immediate/restart read-back, and neither reviewer assigns major on topology, object, or permission fidelity",
+    "joint": "at least 7/8 families satisfy both domain strict lifecycle criteria",
+    "reviewers": 2,
+    "review_mode": "isolated absolute blind",
+    "promotion_requires_all_rules": true
+  },
+  "failure_policy": {
+    "generation_fallback": "forbidden",
+    "failed_family_rerun": "forbidden",
+    "sample_replacement": "forbidden",
+    "domain_denominators_independent": true,
+    "lifecycle_failure_attribution_required": true
+  },
+  "blind_packet_allowlist": [
+    "anonymous_token",
+    "authoritative_persona_source",
+    "authoritative_scene_source",
+    "anonymous_persona_proposal",
+    "anonymous_scene_proposal"
+  ],
+  "blind_packet_forbidden": [
+    "family/campaign/sample/domain IDs",
+    "run or domain status",
+    "Harness trace",
+    "key or oracle",
+    "expected constraints",
+    "provider reasoning"
+  ],
+  "pre_run_rule": "Commit this preregistration and every bound byte before issuing any provider wire."
+}

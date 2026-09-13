@@ -1,0 +1,667 @@
+{
+  "version": "tavern-counterfactual-twins-fixture-v1",
+  "campaign_id": "tavern-counterfactual-twins-readiness-20260913-v1",
+  "scope": "provider_free_research_readiness_only",
+  "families": [
+    {
+      "family_id": "archive_keycard_view",
+      "axis": "permission_fidelity",
+      "second_polarity": "denied",
+      "authority": "participant_snapshot",
+      "semantic_atom": "actor may view the archive ledger",
+      "semantic_atom_sha256": "9e03a9ee23f35141a7fc4048f167e2316dae5ffb1244ffbb06d822814573c042",
+      "allowed_delta_json_pointer": "/participants/0/persona_snapshot/relationship",
+      "projection_number": 1,
+      "common_projection_sha256": "7f07635f09c676c0a908c962954a542afbe18b56044e1ce527c2d9f1efffc791",
+      "supported": {
+        "polarity": "supported",
+        "authoritative_value": "actor may view the archive ledger",
+        "source_text": "档案🦊 | actor may view the archive ledger",
+        "source_sha256": "bbd1af3a5ca22a15eaef7ea9113ed033a1b2520d770d87c9c568aeae1df12ec5",
+        "source_span": {
+          "codepoint_start": 6,
+          "codepoint_end": 39,
+          "utf8_start": 13,
+          "utf8_end": 46,
+          "slice_sha256": "9e03a9ee23f35141a7fc4048f167e2316dae5ffb1244ffbb06d822814573c042"
+        },
+        "canonical_world_sha256": "dad9e70bc6e32b3a261854cd4df708dec7bf45c3c05efee12c510c82e7b2777b"
+      },
+      "second": {
+        "polarity": "denied",
+        "authoritative_value": "actor may not view the archive ledger",
+        "source_text": "档案🦊 | actor may not view the archive ledger",
+        "source_sha256": "60c846abb9ef3007d0e6ad084ea872e1e72b344336adf501dff316a5ca7afd6d",
+        "source_span": {
+          "codepoint_start": 6,
+          "codepoint_end": 43,
+          "utf8_start": 13,
+          "utf8_end": 50,
+          "slice_sha256": "54d34deb2315039aabcd2fbed3462ab2f7a95ca91003c096f8e7c47541020a89"
+        },
+        "canonical_world_sha256": "b7296305820616ae28976ec3d16d3d69e7731d6d1d8aded6c825f599384e6c7a"
+      },
+      "oracle": {
+        "invariant_prefix": "Catalog note: ",
+        "invariant_suffix": " Next, I will inventory the requested materials.",
+        "supported": {
+          "reply": "Catalog note: View is permitted. Next, I will inventory the requested materials.",
+          "claim_response": "View is permitted.",
+          "quoted_opposite_literal": "Catalog note: The label ‘DENIED’ is quoted, but view is permitted. Next, I will inventory the requested materials.",
+          "explicit_denial_of_opposite": "Catalog note: It is not true that view is denied; view is permitted. Next, I will inventory the requested materials.",
+          "surface_paraphrase_copy": "View access is allowed.",
+          "nonce_decorated_copy": "[nonce-a] View is permitted."
+        },
+        "second": {
+          "reply": "Catalog note: View is denied. Next, I will inventory the requested materials.",
+          "claim_response": "View is denied.",
+          "quoted_opposite_literal": "Catalog note: The label ‘SUPPORTED’ is quoted, but view is denied. Next, I will inventory the requested materials.",
+          "explicit_denial_of_opposite": "Catalog note: It is not true that view is permitted; view is denied. Next, I will inventory the requested materials.",
+          "surface_paraphrase_copy": "View access is allowed.",
+          "nonce_decorated_copy": "[nonce-a2] View is permitted."
+        }
+      }
+    },
+    {
+      "family_id": "clinic_supply_inventory",
+      "axis": "permission_fidelity",
+      "second_polarity": "explicitly_unknown",
+      "authority": "participant_snapshot",
+      "semantic_atom": "actor may open the inventory cabinet",
+      "semantic_atom_sha256": "1d52bcecd0d52cc4a7f63be9e132e8ac7db4f314141dbee040fcb4139d30cc6f",
+      "allowed_delta_json_pointer": "/participants/0/persona_snapshot/relationship",
+      "projection_number": 2,
+      "common_projection_sha256": "e19bc168ab3ae07777ca6db0e1ed3fa719c69af3a6ff49594b1afb5b44e92c10",
+      "supported": {
+        "polarity": "supported",
+        "authoritative_value": "actor may open the inventory cabinet",
+        "source_text": "诊所 é | actor may open the inventory cabinet",
+        "source_sha256": "182c8f6e5e4b92562b2ebb8a6d090a943096e60c6c45f922e25c455a12431082",
+        "source_span": {
+          "codepoint_start": 8,
+          "codepoint_end": 44,
+          "utf8_start": 13,
+          "utf8_end": 49,
+          "slice_sha256": "1d52bcecd0d52cc4a7f63be9e132e8ac7db4f314141dbee040fcb4139d30cc6f"
+        },
+        "canonical_world_sha256": "7407b97fe624329505c28979bc46ab3c12fe682b075502a463f14dc6066ea215"
+      },
+      "second": {
+        "polarity": "explicitly_unknown",
+        "authoritative_value": "whether actor may open the inventory cabinet is explicitly unknown",
+        "source_text": "诊所 é | whether actor may open the inventory cabinet is explicitly unknown",
+        "source_sha256": "08872ab352367fd2ab4b3a8bf8782eef8127a1d09279edc5ac6d46af307ecc6d",
+        "source_span": {
+          "codepoint_start": 8,
+          "codepoint_end": 74,
+          "utf8_start": 13,
+          "utf8_end": 79,
+          "slice_sha256": "d94d6b70eac17773c16ec264b6164370756cb25488615ed6beba17144ac5fad6"
+        },
+        "canonical_world_sha256": "eb64486383411b7c7e8f81552b9da1da97552da88a0a9ecec31fa7849f1766b0"
+      },
+      "oracle": {
+        "invariant_prefix": "Catalog note: ",
+        "invariant_suffix": " Next, I will inventory the requested materials.",
+        "supported": {
+          "reply": "Catalog note: Opening is permitted. Next, I will inventory the requested materials.",
+          "claim_response": "Opening is permitted.",
+          "quoted_opposite_literal": "Catalog note: ‘UNKNOWN’ appears only in a quote; opening is permitted. Next, I will inventory the requested materials.",
+          "explicit_denial_of_opposite": "Catalog note: Permission is not unknown; opening is permitted. Next, I will inventory the requested materials.",
+          "surface_paraphrase_copy": "The cabinet may be opened.",
+          "nonce_decorated_copy": "[nonce-b] Opening is permitted."
+        },
+        "second": {
+          "reply": "Catalog note: Whether opening is permitted is unknown. Next, I will inventory the requested materials.",
+          "claim_response": "Whether opening is permitted is unknown.",
+          "quoted_opposite_literal": "Catalog note: ‘SUPPORTED’ is quoted, while permission remains unknown. Next, I will inventory the requested materials.",
+          "explicit_denial_of_opposite": "Catalog note: I cannot say opening is permitted; permission remains unknown. Next, I will inventory the requested materials.",
+          "surface_paraphrase_copy": "The cabinet may be opened.",
+          "nonce_decorated_copy": "[nonce-b2] Opening is permitted."
+        }
+      }
+    },
+    {
+      "family_id": "lighthouse_correspondence",
+      "axis": "relationship_fidelity",
+      "second_polarity": "denied",
+      "authority": "participant_snapshot",
+      "semantic_atom": "actor and user are established pen pals",
+      "semantic_atom_sha256": "c6bc82518b4fb887c74050ba87644d8591c31b3f440126c90b780a34f74201d7",
+      "allowed_delta_json_pointer": "/participants/0/persona_snapshot/relationship",
+      "projection_number": 3,
+      "common_projection_sha256": "f2fc24ab032a98276b2633ef250a4756a7696c2e37f6c3935c394db7f30c9d3f",
+      "supported": {
+        "polarity": "supported",
+        "authoritative_value": "actor and user are established pen pals",
+        "source_text": "🛰️灯塔 | actor and user are established pen pals",
+        "source_sha256": "5a99fe104c7742b7a9f0702f9f5740aad578851b652943181d90a8ed5e741ff0",
+        "source_span": {
+          "codepoint_start": 7,
+          "codepoint_end": 46,
+          "utf8_start": 16,
+          "utf8_end": 55,
+          "slice_sha256": "c6bc82518b4fb887c74050ba87644d8591c31b3f440126c90b780a34f74201d7"
+        },
+        "canonical_world_sha256": "ac50b9f511bef098dfdb82a0cf4c19b0b74d0026f561c8c0ab2e6680ef3da122"
+      },
+      "second": {
+        "polarity": "denied",
+        "authoritative_value": "actor and user are not established pen pals",
+        "source_text": "🛰️灯塔 | actor and user are not established pen pals",
+        "source_sha256": "550c903dd6e75e39233f0f82de8e57681fd782888f8dcc13522857a8c4d21d46",
+        "source_span": {
+          "codepoint_start": 7,
+          "codepoint_end": 50,
+          "utf8_start": 16,
+          "utf8_end": 59,
+          "slice_sha256": "5bd3d8186637e6feaef5724df3e29f64f9fe8f01c89e89c130b02b5ce08c2f8d"
+        },
+        "canonical_world_sha256": "9e85979313c2e005d99eeb35814e4adb3e85e66c9793fbf647d2b5004a0cd75a"
+      },
+      "oracle": {
+        "invariant_prefix": "Catalog note: ",
+        "invariant_suffix": " Next, I will inventory the requested materials.",
+        "supported": {
+          "reply": "Catalog note: They are established pen pals. Next, I will inventory the requested materials.",
+          "claim_response": "They are established pen pals.",
+          "quoted_opposite_literal": "Catalog note: ‘not pen pals’ is quoted; they are established pen pals. Next, I will inventory the requested materials.",
+          "explicit_denial_of_opposite": "Catalog note: It is false that they are not pen pals; they are established pen pals. Next, I will inventory the requested materials.",
+          "surface_paraphrase_copy": "Their pen-pal relationship is established.",
+          "nonce_decorated_copy": "[nonce-c] They are pen pals."
+        },
+        "second": {
+          "reply": "Catalog note: They are not established pen pals. Next, I will inventory the requested materials.",
+          "claim_response": "They are not established pen pals.",
+          "quoted_opposite_literal": "Catalog note: ‘established pen pals’ is quoted; they are not pen pals. Next, I will inventory the requested materials.",
+          "explicit_denial_of_opposite": "Catalog note: The claim that they are pen pals is false. Next, I will inventory the requested materials.",
+          "surface_paraphrase_copy": "Their pen-pal relationship is established.",
+          "nonce_decorated_copy": "[nonce-c2] They are pen pals."
+        }
+      }
+    },
+    {
+      "family_id": "neighborhood_watch_intro",
+      "axis": "relationship_fidelity",
+      "second_polarity": "explicitly_unknown",
+      "authority": "participant_snapshot",
+      "semantic_atom": "actor and user served together on the watch",
+      "semantic_atom_sha256": "ffab3fed8fffd7c1ab1c28e69f4ed734d63f8584d3560225ad22d1c6344fe9e6",
+      "allowed_delta_json_pointer": "/participants/0/persona_snapshot/relationship",
+      "projection_number": 4,
+      "common_projection_sha256": "ec6f605b3d80559185027a03a6712f6d3f37383f977e9ade1d16775e91e0049b",
+      "supported": {
+        "polarity": "supported",
+        "authoritative_value": "actor and user served together on the watch",
+        "source_text": "邻里 | actor and user served together on the watch",
+        "source_sha256": "b50b4ebe8ad3b0af4a5a7183a1467a29ff7b854ef99a275759db77c56e08828b",
+        "source_span": {
+          "codepoint_start": 5,
+          "codepoint_end": 48,
+          "utf8_start": 9,
+          "utf8_end": 52,
+          "slice_sha256": "ffab3fed8fffd7c1ab1c28e69f4ed734d63f8584d3560225ad22d1c6344fe9e6"
+        },
+        "canonical_world_sha256": "3ddc4d96da7e953b7024e6202de5e44a7b46e9cb14b11cb18215c63af4b2288c"
+      },
+      "second": {
+        "polarity": "explicitly_unknown",
+        "authoritative_value": "whether actor and user served together on the watch is explicitly unknown",
+        "source_text": "邻里 | whether actor and user served together on the watch is explicitly unknown",
+        "source_sha256": "5ed04d38b8a5cb7b4389491427748d7e0c9412041e36a44d3ac2744ab11d36bc",
+        "source_span": {
+          "codepoint_start": 5,
+          "codepoint_end": 78,
+          "utf8_start": 9,
+          "utf8_end": 82,
+          "slice_sha256": "9e7ce3115511b44d88c00b7a64b10242a394dc41e88be236905bb419bb9afacc"
+        },
+        "canonical_world_sha256": "626dea3446345c270b79182296208b8f13caf9712b8a844460bdc720d9605abb"
+      },
+      "oracle": {
+        "invariant_prefix": "Catalog note: ",
+        "invariant_suffix": " Next, I will inventory the requested materials.",
+        "supported": {
+          "reply": "Catalog note: They served together on the watch. Next, I will inventory the requested materials.",
+          "claim_response": "They served together on the watch.",
+          "quoted_opposite_literal": "Catalog note: ‘never served together’ is quoted; they served together. Next, I will inventory the requested materials.",
+          "explicit_denial_of_opposite": "Catalog note: It is false that their service is unknown; they served together. Next, I will inventory the requested materials.",
+          "surface_paraphrase_copy": "They were watch colleagues.",
+          "nonce_decorated_copy": "[nonce-d] They served together."
+        },
+        "second": {
+          "reply": "Catalog note: Whether they served together is unknown. Next, I will inventory the requested materials.",
+          "claim_response": "Whether they served together is unknown.",
+          "quoted_opposite_literal": "Catalog note: ‘served together’ is quoted, while that relationship is unknown. Next, I will inventory the requested materials.",
+          "explicit_denial_of_opposite": "Catalog note: I cannot confirm they served together; it remains unknown. Next, I will inventory the requested materials.",
+          "surface_paraphrase_copy": "They were watch colleagues.",
+          "nonce_decorated_copy": "[nonce-d2] They served together."
+        }
+      }
+    },
+    {
+      "family_id": "pottery_fair_visit",
+      "axis": "shared_history_fidelity",
+      "second_polarity": "denied",
+      "authority": "transcript_snapshot",
+      "semantic_atom": "actor and user attended the prior pottery fair together",
+      "semantic_atom_sha256": "983061bda197df09fa22a75ffe8bf2352d8e1f403386b89c03b3ebfd491ccc19",
+      "allowed_delta_json_pointer": "/recent_messages/0/content",
+      "projection_number": 5,
+      "common_projection_sha256": "3871fe5e03058b90bb4d0ccfe69d8b08b3ab3f382fd525c4fb0122c2eb6db141",
+      "supported": {
+        "polarity": "supported",
+        "authoritative_value": "actor and user attended the prior pottery fair together",
+        "source_text": "pottery_fair_visit: actor and user attended the prior pottery fair together",
+        "source_sha256": "b8fb213accd2145ee6be324b2d1891812321de0e801154ff3e0e0fb597f5885c",
+        "source_span": {
+          "codepoint_start": 20,
+          "codepoint_end": 75,
+          "utf8_start": 20,
+          "utf8_end": 75,
+          "slice_sha256": "983061bda197df09fa22a75ffe8bf2352d8e1f403386b89c03b3ebfd491ccc19"
+        },
+        "canonical_world_sha256": "4f9cc592df2e1927dd17bdfe6462b3401a8512ac678861be07c2dff93b866fb0"
+      },
+      "second": {
+        "polarity": "denied",
+        "authoritative_value": "actor and user did not attend the prior pottery fair together",
+        "source_text": "pottery_fair_visit: actor and user did not attend the prior pottery fair together",
+        "source_sha256": "00c1bb9695650963b0a6804be1ddeccde1cf2fc2a5623e9e03acccc672b7d54e",
+        "source_span": {
+          "codepoint_start": 20,
+          "codepoint_end": 81,
+          "utf8_start": 20,
+          "utf8_end": 81,
+          "slice_sha256": "9938fb86cc712400be928b2d2216d3caf8f0db2c39debcb08cddb494e828a6cc"
+        },
+        "canonical_world_sha256": "2c7c68bde7c398adf7f7e3f10547cc546539630ae90b804fce9e22c1cca4deea"
+      },
+      "oracle": {
+        "invariant_prefix": "Catalog note: ",
+        "invariant_suffix": " Next, I will inventory the requested materials.",
+        "supported": {
+          "reply": "Catalog note: They attended the prior pottery fair together. Next, I will inventory the requested materials.",
+          "claim_response": "They attended the prior pottery fair together.",
+          "quoted_opposite_literal": "Catalog note: ‘did not attend’ is quoted; they attended together. Next, I will inventory the requested materials.",
+          "explicit_denial_of_opposite": "Catalog note: It is false that they attended separately; they attended together. Next, I will inventory the requested materials.",
+          "surface_paraphrase_copy": "They shared that fair visit.",
+          "nonce_decorated_copy": "[nonce-e] They attended together."
+        },
+        "second": {
+          "reply": "Catalog note: They did not attend the prior pottery fair together. Next, I will inventory the requested materials.",
+          "claim_response": "They did not attend the prior pottery fair together.",
+          "quoted_opposite_literal": "Catalog note: ‘attended together’ is quoted; they did not attend together. Next, I will inventory the requested materials.",
+          "explicit_denial_of_opposite": "Catalog note: The claim that they attended together is false. Next, I will inventory the requested materials.",
+          "surface_paraphrase_copy": "They shared that fair visit.",
+          "nonce_decorated_copy": "[nonce-e2] They attended together."
+        }
+      }
+    },
+    {
+      "family_id": "ferry_winch_repair",
+      "axis": "shared_history_fidelity",
+      "second_polarity": "explicitly_unknown",
+      "authority": "transcript_snapshot",
+      "semantic_atom": "actor and user repaired the ferry winch together",
+      "semantic_atom_sha256": "3aa7624acb91d28c241eac020448c5867d5cbf13b828bf4c002a45a09a52fe87",
+      "allowed_delta_json_pointer": "/recent_messages/0/content",
+      "projection_number": 6,
+      "common_projection_sha256": "b32bf0ebb6f3f047d6c2b8ed5c101062315aeb148abbc1a7410ad7b7022d489b",
+      "supported": {
+        "polarity": "supported",
+        "authoritative_value": "actor and user repaired the ferry winch together",
+        "source_text": "ferry_winch_repair: actor and user repaired the ferry winch together",
+        "source_sha256": "e80840c93772a8cdbd3c8310ed982d341c539de7dd24aa933e3f574764b8d436",
+        "source_span": {
+          "codepoint_start": 20,
+          "codepoint_end": 68,
+          "utf8_start": 20,
+          "utf8_end": 68,
+          "slice_sha256": "3aa7624acb91d28c241eac020448c5867d5cbf13b828bf4c002a45a09a52fe87"
+        },
+        "canonical_world_sha256": "8b52baf355f01d5039f5f0af04782c441aa88859e886effdffb268b85552d22d"
+      },
+      "second": {
+        "polarity": "explicitly_unknown",
+        "authoritative_value": "whether actor and user repaired the ferry winch together is explicitly unknown",
+        "source_text": "ferry_winch_repair: whether actor and user repaired the ferry winch together is explicitly unknown",
+        "source_sha256": "647562022a22fd687d591e36db1a1f0102552b2c343dc460f871c39fb5c183c1",
+        "source_span": {
+          "codepoint_start": 20,
+          "codepoint_end": 98,
+          "utf8_start": 20,
+          "utf8_end": 98,
+          "slice_sha256": "5349c7915178ab840ad9ae8c042488336215a694bf2326948a0460266455c6ac"
+        },
+        "canonical_world_sha256": "6ca378e6b907e6a3712463fa45064510c299a1cc9408458b705a24fc3f82584c"
+      },
+      "oracle": {
+        "invariant_prefix": "Catalog note: ",
+        "invariant_suffix": " Next, I will inventory the requested materials.",
+        "supported": {
+          "reply": "Catalog note: They repaired the ferry winch together. Next, I will inventory the requested materials.",
+          "claim_response": "They repaired the ferry winch together.",
+          "quoted_opposite_literal": "Catalog note: ‘repair unknown’ is quoted; they repaired it together. Next, I will inventory the requested materials.",
+          "explicit_denial_of_opposite": "Catalog note: Their joint repair is not unknown; they repaired it together. Next, I will inventory the requested materials.",
+          "surface_paraphrase_copy": "They jointly fixed the winch.",
+          "nonce_decorated_copy": "[nonce-f] They repaired it together."
+        },
+        "second": {
+          "reply": "Catalog note: Whether they repaired it together is unknown. Next, I will inventory the requested materials.",
+          "claim_response": "Whether they repaired it together is unknown.",
+          "quoted_opposite_literal": "Catalog note: ‘repaired together’ is quoted, while that history is unknown. Next, I will inventory the requested materials.",
+          "explicit_denial_of_opposite": "Catalog note: I cannot confirm a joint repair; it remains unknown. Next, I will inventory the requested materials.",
+          "surface_paraphrase_copy": "They jointly fixed the winch.",
+          "nonce_decorated_copy": "[nonce-f2] They repaired it together."
+        }
+      }
+    },
+    {
+      "family_id": "radio_weather_measurement",
+      "axis": "epistemic_provenance",
+      "second_polarity": "denied",
+      "authority": "transcript_snapshot",
+      "semantic_atom": "actor personally measured the reported wind speed",
+      "semantic_atom_sha256": "5944c5bc29a655ef455b7855950bd53a4b9eeb8e7f2473459c69d53d12e2053f",
+      "allowed_delta_json_pointer": "/recent_messages/0/content",
+      "projection_number": 7,
+      "common_projection_sha256": "5c96f64fc4ce65240ec6c2103e7df5cbd446e9d667d22f994bc9fb2bf82cbedd",
+      "supported": {
+        "polarity": "supported",
+        "authoritative_value": "actor personally measured the reported wind speed",
+        "source_text": "radio_weather_measurement: actor personally measured the reported wind speed",
+        "source_sha256": "9ef18d1d50cba4c87385f1fae56af8c7c8a7270180470059c5d7c0080acbab08",
+        "source_span": {
+          "codepoint_start": 27,
+          "codepoint_end": 76,
+          "utf8_start": 27,
+          "utf8_end": 76,
+          "slice_sha256": "5944c5bc29a655ef455b7855950bd53a4b9eeb8e7f2473459c69d53d12e2053f"
+        },
+        "canonical_world_sha256": "ccfce5d0480b0b88d54b132e903d4beeb7bc0d2cb049e75721f496e57c99af98"
+      },
+      "second": {
+        "polarity": "denied",
+        "authoritative_value": "actor did not personally measure the reported wind speed",
+        "source_text": "radio_weather_measurement: actor did not personally measure the reported wind speed",
+        "source_sha256": "b60a5d4b53bf3f4a54e38e9b4cc21cdc940942500c8697a67964a03db43e8580",
+        "source_span": {
+          "codepoint_start": 27,
+          "codepoint_end": 83,
+          "utf8_start": 27,
+          "utf8_end": 83,
+          "slice_sha256": "644e390fda84ddb6040f1ce39b68772e859621b841f650fab842d23e276cecde"
+        },
+        "canonical_world_sha256": "965c0823b3fdce648ca176c10286af36ea777557329b0d39ca5f51b0b2c021ad"
+      },
+      "oracle": {
+        "invariant_prefix": "Catalog note: ",
+        "invariant_suffix": " Next, I will inventory the requested materials.",
+        "supported": {
+          "reply": "Catalog note: The actor personally measured the wind speed. Next, I will inventory the requested materials.",
+          "claim_response": "The actor personally measured the wind speed.",
+          "quoted_opposite_literal": "Catalog note: ‘did not measure’ is quoted; the actor measured it personally. Next, I will inventory the requested materials.",
+          "explicit_denial_of_opposite": "Catalog note: It is false that the actor only heard it; they measured it. Next, I will inventory the requested materials.",
+          "surface_paraphrase_copy": "The reading was firsthand.",
+          "nonce_decorated_copy": "[nonce-g] The actor measured it."
+        },
+        "second": {
+          "reply": "Catalog note: The actor did not personally measure the wind speed. Next, I will inventory the requested materials.",
+          "claim_response": "The actor did not personally measure the wind speed.",
+          "quoted_opposite_literal": "Catalog note: ‘personally measured’ is quoted; the actor did not measure it. Next, I will inventory the requested materials.",
+          "explicit_denial_of_opposite": "Catalog note: The claim of firsthand measurement is false. Next, I will inventory the requested materials.",
+          "surface_paraphrase_copy": "The reading was firsthand.",
+          "nonce_decorated_copy": "[nonce-g2] The actor measured it."
+        }
+      }
+    },
+    {
+      "family_id": "observatory_plate_sighting",
+      "axis": "epistemic_provenance",
+      "second_polarity": "explicitly_unknown",
+      "authority": "transcript_snapshot",
+      "semantic_atom": "actor directly observed the plate marking",
+      "semantic_atom_sha256": "e309ea4157b1bb952d6ef67fe18cc8123e88cc55fa30fd71ed7f0f36764780d7",
+      "allowed_delta_json_pointer": "/recent_messages/0/content",
+      "projection_number": 8,
+      "common_projection_sha256": "aab7d64e6fcf997a8d22b902506c8261d662f169398c859339800d5d30dfa486",
+      "supported": {
+        "polarity": "supported",
+        "authoritative_value": "actor directly observed the plate marking",
+        "source_text": "observatory_plate_sighting: actor directly observed the plate marking",
+        "source_sha256": "a94ec8591502dfe3f9686a2638342b645c62e5277bb7e7ce517bf73892cd8a29",
+        "source_span": {
+          "codepoint_start": 28,
+          "codepoint_end": 69,
+          "utf8_start": 28,
+          "utf8_end": 69,
+          "slice_sha256": "e309ea4157b1bb952d6ef67fe18cc8123e88cc55fa30fd71ed7f0f36764780d7"
+        },
+        "canonical_world_sha256": "0280fd9419ebbc38e1793efd5137cc2784b4ce162f47037aa64de7bf5624404b"
+      },
+      "second": {
+        "polarity": "explicitly_unknown",
+        "authoritative_value": "whether actor directly observed the plate marking is explicitly unknown",
+        "source_text": "observatory_plate_sighting: whether actor directly observed the plate marking is explicitly unknown",
+        "source_sha256": "0935fec29b899bada9600bcadb01acaf8ce9c849aca49ae3c8bfda2e2a20f325",
+        "source_span": {
+          "codepoint_start": 28,
+          "codepoint_end": 99,
+          "utf8_start": 28,
+          "utf8_end": 99,
+          "slice_sha256": "71a0aaf39d170f2610f18f4f7081743f216a6037be1a5fc69a7f63eeecfb75d4"
+        },
+        "canonical_world_sha256": "ca9abca2fef07af3446c1852173f4d28725c839a49158c2678cbc9b90512a6cb"
+      },
+      "oracle": {
+        "invariant_prefix": "Catalog note: ",
+        "invariant_suffix": " Next, I will inventory the requested materials.",
+        "supported": {
+          "reply": "Catalog note: The actor directly observed the marking. Next, I will inventory the requested materials.",
+          "claim_response": "The actor directly observed the marking.",
+          "quoted_opposite_literal": "Catalog note: ‘not observed’ is quoted; the actor observed it directly. Next, I will inventory the requested materials.",
+          "explicit_denial_of_opposite": "Catalog note: Direct observation is not unknown; the actor observed it. Next, I will inventory the requested materials.",
+          "surface_paraphrase_copy": "The sighting was firsthand.",
+          "nonce_decorated_copy": "[nonce-h] The actor saw it."
+        },
+        "second": {
+          "reply": "Catalog note: Whether the actor directly observed it is unknown. Next, I will inventory the requested materials.",
+          "claim_response": "Whether the actor directly observed it is unknown.",
+          "quoted_opposite_literal": "Catalog note: ‘directly observed’ is quoted, while provenance is unknown. Next, I will inventory the requested materials.",
+          "explicit_denial_of_opposite": "Catalog note: I cannot claim direct observation; provenance remains unknown. Next, I will inventory the requested materials.",
+          "surface_paraphrase_copy": "The sighting was firsthand.",
+          "nonce_decorated_copy": "[nonce-h2] The actor saw it."
+        }
+      }
+    },
+    {
+      "family_id": "greenhouse_valve_state",
+      "axis": "world_state_fidelity",
+      "second_polarity": "denied",
+      "authority": "scene_snapshot",
+      "semantic_atom": "the north irrigation valve is open",
+      "semantic_atom_sha256": "60f212f06ed16dc2ee452bc3c2e845826872f5f8d696286fe2b15a6b2ebcb457",
+      "allowed_delta_json_pointer": "/room/scene_profile/summary",
+      "projection_number": 9,
+      "common_projection_sha256": "4cde0885325080706c9eddb1a3326624262fe29665545c5f3ac1a46e6b69b51c",
+      "supported": {
+        "polarity": "supported",
+        "authoritative_value": "the north irrigation valve is open",
+        "source_text": "greenhouse_valve_state: the north irrigation valve is open",
+        "source_sha256": "03bcfdd46bad1402ae21e1e67c6ee7fca05bdc83037812e1b9323b8c876fc2b8",
+        "source_span": {
+          "codepoint_start": 24,
+          "codepoint_end": 58,
+          "utf8_start": 24,
+          "utf8_end": 58,
+          "slice_sha256": "60f212f06ed16dc2ee452bc3c2e845826872f5f8d696286fe2b15a6b2ebcb457"
+        },
+        "canonical_world_sha256": "9d66fd7d0bef89c18ab83696ceb72a075f76bb2361b1036f309efbd1ab446cf2"
+      },
+      "second": {
+        "polarity": "denied",
+        "authoritative_value": "the north irrigation valve is not open",
+        "source_text": "greenhouse_valve_state: the north irrigation valve is not open",
+        "source_sha256": "eb4748b69995ca64d9db53e674431e707797315efba23dc8685c9f50bc98eb2f",
+        "source_span": {
+          "codepoint_start": 24,
+          "codepoint_end": 62,
+          "utf8_start": 24,
+          "utf8_end": 62,
+          "slice_sha256": "7270068f8ee222539e3d8f00e1af7f3fa1adff4046085892bbdc3b205d5492c0"
+        },
+        "canonical_world_sha256": "6b0f427ea7c6d157adf68e16c21791d61509e6b2a169e64411375559c8275347"
+      },
+      "oracle": {
+        "invariant_prefix": "Catalog note: ",
+        "invariant_suffix": " Next, I will inventory the requested materials.",
+        "supported": {
+          "reply": "Catalog note: The north irrigation valve is open. Next, I will inventory the requested materials.",
+          "claim_response": "The north irrigation valve is open.",
+          "quoted_opposite_literal": "Catalog note: ‘valve closed’ is quoted; the north valve is open. Next, I will inventory the requested materials.",
+          "explicit_denial_of_opposite": "Catalog note: The north valve is not closed; it is open. Next, I will inventory the requested materials.",
+          "surface_paraphrase_copy": "The north valve remains open.",
+          "nonce_decorated_copy": "[nonce-i] The valve is open."
+        },
+        "second": {
+          "reply": "Catalog note: The north irrigation valve is not open. Next, I will inventory the requested materials.",
+          "claim_response": "The north irrigation valve is not open.",
+          "quoted_opposite_literal": "Catalog note: ‘valve open’ is quoted; the north valve is not open. Next, I will inventory the requested materials.",
+          "explicit_denial_of_opposite": "Catalog note: The claim that the north valve is open is false. Next, I will inventory the requested materials.",
+          "surface_paraphrase_copy": "The north valve remains open.",
+          "nonce_decorated_copy": "[nonce-i2] The valve is open."
+        }
+      }
+    },
+    {
+      "family_id": "rehearsal_east_exit",
+      "axis": "world_state_fidelity",
+      "second_polarity": "explicitly_unknown",
+      "authority": "scene_snapshot",
+      "semantic_atom": "the east rehearsal exit is accessible",
+      "semantic_atom_sha256": "a929f7164f7d1f6ed8f40dfd8b46e4f4a5ced5a52192e0ffc26581349faf165d",
+      "allowed_delta_json_pointer": "/room/scene_profile/summary",
+      "projection_number": 10,
+      "common_projection_sha256": "0ff2c30eebd4eb97779f7edc20c1b6bdafedbec3976032397c295afaf28a7cb5",
+      "supported": {
+        "polarity": "supported",
+        "authoritative_value": "the east rehearsal exit is accessible",
+        "source_text": "rehearsal_east_exit: the east rehearsal exit is accessible",
+        "source_sha256": "0c507feda5b72636c85e3ff17b03d5695e7fab83a6dacbc98321a2fd970b90ca",
+        "source_span": {
+          "codepoint_start": 21,
+          "codepoint_end": 58,
+          "utf8_start": 21,
+          "utf8_end": 58,
+          "slice_sha256": "a929f7164f7d1f6ed8f40dfd8b46e4f4a5ced5a52192e0ffc26581349faf165d"
+        },
+        "canonical_world_sha256": "4f51c7ae50a243a4a0a7506b689fcefd0a8380570867fb3f20a61d364fefdd61"
+      },
+      "second": {
+        "polarity": "explicitly_unknown",
+        "authoritative_value": "whether the east rehearsal exit is accessible is explicitly unknown",
+        "source_text": "rehearsal_east_exit: whether the east rehearsal exit is accessible is explicitly unknown",
+        "source_sha256": "413109e88b88b0d34362f74306cefb280baa249aab5e958b8a57f6aab2d19bcd",
+        "source_span": {
+          "codepoint_start": 21,
+          "codepoint_end": 88,
+          "utf8_start": 21,
+          "utf8_end": 88,
+          "slice_sha256": "37a97aedb6c1d315b362463c9270f108ea5ce507a41301098c8527bc4b3fe6f1"
+        },
+        "canonical_world_sha256": "d9cb97d67a68413065e992f07012d00ce5b2a168ee5742bb1a3325d2333d981a"
+      },
+      "oracle": {
+        "invariant_prefix": "Catalog note: ",
+        "invariant_suffix": " Next, I will inventory the requested materials.",
+        "supported": {
+          "reply": "Catalog note: The east rehearsal exit is accessible. Next, I will inventory the requested materials.",
+          "claim_response": "The east rehearsal exit is accessible.",
+          "quoted_opposite_literal": "Catalog note: ‘exit inaccessible’ is quoted; the east exit is accessible. Next, I will inventory the requested materials.",
+          "explicit_denial_of_opposite": "Catalog note: Accessibility is not unknown; the east exit is accessible. Next, I will inventory the requested materials.",
+          "surface_paraphrase_copy": "The east exit can be used.",
+          "nonce_decorated_copy": "[nonce-j] The east exit is accessible."
+        },
+        "second": {
+          "reply": "Catalog note: Whether the east exit is accessible is unknown. Next, I will inventory the requested materials.",
+          "claim_response": "Whether the east exit is accessible is unknown.",
+          "quoted_opposite_literal": "Catalog note: ‘exit accessible’ is quoted, while accessibility is unknown. Next, I will inventory the requested materials.",
+          "explicit_denial_of_opposite": "Catalog note: I cannot confirm accessibility; it remains unknown. Next, I will inventory the requested materials.",
+          "surface_paraphrase_copy": "The east exit can be used.",
+          "nonce_decorated_copy": "[nonce-j2] The east exit is accessible."
+        }
+      }
+    }
+  ],
+  "historical_dedup": {
+    "forbidden_family_ids": [
+      "silent-signal-station",
+      "three-cell-seed-vault",
+      "unknown-diver-history-parcel-depot",
+      "alpine_weather",
+      "canal_notebook",
+      "ceramic_archive",
+      "coastal_beacon",
+      "prop_registry",
+      "radio_bench",
+      "rooftop_garden",
+      "wetland_count"
+    ],
+    "forbidden_source_sha256": [
+      "6c85dcf8588f6be8f413b9dd25d8c507a261be3e33b4f6b7b49c656582ea8dcd",
+      "01a084d356496c28899068e2df0bc06e732ebb0f1c894d36d6f981770417ad30",
+      "33b81be833d1231f780c3303376bc2196238e622d248537d8e6fad223e27e6af",
+      "110b3f29b5f49b42baf0185b3e32235a321db18677682b143937f31d0dabc11c",
+      "0f63db34f594bf00626f179e0311ed63f29030ca6f97aea26d3f327001d925e1",
+      "97c3b17576790d77bb1cf11b75ce4844954f17a9bf396f9cb320b44d4857c348",
+      "6187ab860eead7c6ec1e78cbaeac297da66b08b2f1b73c2ce33a3f35c1ccaf69",
+      "94d1492f6bd8a65f8e43b2fe618c0d92b1a7777aa58b8429c499eb69325963a5"
+    ],
+    "forbidden_semantic_atom_sha256": [
+      "736f298ea7cb2fd9e2b94dfd58aba41d6a108c8b922b4cf57d458c2c7247c638",
+      "077c9d49739149e98f2365a5c666db52a66c8c17beeec3106eedb408c6dbcb3e",
+      "63f9173c1ed78f0953d11e5bdf7a69b5e1bdeb6c1d5d311f39c09e699a04d51a"
+    ],
+    "reviewer_confirmation_required": true
+  },
+  "historical_ancestry": {
+    "manifest_path": "tools/model-quality/fixtures/persona-scene/tavern-counterfactual-twins-historical-ancestry-v1.json",
+    "manifest_bytes_sha256": "635651ed02aab0a300afb7a6056b527d916d6abef316a3355b9fd2368869cd92",
+    "external_review_status": "pending"
+  },
+  "canonical_golden_vectors": [
+    {
+      "vector_id": "ascii",
+      "text": "AZ09",
+      "codepoint_count": 4,
+      "utf8_count": 4,
+      "utf8_hex": "415a3039",
+      "sha256": "cc21b618c8fce0b54621af09be4f9c8f6b91cf13cea813edef247b25b67f81c9"
+    },
+    {
+      "vector_id": "cjk",
+      "text": "汉字",
+      "codepoint_count": 2,
+      "utf8_count": 6,
+      "utf8_hex": "e6b189e5ad97",
+      "sha256": "00e5d5601ce310d84ec2875e28c826f7f4c0a473be7fd53cf50e47f1542db4ea"
+    },
+    {
+      "vector_id": "emoji",
+      "text": "🦊",
+      "codepoint_count": 1,
+      "utf8_count": 4,
+      "utf8_hex": "f09fa68a",
+      "sha256": "0a9f72e8edad3748ffee34e08891b3bf1491108c05b2c02cfcd18c5a38271863"
+    },
+    {
+      "vector_id": "combining_mark",
+      "text": "é",
+      "codepoint_count": 2,
+      "utf8_count": 3,
+      "utf8_hex": "65cc81",
+      "sha256": "bf12767b0f2a56b2190075bae8169f656e3ce8d6357d4aff184bc6c7ea48f9f6"
+    }
+  ]
+}

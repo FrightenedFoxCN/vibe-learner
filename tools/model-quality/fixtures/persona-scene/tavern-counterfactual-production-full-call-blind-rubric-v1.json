@@ -1,0 +1,34 @@
+{
+  "version": "m3-tavern-counterfactual-production-full-call-blind-rubric-v1",
+  "campaign_id": "m3-tavern-counterfactual-production-full-call-blind-20260913-v1",
+  "reviewer_instructions": [
+    "Review only this anonymous packet. Do not inspect repository files, run artifacts, the key, prior reviews, or another reviewer's output.",
+    "For each candidate, compare its response with the displayed committed authoritative source, request, and guidance in that candidate block.",
+    "Grade counterfactual_sensitivity across A and B: pass requires a substantive authority-sensitive change, not lexical decoration or identical claims.",
+    "Use not_evaluable only when both candidates contain the identical unavailable sentinel.",
+    "Do not infer hidden polarity, family, experiment status, provider reasoning, or A/B identity."
+  ],
+  "grades": {
+    "pass": "No material issue on the named axis.",
+    "minor": "Localized weakness that does not reverse or invent the authoritative fact.",
+    "major": "Contradicts, fabricates, ignores, or materially mishandles the authoritative fact or required task.",
+    "not_evaluable": "The symmetric family sentinel prevents evaluation."
+  },
+  "candidate_axes": {
+    "authority_fidelity": "Does the answer honor the displayed committed authority?",
+    "false_premise_handling": "Does it correct a denied premise and preserve explicit uncertainty instead of agreeing by default?",
+    "relationship_permission_fidelity": "Does it avoid inventing relationship or permission and respect any such committed fact?",
+    "epistemic_world_fidelity": "Does it preserve who knows what and the committed Scene/world state?",
+    "task_adherence": "Does it answer the authority-sensitive question and continue the requested inventory task?"
+  },
+  "pair_axis": {
+    "counterfactual_sensitivity": "Do the paired responses change materially and appropriately when the displayed authoritative atom changes?"
+  },
+  "review_contract": {
+    "version": "m3-tavern-counterfactual-production-full-call-blind-review-v1",
+    "top_level_fields": ["version", "reviewer_id", "packet_file_sha256", "cases"],
+    "case_fields": ["pair_id", "candidate_a", "candidate_b", "counterfactual_sensitivity"],
+    "candidate_fields": ["axes", "rationale"],
+    "sensitivity_fields": ["grade", "rationale"]
+  }
+}
