@@ -72,7 +72,8 @@
     "test:ai:document:input-limits": "cd services/ai && LITELLM_LOCAL_MODEL_COST_MAP=True UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m unittest tests.test_document_input_limits",
     "test:ai:output-language": "cd services/ai && LITELLM_LOCAL_MODEL_COST_MAP=True UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m unittest tests.test_output_language",
     "test:acceptance:tavern-transport-cancel": "cd services/ai && LITELLM_LOCAL_MODEL_COST_MAP=True UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m tests.acceptance.tavern_transport_cancel_probe",
-    "test:acceptance:postgres": "cd services/ai && LITELLM_LOCAL_MODEL_COST_MAP=True UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run --frozen python -m tests.acceptance.postgres_recovery_probe"
+    "test:acceptance:postgres": "cd services/ai && LITELLM_LOCAL_MODEL_COST_MAP=True UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run --frozen python -m tests.acceptance.postgres_recovery_probe",
+    "test:acceptance:historical-replay": "cd services/ai && LITELLM_LOCAL_MODEL_COST_MAP=True UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run --frozen python -m tests.acceptance.historical_artifact_replay"
   },
   "dependencies": {
     "rehype-katex": "^7.0.1"

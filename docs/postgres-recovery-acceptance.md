@@ -59,4 +59,4 @@ docker rm -f vibe-pg-recovery
 
 脚本限制 loopback PostgreSQL URL，并校验 schema 名称。schema marker 丢失时不会回退到 SQLite。实际验收的 26 个 schema（含调试失败时留下的隔离 scope）和专用容器已清理；没有用户数据库挂载或真实 provider 调用。
 
-SQLite 迁移/runtime/context 专项原有 41 项回归、历史 context 的 3 项 Python / 1 项浏览器测试、8 项既有对抗解码检查、一个 SQLite 进程恢复测试、Web 类型和 changed-file style 门已通过。未运行完整后端测试或生产构建。[2026-09-11 独立报告](plans/postgres-replay-independent-acceptance-2026-09-11.md) 保留当时结果；受保护制品的完整历史 adapter 重放仍由 `TODO.md` 的 `REL-REPLAY-001` 跟踪。
+SQLite 迁移/runtime/context 专项原有 41 项回归、历史 context 的 3 项 Python / 1 项浏览器测试、8 项既有对抗解码检查、一个 SQLite 进程恢复测试、Web 类型和 changed-file style 门已通过。未运行完整后端测试或生产构建。[2026-09-11 独立报告](plans/postgres-replay-independent-acceptance-2026-09-11.md) 保留当时结果；历史受保护制品的四领域 adapter 重放见[单独验收报告](historical-artifact-replay-2026-10-30.md)。

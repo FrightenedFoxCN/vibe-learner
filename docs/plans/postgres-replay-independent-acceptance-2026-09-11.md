@@ -41,7 +41,7 @@
 
 另外复跑 `test_harness_artifact_resolver`、`test_harness_runtime`、`test_harness_broad_commit_binding`：**29 项通过，1.685 秒**。既有 resolver 测试补充 artifact 本身 retention expiry、跨 principal、revocation、digest-only、不泄漏内容的审计与 eval bridge 校验。
 
-`REL-REPLAY-001` **建议保持开放并缩小剩余范围**：本轮独立证明四领域共享解析/授权边界对当前契约和常见破坏情形有效。尚未使用真实历史产物完成跨版本迁移/重放，也未验证原进程结束且旧 15 分钟 grant 过期后，如何重新授权并经完整领域 adapter 重放历史任务。当前结果是持久化快照解析与拒绝矩阵，不是完整历史工作流重放认证。未发现本轮覆盖范围内的产品失败。
+`REL-REPLAY-001` **在本报告当时建议保持开放并缩小剩余范围**：本轮独立证明四领域共享解析/授权边界对当前契约和常见破坏情形有效。尚未使用真实历史产物完成跨版本迁移/重放，也未验证原进程结束且旧 15 分钟 grant 过期后，如何重新授权并经完整领域 adapter 重放历史任务。2026-10-30 的[后续验收](../historical-artifact-replay-2026-10-30.md)已覆盖这些剩余范围；本段保留为历史审查结论。
 
 ## 验收脚本修正记录
 

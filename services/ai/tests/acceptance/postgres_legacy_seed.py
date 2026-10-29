@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import base64
 import hashlib
 import json
 import os
@@ -14,6 +15,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--source-tree", type=Path, required=True)
     parser.add_argument("--root", type=Path, required=True)
+    parser.add_argument("--export-only", action="store_true")
     args = parser.parse_args()
     sys.path.insert(0, str(args.source_tree / "services/ai"))
     import fitz
@@ -24,6 +26,14 @@ def main():
     from sqlalchemy import text, create_engine, MetaData, Table, select, JSON, null
     from app.app_factory import create_app
     from app.core.settings import Settings
+    from app.models.persona_generation import (
+        PersonaGenerationInputManifest,
+        PersonaGenerationProposalV1,
+    )
+    from app.models.scene_generation import (
+        SceneGenerationInputManifest,
+        SceneGenerationProposalV1,
+    )
 
     assert Path(inspect.getfile(create_app)).is_relative_to(args.source_tree)
     target_url = os.environ["DATABASE_URL"]
@@ -124,6 +134,68 @@ def main():
             )
         )
         assert turn["run"]["status"] == "completed", turn
+        container = app.state.container
+
+        def generate_persona(protected):
+            result = container.model_provider.generate_persona_cards_from_keywords(
+                keywords=str(protected["input_text"]),
+                count=protected.get("count"),
+            )
+            return PersonaGenerationProposalV1.model_validate(
+                {
+                    "request_kind": "card_batch",
+                    "used_model": result.get("used_model", ""),
+                    "used_web_search": result.get("used_web_search", False),
+                    "summary": result.get("summary", ""),
+                    "relationship": result.get("relationship", ""),
+                    "learner_address": result.get("learner_address", ""),
+                    "cards": result["cards"],
+                },
+                strict=True,
+            )
+
+        container.harness_proposal_runtime.run_persona(
+            manifest=PersonaGenerationInputManifest(
+                request_kind="card_batch",
+                mode="keywords",
+                requested_count=2,
+                input_char_count=len("historical mentor"),
+            ),
+            protected_input={
+                "mode": "keywords",
+                "input_text": "historical mentor",
+                "count": 2,
+            },
+            generate=generate_persona,
+        )
+
+        def generate_scene(protected):
+            result = container.model_provider.generate_scene_tree_from_keywords(
+                keywords=str(protected["input_text"]),
+                layer_count=protected.get("layer_count"),
+            )
+            return SceneGenerationProposalV1.model_validate(
+                {
+                    "used_model": result.get("used_model", ""),
+                    "used_web_search": result.get("used_web_search", False),
+                    "proposal": result["proposal"],
+                },
+                strict=True,
+            )
+
+        container.harness_proposal_runtime.run_scene(
+            manifest=SceneGenerationInputManifest(
+                mode="keywords",
+                requested_layer_count=2,
+                input_char_count=len("historical classroom"),
+            ),
+            protected_input={
+                "mode": "keywords",
+                "input_text": "historical classroom",
+                "layer_count": 2,
+            },
+            generate=generate_scene,
+        )
         database = app.state.container.database
         with database.engine.connect() as connection:
             old_head = connection.execute(
@@ -160,6 +232,51 @@ def main():
                 ]
             },
         }
+        with database.engine.connect() as connection:
+            artifacts = []
+            for artifact in connection.execute(
+                text(
+                    "SELECT artifact_id, artifact_type, contract_name, "
+                    "contract_version, payload_digest, payload, expires_at, "
+                    "registered_at FROM harness_artifacts ORDER BY artifact_id"
+                )
+            ).mappings():
+                grants = list(
+                    connection.execute(
+                        text(
+                            "SELECT s.grant_id, s.permission, "
+                            "g.harness_operation_id, g.expires_at "
+                            "FROM harness_artifact_grant_scopes s "
+                            "JOIN harness_artifact_grants g "
+                            "ON g.grant_id=s.grant_id "
+                            "WHERE s.artifact_id=:artifact_id "
+                            "ORDER BY s.grant_id"
+                        ),
+                        {"artifact_id": artifact["artifact_id"]},
+                    ).mappings()
+                )
+                artifacts.append(
+                    {
+                        "artifact_id": artifact["artifact_id"],
+                        "artifact_type": artifact["artifact_type"],
+                        "contract_name": artifact["contract_name"],
+                        "contract_version": artifact["contract_version"],
+                        "payload_digest": artifact["payload_digest"],
+                        "payload_base64": base64.b64encode(artifact["payload"]).decode(
+                            "ascii"
+                        ),
+                        "expires_at": artifact["expires_at"],
+                        "registered_at": artifact["registered_at"],
+                        "grants": [dict(grant) for grant in grants],
+                    }
+                )
+            payload["historical_artifacts"] = artifacts
+        if args.export_only:
+            payload["seed_backend"] = "old-version SQLite application export"
+            (args.root / "historical-identities.json").write_text(
+                json.dumps(payload, ensure_ascii=False, indent=2) + "\n"
+            )
+            return
         target = create_engine(target_url)
         try:
             metadata = MetaData()

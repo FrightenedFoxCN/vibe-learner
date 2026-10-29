@@ -34,6 +34,7 @@
 | [前端测试边界](frontend-test-boundaries.md) | 独立数据/Hook/组件模块与生产浏览器验收 |
 | [后端测试边界](backend-test-boundaries.md) | 领域契约、生命周期、事务与进程中断门 |
 | [PostgreSQL 迁移与恢复](postgres-recovery-acceptance.md) | 旧版本带数据迁移、24 个进程中断窗口、CAS、回滚与 HTTP / 数据库重启实测 |
+| [历史受保护制品重放](historical-artifact-replay-2026-10-30.md) | 旧应用实际 artifact、历史合同、授权续期和 Document / Planning / Persona / Scene adapter 重放 |
 | [场景编辑器](scene-setup.md) | 层级场景和保存结构 |
 
 修改前先阅读对应领域文档及 [AGENTS](../AGENTS.md)。未完成任务只由根 TODO 维护；已完成的阶段计划、逐日进展、实验原始数据和重复审查记录不在当前目录重复维护。

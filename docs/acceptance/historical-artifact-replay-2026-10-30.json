@@ -1,0 +1,63 @@
+{
+  "contract": "historical-artifact-replay-v1",
+  "source_revision": "e3a03a9",
+  "seed_provenance": "unmodified archived application generated SQLite artifacts",
+  "domains": {
+    "document": {
+      "artifact_id": "harness-artifact-f73669a7abbeb0eb16f4a2a6b779cdec",
+      "artifact_type": "document_upload",
+      "contract": {
+        "name": "DocumentProcessProtectedInput",
+        "version": "document-process-protected-input-v1"
+      },
+      "payload_digest": "c7fd262a78f85eb257afd6ed6b5fed0396807e5ecdf9ce28214438b182ae1c70",
+      "expired_grant_rejected": true,
+      "renewed_grant_resolved": true,
+      "source_operation_id": "harness-operation-245bf64807f94f4db99226bcfb7bb6da",
+      "replay_trace_id": "harness-trace-0f92f610d66a35441c3e6487bd622d93",
+      "replay_status": "passed"
+    },
+    "planning": {
+      "artifact_id": "harness-artifact-2fd4ab10685d667f80b36844ef6525d1",
+      "artifact_type": "planning_context",
+      "contract": {
+        "name": "LearningPlanProtectedInput",
+        "version": "learning-plan-protected-input-v1"
+      },
+      "payload_digest": "c23509568da162ce6acae50724de584c1e2e32e727196e5bcc61cb595aaea985",
+      "expired_grant_rejected": true,
+      "renewed_grant_resolved": true,
+      "source_operation_id": "harness-operation-6651315a633c4d08afe673fc3cbd198d",
+      "replay_trace_id": "harness-trace-d3cbfc0cf08a84c35b374d131d65cce3",
+      "replay_status": "passed"
+    },
+    "persona": {
+      "artifact_id": "harness-artifact-b3369262b0c2f9c335f901106ed26921",
+      "artifact_type": "persona_snapshot",
+      "contract": {
+        "name": "PersonaGenerationProtectedInput",
+        "version": "persona-generation-protected-input-v1"
+      },
+      "payload_digest": "2b284583c8ca31ab9c247ebb4072afe83565a9e710eacc89ebc7d9a9212040af",
+      "expired_grant_rejected": true,
+      "renewed_grant_resolved": true,
+      "source_operation_id": "harness-operation-48ce4ac3171e4bc7b456c4a206b53596",
+      "replay_trace_id": "harness-trace-110c9bef3d3d960adbd8b11fe062ac58",
+      "replay_status": "passed"
+    },
+    "scene": {
+      "artifact_id": "harness-artifact-4b62b2e649148d3ec628a2c09ec826d6",
+      "artifact_type": "scene_snapshot",
+      "contract": {
+        "name": "SceneGenerationProtectedInput",
+        "version": "scene-generation-protected-input-v1"
+      },
+      "payload_digest": "2f4d1fa899ba9796ffc9028f02158bb980a0b8687d99982b774d4e2c9f0023bf",
+      "expired_grant_rejected": true,
+      "renewed_grant_resolved": true,
+      "source_operation_id": "harness-operation-3164dad794c64a7c9fc6122eb2f471c9",
+      "replay_trace_id": "harness-trace-209b99b032762c683467b4a36ee51f9f",
+      "replay_status": "passed"
+    }
+  }
+}
