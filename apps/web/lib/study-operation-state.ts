@@ -37,6 +37,7 @@ const PENDING_STUDY_OPERATION_STORAGE_KEY =
   "vibe-learner:pending-study-chat-operation:v1";
 const AUTOMATIC_STUDY_REQUEST_STORAGE_KEY =
   "vibe-learner:automatic-study-chat-requests:v1";
+const LAST_NOT_COMMITTED_STORAGE_KEY = "vibe-learner:last-not-committed-study-chat:v1";
 
 export function presentStudyChatOperation(receipt: StudyChatOperationResponse): {
   detail: string;
@@ -58,7 +59,8 @@ export function presentStudyChatOperation(receipt: StudyChatOperationResponse): 
       };
     case "uncertain":
       return {
-        detail: "系统暂时无法确认本次请求是否已产生影响。请继续查询，不要重新发送。",
+        detail:
+          "本次请求的结果不确定，等待或刷新不能证明没有产生影响。请保留原请求，只查询已保存结果，不要重新发送。",
         canQuery: true,
         canResend: false,
       };
@@ -93,7 +95,7 @@ export function presentStudyChatOperation(receipt: StudyChatOperationResponse): 
           detail:
             "上游拒绝了本次工具参数（400），本次没有写入会话。修复模型/工具配置后，可以用新的请求身份重新发送。",
           canQuery: false,
-          canResend: true,
+          canResend: receipt.safeToRetry,
         };
       }
       return {
@@ -207,6 +209,7 @@ export function createStudyOperationStore(
       return;
     }
     try {
+      getStorage()!.removeItem(LAST_NOT_COMMITTED_STORAGE_KEY);
       getStorage()!.setItem(
         PENDING_STUDY_OPERATION_STORAGE_KEY,
         JSON.stringify({
@@ -223,11 +226,61 @@ export function createStudyOperationStore(
   }
 
   function readPendingStudyOperation(): PendingStudyOperationIdentity | null {
+    return readIdentity(PENDING_STUDY_OPERATION_STORAGE_KEY);
+  }
+
+  function readLastNotCommittedStudyOperation(): PendingStudyOperationIdentity | null {
+    return readIdentity(LAST_NOT_COMMITTED_STORAGE_KEY);
+  }
+
+  function rememberNotCommittedStudyOperation(
+    operation: PendingStudyOperationIdentity,
+  ): void {
+    const pending = readPendingStudyOperation();
+    if (
+      pending &&
+      (pending.sessionId !== operation.sessionId ||
+        pending.clientRequestId !== operation.clientRequestId)
+    )
+      return;
+    try {
+      getStorage()?.setItem(
+        LAST_NOT_COMMITTED_STORAGE_KEY,
+        JSON.stringify({
+          sessionId: operation.sessionId,
+          clientRequestId: operation.clientRequestId,
+          expectedSessionRevision: operation.expectedSessionRevision,
+          studyUnitId: operation.studyUnitId,
+          messageKind: operation.messageKind,
+        }),
+      );
+    } catch {
+      /* The mounted view still shows the confirmed outcome. */
+    }
+  }
+
+  function clearLastNotCommittedStudyOperation(
+    operation: Pick<PendingStudyOperationIdentity, "sessionId" | "clientRequestId">,
+  ): void {
+    const saved = readLastNotCommittedStudyOperation();
+    if (
+      saved?.sessionId !== operation.sessionId ||
+      saved.clientRequestId !== operation.clientRequestId
+    )
+      return;
+    try {
+      getStorage()?.removeItem(LAST_NOT_COMMITTED_STORAGE_KEY);
+    } catch {
+      /* Storage may be unavailable. */
+    }
+  }
+
+  function readIdentity(key: string): PendingStudyOperationIdentity | null {
     if (!getStorage()) {
       return null;
     }
     try {
-      const raw = getStorage()!.getItem(PENDING_STUDY_OPERATION_STORAGE_KEY);
+      const raw = getStorage()!.getItem(key);
       if (!raw) {
         return null;
       }
@@ -282,6 +335,9 @@ export function createStudyOperationStore(
     persistPendingStudyOperation,
     readPendingStudyOperation,
     clearPendingStudyOperation,
+    readLastNotCommittedStudyOperation,
+    rememberNotCommittedStudyOperation,
+    clearLastNotCommittedStudyOperation,
   };
 }
 export const studyOperationStore = createStudyOperationStore(() =>

@@ -598,6 +598,7 @@ export function StudyDialogPage() {
               currentScheduleId && currentSchedule?.status !== "completed",
             )}
             chatErrorMessage={chatFailure?.detail ?? ""}
+            chatOperationStatus={chatFailure?.operationStatus}
             canQueryLastAsk={Boolean(chatFailure?.canQuery)}
             canResendLastAsk={Boolean(chatFailure?.canResend)}
             canRefreshSessionAfterAsk={Boolean(chatFailure?.canRefreshSession)}

@@ -48,7 +48,7 @@
     "test:persona:persistence:browser": "playwright test tests/browser/persona-persistence.spec.ts",
     "test:persona:components": "TSX_TSCONFIG_PATH=tests/tsconfig.json node --import tsx --test tests/persona-library-cards.test.jsx",
     "test:workspace:mutations": "TSX_TSCONFIG_PATH=tests/tsconfig.json node --import tsx --test tests/plan-mutations.test.jsx tests/plan-overview-ocr.test.jsx tests/study-unit-revision-panel.test.jsx",
-    "test:workspace:recovery": "TSX_TSCONFIG_PATH=tests/tsconfig.json node --import tsx --test tests/study-operation-state.test.jsx tests/study-chat-recovery.test.jsx",
+    "test:workspace:recovery": "TSX_TSCONFIG_PATH=tests/tsconfig.json node --import tsx --test tests/study-operation-state.test.jsx tests/study-chat-recovery.test.jsx tests/study-request-deadline.test.jsx",
     "test:workspace:recovery:browser": "playwright test tests/browser/learning-recovery.spec.ts",
     "test:workspace:sessions": "TSX_TSCONFIG_PATH=tests/tsconfig.json node --import tsx --test tests/study-session-navigation.test.jsx",
     "test:workspace:messages": "TSX_TSCONFIG_PATH=tests/tsconfig.json node --import tsx --test tests/study-messages.test.jsx",
@@ -69,7 +69,8 @@
     "test:tavern:copy:browser": "playwright test tests/browser/tavern-copy-independent.spec.ts",
     "test:workspace:input-limits": "TSX_TSCONFIG_PATH=tests/tsconfig.json node --import tsx --test tests/document-input-limits.test.jsx",
     "test:workspace:output-language": "TSX_TSCONFIG_PATH=tests/tsconfig.json node --import tsx --test tests/output-language.test.jsx",
-    "test:workspace:output-language:browser": "playwright test --config playwright.output-language.config.ts"
+    "test:workspace:output-language:browser": "playwright test --config playwright.output-language.config.ts",
+    "test:workspace:recovery:live": "playwright test --config playwright.study-recovery.config.ts"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.8.0",

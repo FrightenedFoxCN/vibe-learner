@@ -45,6 +45,7 @@ This repository was last materially updated on 2026-09-10. The codebase is a mon
 - Tavern contracts and persistence: `services/ai/app/models/tavern.py`, `services/ai/app/persistence/tavern_repository.py`, and `packages/shared/src/tavern.ts`
 - Study Session CAS persistence: `services/ai/app/persistence/study_session_repository.py`; new Study Session writes must not return to `LocalJsonStore.save_list("sessions", ...)`.
 - Study Chat operation contracts: `services/ai/app/models/study_chat_operation.py`, `services/ai/app/persistence/study_chat_operation_repository.py`, and `apps/web/lib/study-chat-operation-decode.ts`.
+- Study browser recovery: `apps/web/hooks/use-study-chat-recovery.ts`, `apps/web/lib/study-request-deadline.ts`, and `docs/study-recovery.md`. Browser timeouts never prove server cancellation; bounded GET recovery must keep the original identity and never replay `uncertain` outcomes.
 - Typed effect contracts: `services/ai/app/models/harness_effect.py`, `services/ai/app/models/study_chat_effect.py`, `services/ai/app/services/study_chat_effects.py`, and `packages/shared/src/harness-effect.ts`.
 
 ## Current Runtime Layout

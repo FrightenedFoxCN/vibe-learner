@@ -15,6 +15,7 @@ import type {
   StudySessionRecord,
 } from "@vibe-learner/shared";
 import { orderStudySessionTurns } from "../lib/study-session-decode";
+import type { StudyChatOperationStatus } from "../lib/study-chat-operation-decode";
 import { OutputLanguageField } from "./output-language-field";
 import { outputLanguageError } from "../lib/output-language";
 
@@ -49,6 +50,7 @@ interface StudyConsoleProps {
   onCompleteCurrentSchedule?: () => void | Promise<void>;
   canCompleteCurrentSchedule?: boolean;
   chatErrorMessage?: string;
+  chatOperationStatus?: StudyChatOperationStatus | "unresolved";
   canQueryLastAsk?: boolean;
   canResendLastAsk?: boolean;
   canRefreshSessionAfterAsk?: boolean;
@@ -101,6 +103,7 @@ export function StudyConsole({
   onCompleteCurrentSchedule,
   canCompleteCurrentSchedule,
   chatErrorMessage,
+  chatOperationStatus,
   canQueryLastAsk,
   canResendLastAsk,
   canRefreshSessionAfterAsk,
@@ -383,7 +386,14 @@ export function StudyConsole({
 
           {chatErrorMessage ? (
             <div style={styles.errorBox} role="status" aria-live="polite">
-              <span style={styles.errorTitle}>本次对话需要确认</span>
+              <span style={styles.errorTitle}>
+                {chatOperationStatus === "not_committed"
+                  ? "已确认本次回复未保存"
+                  : chatOperationStatus === "admitted" ||
+                      chatOperationStatus === "running"
+                    ? "仍在等待本次回复"
+                    : "本次对话需要确认"}
+              </span>
               <span style={styles.errorText}>{chatErrorMessage}</span>
               {canQueryLastAsk ? (
                 <button
@@ -1163,7 +1173,7 @@ const styles: Record<string, CSSProperties> = {
     border: "1px solid #f0c2c2",
     background: "white",
     color: "#7f1d1d",
-    height: 30,
+    minHeight: 44,
     padding: "0 12px",
     fontSize: 12,
     fontWeight: 600,

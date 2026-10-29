@@ -15,6 +15,7 @@ import {
 } from "../lib/study-operation-state";
 import { StudyAsyncViewFence } from "../lib/async-result-fence";
 import { createStudyChatRequestId } from "../lib/client-request-id";
+import { StudyRequestWaitExpired } from "../lib/study-request-deadline";
 import { resolveStudySessionErrorNotice } from "../lib/study-session-decode";
 import {
   isDefiniteStudyChatPreAdmissionError,
@@ -145,7 +146,10 @@ export function useStudyMessages(
       }
       setChatFailure({
         ...draft,
-        detail: "未能确认这次自动消息的结果。请查询本次请求，不要重复执行。",
+        detail:
+          error instanceof StudyRequestWaitExpired
+            ? error.message
+            : "未能确认这次自动消息的结果。请查询本次请求，不要重复执行。",
         operationStatus: "unresolved",
         canQuery: true,
         canResend: false,
@@ -313,7 +317,10 @@ export function useStudyMessages(
       }
       setChatFailure({
         ...draft,
-        detail: "未能确认本次请求结果。请查询本次请求，不要重新发送。",
+        detail:
+          error instanceof StudyRequestWaitExpired
+            ? error.message
+            : "未能确认本次请求结果。请查询本次请求，不要重新发送。",
         operationStatus: "unresolved",
         canQuery: true,
         canResend: false,

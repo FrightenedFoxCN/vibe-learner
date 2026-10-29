@@ -1,17 +1,42 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { createStudyOperationStore, presentStudyChatOperation } from "../lib/study-operation-state.ts";
+import {
+  createStudyOperationStore,
+  presentStudyChatOperation,
+} from "../lib/study-operation-state.ts";
 
 function fixture() {
-  const values = new Map(); let sequence = 0;
-  const storage = { getItem: key => values.get(key) ?? null, setItem: (key, value) => values.set(key, value), removeItem: key => values.delete(key) };
-  return { values, storage, store: createStudyOperationStore(() => storage, scope => `${scope}-${++sequence}`) };
+  const values = new Map();
+  let sequence = 0;
+  const storage = {
+    getItem: (key) => values.get(key) ?? null,
+    setItem: (key, value) => values.set(key, value),
+    removeItem: (key) => values.delete(key),
+  };
+  return {
+    values,
+    storage,
+    store: createStudyOperationStore(
+      () => storage,
+      (scope) => `${scope}-${++sequence}`,
+    ),
+  };
 }
-const identity = { sessionId: "s", clientRequestId: "r", expectedSessionRevision: 2, studyUnitId: "u", messageKind: "learner" };
+const identity = {
+  sessionId: "s",
+  clientRequestId: "r",
+  expectedSessionRevision: 2,
+  studyUnitId: "u",
+  messageKind: "learner",
+};
 
 test("pending persistence contains identity only and stale receipt cannot erase a newer request", () => {
   const h = fixture();
-  h.store.persistPendingStudyOperation({ ...identity, message: "private text", attachments: ["private file"] });
+  h.store.persistPendingStudyOperation({
+    ...identity,
+    message: "private text",
+    attachments: ["private file"],
+  });
   assert.deepEqual(h.store.readPendingStudyOperation(), identity);
   assert.equal([...h.values.values()][0].includes("private"), false);
   h.store.persistPendingStudyOperation({ ...identity, clientRequestId: "new" });
@@ -23,24 +48,57 @@ test("pending persistence contains identity only and stale receipt cannot erase 
 
 test("automatic identities are reused across a fresh page and only explicitly forgotten identities can be generated again", () => {
   const h = fixture();
-  const first = h.store.getOrCreateAutomaticRequestId(new Map(), "prelude:s:u:2", "prelude");
+  const first = h.store.getOrCreateAutomaticRequestId(
+    new Map(),
+    "prelude:s:u:2",
+    "prelude",
+  );
   assert.equal(first.queryExisting, false);
-  const secondStore = createStudyOperationStore(() => h.storage, () => { throw new Error("must query"); });
-  assert.deepEqual(secondStore.getOrCreateAutomaticRequestId(new Map(), "prelude:s:u:2", "prelude"), { ...first, queryExisting: true });
+  const secondStore = createStudyOperationStore(
+    () => h.storage,
+    () => {
+      throw new Error("must query");
+    },
+  );
+  assert.deepEqual(
+    secondStore.getOrCreateAutomaticRequestId(new Map(), "prelude:s:u:2", "prelude"),
+    { ...first, queryExisting: true },
+  );
   h.store.forgetAutomaticStudyRequestId(new Map(), "prelude:s:u:2");
-  assert.notEqual(h.store.getOrCreateAutomaticRequestId(new Map(), "prelude:s:u:2", "prelude").clientRequestId, first.clientRequestId);
+  assert.notEqual(
+    h.store.getOrCreateAutomaticRequestId(new Map(), "prelude:s:u:2", "prelude")
+      .clientRequestId,
+    first.clientRequestId,
+  );
 });
 
 test("storage denial preserves in-memory automatic identity and malformed pending state cannot restore", () => {
-  const store = createStudyOperationStore(() => { throw new Error("blocked storage"); }, () => "memory-id");
+  const store = createStudyOperationStore(
+    () => {
+      throw new Error("blocked storage");
+    },
+    () => "memory-id",
+  );
   const map = new Map();
-  assert.equal(store.getOrCreateAutomaticRequestId(map, "key", "scope").queryExisting, false);
-  assert.equal(store.getOrCreateAutomaticRequestId(map, "key", "scope").queryExisting, true);
+  assert.equal(
+    store.getOrCreateAutomaticRequestId(map, "key", "scope").queryExisting,
+    false,
+  );
+  assert.equal(
+    store.getOrCreateAutomaticRequestId(map, "key", "scope").queryExisting,
+    true,
+  );
   assert.equal(store.readPendingStudyOperation(), null);
   assert.doesNotThrow(() => store.persistPendingStudyOperation(identity));
-  const h = fixture(); h.store.persistPendingStudyOperation(identity);
+  const h = fixture();
+  h.store.persistPendingStudyOperation(identity);
   const key = [...h.values.keys()][0];
-  for (const value of ["{", "null", JSON.stringify({ ...identity, expectedSessionRevision: -1 }), JSON.stringify({ ...identity, sessionId: "" })]) {
+  for (const value of [
+    "{",
+    "null",
+    JSON.stringify({ ...identity, expectedSessionRevision: -1 }),
+    JSON.stringify({ ...identity, sessionId: "" }),
+  ]) {
     h.values.set(key, value);
     assert.equal(h.store.readPendingStudyOperation(), null);
   }
@@ -48,11 +106,24 @@ test("storage denial preserves in-memory automatic identity and malformed pendin
 
 test("retry eligibility requires explicit not-committed evidence", () => {
   for (const status of ["admitted", "running", "uncertain", "committed"]) {
-    assert.equal(presentStudyChatOperation({ status, safeToRetry: true }).canResend, false);
+    assert.equal(
+      presentStudyChatOperation({ status, safeToRetry: true }).canResend,
+      false,
+    );
   }
-  assert.equal(presentStudyChatOperation({ status: "uncertain", safeToRetry: false }).canQuery, true);
-  assert.equal(presentStudyChatOperation({ status: "not_committed", safeToRetry: false }).canResend, false);
-  assert.equal(presentStudyChatOperation({ status: "not_committed", safeToRetry: true }).canResend, true);
+  assert.equal(
+    presentStudyChatOperation({ status: "uncertain", safeToRetry: false }).canQuery,
+    true,
+  );
+  assert.equal(
+    presentStudyChatOperation({ status: "not_committed", safeToRetry: false })
+      .canResend,
+    false,
+  );
+  assert.equal(
+    presentStudyChatOperation({ status: "not_committed", safeToRetry: true }).canResend,
+    true,
+  );
 });
 
 test("provider output schema failure is retryable and explains that no turn was written", () => {
@@ -64,4 +135,23 @@ test("provider output schema failure is retryable and explains that no turn was 
   assert.equal(presented.canQuery, false);
   assert.equal(presented.canResend, true);
   assert.match(presented.detail, /未通过 Study Chat 结构校验/);
+});
+
+test("terminal recovery keeps identity only and cannot replace a newer pending request", () => {
+  const h = fixture();
+  h.store.rememberNotCommittedStudyOperation({
+    ...identity,
+    message: "private draft",
+    attachments: ["private file"],
+  });
+  assert.deepEqual(h.store.readLastNotCommittedStudyOperation(), identity);
+  assert.equal(
+    [...h.values.values()].some((value) => value.includes("private")),
+    false,
+  );
+  h.store.persistPendingStudyOperation({ ...identity, clientRequestId: "newer" });
+  assert.equal(h.store.readLastNotCommittedStudyOperation(), null);
+  h.store.rememberNotCommittedStudyOperation(identity);
+  assert.equal(h.store.readLastNotCommittedStudyOperation(), null);
+  assert.equal(h.store.readPendingStudyOperation().clientRequestId, "newer");
 });

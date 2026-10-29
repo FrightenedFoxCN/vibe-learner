@@ -32,3 +32,5 @@ Study commit policy 是 `primary_output_only`：证明 Session/Turn projection�
 
 输出语言是应用输入：request v3 对显式语言绑定指纹，input manifest v2 与 protected snapshot v3 保留选择；Study prompt v3 在原文证据之外统一指导语语言。Session 语言与成功 Turn 一起 CAS 保存，失败/uncertain 不提前修改；历史 v1/v2 指纹和附件读回不放宽。详见[输出语言偏好](../output-language.md)。
 
+浏览器将 60 秒本地等待上限与服务端运行状态分开：超时只查询原请求，单次查询/显式 Session 刷新上限 15 秒，admitted/running 每次恢复访问最多六次后台查询，uncertain 不自动轮询或重发。断网保留身份，终态刷新只读取回执，不恢复缺失的消息/附件重放能力。协议与真实临时后端验收见 [Study 请求恢复](../study-recovery.md)。
+

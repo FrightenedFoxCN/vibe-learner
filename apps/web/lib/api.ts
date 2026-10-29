@@ -1,4 +1,9 @@
 import { documentUploadError } from "./document-upload-validation";
+import {
+  withStudyRequestDeadline,
+  STUDY_SEND_WAIT_MS,
+  STUDY_QUERY_WAIT_MS,
+} from "./study-request-deadline";
 import { decodeDocumentCheckpoint } from "./document-checkpoint-decode";
 import { decodeDocumentPageNumbering } from "./document-page-numbering-decode";
 import { decodePlanRevision } from "./plan-revision-decode";
@@ -2038,6 +2043,7 @@ export async function listStudySessions(input: {
   personaId?: string;
   planId?: string;
   studyUnitId?: string;
+  signal?: AbortSignal;
 }): Promise<StudySessionRecord[]> {
   const query = new URLSearchParams();
   if (input.documentId) query.set("document_id", input.documentId);
@@ -2050,6 +2056,7 @@ export async function listStudySessions(input: {
   const suffix = query.toString();
   const diagnosticResponse = await request(
     `${AI_BASE_URL()}/study-sessions${suffix ? `?${suffix}` : ""}`,
+    { signal: input.signal, cache: "no-store" },
   );
   const payload = await readJson<unknown>(diagnosticResponse);
   return diagnosticDecode(
@@ -2144,6 +2151,15 @@ export async function sendStudyMessage(input: {
   attachments?: File[];
   diagnosticFlowId?: string | null;
 }): Promise<StudyChatOperationResponse> {
+  return withStudyRequestDeadline(STUDY_SEND_WAIT_MS, (signal) =>
+    sendStudyMessageRequest(input, signal),
+  );
+}
+
+async function sendStudyMessageRequest(
+  input: Parameters<typeof sendStudyMessage>[0],
+  signal: AbortSignal,
+): Promise<StudyChatOperationResponse> {
   const context = studyDiagnosticContext(
     input.sessionId,
     input.clientRequestId,
@@ -2155,6 +2171,7 @@ export async function sendStudyMessage(input: {
         `${AI_BASE_URL()}/study-sessions/${input.sessionId}/chat-with-attachments`,
         {
           method: "POST",
+          signal,
           body: (() => {
             const form = new FormData();
             form.set("message", input.message);
@@ -2180,6 +2197,7 @@ export async function sendStudyMessage(input: {
         `${AI_BASE_URL()}/study-sessions/${input.sessionId}/chat`,
         {
           method: "POST",
+          signal,
           headers: {
             "Content-Type": "application/json",
           },
@@ -2212,10 +2230,20 @@ export async function getStudyChatOperation(input: {
   clientRequestId: string;
   diagnosticFlowId?: string | null;
 }): Promise<StudyChatOperationResponse> {
+  return withStudyRequestDeadline(STUDY_QUERY_WAIT_MS, (signal) =>
+    getStudyChatOperationRequest(input, signal),
+  );
+}
+
+async function getStudyChatOperationRequest(
+  input: Parameters<typeof getStudyChatOperation>[0],
+  signal: AbortSignal,
+): Promise<StudyChatOperationResponse> {
   const diagnosticResponse = await request(
     `${AI_BASE_URL()}/study-sessions/${encodeURIComponent(input.sessionId)}/chat-operations/${encodeURIComponent(input.clientRequestId)}`,
     {
       cache: "no-store",
+      signal,
       headers: { "Cache-Control": "no-cache" },
     },
     studyDiagnosticContext(
