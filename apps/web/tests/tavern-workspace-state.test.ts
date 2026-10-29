@@ -484,33 +484,6 @@ test("terminal roster states are explicitly scoped to the previous round", () =>
   );
 });
 
-test("mobile Tavern DOM order matches its primary visual flow", () => {
-  const componentSource = readFileSync(
-    new URL("../components/tavern-workspace.tsx", import.meta.url),
-    "utf8"
-  );
-  const gridStart = componentSource.indexOf('<div className={`tavern-workspace-grid');
-  const leftRail = componentSource.indexOf('className="tavern-left-rail"', gridStart);
-  const rightRail = componentSource.indexOf('className="tavern-right-rail"', gridStart);
-  const conversation = componentSource.indexOf("<TavernConversationPanel", gridStart);
-  assert.ok(gridStart >= 0);
-  assert.ok(leftRail > gridStart && rightRail > leftRail && conversation > rightRail);
-  assert.ok(componentSource.includes('activeRoom ? "has-room" : "empty-room"'));
-  assert.ok(componentSource.includes("先创建或打开一个酒馆，然后开始对话。"));
-  assert.ok(!componentSource.includes("从左侧创建或打开一个酒馆。"));
-});
-
-test("Tavern Session pagination exposes pending, error, and duplicate-cursor fences", () => {
-  const componentSource = readFileSync(
-    new URL("../components/tavern-workspace.tsx", import.meta.url),
-    "utf8"
-  );
-  assert.ok(componentSource.includes("loadingRoomCursorRef.current === cursor"));
-  assert.ok(componentSource.includes('disabled={busy || loadingMore}'));
-  assert.ok(componentSource.includes('{pageError ? <p role="alert">{pageError}</p> : null}'));
-  assert.ok(componentSource.includes("已显示最近 100 个房间"));
-});
-
 test("mobile Tavern buttons keep a 44px minimum touch target", () => {
   const cssSource = readFileSync(
     new URL("../app/globals.css", import.meta.url),
@@ -521,57 +494,6 @@ test("mobile Tavern buttons keep a 44px minimum touch target", () => {
 
   assert.ok(mobileStart >= 0);
   assert.match(mobileCss, /\.tavern-button\s*\{\s*min-height:\s*44px;/);
-});
-
-test("Interaction Composer restores focus only after a confirmed user turn settles", () => {
-  const componentSource = readFileSync(
-    new URL("../components/tavern-workspace.tsx", import.meta.url),
-    "utf8"
-  );
-  const composerStart = componentSource.indexOf("function InteractionComposer");
-  const composerEnd = componentSource.indexOf("function ReliabilityDetails", composerStart);
-  const composer = componentSource.slice(composerStart, composerEnd);
-  const turnStart = componentSource.indexOf("const handleTurn = useCallback");
-  const turnEnd = componentSource.indexOf("const handleCancelRun", turnStart);
-  const handleTurn = componentSource.slice(turnStart, turnEnd);
-  const sendStart = composer.indexOf("const sendMessage = async () =>");
-  const continueStart = composer.indexOf("const continueConversation = async () =>");
-  const sendMessage = composer.slice(sendStart, continueStart);
-
-  assert.ok(composerStart >= 0 && composerEnd > composerStart);
-  assert.ok(turnStart >= 0 && turnEnd > turnStart);
-  assert.ok(sendStart >= 0 && continueStart > sendStart);
-  assert.ok(handleTurn.includes("return Boolean(recoveredRun);"));
-  assert.match(
-    sendMessage,
-    /if \(completed\) \{\s*setMessage\(""\);\s*setGuidance\(""\);\s*setFocusRequestVersion/
-  );
-  assert.equal((composer.match(/setFocusRequestVersion/g) ?? []).length, 2);
-  assert.ok(composer.includes("if (busy) return;"));
-  assert.ok(composer.includes("if (!roomActive || message || guidance)"));
-  assert.ok(composer.includes("mountedRoomIdRef.current !== expectedRoomId"));
-  assert.ok(composer.includes("!input.isConnected || input.disabled"));
-  assert.ok(composer.includes("window.requestAnimationFrame"));
-  assert.ok(composer.includes("window.cancelAnimationFrame(frame)"));
-  assert.ok(composer.includes("ref={messageInputRef}"));
-});
-
-test("Interaction Composer retains Enter, Shift+Enter, and IME composition fencing", () => {
-  const componentSource = readFileSync(
-    new URL("../components/tavern-workspace.tsx", import.meta.url),
-    "utf8"
-  );
-  const composer = componentSource.slice(
-    componentSource.indexOf("function InteractionComposer"),
-    componentSource.indexOf("function ReliabilityDetails")
-  );
-
-  assert.ok(composer.includes('event.key !== "Enter" || event.shiftKey'));
-  assert.ok(composer.includes("composingRef.current"));
-  assert.ok(composer.includes("event.nativeEvent.isComposing"));
-  assert.ok(composer.includes("event.nativeEvent.keyCode === 229"));
-  assert.ok(composer.includes("suppressCompositionEnterRef.current"));
-  assert.ok(composer.includes("event.preventDefault()"));
 });
 
 function rawPersona() {

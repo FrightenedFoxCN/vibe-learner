@@ -90,11 +90,17 @@ The Learning Workspace is split into:
 - provider-level page-cache persistence in `apps/web/lib/learning-workspace-page-cache.ts`;
 - plan-view mapping in `apps/web/lib/plan-panel-data.ts`.
 
-The root layout still mounts `LearningWorkspaceProvider` on every route. Moving that provider down to only its consumers is tracked by `PERF-WEB-PROVIDER-SCOPE-001` in the root TODO.
+`LearningWorkspaceProvider` is scoped to the `(learning)` route group for Plan and Study. Other routes retain only the page-draft cache and do not bootstrap learning resources.
 
 Tavern uses a separate client boundary:
 
-- `apps/web/components/tavern-workspace.tsx`: page orchestration and the seven standard Workspace blocks;
+- `apps/web/components/tavern-workspace.tsx`: page composition and Debug publication;
+- `apps/web/components/tavern-workspace-panels.tsx`: the seven standard Workspace blocks and local form/focus behavior;
+- `apps/web/hooks/use-tavern-workspace-controller.ts`: composes shared state, Room queries, Run recovery and mutations;
+- `apps/web/hooks/use-tavern-room-queries.ts`: bootstrap, Room/history paging, read-back and monotonic reconciliation;
+- `apps/web/hooks/use-tavern-run-recovery.ts`: bounded auto-resume backoff and one in-flight foreground poll;
+- `apps/web/hooks/use-tavern-mutations.ts`: operation fencing, creation, archive, turn, cancel and scoped retry;
+- `apps/web/lib/tavern-workspace-ports.ts`: narrow injectable API, clock, request-key and draft storage boundaries;
 - `apps/web/lib/tavern-decode.ts`: fail-closed Tavern wire decoder with legacy v1/v2 compatibility and strict v3 evidence support;
 - `apps/web/lib/tavern-workspace-state.ts`: message/run reconciliation and monotonic state helpers.
 

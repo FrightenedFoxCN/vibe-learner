@@ -4,6 +4,8 @@
 
 | 入口 | 边界 |
 | --- | --- |
+| `npm --workspace @vibe-learner/web run test:tavern:controller` | 完整 Tavern controller 和展示组件行为，注入 API、时钟和草稿存储；切房、迟到结果、分页竞争、轮询清理、终态单调性、取消/恢复交错和幂等身份 |
+| `npm --workspace @vibe-learner/web run test:tavern:controller:browser` | 开发服务与截获 API 的 Tavern partial/failed/archive/retry 文案、名册顺序、移动 DOM 流与完成后焦点；无需全量构建 |
 | `npm run test:web:debug` | 完整 React 组件的 Debug 发布、更新、卸载清理；无学习 controller/API |
 | `npm run test:web:workspace` | 快照查询、草稿生命周期与生成 Hook；注入依赖，无网络 |
 | `npm --workspace @vibe-learner/web run test:workspace:data` | 只运行首次加载、刷新竞争、失效与重试模块 |

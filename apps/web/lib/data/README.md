@@ -20,6 +20,9 @@ Each domain structure now has one frontend entrypoint under `apps/web/lib/data/`
 - `scenes.ts`
   Used by: `app/scene-setup/page.tsx`, `components/document-setup.tsx`, `hooks/use-learning-workspace-controller.ts`.
   Owns: scene setup state, saved scene library CRUD, reusable scene node CRUD, scene generation.
+- `tavern.ts`
+  Used by: `lib/tavern-workspace-ports.ts` and the Tavern query/recovery/mutation Hooks.
+  Owns: Room detail/history, Run/recovery reads, creation, turns, retry, resume, cancellation and archive mutations.
 - `runtime-settings.ts`
   Used by: `components/runtime-settings-provider.tsx`, `components/settings/use-settings-controller.ts`.
   Owns: runtime settings read/update and model probe.

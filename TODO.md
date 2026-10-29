@@ -10,11 +10,6 @@
 
 ## 数据一致性与工程重构
 
-- [ ] `ENG-TAV-WORKSPACE-001` `[P2]` 拆分 Tavern Workspace 的查询、Run 恢复和交互提交职责。
-  - 2026-10-29 审计：`apps/web/components/tavern-workspace.tsx` 的主组件同时拥有房间分页、轮询、恢复、mutation fencing、草稿与界面状态；已有纯状态工具不覆盖完整异步编排。
-  - 参照现有学习工作区的领域 Hook/展示组件边界，注入窄 API、时钟和存储 port；保留原有幂等身份、房间/请求版本 fencing、终态单调性、取消与 retry 语义。
-  - 以行为测试覆盖切房、迟到结果、分页竞争、轮询清理及恢复/提交交错；源码字符串断言不能替代运行时测试。完整设备 UX 仍由 `REL-DESKTOP-001` 独立验收。
-
 - [ ] `ENG-STYLE-GATES-001` `[P3]` 渐进建立前后端代码风格与静态检查门。
   - 2026-10-29 审计：Web 的 `lint` 仅为 TypeScript 检查别名，Python 未配置 Ruff 等风格检查；类型检查不能覆盖 React Hooks 规则、未使用导入和格式一致性。
   - 明确格式化与 lint 的职责，优先启用未使用导入、React Hooks 和新增/修改文件的格式检查，接入本地命令及 CI；对既有问题建立显式基线，避免一次性全仓格式化混入功能变更。
