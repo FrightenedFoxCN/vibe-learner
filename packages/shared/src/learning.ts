@@ -484,8 +484,8 @@ export interface PlanToolCallTrace {
   toolCallId: string;
   toolName: string;
   argumentsJson: string;
-  argumentContractVersion: "" | "planning-tool-arguments-v1";
-  resultContractVersion: "" | "planning-tool-result-v1";
+  argumentContractVersion: "" | "planning-tool-arguments-v1" | "planning-tool-arguments-v2";
+  resultContractVersion: "" | "planning-tool-result-v1" | "planning-tool-result-v2";
   resultSummary: string;
   resultJson: string;
 }

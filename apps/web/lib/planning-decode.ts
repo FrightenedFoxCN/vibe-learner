@@ -58,8 +58,8 @@ const PLANNING_TOOL_NAMES = [
   "read_page_range_images",
 ] as const;
 const MODEL_RECOVERY_SCHEMA_VERSIONS = ["model-recovery-v1"] as const;
-const TOOL_ARGUMENT_CONTRACT_VERSIONS = ["", "planning-tool-arguments-v1"] as const;
-const TOOL_RESULT_CONTRACT_VERSIONS = ["", "planning-tool-result-v1"] as const;
+const TOOL_ARGUMENT_CONTRACT_VERSIONS = ["", "planning-tool-arguments-v1", "planning-tool-arguments-v2"] as const;
+const TOOL_RESULT_CONTRACT_VERSIONS = ["", "planning-tool-result-v1", "planning-tool-result-v2"] as const;
 
 export class PlanningDecodeError extends Error {
   readonly code = "planning_response_decode_error";
@@ -1585,6 +1585,14 @@ function decodePlanRound(raw: unknown, path: string, expectedIndex: number): Pla
       };
     },
   );
+  for (const [index, call] of toolCalls.entries()) {
+    const currentArguments = call.argumentContractVersion === "planning-tool-arguments-v2";
+    const currentResult = call.resultContractVersion === "planning-tool-result-v2";
+    if ((currentArguments || currentResult) &&
+        (!currentArguments || !currentResult || call.toolName !== "revise_study_units")) {
+      throw new PlanningDecodeError(`${path}.tool_calls[${index}]`, "tool_contract_binding_mismatch");
+    }
+  }
   decoder.unique(toolCalls.map((toolCall) => toolCall.toolCallId), `${path}.tool_calls.tool_call_id`);
   const recoveries = decoder.array(
     decoder.field(value, "recoveries", path),

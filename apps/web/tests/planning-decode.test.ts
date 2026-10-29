@@ -464,3 +464,20 @@ test("Planning Trace decoder accepts a truthful no-trace projection only", () =>
     PlanningDecodeError,
   );
 });
+
+test("Planning Trace accepts confirmed-unit tool v2 and preserves historical v1", () => {
+  const raw = wirePlanningTrace();
+  const call = raw.trace.rounds[0].tool_calls[0];
+  const revise = { ...call, tool_name: "revise_study_units",
+    argument_contract_version: "planning-tool-arguments-v2", result_contract_version: "planning-tool-result-v2" };
+  const traceWith = (tool: typeof call) => ({ ...raw, trace: { ...raw.trace,
+    rounds: [{ ...raw.trace.rounds[0], tool_calls: [tool] }] } });
+  assert.equal(decodeDocumentPlanningTraceResponse(traceWith(revise), "document-1").trace?.rounds[0].toolCalls[0].resultContractVersion, "planning-tool-result-v2");
+  assert.equal(decodeDocumentPlanningTraceResponse(traceWith({ ...revise, argument_contract_version: "planning-tool-arguments-v1", result_contract_version: "planning-tool-result-v1" }), "document-1").hasTrace, true);
+  for (const tool of [
+    { ...revise, tool_name: "get_study_unit_detail" },
+    { ...revise, result_contract_version: "planning-tool-result-v1" },
+    { ...revise, argument_contract_version: "" },
+    { ...revise, argument_contract_version: "planning-tool-arguments-v3" },
+  ]) assert.throws(() => decodeDocumentPlanningTraceResponse(traceWith(tool), "document-1"), PlanningDecodeError);
+});

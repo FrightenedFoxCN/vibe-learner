@@ -1,13 +1,14 @@
 from __future__ import annotations
 
-from app.core.diagnostic_tool import observe_tool_call
-
+import json
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any, Callable
 from uuid import uuid4
+
 from pydantic import ValidationError
 
+from app.core.diagnostic_tool import observe_tool_call
 from app.core.harness_component_versions import (
     PLANNING_TOOL_RUNTIME_CONTRACT_VERSION,
     PLANNING_TOOLSET_CONTRACT_VERSION,
@@ -832,9 +833,17 @@ def _tool_argument_error_execution(
     }.get(error, "参数拒绝")
     return PlanToolExecution(
         tool_call_id=tool_call_id,
-        tool_name=entry.canonical_name if entry is not None else (tool_name or "unknown_tool"),
-        arguments_json=(
-            '{"contract_version":"planning-tool-arguments-v1","redacted":true}'
+        tool_name=entry.canonical_name
+        if entry is not None
+        else (tool_name or "unknown_tool"),
+        arguments_json=json.dumps(
+            {
+                "contract_version": entry.input_contract.version
+                if entry is not None
+                else "planning-tool-arguments-v1",
+                "redacted": True,
+            },
+            separators=(",", ":"),
         ),
         result=canonical,
         provider_result=provider_result,

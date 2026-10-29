@@ -295,3 +295,36 @@ class StudyUnitRevisionTests(unittest.TestCase):
         self.assertEqual(
             DocumentRepository(self.store.database).get(self.document.id), self.document
         )
+
+    def test_tool_trace_versions_match_manifest_on_success_and_argument_rejection(self):
+        import json
+        from app.services.plan_tool_runtime import build_plan_tool_runtime
+
+        runtime = build_plan_tool_runtime(
+            study_units=self.document.study_units, debug_report=self.debug
+        )
+        for arguments in (
+            {"study_units": [{"title": "Proposal", "page_start": 1, "page_end": 12}]},
+            {},
+        ):
+            with self.subTest(valid=bool(arguments)):
+                result = runtime.execute_tool_call(
+                    {
+                        "id": "revise-contract",
+                        "type": "function",
+                        "function": {
+                            "name": "revise_study_units",
+                            "arguments": json.dumps(arguments),
+                        },
+                    }
+                )
+                self.assertEqual(
+                    result.argument_contract_version, "planning-tool-arguments-v2"
+                )
+                self.assertEqual(
+                    result.result_contract_version, "planning-tool-result-v2"
+                )
+                self.assertEqual(
+                    json.loads(result.arguments_json)["contract_version"],
+                    result.argument_contract_version,
+                )
