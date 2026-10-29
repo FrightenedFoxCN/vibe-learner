@@ -39,6 +39,7 @@ This repository was last materially updated on 2026-09-10. The codebase is a mon
 - Operation commit contracts: `services/ai/app/models/tavern_commit.py` and `packages/shared/fixtures/harness/operation-commit-policies-v1.json`.
 - Harness engineering guide and source ownership map: `docs/harness/README.md`
 - Unified active backlog: `TODO.md`
+- Planning/Study output language: `services/ai/app/models/output_language.py`, `services/ai/app/services/output_language.py`, and `docs/output-language.md`. Explicit preferences bind operation identity and save with successful Session commits; source quotations stay verbatim and legacy absent fields preserve fingerprint bytes.
 - Versioned performance gates: `docs/performance-budgets-v1.md`
 - Harness Wave 5 performance gates: `docs/performance-budgets-v1.md`; run `npm run bench:harness -- --samples 30 --output /tmp/harness-local.json` for provider-free local measurements. Remaining independent review and representative live-provider gates are tracked in `TODO.md`; deterministic stage and SQLite crash/size gates are implemented.
 - Tavern contracts and persistence: `services/ai/app/models/tavern.py`, `services/ai/app/persistence/tavern_repository.py`, and `packages/shared/src/tavern.ts`

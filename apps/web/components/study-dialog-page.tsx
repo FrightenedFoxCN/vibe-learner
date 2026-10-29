@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import type { CSSProperties } from "react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Citation, StudySessionRecord } from "@vibe-learner/shared";
 
 import { useLearningWorkspace } from "./learning-workspace-provider";
@@ -22,11 +22,12 @@ import type {
 const AI_BASE_URL = () => getAiBaseUrl();
 const ProjectedPdfViewer = dynamic(
   () => import("./projected-pdf-viewer").then((module) => module.ProjectedPdfViewer),
-  { ssr: false }
+  { ssr: false },
 );
 const ProjectedImageViewer = dynamic(
-  () => import("./projected-image-viewer").then((module) => module.ProjectedImageViewer),
-  { ssr: false }
+  () =>
+    import("./projected-image-viewer").then((module) => module.ProjectedImageViewer),
+  { ssr: false },
 );
 
 type PreviewState = StudyDialogPreviewState;
@@ -68,11 +69,14 @@ export function StudyDialogPage() {
   const [pdfPage, setPdfPage] = useState(() => studyDialogCache?.pdfPage ?? 1);
   const [isPdfPreviewOpen, setIsPdfPreviewOpen] = useState(false);
   const [previewState, setPreviewState] = useState<PreviewState | null>(
-    () => studyDialogCache?.previewState ?? null
+    () => studyDialogCache?.previewState ?? null,
   );
-  const [pendingComposerInsert, setPendingComposerInsert] = useState<{ id: string; text: string } | null>(null);
+  const [pendingComposerInsert, setPendingComposerInsert] = useState<{
+    id: string;
+    text: string;
+  } | null>(null);
   const [selectedScheduleId, setSelectedScheduleId] = useState(
-    () => studyDialogCache?.selectedScheduleId ?? ""
+    () => studyDialogCache?.selectedScheduleId ?? "",
   );
   const [requestedPlanId, setRequestedPlanId] = useState("");
   const [requestedScheduleId, setRequestedScheduleId] = useState("");
@@ -82,13 +86,17 @@ export function StudyDialogPage() {
   const handleSwitchSectionRef = useRef(handleSwitchSection);
   handleSwitchSectionRef.current = handleSwitchSection;
 
-  const scheduleOptions = activePlan?.schedule ?? [];
+  const scheduleOptions = useMemo(
+    () => activePlan?.schedule ?? [],
+    [activePlan?.schedule],
+  );
   const currentSchedule =
     scheduleOptions.find((item) => item.id === selectedScheduleId) ??
     scheduleOptions[0] ??
     null;
   const currentScheduleId = currentSchedule?.id ?? "";
-  const activeSceneProfile = studySession?.sceneProfile ?? activePlan?.sceneProfile ?? null;
+  const activeSceneProfile =
+    studySession?.sceneProfile ?? activePlan?.sceneProfile ?? null;
   const projectedPdf = studySession?.projectedPdf ?? null;
 
   const resolveScheduleStartPage = useCallback(
@@ -100,48 +108,74 @@ export function StudyDialogPage() {
       if (firstScheduleChapter?.anchorPageStart) {
         return firstScheduleChapter.anchorPageStart;
       }
-      const fromPlanSection = planSections.find((section) => section.id === scheduleItem.unitId)?.pageStart;
+      const fromPlanSection = planSections.find(
+        (section) => section.id === scheduleItem.unitId,
+      )?.pageStart;
       if (fromPlanSection) return fromPlanSection;
-      const fromStudyUnit = activeDocument?.studyUnits.find((unit) => unit.id === scheduleItem.unitId)?.pageStart;
+      const fromStudyUnit = activeDocument?.studyUnits.find(
+        (unit) => unit.id === scheduleItem.unitId,
+      )?.pageStart;
       if (fromStudyUnit) return fromStudyUnit;
-      const fromRawSection = activeDocument?.sections.find((section) => section.id === scheduleItem.unitId)?.pageStart;
+      const fromRawSection = activeDocument?.sections.find(
+        (section) => section.id === scheduleItem.unitId,
+      )?.pageStart;
       if (fromRawSection) return fromRawSection;
       return 0;
     },
-    [activeDocument?.sections, activeDocument?.studyUnits, activePlan?.schedule, planSections]
+    [
+      activeDocument?.sections,
+      activeDocument?.studyUnits,
+      activePlan?.schedule,
+      planSections,
+    ],
   );
 
   const scheduleStartPage = resolveScheduleStartPage(currentScheduleId);
   const currentStudyUnitId = currentSchedule?.unitId ?? "";
 
-  const handleOpenPdfPage = useCallback((page: number) => {
-    setPdfPage(page);
-    if (activeDocument) {
-      setPreviewState({
-        kind: "document",
-        sourceId: activeDocument.id,
-        title: activeDocument.title,
-        page: page,
-        pageCount: activeDocument.pageCount,
-      });
-    }
-    setIsPdfPreviewOpen(true);
-  }, [activeDocument]);
+  const handleOpenPdfPage = useCallback(
+    (page: number) => {
+      setPdfPage(page);
+      if (activeDocument) {
+        setPreviewState({
+          kind: "document",
+          sourceId: activeDocument.id,
+          title: activeDocument.title,
+          page: page,
+          pageCount: activeDocument.pageCount,
+        });
+      }
+      setIsPdfPreviewOpen(true);
+    },
+    [activeDocument],
+  );
 
   const navigateToSchedule = useCallback(
     async (scheduleId: string) => {
       setSelectedScheduleId(scheduleId);
       const scheduleItem = scheduleOptions.find((item) => item.id === scheduleId);
       if (!scheduleItem) return;
-      const nextPage = scheduleItem.scheduleChapters[0]?.anchorPageStart || resolveScheduleStartPage(scheduleId);
+      const nextPage =
+        scheduleItem.scheduleChapters[0]?.anchorPageStart ||
+        resolveScheduleStartPage(scheduleId);
       if (nextPage > 0) {
         handleOpenPdfPage(nextPage);
       }
-      if (studySession && scheduleItem.unitId && scheduleItem.unitId !== studySession.studyUnitId) {
+      if (
+        studySession &&
+        scheduleItem.unitId &&
+        scheduleItem.unitId !== studySession.studyUnitId
+      ) {
         await handleSwitchSection(scheduleItem.unitId);
       }
     },
-    [handleOpenPdfPage, handleSwitchSection, resolveScheduleStartPage, scheduleOptions, studySession]
+    [
+      handleOpenPdfPage,
+      handleSwitchSection,
+      resolveScheduleStartPage,
+      scheduleOptions,
+      studySession,
+    ],
   );
 
   const handleScheduleChange = useCallback(
@@ -149,7 +183,7 @@ export function StudyDialogPage() {
       setRequestedScheduleId("");
       void navigateToSchedule(scheduleId);
     },
-    [navigateToSchedule]
+    [navigateToSchedule],
   );
 
   const handlePlanSelection = useCallback(
@@ -160,51 +194,62 @@ export function StudyDialogPage() {
       setRequestedScheduleId("");
       selectPlan(planId, PLAN_SWITCH_NOTICE);
     },
-    [selectPlan]
+    [selectPlan],
   );
 
-  const handleOpenCitation = useCallback((citation: Citation) => {
-    const targetPage = Math.max(1, citation.pageStart || 1);
-    if (citation.sourceKind === "attachment_pdf" && studySession?.id) {
-      const attachment = resolvePreviewableAttachmentById(studySession, citation.sourceId || citation.sectionId, "pdf");
-      if (attachment) {
+  const handleOpenCitation = useCallback(
+    (citation: Citation) => {
+      const targetPage = Math.max(1, citation.pageStart || 1);
+      if (citation.sourceKind === "attachment_pdf" && studySession?.id) {
+        const attachment = resolvePreviewableAttachmentById(
+          studySession,
+          citation.sourceId || citation.sectionId,
+          "pdf",
+        );
+        if (attachment) {
+          setPreviewState({
+            kind: "attachment_pdf",
+            sourceId: attachment.attachmentId,
+            title: attachment.name,
+            page: targetPage,
+            pageCount: attachment.pageCount ?? 0,
+          });
+          setIsPdfPreviewOpen(true);
+          return;
+        }
+      }
+      if (citation.sourceKind === "attachment_image" && studySession?.id) {
+        const attachment = resolvePreviewableAttachmentById(
+          studySession,
+          citation.sourceId || citation.sectionId,
+          "image",
+        );
+        if (attachment) {
+          setPreviewState({
+            kind: "attachment_image",
+            sourceId: attachment.attachmentId,
+            title: attachment.name,
+            page: 1,
+            pageCount: 1,
+          });
+          setIsPdfPreviewOpen(true);
+          return;
+        }
+      }
+      if (activeDocument) {
+        setPdfPage(targetPage);
         setPreviewState({
-          kind: "attachment_pdf",
-          sourceId: attachment.attachmentId,
-          title: attachment.name,
+          kind: "document",
+          sourceId: activeDocument.id,
+          title: activeDocument.title,
           page: targetPage,
-          pageCount: attachment.pageCount ?? 0,
+          pageCount: activeDocument.pageCount,
         });
         setIsPdfPreviewOpen(true);
-        return;
       }
-    }
-    if (citation.sourceKind === "attachment_image" && studySession?.id) {
-      const attachment = resolvePreviewableAttachmentById(studySession, citation.sourceId || citation.sectionId, "image");
-      if (attachment) {
-        setPreviewState({
-          kind: "attachment_image",
-          sourceId: attachment.attachmentId,
-          title: attachment.name,
-          page: 1,
-          pageCount: 1,
-        });
-        setIsPdfPreviewOpen(true);
-        return;
-      }
-    }
-    if (activeDocument) {
-      setPdfPage(targetPage);
-      setPreviewState({
-        kind: "document",
-        sourceId: activeDocument.id,
-        title: activeDocument.title,
-        page: targetPage,
-        pageCount: activeDocument.pageCount,
-      });
-      setIsPdfPreviewOpen(true);
-    }
-  }, [activeDocument, studySession]);
+    },
+    [activeDocument, studySession],
+  );
 
   const handleJumpToScheduleStart = useCallback(() => {
     if (scheduleStartPage > 0) {
@@ -213,14 +258,19 @@ export function StudyDialogPage() {
   }, [handleOpenPdfPage, scheduleStartPage]);
 
   const handleAskByCurrentChapter = useCallback(
-    async (message: string, attachments: File[] = []) => {
+    async (message: string, attachments: File[] = [], outputLanguage?: string) => {
       const targetStudyUnitId = currentStudyUnitId || studySession?.studyUnitId || "";
       if (targetStudyUnitId) {
-        return handleAskForSection(message, targetStudyUnitId, attachments);
+        return handleAskForSection(
+          message,
+          targetStudyUnitId,
+          attachments,
+          outputLanguage,
+        );
       }
-      return handleAsk(message, attachments);
+      return handleAsk(message, attachments, outputLanguage);
     },
-    [currentStudyUnitId, handleAsk, handleAskForSection, studySession?.studyUnitId]
+    [currentStudyUnitId, handleAsk, handleAskForSection, studySession?.studyUnitId],
   );
 
   useEffect(() => {
@@ -265,7 +315,10 @@ export function StudyDialogPage() {
   }, [activePlan?.id, planHistoryItems, requestedPlanId, selectPlan]);
 
   useEffect(() => {
-    if (!scheduleOptions.length) { setSelectedScheduleId(""); return; }
+    if (!scheduleOptions.length) {
+      setSelectedScheduleId("");
+      return;
+    }
     if (
       requestedScheduleId &&
       scheduleOptions.some((item) => item.id === requestedScheduleId) &&
@@ -275,7 +328,10 @@ export function StudyDialogPage() {
       setRequestedScheduleId("");
       return;
     }
-    if (!selectedScheduleId || !scheduleOptions.some((item) => item.id === selectedScheduleId)) {
+    if (
+      !selectedScheduleId ||
+      !scheduleOptions.some((item) => item.id === selectedScheduleId)
+    ) {
       setSelectedScheduleId(scheduleOptions[0]?.id ?? "");
     }
   }, [activePlan?.id, requestedScheduleId, scheduleOptions, selectedScheduleId]);
@@ -293,7 +349,7 @@ export function StudyDialogPage() {
         pageCount: activeDocument.pageCount,
       });
     }
-  }, [activeDocument?.id, activeDocument?.pageCount, activeDocument?.title, projectedPdf]);
+  }, [activeDocument, projectedPdf]);
 
   useEffect(() => {
     if (!Number.isFinite(requestedPage) || requestedPage <= 0) return;
@@ -308,7 +364,7 @@ export function StudyDialogPage() {
         pageCount: activeDocument.pageCount,
       });
     }
-  }, [requestedPage, activeDocument?.id, activeDocument?.pageCount, activeDocument?.title, projectedPdf]);
+  }, [requestedPage, activeDocument, projectedPdf]);
 
   useEffect(() => {
     if (!projectedPdf) return;
@@ -362,11 +418,7 @@ export function StudyDialogPage() {
     if (currentStudyUnitId !== studySession.studyUnitId) {
       void handleSwitchSectionRef.current(currentStudyUnitId);
     }
-  }, [
-    currentStudyUnitId,
-    studySession?.id,
-    studySession?.studyUnitId,
-  ]);
+  }, [currentStudyUnitId, studySession]);
 
   useEffect(() => {
     const nextCache: StudyDialogPageCache = {
@@ -387,24 +439,27 @@ export function StudyDialogPage() {
       ? `${AI_BASE_URL()}/documents/${effectivePreview.sourceId}/file`
       : effectivePreview?.kind === "generated_image"
         ? effectivePreview.imageUrl
-      : (effectivePreview?.kind === "attachment_pdf" || effectivePreview?.kind === "attachment_image") && studySession?.id
-        ? `${AI_BASE_URL()}/study-sessions/${studySession.id}/attachments/${effectivePreview.sourceId}/file`
-        : "";
-  const previewPageCount = effectivePreview?.pageCount ?? activeDocument?.pageCount ?? 0;
+        : (effectivePreview?.kind === "attachment_pdf" ||
+              effectivePreview?.kind === "attachment_image") &&
+            studySession?.id
+          ? `${AI_BASE_URL()}/study-sessions/${studySession.id}/attachments/${effectivePreview.sourceId}/file`
+          : "";
+  const previewPageCount =
+    effectivePreview?.pageCount ?? activeDocument?.pageCount ?? 0;
   const previewFileUrl =
     effectivePreview?.kind === "document"
       ? `${AI_BASE_URL()}/documents/${effectivePreview.sourceId}/file`
       : effectivePreview?.kind === "generated_image"
         ? effectivePreview.imageUrl
-      : (effectivePreview?.kind === "attachment_pdf" || effectivePreview?.kind === "attachment_image") && studySession?.id
-        ? `${AI_BASE_URL()}/study-sessions/${studySession.id}/attachments/${effectivePreview.sourceId}/file`
-        : "";
+        : (effectivePreview?.kind === "attachment_pdf" ||
+              effectivePreview?.kind === "attachment_image") &&
+            studySession?.id
+          ? `${AI_BASE_URL()}/study-sessions/${studySession.id}/attachments/${effectivePreview.sourceId}/file`
+          : "";
   const previewOverlays =
-    (
-      effectivePreview?.kind === "attachment_pdf" ||
+    (effectivePreview?.kind === "attachment_pdf" ||
       effectivePreview?.kind === "attachment_image" ||
-      effectivePreview?.kind === "generated_image"
-    ) &&
+      effectivePreview?.kind === "generated_image") &&
     projectedPdf?.sourceId === effectivePreview.sourceId
       ? projectedPdf.overlays.filter((item) => item.pageNumber === previewPage)
       : [];
@@ -437,7 +492,7 @@ export function StudyDialogPage() {
             ...current,
             page: nextPage,
           }
-        : current
+        : current,
     );
   }, [effectivePreview, previewPage, previewPageCount]);
 
@@ -445,7 +500,9 @@ export function StudyDialogPage() {
     if (!activePlan || !currentScheduleId) {
       return;
     }
-    const currentIndex = scheduleOptions.findIndex((item) => item.id === currentScheduleId);
+    const currentIndex = scheduleOptions.findIndex(
+      (item) => item.id === currentScheduleId,
+    );
     if (currentIndex < 0) {
       return;
     }
@@ -464,7 +521,13 @@ export function StudyDialogPage() {
       status: "in_progress",
     });
     await navigateToSchedule(nextSchedule.id);
-  }, [activePlan, currentScheduleId, navigateToSchedule, scheduleOptions, updatePlanProgress]);
+  }, [
+    activePlan,
+    currentScheduleId,
+    navigateToSchedule,
+    scheduleOptions,
+    updatePlanProgress,
+  ]);
 
   return (
     <main className="with-app-nav study-dialog-page" style={pageStyle}>
@@ -475,7 +538,12 @@ export function StudyDialogPage() {
           <h1 style={styles.pageTitle}>章节对话</h1>
           <ProviderTruth scope="study" />
           {notice ? (
-            <div style={styles.notice} role="status" aria-live="polite" data-study-action-notice>
+            <div
+              style={styles.notice}
+              role="status"
+              aria-live="polite"
+              data-study-action-notice
+            >
               <span style={styles.noticeLabel}>操作反馈</span>
               <span>{notice}</span>
             </div>
@@ -505,16 +573,30 @@ export function StudyDialogPage() {
               title: `${item.courseTitle} · ${item.documentTitle}`,
             }))}
             onSelectPlan={handlePlanSelection}
-            onCreateSession={() => { void createSessionForActivePlan(); }}
+            onCreateSession={() => {
+              void createSessionForActivePlan();
+            }}
             showCreateSession={!studySession && Boolean(activePlan)}
             onAsk={handleAskByCurrentChapter}
+            outputLanguage={
+              studySession?.outputLanguage ??
+              (activePlan?.outputLanguage !== "unknown"
+                ? activePlan?.outputLanguage
+                : "auto") ??
+              "auto"
+            }
+            outputLanguageScope={studySession?.id ?? activePlan?.id ?? ""}
             onSubmitQuestionAttempt={handleSubmitQuestionAttempt}
             onContinueAfterQuestion={continueAfterInteractiveQuestion}
             onChangeSchedule={handleScheduleChange}
             onOpenCitation={handleOpenCitation}
             onJumpToScheduleStart={handleJumpToScheduleStart}
-            onCompleteCurrentSchedule={() => { void handleCompleteCurrentSchedule(); }}
-            canCompleteCurrentSchedule={Boolean(currentScheduleId && currentSchedule?.status !== "completed")}
+            onCompleteCurrentSchedule={() => {
+              void handleCompleteCurrentSchedule();
+            }}
+            canCompleteCurrentSchedule={Boolean(
+              currentScheduleId && currentSchedule?.status !== "completed",
+            )}
             chatErrorMessage={chatFailure?.detail ?? ""}
             canQueryLastAsk={Boolean(chatFailure?.canQuery)}
             canResendLastAsk={Boolean(chatFailure?.canResend)}
@@ -523,14 +605,19 @@ export function StudyDialogPage() {
             onRetryLastAsk={retryFailedAsk}
             onRefreshSessionAfterAsk={refreshStudySessionAfterRejectedAdmission}
             selectedScheduleId={currentScheduleId}
-            scheduleOptions={scheduleOptions.map((item) => ({ id: item.id, title: item.title }))}
+            scheduleOptions={scheduleOptions.map((item) => ({
+              id: item.id,
+              title: item.title,
+            }))}
             turns={studySession?.turns ?? []}
             session={response}
             persona={activePersona}
             sceneProfile={activeSceneProfile}
             pendingFollowUps={studySession?.pendingFollowUps ?? []}
             isDialogueInterrupted={isDialogueInterrupted}
-            onInterruptDialogue={() => { void interruptDialogue(); }}
+            onInterruptDialogue={() => {
+              void interruptDialogue();
+            }}
             affinityState={studySession?.affinityState}
             planConfirmations={studySession?.planConfirmations ?? []}
             onResolvePlanConfirmation={handleResolvePlanConfirmation}
@@ -540,7 +627,9 @@ export function StudyDialogPage() {
             canJumpToScheduleStart={scheduleStartPage > 0}
             disabled={!studySession}
             cachedState={studyConsoleCache}
-            onCachedStateChange={(nextState: StudyConsolePageCache) => setPageCache("studyConsole", nextState)}
+            onCachedStateChange={(nextState: StudyConsolePageCache) =>
+              setPageCache("studyConsole", nextState)
+            }
           />
         )}
       </section>
@@ -571,11 +660,15 @@ export function StudyDialogPage() {
                       type="button"
                       style={{
                         ...styles.pdfIconBtn,
-                        ...(previewPage <= 1 ? styles.pdfNavBtnDisabled : {})
+                        ...(previewPage <= 1 ? styles.pdfNavBtnDisabled : {}),
                       }}
                       onClick={() => {
                         if (!effectivePreview || previewPage <= 1) return;
-                        if (effectivePreview.kind === "attachment_image" || effectivePreview.kind === "generated_image") return;
+                        if (
+                          effectivePreview.kind === "attachment_image" ||
+                          effectivePreview.kind === "generated_image"
+                        )
+                          return;
                         const nextPage = previewPage - 1;
                         setPdfPage(nextPage);
                         setPreviewState({ ...effectivePreview, page: nextPage });
@@ -594,12 +687,19 @@ export function StudyDialogPage() {
                       type="button"
                       style={{
                         ...styles.pdfIconBtn,
-                        ...(previewPageCount > 0 && previewPage >= previewPageCount ? styles.pdfNavBtnDisabled : {})
+                        ...(previewPageCount > 0 && previewPage >= previewPageCount
+                          ? styles.pdfNavBtnDisabled
+                          : {}),
                       }}
                       onClick={() => {
                         if (!effectivePreview) return;
-                        if (effectivePreview.kind === "attachment_image" || effectivePreview.kind === "generated_image") return;
-                        if (previewPageCount > 0 && previewPage >= previewPageCount) return;
+                        if (
+                          effectivePreview.kind === "attachment_image" ||
+                          effectivePreview.kind === "generated_image"
+                        )
+                          return;
+                        if (previewPageCount > 0 && previewPage >= previewPageCount)
+                          return;
                         const nextPage = previewPage + 1;
                         setPdfPage(nextPage);
                         setPreviewState({ ...effectivePreview, page: nextPage });
@@ -663,7 +763,8 @@ export function StudyDialogPage() {
                           if (!effectivePreview) return;
                           const nextPage = previewPage + delta;
                           if (nextPage < 1) return;
-                          if (previewPageCount > 0 && nextPage > previewPageCount) return;
+                          if (previewPageCount > 0 && nextPage > previewPageCount)
+                            return;
                           setPdfPage(nextPage);
                           setPreviewState((current) =>
                             current
@@ -671,7 +772,7 @@ export function StudyDialogPage() {
                                   ...current,
                                   page: nextPage,
                                 }
-                              : current
+                              : current,
                           );
                         }}
                         onPageCountChange={(pageCount) => {
@@ -682,7 +783,7 @@ export function StudyDialogPage() {
                                   ...current,
                                   pageCount,
                                 }
-                              : current
+                              : current,
                           );
                         }}
                         onInsertReference={(text) => {
@@ -703,12 +804,16 @@ export function StudyDialogPage() {
                               ? "AI 图像"
                               : "教材材料"}
                       </span>
-                      {effectivePreview.kind === "attachment_image" || effectivePreview.kind === "generated_image" ? (
+                      {effectivePreview.kind === "attachment_image" ||
+                      effectivePreview.kind === "generated_image" ? (
                         <span style={styles.previewMetaChip}>图像</span>
                       ) : (
                         <button
                           type="button"
-                          style={{ ...styles.previewMetaChip, ...styles.previewMetaChipButton }}
+                          style={{
+                            ...styles.previewMetaChip,
+                            ...styles.previewMetaChipButton,
+                          }}
                           onClick={jumpToPreviewPage}
                           title="输入页码跳转"
                           aria-label="输入页码跳转"
@@ -733,7 +838,10 @@ export function StudyDialogPage() {
               title="打开材料预览"
             >
               <MaterialIcon name="menu_book" size={16} />
-              {(effectivePreview.kind === "attachment_image" || effectivePreview.kind === "generated_image") ? "图像" : `p.${previewPage}`}
+              {effectivePreview.kind === "attachment_image" ||
+              effectivePreview.kind === "generated_image"
+                ? "图像"
+                : `p.${previewPage}`}
             </button>
           )
         ) : (
@@ -751,7 +859,7 @@ export function StudyDialogPage() {
 function resolvePreviewableAttachmentById(
   session: StudySessionRecord | null | undefined,
   attachmentId: string,
-  kind?: "pdf" | "image"
+  kind?: "pdf" | "image",
 ) {
   const normalizedId = attachmentId.trim();
   if (!session || !normalizedId) {
@@ -762,7 +870,7 @@ function resolvePreviewableAttachmentById(
       (attachment) =>
         attachment.attachmentId === normalizedId &&
         attachment.previewable &&
-        (!kind || attachment.kind === kind)
+        (!kind || attachment.kind === kind),
     );
     if (match) {
       return match;

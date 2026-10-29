@@ -174,7 +174,9 @@ class StudyChatOperationRepository:
                 session.flush()
                 return _from_row(row)
         except IntegrityError:
-            existing = self.get(session_id=session_id, client_request_id=client_request_id)
+            existing = self.get(
+                session_id=session_id, client_request_id=client_request_id
+            )
             if existing is not None:
                 if existing.request_fingerprint != fingerprint:
                     raise StudyChatOperationRequestMismatch(client_request_id)
@@ -214,18 +216,16 @@ class StudyChatOperationRepository:
                     scene_records=_load_operation_scene_records(session, record),
                     chat_attachment_root=self.chat_attachment_root,
                 )
-        if (
-            record.status == StudyChatOperationStatus.RUNNING
-            and _timestamp_expired(record.execution_deadline_at, now=database_now)
+        if record.status == StudyChatOperationStatus.RUNNING and _timestamp_expired(
+            record.execution_deadline_at, now=database_now
         ):
             return self.mark_uncertain(
                 operation_id=record.operation_id,
                 execution_token=record.execution_token,
                 error_code="study_chat_execution_deadline_expired",
             )
-        if (
-            record.status == StudyChatOperationStatus.ADMITTED
-            and _timestamp_older_than(record.created_at, seconds=30, now=database_now)
+        if record.status == StudyChatOperationStatus.ADMITTED and _timestamp_older_than(
+            record.created_at, seconds=30, now=database_now
         ):
             return self.mark_not_committed(
                 operation_id=record.operation_id,
@@ -256,9 +256,8 @@ class StudyChatOperationRepository:
             if row is None:
                 return None
             record = _from_row(row)
-        if (
-            record.status == StudyChatOperationStatus.RUNNING
-            and _timestamp_expired(record.execution_deadline_at, now=database_now)
+        if record.status == StudyChatOperationStatus.RUNNING and _timestamp_expired(
+            record.execution_deadline_at, now=database_now
         ):
             return self.mark_uncertain(
                 operation_id=record.operation_id,
@@ -276,7 +275,10 @@ class StudyChatOperationRepository:
         token = f"study-chat-exec-{uuid4().hex}"
         with self.database.session() as session:
             now = database_utc_wire(session)
-            deadline = (datetime.fromisoformat(now) + timedelta(seconds=max(1, min(timeout_seconds, 900)))).isoformat(timespec="microseconds")
+            deadline = (
+                datetime.fromisoformat(now)
+                + timedelta(seconds=max(1, min(timeout_seconds, 900)))
+            ).isoformat(timespec="microseconds")
             row = session.get(StudyChatOperationRow, operation_id)
             if row is None:
                 raise StudyChatOperationNotFound(operation_id)
@@ -297,7 +299,8 @@ class StudyChatOperationRepository:
                 update(StudyChatOperationRow)
                 .where(
                     StudyChatOperationRow.operation_id == operation_id,
-                    StudyChatOperationRow.status == StudyChatOperationStatus.ADMITTED.value,
+                    StudyChatOperationRow.status
+                    == StudyChatOperationStatus.ADMITTED.value,
                     StudyChatOperationRow.claim_count == 0,
                     StudyChatOperationRow.active_slot == 1,
                 )
@@ -332,7 +335,8 @@ class StudyChatOperationRepository:
                 update(StudyChatOperationRow)
                 .where(
                     StudyChatOperationRow.operation_id == operation_id,
-                    StudyChatOperationRow.status == StudyChatOperationStatus.RUNNING.value,
+                    StudyChatOperationRow.status
+                    == StudyChatOperationStatus.RUNNING.value,
                     StudyChatOperationRow.execution_token == execution_token,
                 )
                 .values(provider_started_at=now, heartbeat_at=now, updated_at=now)
@@ -340,7 +344,9 @@ class StudyChatOperationRepository:
             if marked.rowcount != 1:
                 raise StudyChatOperationExecutionFenced(operation_id)
 
-    def mark_not_committed(self, *, operation_id: str, error_code: str) -> StudyChatOperationRecord:
+    def mark_not_committed(
+        self, *, operation_id: str, error_code: str
+    ) -> StudyChatOperationRecord:
         with self.database.session() as session:
             now = database_utc_wire(session)
             row = session.get(StudyChatOperationRow, operation_id)
@@ -359,7 +365,8 @@ class StudyChatOperationRepository:
                 update(StudyChatOperationRow)
                 .where(
                     StudyChatOperationRow.operation_id == operation_id,
-                    StudyChatOperationRow.status == StudyChatOperationStatus.ADMITTED.value,
+                    StudyChatOperationRow.status
+                    == StudyChatOperationStatus.ADMITTED.value,
                     StudyChatOperationRow.claim_count == 0,
                 )
                 .values(
@@ -413,7 +420,8 @@ class StudyChatOperationRepository:
                 update(StudyChatOperationRow)
                 .where(
                     StudyChatOperationRow.operation_id == operation_id,
-                    StudyChatOperationRow.status == StudyChatOperationStatus.RUNNING.value,
+                    StudyChatOperationRow.status
+                    == StudyChatOperationStatus.RUNNING.value,
                     StudyChatOperationRow.execution_token == execution_token,
                 )
                 .values(**values)
@@ -464,7 +472,8 @@ class StudyChatOperationRepository:
                 update(StudyChatOperationRow)
                 .where(
                     StudyChatOperationRow.operation_id == operation_id,
-                    StudyChatOperationRow.status == StudyChatOperationStatus.RUNNING.value,
+                    StudyChatOperationRow.status
+                    == StudyChatOperationStatus.RUNNING.value,
                     StudyChatOperationRow.execution_token == execution_token,
                 )
                 .values(**values)
@@ -521,7 +530,9 @@ class StudyChatOperationSessionNotFound(StudyChatOperationRepositoryError):
 class StudyChatOperationRevisionConflict(StudyChatOperationRepositoryError):
     def __init__(self, session_id: str, *, actual_revision: int) -> None:
         self.actual_revision = actual_revision
-        super().__init__(f"study_chat_session_revision_conflict:{session_id}:{actual_revision}")
+        super().__init__(
+            f"study_chat_session_revision_conflict:{session_id}:{actual_revision}"
+        )
 
 
 class StudyChatOperationRequestMismatch(StudyChatOperationRepositoryError):
@@ -607,6 +618,11 @@ def _validate_committed_read_back(
         raise ValueError("study_chat_operation_committed_response_session_missing")
     response_session = StudySessionRecord.model_validate(raw_response_session)
     if (
+        record.request_payload.output_language is not None
+        and response_session.output_language != record.request_payload.output_language
+    ):
+        raise ValueError("study_chat_operation_output_language_read_back_mismatch")
+    if (
         response_session.id != record.session_id
         or response_session.revision != record.committed_session_revision
         or response_session.last_turn_sequence != record.committed_turn_sequence
@@ -621,7 +637,8 @@ def _validate_committed_read_back(
     if len(matching_response_turns) != 1:
         raise ValueError("study_chat_operation_committed_response_turn_missing")
     if (
-        record.request_schema_version == STUDY_CHAT_REQUEST_SCHEMA_VERSION
+        record.request_schema_version
+        in {"study-chat-request-v2", STUDY_CHAT_REQUEST_SCHEMA_VERSION}
         and record.request_payload.attachments
     ):
         if chat_attachment_root is None:
@@ -635,9 +652,7 @@ def _validate_committed_read_back(
         )
     raw_effect_batch = record.response_payload.get("_committed_effect_batch")
     if raw_effect_batch is not None:
-        effect_batch = StudyChatCommittedEffectBatchV1.model_validate(
-            raw_effect_batch
-        )
+        effect_batch = StudyChatCommittedEffectBatchV1.model_validate(raw_effect_batch)
         if effect_batch.operation_id != record.operation_id:
             raise ValueError("study_chat_operation_effect_operation_mismatch")
         validate_study_chat_committed_effect_read_back(
@@ -811,7 +826,9 @@ def _timestamp_expired(value: str, *, now: str) -> bool:
 
 def _timestamp_older_than(value: str, *, seconds: int, now: str) -> bool:
     try:
-        return datetime.fromisoformat(value) + timedelta(seconds=seconds) <= datetime.fromisoformat(now)
+        return datetime.fromisoformat(value) + timedelta(
+            seconds=seconds
+        ) <= datetime.fromisoformat(now)
     except ValueError:
         return True
 

@@ -19,6 +19,7 @@ from app.models.domain import (
 from app.models.study_chat_operation import (
     STUDY_CHAT_RESPONSE_SCHEMA_VERSION,
     StudyChatOperationStatus,
+    StudyChatOperationRequestPayload,
     study_chat_response_digest,
 )
 from app.models.harness_operation import HarnessDomainOperationKind
@@ -174,7 +175,9 @@ class StudySessionRepository:
                         )
                     if mutation_result is False:
                         if record != before_mutation:
-                            raise ValueError("study_session_noop_mutation_changed_record")
+                            raise ValueError(
+                                "study_session_noop_mutation_changed_record"
+                            )
                         return before_mutation
                     record.revision = expected_revision + 1
                     record = StudySessionRecord.model_validate(
@@ -222,7 +225,8 @@ class StudySessionRepository:
                     existing = session.scalar(
                         select(StudyQuestionAttemptRow).where(
                             StudyQuestionAttemptRow.session_id == session_id,
-                            StudyQuestionAttemptRow.client_attempt_id == client_attempt_id,
+                            StudyQuestionAttemptRow.client_attempt_id
+                            == client_attempt_id,
                         )
                     )
                     if existing is not None:
@@ -257,7 +261,9 @@ class StudySessionRepository:
                         )
                     record = _from_row(session_row)
                     before_record = record.model_copy(deep=True)
-                    matching_turns = [turn for turn in record.turns if turn.id == turn_id]
+                    matching_turns = [
+                        turn for turn in record.turns if turn.id == turn_id
+                    ]
                     if len(matching_turns) != 1:
                         raise StudyQuestionAttemptTurnNotFound(turn_id)
                     turn = matching_turns[0]
@@ -272,7 +278,9 @@ class StudySessionRepository:
                         )
                     except ValueError as exc:
                         if str(exc) == "study_question_grading_unavailable":
-                            raise StudyQuestionAttemptGradingUnavailable(turn_id) from exc
+                            raise StudyQuestionAttemptGradingUnavailable(
+                                turn_id
+                            ) from exc
                         raise
 
                     committed_at = datetime.now(timezone.utc).isoformat()
@@ -348,7 +356,9 @@ class StudySessionRepository:
                                 STUDY_QUESTION_ATTEMPT_RESPONSE_SCHEMA_VERSION
                             ),
                             response_payload=response_payload,
-                            response_digest=study_question_attempt_response_digest(response),
+                            response_digest=study_question_attempt_response_digest(
+                                response
+                            ),
                             before_session_revision=expected_session_revision,
                             committed_session_revision=committed_revision,
                             committed_at=committed_at,
@@ -438,9 +448,11 @@ class StudySessionRepository:
         prepared_study_unit_id: str | None,
         completed_follow_up_id: str,
         cancel_pending_follow_ups: bool,
+        output_language: str | None = None,
         prepared_effect_batch: StudyChatPreparedEffectBatchV1 | None = None,
         build_response_payload: Callable[[StudySessionRecord], dict[str, object]],
-        runtime_commit_callback: Callable[[object, StudySessionRecord, str, int], None] | None = None,
+        runtime_commit_callback: Callable[[object, StudySessionRecord, str, int], None]
+        | None = None,
     ) -> tuple[StudySessionRecord, dict[str, object]]:
         """Append one Turn and publish its durable receipt in one transaction."""
         committed_at = datetime.now(timezone.utc).isoformat()
@@ -453,16 +465,28 @@ class StudySessionRepository:
                 or operation.execution_token != execution_token
             ):
                 raise StudySessionOperationFenced(operation_id)
-            harness_operation_binding = self.harness_operations.require_domain_in_session(
-                session,
-                domain_operation_kind=HarnessDomainOperationKind.STUDY_CHAT,
-                domain_operation_id=operation_id,
+            harness_operation_binding = (
+                self.harness_operations.require_domain_in_session(
+                    session,
+                    domain_operation_kind=HarnessDomainOperationKind.STUDY_CHAT,
+                    domain_operation_id=operation_id,
+                )
             )
             row = session.get(StudySessionRow, operation.session_id)
             if row is None:
                 raise StudySessionNotFound(operation.session_id)
             record = _from_row(row)
             expected_revision = record.revision
+            request = StudyChatOperationRequestPayload.model_validate(
+                operation.request_payload
+            )
+            if (
+                request.output_language is not None
+                and output_language != request.output_language
+            ):
+                raise ValueError("study_chat_output_language_binding_mismatch")
+            if output_language is not None:
+                record.output_language = output_language
             next_sequence = record.last_turn_sequence + 1
             record.turns.append(
                 DialogueTurnRecord(
@@ -486,13 +510,19 @@ class StudySessionRepository:
             )
             record.last_turn_sequence = next_sequence
             normalized_prepared = (prepared_study_unit_id or "").strip()
-            if normalized_prepared and normalized_prepared not in record.prepared_study_unit_ids:
+            if (
+                normalized_prepared
+                and normalized_prepared not in record.prepared_study_unit_ids
+            ):
                 record.prepared_study_unit_ids.append(normalized_prepared)
             if result.scene_profile is not None:
                 record.scene_profile = result.scene_profile
             if completed_follow_up_id:
                 for follow_up in record.pending_follow_ups:
-                    if follow_up.id == completed_follow_up_id and follow_up.status == "pending":
+                    if (
+                        follow_up.id == completed_follow_up_id
+                        and follow_up.status == "pending"
+                    ):
                         follow_up.status = "completed"
                         follow_up.completed_at = committed_at
                         break
@@ -519,7 +549,9 @@ class StudySessionRepository:
                 allowed_schedule_ids = {item.id for item in plan.schedule}
             scene_ids = {
                 effect.proposal.proposed_record.scene_instance_id
-                for effect in (prepared_effect_batch.effects if prepared_effect_batch else [])
+                for effect in (
+                    prepared_effect_batch.effects if prepared_effect_batch else []
+                )
                 if isinstance(effect.proposal, StudySceneReplaceEffectProposalV1)
             }
             scene_records: dict[str, SessionSceneRecord] = {}
@@ -599,7 +631,8 @@ class StudySessionRepository:
                 update(StudyChatOperationRow)
                 .where(
                     StudyChatOperationRow.operation_id == operation_id,
-                    StudyChatOperationRow.status == StudyChatOperationStatus.RUNNING.value,
+                    StudyChatOperationRow.status
+                    == StudyChatOperationStatus.RUNNING.value,
                     StudyChatOperationRow.execution_token == execution_token,
                 )
                 .values(
@@ -817,8 +850,7 @@ def _read_question_attempt(
         row.request_schema_version != STUDY_QUESTION_ATTEMPT_REQUEST_SCHEMA_VERSION
         or row.fingerprint_contract_version
         != STUDY_QUESTION_ATTEMPT_FINGERPRINT_VERSION
-        or row.response_schema_version
-        != STUDY_QUESTION_ATTEMPT_RESPONSE_SCHEMA_VERSION
+        or row.response_schema_version != STUDY_QUESTION_ATTEMPT_RESPONSE_SCHEMA_VERSION
     ):
         raise ValueError("study_question_attempt_schema_unsupported")
     request_payload = StudyQuestionAttemptRequestPayloadV1.model_validate(
@@ -955,4 +987,6 @@ def _validate_row_projection(
 
 
 def _is_retryable_sqlite_lock(database: Database, exc: OperationalError) -> bool:
-    return database.url.startswith("sqlite") and "database is locked" in str(exc).lower()
+    return (
+        database.url.startswith("sqlite") and "database is locked" in str(exc).lower()
+    )

@@ -7,11 +7,16 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from app.models.harness import HarnessTraceV3
+from app.models.output_language import OutputLanguagePreference
 
 
-STUDY_CHAT_REQUEST_SCHEMA_VERSION = "study-chat-request-v2"
+STUDY_CHAT_REQUEST_SCHEMA_VERSION = "study-chat-request-v3"
 STUDY_CHAT_REQUEST_SCHEMA_VERSIONS = frozenset(
-    {"study-chat-request-v1", STUDY_CHAT_REQUEST_SCHEMA_VERSION}
+    {
+        "study-chat-request-v1",
+        "study-chat-request-v2",
+        STUDY_CHAT_REQUEST_SCHEMA_VERSION,
+    }
 )
 STUDY_CHAT_FINGERPRINT_CONTRACT_VERSION = "study-chat-request-fingerprint-v1"
 STUDY_CHAT_RESPONSE_SCHEMA_VERSION_V1 = "study-chat-exchange-v1"
@@ -67,6 +72,10 @@ class StudyChatOperationRequestPayload(BaseModel):
     follow_up_id: str = Field(max_length=128)
     hidden_message_prefix: str = Field(max_length=20_000)
     expected_session_revision: int = Field(ge=0)
+    # Omission preserves historical v1 fingerprint bytes and means "keep the Session preference".
+    output_language: OutputLanguagePreference | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
     attachments: list[StudyChatAttachmentManifestEntry] = Field(default_factory=list)
 
     @field_validator("message_kind", "follow_up_id", mode="before")
@@ -110,11 +119,21 @@ class StudyChatOperationRecord(BaseModel):
     def validate_state_projection(self) -> "StudyChatOperationRecord":
         if self.request_schema_version not in STUDY_CHAT_REQUEST_SCHEMA_VERSIONS:
             raise ValueError("study_chat_operation_request_schema_unsupported")
+        if (
+            self.request_schema_version != STUDY_CHAT_REQUEST_SCHEMA_VERSION
+            and self.request_payload.output_language is not None
+        ):
+            raise ValueError("study_chat_legacy_request_has_output_language")
         if self.fingerprint_contract_version != STUDY_CHAT_FINGERPRINT_CONTRACT_VERSION:
             raise ValueError("study_chat_operation_fingerprint_contract_unsupported")
-        if self.request_fingerprint != study_chat_request_fingerprint(self.request_payload):
+        if self.request_fingerprint != study_chat_request_fingerprint(
+            self.request_payload
+        ):
             raise ValueError("study_chat_operation_request_fingerprint_mismatch")
-        if self.admitted_session_revision != self.request_payload.expected_session_revision:
+        if (
+            self.admitted_session_revision
+            != self.request_payload.expected_session_revision
+        ):
             raise ValueError("study_chat_operation_admitted_revision_mismatch")
         terminal = self.status in {
             StudyChatOperationStatus.COMMITTED,
@@ -137,13 +156,19 @@ class StudyChatOperationRecord(BaseModel):
                     bool(self.heartbeat_at),
                 )
             ):
-                raise ValueError("study_chat_operation_unstarted_execution_evidence_invalid")
+                raise ValueError(
+                    "study_chat_operation_unstarted_execution_evidence_invalid"
+                )
         elif self.status in {
             StudyChatOperationStatus.RUNNING,
             StudyChatOperationStatus.COMMITTED,
             StudyChatOperationStatus.UNCERTAIN,
         }:
-            if self.claim_count != 1 or not self.execution_token or not self.execution_started_at:
+            if (
+                self.claim_count != 1
+                or not self.execution_token
+                or not self.execution_started_at
+            ):
                 raise ValueError("study_chat_operation_execution_evidence_missing")
         if self.status == StudyChatOperationStatus.COMMITTED:
             if (
@@ -151,9 +176,11 @@ class StudyChatOperationRecord(BaseModel):
                 or self.committed_session_revision <= self.admitted_session_revision
                 or not self.committed_turn_id
                 or self.committed_turn_sequence is None
-                or self.response_schema_version not in STUDY_CHAT_RESPONSE_SCHEMA_VERSIONS
+                or self.response_schema_version
+                not in STUDY_CHAT_RESPONSE_SCHEMA_VERSIONS
                 or self.response_payload is None
-                or self.response_digest != study_chat_response_digest(self.response_payload)
+                or self.response_digest
+                != study_chat_response_digest(self.response_payload)
                 or self.error_code
             ):
                 raise ValueError("study_chat_operation_committed_evidence_invalid")
@@ -168,10 +195,14 @@ class StudyChatOperationRecord(BaseModel):
             )
         ):
             raise ValueError("study_chat_operation_non_committed_claims_result")
-        if self.status in {
-            StudyChatOperationStatus.NOT_COMMITTED,
-            StudyChatOperationStatus.UNCERTAIN,
-        } and not self.error_code:
+        if (
+            self.status
+            in {
+                StudyChatOperationStatus.NOT_COMMITTED,
+                StudyChatOperationStatus.UNCERTAIN,
+            }
+            and not self.error_code
+        ):
             raise ValueError("study_chat_operation_terminal_error_missing")
         return self
 
@@ -200,7 +231,9 @@ class StudyChatOperationReceipt(BaseModel):
             self.status == StudyChatOperationStatus.NOT_COMMITTED
         ):
             raise ValueError("study_chat_operation_retry_projection_invalid")
-        if (self.status == StudyChatOperationStatus.COMMITTED) != (self.result is not None):
+        if (self.status == StudyChatOperationStatus.COMMITTED) != (
+            self.result is not None
+        ):
             raise ValueError("study_chat_operation_result_projection_invalid")
         return self
 

@@ -1,4 +1,9 @@
-import type { RUNTIME_CAPABILITY_STATUSES, RUNTIME_CAPABILITY_SOURCES, RUNTIME_PROBE_FEATURES, RUNTIME_READINESS_STATUSES } from "./settings-response-contracts";
+import type {
+  RUNTIME_CAPABILITY_STATUSES,
+  RUNTIME_CAPABILITY_SOURCES,
+  RUNTIME_PROBE_FEATURES,
+  RUNTIME_READINESS_STATUSES,
+} from "./settings-response-contracts";
 import type { CharacterStateEvent } from "./character";
 import type { HarnessTraceV3 } from "./harness";
 
@@ -141,8 +146,7 @@ export interface LearningGoal {
 }
 
 export type PlanningIntentValue<T> =
-  | { status: "unknown"; value: null }
-  | { status: "user_explicit"; value: T };
+  { status: "unknown"; value: null } | { status: "user_explicit"; value: T };
 
 export interface PlanningPageRange {
   pageStart: number;
@@ -484,7 +488,8 @@ export interface PlanToolCallTrace {
   toolCallId: string;
   toolName: string;
   argumentsJson: string;
-  argumentContractVersion: "" | "planning-tool-arguments-v1" | "planning-tool-arguments-v2";
+  argumentContractVersion:
+    "" | "planning-tool-arguments-v1" | "planning-tool-arguments-v2";
   resultContractVersion: "" | "planning-tool-result-v1" | "planning-tool-result-v2";
   resultSummary: string;
   resultJson: string;
@@ -620,15 +625,13 @@ export interface StudyChatResponse {
 }
 
 export type StudyChatOperationStatus =
-  | "admitted"
-  | "running"
-  | "committed"
-  | "not_committed"
-  | "uncertain";
+  "admitted" | "running" | "committed" | "not_committed" | "uncertain";
 
 /** Public recovery receipt. Application-owned operation evidence wraps the
  * existing chat exchange instead of entering the model-owned reply schema. */
-export interface StudyChatOperationReceipt<TResult = StudyChatResponse & { session: StudySessionRecord }> {
+export interface StudyChatOperationReceipt<
+  TResult = StudyChatResponse & { session: StudySessionRecord },
+> {
   operationId: string;
   sessionId: string;
   clientRequestId: string;
@@ -789,6 +792,7 @@ export interface StudySessionRecord {
   studyUnitId: string;
   studyUnitTitle?: string;
   themeHint?: string;
+  outputLanguage?: string;
   sessionSystemPrompt?: string;
   status: string;
   revision: number;
@@ -870,7 +874,6 @@ export interface DocumentDebugRecord {
   warnings: ParseWarning[];
   dominantLanguageHint: string;
 }
-
 
 export interface TokenUsageDailyBucket {
   date: string;

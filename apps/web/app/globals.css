@@ -1504,3 +1504,44 @@ textarea {
 .sensory-toggle { display: grid; place-items: center; width: 44px; height: 44px; cursor: pointer; }
 .sensory-tools-page input.sensory-checkbox[type="checkbox"] { width: 18px !important; height: 18px !important; min-width: 18px !important; min-height: 18px !important; margin: 0; flex: 0 0 18px; accent-color: var(--accent); }
 .library-inline-option { gap: 8px; }
+.output-language-field {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 6px 10px;
+  align-items: center;
+  min-width: 0;
+}
+
+.output-language-field label {
+  color: var(--ink-2);
+  font-size: 12px;
+}
+
+.output-language-field select,
+.output-language-field input {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface, white);
+  color: var(--ink);
+}
+
+.output-language-field input {
+  grid-column: 2;
+}
+
+.output-language-field small,
+.output-language-field p {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+.output-language-field [role="alert"] {
+  color: var(--danger, #a63d40);
+}

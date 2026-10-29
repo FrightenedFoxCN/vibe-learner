@@ -167,6 +167,7 @@ export function LearningWorkspace() {
                 processedDocument: document,
                 objective: planSetupCache?.objective ?? "请基于教材生成学习计划",
                 physicalPageRanges: planSetupCache?.physicalPageRanges,
+                outputLanguage: planSetupCache?.outputLanguage,
               })
             }
           />

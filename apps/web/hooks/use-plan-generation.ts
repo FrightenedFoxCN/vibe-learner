@@ -18,12 +18,14 @@ import {
 import { PLAN_GENERATED_NOTICE } from "../lib/learning-workspace-copy";
 import { parsePhysicalPdfRanges, physicalPageIntent } from "../lib/planning-page-scope";
 import { ACTIVE_PLAN_GENERATION_KEY } from "../lib/app-navigation";
+import { withOutputLanguage } from "../lib/output-language";
 
 export interface GeneratePlanInput {
   mode: "document" | "goal_only";
   file?: File | null;
   objective: string;
   physicalPageRanges?: string;
+  outputLanguage?: string;
   processedDocument?: DocumentRecord;
 }
 
@@ -151,6 +153,10 @@ export function usePlanGeneration(
           ? parsePhysicalPdfRanges(input.physicalPageRanges ?? "")
           : [];
       const selectedScene = options.resolveSceneProfile();
+      const planningIntent = withOutputLanguage(
+        physicalPageIntent(ranges),
+        input.outputLanguage ?? "auto",
+      );
       const sceneProfile = selectedScene ? structuredClone(selectedScene) : undefined;
       let nextDocument: DocumentRecord | null = null;
 
@@ -249,7 +255,7 @@ export function usePlanGeneration(
           clientRequestId: planClientRequestId,
           expectedDocumentUpdatedAt: nextDocument?.updatedAt ?? "",
           objective: input.objective,
-          planningIntent: physicalPageIntent(ranges),
+          planningIntent,
           sceneProfileSummary: sceneProfile?.summary ?? "",
           sceneProfile,
         },

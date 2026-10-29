@@ -2,20 +2,44 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { StudySessionRecord } from "@vibe-learner/shared";
-import { getStudyChatOperation, sendStudyMessage, type StudyChatOperationResponse } from "../lib/data/study-sessions";
-import { studyOperationStore, presentStudyChatOperation, type StudyChatDraft, type StudyOperationStore } from "../lib/study-operation-state";
+import {
+  getStudyChatOperation,
+  sendStudyMessage,
+  type StudyChatOperationResponse,
+} from "../lib/data/study-sessions";
+import {
+  studyOperationStore,
+  presentStudyChatOperation,
+  type StudyChatDraft,
+  type StudyOperationStore,
+} from "../lib/study-operation-state";
 import { StudyAsyncViewFence } from "../lib/async-result-fence";
 import { createStudyChatRequestId } from "../lib/client-request-id";
 import { resolveStudySessionErrorNotice } from "../lib/study-session-decode";
-import { isDefiniteStudyChatPreAdmissionError, studyChatPreAdmissionNotice } from "../lib/http-error";
-import { logWorkspaceError, logWorkspaceInfo } from "../lib/learning-workspace-telemetry";
+import {
+  isDefiniteStudyChatPreAdmissionError,
+  studyChatPreAdmissionNotice,
+} from "../lib/http-error";
+import {
+  logWorkspaceError,
+  logWorkspaceInfo,
+} from "../lib/learning-workspace-telemetry";
 import type { useStudyChatRecovery } from "./use-study-chat-recovery";
 import type { useStudySessionNavigation } from "./use-study-session-navigation";
 
 interface StudyMessageOptions {
   view: StudyAsyncViewFence<StudySessionRecord>;
-  recovery: Pick<ReturnType<typeof useStudyChatRecovery>, "chatFailure" | "setChatFailure" | "beginStudyResponseTicket" | "isCurrentStudyResponseTicket" | "applyStudyChatOperation">;
-  ensureSessionForSection: ReturnType<typeof useStudySessionNavigation>["ensureSessionForSection"];
+  recovery: Pick<
+    ReturnType<typeof useStudyChatRecovery>,
+    | "chatFailure"
+    | "setChatFailure"
+    | "beginStudyResponseTicket"
+    | "isCurrentStudyResponseTicket"
+    | "applyStudyChatOperation"
+  >;
+  ensureSessionForSection: ReturnType<
+    typeof useStudySessionNavigation
+  >["ensureSessionForSection"];
   isDialogueInterruptedForSession: (id: string) => boolean;
   peekDeferredInteractiveCallbackPrefix: (id: string) => string;
   clearInterruptedDialogueState: (id: string, consumedPrefix: string) => void;
@@ -26,8 +50,11 @@ export interface StudyMessagePort {
   sendStudyMessage: typeof sendStudyMessage;
 }
 const defaultPort: StudyMessagePort = { getStudyChatOperation, sendStudyMessage };
-export function useStudyMessages(options: StudyMessageOptions, port: StudyMessagePort = defaultPort,
-  store: StudyOperationStore = studyOperationStore) {
+export function useStudyMessages(
+  options: StudyMessageOptions,
+  port: StudyMessagePort = defaultPort,
+  store: StudyOperationStore = studyOperationStore,
+) {
   const latest = useRef(options);
   latest.current = options;
   const { view } = options;
@@ -35,11 +62,23 @@ export function useStudyMessages(options: StudyMessageOptions, port: StudyMessag
   const learnerInFlight = useRef(false);
   const [pendingCount, setPendingCount] = useState(0);
   const automaticRequests = useRef(new Map<string, string>());
-  const automaticStudyRequest = (key: string, scope: string) => store.getOrCreateAutomaticRequestId(automaticRequests.current, key, scope);
-  const forgetAutomaticStudyRequest = (key: string) => store.forgetAutomaticStudyRequestId(automaticRequests.current, key);
+  const automaticStudyRequest = (key: string, scope: string) =>
+    store.getOrCreateAutomaticRequestId(automaticRequests.current, key, scope);
+  const forgetAutomaticStudyRequest = (key: string) =>
+    store.forgetAutomaticStudyRequestId(automaticRequests.current, key);
   const { persistPendingStudyOperation, clearPendingStudyOperation } = store;
-  const { setChatFailure, beginStudyResponseTicket, isCurrentStudyResponseTicket, applyStudyChatOperation } = options.recovery;
-  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
+  const {
+    setChatFailure,
+    beginStudyResponseTicket,
+    isCurrentStudyResponseTicket,
+    applyStudyChatOperation,
+  } = options.recovery;
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
 
   const sendHiddenSessionMessage = async (input: {
     session: StudySessionRecord;
@@ -70,7 +109,9 @@ export function useStudyMessages(options: StudyMessageOptions, port: StudyMessag
         ? await port.getStudyChatOperation({
             sessionId: input.session.id,
             clientRequestId: input.clientRequestId,
-            ...(input.diagnosticFlowId ? { diagnosticFlowId: input.diagnosticFlowId } : {}),
+            ...(input.diagnosticFlowId
+              ? { diagnosticFlowId: input.diagnosticFlowId }
+              : {}),
           })
         : await port.sendStudyMessage({
             sessionId: input.session.id,
@@ -79,7 +120,9 @@ export function useStudyMessages(options: StudyMessageOptions, port: StudyMessag
             message: input.message,
             messageKind: input.messageKind,
             followUpId: input.followUpId,
-            ...(input.diagnosticFlowId ? { diagnosticFlowId: input.diagnosticFlowId } : {}),
+            ...(input.diagnosticFlowId
+              ? { diagnosticFlowId: input.diagnosticFlowId }
+              : {}),
           });
     } catch (error) {
       if (!isCurrentStudyResponseTicket(ticket)) {
@@ -120,23 +163,57 @@ export function useStudyMessages(options: StudyMessageOptions, port: StudyMessag
     return next;
   };
 
-  const handleAsk = async (message: string, attachments: File[] = []) => {
+  const handleAsk = async (
+    message: string,
+    attachments: File[] = [],
+    outputLanguage?: string,
+  ) => {
     if (!view.session) {
       return false;
     }
-    return handleAskForSection(message, view.session.studyUnitId, attachments);
+    return handleAskForSection(
+      message,
+      view.session.studyUnitId,
+      attachments,
+      outputLanguage,
+    );
   };
 
-  const handleAskForSection = async (message: string, studyUnitId: string, attachments: File[] = []) => {
+  const handleAskForSection = async (
+    message: string,
+    studyUnitId: string,
+    attachments: File[] = [],
+    outputLanguage?: string,
+  ) => {
     const failure = latest.current.recovery.chatFailure;
-    if (!mounted.current || learnerInFlight.current || failure?.canQuery || failure?.canRefreshSession) return false;
+    if (
+      !mounted.current ||
+      learnerInFlight.current ||
+      failure?.canQuery ||
+      failure?.canRefreshSession
+    )
+      return false;
     learnerInFlight.current = true;
-    setPendingCount(count => count + 1);
-    try { return await sendLearnerMessage(message, studyUnitId, attachments); }
-    finally { learnerInFlight.current = false; if (mounted.current) setPendingCount(count => count - 1); }
+    setPendingCount((count) => count + 1);
+    try {
+      return await sendLearnerMessage(
+        message,
+        studyUnitId,
+        attachments,
+        outputLanguage,
+      );
+    } finally {
+      learnerInFlight.current = false;
+      if (mounted.current) setPendingCount((count) => count - 1);
+    }
   };
 
-  const sendLearnerMessage = async (message: string, studyUnitId: string, attachments: File[]) => {
+  const sendLearnerMessage = async (
+    message: string,
+    studyUnitId: string,
+    attachments: File[],
+    outputLanguage?: string,
+  ) => {
     setChatFailure(null);
     let targetSession: StudySessionRecord | null;
     try {
@@ -145,21 +222,29 @@ export function useStudyMessages(options: StudyMessageOptions, port: StudyMessag
       });
     } catch (error) {
       if (!mounted.current) return false;
-      latest.current.onNotice(resolveStudySessionErrorNotice(
+      latest.current.onNotice(
+        resolveStudySessionErrorNotice(
           error,
           `打开学习会话失败：${String(error)}`,
           "history",
-        ));
+        ),
+      );
       logWorkspaceError("workflow:study_session:open_error", error);
       return false;
     }
-    if (!mounted.current || !targetSession || view.session?.id !== targetSession.id || view.session.studyUnitId !== studyUnitId) {
+    if (
+      !mounted.current ||
+      !targetSession ||
+      view.session?.id !== targetSession.id ||
+      view.session.studyUnitId !== studyUnitId
+    ) {
       return false;
     }
-    const hiddenMessagePrefix =
-      latest.current.isDialogueInterruptedForSession(targetSession.id)
-        ? latest.current.peekDeferredInteractiveCallbackPrefix(targetSession.id)
-        : "";
+    const hiddenMessagePrefix = latest.current.isDialogueInterruptedForSession(
+      targetSession.id,
+    )
+      ? latest.current.peekDeferredInteractiveCallbackPrefix(targetSession.id)
+      : "";
     const draft: StudyChatDraft = {
       sessionId: targetSession.id,
       clientRequestId: createStudyChatRequestId("learner"),
@@ -169,13 +254,14 @@ export function useStudyMessages(options: StudyMessageOptions, port: StudyMessag
       attachments,
       messageKind: "learner",
       hiddenMessagePrefix,
+      ...(outputLanguage !== undefined ? { outputLanguage } : {}),
     };
     persistPendingStudyOperation(draft);
     const ticket = beginStudyResponseTicket(draft);
     try {
       logWorkspaceInfo("workflow:study_chat:start", {
         sessionId: targetSession.id,
-        messageLength: message.length
+        messageLength: message.length,
       });
       const next = await port.sendStudyMessage({
         sessionId: draft.sessionId,
@@ -185,11 +271,11 @@ export function useStudyMessages(options: StudyMessageOptions, port: StudyMessag
         messageKind: draft.messageKind,
         hiddenMessagePrefix: draft.hiddenMessagePrefix,
         attachments: draft.attachments,
+        ...(draft.outputLanguage !== undefined
+          ? { outputLanguage: draft.outputLanguage }
+          : {}),
       });
-      const shouldApply = isCurrentStudyResponseTicket(
-        ticket,
-        next.clientRequestId,
-      );
+      const shouldApply = isCurrentStudyResponseTicket(ticket, next.clientRequestId);
       const applied = applyStudyChatOperation(next, draft, ticket);
       if (!applied) {
         if (shouldApply) {
@@ -197,7 +283,10 @@ export function useStudyMessages(options: StudyMessageOptions, port: StudyMessag
         }
         return false;
       }
-      latest.current.clearInterruptedDialogueState(targetSession.id, draft.hiddenMessagePrefix ?? "");
+      latest.current.clearInterruptedDialogueState(
+        targetSession.id,
+        draft.hiddenMessagePrefix ?? "",
+      );
       logWorkspaceInfo("workflow:study_chat:done", {
         sessionId: targetSession.id,
         citations: next.result?.citations.length ?? 0,
@@ -231,7 +320,9 @@ export function useStudyMessages(options: StudyMessageOptions, port: StudyMessag
         canRefreshSession: false,
       });
       persistPendingStudyOperation(draft);
-      latest.current.onNotice("未能确认本次请求结果；已保留请求身份，请先查询，不要重复发送。");
+      latest.current.onNotice(
+        "未能确认本次请求结果；已保留请求身份，请先查询，不要重复发送。",
+      );
       logWorkspaceError("workflow:study_chat:error", error);
       return false;
     } finally {
@@ -244,10 +335,21 @@ export function useStudyMessages(options: StudyMessageOptions, port: StudyMessag
     if (!chatFailure?.canResend) {
       return;
     }
-    await handleAskForSection(chatFailure.message, chatFailure.studyUnitId, chatFailure.attachments);
+    await handleAskForSection(
+      chatFailure.message,
+      chatFailure.studyUnitId,
+      chatFailure.attachments,
+      chatFailure.outputLanguage,
+    );
   };
 
-
-  return { handleAsk, handleAskForSection, retryFailedAsk, sendHiddenSessionMessage,
-    automaticStudyRequest, forgetAutomaticStudyRequest, isSending: pendingCount > 0 };
+  return {
+    handleAsk,
+    handleAskForSection,
+    retryFailedAsk,
+    sendHiddenSessionMessage,
+    automaticStudyRequest,
+    forgetAutomaticStudyRequest,
+    isSending: pendingCount > 0,
+  };
 }

@@ -32,7 +32,7 @@ PLAN_SNAPSHOT_CONTRACT = HarnessContractRef(
 
 
 PLAN_PROMPT_CONTRACT = HarnessContractRef(
-    name="LearningPlanPrompt", version="planning-prompt-v7"
+    name="LearningPlanPrompt", version="planning-prompt-v8"
 )
 
 
@@ -111,22 +111,25 @@ class LearningPlanRuntimeOutputV1(_StrictModel):
         if self.document is not None and self.document.id != self.plan.document_id:
             raise ValueError("learning_plan_document_identity_invalid")
         if self.debug_report is not None and (
-            self.document is None
-            or self.debug_report.document_id != self.document.id
+            self.document is None or self.debug_report.document_id != self.document.id
         ):
             raise ValueError("learning_plan_debug_identity_invalid")
         return self
 
 
 class LearningPlanRuntimeOutputV2(LearningPlanRuntimeOutputV1):
-    schema_version: Literal["learning-plan-runtime-output-v2"] = "learning-plan-runtime-output-v2"
+    schema_version: Literal["learning-plan-runtime-output-v2"] = (
+        "learning-plan-runtime-output-v2"
+    )
     study_unit_revision: StudyUnitRevisionPreviewV1 | None = None
 
     @model_validator(mode="after")
     def validate_revision(self):
         if self.study_unit_revision is not None:
-            if (self.study_unit_revision.plan_id != self.plan.id
-                    or self.study_unit_revision.base_document != self.document):
+            if (
+                self.study_unit_revision.plan_id != self.plan.id
+                or self.study_unit_revision.base_document != self.document
+            ):
                 raise ValueError("learning_plan_unit_revision_preview_scope_mismatch")
         return self
 

@@ -1976,6 +1976,7 @@ export async function createStudySession(
     studyUnitId: string;
     studyUnitTitle?: string;
     themeHint?: string;
+    outputLanguage?: string;
   },
   context?: DiagnosticContext,
 ): Promise<StudySessionRecord> {
@@ -1996,6 +1997,9 @@ export async function createStudySession(
         section_id: input.studyUnitId,
         section_title: input.studyUnitTitle ?? "",
         theme_hint: input.themeHint ?? "",
+        ...(input.outputLanguage !== undefined
+          ? { output_language: input.outputLanguage }
+          : {}),
       }),
     },
     context,
@@ -2136,6 +2140,7 @@ export async function sendStudyMessage(input: {
   messageKind?: string;
   followUpId?: string;
   hiddenMessagePrefix?: string;
+  outputLanguage?: string;
   attachments?: File[];
   diagnosticFlowId?: string | null;
 }): Promise<StudyChatOperationResponse> {
@@ -2161,6 +2166,8 @@ export async function sendStudyMessage(input: {
             form.set("message_kind", input.messageKind ?? "learner");
             form.set("follow_up_id", input.followUpId ?? "");
             form.set("hidden_message_prefix", input.hiddenMessagePrefix ?? "");
+            if (input.outputLanguage !== undefined)
+              form.set("output_language", input.outputLanguage);
             (input.attachments ?? []).forEach((file) => {
               form.append("files", file);
             });
@@ -2183,6 +2190,9 @@ export async function sendStudyMessage(input: {
             message_kind: input.messageKind ?? "learner",
             follow_up_id: input.followUpId ?? "",
             hidden_message_prefix: input.hiddenMessagePrefix ?? "",
+            ...(input.outputLanguage !== undefined
+              ? { output_language: input.outputLanguage }
+              : {}),
           }),
         },
         context,

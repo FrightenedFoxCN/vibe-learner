@@ -286,7 +286,7 @@ const STAGE_VOCABULARY: StageVocabulary[] = [
     components: [
       {
         name: "planning_prompt",
-        contract: { name: "planning_prompt", version: "planning-prompt-v7" },
+        contract: { name: "planning_prompt", version: "planning-prompt-v8" },
       },
       {
         name: "planning_toolset",
@@ -345,7 +345,7 @@ const STAGE_VOCABULARY: StageVocabulary[] = [
     components: [
       {
         name: "study_chat_prompt",
-        contract: { name: "study_chat_prompt", version: "study-chat-prompt-v2" },
+        contract: { name: "study_chat_prompt", version: "study-chat-prompt-v3" },
       },
       {
         name: "study_chat_toolset",
@@ -600,7 +600,7 @@ const STUDY_ENTRY: HarnessWorkflowManifestEntryV1 = {
   ),
   input_contract: registeredContract(
     "StudyChatInputManifest",
-    "study-chat-input-manifest-v1",
+    "study-chat-input-manifest-v2",
   ),
   proposal_contract: registeredContract(
     "StudyChatReplyProposal",
@@ -611,7 +611,7 @@ const STUDY_ENTRY: HarnessWorkflowManifestEntryV1 = {
     "study-chat-turn-committed-projection-v1",
   ),
   component_contracts: componentContracts("study_chat", "study_chat_reply"),
-  prompt_contract: registeredContract("StudyChatPrompt", "study-chat-prompt-v2"),
+  prompt_contract: registeredContract("StudyChatPrompt", "study-chat-prompt-v3"),
   policy_contract: registeredContract(
     "StudyChatHarnessPolicy",
     "study-chat-harness-v1",
@@ -785,7 +785,7 @@ const entries: HarnessWorkflowManifestEntryV1[] = [
     ),
     artifacts: ["planning_context"],
     decoder: "app.services.plan_revision.PlanRevisionService",
-    prompt: contract("PlanRevisionPrompt", "plan-revision-prompt-v1"),
+    prompt: contract("PlanRevisionPrompt", "plan-revision-prompt-v2"),
     policy: contract("PlanRevisionPolicy", "plan-revision-policy-v1"),
     evalSuites: [contract("plan_revision_regression", "plan-revision-regression-v1")],
     commit: {
@@ -949,7 +949,7 @@ const entries: HarnessWorkflowManifestEntryV1[] = [
       "study_unit_input",
     ],
     decoder: "app.services.harness_broad_adoption.LearningPlanWorkflowAdapter",
-    prompt: contract("LearningPlanPrompt", "planning-prompt-v7"),
+    prompt: contract("LearningPlanPrompt", "planning-prompt-v8"),
     policy: contract("LearningPlanHarnessPolicy", "learning-plan-harness-v1"),
     toolset: TOOL_MANIFEST_SLOT,
     commit: {

@@ -14,7 +14,7 @@ class PlanningRuntimeContractTests(unittest.TestCase):
             reviewed_contracts={
                 "PLAN_PROMPT_CONTRACT": {
                     "name": "LearningPlanPrompt",
-                    "version": "planning-prompt-v7",
+                    "version": "planning-prompt-v8",
                 },
                 "PLAN_ADAPTER_CONTRACT": {
                     "name": "LearningPlanWorkflowAdapter",
@@ -26,8 +26,8 @@ class PlanningRuntimeContractTests(unittest.TestCase):
                 },
             },
             reviewed_schema_digests={
-                # Document CAS adds optional revision to the nested Document schema;
-                # revision zero still serializes exactly as the historical payload.
-                "LearningPlanRuntimeOutputV1": "ea126d324a408395b4c2b587718cf0ac6b9f7822bd7915d5b1ebb4a235fa7768",
+                # Includes reviewed Document CAS and strict application language-tag
+                # input constraints; model-owned output identity remains unchanged.
+                "LearningPlanRuntimeOutputV1": "4fa27aee3a3d51fda1288c7d4d471d70110ca7f26f68512ff73b920655ad7e63",
             },
         )

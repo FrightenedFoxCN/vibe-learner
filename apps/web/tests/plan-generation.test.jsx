@@ -62,6 +62,32 @@ function fixture(overrides = {}, optionOverrides = {}) {
   return { ...renderHook(() => usePlanGeneration(options, port)), calls };
 }
 
+test("generation carries explicit language alongside a physical PDF constraint", async () => {
+  let admitted;
+  const view = fixture({
+    createLearningPlanStream: async (input) => {
+      admitted = input;
+      return plan("language");
+    },
+  });
+  await act(async () => {
+    await view.result.current.generatePlanWorkflow({
+      mode: "document",
+      objective: "Read",
+      outputLanguage: "fr",
+      physicalPageRanges: "100–103",
+      processedDocument: { id: "doc", pageCount: 120, updatedAt: "revision" },
+    });
+  });
+  assert.deepEqual(admitted.planningIntent.outputLanguage, {
+    status: "user_explicit",
+    value: "fr",
+  });
+  assert.deepEqual(admitted.planningIntent.pdfPageRanges.value, [
+    { pageStart: 100, pageEnd: 103 },
+  ]);
+});
+
 test("cancelled upload cannot start parsing or apply a document", async () => {
   const upload = deferred();
   const view = fixture({ uploadDocument: () => upload.promise });

@@ -1,14 +1,34 @@
 from __future__ import annotations
 
+from app.services.mock_language import (
+    mock_auto_language,
+    mock_language_text,
+    mock_study_language,
+)
+
 from threading import Lock
 
-from app.services.provider_transport import ProviderTransport, ModelRequestError, _coerce_int
+from app.services.provider_transport import (
+    ProviderTransport,
+    ModelRequestError,
+    _coerce_int as _coerce_int,
+)
 
-from app.services.provider_capabilities import ModelProvider, ModelReply, PlanModelReply, PlanScheduleItem
+from app.services.provider_capabilities import (
+    ModelProvider,
+    ModelReply,
+    PlanModelReply,
+    PlanScheduleItem,
+)
 from app.services.provider_exercises import LocalExerciseProvider
 from app.services.provider_embedding import RemoteEmbeddingProvider
 from app.services.provider_image import RemoteImageProvider
-from app.services.provider_sdk import ProviderSDK, ProviderRequestAdapter, _known_litellm_providers, adapt_openai_compatible_payload
+from app.services.provider_sdk import (
+    ProviderSDK,
+    ProviderRequestAdapter,
+    _known_litellm_providers,
+    adapt_openai_compatible_payload,
+)
 from app.services.provider_snapshot import operation_snapshot
 from app.services.provider_settings import (
     RemoteSettingsProvider,
@@ -16,7 +36,8 @@ from app.services.provider_settings import (
     _normalize_generated_scene_result,
 )
 from app.services.provider_study import (
-    RemoteStudyProvider, CHAT_JSON_SCHEMA,
+    RemoteStudyProvider,
+    CHAT_JSON_SCHEMA as CHAT_JSON_SCHEMA,
     _chat_tools,
     _chat_tools_disabled_for_round,
     _decode_study_chat_reply_proposal,
@@ -26,13 +47,20 @@ from app.services.provider_study import (
 )
 from app.services.provider_callbacks import _call_interrupt, _emit_progress
 from app.services.provider_planning import (
-    RemotePlanningProvider, PlanningProposalDecodeError, _decode_learning_plan_proposal,
+    RemotePlanningProvider,
+    PlanningProposalDecodeError as PlanningProposalDecodeError,
+    _decode_learning_plan_proposal as _decode_learning_plan_proposal,
     _validate_learning_plan_proposal_refs,
 )
 from app.services.provider_payload import (
-    _extract_choice_content, _extract_json_payload, _escape_invalid_backslashes_in_json_strings,
+    _extract_choice_content as _extract_choice_content,
+    _extract_json_payload as _extract_json_payload,
+    _escape_invalid_backslashes_in_json_strings as _escape_invalid_backslashes_in_json_strings,
 )
-from app.services.provider_tavern import RemoteTavernProvider, _should_fallback_tavern_schema_transport
+from app.services.provider_tavern import (
+    RemoteTavernProvider,
+    _should_fallback_tavern_schema_transport,
+)
 
 import json
 import re
@@ -179,7 +207,10 @@ def _feature_probe_tavern_payload(model: str) -> dict[str, Any]:
         "max_tokens": FEATURE_PROBE_TAVERN_MAX_TOKENS,
         "messages": [
             {"role": "system", "content": "Return the requested JSON object."},
-            {"role": "user", "content": "Return a short compatibility acknowledgement."},
+            {
+                "role": "user",
+                "content": "Return a short compatibility acknowledgement.",
+            },
         ],
         "response_format": {
             "type": "json_schema",
@@ -247,19 +278,29 @@ class MockModelProvider(LocalExerciseProvider, ModelProvider):
                 "请你试着用自己的话复述关键点，我会继续补齐边界与易错处。"
             )
             state_commentary = "保持连续讲解，并根据当前互动推进重点。"
+        language = mock_study_language(session_prompt, message)
+        if language is not None:
+            copy = mock_language_text(language)
+            text = (
+                copy["prelude"] if message_kind == "session_prelude" else copy["chat"]
+            )
+            state_commentary = copy["commentary"]
         narrative_mode = persona_slot_content(persona, "narrative_mode", "稳态导学")
-        mood = "playful" if normalize_persona_narrative_mode(narrative_mode) == "light_story" else "calm"
+        mood = (
+            "playful"
+            if normalize_persona_narrative_mode(narrative_mode) == "light_story"
+            else "calm"
+        )
         return ModelReply(
             text=text,
             mood=mood,
             action="point",
             speech_style=persona.default_speech_style,
-            delivery_cue="先稳住节奏，再把概念拆成两到三个抓手。",
+            delivery_cue=state_commentary,
             state_commentary=state_commentary,
             rich_blocks=[],
             memory_trace=memory_trace_hits or [],
         )
-
 
     def generate_tavern_actor_reply(
         self,
@@ -277,7 +318,9 @@ class MockModelProvider(LocalExerciseProvider, ModelProvider):
     ) -> TavernActorReply:
         if should_continue is not None and not should_continue():
             raise RuntimeError("tavern_actor_generation_canceled")
-        relationship = persona.relationship.strip().rstrip("。！？!?，,；;：:") or "同行者"
+        relationship = (
+            persona.relationship.strip().rstrip("。！？!?，,；;：:") or "同行者"
+        )
         scene_hint = (
             f"在{scene_profile.scene_name or scene_profile.title}里，"
             if scene_profile is not None
@@ -300,14 +343,21 @@ class MockModelProvider(LocalExerciseProvider, ModelProvider):
             speech_style=persona.default_speech_style,
             delivery_cue="自然停顿后再回应，不抢替对方下结论。",
             state_commentary="保持当前角色身份并直接回应用户。",
-            addressed_participant_ids=[required_target_id] if required_target_id else [],
+            addressed_participant_ids=[required_target_id]
+            if required_target_id
+            else [],
         )
-
 
     def generate_plan_revision(self, *, plan, instruction: str):
         from app.models.plan_revision import proposal_from_plan
-        proposal = proposal_from_plan(plan, "本地模拟修订；保留已有排期身份和学习进度。")
-        proposal.overview = f"{plan.overview}\n本次调整：{instruction}"[:8000]
+        from app.services.output_language import plan_output_language
+
+        language = plan_output_language(plan)
+        copy = mock_language_text(
+            language if language != "auto" else mock_auto_language(plan.objective)
+        )
+        proposal = proposal_from_plan(plan, copy["commentary"])
+        proposal.overview = f"{plan.overview}\n{copy['goal']}: «{instruction}»"[:8000]
         return proposal
 
     def generate_learning_plan(
@@ -325,25 +375,42 @@ class MockModelProvider(LocalExerciseProvider, ModelProvider):
         interrupt_check: Callable[[], None] | None = None,
     ) -> PlanModelReply:
         _call_interrupt(interrupt_check)
-        plannable_units = [unit for unit in study_units if unit.include_in_plan] or study_units
+        plannable_units = [
+            unit for unit in study_units if unit.include_in_plan
+        ] or study_units
         objective_hint = self._compact_objective(goal.objective)
         answered_questions = [
-            item for item in (planning_questions or [])
+            item
+            for item in (planning_questions or [])
             if item.status == "answered" and item.answer.strip()
         ]
+        language = (
+            goal.planning_intent.output_language.value
+            if goal.planning_intent.output_language.status == "user_explicit"
+            else mock_auto_language(
+                goal.objective, document_title, persona.system_prompt
+            )
+        )
+        copy = mock_language_text(language)
+        # Goal-only anchors are application scaffolding, not quoted textbook
+        # headings. Keep their Chinese seed labels out of localized guidance.
+        unit_titles = {
+            unit.id: unit.title if goal.document_id else f"{copy['study']} {index}"
+            for index, unit in enumerate(plannable_units, start=1)
+        }
         today_tasks = [
-            f"阅读 {unit.title}，提取 2 条定义或结论。"
+            f"{copy['read']} «{unit_titles[unit.id]}». {copy['task']}"
             for unit in plannable_units[:2]
         ]
         if not today_tasks:
-            today_tasks = [f"阅读 {document_title}，确认学习章节顺序与关键知识点。"]
+            today_tasks = [f"{copy['read']} «{document_title}». {copy['task']}"]
         if objective_hint:
-            today_tasks.insert(0, f"先对照学习目标：{objective_hint}。")
+            today_tasks.insert(0, f"{copy['goal']}: «{objective_hint}».")
         if answered_questions:
             latest_answer = answered_questions[-1]
             today_tasks.insert(
                 1 if objective_hint else 0,
-                f"按学习者新增偏好修订：{latest_answer.answer.strip()}。",
+                f"{copy['goal']}: «{latest_answer.answer.strip()}».",
             )
         schedule: list[PlanScheduleItem] = []
         explicit_session_count = (
@@ -352,52 +419,51 @@ class MockModelProvider(LocalExerciseProvider, ModelProvider):
             else None
         )
         schedule_count = explicit_session_count or min(4, len(plannable_units))
-        scheduled_units = [
-            plannable_units[index % len(plannable_units)]
-            for index in range(schedule_count)
-        ] if plannable_units else []
+        scheduled_units = (
+            [
+                plannable_units[index % len(plannable_units)]
+                for index in range(schedule_count)
+            ]
+            if plannable_units
+            else []
+        )
         for unit in scheduled_units:
+            chapters = _fallback_schedule_chapters_for_unit(
+                unit,
+                page_ranges=[
+                    (item.page_start, item.page_end)
+                    for item in (goal.planning_intent.pdf_page_ranges.value or [])
+                ]
+                if goal.planning_intent.pdf_page_ranges.status == "user_explicit"
+                else None,
+            )
+            if not goal.document_id:
+                chapters = [
+                    chapter.model_copy(update={"title": unit_titles[unit.id]})
+                    for chapter in chapters
+                ]
             schedule.append(
                 PlanScheduleItem(
                     unit_id=unit.id,
-                    title=f"{unit.title} 精读",
-                    focus=(
-                        f"围绕 {unit.title} 推进学习目标，并整理概念、例题与疑问。"
-                        if goal.objective.strip()
-                        else f"在 {unit.title} 中整理概念、例题与疑问。"
-                    ),
+                    title=unit_titles[unit.id]
+                    if not goal.document_id
+                    else f"{copy['study']} — {unit.title}",
+                    focus=f"{copy['focus']}: «{unit_titles[unit.id]}».",
                     activity_type="learn",
-                    schedule_chapters=_fallback_schedule_chapters_for_unit(
-                        unit,
-                        page_ranges=[
-                            (item.page_start, item.page_end)
-                            for item in (goal.planning_intent.pdf_page_ranges.value or [])
-                        ] if goal.planning_intent.pdf_page_ranges.status == "user_explicit" else None,
-                    ),
+                    schedule_chapters=chapters,
                     duration_minutes=(
                         goal.planning_intent.minutes_per_session.value
-                        if goal.planning_intent.minutes_per_session.status == "user_explicit"
+                        if goal.planning_intent.minutes_per_session.status
+                        == "user_explicit"
                         else 45
                     ),
                 )
             )
         # course_title is the generated textbook-grounded title; objective remains learner-authored goal text.
         return PlanModelReply(
-            course_title=_build_course_title(
-                document_title=document_title,
-                plannable_units=plannable_units,
-            ),
-            overview=(
-                f"{persona.name} 将围绕 {document_title} 生成首轮学习计划，"
-                f"覆盖 {len(plannable_units)} 个学习单元。"
-                f"{' 目标优先：' + objective_hint + '。' if objective_hint else ''}"
-                f"{' 已吸收最新规划回答。' if answered_questions else ''}"
-            ),
-            output_language=(
-                goal.planning_intent.output_language.value
-                if goal.planning_intent.output_language.status == "user_explicit"
-                else ("zh-CN" if re.search(r"[\u3400-\u9fff]", f"{goal.objective}{document_title}") else "en")
-            ),
+            course_title=f"{copy['plan']} — {_build_course_title(document_title=document_title, plannable_units=plannable_units) if goal.document_id else document_title}",
+            overview=f"{persona.name}: {copy['plan']} — «{document_title}». {copy['focus']}.",
+            output_language=language,
             today_tasks=today_tasks,
             schedule=schedule,
             planning_questions=list(planning_questions or []),
@@ -410,6 +476,7 @@ class MockModelProvider(LocalExerciseProvider, ModelProvider):
         if len(cleaned) <= 20:
             return cleaned
         return f"{cleaned[:20].rstrip()}…"
+
     def assist_persona_setting(
         self,
         *,
@@ -419,12 +486,24 @@ class MockModelProvider(LocalExerciseProvider, ModelProvider):
         rewrite_strength: float,
     ) -> dict[str, object]:
         ordered_slots = persona_sorted_slots(slots)
-        worldview = next((s.content for s in ordered_slots if s.kind == "worldview"), "")
-        past_exp = next((s.content for s in ordered_slots if s.kind == "past_experiences"), "")
-        teaching_method = next((s.content for s in ordered_slots if s.kind == "teaching_method"), "")
-        narrative_mode = next((s.content for s in ordered_slots if s.kind == "narrative_mode"), "稳态导学")
-        encouragement_style = next((s.content for s in ordered_slots if s.kind == "encouragement_style"), "")
-        correction_style = next((s.content for s in ordered_slots if s.kind == "correction_style"), "")
+        worldview = next(
+            (s.content for s in ordered_slots if s.kind == "worldview"), ""
+        )
+        past_exp = next(
+            (s.content for s in ordered_slots if s.kind == "past_experiences"), ""
+        )
+        teaching_method = next(
+            (s.content for s in ordered_slots if s.kind == "teaching_method"), ""
+        )
+        narrative_mode = next(
+            (s.content for s in ordered_slots if s.kind == "narrative_mode"), "稳态导学"
+        )
+        encouragement_style = next(
+            (s.content for s in ordered_slots if s.kind == "encouragement_style"), ""
+        )
+        correction_style = next(
+            (s.content for s in ordered_slots if s.kind == "correction_style"), ""
+        )
 
         style_text = teaching_method.strip() or "结构化讲解"
         narrative_text = persona_narrative_mode_label(narrative_mode)
@@ -436,20 +515,23 @@ class MockModelProvider(LocalExerciseProvider, ModelProvider):
             narrative_content = (
                 f"{base_narrative}\n\n"
                 f"补充设定：{identity_name} 采用{narrative_text}叙事，"
-                f"以{style_text}推进讲解，鼓励策略偏向\"{encouragement_style or '阶段性肯定'}\"，"
-                f"纠错策略采用\"{correction_style or '温和纠偏'}\"。"
+                f'以{style_text}推进讲解，鼓励策略偏向"{encouragement_style or "阶段性肯定"}"，'
+                f'纠错策略采用"{correction_style or "温和纠偏"}"。'
             )
         else:
             narrative_content = (
                 f"{identity_name} 的核心定位：{summary_text}。"
                 f"其教学叙事采用{narrative_text}路线，常用{style_text}组织内容。"
-                f"面对学习者挫折时，优先使用\"{encouragement_style or '阶段性肯定'}\"进行支持；"
-                f"在纠错时坚持\"{correction_style or '温和纠偏'}\"，先指出可改进点，再给出可执行下一步。"
+                f'面对学习者挫折时，优先使用"{encouragement_style or "阶段性肯定"}"进行支持；'
+                f'在纠错时坚持"{correction_style or "温和纠偏"}"，先指出可改进点，再给出可执行下一步。'
             )
         updated_slots: list[PersonaSlot] = []
         narrative_inserted = False
         for slot in ordered_slots:
-            if slot.kind in ("worldview", "past_experiences") and not narrative_inserted:
+            if (
+                slot.kind in ("worldview", "past_experiences")
+                and not narrative_inserted
+            ):
                 updated_slots.append(
                     PersonaSlot(
                         kind=slot.kind,
@@ -467,7 +549,12 @@ class MockModelProvider(LocalExerciseProvider, ModelProvider):
                 updated_slots.append(slot)
         if not narrative_inserted:
             updated_slots.append(
-                PersonaSlot(kind="worldview", label="世界观起点", content=narrative_content, sort_order=10)
+                PersonaSlot(
+                    kind="worldview",
+                    label="世界观起点",
+                    content=narrative_content,
+                    sort_order=10,
+                )
             )
         prompt = (
             "你是一位严格贴合教材章节的教学人格。"
@@ -505,8 +592,14 @@ class MockModelProvider(LocalExerciseProvider, ModelProvider):
         elif slot.kind == "correction_style":
             rewritten = "纠错先指出可执行改进点，再给下一步练习，保持语气温和但明确。"
         else:
-            rewritten = f"{identity_name}：{summary or '围绕章节核心概念组织学习路径'}。"
-        content = f"{base}\n\n润色补充：{rewritten}" if base and strength < 0.45 else rewritten
+            rewritten = (
+                f"{identity_name}：{summary or '围绕章节核心概念组织学习路径'}。"
+            )
+        content = (
+            f"{base}\n\n润色补充：{rewritten}"
+            if base and strength < 0.45
+            else rewritten
+        )
         return {
             "slot": PersonaSlot(
                 kind=slot.kind,
@@ -571,7 +664,11 @@ class MockModelProvider(LocalExerciseProvider, ModelProvider):
         text: str,
         count: int | None,
     ) -> dict[str, object]:
-        sentences = [segment.strip() for segment in re.split(r"[。！？\n]+", text) if segment.strip()]
+        sentences = [
+            segment.strip()
+            for segment in re.split(r"[。！？\n]+", text)
+            if segment.strip()
+        ]
         target_count = _resolve_persona_card_count_hint(count, default=6)
         if not sentences:
             raise RuntimeError("setting_model_invalid_payload")
@@ -769,11 +866,19 @@ class OpenAIModelProvider(ModelProvider):
         with self._sdk_lock:
             self._sdk = value
 
-    def generate_exercise(self, *, persona: PersonaProfile, section_id: str, topic: str) -> ModelReply:
-        return self._local_exercises.generate_exercise(persona=persona, section_id=section_id, topic=topic)
+    def generate_exercise(
+        self, *, persona: PersonaProfile, section_id: str, topic: str
+    ) -> ModelReply:
+        return self._local_exercises.generate_exercise(
+            persona=persona, section_id=section_id, topic=topic
+        )
 
-    def grade_submission(self, *, persona: PersonaProfile, exercise_id: str, answer: str) -> ModelReply:
-        return self._local_exercises.grade_submission(persona=persona, exercise_id=exercise_id, answer=answer)
+    def grade_submission(
+        self, *, persona: PersonaProfile, exercise_id: str, answer: str
+    ) -> ModelReply:
+        return self._local_exercises.grade_submission(
+            persona=persona, exercise_id=exercise_id, answer=answer
+        )
 
     def supports_page_image_tools(self) -> bool:
         return self.multimodal_enabled
@@ -794,19 +899,35 @@ class OpenAIModelProvider(ModelProvider):
         return self.chat_memory_tool_enabled
 
     @operation_snapshot
-    def probe_feature_readiness(self, features: list[str]) -> dict[str, dict[str, object]]:
+    def probe_feature_readiness(
+        self, features: list[str]
+    ) -> dict[str, dict[str, object]]:
         requested = list(dict.fromkeys(features))
         results: dict[str, dict[str, object]] = {}
         transports: list[tuple[list[str], dict[str, Any], str]] = []
         if "plan" in requested:
-            transports.append((["plan"], _feature_probe_tools_payload(self.plan_model), "plan"))
+            transports.append(
+                (["plan"], _feature_probe_tools_payload(self.plan_model), "plan")
+            )
         if "study" in requested:
-            transports.append((["study"], _feature_probe_tools_payload(self.chat_model), "chat"))
-        setting_features = [feature for feature in ("persona", "scene") if feature in requested]
+            transports.append(
+                (["study"], _feature_probe_tools_payload(self.chat_model), "chat")
+            )
+        setting_features = [
+            feature for feature in ("persona", "scene") if feature in requested
+        ]
         if setting_features:
-            transports.append((setting_features, _feature_probe_json_payload(self.setting_model), "setting"))
+            transports.append(
+                (
+                    setting_features,
+                    _feature_probe_json_payload(self.setting_model),
+                    "setting",
+                )
+            )
         if "tavern" in requested:
-            transports.append((["tavern"], _feature_probe_tavern_payload(self.chat_model), "chat"))
+            transports.append(
+                (["tavern"], _feature_probe_tavern_payload(self.chat_model), "chat")
+            )
 
         for transport_features, payload, request_kind in transports:
             _, adjustments = adapt_openai_compatible_payload(
@@ -893,12 +1014,19 @@ class OpenAIModelProvider(ModelProvider):
         document_path: str | None = None,
     ) -> ModelReply:
         return RemoteStudyProvider(
-            chat_model=self.chat_model, chat_temperature=self.chat_temperature,
-            chat_max_tokens=self.chat_max_tokens, chat_history_messages=self.chat_history_messages,
-            chat_tool_max_rounds=self.chat_tool_max_rounds, chat_tools_enabled=self.chat_tools_enabled,
+            chat_model=self.chat_model,
+            chat_temperature=self.chat_temperature,
+            chat_max_tokens=self.chat_max_tokens,
+            chat_history_messages=self.chat_history_messages,
+            chat_tool_max_rounds=self.chat_tool_max_rounds,
+            chat_tools_enabled=self.chat_tools_enabled,
             chat_memory_tool_enabled=self.chat_memory_tool_enabled,
             chat_multimodal_enabled=self.chat_multimodal_enabled,
-            disabled_tools=frozenset(self.chat_disabled_tools_provider() if self.chat_disabled_tools_provider else ()),
+            disabled_tools=frozenset(
+                self.chat_disabled_tools_provider()
+                if self.chat_disabled_tools_provider
+                else ()
+            ),
             request=self._request_openai_chat_completion,
         ).generate_chat(
             persona=persona,
@@ -943,10 +1071,16 @@ class OpenAIModelProvider(ModelProvider):
             chat_max_tokens=self.chat_max_tokens,
             request=self._request_openai_chat_completion,
         ).generate_tavern_actor_reply(
-            persona=persona, participants=participants, scene_profile=scene_profile,
-            recent_messages=recent_messages, user_message=user_message, guidance=guidance,
-            allowed_target_ids=allowed_target_ids, turn_kind=turn_kind,
-            required_target_id=required_target_id, should_continue=should_continue,
+            persona=persona,
+            participants=participants,
+            scene_profile=scene_profile,
+            recent_messages=recent_messages,
+            user_message=user_message,
+            guidance=guidance,
+            allowed_target_ids=allowed_target_ids,
+            turn_kind=turn_kind,
+            required_target_id=required_target_id,
+            should_continue=should_continue,
         )
 
     @operation_snapshot
@@ -1017,7 +1151,6 @@ class OpenAIModelProvider(ModelProvider):
             layer_count=layer_count,
         )
 
-
     @operation_snapshot
     def generate_scene_tree_from_text(
         self,
@@ -1030,15 +1163,20 @@ class OpenAIModelProvider(ModelProvider):
             layer_count=layer_count,
         )
 
-
     @operation_snapshot
     def generate_plan_revision(self, *, plan, instruction: str):
         return RemotePlanningProvider(
-            plan_model=self.plan_model, plan_tools_enabled=self.plan_tools_enabled,
+            plan_model=self.plan_model,
+            plan_tools_enabled=self.plan_tools_enabled,
             fallback_plan_model=self.fallback_plan_model,
             fallback_disable_tools=self.fallback_disable_tools,
-            multimodal_enabled=self.multimodal_enabled, timeout_seconds=self.timeout_seconds,
-            disabled_tools=frozenset(self.plan_disabled_tools_provider() if self.plan_disabled_tools_provider else ()),
+            multimodal_enabled=self.multimodal_enabled,
+            timeout_seconds=self.timeout_seconds,
+            disabled_tools=frozenset(
+                self.plan_disabled_tools_provider()
+                if self.plan_disabled_tools_provider
+                else ()
+            ),
             request=self._request_openai_chat_completion,
         ).generate_plan_revision(plan=plan, instruction=instruction)
 
@@ -1058,21 +1196,35 @@ class OpenAIModelProvider(ModelProvider):
         interrupt_check: Callable[[], None] | None = None,
     ) -> PlanModelReply:
         return RemotePlanningProvider(
-            plan_model=self.plan_model, plan_tools_enabled=self.plan_tools_enabled,
+            plan_model=self.plan_model,
+            plan_tools_enabled=self.plan_tools_enabled,
             fallback_plan_model=self.fallback_plan_model,
             fallback_disable_tools=self.fallback_disable_tools,
-            multimodal_enabled=self.multimodal_enabled, timeout_seconds=self.timeout_seconds,
-            disabled_tools=frozenset(self.plan_disabled_tools_provider() if self.plan_disabled_tools_provider else ()),
+            multimodal_enabled=self.multimodal_enabled,
+            timeout_seconds=self.timeout_seconds,
+            disabled_tools=frozenset(
+                self.plan_disabled_tools_provider()
+                if self.plan_disabled_tools_provider
+                else ()
+            ),
             request=self._request_openai_chat_completion,
         ).generate_learning_plan(
-            persona=persona, document_title=document_title, goal=goal, study_units=study_units,
-            document_path=document_path, debug_report=debug_report, planning_questions=planning_questions,
-            existing_plan=existing_plan, progress_callback=progress_callback, interrupt_check=interrupt_check,
+            persona=persona,
+            document_title=document_title,
+            goal=goal,
+            study_units=study_units,
+            document_path=document_path,
+            debug_report=debug_report,
+            planning_questions=planning_questions,
+            existing_plan=existing_plan,
+            progress_callback=progress_callback,
+            interrupt_check=interrupt_check,
         )
 
-
     @operation_snapshot
-    def generate_projected_image(self, *, prompt: str, size: str = "1024x1024") -> dict[str, str]:
+    def generate_projected_image(
+        self, *, prompt: str, size: str = "1024x1024"
+    ) -> dict[str, str]:
         return self._image_provider().generate_projected_image(prompt=prompt, size=size)
 
     def _sdk_adapter(self) -> ProviderRequestAdapter:
@@ -1080,20 +1232,30 @@ class OpenAIModelProvider(ModelProvider):
         if existing is not None:
             return existing
         return ProviderRequestAdapter(
-            api_key=self.api_key, base_url=self.base_url,
-            plan_api_key=self.plan_api_key, plan_base_url=self.plan_base_url,
-            setting_api_key=self.setting_api_key, setting_base_url=self.setting_base_url,
-            chat_api_key=self.chat_api_key, chat_base_url=self.chat_base_url,
+            api_key=self.api_key,
+            base_url=self.base_url,
+            plan_api_key=self.plan_api_key,
+            plan_base_url=self.plan_base_url,
+            setting_api_key=self.setting_api_key,
+            setting_base_url=self.setting_base_url,
+            chat_api_key=self.chat_api_key,
+            chat_base_url=self.chat_base_url,
             timeout_seconds=self.timeout_seconds,
-            completion=self.sdk.completion, responses=self.sdk.responses, embedding=self.sdk.embedding,
+            completion=self.sdk.completion,
+            responses=self.sdk.responses,
+            embedding=self.sdk.embedding,
             providers=frozenset(_known_litellm_providers(self.sdk.error_types)),
-            transport=ProviderTransport(timeout_seconds=self.timeout_seconds,
-                sdk=self.sdk.error_types, token_usage_service=self.token_usage_service),
+            transport=ProviderTransport(
+                timeout_seconds=self.timeout_seconds,
+                sdk=self.sdk.error_types,
+                token_usage_service=self.token_usage_service,
+            ),
         )
 
     def _settings_provider(self) -> RemoteSettingsProvider:
         return RemoteSettingsProvider(
-            setting_model=self.setting_model, setting_temperature=self.setting_temperature,
+            setting_model=self.setting_model,
+            setting_temperature=self.setting_temperature,
             setting_max_tokens=self.setting_max_tokens,
             setting_web_search_enabled=self.setting_web_search_enabled,
             request_chat=self._request_openai_chat_completion,
@@ -1114,7 +1276,9 @@ class OpenAIModelProvider(ModelProvider):
         request_kind: str,
         model: str,
     ) -> tuple[dict[str, Any], int]:
-        return self._sdk_adapter().request_chat_completion(payload, request_kind=request_kind, model=model)
+        return self._sdk_adapter().request_chat_completion(
+            payload, request_kind=request_kind, model=model
+        )
 
     def _request_openai_response(
         self,
@@ -1123,7 +1287,9 @@ class OpenAIModelProvider(ModelProvider):
         request_kind: str,
         model: str,
     ) -> tuple[dict[str, Any], int]:
-        return self._sdk_adapter().request_response(payload, request_kind=request_kind, model=model)
+        return self._sdk_adapter().request_response(
+            payload, request_kind=request_kind, model=model
+        )
 
     @operation_snapshot
     def embed_texts(self, texts: list[str]) -> list[list[float]]:
@@ -1160,9 +1326,7 @@ def _scene_proposal_payload_from_layers(
 ) -> dict[str, object]:
     def split_tags(value: str) -> list[str]:
         return [
-            item.strip()
-            for item in value.replace("，", ",").split(",")
-            if item.strip()
+            item.strip() for item in value.replace("，", ",").split(",") if item.strip()
         ]
 
     def object_payload(item: SceneObjectStateRecord) -> dict[str, object]:
@@ -1227,9 +1391,7 @@ def _resolve_scene_layer_count_hint(layer_count: int | None, *, default: int) ->
 
 def _extract_scene_anchors_from_text(text: str) -> list[str]:
     tokens = [
-        token.strip()
-        for token in re.split(r"[，,、；;：:\s]+", text)
-        if token.strip()
+        token.strip() for token in re.split(r"[，,、；;：:\s]+", text) if token.strip()
     ]
     anchors: list[str] = []
     for token in tokens:
@@ -1261,7 +1423,9 @@ def _build_mock_scene_layers(
     def build_layer(depth: int) -> SceneLayerStateRecord:
         title, scope_label = layer_templates[min(depth, len(layer_templates) - 1)]
         anchor = anchors[depth % len(anchors)] if anchors else "学习"
-        fragment = fragments[depth % len(fragments)] if fragments else "围绕学习任务组织空间。"
+        fragment = (
+            fragments[depth % len(fragments)] if fragments else "围绕学习任务组织空间。"
+        )
         layer_title = f"{anchor}{title}" if depth else f"{anchor}{title}"
         object_name = f"{anchor}装置"
         seed = f"{depth}:{layer_title}:{scope_label}"
@@ -1284,7 +1448,9 @@ def _build_mock_scene_layers(
                     description=f"承载“{anchor}”主题线索的核心物体，用于帮助学习者快速识别当前层级的功能。",
                     interaction=f"可读取、操作或指向该物体，以推进与“{anchor}”相关的讲解或任务。",
                     tags=",".join(dict.fromkeys([anchor, "交互", scope_label])),
-                    reuse_id=_stable_scene_token(seed + ":object", "scene-object-reuse"),
+                    reuse_id=_stable_scene_token(
+                        seed + ":object", "scene-object-reuse"
+                    ),
                     reuse_hint=f"可复用为“{object_name}”这一类核心交互物体。",
                 )
             ],
@@ -1314,7 +1480,9 @@ def _build_course_title(
     document_title: str,
     plannable_units: list[StudyUnitRecord],
 ) -> str:
-    lead_titles = [unit.title.strip() for unit in plannable_units[:2] if unit.title.strip()]
+    lead_titles = [
+        unit.title.strip() for unit in plannable_units[:2] if unit.title.strip()
+    ]
     if lead_titles:
         return " / ".join(lead_titles)
     return document_title.strip()
@@ -1324,7 +1492,9 @@ def _fallback_schedule_chapters_for_unit(
     unit: StudyUnitRecord,
     page_ranges: list[tuple[int, int]] | None = None,
 ) -> list[PlanScheduleChapterProposalV1]:
-    normalized_sources = [str(item).strip() for item in unit.source_section_ids if str(item).strip()]
+    normalized_sources = [
+        str(item).strip() for item in unit.source_section_ids if str(item).strip()
+    ]
     intersections = [
         (max(unit.page_start, start), min(unit.page_end, end))
         for start, end in (page_ranges or [(unit.page_start, unit.page_end)])

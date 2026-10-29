@@ -625,7 +625,7 @@ _STUDY_ENTRY = HarnessWorkflowManifestEntryV1(
         "StudyChatWorkflowAdapter", "study-chat-workflow-adapter-v1"
     ),
     input_contract=_registered_contract(
-        "StudyChatInputManifest", "study-chat-input-manifest-v1"
+        "StudyChatInputManifest", "study-chat-input-manifest-v2"
     ),
     proposal_contract=_registered_contract(
         "StudyChatReplyProposal", "study-chat-reply-proposal-v1"
@@ -636,7 +636,7 @@ _STUDY_ENTRY = HarnessWorkflowManifestEntryV1(
     component_contracts=_component_contracts(
         HarnessWorkflow.STUDY_CHAT, HarnessStage.STUDY_CHAT_REPLY
     ),
-    prompt_contract=_registered_contract("StudyChatPrompt", "study-chat-prompt-v2"),
+    prompt_contract=_registered_contract("StudyChatPrompt", "study-chat-prompt-v3"),
     policy_contract=_registered_contract(
         "StudyChatHarnessPolicy", "study-chat-harness-v1"
     ),
@@ -828,7 +828,7 @@ _ENTRIES = (
         ),
         artifact_types=(HarnessArtifactType.PLANNING_CONTEXT,),
         decoder_route="app.services.plan_revision.PlanRevisionService",
-        prompt=("PlanRevisionPrompt", "plan-revision-prompt-v1"),
+        prompt=("PlanRevisionPrompt", "plan-revision-prompt-v2"),
         policy=("PlanRevisionPolicy", "plan-revision-policy-v1"),
         eval_suites=(
             HarnessContractRef(
@@ -912,7 +912,7 @@ _ENTRIES = (
             HarnessArtifactType.STUDY_UNIT_INPUT,
         ),
         decoder_route="app.services.harness_broad_adoption.LearningPlanWorkflowAdapter",
-        prompt=("LearningPlanPrompt", "planning-prompt-v7"),
+        prompt=("LearningPlanPrompt", "planning-prompt-v8"),
         policy=("LearningPlanHarnessPolicy", "learning-plan-harness-v1"),
         toolset=_TOOL_MANIFEST_SLOT,
         commit_policy=HarnessManifestRegisteredCommitPolicySlotV1(

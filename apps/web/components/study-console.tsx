@@ -12,9 +12,11 @@ import type {
   SessionFollowUp,
   SessionPlanConfirmation,
   StudyChatResponse,
-  StudySessionRecord
+  StudySessionRecord,
 } from "@vibe-learner/shared";
 import { orderStudySessionTurns } from "../lib/study-session-decode";
+import { OutputLanguageField } from "./output-language-field";
+import { outputLanguageError } from "../lib/output-language";
 
 import { CharacterShell } from "./character-shell";
 import { MaterialIcon } from "./material-icon";
@@ -28,7 +30,13 @@ interface StudyConsoleProps {
   onSelectPlan: (planId: string) => void;
   onCreateSession?: () => void;
   showCreateSession?: boolean;
-  onAsk: (message: string, attachments: File[]) => Promise<boolean> | boolean;
+  onAsk: (
+    message: string,
+    attachments: File[],
+    outputLanguage?: string,
+  ) => Promise<boolean> | boolean;
+  outputLanguage?: string;
+  outputLanguageScope?: string;
   onSubmitQuestionAttempt: (input: {
     turnId: string;
     submittedAnswer: string;
@@ -82,6 +90,8 @@ export function StudyConsole({
   onCreateSession,
   showCreateSession = false,
   onAsk,
+  outputLanguage = "auto",
+  outputLanguageScope = "",
   onSubmitQuestionAttempt,
   onContinueAfterQuestion,
   onChangeSchedule,
@@ -116,29 +126,37 @@ export function StudyConsole({
   cachedState,
   onCachedStateChange,
 }: StudyConsoleProps) {
+  const [languagePreference, setLanguagePreference] = useState(outputLanguage);
+  useEffect(() => {
+    setLanguagePreference(outputLanguage);
+  }, [outputLanguage, outputLanguageScope]);
+  const languageError = outputLanguageError(languagePreference);
   const recoveryLocked = Boolean(chatErrorMessage && canQueryLastAsk);
   const refreshRequired = Boolean(chatErrorMessage && canRefreshSessionAfterAsk);
   const [message, setMessage] = useState(
-    () => cachedState?.message ?? "请解释这一章的核心概念，并给我一个复述练习。"
+    () => cachedState?.message ?? "请解释这一章的核心概念，并给我一个复述练习。",
   );
-  const [attachments, setAttachments] = useState<File[]>(() => cachedState?.attachments ?? []);
+  const [attachments, setAttachments] = useState<File[]>(
+    () => cachedState?.attachments ?? [],
+  );
   const [selectedChoices, setSelectedChoices] = useState<Record<string, string>>(
-    () => cachedState?.selectedChoices ?? {}
+    () => cachedState?.selectedChoices ?? {},
   );
   const [blankAnswers, setBlankAnswers] = useState<Record<string, string>>(
-    () => cachedState?.blankAnswers ?? {}
+    () => cachedState?.blankAnswers ?? {},
   );
   const [questionAttemptStates, setQuestionAttemptStates] = useState<
     Record<string, "submitting" | "failed">
   >({});
   const questionAttemptInFlightRef = useRef(new Set<string>());
-  const [expandedExplanation, setExpandedExplanation] = useState<Record<string, boolean>>(
-    () => cachedState?.expandedExplanation ?? {}
-  );
+  const [expandedExplanation, setExpandedExplanation] = useState<
+    Record<string, boolean>
+  >(() => cachedState?.expandedExplanation ?? {});
   const transcriptRef = useRef<HTMLDivElement | null>(null);
   const attachmentInputRef = useRef<HTMLInputElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
-  const activeFollowUp = pendingFollowUps.find((item) => item.status === "pending") ?? null;
+  const activeFollowUp =
+    pendingFollowUps.find((item) => item.status === "pending") ?? null;
 
   const sortedTurns = orderStudySessionTurns(turns);
 
@@ -189,34 +207,56 @@ export function StudyConsole({
     <div style={styles.wrap}>
       <div className="study-console-layout" style={styles.consoleCard}>
         <section style={styles.chatPanel} aria-label="学习对话">
-          <div className="study-status-strip" style={styles.statusStrip} aria-label="会话状态">
-            <StudyStatusItem label="会话" value={disabled ? "未创建" : "已建立"} kind="session" />
+          <div
+            className="study-status-strip"
+            style={styles.statusStrip}
+            aria-label="会话状态"
+          >
+            <StudyStatusItem
+              label="会话"
+              value={disabled ? "未创建" : "已建立"}
+              kind="session"
+            />
             <StudyStatusItem
               label="记录同步"
-              value={chatErrorMessage ? "需要确认" : isPending ? "等待结果" : disabled ? "未开始" : "已同步"}
+              value={
+                chatErrorMessage
+                  ? "需要确认"
+                  : isPending
+                    ? "等待结果"
+                    : disabled
+                      ? "未开始"
+                      : "已同步"
+              }
               kind="sync"
             />
-            <StudyStatusItem label="模型" value={isPending ? "生成中" : "空闲"} kind="model" />
+            <StudyStatusItem
+              label="模型"
+              value={isPending ? "生成中" : "空闲"}
+              kind="model"
+            />
           </div>
           <div className="study-transcript" style={styles.transcript}>
             {turns.length ? (
               <div ref={transcriptRef} style={styles.turnList}>
                 {sortedTurns.map((turn) => (
-                  <div
-                    key={turn.id}
-                    style={styles.turnCard}
-                  >
+                  <div key={turn.id} style={styles.turnCard}>
                     {!isHiddenLearnerMessage(turn) ? (
                       <div style={styles.userSection}>
                         <div style={{ ...styles.turnMeta, ...styles.turnMetaRight }}>
-                          <span style={styles.timeLabel}>{formatTurnTime(turn.createdAt)}</span>
+                          <span style={styles.timeLabel}>
+                            {formatTurnTime(turn.createdAt)}
+                          </span>
                           <span style={styles.roleLabel}>你</span>
                         </div>
                         <p style={styles.userMessage}>{formatLearnerMessage(turn)}</p>
                         {turn.learnerAttachments?.length ? (
                           <div style={styles.attachmentChipRow}>
                             {turn.learnerAttachments.map((attachment) => (
-                              <span key={attachment.attachmentId} style={styles.attachmentChip}>
+                              <span
+                                key={attachment.attachmentId}
+                                style={styles.attachmentChip}
+                              >
                                 {formatAttachmentLabel(attachment)}
                               </span>
                             ))}
@@ -228,40 +268,47 @@ export function StudyConsole({
                     <div style={styles.aiSection}>
                       <div style={styles.turnMeta}>
                         <span style={styles.aiLabel}>{persona.name}</span>
-                        <span style={styles.timeLabel}>{formatTurnTime(turn.createdAt)}</span>
+                        <span style={styles.timeLabel}>
+                          {formatTurnTime(turn.createdAt)}
+                        </span>
                       </div>
                       <div style={styles.aiBubble}>
                         <RichTextMessage
-                          content={buildRenderableReply(turn.assistantReply, turn.richBlocks)}
+                          content={buildRenderableReply(
+                            turn.assistantReply,
+                            turn.richBlocks,
+                          )}
                           style={styles.aiMessage}
                         />
                         <CharacterEventDetails events={turn.characterEvents} />
-                      {turn.interactiveQuestion ? (
-                        <div style={styles.questionWrap}>
-                            <InteractiveQuestionCard {...{
-                              question: turn.interactiveQuestion,
-                              turnKey: turn.id,
-                              selectedChoices,
-                              blankAnswers,
-                              setSelectedChoices,
-                              setBlankAnswers,
-                              attemptState: questionAttemptStates[turn.id],
-                              onAttemptStateChange: (state) => {
-                                setQuestionAttemptStates((current) => {
-                                  if (state) return { ...current, [turn.id]: state };
-                                  const next = { ...current };
-                                  delete next[turn.id];
-                                  return next;
-                                });
-                              },
-                              attemptInFlight: questionAttemptInFlightRef.current,
-                              expandedExplanation,
-                              setExpandedExplanation,
-                              onAsk,
-                              onSubmitQuestionAttempt,
-                              onContinueAfterQuestion,
-                              disabled: Boolean(disabled || isPending)
-                            }} />
+                        {turn.interactiveQuestion ? (
+                          <div style={styles.questionWrap}>
+                            <InteractiveQuestionCard
+                              {...{
+                                question: turn.interactiveQuestion,
+                                turnKey: turn.id,
+                                selectedChoices,
+                                blankAnswers,
+                                setSelectedChoices,
+                                setBlankAnswers,
+                                attemptState: questionAttemptStates[turn.id],
+                                onAttemptStateChange: (state) => {
+                                  setQuestionAttemptStates((current) => {
+                                    if (state) return { ...current, [turn.id]: state };
+                                    const next = { ...current };
+                                    delete next[turn.id];
+                                    return next;
+                                  });
+                                },
+                                attemptInFlight: questionAttemptInFlightRef.current,
+                                expandedExplanation,
+                                setExpandedExplanation,
+                                onAsk,
+                                onSubmitQuestionAttempt,
+                                onContinueAfterQuestion,
+                                disabled: Boolean(disabled || isPending),
+                              }}
+                            />
                           </div>
                         ) : null}
                         {turn.citations.length ? (
@@ -271,11 +318,14 @@ export function StudyConsole({
                                 key={`${turn.id}:${citation.sectionId}:${citation.pageStart}:${citation.pageEnd}:${citationIndex}`}
                                 type="button"
                                 style={styles.citation}
-                                onClick={() => { if (onOpenCitation) onOpenCitation(citation); }}
+                                onClick={() => {
+                                  if (onOpenCitation) onOpenCitation(citation);
+                                }}
                                 title={`跳转到 p.${citation.pageStart}–${citation.pageEnd}`}
                                 disabled={!onOpenCitation}
                               >
-                                {citation.title} · p.{citation.pageStart}–{citation.pageEnd}
+                                {citation.title} · p.{citation.pageStart}–
+                                {citation.pageEnd}
                               </button>
                             ))}
                           </div>
@@ -294,7 +344,10 @@ export function StudyConsole({
                     </div>
                     <div style={styles.aiBubble}>
                       <RichTextMessage
-                        content={buildRenderableReply(session.reply, session.richBlocks)}
+                        content={buildRenderableReply(
+                          session.reply,
+                          session.richBlocks,
+                        )}
                         style={styles.aiMessage}
                       />
                       <CharacterEventDetails events={session.characterEvents} />
@@ -305,11 +358,14 @@ export function StudyConsole({
                               key={`${citation.sectionId}:${citation.pageStart}:${citation.pageEnd}:${index}`}
                               type="button"
                               style={styles.citation}
-                              onClick={() => { if (onOpenCitation) onOpenCitation(citation); }}
+                              onClick={() => {
+                                if (onOpenCitation) onOpenCitation(citation);
+                              }}
                               title={`跳转到 p.${citation.pageStart}–${citation.pageEnd}`}
                               disabled={!onOpenCitation}
                             >
-                              {citation.title} · p.{citation.pageStart}–{citation.pageEnd}
+                              {citation.title} · p.{citation.pageStart}–
+                              {citation.pageEnd}
                             </button>
                           ))}
                         </div>
@@ -334,10 +390,14 @@ export function StudyConsole({
                   type="button"
                   style={{
                     ...styles.retryBtn,
-                    ...(isPending || disabled || !onQueryLastAsk ? styles.btnDisabled : {})
+                    ...(isPending || disabled || !onQueryLastAsk
+                      ? styles.btnDisabled
+                      : {}),
                   }}
                   disabled={isPending || disabled || !onQueryLastAsk}
-                  onClick={() => { if (onQueryLastAsk) void onQueryLastAsk(); }}
+                  onClick={() => {
+                    if (onQueryLastAsk) void onQueryLastAsk();
+                  }}
                 >
                   {isPending ? "查询中…" : "查询本次请求结果"}
                 </button>
@@ -347,10 +407,14 @@ export function StudyConsole({
                   type="button"
                   style={{
                     ...styles.retryBtn,
-                    ...(isPending || disabled || !onRetryLastAsk ? styles.btnDisabled : {})
+                    ...(isPending || disabled || !onRetryLastAsk
+                      ? styles.btnDisabled
+                      : {}),
                   }}
                   disabled={isPending || disabled || !onRetryLastAsk}
-                  onClick={() => { if (onRetryLastAsk) void onRetryLastAsk(); }}
+                  onClick={() => {
+                    if (onRetryLastAsk) void onRetryLastAsk();
+                  }}
                 >
                   {isPending ? "发送中…" : "重新发送（新请求）"}
                 </button>
@@ -360,10 +424,14 @@ export function StudyConsole({
                   type="button"
                   style={{
                     ...styles.retryBtn,
-                    ...(isPending || disabled || !onRefreshSessionAfterAsk ? styles.btnDisabled : {})
+                    ...(isPending || disabled || !onRefreshSessionAfterAsk
+                      ? styles.btnDisabled
+                      : {}),
                   }}
                   disabled={isPending || disabled || !onRefreshSessionAfterAsk}
-                  onClick={() => { if (onRefreshSessionAfterAsk) void onRefreshSessionAfterAsk(); }}
+                  onClick={() => {
+                    if (onRefreshSessionAfterAsk) void onRefreshSessionAfterAsk();
+                  }}
                 >
                   {isPending ? "刷新中…" : "刷新会话状态"}
                 </button>
@@ -379,13 +447,22 @@ export function StudyConsole({
                   <div key={item.id} style={styles.confirmationCard}>
                     <div style={styles.confirmationHead}>
                       <span style={styles.confirmationTitle}>{item.title}</span>
-                      <span style={styles.confirmationMeta}>{formatToolName(item.toolName)}</span>
+                      <span style={styles.confirmationMeta}>
+                        {formatToolName(item.toolName)}
+                      </span>
                     </div>
-                    <p style={styles.confirmationSummary}>{item.summary || "请确认这项调整。"}</p>
+                    <p style={styles.confirmationSummary}>
+                      {item.summary || "请确认这项调整。"}
+                    </p>
                     {item.previewLines.length ? (
                       <div style={styles.confirmationLines}>
                         {item.previewLines.map((line, index) => (
-                          <span key={`${item.id}:${index}`} style={styles.confirmationLine}>{line}</span>
+                          <span
+                            key={`${item.id}:${index}`}
+                            style={styles.confirmationLine}
+                          >
+                            {line}
+                          </span>
                         ))}
                       </div>
                     ) : null}
@@ -394,10 +471,18 @@ export function StudyConsole({
                         type="button"
                         style={{
                           ...styles.confirmApproveBtn,
-                          ...(disabled || isPending || !onResolvePlanConfirmation ? styles.btnDisabled : {})
+                          ...(disabled || isPending || !onResolvePlanConfirmation
+                            ? styles.btnDisabled
+                            : {}),
                         }}
                         disabled={disabled || isPending || !onResolvePlanConfirmation}
-                        onClick={() => { if (onResolvePlanConfirmation) void onResolvePlanConfirmation({ confirmationId: item.id, decision: "approve" }); }}
+                        onClick={() => {
+                          if (onResolvePlanConfirmation)
+                            void onResolvePlanConfirmation({
+                              confirmationId: item.id,
+                              decision: "approve",
+                            });
+                        }}
                       >
                         确认应用
                       </button>
@@ -405,10 +490,18 @@ export function StudyConsole({
                         type="button"
                         style={{
                           ...styles.confirmRejectBtn,
-                          ...(disabled || isPending || !onResolvePlanConfirmation ? styles.btnDisabled : {})
+                          ...(disabled || isPending || !onResolvePlanConfirmation
+                            ? styles.btnDisabled
+                            : {}),
                         }}
                         disabled={disabled || isPending || !onResolvePlanConfirmation}
-                        onClick={() => { if (onResolvePlanConfirmation) void onResolvePlanConfirmation({ confirmationId: item.id, decision: "reject" }); }}
+                        onClick={() => {
+                          if (onResolvePlanConfirmation)
+                            void onResolvePlanConfirmation({
+                              confirmationId: item.id,
+                              decision: "reject",
+                            });
+                        }}
                       >
                         暂不应用
                       </button>
@@ -431,15 +524,24 @@ export function StudyConsole({
               />
               <details className="study-memory-help">
                 <summary>如何保存原文记忆</summary>
-                <p>输入以下指令，将中间的原文保存到当前会话的指定记忆键。键名使用字母、数字、下划线或短横线；原文最多 4000 字，首尾不能留空白。请等待保存结果后再继续。</p>
-                <pre className="study-memory-help-code">{"/remember-verbatim my_note\n需要逐字保留的原文\n/end-remember"}</pre>
+                <p>
+                  输入以下指令，将中间的原文保存到当前会话的指定记忆键。键名使用字母、数字、下划线或短横线；原文最多
+                  4000 字，首尾不能留空白。请等待保存结果后再继续。
+                </p>
+                <pre className="study-memory-help-code">
+                  {"/remember-verbatim my_note\n需要逐字保留的原文\n/end-remember"}
+                </pre>
               </details>
               <div style={styles.attachmentToolbar}>
                 <input
                   ref={attachmentInputRef}
                   type="file"
                   multiple
-                  accept={chatImageUploadEnabled ? "image/*,.pdf,.txt,.md,.markdown,.json,.csv,.log,.yaml,.yml,.xml" : ".pdf,.txt,.md,.markdown,.json,.csv,.log,.yaml,.yml,.xml"}
+                  accept={
+                    chatImageUploadEnabled
+                      ? "image/*,.pdf,.txt,.md,.markdown,.json,.csv,.log,.yaml,.yml,.xml"
+                      : ".pdf,.txt,.md,.markdown,.json,.csv,.log,.yaml,.yml,.xml"
+                  }
                   style={styles.hiddenFileInput}
                   onChange={(event) => {
                     const nextFiles = Array.from(event.target.files ?? []);
@@ -449,7 +551,14 @@ export function StudyConsole({
                     setAttachments((current) => {
                       const deduped = [...current];
                       nextFiles.forEach((file) => {
-                        if (deduped.some((item) => item.name === file.name && item.size === file.size && item.type === file.type)) {
+                        if (
+                          deduped.some(
+                            (item) =>
+                              item.name === file.name &&
+                              item.size === file.size &&
+                              item.type === file.type,
+                          )
+                        ) {
                           return;
                         }
                         deduped.push(file);
@@ -463,7 +572,9 @@ export function StudyConsole({
                   type="button"
                   style={{
                     ...styles.iconToolButton,
-                    ...(disabled || isPending || recoveryLocked ? styles.btnDisabled : {})
+                    ...(disabled || isPending || recoveryLocked
+                      ? styles.btnDisabled
+                      : {}),
                   }}
                   disabled={disabled || isPending || recoveryLocked}
                   onClick={() => attachmentInputRef.current?.click()}
@@ -477,32 +588,65 @@ export function StudyConsole({
                     type="button"
                     style={{
                       ...styles.iconToolButton,
-                      ...(disabled || isPending || isDialogueInterrupted ? styles.btnDisabled : {})
+                      ...(disabled || isPending || isDialogueInterrupted
+                        ? styles.btnDisabled
+                        : {}),
                     }}
                     disabled={disabled || isPending || isDialogueInterrupted}
-                  onClick={() => { void onInterruptDialogue(); }}
-                  aria-label={isDialogueInterrupted ? "已举手打断" : "举手打断"}
-                  title={isDialogueInterrupted ? "已举手打断" : "举手打断"}
-                >
+                    onClick={() => {
+                      void onInterruptDialogue();
+                    }}
+                    aria-label={isDialogueInterrupted ? "已举手打断" : "举手打断"}
+                    title={isDialogueInterrupted ? "已举手打断" : "举手打断"}
+                  >
                     <MaterialIcon name="front_hand" size={16} />
                   </button>
                 ) : null}
                 <button
                   style={{
                     ...styles.iconSendButton,
-                    ...(isPending || disabled || recoveryLocked || refreshRequired ? styles.btnDisabled : {})
+                    ...(isPending || disabled || recoveryLocked || refreshRequired
+                      ? styles.btnDisabled
+                      : {}),
                   }}
-                  disabled={isPending || disabled || recoveryLocked || refreshRequired}
+                  disabled={
+                    isPending ||
+                    disabled ||
+                    recoveryLocked ||
+                    refreshRequired ||
+                    Boolean(languageError)
+                  }
                   onClick={async () => {
-                    const didSend = await onAsk(message, attachments);
+                    if (languageError) return;
+                    const didSend = await onAsk(
+                      message,
+                      attachments,
+                      languagePreference,
+                    );
                     if (!didSend) {
                       return;
                     }
                     setMessage("");
                     setAttachments([]);
                   }}
-                  aria-label={recoveryLocked ? "请先查询本次请求结果" : refreshRequired ? "请先刷新会话状态" : isPending ? "发送中" : "发送"}
-                  title={recoveryLocked ? "请先查询本次请求结果" : refreshRequired ? "请先刷新会话状态" : isPending ? "发送中" : "发送"}
+                  aria-label={
+                    recoveryLocked
+                      ? "请先查询本次请求结果"
+                      : refreshRequired
+                        ? "请先刷新会话状态"
+                        : isPending
+                          ? "发送中"
+                          : "发送"
+                  }
+                  title={
+                    recoveryLocked
+                      ? "请先查询本次请求结果"
+                      : refreshRequired
+                        ? "请先刷新会话状态"
+                        : isPending
+                          ? "发送中"
+                          : "发送"
+                  }
                 >
                   <MaterialIcon name="send" size={16} />
                 </button>
@@ -510,20 +654,31 @@ export function StudyConsole({
               {attachments.length ? (
                 <div style={styles.attachmentDraftList}>
                   {attachments.map((file) => (
-                    <div key={`${file.name}:${file.size}:${file.type}`} style={styles.attachmentDraftItem}>
+                    <div
+                      key={`${file.name}:${file.size}:${file.type}`}
+                      style={styles.attachmentDraftItem}
+                    >
                       <span style={styles.attachmentDraftText}>
-                        {file.name} · {formatFileSize(file.size)}{file.type.startsWith("image/") ? " · 图片" : ""}
+                        {file.name} · {formatFileSize(file.size)}
+                        {file.type.startsWith("image/") ? " · 图片" : ""}
                       </span>
                       <button
                         type="button"
                         style={{
                           ...styles.attachmentRemoveBtn,
-                          ...(disabled || isPending ? styles.btnDisabled : {})
+                          ...(disabled || isPending ? styles.btnDisabled : {}),
                         }}
                         disabled={disabled || isPending}
                         onClick={() => {
                           setAttachments((current) =>
-                            current.filter((item) => !(item.name === file.name && item.size === file.size && item.type === file.type))
+                            current.filter(
+                              (item) =>
+                                !(
+                                  item.name === file.name &&
+                                  item.size === file.size &&
+                                  item.type === file.type
+                                ),
+                            ),
                           );
                         }}
                       >
@@ -535,7 +690,6 @@ export function StudyConsole({
               ) : null}
             </div>
           </div>
-
         </section>
 
         <aside style={styles.sidebar}>
@@ -550,11 +704,16 @@ export function StudyConsole({
                       value={selectedPlanId}
                       onChange={(event) => onSelectPlan(event.target.value)}
                       disabled={!planOptions.length}
-                      title={planOptions.find((item) => item.id === selectedPlanId)?.title || "暂无学习计划"}
+                      title={
+                        planOptions.find((item) => item.id === selectedPlanId)?.title ||
+                        "暂无学习计划"
+                      }
                     >
                       {planOptions.length ? (
                         planOptions.map((item) => (
-                          <option key={item.id} value={item.id}>{item.title}</option>
+                          <option key={item.id} value={item.id}>
+                            {item.title}
+                          </option>
                         ))
                       ) : (
                         <option value="">暂无学习计划</option>
@@ -566,10 +725,12 @@ export function StudyConsole({
                       type="button"
                       style={{
                         ...styles.primaryBtn,
-                        ...(isPending || !onCreateSession ? styles.btnDisabled : {})
+                        ...(isPending || !onCreateSession ? styles.btnDisabled : {}),
                       }}
                       disabled={isPending || !onCreateSession}
-                      onClick={() => { if (onCreateSession) onCreateSession(); }}
+                      onClick={() => {
+                        if (onCreateSession) onCreateSession();
+                      }}
                     >
                       {isPending ? "创建中…" : "创建会话"}
                     </button>
@@ -584,11 +745,16 @@ export function StudyConsole({
                       value={selectedScheduleId}
                       onChange={(event) => onChangeSchedule(event.target.value)}
                       disabled={isPending || disabled}
-                      title={scheduleOptions.find((item) => item.id === selectedScheduleId)?.title || "暂无排期项"}
+                      title={
+                        scheduleOptions.find((item) => item.id === selectedScheduleId)
+                          ?.title || "暂无排期项"
+                      }
                     >
                       {scheduleOptions.length ? (
                         scheduleOptions.map((item) => (
-                          <option key={item.id} value={item.id}>{item.title}</option>
+                          <option key={item.id} value={item.id}>
+                            {item.title}
+                          </option>
                         ))
                       ) : (
                         <option value="">暂无排期项</option>
@@ -602,10 +768,22 @@ export function StudyConsole({
                     type="button"
                     style={{
                       ...styles.ghostBtn,
-                      ...(isPending || disabled || !onJumpToScheduleStart || !canJumpToScheduleStart ? styles.btnDisabled : {})
+                      ...(isPending ||
+                      disabled ||
+                      !onJumpToScheduleStart ||
+                      !canJumpToScheduleStart
+                        ? styles.btnDisabled
+                        : {}),
                     }}
-                    disabled={isPending || disabled || !onJumpToScheduleStart || !canJumpToScheduleStart}
-                    onClick={() => { if (onJumpToScheduleStart) onJumpToScheduleStart(); }}
+                    disabled={
+                      isPending ||
+                      disabled ||
+                      !onJumpToScheduleStart ||
+                      !canJumpToScheduleStart
+                    }
+                    onClick={() => {
+                      if (onJumpToScheduleStart) onJumpToScheduleStart();
+                    }}
                   >
                     定位排期首页
                   </button>
@@ -613,14 +791,32 @@ export function StudyConsole({
                     type="button"
                     style={{
                       ...styles.primaryBtn,
-                      ...(isPending || disabled || !onCompleteCurrentSchedule || !canCompleteCurrentSchedule ? styles.btnDisabled : {})
+                      ...(isPending ||
+                      disabled ||
+                      !onCompleteCurrentSchedule ||
+                      !canCompleteCurrentSchedule
+                        ? styles.btnDisabled
+                        : {}),
                     }}
-                    disabled={isPending || disabled || !onCompleteCurrentSchedule || !canCompleteCurrentSchedule}
-                    onClick={() => { if (onCompleteCurrentSchedule) void onCompleteCurrentSchedule(); }}
+                    disabled={
+                      isPending ||
+                      disabled ||
+                      !onCompleteCurrentSchedule ||
+                      !canCompleteCurrentSchedule
+                    }
+                    onClick={() => {
+                      if (onCompleteCurrentSchedule) void onCompleteCurrentSchedule();
+                    }}
                   >
                     完成当前排期
                   </button>
                 </div>
+                <OutputLanguageField
+                  value={languagePreference}
+                  onChange={setLanguagePreference}
+                  study
+                  disabled={isPending || disabled || recoveryLocked || refreshRequired}
+                />
               </div>
             </div>
 
@@ -631,7 +827,9 @@ export function StudyConsole({
                 </div>
                 <div style={styles.companionRow}>
                   <span style={styles.companionChip}>人格 · {persona.name}</span>
-                  <span style={styles.companionChip}>场景 · {sceneProfile?.title || "未设置"}</span>
+                  <span style={styles.companionChip}>
+                    场景 · {sceneProfile?.title || "未设置"}
+                  </span>
                 </div>
                 <p style={styles.companionSummary}>
                   {sceneProfile?.summary || persona.summary || "尚未配置场景摘要。"}
@@ -1383,7 +1581,7 @@ function formatTurnTime(value: string) {
     month: "2-digit",
     day: "2-digit",
     hour: "2-digit",
-    minute: "2-digit"
+    minute: "2-digit",
   });
 }
 
@@ -1422,7 +1620,7 @@ function InteractiveQuestionCard(input: {
     onAsk,
     onSubmitQuestionAttempt,
     onContinueAfterQuestion,
-    disabled
+    disabled,
   } = input;
   const id = useId();
   const root = useRef<HTMLDivElement>(null);
@@ -1432,19 +1630,28 @@ function InteractiveQuestionCard(input: {
   const isLocked = question.result !== null;
   const isSubmitting = attemptState === "submitting";
   const isChoice = question.questionType === "multiple_choice";
-  const value = isChoice ? selectedChoices[turnKey] ?? question.result?.submittedAnswer ?? ""
-    : blankAnswers[turnKey] ?? question.result?.submittedAnswer ?? "";
+  const value = isChoice
+    ? (selectedChoices[turnKey] ?? question.result?.submittedAnswer ?? "")
+    : (blankAnswers[turnKey] ?? question.result?.submittedAnswer ?? "");
   const explanationVisible = isLocked && Boolean(expandedExplanation[turnKey]);
-  const feedbackText = question.result ? `${question.result.feedbackText} · 已记录`
-    : attemptState === "failed" ? "答案未记录，请检查后重新提交。"
-    : isSubmitting ? "正在保存到学习记录…" : "";
+  const feedbackText = question.result
+    ? `${question.result.feedbackText} · 已记录`
+    : attemptState === "failed"
+      ? "答案未记录，请检查后重新提交。"
+      : isSubmitting
+        ? "正在保存到学习记录…"
+        : "";
 
   useEffect(() => {
     if (!restoreFocus.current || (!isLocked && attemptState !== "failed")) return;
     restoreFocus.current = false;
     // Only return focus for this submission while the learner remains here.
     // A late result from another page or after moving to another control cannot steal it.
-    if (root.current && (root.current.contains(document.activeElement) || document.activeElement === document.body)) {
+    if (
+      root.current &&
+      (root.current.contains(document.activeElement) ||
+        document.activeElement === document.body)
+    ) {
       feedback.current?.focus({ preventScroll: true });
     }
   }, [isLocked, attemptState]);
@@ -1455,7 +1662,10 @@ function InteractiveQuestionCard(input: {
     attemptInFlight.add(turnKey);
     onAttemptStateChange("submitting");
     try {
-      const committed = await onSubmitQuestionAttempt({ turnId: turnKey, submittedAnswer: value });
+      const committed = await onSubmitQuestionAttempt({
+        turnId: turnKey,
+        submittedAnswer: value,
+      });
       onAttemptStateChange(committed ? undefined : "failed");
     } catch {
       onAttemptStateChange("failed");
@@ -1466,99 +1676,222 @@ function InteractiveQuestionCard(input: {
 
   return (
     <div ref={root} style={{ display: "grid", gap: 10 }}>
-      <fieldset aria-busy={isSubmitting} aria-describedby={`${id}-prompt ${id}-meta`}
-        style={{ border: 0, margin: 0, padding: 0, minWidth: 0, display: "grid", gap: 10 }}>
-        <legend style={styles.questionTitle}>{isChoice ? "选择题（单选）" : "填空题"}</legend>
-        <span id={`${id}-meta`} style={styles.questionMeta}>{question.topic || "章节练习"} · {question.difficulty}</span>
-        <div id={`${id}-prompt`}><RichTextMessage content={question.prompt} style={styles.aiMessage} /></div>
+      <fieldset
+        aria-busy={isSubmitting}
+        aria-describedby={`${id}-prompt ${id}-meta`}
+        style={{
+          border: 0,
+          margin: 0,
+          padding: 0,
+          minWidth: 0,
+          display: "grid",
+          gap: 10,
+        }}
+      >
+        <legend style={styles.questionTitle}>
+          {isChoice ? "选择题（单选）" : "填空题"}
+        </legend>
+        <span id={`${id}-meta`} style={styles.questionMeta}>
+          {question.topic || "章节练习"} · {question.difficulty}
+        </span>
+        <div id={`${id}-prompt`}>
+          <RichTextMessage content={question.prompt} style={styles.aiMessage} />
+        </div>
         {isChoice ? (
-          <div style={styles.choiceList} role="radiogroup" aria-label="选择一个答案" aria-describedby={`${id}-prompt`}>
-            {question.options.map(option => (
-              <label key={option.key} style={{ ...styles.choiceButton, minHeight: 44, boxSizing: "border-box",
-                display: "flex", alignItems: "center", gap: 10,
-                ...(value === option.key ? styles.choiceButtonActive : {}),
-                ...(isLocked ? styles.choiceButtonLocked : {}) }}>
-                <input type="radio" name={`${id}-choice`} value={option.key} checked={value === option.key}
+          <div
+            style={styles.choiceList}
+            role="radiogroup"
+            aria-label="选择一个答案"
+            aria-describedby={`${id}-prompt`}
+          >
+            {question.options.map((option) => (
+              <label
+                key={option.key}
+                style={{
+                  ...styles.choiceButton,
+                  minHeight: 44,
+                  boxSizing: "border-box",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                  ...(value === option.key ? styles.choiceButtonActive : {}),
+                  ...(isLocked ? styles.choiceButtonLocked : {}),
+                }}
+              >
+                <input
+                  type="radio"
+                  name={`${id}-choice`}
+                  value={option.key}
+                  checked={value === option.key}
                   disabled={disabled || isLocked || isSubmitting}
-                  onChange={() => setSelectedChoices(current => ({ ...current, [turnKey]: option.key }))} />
-                <RichTextMessage content={`${option.key}. ${option.text}`} inline style={styles.choiceButtonText} />
+                  onChange={() =>
+                    setSelectedChoices((current) => ({
+                      ...current,
+                      [turnKey]: option.key,
+                    }))
+                  }
+                />
+                <RichTextMessage
+                  content={`${option.key}. ${option.text}`}
+                  inline
+                  style={styles.choiceButtonText}
+                />
               </label>
             ))}
           </div>
         ) : (
-          <label htmlFor={`${id}-answer`}>你的答案
-            <input id={`${id}-answer`} type="text" value={value}
-              style={{ ...styles.blankInput, height: 44, boxSizing: "border-box", ...(isLocked ? styles.blankInputLocked : {}) }}
+          <label htmlFor={`${id}-answer`}>
+            你的答案
+            <input
+              id={`${id}-answer`}
+              type="text"
+              value={value}
+              style={{
+                ...styles.blankInput,
+                height: 44,
+                boxSizing: "border-box",
+                ...(isLocked ? styles.blankInputLocked : {}),
+              }}
               aria-describedby={`${id}-prompt${attemptState === "failed" ? ` ${id}-feedback` : ""}`}
-              onChange={event => setBlankAnswers(current => ({ ...current, [turnKey]: event.target.value }))}
-              onKeyDown={event => { if (event.key === "Enter" && !event.nativeEvent.isComposing) { event.preventDefault(); void submitAttempt(); } }}
-              readOnly={disabled || isLocked || isSubmitting} placeholder="输入你的答案" />
+              onChange={(event) =>
+                setBlankAnswers((current) => ({
+                  ...current,
+                  [turnKey]: event.target.value,
+                }))
+              }
+              onKeyDown={(event) => {
+                if (event.key === "Enter" && !event.nativeEvent.isComposing) {
+                  event.preventDefault();
+                  void submitAttempt();
+                }
+              }}
+              readOnly={disabled || isLocked || isSubmitting}
+              placeholder="输入你的答案"
+            />
           </label>
         )}
         <div style={styles.questionActions}>
-          <button type="button" style={{ ...styles.checkButton, minHeight: 44, height: "auto" }}
-            disabled={!value.trim() || disabled || isLocked || isSubmitting} onClick={() => void submitAttempt()}>
-            {isSubmitting ? "正在记录答案…" : attemptState === "failed" ? "重新提交答案" : "提交答案"}
+          <button
+            type="button"
+            style={{ ...styles.checkButton, minHeight: 44, height: "auto" }}
+            disabled={!value.trim() || disabled || isLocked || isSubmitting}
+            onClick={() => void submitAttempt()}
+          >
+            {isSubmitting
+              ? "正在记录答案…"
+              : attemptState === "failed"
+                ? "重新提交答案"
+                : "提交答案"}
           </button>
-          {isLocked && <button type="button" style={{ ...styles.inlineGhostBtn, minHeight: 44, height: "auto" }}
-            aria-expanded={explanationVisible} aria-controls={`${id}-explanation`}
-            onClick={() => setExpandedExplanation(current => ({ ...current, [turnKey]: !current[turnKey] }))}>
-            {explanationVisible ? "收起解析" : "查看解析"}
-          </button>}
+          {isLocked && (
+            <button
+              type="button"
+              style={{ ...styles.inlineGhostBtn, minHeight: 44, height: "auto" }}
+              aria-expanded={explanationVisible}
+              aria-controls={`${id}-explanation`}
+              onClick={() =>
+                setExpandedExplanation((current) => ({
+                  ...current,
+                  [turnKey]: !current[turnKey],
+                }))
+              }
+            >
+              {explanationVisible ? "收起解析" : "查看解析"}
+            </button>
+          )}
           {isLocked && question.callBack && onContinueAfterQuestion ? (
-            <button type="button" style={{ ...styles.inlineGhostBtn, minHeight: 44, height: "auto" }}
+            <button
+              type="button"
+              style={{ ...styles.inlineGhostBtn, minHeight: 44, height: "auto" }}
               disabled={disabled || isSubmitting}
               aria-expanded={showContinuationConfirm}
               aria-controls={`${id}-continuation-confirm`}
-              onClick={() => setShowContinuationConfirm(true)}>
+              onClick={() => setShowContinuationConfirm(true)}
+            >
               生成答题讲解
             </button>
           ) : null}
-          <button type="button" style={{ ...styles.inlineGhostBtn, minHeight: 44, height: "auto" }}
+          <button
+            type="button"
+            style={{ ...styles.inlineGhostBtn, minHeight: 44, height: "auto" }}
             disabled={disabled || isSubmitting}
-            onClick={() => { void onAsk(`请围绕${question.topic || "本章节核心概念"}再出一道同难度${isChoice ? "选择题" : "填空题"}。`, []); }}>
+            onClick={() => {
+              void onAsk(
+                `请围绕${question.topic || "本章节核心概念"}再出一道同难度${isChoice ? "选择题" : "填空题"}。`,
+                [],
+              );
+            }}
+          >
             再来一题（调用模型）
           </button>
         </div>
       </fieldset>
       {showContinuationConfirm ? (
-        <div id={`${id}-continuation-confirm`} role="status" style={styles.explanationBox}>
+        <div
+          id={`${id}-continuation-confirm`}
+          role="status"
+          style={styles.explanationBox}
+        >
           <p style={{ margin: 0 }}>
             继续会调用学习模型，可能产生费用并需要等待；答案已经记录，取消不会影响评分结果。
           </p>
           <div style={styles.questionActions}>
-            <button type="button" style={{ ...styles.checkButton, minHeight: 44, height: "auto" }}
+            <button
+              type="button"
+              style={{ ...styles.checkButton, minHeight: 44, height: "auto" }}
               disabled={disabled}
               onClick={() => {
                 setShowContinuationConfirm(false);
                 void onContinueAfterQuestion?.(turnKey);
-              }}>
+              }}
+            >
               继续生成（调用模型）
             </button>
-            <button type="button" style={{ ...styles.inlineGhostBtn, minHeight: 44, height: "auto" }}
+            <button
+              type="button"
+              style={{ ...styles.inlineGhostBtn, minHeight: 44, height: "auto" }}
               disabled={disabled}
-              onClick={() => setShowContinuationConfirm(false)}>
+              onClick={() => setShowContinuationConfirm(false)}
+            >
               取消
             </button>
           </div>
         </div>
       ) : null}
-      <p id={`${id}-feedback`} ref={feedback} tabIndex={-1}
-        role={attemptState === "failed" && !question.result ? "alert" : "status"} aria-atomic="true"
-        style={{ margin: 0, ...(question.result?.isCorrect ? styles.feedbackOk : attemptState === "failed" || question.result ? styles.feedbackBad : styles.questionPending) }}>
+      <p
+        id={`${id}-feedback`}
+        ref={feedback}
+        tabIndex={-1}
+        role={attemptState === "failed" && !question.result ? "alert" : "status"}
+        aria-atomic="true"
+        style={{
+          margin: 0,
+          ...(question.result?.isCorrect
+            ? styles.feedbackOk
+            : attemptState === "failed" || question.result
+              ? styles.feedbackBad
+              : styles.questionPending),
+        }}
+      >
         {feedbackText}
       </p>
-      {value.trim() && <p style={styles.answerInline}>{isChoice ? "你的选择" : "你的答案"}：{value.trim()}</p>}
-      {explanationVisible && <div id={`${id}-explanation`} style={styles.explanationBox}>
-        <RichTextMessage content={question.result?.explanation || "暂无解析"} />
-      </div>}
+      {value.trim() && (
+        <p style={styles.answerInline}>
+          {isChoice ? "你的选择" : "你的答案"}：{value.trim()}
+        </p>
+      )}
+      {explanationVisible && (
+        <div id={`${id}-explanation`} style={styles.explanationBox}>
+          <RichTextMessage content={question.result?.explanation || "暂无解析"} />
+        </div>
+      )}
     </div>
   );
 }
 
 function buildRenderableReply(
   reply: string,
-  richBlocks?: Array<{ kind: string; content: string }>
+  richBlocks?: Array<{ kind: string; content: string }>,
 ) {
   const normalizedReply = String(reply ?? "").trim();
   const blocks = Array.isArray(richBlocks) ? richBlocks : [];
@@ -1567,7 +1900,9 @@ function buildRenderableReply(
   }
   const appendix = blocks
     .map((block) => {
-      const kind = String(block.kind ?? "").trim().toLowerCase();
+      const kind = String(block.kind ?? "")
+        .trim()
+        .toLowerCase();
       const content = String(block.content ?? "").trim();
       if (!kind || !content) {
         return "";
@@ -1611,7 +1946,9 @@ function CharacterEventDetails({ events }: { events: CharacterStateEvent[] }) {
 
   return (
     <details style={styles.eventInline} data-study-event-details>
-      <summary style={styles.eventSummary}>表演与工具详情 · {detailItems.length} 项</summary>
+      <summary style={styles.eventSummary}>
+        表演与工具详情 · {detailItems.length} 项
+      </summary>
       <div style={styles.eventNotes}>
         {detailItems.map((item, index) => (
           <p key={`${item.label}:${item.text}:${index}`} style={styles.eventNoteText}>
@@ -1625,7 +1962,8 @@ function CharacterEventDetails({ events }: { events: CharacterStateEvent[] }) {
 }
 
 function collectEventDetails(events: CharacterStateEvent[]) {
-  const items: Array<{ label: "角色动作" | "表达提示" | "工具回执"; text: string }> = [];
+  const items: Array<{ label: "角色动作" | "表达提示" | "工具回执"; text: string }> =
+    [];
   const seen = new Set<string>();
 
   events.forEach((event) => {
@@ -1679,7 +2017,12 @@ function isAttemptTurn(message: string) {
   return message.trim().startsWith("[练习作答]");
 }
 
-function isHiddenLearnerMessage(turn: Pick<StudySessionRecord["turns"][number], "learnerMessage" | "learnerMessageKind">) {
+function isHiddenLearnerMessage(
+  turn: Pick<
+    StudySessionRecord["turns"][number],
+    "learnerMessage" | "learnerMessageKind"
+  >,
+) {
   const kind = String(turn.learnerMessageKind ?? "learner");
   if (kind !== "learner") {
     return true;
@@ -1688,7 +2031,12 @@ function isHiddenLearnerMessage(turn: Pick<StudySessionRecord["turns"][number], 
   return normalized.startsWith("[练习作答]") || normalized.startsWith("[交互回调]");
 }
 
-function formatLearnerMessage(turn: Pick<StudySessionRecord["turns"][number], "learnerMessage" | "learnerMessageKind">) {
+function formatLearnerMessage(
+  turn: Pick<
+    StudySessionRecord["turns"][number],
+    "learnerMessage" | "learnerMessageKind"
+  >,
+) {
   const kind = String(turn.learnerMessageKind ?? "learner");
   if (kind === "interactive_callback") return "答题回调";
   if (kind === "session_prelude") return "章节预处理";
@@ -1697,13 +2045,13 @@ function formatLearnerMessage(turn: Pick<StudySessionRecord["turns"][number], "l
   return turn.learnerMessage.replace("[练习作答]", "练习作答").trim();
 }
 
-function formatAttachmentLabel(attachment: NonNullable<StudySessionRecord["turns"][number]["learnerAttachments"]>[number]) {
+function formatAttachmentLabel(
+  attachment: NonNullable<
+    StudySessionRecord["turns"][number]["learnerAttachments"]
+  >[number],
+) {
   const typeLabel =
-    attachment.kind === "image"
-      ? "图片"
-      : attachment.kind === "pdf"
-        ? "PDF"
-        : "附件";
+    attachment.kind === "image" ? "图片" : attachment.kind === "pdf" ? "PDF" : "附件";
   return `${typeLabel} · ${attachment.name}`;
 }
 

@@ -1,3 +1,4 @@
+import { isOutputLanguagePreference } from "@vibe-learner/shared/output-language";
 import type {
   DocumentPlanningContext,
   DocumentPlanningTraceResponse,
@@ -171,7 +172,18 @@ function decodePlanningIntent(raw: unknown, path: string): PlanningIntent {
     outputLanguage: decodeIntentValue(
       decoder.field(value, "output_language", path),
       `${path}.output_language`,
-      (rawLanguage, languagePath) => decoder.string(rawLanguage, languagePath),
+      (rawLanguage, languagePath) => {
+        if (
+          !isOutputLanguagePreference(rawLanguage) ||
+          rawLanguage.toLowerCase() === "auto"
+        ) {
+          throw new PlanningDecodeError(
+            languagePath,
+            "explicit_output_language_invalid",
+          );
+        }
+        return rawLanguage;
+      },
     ),
   };
 }

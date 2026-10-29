@@ -62,6 +62,7 @@ class StudySessionService:
         study_unit_title: str = "",
         theme_hint: str = "",
         session_system_prompt: str = "",
+        output_language: str | None = None,
     ) -> StudySessionRecord:
         session = StudySessionRecord(
             id=session_id or f"session-{uuid4().hex[:10]}",
@@ -73,6 +74,7 @@ class StudySessionService:
             study_unit_id=study_unit_id,
             study_unit_title=study_unit_title,
             theme_hint=theme_hint,
+            output_language=output_language,
             session_system_prompt=session_system_prompt,
             status="active",
             turns=[],
@@ -90,7 +92,9 @@ class StudySessionService:
         try:
             created = self.repository.create(session)
         except StudySessionAlreadyExists as exc:
-            raise HTTPException(status_code=409, detail="session_already_exists") from exc
+            raise HTTPException(
+                status_code=409, detail="session_already_exists"
+            ) from exc
         return created
 
     def append_turn(
@@ -186,7 +190,9 @@ class StudySessionService:
         follow_up = SessionFollowUpRecord(
             id=f"follow-up-{uuid4().hex[:10]}",
             delay_seconds=max(0, delay_seconds),
-            due_at=(datetime.now(timezone.utc) + timedelta(seconds=max(0, delay_seconds))).isoformat(),
+            due_at=(
+                datetime.now(timezone.utc) + timedelta(seconds=max(0, delay_seconds))
+            ).isoformat(),
             hidden_message=hidden_message.strip(),
             reason=reason.strip(),
             created_at=created_at,
@@ -199,7 +205,9 @@ class StudySessionService:
         self._mutate(session_id=session_id, mutation=mutation)
         return follow_up
 
-    def complete_follow_up(self, *, session_id: str, follow_up_id: str) -> StudySessionRecord:
+    def complete_follow_up(
+        self, *, session_id: str, follow_up_id: str
+    ) -> StudySessionRecord:
         completed_at = _now()
 
         def mutation(session: StudySessionRecord) -> None:
@@ -280,7 +288,9 @@ class StudySessionService:
         event_id = f"affinity-{uuid4().hex[:10]}"
 
         def mutation(session: StudySessionRecord) -> None:
-            next_score = max(-100, min(100, int(session.affinity_state.score) + int(delta)))
+            next_score = max(
+                -100, min(100, int(session.affinity_state.score) + int(delta))
+            )
             session.affinity_state.score = next_score
             session.affinity_state.level = _affinity_level(next_score)
             session.affinity_state.summary = reason.strip()
@@ -331,7 +341,9 @@ class StudySessionService:
             for confirmation in session.plan_confirmations:
                 if confirmation.id != confirmation_id:
                     continue
-                confirmation.status = "approved" if decision == "approve" else "rejected"
+                confirmation.status = (
+                    "approved" if decision == "approve" else "rejected"
+                )
                 confirmation.resolution_note = note.strip()
                 confirmation.resolved_at = resolved_at
                 session.updated_at = resolved_at
@@ -526,7 +538,9 @@ class StudySessionService:
             try:
                 return self.repository.require(session_id)
             except StudySessionNotFound as exc:
-                raise HTTPException(status_code=404, detail="session_not_found") from exc
+                raise HTTPException(
+                    status_code=404, detail="session_not_found"
+                ) from exc
         for session in sessions:
             if session.id == session_id:
                 return session
@@ -544,7 +558,9 @@ class StudySessionService:
         sessions = self._load_sessions()
         result = sessions
         if document_id:
-            result = [session for session in result if session.document_id == document_id]
+            result = [
+                session for session in result if session.document_id == document_id
+            ]
         if persona_id:
             result = [session for session in result if session.persona_id == persona_id]
         if plan_id:
@@ -556,7 +572,9 @@ class StudySessionService:
                 if session.scene_profile and session.scene_profile.scene_id == scene_id
             ]
         if study_unit_id:
-            result = [session for session in result if session.study_unit_id == study_unit_id]
+            result = [
+                session for session in result if session.study_unit_id == study_unit_id
+            ]
         return result
 
     def _load_sessions(self) -> list[StudySessionRecord]:
@@ -578,7 +596,9 @@ class StudySessionService:
         except StudySessionNotFound as exc:
             raise HTTPException(status_code=404, detail="session_not_found") from exc
         except StudySessionRevisionConflict as exc:
-            raise HTTPException(status_code=409, detail="session_revision_conflict") from exc
+            raise HTTPException(
+                status_code=409, detail="session_revision_conflict"
+            ) from exc
 
     def _cancel_pending_follow_ups(
         self,

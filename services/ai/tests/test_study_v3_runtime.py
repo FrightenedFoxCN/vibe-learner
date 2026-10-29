@@ -91,9 +91,9 @@ class StudyV3RuntimeTests(ContainerTestCase):
     def _protected_payload(self) -> dict[str, object]:
         return {
             "schema_name": "StudyChatProtectedSnapshot",
-            "schema_version": "study-chat-protected-snapshot-v2",
+            "schema_version": "study-chat-protected-snapshot-v3",
             "dependencies": {
-                "input": {},
+                "input": {"output_language": "auto"},
                 "session": {},
                 "persona": {},
                 "bound_plan": None,
@@ -174,7 +174,7 @@ class StudyV3RuntimeTests(ContainerTestCase):
             ),
         )
 
-    def _run(self, *, client_request_id: str):
+    def _run(self, *, client_request_id: str, output_language=None):
         return self.container.study_chat_application().admit(
             session_id=self.session_id,
             client_request_id=client_request_id,
@@ -184,9 +184,12 @@ class StudyV3RuntimeTests(ContainerTestCase):
             follow_up_id="",
             hidden_message_prefix="",
             attachment_inputs=[],
+            output_language=output_language,
         )
 
-    def test_authorized_snapshot_precedes_single_provider_call_and_atomic_commit(self) -> None:
+    def test_authorized_snapshot_precedes_single_provider_call_and_atomic_commit(
+        self,
+    ) -> None:
         events: list[str] = []
         original_resolve = HarnessArtifactRepository.resolve
 
@@ -194,7 +197,9 @@ class StudyV3RuntimeTests(ContainerTestCase):
             events.append("resolve")
             return original_resolve(repository, request, **kwargs)
 
-        provider = Mock(side_effect=lambda **_kwargs: (events.append("provider"), self._result())[1])
+        provider = Mock(
+            side_effect=lambda **_kwargs: (events.append("provider"), self._result())[1]
+        )
         with ExitStack() as stack:
             for patcher in self._patches(provider):
                 stack.enter_context(patcher)
@@ -232,9 +237,9 @@ class StudyV3RuntimeTests(ContainerTestCase):
                 stack.enter_context(patcher)
             stack.enter_context(
                 patch.object(
-                HarnessArtifactRepository,
-                "resolve",
-                side_effect=PermissionError("harness_artifact_grant_denied"),
+                    HarnessArtifactRepository,
+                    "resolve",
+                    side_effect=PermissionError("harness_artifact_grant_denied"),
                 )
             )
             receipt = self._run(client_request_id="request-study-v3-denied")
@@ -254,7 +259,9 @@ class StudyV3RuntimeTests(ContainerTestCase):
             HarnessCommitStatus.NOT_COMMITTED,
         )
 
-    def test_commit_failure_leaves_session_unchanged_and_records_non_commit(self) -> None:
+    def test_commit_failure_leaves_session_unchanged_and_records_non_commit(
+        self,
+    ) -> None:
         provider = Mock(return_value=self._result())
         with ExitStack() as stack:
             for patcher in self._patches(provider):
@@ -266,7 +273,10 @@ class StudyV3RuntimeTests(ContainerTestCase):
                     side_effect=RuntimeError("study_commit_fixture_failure"),
                 )
             )
-            receipt = self._run(client_request_id="request-study-v3-commit-failure")
+            receipt = self._run(
+                client_request_id="request-study-v3-commit-failure",
+                output_language="fr",
+            )
 
         provider.assert_called_once()
         self.assertEqual(receipt.status, "uncertain")
@@ -276,6 +286,7 @@ class StudyV3RuntimeTests(ContainerTestCase):
             session_id=self.session_id,
             client_request_id="request-study-v3-commit-failure",
         )
+        self.assertIsNone(session.output_language)
         self.assertIsNotNone(operation.harness_trace)
         assert operation.harness_trace is not None
         self.assertEqual(

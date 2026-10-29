@@ -8,6 +8,7 @@
     "./character": "./src/character.ts",
     "./document-input-limits": "./src/document-input-limits.ts",
     "./settings-response-contracts": "./src/settings-response-contracts.ts",
-    "./model-runtime-config": "./src/model-runtime-config.ts"
+    "./model-runtime-config": "./src/model-runtime-config.ts",
+    "./output-language": "./src/output-language.ts"
   }
 }

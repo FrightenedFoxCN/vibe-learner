@@ -4,6 +4,8 @@
 
 ## 数据和所有权
 
+输出语言复用 `PlanningIntentV1.output_language`：显式选择与物理页范围共同进入请求指纹和计划读回；自动模式保持 unknown intent，仅把模型选择写入 resolved language。Planning prompt v8 和 Plan Revision prompt v2 保留这条约束，Study 默认继承已保存计划语言；详见[输出语言偏好](../output-language.md)。
+
 - protected input：Document debug、Study Unit input、planning context、Persona/Scene snapshot。
 - model proposal：`LearningPlanProposalV2/V3`；不得产生 committed ID、revision、timestamp 或完成度。
 - committed projection：`LearningPlanCommittedProjection`，由 repository 在同一事务写 Plan、operation receipt 和 terminal trace。

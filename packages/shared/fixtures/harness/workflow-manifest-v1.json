@@ -843,7 +843,7 @@
             "status": "registered",
             "contract": {
               "name": "planning_prompt",
-              "version": "planning-prompt-v7"
+              "version": "planning-prompt-v8"
             }
           }
         },
@@ -862,7 +862,7 @@
         "status": "registered",
         "contract": {
           "name": "LearningPlanPrompt",
-          "version": "planning-prompt-v7"
+          "version": "planning-prompt-v8"
         }
       },
       "policy_contract": {
@@ -994,7 +994,7 @@
         "status": "registered",
         "contract": {
           "name": "PlanRevisionPrompt",
-          "version": "plan-revision-prompt-v1"
+          "version": "plan-revision-prompt-v2"
         }
       },
       "policy_contract": {
@@ -1452,7 +1452,7 @@
         "status": "registered",
         "contract": {
           "name": "StudyChatInputManifest",
-          "version": "study-chat-input-manifest-v1"
+          "version": "study-chat-input-manifest-v2"
         }
       },
       "proposal_contract": {
@@ -1476,7 +1476,7 @@
             "status": "registered",
             "contract": {
               "name": "study_chat_prompt",
-              "version": "study-chat-prompt-v2"
+              "version": "study-chat-prompt-v3"
             }
           }
         },
@@ -1515,7 +1515,7 @@
         "status": "registered",
         "contract": {
           "name": "StudyChatPrompt",
-          "version": "study-chat-prompt-v2"
+          "version": "study-chat-prompt-v3"
         }
       },
       "policy_contract": {

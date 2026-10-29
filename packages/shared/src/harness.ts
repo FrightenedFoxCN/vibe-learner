@@ -172,7 +172,7 @@ export const HARNESS_COMPONENT_REGISTRATIONS = deepFreeze({
   },
   planning_prompt: {
     ownerModule: "app.services.plan_prompt",
-    contract: { name: "planning_prompt", version: "planning-prompt-v7" },
+    contract: { name: "planning_prompt", version: "planning-prompt-v8" },
   },
   planning_toolset: {
     ownerModule: "app.services.plan_tool_runtime",
@@ -192,7 +192,7 @@ export const HARNESS_COMPONENT_REGISTRATIONS = deepFreeze({
   },
   study_chat_prompt: {
     ownerModule: "app.services.provider_study",
-    contract: { name: "study_chat_prompt", version: "study-chat-prompt-v2" },
+    contract: { name: "study_chat_prompt", version: "study-chat-prompt-v3" },
   },
   study_grounding: {
     ownerModule: "app.services.study_grounding",

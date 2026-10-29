@@ -71,7 +71,7 @@
       "owner_module": "app.services.plan_prompt",
       "contract": {
         "name": "planning_prompt",
-        "version": "planning-prompt-v7"
+        "version": "planning-prompt-v8"
       }
     },
     {
@@ -103,7 +103,7 @@
       "owner_module": "app.services.provider_study",
       "contract": {
         "name": "study_chat_prompt",
-        "version": "study-chat-prompt-v2"
+        "version": "study-chat-prompt-v3"
       }
     },
     {

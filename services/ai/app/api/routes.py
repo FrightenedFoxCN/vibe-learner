@@ -1,4 +1,6 @@
 from app.models.document_input_limits import DocumentInputLimitsV1
+from app.models.output_language import OutputLanguagePreference
+from app.services.output_language import plan_output_language
 from app.models.document_checkpoint import DocumentCheckpointResponseV1
 from app.models.pdf_page_scope import DocumentPageNumberingResponseV1
 from app.services.document_page_numbering import read_document_page_numbering
@@ -370,6 +372,11 @@ def _runtime_error_retry_attempts(exc: RuntimeError) -> int:
 
 def _map_plan_generation_error(exc: RuntimeError) -> HTTPException:
     detail = str(exc)
+    if detail == "mock_output_language_not_supported":
+        return HTTPException(
+            status_code=422,
+            detail="本地演示模板不支持该语言，请选择列表中的语言或配置模型后重试。",
+        )
     if detail == "openai_plan_request_unsupported_params":
         return HTTPException(status_code=422, detail="plan_model_unsupported_params")
     if detail == "openai_plan_request_rate_limit":
@@ -1730,6 +1737,7 @@ def study_chat(
         message_kind=payload.message_kind,
         follow_up_id=payload.follow_up_id,
         hidden_message_prefix=payload.hidden_message_prefix,
+        output_language=payload.output_language,
     )
 
 
@@ -1745,6 +1753,7 @@ def study_chat_with_attachments(
     message_kind: str = Form("learner"),
     follow_up_id: str = Form(""),
     hidden_message_prefix: str = Form(""),
+    output_language: OutputLanguagePreference | None = Form(None),
     files: list[UploadFile] | None = File(default=None),
     *,
     container: Container = Depends(get_container),
@@ -1759,6 +1768,7 @@ def study_chat_with_attachments(
         message_kind=message_kind,
         follow_up_id=follow_up_id,
         hidden_message_prefix=hidden_message_prefix,
+        output_language=output_language,
         attachment_inputs=attachment_inputs,
     )
 
@@ -2045,6 +2055,7 @@ def create_study_session(
         study_unit_title=study_unit_title,
         theme_hint=theme_hint,
         session_system_prompt=session_system_prompt,
+        output_language=payload.output_language or plan_output_language(plan),
     )
     reference_resource("study_session", session.id, revision=session.revision)
     return _into_response(StudySessionResponse, session)

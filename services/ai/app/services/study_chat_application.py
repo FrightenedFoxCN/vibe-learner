@@ -17,6 +17,7 @@ from app.models.harness import (
     HarnessStage,
     canonical_harness_digest,
 )
+from app.services.output_language import plan_output_language
 from app.models.study_chat_operation import (
     StudyChatAttachmentManifestEntry,
     StudyChatOperationRequestPayload,
@@ -31,9 +32,15 @@ from app.persistence.study_chat_operation_repository import (
 from app.persistence.harness_artifact_repository import HarnessArtifactRepository
 from app.persistence.harness_runtime_repository import HarnessRuntimeRepository
 from app.services.learning_plan_chat_runtime import LearningPlanChatToolRuntime
-from app.services.model_recovery import consume_model_recovery_state, reset_model_recovery_state
+from app.services.model_recovery import (
+    consume_model_recovery_state,
+    reset_model_recovery_state,
+)
 from app.services.study_chat_attachments import StudyChatAttachmentService
-from app.services.study_chat_preflight import StudyChatPreflightError, validate_study_chat_preclaim
+from app.services.study_chat_preflight import (
+    StudyChatPreflightError,
+    validate_study_chat_preclaim,
+)
 from app.models.study_chat_effect import StudyMemoryUpsertEffectProposalV1
 from app.services.study_grounding import parse_verbatim_memory
 from app.services.study_session_chat_runtime import StudySessionChatToolRuntime
@@ -66,16 +73,24 @@ from app.core.settings import Settings
 from app.core.logging import get_logger
 from app.models.study_chat_operation import StudyChatMessageKind
 from app.models.study_chat_operation import StudyChatOperationReceipt
-from app.services.study_chat_errors import StudyChatApplicationError, map_chat_generation_error
+from app.services.study_chat_errors import (
+    StudyChatApplicationError,
+    map_chat_generation_error,
+)
 from app.services.provider_transport import ModelRequestError
 from app.services.study_chat_context import (
-    _compose_hidden_prefixed_message, _resolve_session_state_context,
-    _compose_session_prompt, _merge_chat_citations, _resolve_session_document,
+    _compose_hidden_prefixed_message,
+    _resolve_session_state_context,
+    _compose_session_prompt,
+    _merge_chat_citations,
+    _resolve_session_document,
     _scene_profile_summary,
 )
 
 if TYPE_CHECKING:
-    from app.persistence.study_chat_operation_repository import StudyChatOperationRepository
+    from app.persistence.study_chat_operation_repository import (
+        StudyChatOperationRepository,
+    )
     from app.persistence.study_session_repository import StudySessionRepository
     from app.services.local_store import LocalJsonStore
     from app.services.model_provider import ModelProvider
@@ -102,7 +117,9 @@ class StudyChatDependencies:
     session_scene_service: SessionSceneService
     pedagogy_orchestrator: PedagogyOrchestrator
     document_layout_service: DocumentLayoutService | None = None
-    attachments: StudyChatAttachmentService = field(default_factory=StudyChatAttachmentService)
+    attachments: StudyChatAttachmentService = field(
+        default_factory=StudyChatAttachmentService
+    )
 
 
 @dataclass(frozen=True)
@@ -117,10 +134,13 @@ class StudyChatExecutionContext:
     learner_multimodal_parts: tuple
     operation_id: str
     execution_token: str
+    output_language: str | None = None
 
     def __post_init__(self):
         object.__setattr__(self, "learner_attachments", tuple(self.learner_attachments))
-        object.__setattr__(self, "learner_multimodal_parts", tuple(self.learner_multimodal_parts))
+        object.__setattr__(
+            self, "learner_multimodal_parts", tuple(self.learner_multimodal_parts)
+        )
 
 
 class StudyChatApplication:
@@ -128,18 +148,31 @@ class StudyChatApplication:
         self.dependencies = dependencies
 
     def admit(
-        self, *, session_id: str, client_request_id: str,
-        expected_session_revision: int, message: str, message_kind: str,
-        follow_up_id: str, hidden_message_prefix: str, attachment_inputs=None,
+        self,
+        *,
+        session_id: str,
+        client_request_id: str,
+        expected_session_revision: int,
+        message: str,
+        message_kind: str,
+        follow_up_id: str,
+        hidden_message_prefix: str,
+        attachment_inputs=None,
+        output_language: str | None = None,
     ) -> StudyChatOperationReceipt:
         try:
             return _admit_and_run_study_chat(
-                session_id=session_id, client_request_id=client_request_id,
+                session_id=session_id,
+                client_request_id=client_request_id,
                 expected_session_revision=expected_session_revision,
-                message=message, message_kind=message_kind,
-                follow_up_id=follow_up_id, hidden_message_prefix=hidden_message_prefix,
+                message=message,
+                message_kind=message_kind,
+                follow_up_id=follow_up_id,
+                hidden_message_prefix=hidden_message_prefix,
                 attachment_inputs=attachment_inputs,
-                dependencies=self.dependencies, execute=self.execute,
+                output_language=output_language,
+                dependencies=self.dependencies,
+                execute=self.execute,
             )
         except HTTPException as exc:
             # Existing domain adapters still use HTTPException; contain that
@@ -149,9 +182,12 @@ class StudyChatApplication:
     def execute(self, context: StudyChatExecutionContext) -> dict[str, object]:
         return _run_study_chat(context, dependencies=self.dependencies)
 
-    def get_receipt(self, *, session_id: str, client_request_id: str) -> StudyChatOperationReceipt:
+    def get_receipt(
+        self, *, session_id: str, client_request_id: str
+    ) -> StudyChatOperationReceipt:
         operation = self.dependencies.study_chat_operation_repository.require(
-            session_id=session_id, client_request_id=client_request_id,
+            session_id=session_id,
+            client_request_id=client_request_id,
         )
         _cleanup_terminal_study_chat_staging(operation, dependencies=self.dependencies)
         return _receipt(operation, dependencies=self.dependencies)
@@ -175,6 +211,7 @@ def _admit_and_run_study_chat(
     follow_up_id: str,
     hidden_message_prefix: str,
     attachment_inputs=None,
+    output_language: str | None = None,
     execute,
     dependencies: StudyChatDependencies,
 ) -> StudyChatOperationReceipt:
@@ -188,6 +225,7 @@ def _admit_and_run_study_chat(
         follow_up_id=follow_up_id,
         hidden_message_prefix=hidden_message_prefix,
         expected_session_revision=expected_session_revision,
+        output_language=output_language,
         attachments=[
             StudyChatAttachmentManifestEntry.model_validate(item)
             for item in dependencies.attachments.manifest(attachment_inputs or [])
@@ -200,7 +238,9 @@ def _admit_and_run_study_chat(
             request_payload=request_payload,
         )
     except StudyChatOperationSessionNotFound as exc:
-        raise StudyChatApplicationError(status_code=404, detail="session_not_found") from exc
+        raise StudyChatApplicationError(
+            status_code=404, detail="session_not_found"
+        ) from exc
     except StudyChatOperationRevisionConflict as exc:
         raise StudyChatApplicationError(
             status_code=409,
@@ -210,9 +250,13 @@ def _admit_and_run_study_chat(
             },
         ) from exc
     except StudyChatOperationRequestMismatch as exc:
-        raise StudyChatApplicationError(status_code=409, detail="study_chat_request_id_reused") from exc
+        raise StudyChatApplicationError(
+            status_code=409, detail="study_chat_request_id_reused"
+        ) from exc
     except StudyChatOperationAlreadyActive as exc:
-        raise StudyChatApplicationError(status_code=409, detail="study_chat_operation_already_active") from exc
+        raise StudyChatApplicationError(
+            status_code=409, detail="study_chat_operation_already_active"
+        ) from exc
 
     if operation.status != StudyChatOperationStatus.ADMITTED:
         _cleanup_terminal_study_chat_staging(operation, dependencies=dependencies)
@@ -252,18 +296,21 @@ def _admit_and_run_study_chat(
             operation_id=operation.operation_id,
             inputs_validated=True,
         )
-        response_payload = execute(StudyChatExecutionContext(
-            session_id=session_id,
-            message=message,
-            message_kind=operation.request_payload.message_kind,
-            follow_up_id=follow_up_id,
-            hidden_message_prefix=hidden_message_prefix,
-            learner_attachments=prepared.records,
-            attachment_context=prepared.attachment_context,
-            learner_multimodal_parts=prepared.multimodal_parts,
-            operation_id=operation.operation_id,
-            execution_token=operation.execution_token,
-        ))
+        response_payload = execute(
+            StudyChatExecutionContext(
+                session_id=session_id,
+                message=message,
+                message_kind=operation.request_payload.message_kind,
+                follow_up_id=follow_up_id,
+                hidden_message_prefix=hidden_message_prefix,
+                learner_attachments=prepared.records,
+                attachment_context=prepared.attachment_context,
+                learner_multimodal_parts=prepared.multimodal_parts,
+                operation_id=operation.operation_id,
+                execution_token=operation.execution_token,
+                output_language=operation.request_payload.output_language,
+            )
+        )
         committed = dependencies.study_chat_operation_repository.require(
             session_id=session_id,
             client_request_id=client_request_id,
@@ -273,7 +320,9 @@ def _admit_and_run_study_chat(
         return _receipt(committed, dependencies=dependencies)
     except Exception as exc:
         error_code = _study_chat_uncertain_error_code(exc)
-        harness_trace = _study_chat_terminal_harness_trace(operation.operation_id, dependencies=dependencies)
+        harness_trace = _study_chat_terminal_harness_trace(
+            operation.operation_id, dependencies=dependencies
+        )
         if _is_non_committing_provider_outcome(exc):
             error_code = _study_chat_not_committed_error_code(exc)
             terminal = dependencies.study_chat_operation_repository.mark_not_committed_after_provider_rejection(
@@ -311,7 +360,9 @@ def _admit_and_run_study_chat(
         return _receipt(terminal, dependencies=dependencies)
 
 
-def _cleanup_terminal_study_chat_staging(operation, *, dependencies: StudyChatDependencies) -> None:
+def _cleanup_terminal_study_chat_staging(
+    operation, *, dependencies: StudyChatDependencies
+) -> None:
     if operation.status not in {
         StudyChatOperationStatus.NOT_COMMITTED,
         StudyChatOperationStatus.UNCERTAIN,
@@ -346,6 +397,7 @@ def _is_non_committing_provider_outcome(exc: Exception) -> bool:
     if _is_deterministic_provider_rejection(exc):
         return True
     if str(exc) in {
+        "mock_output_language_not_supported",
         "chat_model_content_filter",
         "chat_model_empty_response",
         "chat_model_invalid_payload",
@@ -355,6 +407,7 @@ def _is_non_committing_provider_outcome(exc: Exception) -> bool:
         return False
     detail = exc.detail if isinstance(exc.detail, str) else ""
     return detail in {
+        "mock_output_language_not_supported",
         "chat_model_content_filter",
         "chat_model_empty_response",
         "chat_model_invalid_payload",
@@ -378,17 +431,27 @@ def _provider_diagnostic_payload(exc: Exception) -> dict[str, object] | None:
 def _study_chat_not_committed_error_code(exc: Exception) -> str:
     if isinstance(exc, ModelRequestError):
         upstream = exc.upstream_code or "bad_request"
-        return f"study_chat_not_committed_chat_model_upstream_error:400:{upstream}"[:128]
-    detail = exc.detail if isinstance(exc, (HTTPException, StudyChatApplicationError)) else str(exc)
+        return f"study_chat_not_committed_chat_model_upstream_error:400:{upstream}"[
+            :128
+        ]
+    detail = (
+        exc.detail
+        if isinstance(exc, (HTTPException, StudyChatApplicationError))
+        else str(exc)
+    )
     return f"study_chat_not_committed_{detail}"[:128]
 
 
-def _study_chat_terminal_harness_trace(operation_id: str, *, dependencies: StudyChatDependencies):
+def _study_chat_terminal_harness_trace(
+    operation_id: str, *, dependencies: StudyChatDependencies
+):
     """Return the terminal reply trace without exposing it on the public receipt."""
 
     try:
-        binding = dependencies.study_chat_operation_repository.require_harness_operation(
-            operation_id
+        binding = (
+            dependencies.study_chat_operation_repository.require_harness_operation(
+                operation_id
+            )
         )
     except Exception:
         return None
@@ -406,7 +469,9 @@ def _study_chat_terminal_harness_trace(operation_id: str, *, dependencies: Study
     return terminal[-1] if terminal else None
 
 
-def _run_study_chat(context: StudyChatExecutionContext, *, dependencies: StudyChatDependencies) -> dict[str, object]:
+def _run_study_chat(
+    context: StudyChatExecutionContext, *, dependencies: StudyChatDependencies
+) -> dict[str, object]:
     session_id = context.session_id
     message = context.message
     message_kind = context.message_kind
@@ -420,7 +485,9 @@ def _run_study_chat(context: StudyChatExecutionContext, *, dependencies: StudyCh
     reset_model_recovery_state()
     session = dependencies.study_session_service.require_session(session_id)
     if session.scene_profile is not None and not session.scene_instance_id:
-        raise StudyChatApplicationError(status_code=409, detail="session_scene_binding_required")
+        raise StudyChatApplicationError(
+            status_code=409, detail="session_scene_binding_required"
+        )
     normalized_message_kind = message_kind
     normalized_follow_up_id = follow_up_id.strip()
     if normalized_message_kind == "scheduled_follow_up" and normalized_follow_up_id:
@@ -433,7 +500,9 @@ def _run_study_chat(context: StudyChatExecutionContext, *, dependencies: StudyCh
             None,
         )
         if target_follow_up is None:
-            raise StudyChatApplicationError(status_code=409, detail="follow_up_not_pending")
+            raise StudyChatApplicationError(
+                status_code=409, detail="follow_up_not_pending"
+            )
     persona = dependencies.persona_engine.require_persona(session.persona_id)
     active_plan = None
     if session.plan_id:
@@ -442,6 +511,11 @@ def _run_study_chat(context: StudyChatExecutionContext, *, dependencies: StudyCh
         except HTTPException:
             active_plan = None
     bound_session_plan = active_plan
+    language_preference = (
+        context.output_language
+        or session.output_language
+        or plan_output_language(bound_session_plan)
+    )
     memory_sessions = (
         dependencies.study_session_service.list_sessions(
             plan_id=session.plan_id,
@@ -453,11 +527,15 @@ def _run_study_chat(context: StudyChatExecutionContext, *, dependencies: StudyCh
             persona_id=session.persona_id,
         )
     )
-    document = _resolve_session_document(session.document_id, active_plan, document_service=dependencies.document_service)
+    document = _resolve_session_document(
+        session.document_id, active_plan, document_service=dependencies.document_service
+    )
     debug_report = None
     if document is not None:
         try:
-            debug_report = dependencies.document_service.require_debug_report(document.id)
+            debug_report = dependencies.document_service.require_debug_report(
+                document.id
+            )
         except HTTPException:
             debug_report = None
 
@@ -478,7 +556,9 @@ def _run_study_chat(context: StudyChatExecutionContext, *, dependencies: StudyCh
     )
 
     effect_operation_binding = (
-        dependencies.study_chat_operation_repository.require_harness_operation(operation_id)
+        dependencies.study_chat_operation_repository.require_harness_operation(
+            operation_id
+        )
     )
     study_input_manifest = StudyChatInputManifest(
         session_id=session_id,
@@ -487,14 +567,15 @@ def _run_study_chat(context: StudyChatExecutionContext, *, dependencies: StudyCh
         scene_id=session.scene_instance_id,
         session_revision=session.revision,
         attachment_count=len(learner_attachments or []),
+        output_language=language_preference,
     )
     effect_collector = StudyChatEffectCollector(
         operation_id=operation_id,
         session_id=session_id,
         plan_id=bound_session_plan.id if bound_session_plan is not None else None,
-        allowed_schedule_ids={
-            item.id for item in bound_session_plan.schedule
-        } if bound_session_plan is not None else set(),
+        allowed_schedule_ids={item.id for item in bound_session_plan.schedule}
+        if bound_session_plan is not None
+        else set(),
         operation_binding=effect_operation_binding,
         effect_journal=dependencies.study_session_repository.effect_journal,
     )
@@ -537,6 +618,8 @@ def _run_study_chat(context: StudyChatExecutionContext, *, dependencies: StudyCh
     session_prompt = _compose_session_prompt(
         session=session,
         session_state_context=session_state_context,
+        output_language=language_preference,
+        plan=bound_session_plan,
     )
     model_message = _compose_hidden_prefixed_message(
         message=message,
@@ -549,7 +632,7 @@ def _run_study_chat(context: StudyChatExecutionContext, *, dependencies: StudyCh
     )
     protected_snapshot_payload = {
         "schema_name": "StudyChatProtectedSnapshot",
-        "schema_version": "study-chat-protected-snapshot-v2",
+        "schema_version": "study-chat-protected-snapshot-v3",
         "dependencies": {
             "input": {
                 **study_input_manifest.model_dump(mode="json"),
@@ -601,11 +684,9 @@ def _run_study_chat(context: StudyChatExecutionContext, *, dependencies: StudyCh
     study_artifacts = HarnessArtifactRepository(study_database)
     study_snapshot_service = StudyV3SnapshotService(study_artifacts)
     study_runtime_repository = HarnessRuntimeRepository(study_database)
-    study_snapshot, study_grant_id = (
-        study_snapshot_service.register_session_snapshot(
-            operation_binding=effect_operation_binding,
-            payload=protected_snapshot_payload,
-        )
+    study_snapshot, study_grant_id = study_snapshot_service.register_session_snapshot(
+        operation_binding=effect_operation_binding,
+        payload=protected_snapshot_payload,
     )
     study_harness_context = build_study_context(
         operation_binding=effect_operation_binding,
@@ -644,15 +725,16 @@ def _run_study_chat(context: StudyChatExecutionContext, *, dependencies: StudyCh
                 study_unit_title=session.study_unit_title,
                 theme_hint=session.theme_hint,
                 active_plan=active_plan,
-                session_system_prompt=session_prompt + (
+                session_system_prompt=session_prompt
+                + (
                     "\n当前学习者明确请求原文保存。调用 write_session_memory，key="
-                    + source.key + "；服务器从当前操作授权来源绑定原文。仅在工具成功后确认，禁止声称已提交。"
-                    if source is not None else ""
+                    + source.key
+                    + "；服务器从当前操作授权来源绑定原文。仅在工具成功后确认，禁止声称已提交。"
+                    if source is not None
+                    else ""
                 ),
                 debug_report=debug_report,
-                document_path=(
-                    document.stored_path if document is not None else None
-                ),
+                document_path=(document.stored_path if document is not None else None),
                 previous_turns=session.turns,
                 memory_sessions=memory_sessions,
                 active_plan_context=active_plan_context,
@@ -669,9 +751,9 @@ def _run_study_chat(context: StudyChatExecutionContext, *, dependencies: StudyCh
             recoveries = consume_model_recovery_state()
             if not recoveries:
                 raise
-            strategy = "+".join(
-                dict.fromkeys(item.strategy for item in recoveries)
-            )[:320]
+            strategy = "+".join(dict.fromkeys(item.strategy for item in recoveries))[
+                :320
+            ]
             checks = tuple(
                 HarnessCheckV2(
                     name="study_chat_model_recovery",
@@ -688,9 +770,20 @@ def _run_study_chat(context: StudyChatExecutionContext, *, dependencies: StudyCh
             ) from exc
         if source is not None:
             batch = effect_collector.prepared_batch()
-            writes = [effect.proposal for effect in batch.effects
-                      if isinstance(effect.proposal, StudyMemoryUpsertEffectProposalV1)] if batch else []
-            if not writes or writes[-1].key != source.key or writes[-1].content != source.content:
+            writes = (
+                [
+                    effect.proposal
+                    for effect in batch.effects
+                    if isinstance(effect.proposal, StudyMemoryUpsertEffectProposalV1)
+                ]
+                if batch
+                else []
+            )
+            if (
+                not writes
+                or writes[-1].key != source.key
+                or writes[-1].content != source.content
+            ):
                 raise RuntimeError("verbatim_memory_effect_missing")
         result.citations = _merge_chat_citations(
             result.citations,
@@ -845,6 +938,7 @@ def _run_study_chat(context: StudyChatExecutionContext, *, dependencies: StudyCh
                 ),
                 completed_follow_up_id="",
                 cancel_pending_follow_ups=False,
+                output_language=language_preference,
                 prepared_effect_batch=effect_collector.prepared_batch(),
                 build_response_payload=build_exchange_payload,
                 runtime_commit_callback=finalize_study_runtime,
@@ -886,5 +980,8 @@ def _run_study_chat(context: StudyChatExecutionContext, *, dependencies: StudyCh
         raise
     return response_payload
 
-def _receipt(operation, *, dependencies: StudyChatDependencies) -> StudyChatOperationReceipt:
+
+def _receipt(
+    operation, *, dependencies: StudyChatDependencies
+) -> StudyChatOperationReceipt:
     return dependencies.study_chat_operation_repository.receipt(operation)

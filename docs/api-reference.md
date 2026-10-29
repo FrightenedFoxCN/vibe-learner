@@ -870,7 +870,15 @@ Request body:
 }
 ```
 
-Returns the persisted `StudySessionRecord`. The server owns:
+Returns the persisted `StudySessionRecord`.
+
+Optional `output_language` sets an application language preference (`auto` or a
+language tag such as `fr`). When omitted, the Session inherits its bound plan's
+explicit/resolved language. Legacy Sessions may omit the field. It is persisted
+application input and stays outside model-owned reply schemas. See
+[output-language policy](output-language.md).
+
+The server owns:
 
 - `revision`, a monotonic per-session CAS watermark;
 - `last_turn_sequence`, the current contiguous turn watermark;
@@ -912,6 +920,7 @@ Notes:
 - `client_request_id` identifies one browser intent and must remain stable across transport retry, reconnect, and terminal read-back; reusing it with a different payload or revision is rejected
 - `expected_session_revision` fences admission against a stale Session; the final visible Turn still commits through bounded revision CAS with an application-owned ID and contiguous sequence
 - admission is persisted before provider execution; a duplicate committed request returns the same terminal receipt without invoking the model again
+- optional `output_language` overrides the Session preference for this operation; omission keeps the current preference. A successful reply saves it atomically with the Session/Turn. Request v3 binds a present language value in the fingerprint; changed-language reuse of the same key is rejected. Failed/uncertain replies do not change the committed preference. JSON and multipart attachment requests use the same field and semantics.
 - after timeout, disconnect, `admitted`, `running`, or `uncertain`, query the original operation; do not automatically repeat this POST or mint a new key
 - request-schema and stale-revision failures are rejected before admission with 4xx; attachment validation after durable admission but before execution returns a `not_committed` receipt; deterministic scheduled-follow-up, Session, revision, and Scene conflicts are validated before the provider claim and therefore do not become false `uncertain` operations
 - the browser preserves HTTP status plus typed error code for pre-admission failures: explicit Session/request/revision/active-slot conflicts and request validation offer “refresh Session state” instead of querying an operation that was never created; the learner draft remains editable, while sending waits for refresh and then uses a new request identity

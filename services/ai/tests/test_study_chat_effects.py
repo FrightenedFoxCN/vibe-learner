@@ -191,7 +191,9 @@ class StudyChatEffectsTests(unittest.TestCase):
         self.database.dispose()
         self.temp.cleanup()
 
-    def test_prepared_confirmation_has_no_business_write_until_final_commit(self) -> None:
+    def test_prepared_confirmation_has_no_business_write_until_final_commit(
+        self,
+    ) -> None:
         running = self._running_operation("request-effect-0001")
         collector = StudyChatEffectCollector(
             operation_id=running.operation_id,
@@ -271,12 +273,16 @@ class StudyChatEffectsTests(unittest.TestCase):
                 learner_message="hello",
                 learner_message_kind="learner",
                 learner_attachments=[],
-                result=StudyChatResult(reply="ignored", citations=[], character_events=[]),
+                result=StudyChatResult(
+                    reply="ignored", citations=[], character_events=[]
+                ),
                 prepared_study_unit_id=None,
                 completed_follow_up_id="",
                 cancel_pending_follow_ups=True,
                 prepared_effect_batch=collector.prepared_batch(),
-                build_response_payload=lambda session: {"session": session.model_dump(mode="json")},
+                build_response_payload=lambda session: {
+                    "session": session.model_dump(mode="json")
+                },
             )
         record = self.sessions.require("session-effect")
         self.assertEqual(record.plan_confirmations, [])
@@ -332,7 +338,9 @@ class StudyChatEffectsTests(unittest.TestCase):
         receipt = payload["_committed_effect_batch"]
         self.assertEqual(
             [item["effect_kind"] for item in receipt["effects"]],
-            ["memory_upsert"] + ["affinity_delta"] * 6 + ["memory_upsert", "plan_confirmation"],
+            ["memory_upsert"]
+            + ["affinity_delta"] * 6
+            + ["memory_upsert", "plan_confirmation"],
         )
         public_payload = StudyChatExchangeResponse.model_validate(payload).model_dump(
             mode="json"
@@ -360,7 +368,9 @@ class StudyChatEffectsTests(unittest.TestCase):
                 learner_message="hello",
                 learner_message_kind="learner",
                 learner_attachments=[],
-                result=StudyChatResult(reply="ignored", citations=[], character_events=[]),
+                result=StudyChatResult(
+                    reply="ignored", citations=[], character_events=[]
+                ),
                 prepared_study_unit_id=None,
                 completed_follow_up_id="",
                 cancel_pending_follow_ups=True,
@@ -469,8 +479,18 @@ class StudyChatEffectsTests(unittest.TestCase):
         self.assertEqual(committed.projected_pdf.page_number, 3)
         self.assertEqual(committed.projected_pdf.overlays[-1].label, "focus")
         self.assertEqual(
-            [item["effect_kind"] for item in payload["_committed_effect_batch"]["effects"]],
-            ["follow_up", "follow_up", "follow_up", "projection", "projection", "projection"],
+            [
+                item["effect_kind"]
+                for item in payload["_committed_effect_batch"]["effects"]
+            ],
+            [
+                "follow_up",
+                "follow_up",
+                "follow_up",
+                "projection",
+                "projection",
+                "projection",
+            ],
         )
 
     def test_projection_source_is_revalidated_at_commit(self) -> None:
@@ -636,7 +656,10 @@ class StudyChatEffectsTests(unittest.TestCase):
         self.assertEqual(child.objects[0].id, add_object["object_id"])
         self.assertEqual(committed.scene_profile, persisted_after.scene_profile)
         self.assertEqual(
-            [item["effect_kind"] for item in payload["_committed_effect_batch"]["effects"]],
+            [
+                item["effect_kind"]
+                for item in payload["_committed_effect_batch"]["effects"]
+            ],
             ["scene_replace", "scene_replace"],
         )
         replayed = self.operations.require(
@@ -721,16 +744,13 @@ class StudyChatEffectsTests(unittest.TestCase):
             self.scene_record.scene_instance_id
         )
         object_names = [
-            item.name
-            for layer in scene_after.scene_layers
-            for item in layer.objects
+            item.name for layer in scene_after.scene_layers for item in layer.objects
         ]
         self.assertEqual(object_names, ["Concurrent winner"])
-        self.assertNotIn(rejected["object_id"], {
-            item.id
-            for layer in scene_after.scene_layers
-            for item in layer.objects
-        })
+        self.assertNotIn(
+            rejected["object_id"],
+            {item.id for layer in scene_after.scene_layers for item in layer.objects},
+        )
         self.assertEqual(
             self.sessions.require("session-effect").model_dump(mode="json"),
             session_before.model_dump(mode="json"),
@@ -769,9 +789,7 @@ class StudyChatEffectsTests(unittest.TestCase):
             reply="invalid final",
             citations=[],
             character_events=[],
-            scene_profile=SceneProfileRecord.model_validate(
-                prepared["scene_profile"]
-            ),
+            scene_profile=SceneProfileRecord.model_validate(prepared["scene_profile"]),
         )
         with self.assertRaisesRegex(RuntimeError, "invalid_final"):
             self.sessions.commit_chat_operation_turn(
@@ -860,7 +878,9 @@ class StudyChatEffectsTests(unittest.TestCase):
                 client_request_id="request-effect-scene-0003",
             )
 
-    def test_operation_owned_attachment_stage_commits_and_hashes_read_back(self) -> None:
+    def test_operation_owned_attachment_stage_commits_and_hashes_read_back(
+        self,
+    ) -> None:
         inputs = [
             StudyChatAttachmentInput(
                 filename="diagram.png",
@@ -917,6 +937,14 @@ class StudyChatEffectsTests(unittest.TestCase):
         )
         self.assertEqual(committed.status.value, "committed")
         stored_path = Path(prepared.records[0].stored_path)
+        # The request-v3 language addition must retain request-v2 attachment checks.
+        with self.database.session() as database_session:
+            row = database_session.get(StudyChatOperationRow, running.operation_id)
+            row.request_schema_version = "study-chat-request-v2"
+        self.operations.require(
+            session_id="session-effect",
+            client_request_id="request-effect-attachment-0001",
+        )
         self.assertEqual(stored_path.parent.name, running.operation_id)
         stored_path.write_bytes(b"forged-image-bytes")
         with self.assertRaisesRegex(ValueError, "attachment_file_digest_mismatch"):
@@ -1002,12 +1030,16 @@ class StudyChatEffectsTests(unittest.TestCase):
                 learner_message="hello",
                 learner_message_kind="learner",
                 learner_attachments=[],
-                result=StudyChatResult(reply="ignored", citations=[], character_events=[]),
+                result=StudyChatResult(
+                    reply="ignored", citations=[], character_events=[]
+                ),
                 prepared_study_unit_id=None,
                 completed_follow_up_id="",
                 cancel_pending_follow_ups=True,
                 prepared_effect_batch=collector.prepared_batch(),
-                build_response_payload=lambda session: {"session": session.model_dump(mode="json")},
+                build_response_payload=lambda session: {
+                    "session": session.model_dump(mode="json")
+                },
             )
         record = self.sessions.require("session-effect")
         self.assertEqual(record.plan_confirmations, [])
@@ -1064,7 +1096,9 @@ class StudyChatEffectsTests(unittest.TestCase):
         )
         batch = collector.prepared_batch()
         assert batch is not None
-        forged_effect = batch.effects[0].model_copy(update={"effect_id": "study-effect-forged"})
+        forged_effect = batch.effects[0].model_copy(
+            update={"effect_id": "study-effect-forged"}
+        )
         forged_batch = batch.model_copy(update={"effects": [forged_effect]})
         with self.assertRaisesRegex(ValueError, "effect_identity_mismatch"):
             self._commit(running, forged_batch)
@@ -1100,7 +1134,9 @@ class StudyChatEffectsTests(unittest.TestCase):
                 forged_batch = batch.model_copy(update={"effects": [forged]})
                 with self.assertRaisesRegex(ValueError, error):
                     commit_study_chat_effects(
-                        record=self.sessions.require("session-effect").model_copy(deep=True),
+                        record=self.sessions.require("session-effect").model_copy(
+                            deep=True
+                        ),
                         batch=forged_batch,
                         expected_operation_id=operation_id,
                         allowed_schedule_ids=set(),

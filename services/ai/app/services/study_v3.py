@@ -4,7 +4,8 @@ from datetime import UTC, datetime, timedelta
 import json
 from typing import Any, ClassVar, Literal
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, TypeAdapter, field_validator
+from app.models.output_language import OutputLanguagePreference
 
 from app.models.domain import StudyChatResult
 from app.models.harness import (
@@ -36,13 +37,13 @@ from app.services.harness_runtime import (
 
 
 STUDY_SNAPSHOT_CONTRACT = HarnessContractRef(
-    name="StudyChatProtectedSnapshot", version="study-chat-protected-snapshot-v2"
+    name="StudyChatProtectedSnapshot", version="study-chat-protected-snapshot-v3"
 )
 STUDY_INPUT_CONTRACT = HarnessContractRef(
-    name="StudyChatInputManifest", version="study-chat-input-manifest-v1"
+    name="StudyChatInputManifest", version="study-chat-input-manifest-v2"
 )
 STUDY_PROMPT_CONTRACT = HarnessContractRef(
-    name="StudyChatPrompt", version="study-chat-prompt-v2"
+    name="StudyChatPrompt", version="study-chat-prompt-v3"
 )
 STUDY_POLICY_CONTRACT = HarnessContractRef(
     name="StudyChatHarnessPolicy", version="study-chat-harness-v1"
@@ -60,6 +61,7 @@ class StudyChatInputManifest(HarnessSafeManifest):
             "scene_id",
             "session_revision",
             "attachment_count",
+            "output_language",
         }
     )
 
@@ -69,6 +71,12 @@ class StudyChatInputManifest(HarnessSafeManifest):
     scene_id: str | None = None
     session_revision: int
     attachment_count: int = 0
+    output_language: str = "auto"
+
+    @field_validator("output_language")
+    @classmethod
+    def validate_output_language(cls, value: str) -> str:
+        return TypeAdapter(OutputLanguagePreference).validate_python(value)
 
 
 class StudyChatRuntimeOutputV1(BaseModel):
@@ -135,7 +143,11 @@ def decode_study_snapshot(payload: object) -> dict[str, Any]:
         raise ValueError("study_snapshot_object_required")
     if decoded.get("schema_name") != "StudyChatProtectedSnapshot":
         raise ValueError("study_snapshot_schema_name_invalid")
-    if decoded.get("schema_version") not in ("study-chat-protected-snapshot-v1", STUDY_SNAPSHOT_CONTRACT.version):
+    if decoded.get("schema_version") not in (
+        "study-chat-protected-snapshot-v1",
+        "study-chat-protected-snapshot-v2",
+        STUDY_SNAPSHOT_CONTRACT.version,
+    ):
         raise ValueError("study_snapshot_schema_version_invalid")
     dependencies = decoded.get("dependencies")
     if not isinstance(dependencies, dict):
@@ -159,12 +171,17 @@ def decode_study_snapshot(payload: object) -> dict[str, Any]:
         "active_scene_context",
         "learner_attachments",
     }
-    if decoded["schema_version"] == STUDY_SNAPSHOT_CONTRACT.version:
+    if decoded["schema_version"] != "study-chat-protected-snapshot-v1":
         required.add("learner_message")
         if not isinstance(dependencies.get("learner_message"), str):
             raise ValueError("study_snapshot_learner_message_invalid")
     if set(dependencies) != required:
         raise ValueError("study_snapshot_dependency_set_mismatch")
+    if decoded["schema_version"] == STUDY_SNAPSHOT_CONTRACT.version:
+        entry = dependencies.get("input")
+        if not isinstance(entry, dict) or "output_language" not in entry:
+            raise ValueError("study_snapshot_output_language_missing")
+        TypeAdapter(OutputLanguagePreference).validate_python(entry["output_language"])
     return decoded
 
 
@@ -292,7 +309,9 @@ class StudyV3ReplyAdapter:
             output = StudyChatRuntimeOutputV1(result=raw)
         elif isinstance(raw, dict):
             candidate = raw if "result" in raw else {"result": raw}
-            unknown_wrapper = set(candidate) - set(StudyChatRuntimeOutputV1.model_fields)
+            unknown_wrapper = set(candidate) - set(
+                StudyChatRuntimeOutputV1.model_fields
+            )
             if unknown_wrapper:
                 raise ValueError("study_v3_reply_wrapper_extra_forbidden")
             result_payload = candidate.get("result")
@@ -382,9 +401,7 @@ class StudyV3ReplyAdapter:
             HarnessCheckV2(
                 name="study_chat_model_recovery",
                 status=HarnessCheckStatus.WARNING,
-                code=":".join(
-                    [recoveries[-1].category, recoveries[-1].reason]
-                )[:160],
+                code=":".join([recoveries[-1].category, recoveries[-1].reason])[:160],
                 message=strategies,
             )
         )

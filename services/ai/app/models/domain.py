@@ -4,6 +4,7 @@ import hashlib
 from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
+from app.models.output_language import OutputLanguagePreference
 
 from app.core.model_runtime_limits import (
     DEFAULT_CHAT_HISTORY_MESSAGES,
@@ -114,7 +115,11 @@ def normalize_persona_narrative_mode(value: str) -> str:
 
 
 def persona_narrative_mode_label(value: str) -> str:
-    return "轻剧情陪伴" if normalize_persona_narrative_mode(value) == "light_story" else "稳态导学"
+    return (
+        "轻剧情陪伴"
+        if normalize_persona_narrative_mode(value) == "light_story"
+        else "稳态导学"
+    )
 
 
 def persona_sorted_slots(slots: list[PersonaSlot]) -> list[PersonaSlot]:
@@ -262,7 +267,9 @@ class DocumentRecord(BaseModel):
     id: str
     # Missing revision denotes a legacy baseline. Preserve its original v1
     # snapshot/digest bytes until the first database-authoritative mutation.
-    revision: int = Field(default=0, ge=0, strict=True, exclude_if=lambda value: value == 0)
+    revision: int = Field(
+        default=0, ge=0, strict=True, exclude_if=lambda value: value == 0
+    )
     title: str
     original_filename: str
     stored_path: str
@@ -305,7 +312,9 @@ class PlanningPageRangesIntentV1(_StrictPlanningIntentModel):
         if self.status == "user_explicit" and not self.value:
             raise ValueError("explicit_intent_value_required")
         if self.value:
-            ordered = sorted(self.value, key=lambda item: (item.page_start, item.page_end))
+            ordered = sorted(
+                self.value, key=lambda item: (item.page_start, item.page_end)
+            )
             for previous, current in zip(ordered, ordered[1:]):
                 if current.page_start <= previous.page_end:
                     raise ValueError("page_ranges_overlap")
@@ -345,10 +354,12 @@ class PlanningIntegerIntentV1(_StrictPlanningIntentModel):
 
 class PlanningLanguageIntentV1(_StrictPlanningIntentModel):
     status: Literal["unknown", "user_explicit"] = "unknown"
-    value: str | None = Field(default=None, min_length=2, max_length=35)
+    value: OutputLanguagePreference | None = None
 
     @model_validator(mode="after")
     def validate_status_value(self) -> "PlanningLanguageIntentV1":
+        if self.value == "auto":
+            raise ValueError("automatic_language_requires_unknown_intent")
         if self.status == "unknown" and self.value is not None:
             raise ValueError("unknown_intent_must_not_have_value")
         if self.status == "user_explicit" and self.value is None:
@@ -540,7 +551,9 @@ class ScheduleChapterRecord(BaseModel):
     anchor_page_start: int
     anchor_page_end: int
     source_section_ids: list[str] = Field(default_factory=list)
-    content_slices: list[ScheduleChapterContentSliceRecord] = Field(default_factory=list)
+    content_slices: list[ScheduleChapterContentSliceRecord] = Field(
+        default_factory=list
+    )
 
 
 def build_schedule_chapter_id(
@@ -625,7 +638,9 @@ def _normalize_schedule_chapter_payload(
     page_end: int,
     source_section_ids: list[str],
 ) -> dict[str, Any]:
-    normalized_sources = [str(item).strip() for item in source_section_ids if str(item).strip()]
+    normalized_sources = [
+        str(item).strip() for item in source_section_ids if str(item).strip()
+    ]
     return {
         "id": build_schedule_chapter_id(
             unit_id=unit_id,
@@ -659,7 +674,9 @@ def _legacy_study_chapter_title_map(payload: dict[str, Any]) -> dict[str, str]:
         unit_ids = [
             str(item.get("id") or "").strip()
             for item in raw_study_units
-            if isinstance(item, dict) and bool(item.get("include_in_plan", True)) and str(item.get("id") or "").strip()
+            if isinstance(item, dict)
+            and bool(item.get("include_in_plan", True))
+            and str(item.get("id") or "").strip()
         ]
     if not unit_ids:
         seen: set[str] = set()
@@ -717,7 +734,8 @@ class StudyScheduleRecord(BaseModel):
         value["schedule_chapters"] = [
             _normalize_schedule_chapter_payload(
                 unit_id=unit_id,
-                schedule_id=str(value.get("id") or "schedule-1").strip() or "schedule-1",
+                schedule_id=str(value.get("id") or "schedule-1").strip()
+                or "schedule-1",
                 title=fallback_title,
                 page_start=page_start,
                 page_end=page_end,
@@ -800,7 +818,9 @@ class LearningPlanRecord(BaseModel):
     )
     study_units: list[StudyUnitRecord] = []
     schedule: list[StudyScheduleRecord] = []
-    progress_summary: PlanProgressSummaryRecord = Field(default_factory=PlanProgressSummaryRecord)
+    progress_summary: PlanProgressSummaryRecord = Field(
+        default_factory=PlanProgressSummaryRecord
+    )
     study_unit_progress: list[StudyUnitProgressRecord] = Field(default_factory=list)
     progress_events: list[PlanProgressEventRecord] = Field(default_factory=list)
     planning_questions: list[PlanningQuestionRecord] = Field(default_factory=list)
@@ -811,7 +831,10 @@ class LearningPlanRecord(BaseModel):
     def migrate_legacy_learning_plan_fields(cls, value: Any) -> Any:
         if not isinstance(value, dict):
             return value
-        if value.get("study_unit_progress") is None and value.get("chapter_progress") is not None:
+        if (
+            value.get("study_unit_progress") is None
+            and value.get("chapter_progress") is not None
+        ):
             value["study_unit_progress"] = value.get("chapter_progress")
 
         study_units = value.get("study_units")
@@ -845,18 +868,22 @@ class LearningPlanRecord(BaseModel):
                             "_unit_page_start": page_start,
                             "_unit_page_end": page_end,
                             "_unit_source_section_ids": (
-                                source_section_ids if isinstance(source_section_ids, list) else []
+                                source_section_ids
+                                if isinstance(source_section_ids, list)
+                                else []
                             ),
-                            "_legacy_study_chapter_title": legacy_title_map.get(unit_id, ""),
+                            "_legacy_study_chapter_title": legacy_title_map.get(
+                                unit_id, ""
+                            ),
                         }
                 next_schedule.append(raw_item)
             value["schedule"] = next_schedule
         return value
 
 
-
 class VersionedLearningPlanRecord(LearningPlanRecord):
     """Current mutable aggregate; legacy Harness snapshots retain their v1 shape."""
+
     revision: int = Field(default=0, ge=0, strict=True)
 
 
@@ -1099,6 +1126,9 @@ class StudySessionRecord(BaseModel):
     study_unit_id: str
     study_unit_title: str = ""
     theme_hint: str = ""
+    output_language: OutputLanguagePreference | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
     session_system_prompt: str = ""
     status: str
     turns: list[DialogueTurnRecord]
@@ -1107,8 +1137,12 @@ class StudySessionRecord(BaseModel):
     prepared_study_unit_ids: list[str] = Field(default_factory=list)
     pending_follow_ups: list[SessionFollowUpRecord] = Field(default_factory=list)
     session_memory: list[SessionMemoryRecord] = Field(default_factory=list)
-    affinity_state: SessionAffinityStateRecord = Field(default_factory=SessionAffinityStateRecord)
-    plan_confirmations: list[SessionPlanConfirmationRecord] = Field(default_factory=list)
+    affinity_state: SessionAffinityStateRecord = Field(
+        default_factory=SessionAffinityStateRecord
+    )
+    plan_confirmations: list[SessionPlanConfirmationRecord] = Field(
+        default_factory=list
+    )
     projected_pdf: SessionProjectedPdfRecord | None = None
     created_at: str
     updated_at: str
@@ -1120,7 +1154,10 @@ class StudySessionRecord(BaseModel):
             return value
         if value.get("study_unit_id") is None and value.get("section_id") is not None:
             value["study_unit_id"] = value.get("section_id")
-        if value.get("study_unit_title") is None and value.get("section_title") is not None:
+        if (
+            value.get("study_unit_title") is None
+            and value.get("section_title") is not None
+        ):
             value["study_unit_title"] = value.get("section_title")
         if (
             value.get("prepared_study_unit_ids") is None
@@ -1151,7 +1188,10 @@ class StudySessionRecord(BaseModel):
                     turn["id"] = f"turn-legacy-{digest}"
                     turn["sequence"] = index
                 value["last_turn_sequence"] = len(turns)
-            elif any(not has_id or not has_sequence for has_id, has_sequence in identity_state):
+            elif any(
+                not has_id or not has_sequence
+                for has_id, has_sequence in identity_state
+            ):
                 raise ValueError("study_session_legacy_turn_identity_partial")
         return value
 

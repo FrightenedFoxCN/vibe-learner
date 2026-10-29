@@ -1,9 +1,11 @@
 "use client";
 
 import { documentUploadError } from "../lib/document-upload-validation";
+import { OutputLanguageField } from "./output-language-field";
+import { outputLanguageError } from "../lib/output-language";
 
 import type { CSSProperties } from "react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { PersonaProfile } from "@vibe-learner/shared";
 import type { PlanSetupPageCache } from "../lib/learning-workspace-page-cache";
 import type { SceneLibraryItemPayload } from "../lib/data/scenes";
@@ -39,7 +41,26 @@ interface StreamEventItem {
   payload: Record<string, unknown>;
 }
 
-export function DocumentSetup({
+const noHydrationSubscription = () => () => {};
+const clientReady = () => true;
+const serverPending = () => false;
+
+export function DocumentSetup(props: DocumentSetupProps) {
+  const ready = useSyncExternalStore(
+    noHydrationSubscription,
+    clientReady,
+    serverPending,
+  );
+  // Browser draft values are available only after the server/client hydration
+  // snapshot agrees; mounting the form then preserves the stored preference.
+  return ready ? (
+    <DocumentSetupForm {...props} />
+  ) : (
+    <p role="status">正在恢复计划设置…</p>
+  );
+}
+
+function DocumentSetupForm({
   personas,
   selectedPersonaId,
   onSelectPersonaId,
@@ -71,6 +92,10 @@ export function DocumentSetup({
   const [physicalPageRanges, setPhysicalPageRanges] = useState(
     () => cachedState?.physicalPageRanges ?? "",
   );
+  const [outputLanguage, setOutputLanguage] = useState(
+    () => cachedState?.outputLanguage ?? "auto",
+  );
+  const languageError = outputLanguageError(outputLanguage);
   let pageScopeError = "";
   if (generationMode === "document") {
     try {
@@ -89,9 +114,17 @@ export function DocumentSetup({
       generationMode,
       objective,
       physicalPageRanges,
+      outputLanguage,
       file,
     });
-  }, [file, generationMode, objective, physicalPageRanges, onCachedStateChange]);
+  }, [
+    file,
+    generationMode,
+    objective,
+    physicalPageRanges,
+    outputLanguage,
+    onCachedStateChange,
+  ]);
 
   const planRoundSummary = summarizePlanRounds(planStreamEvents);
   const processProgress = summarizeProcessProgress(processStreamEvents);
@@ -100,7 +133,7 @@ export function DocumentSetup({
     planStreamEvents.length > 0 ||
     planRoundSummary.rounds.length > 0;
   const isGenerateDisabled =
-    Boolean(pageScopeError || uploadError) ||
+    Boolean(pageScopeError || uploadError || languageError) ||
     isBusy ||
     (generationMode === "document" && !file) ||
     Boolean(generationBlockedReason);
@@ -114,7 +147,12 @@ export function DocumentSetup({
     (processStreamStatus !== "idle" || processStreamEvents.length > 0);
 
   const handleGenerate = () => {
-    if (pageScopeError || uploadError || (generationMode === "document" && !file)) {
+    if (
+      pageScopeError ||
+      uploadError ||
+      languageError ||
+      (generationMode === "document" && !file)
+    ) {
       return;
     }
     console.info("[vibe-learner] ui:upload_click", {
@@ -127,6 +165,7 @@ export function DocumentSetup({
       mode: generationMode,
       file,
       objective,
+      outputLanguage,
       physicalPageRanges: generationMode === "document" ? physicalPageRanges : "",
     });
   };
@@ -206,6 +245,11 @@ export function DocumentSetup({
                 <option value="goal_only">仅学习目标</option>
               </select>
             </div>
+            <OutputLanguageField
+              value={outputLanguage}
+              onChange={setOutputLanguage}
+              disabled={isBusy}
+            />
             <div style={styles.field}>
               <label htmlFor="plan-document-file" style={styles.fieldLabel}>
                 教材文件（PDF）

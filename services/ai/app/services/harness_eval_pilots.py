@@ -19,7 +19,12 @@ from app.models.domain import (
     PersonaProfile,
     StudyUnitRecord,
 )
-from app.models.harness import HarnessContractRef, HarnessStage, HarnessWorkflow, canonical_harness_digest
+from app.models.harness import (
+    HarnessContractRef,
+    HarnessStage,
+    HarnessWorkflow,
+    canonical_harness_digest,
+)
 from app.models.harness_eval import (
     HARNESS_EVAL_FAILURE_TAXONOMY_CONTRACT,
     HarnessEvalBooleanMetricV1,
@@ -65,7 +70,9 @@ from app.models.tavern import (
 )
 from app.models.tavern_integrity import persona_prompt_hash
 from app.persistence.database import Database
-from app.persistence.harness_operation_repository import HarnessOperationBindingRepository
+from app.persistence.harness_operation_repository import (
+    HarnessOperationBindingRepository,
+)
 from app.persistence.models import HarnessOperationBindingRow
 from app.services.harness_eval_runner import (
     CANDIDATE_PASS_RATE,
@@ -382,7 +389,9 @@ class _TavernPilotGrader:
         correct = actual == expected
         is_positive = expected == "passed"
         unsafe = expected in {"repaired", "rejected"}
-        is_leak = "prompt_safety" in payload["tags"] or "guidance_leak" in payload["tags"]
+        is_leak = (
+            "prompt_safety" in payload["tags"] or "guidance_leak" in payload["tags"]
+        )
         metrics = [
             _boolean_metric(TAVERN_CORRECT_RATE, correct, case.case_digest),
             _boolean_metric(
@@ -488,7 +497,11 @@ def _boolean_metric(
         metric=contract,
         value=value,
         evidence_digest=canonical_harness_digest(
-            {"metric": contract.model_dump(mode="json"), "value": value, "evidence": evidence}
+            {
+                "metric": contract.model_dump(mode="json"),
+                "value": value,
+                "evidence": evidence,
+            }
         ),
     )
 
@@ -504,7 +517,11 @@ def _integer_metric(
         unit=unit,
         value=value,
         evidence_digest=canonical_harness_digest(
-            {"metric": contract.model_dump(mode="json"), "value": value, "evidence": evidence}
+            {
+                "metric": contract.model_dump(mode="json"),
+                "value": value,
+                "evidence": evidence,
+            }
         ),
     )
 
@@ -519,7 +536,9 @@ def _grader_result(*, grader, case, passed: bool, metrics, evidence):
         execution_status="completed",
         verdict="passed" if passed else "failed",
         score=1.0 if passed else 0.0,
-        metrics=sorted(metrics, key=lambda item: (item.metric.name, item.metric.version)),
+        metrics=sorted(
+            metrics, key=lambda item: (item.metric.name, item.metric.version)
+        ),
         failure_codes=[],
         evidence_digest=digest,
         duration_ms=0,
@@ -592,7 +611,12 @@ def _execute_tavern(*, payload, run, **_):
         trace_contract=run.tested_system.harness_contract,
         trace_digest=canonical_harness_digest(trace.model_dump(mode="json")),
         evidence_digest=canonical_harness_digest(
-            {"status": actual, "checks": [(item.name, item.status.value, item.code) for item in trace.checks]}
+            {
+                "status": actual,
+                "checks": [
+                    (item.name, item.status.value, item.code) for item in trace.checks
+                ],
+            }
         ),
         duration_ms=duration_ms,
         grader_evidence={"actual_status": actual},
@@ -704,7 +728,9 @@ def _execute_planning(*, payload, run, **_):
         final_schema_valid=True,
         trace_contract=run.tested_system.harness_contract,
         trace_digest=canonical_harness_digest(evidence),
-        metrics=tuple(sorted(metrics, key=lambda item: (item.metric.name, item.metric.version))),
+        metrics=tuple(
+            sorted(metrics, key=lambda item: (item.metric.name, item.metric.version))
+        ),
         evidence_digest=canonical_harness_digest(evidence),
         duration_ms=duration_ms,
         grader_evidence={
@@ -832,7 +858,9 @@ def _case(
         ).model_dump(mode="json"),
         "provenance": HarnessEvalProvenanceV1(
             source_kind="independently_reviewed" if held_out else "developer_authored",
-            review_status="independently_reviewed" if held_out else "developer_reviewed",
+            review_status="independently_reviewed"
+            if held_out
+            else "developer_reviewed",
             review_contract=review_contract if held_out else None,
             attestation_digest=review_attestation_digest if held_out else None,
         ).model_dump(mode="json"),
@@ -957,7 +985,7 @@ def _system_config(*, suite: HarnessContractRef) -> HarnessEvalSystemConfigV1:
             ),
             "prompt_contract": HarnessContractRef(
                 name="StudyChatPrompt",
-                version="study-chat-prompt-v2",
+                version="study-chat-prompt-v3",
             ),
             "policy_contract": HarnessContractRef(
                 name="StudyChatHarnessPolicy",
@@ -970,7 +998,7 @@ def _system_config(*, suite: HarnessContractRef) -> HarnessEvalSystemConfigV1:
             "component_contracts": [
                 HarnessContractRef(
                     name="study_chat_prompt",
-                    version="study-chat-prompt-v2",
+                    version="study-chat-prompt-v3",
                 ),
                 HarnessContractRef(
                     name="study_chat_toolset",
@@ -1058,10 +1086,16 @@ def _run(*, suite: HarnessContractRef, cases: tuple[HarnessEvalCaseV1, ...]):
         "repetition_count": 1,
         "seeds": [17],
         "runner_contract": PILOT_RUNNER_CONTRACT.model_dump(mode="json"),
-        "failure_taxonomy_contract": HARNESS_EVAL_FAILURE_TAXONOMY_CONTRACT.model_dump(mode="json"),
-        "grader_registry_contract": PILOT_GRADER_REGISTRY_CONTRACT.model_dump(mode="json"),
+        "failure_taxonomy_contract": HARNESS_EVAL_FAILURE_TAXONOMY_CONTRACT.model_dump(
+            mode="json"
+        ),
+        "grader_registry_contract": PILOT_GRADER_REGISTRY_CONTRACT.model_dump(
+            mode="json"
+        ),
         "tested_system": system.model_dump(mode="json", exclude_none=False),
-        "tested_system_config_digest": canonical_harness_eval_system_config_digest(system),
+        "tested_system_config_digest": canonical_harness_eval_system_config_digest(
+            system
+        ),
         "environment": environment.model_dump(mode="json", exclude_none=False),
         "environment_digest": canonical_harness_eval_environment_digest(environment),
         "admitted_at": "2026-09-03T00:00:00Z",
@@ -1105,10 +1139,7 @@ def _registration(
     ):
         if optional is not None:
             values.append(optional)
-    known = {
-        (item.name, item.version): item
-        for item in values
-    }
+    known = {(item.name, item.version): item for item in values}
     return HarnessEvalSuiteRegistration(
         registration_contract=PILOT_SUITE_REGISTRY_CONTRACT,
         suite=suite,
@@ -1123,18 +1154,22 @@ def _registration(
     )
 
 
-def _current_planning_cases(fixture: HarnessPilotEvalCasesV1) -> list[PlanningPilotCase]:
+def _current_planning_cases(
+    fixture: HarnessPilotEvalCasesV1,
+) -> list[PlanningPilotCase]:
     # Keep the independently reviewed historical book immutable. Only this
     # developer-authored budget regression changes with the reviewed quota.
     replacement = PlanningPilotCase.model_validate_json(
-        FIXTURE_PATH.with_name("planning-detail-budget-regression-v2.json").read_text(encoding="utf-8")
+        FIXTURE_PATH.with_name("planning-detail-budget-regression-v2.json").read_text(
+            encoding="utf-8"
+        )
     )
     if replacement.split != "regression":
         raise ValueError("planning_budget_replacement_must_be_regression")
     page_read_budget = PlanningPilotCase.model_validate_json(
-        FIXTURE_PATH.with_name("planning-page-read-budget-regression-v3.json").read_text(
-            encoding="utf-8"
-        )
+        FIXTURE_PATH.with_name(
+            "planning-page-read-budget-regression-v3.json"
+        ).read_text(encoding="utf-8")
     )
     if page_read_budget.split != "regression":
         raise ValueError("planning_page_read_budget_must_be_regression")
@@ -1147,34 +1182,44 @@ def _current_planning_cases(fixture: HarnessPilotEvalCasesV1) -> list[PlanningPi
 def build_harness_pilot_runner() -> HarnessEvalRunner:
     fixture = _load_fixtures()
     study_fixture = _load_study_fixtures()
-    tavern_cases = tuple(sorted((
-        _case(
-            suite=TAVERN_IDENTITY_EVAL_SUITE,
-            workflow=HarnessWorkflow.TAVERN,
-            stage=HarnessStage.TAVERN_ACTOR_REPLY,
-            eval_route="tavern.actor_reply",
-            payload=item,
-            invariant=TAVERN_OUTCOME_INVARIANT,
-            grader=TAVERN_GRADER_CONTRACT,
-            review_contract=fixture.review_contract,
-            review_attestation_digest=fixture.review_attestation_digest,
+    tavern_cases = tuple(
+        sorted(
+            (
+                _case(
+                    suite=TAVERN_IDENTITY_EVAL_SUITE,
+                    workflow=HarnessWorkflow.TAVERN,
+                    stage=HarnessStage.TAVERN_ACTOR_REPLY,
+                    eval_route="tavern.actor_reply",
+                    payload=item,
+                    invariant=TAVERN_OUTCOME_INVARIANT,
+                    grader=TAVERN_GRADER_CONTRACT,
+                    review_contract=fixture.review_contract,
+                    review_attestation_digest=fixture.review_attestation_digest,
+                )
+                for item in fixture.tavern_cases
+            ),
+            key=lambda item: (item.case_id, item.case_version),
         )
-        for item in fixture.tavern_cases
-    ), key=lambda item: (item.case_id, item.case_version)))
-    planning_cases = tuple(sorted((
-        _case(
-            suite=PLANNING_TOOL_EVAL_SUITE,
-            workflow=HarnessWorkflow.PLANNING,
-            stage=HarnessStage.PLANNING_TOOL_EXECUTION,
-            eval_route="planning.tool_execution",
-            payload=item,
-            invariant=PLANNING_OUTCOME_INVARIANT,
-            grader=PLANNING_GRADER_CONTRACT,
-            review_contract=fixture.review_contract,
-            review_attestation_digest=fixture.review_attestation_digest,
+    )
+    planning_cases = tuple(
+        sorted(
+            (
+                _case(
+                    suite=PLANNING_TOOL_EVAL_SUITE,
+                    workflow=HarnessWorkflow.PLANNING,
+                    stage=HarnessStage.PLANNING_TOOL_EXECUTION,
+                    eval_route="planning.tool_execution",
+                    payload=item,
+                    invariant=PLANNING_OUTCOME_INVARIANT,
+                    grader=PLANNING_GRADER_CONTRACT,
+                    review_contract=fixture.review_contract,
+                    review_attestation_digest=fixture.review_attestation_digest,
+                )
+                for item in _current_planning_cases(fixture)
+            ),
+            key=lambda item: (item.case_id, item.case_version),
         )
-        for item in _current_planning_cases(fixture)
-    ), key=lambda item: (item.case_id, item.case_version)))
+    )
     study_cases = tuple(
         sorted(
             (
@@ -1187,9 +1232,7 @@ def build_harness_pilot_runner() -> HarnessEvalRunner:
                     invariant=STUDY_OUTCOME_INVARIANT,
                     grader=STUDY_GRADER_CONTRACT,
                     review_contract=study_fixture.review_contract,
-                    review_attestation_digest=(
-                        study_fixture.review_attestation_digest
-                    ),
+                    review_attestation_digest=(study_fixture.review_attestation_digest),
                 )
                 for item in study_fixture.study_cases
             ),
@@ -1217,7 +1260,9 @@ def build_harness_pilot_runner() -> HarnessEvalRunner:
             workflow=HarnessWorkflow.TAVERN,
             stage=HarnessStage.TAVERN_ACTOR_REPLY,
             route="tavern.actor_reply",
-            run=runs[(TAVERN_IDENTITY_EVAL_SUITE.name, TAVERN_IDENTITY_EVAL_SUITE.version)],
+            run=runs[
+                (TAVERN_IDENTITY_EVAL_SUITE.name, TAVERN_IDENTITY_EVAL_SUITE.version)
+            ],
             cases=tavern_cases,
         )
     )
@@ -1227,9 +1272,7 @@ def build_harness_pilot_runner() -> HarnessEvalRunner:
             workflow=HarnessWorkflow.STUDY_CHAT,
             stage=HarnessStage.STUDY_CHAT_REPLY,
             route="study_chat.reply",
-            run=runs[
-                (STUDY_CHAT_EVAL_SUITE.name, STUDY_CHAT_EVAL_SUITE.version)
-            ],
+            run=runs[(STUDY_CHAT_EVAL_SUITE.name, STUDY_CHAT_EVAL_SUITE.version)],
             cases=study_cases,
         )
     )
@@ -1327,8 +1370,14 @@ def execute_harness_pilot_bundle(
         study_cases,
     ) = runner._pilot_resources
     cases = {
-        (TAVERN_IDENTITY_EVAL_SUITE.name, TAVERN_IDENTITY_EVAL_SUITE.version): tavern_cases,
-        (PLANNING_TOOL_EVAL_SUITE.name, PLANNING_TOOL_EVAL_SUITE.version): planning_cases,
+        (
+            TAVERN_IDENTITY_EVAL_SUITE.name,
+            TAVERN_IDENTITY_EVAL_SUITE.version,
+        ): tavern_cases,
+        (
+            PLANNING_TOOL_EVAL_SUITE.name,
+            PLANNING_TOOL_EVAL_SUITE.version,
+        ): planning_cases,
         (STUDY_CHAT_EVAL_SUITE.name, STUDY_CHAT_EVAL_SUITE.version): study_cases,
     }
     executions = {}
@@ -1379,7 +1428,7 @@ def execute_harness_pilot_bundle(
                 baseline_version=(
                     f"{suite.version}-baseline-v3"
                     if suite == PLANNING_TOOL_EVAL_SUITE
-                    else f"{suite.version}-baseline-v2"
+                    else f"{suite.version}-baseline-v3"
                     if suite == STUDY_CHAT_EVAL_SUITE
                     else f"{suite.version}-baseline-v1"
                 ),
@@ -1391,34 +1440,41 @@ def execute_harness_pilot_bundle(
                     key=lambda item: (item.metric.name, item.metric.version),
                 ),
                 review_contract=(
-                    HarnessContractRef(name="PlanningToolsetBudgetMaintainerReview", version="planning-toolset-budget-review-v3")
-                    if suite == PLANNING_TOOL_EVAL_SUITE else
-                    study_fixture.review_contract
+                    HarnessContractRef(
+                        name="PlanningToolsetBudgetMaintainerReview",
+                        version="planning-toolset-budget-review-v3",
+                    )
+                    if suite == PLANNING_TOOL_EVAL_SUITE
+                    else study_fixture.review_contract
                     if suite == STUDY_CHAT_EVAL_SUITE
                     else fixture.review_contract
                 ),
                 review_attestation_digest=(
-                    canonical_harness_digest({
-                        "case_ids": [
-                            "planning-tool-detail-round-limit-002",
-                            "planning-tool-page-read-round-limit-003",
-                        ],
-                        "same_round_limit": 3,
-                        "operation_limit": 4,
-                        "runtime_mode": "serial",
-                        "review_kind": "developer_reviewed",
-                    })
-                    if suite == PLANNING_TOOL_EVAL_SUITE else
-                    study_fixture.review_attestation_digest
+                    canonical_harness_digest(
+                        {
+                            "case_ids": [
+                                "planning-tool-detail-round-limit-002",
+                                "planning-tool-page-read-round-limit-003",
+                            ],
+                            "same_round_limit": 3,
+                            "operation_limit": 4,
+                            "runtime_mode": "serial",
+                            "review_kind": "developer_reviewed",
+                        }
+                    )
+                    if suite == PLANNING_TOOL_EVAL_SUITE
+                    else study_fixture.review_attestation_digest
                     if suite == STUDY_CHAT_EVAL_SUITE
                     else fixture.review_attestation_digest
                 ),
             )
         else:
             baseline = HarnessEvalBaselineV1.model_validate_json(
-                (BASELINE_ROOT / _baseline_directory_name(suite.name) / "baseline.json").read_text(
-                    encoding="utf-8"
-                )
+                (
+                    BASELINE_ROOT
+                    / _baseline_directory_name(suite.name)
+                    / "baseline.json"
+                ).read_text(encoding="utf-8")
             )
         baselines[key] = baseline
         decisions[key] = evaluate_harness_eval_baseline(
@@ -1439,14 +1495,16 @@ def _baseline_directory_name(suite_name: str) -> str:
     if suite_name == PLANNING_TOOL_EVAL_SUITE.name:
         return "planning_tool_eval_toolset_v2"
     if suite_name == STUDY_CHAT_EVAL_SUITE.name:
-        # Keep the prompt-v1 baseline immutable; the directory name binds this
-        # deterministic evidence set to the reviewed prompt-v2 system identity.
-        return "study_chat_eval_prompt_v2"
+        # Keep prompt-v1/v2 evidence immutable; this deterministic baseline binds
+        # the same fixture set to the reviewed prompt-v3 system identity.
+        return "study_chat_eval_prompt_v3"
     return suite_name
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Run Wave 2 deterministic Harness pilot gates.")
+    parser = argparse.ArgumentParser(
+        description="Run Wave 2 deterministic Harness pilot gates."
+    )
     parser.add_argument("--profile", choices=("pr",), default="pr")
     parser.add_argument("--output-dir", type=Path)
     parser.add_argument("--refresh-baselines", action="store_true")
@@ -1470,22 +1528,44 @@ def main(argv: list[str] | None = None) -> int:
             name = key[0]
             if args.selected_suite is not None and name != args.selected_suite:
                 continue
-            suite_dir = output / (_baseline_directory_name(name) if args.refresh_baselines else name)
+            suite_dir = output / (
+                _baseline_directory_name(name) if args.refresh_baselines else name
+            )
             suite_dir.mkdir(parents=True, exist_ok=True)
             (suite_dir / "raw-samples.json").write_text(
-                json.dumps(bundle.executions[key].raw_samples_json(), sort_keys=True, separators=(",", ":")) + "\n",
+                json.dumps(
+                    bundle.executions[key].raw_samples_json(),
+                    sort_keys=True,
+                    separators=(",", ":"),
+                )
+                + "\n",
                 encoding="utf-8",
             )
             (suite_dir / "aggregate.json").write_text(
-                json.dumps(bundle.executions[key].aggregate_json(), sort_keys=True, separators=(",", ":")) + "\n",
+                json.dumps(
+                    bundle.executions[key].aggregate_json(),
+                    sort_keys=True,
+                    separators=(",", ":"),
+                )
+                + "\n",
                 encoding="utf-8",
             )
             (suite_dir / "baseline.json").write_text(
-                json.dumps(bundle.baselines[key].model_dump(mode="json"), sort_keys=True, separators=(",", ":")) + "\n",
+                json.dumps(
+                    bundle.baselines[key].model_dump(mode="json"),
+                    sort_keys=True,
+                    separators=(",", ":"),
+                )
+                + "\n",
                 encoding="utf-8",
             )
             (suite_dir / "gate-decision.json").write_text(
-                json.dumps(bundle.decisions[key].model_dump(mode="json"), sort_keys=True, separators=(",", ":")) + "\n",
+                json.dumps(
+                    bundle.decisions[key].model_dump(mode="json"),
+                    sort_keys=True,
+                    separators=(",", ":"),
+                )
+                + "\n",
                 encoding="utf-8",
             )
     summary = {
@@ -1498,7 +1578,9 @@ def main(argv: list[str] | None = None) -> int:
         for name in [key[0]]
     }
     print(json.dumps(summary, sort_keys=True))
-    return 0 if all(item.status == "passed" for item in bundle.decisions.values()) else 1
+    return (
+        0 if all(item.status == "passed" for item in bundle.decisions.values()) else 1
+    )
 
 
 if __name__ == "__main__":

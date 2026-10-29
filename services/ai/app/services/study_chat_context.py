@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 from app.models.domain import Citation
+from app.services.output_language import output_language_instruction
 
 
-def _compose_hidden_prefixed_message(*, message: str, hidden_message_prefix: str) -> str:
+def _compose_hidden_prefixed_message(
+    *, message: str, hidden_message_prefix: str
+) -> str:
     visible_message = message.strip()
     hidden_prefix = hidden_message_prefix.strip()
     if not hidden_prefix:
@@ -27,8 +30,16 @@ def _resolve_session_state_context(*, session_tool_runtime, follow_up_id: str) -
     return runtime_state
 
 
-def _compose_session_prompt(*, session, session_state_context: str) -> str:
+def _compose_session_prompt(
+    *,
+    session,
+    session_state_context: str,
+    output_language: str | None = None,
+    plan=None,
+) -> str:
     base = session.session_system_prompt.strip()
+    if output_language is not None:
+        base = f"{base}\n\n{output_language_instruction(output_language, plan=plan)}".strip()
     if not session_state_context:
         return base
     if not base:
@@ -36,7 +47,9 @@ def _compose_session_prompt(*, session, session_state_context: str) -> str:
     return f"{base}\n\n会话动态状态：\n{session_state_context}"
 
 
-def _merge_chat_citations(base: list[Citation], extra: list[Citation]) -> list[Citation]:
+def _merge_chat_citations(
+    base: list[Citation], extra: list[Citation]
+) -> list[Citation]:
     merged: list[Citation] = []
     seen: set[tuple[str, str, int, int, str]] = set()
     for citation in [*(base or []), *(extra or [])]:
@@ -55,7 +68,9 @@ def _merge_chat_citations(base: list[Citation], extra: list[Citation]) -> list[C
 
 
 def _resolve_session_document(document_id: str, plan, *, document_service):
-    resolved_document_id = document_id.strip() or (plan.document_id.strip() if plan is not None else "")
+    resolved_document_id = document_id.strip() or (
+        plan.document_id.strip() if plan is not None else ""
+    )
     if not resolved_document_id:
         return None
     return document_service.require_document(resolved_document_id)

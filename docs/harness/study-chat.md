@@ -30,3 +30,5 @@
 
 Study commit policy 是 `primary_output_only`：证明 Session/Turn projection，不声称所有 Scene、文件或 provider effect 都成功。交互题必须等待持久化 Session read-back 后显示，浏览器永远不接收未作答 grading spec。
 
+输出语言是应用输入：request v3 对显式语言绑定指纹，input manifest v2 与 protected snapshot v3 保留选择；Study prompt v3 在原文证据之外统一指导语语言。Session 语言与成功 Turn 一起 CAS 保存，失败/uncertain 不提前修改；历史 v1/v2 指纹和附件读回不放宽。详见[输出语言偏好](../output-language.md)。
+

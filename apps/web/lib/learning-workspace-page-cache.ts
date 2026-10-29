@@ -1,5 +1,7 @@
 "use client";
 
+import { isOutputLanguagePreference } from "@vibe-learner/shared/output-language";
+
 export type StudyDialogPreviewState =
   | {
       kind: "document";
@@ -36,6 +38,7 @@ export interface PlanSetupPageCache {
   generationMode: "document" | "goal_only";
   objective: string;
   physicalPageRanges?: string;
+  outputLanguage?: string;
   file: File | null;
 }
 
@@ -108,6 +111,11 @@ export function loadLearningWorkspacePageCache(): LearningWorkspacePageCache {
                 ? "goal_only"
                 : "document",
             objective: String(parsed.planSetup.objective ?? ""),
+            outputLanguage:
+              typeof parsed.planSetup.outputLanguage === "string" &&
+              isOutputLanguagePreference(parsed.planSetup.outputLanguage)
+                ? parsed.planSetup.outputLanguage
+                : "auto",
             physicalPageRanges:
               typeof parsed.planSetup.physicalPageRanges === "string"
                 ? parsed.planSetup.physicalPageRanges.slice(0, 2000)
@@ -162,6 +170,7 @@ export function persistLearningWorkspacePageCache(
     serializable.planSetup = {
       generationMode: cache.planSetup.generationMode,
       objective: cache.planSetup.objective,
+      outputLanguage: cache.planSetup.outputLanguage ?? "auto",
       physicalPageRanges: cache.planSetup.physicalPageRanges ?? "",
     };
   }

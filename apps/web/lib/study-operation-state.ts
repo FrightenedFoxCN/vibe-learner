@@ -13,6 +13,7 @@ export type ChatFailureState = {
   messageKind: string;
   followUpId?: string;
   hiddenMessagePrefix?: string;
+  outputLanguage?: string;
   operationStatus: StudyChatOperationStatus | "unresolved";
   canQuery: boolean;
   canResend: boolean;
@@ -32,8 +33,10 @@ export type PendingStudyOperationIdentity = Pick<
   studyUnitId?: string;
 };
 
-const PENDING_STUDY_OPERATION_STORAGE_KEY = "vibe-learner:pending-study-chat-operation:v1";
-const AUTOMATIC_STUDY_REQUEST_STORAGE_KEY = "vibe-learner:automatic-study-chat-requests:v1";
+const PENDING_STUDY_OPERATION_STORAGE_KEY =
+  "vibe-learner:pending-study-chat-operation:v1";
+const AUTOMATIC_STUDY_REQUEST_STORAGE_KEY =
+  "vibe-learner:automatic-study-chat-requests:v1";
 
 export function presentStudyChatOperation(receipt: StudyChatOperationResponse): {
   detail: string;
@@ -61,23 +64,34 @@ export function presentStudyChatOperation(receipt: StudyChatOperationResponse): 
       };
     case "not_committed":
       const errorCode = receipt.errorCode ?? "";
+      if (errorCode.includes("mock_output_language_not_supported")) {
+        return {
+          detail:
+            "本地演示不支持这个语言标签；本次未写入会话。请更换为列表中的语言后发送新消息，或配置模型后重试。",
+          canQuery: false,
+          canResend: receipt.safeToRetry,
+        };
+      }
       if (errorCode.includes("chat_model_invalid_payload")) {
         return {
-          detail: "上游已返回模型结果，但结果未通过 Study Chat 结构校验；本次没有写入会话。可以重新发送，系统会使用新的请求身份。",
+          detail:
+            "上游已返回模型结果，但结果未通过 Study Chat 结构校验；本次没有写入会话。可以重新发送，系统会使用新的请求身份。",
           canQuery: false,
           canResend: receipt.safeToRetry,
         };
       }
       if (errorCode.includes("chat_model_empty_response")) {
         return {
-          detail: "上游没有返回可用的模型内容，本次没有写入会话。可以重新发送，系统会使用新的请求身份。",
+          detail:
+            "上游没有返回可用的模型内容，本次没有写入会话。可以重新发送，系统会使用新的请求身份。",
           canQuery: false,
           canResend: receipt.safeToRetry,
         };
       }
       if (errorCode.includes("chat_model_upstream_error:400")) {
         return {
-          detail: "上游拒绝了本次工具参数（400），本次没有写入会话。修复模型/工具配置后，可以用新的请求身份重新发送。",
+          detail:
+            "上游拒绝了本次工具参数（400），本次没有写入会话。修复模型/工具配置后，可以用新的请求身份重新发送。",
           canQuery: false,
           canResend: true,
         };
@@ -94,14 +108,17 @@ export function presentStudyChatOperation(receipt: StudyChatOperationResponse): 
   }
 }
 
-
 export type StudyOperationStorage = Pick<Storage, "getItem" | "setItem" | "removeItem">;
 export function createStudyOperationStore(
   resolveStorage: () => StudyOperationStorage | null,
   createRequestId: (scope: string) => string = createStudyChatRequestId,
 ) {
   const getStorage = () => {
-    try { return resolveStorage(); } catch { return null; }
+    try {
+      return resolveStorage();
+    } catch {
+      return null;
+    }
   };
   function getOrCreateAutomaticRequestId(
     requests: Map<string, string>,
@@ -124,7 +141,10 @@ export function createStudyOperationStore(
     return { clientRequestId: created, queryExisting: false };
   }
 
-  function forgetAutomaticStudyRequestId(requests: Map<string, string>, key: string): void {
+  function forgetAutomaticStudyRequestId(
+    requests: Map<string, string>,
+    key: string,
+  ): void {
     requests.delete(key);
     if (!getStorage()) {
       return;
@@ -153,7 +173,7 @@ export function createStudyOperationStore(
       const parsed = JSON.parse(raw) as Record<string, unknown>;
       return Object.fromEntries(
         Object.entries(parsed).filter((entry): entry is [string, string] =>
-          Boolean(entry[0] && typeof entry[1] === "string" && entry[1].trim())
+          Boolean(entry[0] && typeof entry[1] === "string" && entry[1].trim()),
         ),
       );
     } catch {
@@ -180,7 +200,9 @@ export function createStudyOperationStore(
     }
   }
 
-  function persistPendingStudyOperation(operation: PendingStudyOperationIdentity): void {
+  function persistPendingStudyOperation(
+    operation: PendingStudyOperationIdentity,
+  ): void {
     if (!getStorage()) {
       return;
     }
@@ -224,15 +246,19 @@ export function createStudyOperationStore(
         sessionId: value.sessionId,
         clientRequestId: value.clientRequestId,
         expectedSessionRevision: Number(value.expectedSessionRevision),
-        messageKind: typeof value.messageKind === "string" ? value.messageKind : undefined,
-        studyUnitId: typeof value.studyUnitId === "string" ? value.studyUnitId : undefined,
+        messageKind:
+          typeof value.messageKind === "string" ? value.messageKind : undefined,
+        studyUnitId:
+          typeof value.studyUnitId === "string" ? value.studyUnitId : undefined,
       };
     } catch {
       return null;
     }
   }
 
-  function clearPendingStudyOperation(operation: Pick<PendingStudyOperationIdentity, "sessionId" | "clientRequestId">): void {
+  function clearPendingStudyOperation(
+    operation: Pick<PendingStudyOperationIdentity, "sessionId" | "clientRequestId">,
+  ): void {
     if (!getStorage()) {
       return;
     }
@@ -250,8 +276,15 @@ export function createStudyOperationStore(
     }
   }
 
-  return { getOrCreateAutomaticRequestId, forgetAutomaticStudyRequestId,
-    persistPendingStudyOperation, readPendingStudyOperation, clearPendingStudyOperation };
+  return {
+    getOrCreateAutomaticRequestId,
+    forgetAutomaticStudyRequestId,
+    persistPendingStudyOperation,
+    readPendingStudyOperation,
+    clearPendingStudyOperation,
+  };
 }
-export const studyOperationStore = createStudyOperationStore(() => typeof window === "undefined" ? null : window.localStorage);
+export const studyOperationStore = createStudyOperationStore(() =>
+  typeof window === "undefined" ? null : window.localStorage,
+);
 export type StudyOperationStore = ReturnType<typeof createStudyOperationStore>;

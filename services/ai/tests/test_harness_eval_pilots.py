@@ -4,7 +4,11 @@ import json
 from pathlib import Path
 import unittest
 
-from app.services.harness_eval_pilots import execute_harness_pilot_bundle, _load_fixtures, _current_planning_cases
+from app.services.harness_eval_pilots import (
+    execute_harness_pilot_bundle,
+    _load_fixtures,
+    _current_planning_cases,
+)
 
 
 class HarnessEvalPilotTests(unittest.TestCase):
@@ -20,13 +24,23 @@ class HarnessEvalPilotTests(unittest.TestCase):
         legacy = json.loads(
             (root / "study_chat_eval" / "baseline.json").read_text(encoding="utf-8")
         )
-        current = json.loads(
+        previous = json.loads(
             (root / "study_chat_eval_prompt_v2" / "baseline.json").read_text(
                 encoding="utf-8"
             )
         )
+        current = json.loads(
+            (root / "study_chat_eval_prompt_v3" / "baseline.json").read_text(
+                encoding="utf-8"
+            )
+        )
         self.assertEqual(legacy["baseline_version"], "study-chat-eval-v1-baseline-v1")
-        self.assertEqual(current["baseline_version"], "study-chat-eval-v1-baseline-v2")
+        self.assertEqual(previous["baseline_version"], "study-chat-eval-v1-baseline-v2")
+        self.assertEqual(current["baseline_version"], "study-chat-eval-v1-baseline-v3")
+        self.assertNotEqual(
+            previous["tested_system_config_digest"],
+            current["tested_system_config_digest"],
+        )
         self.assertNotEqual(
             legacy["tested_system_config_digest"],
             current["tested_system_config_digest"],
@@ -34,15 +48,31 @@ class HarnessEvalPilotTests(unittest.TestCase):
 
     def test_budget_revision_preserves_reviewed_book_and_held_out_cases(self):
         historical = _load_fixtures()
-        original = next(case for case in historical.planning_cases if case.case_id == "planning-tool-duplicate-call-001")
+        original = next(
+            case
+            for case in historical.planning_cases
+            if case.case_id == "planning-tool-duplicate-call-001"
+        )
         self.assertEqual(original.repeat_count, 2)
         current = _current_planning_cases(historical)
-        replacement = next(case for case in current if case.case_id == "planning-tool-detail-round-limit-002")
-        self.assertEqual((replacement.split, replacement.repeat_count), ("regression", 4))
-        page_read = next(case for case in current if case.case_id == "planning-tool-page-read-round-limit-003")
+        replacement = next(
+            case
+            for case in current
+            if case.case_id == "planning-tool-detail-round-limit-002"
+        )
+        self.assertEqual(
+            (replacement.split, replacement.repeat_count), ("regression", 4)
+        )
+        page_read = next(
+            case
+            for case in current
+            if case.case_id == "planning-tool-page-read-round-limit-003"
+        )
         self.assertEqual((page_read.split, page_read.repeat_count), ("regression", 4))
-        self.assertEqual([case for case in current if case.split == "held_out"],
-            [case for case in historical.planning_cases if case.split == "held_out"])
+        self.assertEqual(
+            [case for case in current if case.split == "held_out"],
+            [case for case in historical.planning_cases if case.split == "held_out"],
+        )
 
     def test_checked_in_pilots_pass_against_checked_in_baselines(self) -> None:
         bundle = execute_harness_pilot_bundle(refresh_baselines=False)

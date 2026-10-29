@@ -2,6 +2,7 @@ import json
 from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from app.models.output_language import OutputLanguagePreference
 
 from app.core.model_runtime_limits import (
     CHAT_HISTORY_MESSAGES_MAX,
@@ -718,6 +719,7 @@ class CreateStudySessionRequest(BaseModel):
     study_unit_id: str
     study_unit_title: str = ""
     theme_hint: str = ""
+    output_language: OutputLanguagePreference | None = None
 
     @model_validator(mode="before")
     @classmethod
@@ -836,6 +838,7 @@ class StudyChatRequest(BaseModel):
     message_kind: StudyChatMessageKind = "learner"
     follow_up_id: str = ""
     hidden_message_prefix: str = ""
+    output_language: OutputLanguagePreference | None = None
 
 
 class StudyChatResponse(BaseModel):
