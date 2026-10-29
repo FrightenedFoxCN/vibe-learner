@@ -15,6 +15,7 @@
 | [原生计数检查点](diagnostic-native-counter.md) | 双槽格式、旧格式迁移、损坏恢复及降级行为 |
 | [桌面打包](desktop-packaging.md) | 本地构建、sidecar、Vault 与发布配置 |
 | [性能预算](performance-budgets-v1.md) | Room 分页、Harness 字节/调用/时延门 |
+| [前端资源读取边界](performance/web-resource-reads-v1.md) | 历史数据下 focus、跨页与恢复的请求计数门和原始 before/after |
 | [解析与规划数据流](parsing-and-planning-data-flow.md) | Document → Study Unit → Learning Plan |
 | [章节与日程](study-chapter-and-schedule.md) | 领域术语和 Session 范围 |
 | [计划修订](plan-revision.md) | Plan CAS、修订预览、接受/拒绝、历史回滚与恢复 |

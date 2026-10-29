@@ -95,10 +95,7 @@ export function useTavernRunRecovery(
           );
         }
       } finally {
-        if (
-          loadVersion === roomLoadVersion.current &&
-          resumeRunRef.current === run.id
-        )
+        if (loadVersion === roomLoadVersion.current && resumeRunRef.current === run.id)
           resumeRunRef.current = "";
         if (isCurrent()) await refreshRoom(diagnostic);
       }
@@ -125,8 +122,7 @@ export function useTavernRunRecovery(
   }, [activeRoom, busyAction, resumePendingRun, runs, clock]);
 
   useEffect(() => {
-    if (!activeRoom || (busyAction !== "turn" && busyAction !== "retry"))
-      return;
+    if (!activeRoom || (busyAction !== "turn" && busyAction !== "retry")) return;
     const roomId = activeRoom.id;
     const operationId = foregroundOperationIdRef.current;
     if (operationId === null) return;
@@ -134,7 +130,13 @@ export function useTavernRunRecovery(
     let disposed = false;
     let inFlight = false;
     const discoverPendingRun = async () => {
-      if (disposed || inFlight) return;
+      if (
+        disposed ||
+        inFlight ||
+        foregroundOperationIdRef.current !== operationId ||
+        mutationOperationRef.current?.id !== operationId
+      )
+        return;
       inFlight = true;
       const pollVersion = ++runPollVersionRef.current;
       try {

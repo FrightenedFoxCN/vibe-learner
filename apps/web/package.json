@@ -71,7 +71,8 @@
     "test:workspace:output-language": "TSX_TSCONFIG_PATH=tests/tsconfig.json node --import tsx --test tests/output-language.test.jsx",
     "test:workspace:output-language:browser": "playwright test --config playwright.output-language.config.ts",
     "test:workspace:recovery:live": "playwright test --config playwright.study-recovery.config.ts",
-    "test:tavern:order:live": "playwright test --config playwright.tavern-order.config.ts"
+    "test:tavern:order:live": "playwright test --config playwright.tavern-order.config.ts",
+    "test:resources:live": "playwright test --config playwright.resource-requests.config.ts"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.8.0",

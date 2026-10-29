@@ -41,6 +41,7 @@ This repository was last materially updated on 2026-09-10. The codebase is a mon
 - Unified active backlog: `TODO.md`
 - Planning/Study output language: `services/ai/app/models/output_language.py`, `services/ai/app/services/output_language.py`, and `docs/output-language.md`. Explicit preferences bind operation identity and save with successful Session commits; source quotations stay verbatim and legacy absent fields preserve fingerprint bytes.
 - Versioned performance gates: `docs/performance-budgets-v1.md`
+- Populated frontend request-count gates: `docs/performance/web-resource-reads-v1.md`; focus may join owned in-flight reads, while explicit refresh and post-mutation recovery need fresh projection tickets. Do not share a URL-only cache across operation/owner boundaries.
 - Harness Wave 5 performance gates: `docs/performance-budgets-v1.md`; run `npm run bench:harness -- --samples 30 --output /tmp/harness-local.json` for provider-free local measurements. Remaining independent review and representative live-provider gates are tracked in `TODO.md`; deterministic stage and SQLite crash/size gates are implemented.
 - Tavern contracts and persistence: `services/ai/app/models/tavern.py`, `services/ai/app/persistence/tavern_repository.py`, and `packages/shared/src/tavern.ts`
 - Study Session CAS persistence: `services/ai/app/persistence/study_session_repository.py`; new Study Session writes must not return to `LocalJsonStore.save_list("sessions", ...)`.

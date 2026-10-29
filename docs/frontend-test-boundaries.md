@@ -10,6 +10,7 @@
 | `npm run test:web:debug` | 完整 React 组件的 Debug 发布、更新、卸载清理；无学习 controller/API |
 | `npm run test:web:workspace` | 快照查询、草稿生命周期与生成 Hook；注入依赖，无网络 |
 | `npm --workspace @vibe-learner/web run test:workspace:data` | 只运行首次加载、刷新竞争、失效与重试模块 |
+| `npm --workspace @vibe-learner/web run test:resources:live` | 有历史 Room/Run 的真实临时后端：连续 focus、Plan/Study 共享 owner、跨页返回、慢轮询与丢失响应恢复；原始时序和 before/after 见[请求边界 v1](performance/web-resource-reads-v1.md) |
 | `npm --workspace @vibe-learner/web run test:workspace:checkpoints` | 保存进度严格解码、结果丢失后的 child 查询、持久身份和切换/卸载 fencing |
 | `npm --workspace @vibe-learner/web run test:workspace:checkpoints:browser` | 开发服务上的 OCR 保存片段、刷新、模糊续跑结果、GET 恢复和提交后继续规划入口 |
 | `npm --workspace @vibe-learner/web run test:workspace:page-scope` | 物理页输入、非法范围、独立印刷标签 DTO、实际 HTTP 请求序列化与 Setup 提交行为 |

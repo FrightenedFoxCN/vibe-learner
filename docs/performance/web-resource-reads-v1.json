@@ -1,0 +1,1417 @@
+{
+  "contract": "populated-resource-reads-evidence-v1",
+  "fixture_contract": "populated-resource-reads-v1",
+  "recorded_date": "2026-10-29",
+  "provenance": "developer_observed_real_browser_and_api",
+  "environment": {
+    "os": "macOS 27.0.1",
+    "architecture": "arm64",
+    "node": "26.12.1",
+    "python": "3.13.5",
+    "browser": "Chromium 153",
+    "frontend_mode": "Next development",
+    "database": "temporary SQLite",
+    "provider": "local mock",
+    "live_provider_calls": 0
+  },
+  "base_revision": "9ae0a45",
+  "samples": {
+    "before": {
+      "source_base_revision": "9ae0a45",
+      "implementation_file_sha256": {
+        "apps/web/lib/workspace-snapshot-loader.ts": "2067c78bd5def104997e393f439ed3d0ab332f9a590b6b238aa8f571e15a7cd2",
+        "apps/web/hooks/use-workspace-libraries.ts": "70b720030c99b5aab821c6f3a781064e1e36805b75c28a20c0dc0ab0d8ac067a",
+        "apps/web/hooks/use-learning-workspace-controller.ts": "736b6133188e6b31783c74cc0dece87314d1ebd5f2f451ae7317eb5c7f3f062b",
+        "apps/web/hooks/use-tavern-mutations.ts": "a04a4030b52907e821a9d9dbe1f26711c01e96fedf4420e38a12fb57a85257f5",
+        "apps/web/hooks/use-tavern-run-recovery.ts": "1ea7a19c99778ab6787cb24f3567282503ce78ea93d9b15aea6cd1372d369a58"
+      },
+      "observations": {
+        "resource-request-timeline.json": {
+          "before": true,
+          "fixture": {
+            "roomId": "tavern-1931a6da74be",
+            "historicalRuns": 1
+          },
+          "focusCounts": {
+            "/documents": 8,
+            "/learning-plans": 8,
+            "/personas": 8,
+            "/scene-library": 8
+          },
+          "returnCounts": {
+            "/documents": 10,
+            "/learning-plans": 10,
+            "/personas": 18,
+            "/scene-library": 10
+          },
+          "records": [
+            {
+              "phase": "bootstrap",
+              "method": "GET",
+              "path": "/scene-library",
+              "startMs": 225.07295900000003,
+              "status": 200,
+              "endMs": 237.01000000000005
+            },
+            {
+              "phase": "bootstrap",
+              "method": "GET",
+              "path": "/documents",
+              "startMs": 225.312292,
+              "status": 200,
+              "endMs": 237.01487500000002
+            },
+            {
+              "phase": "bootstrap",
+              "method": "GET",
+              "path": "/learning-plans",
+              "startMs": 225.32737500000002,
+              "status": 200,
+              "endMs": 237.01241699999997
+            },
+            {
+              "phase": "bootstrap",
+              "method": "GET",
+              "path": "/personas",
+              "startMs": 225.457334,
+              "status": 200,
+              "endMs": 237.00662500000004
+            },
+            {
+              "phase": "bootstrap",
+              "method": "GET",
+              "path": "/runtime-settings",
+              "startMs": 225.46645900000004,
+              "status": 200,
+              "endMs": 236.72370900000004
+            },
+            {
+              "phase": "bootstrap",
+              "method": "GET",
+              "path": "/study-sessions?persona_id=persona-515b2d42d101443ca2f76bd276b40c10&plan_id=plan-9d44fc0639",
+              "startMs": 264.334,
+              "status": 200,
+              "endMs": 264.50600000000003
+            },
+            {
+              "phase": "focus-burst",
+              "method": "GET",
+              "path": "/documents",
+              "startMs": 926.9325840000001,
+              "status": 200,
+              "endMs": 1256.320584
+            },
+            {
+              "phase": "focus-burst",
+              "method": "GET",
+              "path": "/learning-plans",
+              "startMs": 927.8001670000001,
+              "status": 200,
+              "endMs": 1256.691125
+            },
+            {
+              "phase": "focus-burst",
+              "method": "GET",
+              "path": "/personas",
+              "startMs": 929.813584,
+              "status": 200,
+              "endMs": 1283.210375
+            },
+            {
+              "phase": "focus-burst",
+              "method": "GET",
+              "path": "/scene-library",
+              "startMs": 930.147375,
+              "status": 200,
+              "endMs": 1283.153667
+            },
+            {
+              "phase": "focus-burst",
+              "method": "GET",
+              "path": "/documents",
+              "startMs": 930.3917920000001,
+              "status": 200,
+              "endMs": 1285.7725420000002
+            },
+            {
+              "phase": "focus-burst",
+              "method": "GET",
+              "path": "/learning-plans",
+              "startMs": 930.6078340000001,
+              "status": 200,
+              "endMs": 1314.509667
+            },
+            {
+              "phase": "focus-burst",
+              "method": "GET",
+              "path": "/personas",
+              "startMs": 930.8046670000001,
+              "status": 200,
+              "endMs": 1285.964
+            },
+            {
+              "phase": "focus-burst",
+              "method": "GET",
+              "path": "/scene-library",
+              "startMs": 930.9794590000001,
+              "status": 200,
+              "endMs": 1303.67875
+            },
+            {
+              "phase": "focus-burst",
+              "method": "GET",
+              "path": "/documents",
+              "startMs": 931.1380840000002,
+              "status": 200,
+              "endMs": 1314.282042
+            },
+            {
+              "phase": "focus-burst",
+              "method": "GET",
+              "path": "/learning-plans",
+              "startMs": 931.3208340000001,
+              "status": 200,
+              "endMs": 1303.638125
+            },
+            {
+              "phase": "focus-burst",
+              "method": "GET",
+              "path": "/personas",
+              "startMs": 931.498,
+              "status": 200,
+              "endMs": 1285.8646250000002
+            },
+            {
+              "phase": "focus-burst",
+              "method": "GET",
+              "path": "/scene-library",
+              "startMs": 931.649167,
+              "status": 200,
+              "endMs": 1314.529584
+            },
+            {
+              "phase": "focus-burst",
+              "method": "GET",
+              "path": "/documents",
+              "startMs": 931.797292,
+              "status": 200,
+              "endMs": 1303.65875
+            },
+            {
+              "phase": "focus-burst",
+              "method": "GET",
+              "path": "/learning-plans",
+              "startMs": 931.9634590000001,
+              "status": 200,
+              "endMs": 1303.655584
+            },
+            {
+              "phase": "focus-burst",
+              "method": "GET",
+              "path": "/personas",
+              "startMs": 932.1277090000001,
+              "status": 200,
+              "endMs": 1283.2144170000001
+            },
+            {
+              "phase": "focus-burst",
+              "method": "GET",
+              "path": "/scene-library",
+              "startMs": 932.2871250000001,
+              "status": 200,
+              "endMs": 1314.513875
+            },
+            {
+              "phase": "focus-burst",
+              "method": "GET",
+              "path": "/documents",
+              "startMs": 932.443417,
+              "status": 200,
+              "endMs": 1314.2865000000002
+            },
+            {
+              "phase": "focus-burst",
+              "method": "GET",
+              "path": "/learning-plans",
+              "startMs": 932.622417,
+              "status": 200,
+              "endMs": 1303.661625
+            },
+            {
+              "phase": "focus-burst",
+              "method": "GET",
+              "path": "/personas",
+              "startMs": 932.8098340000001,
+              "status": 200,
+              "endMs": 1285.9058340000001
+            },
+            {
+              "phase": "focus-burst",
+              "method": "GET",
+              "path": "/scene-library",
+              "startMs": 933.004709,
+              "status": 200,
+              "endMs": 1314.519834
+            },
+            {
+              "phase": "focus-burst",
+              "method": "GET",
+              "path": "/documents",
+              "startMs": 933.1800000000001,
+              "status": 200,
+              "endMs": 1283.192917
+            },
+            {
+              "phase": "focus-burst",
+              "method": "GET",
+              "path": "/learning-plans",
+              "startMs": 933.3631250000001,
+              "status": 200,
+              "endMs": 1314.5264590000002
+            },
+            {
+              "phase": "focus-burst",
+              "method": "GET",
+              "path": "/personas",
+              "startMs": 933.540459,
+              "status": 200,
+              "endMs": 1283.174459
+            },
+            {
+              "phase": "focus-burst",
+              "method": "GET",
+              "path": "/scene-library",
+              "startMs": 933.7541250000002,
+              "status": 200,
+              "endMs": 1314.532167
+            },
+            {
+              "phase": "focus-burst",
+              "method": "GET",
+              "path": "/documents",
+              "startMs": 933.92075,
+              "status": 200,
+              "endMs": 1314.516959
+            },
+            {
+              "phase": "focus-burst",
+              "method": "GET",
+              "path": "/learning-plans",
+              "startMs": 934.0997500000001,
+              "status": 200,
+              "endMs": 1303.6335840000002
+            },
+            {
+              "phase": "focus-burst",
+              "method": "GET",
+              "path": "/personas",
+              "startMs": 934.2714170000002,
+              "status": 200,
+              "endMs": 1285.9113750000001
+            },
+            {
+              "phase": "focus-burst",
+              "method": "GET",
+              "path": "/scene-library",
+              "startMs": 934.4784590000002,
+              "status": 200,
+              "endMs": 1303.6423340000001
+            },
+            {
+              "phase": "focus-burst",
+              "method": "GET",
+              "path": "/documents",
+              "startMs": 934.663959,
+              "status": 200,
+              "endMs": 1303.648792
+            },
+            {
+              "phase": "focus-burst",
+              "method": "GET",
+              "path": "/learning-plans",
+              "startMs": 934.8545000000001,
+              "status": 200,
+              "endMs": 1303.645417
+            },
+            {
+              "phase": "focus-burst",
+              "method": "GET",
+              "path": "/personas",
+              "startMs": 938.891709,
+              "status": 200,
+              "endMs": 1285.971
+            },
+            {
+              "phase": "focus-burst",
+              "method": "GET",
+              "path": "/scene-library",
+              "startMs": 939.1927500000002,
+              "status": 200,
+              "endMs": 1303.652292
+            },
+            {
+              "phase": "leave-learning",
+              "method": "GET",
+              "path": "/tavern/rooms?limit=30",
+              "startMs": 1794.335709,
+              "status": 200,
+              "endMs": 1815.8973340000002
+            },
+            {
+              "phase": "leave-learning",
+              "method": "GET",
+              "path": "/personas",
+              "startMs": 1794.348834,
+              "status": 200,
+              "endMs": 2112.9885
+            },
+            {
+              "phase": "leave-learning",
+              "method": "GET",
+              "path": "/scene-library",
+              "startMs": 1795.32175,
+              "status": 200,
+              "endMs": 2113.5865
+            },
+            {
+              "phase": "leave-learning",
+              "method": "GET",
+              "path": "/tavern/rooms?limit=30",
+              "startMs": 1795.7480420000002,
+              "status": 200,
+              "endMs": 1815.8947090000001
+            },
+            {
+              "phase": "leave-learning",
+              "method": "GET",
+              "path": "/personas",
+              "startMs": 1796.3961250000002,
+              "status": 200,
+              "endMs": 2113.575584
+            },
+            {
+              "phase": "leave-learning",
+              "method": "GET",
+              "path": "/scene-library",
+              "startMs": 1796.626667,
+              "status": 200,
+              "endMs": 2113.59475
+            },
+            {
+              "phase": "leave-learning",
+              "method": "GET",
+              "path": "/tavern/rooms/tavern-1931a6da74be?tail=true&limit=40",
+              "startMs": 2118.426375,
+              "status": 200,
+              "endMs": 2138.3136250000002
+            },
+            {
+              "phase": "leave-learning",
+              "method": "GET",
+              "path": "/tavern/rooms/tavern-1931a6da74be/runs?limit=50",
+              "startMs": 2118.496709,
+              "status": 200,
+              "endMs": 2142.9145
+            },
+            {
+              "phase": "leave-learning",
+              "method": "GET",
+              "path": "/tavern/rooms/tavern-1931a6da74be/run-recovery?limit=50",
+              "startMs": 2119.618584,
+              "status": 200,
+              "endMs": 2144.410084
+            },
+            {
+              "phase": "return-with-focus",
+              "method": "GET",
+              "path": "/scene-library",
+              "startMs": 2476.9500000000003,
+              "status": 200,
+              "endMs": 2805.557375
+            },
+            {
+              "phase": "return-with-focus",
+              "method": "GET",
+              "path": "/documents",
+              "startMs": 2477.7765,
+              "status": 200,
+              "endMs": 2805.551875
+            },
+            {
+              "phase": "return-with-focus",
+              "method": "GET",
+              "path": "/learning-plans",
+              "startMs": 2478.7054590000002,
+              "status": 200,
+              "endMs": 2803.364959
+            },
+            {
+              "phase": "return-with-focus",
+              "method": "GET",
+              "path": "/personas",
+              "startMs": 2478.88775,
+              "status": 200,
+              "endMs": 2805.505417
+            },
+            {
+              "phase": "return-with-focus",
+              "method": "GET",
+              "path": "/scene-library",
+              "startMs": 2479.052875,
+              "status": 200,
+              "endMs": 2805.563459
+            },
+            {
+              "phase": "return-with-focus",
+              "method": "GET",
+              "path": "/documents",
+              "startMs": 2479.207209,
+              "status": 200,
+              "endMs": 2805.45825
+            },
+            {
+              "phase": "return-with-focus",
+              "method": "GET",
+              "path": "/learning-plans",
+              "startMs": 2479.35925,
+              "status": 200,
+              "endMs": 2805.37325
+            },
+            {
+              "phase": "return-with-focus",
+              "method": "GET",
+              "path": "/personas",
+              "startMs": 2479.5185420000003,
+              "status": 200,
+              "endMs": 2805.586584
+            },
+            {
+              "phase": "return-with-focus",
+              "method": "GET",
+              "path": "/documents",
+              "startMs": 2499.333834,
+              "status": 200,
+              "endMs": 2858.4939170000002
+            },
+            {
+              "phase": "return-with-focus",
+              "method": "GET",
+              "path": "/learning-plans",
+              "startMs": 2499.674084,
+              "status": 200,
+              "endMs": 2862.178667
+            },
+            {
+              "phase": "return-with-focus",
+              "method": "GET",
+              "path": "/personas",
+              "startMs": 2499.978709,
+              "status": 200,
+              "endMs": 2858.445292
+            },
+            {
+              "phase": "return-with-focus",
+              "method": "GET",
+              "path": "/personas",
+              "startMs": 2500.198875,
+              "status": 200,
+              "endMs": 2858.479292
+            },
+            {
+              "phase": "return-with-focus",
+              "method": "GET",
+              "path": "/scene-library",
+              "startMs": 2500.33925,
+              "status": 200,
+              "endMs": 2862.322459
+            },
+            {
+              "phase": "return-with-focus",
+              "method": "GET",
+              "path": "/documents",
+              "startMs": 2500.537667,
+              "status": 200,
+              "endMs": 2891.200709
+            },
+            {
+              "phase": "return-with-focus",
+              "method": "GET",
+              "path": "/learning-plans",
+              "startMs": 2500.6947920000002,
+              "status": 200,
+              "endMs": 2862.294084
+            },
+            {
+              "phase": "return-with-focus",
+              "method": "GET",
+              "path": "/personas",
+              "startMs": 2500.816542,
+              "status": 200,
+              "endMs": 2862.13825
+            },
+            {
+              "phase": "return-with-focus",
+              "method": "GET",
+              "path": "/personas",
+              "startMs": 2500.9247920000003,
+              "status": 200,
+              "endMs": 2858.474459
+            },
+            {
+              "phase": "return-with-focus",
+              "method": "GET",
+              "path": "/scene-library",
+              "startMs": 2501.028459,
+              "status": 200,
+              "endMs": 2891.207959
+            },
+            {
+              "phase": "return-with-focus",
+              "method": "GET",
+              "path": "/documents",
+              "startMs": 2501.130459,
+              "status": 200,
+              "endMs": 2862.273209
+            },
+            {
+              "phase": "return-with-focus",
+              "method": "GET",
+              "path": "/learning-plans",
+              "startMs": 2501.235125,
+              "status": 200,
+              "endMs": 2862.487125
+            },
+            {
+              "phase": "return-with-focus",
+              "method": "GET",
+              "path": "/personas",
+              "startMs": 2501.337625,
+              "status": 200,
+              "endMs": 2862.1072090000002
+            },
+            {
+              "phase": "return-with-focus",
+              "method": "GET",
+              "path": "/personas",
+              "startMs": 2501.43675,
+              "status": 200,
+              "endMs": 2858.526292
+            },
+            {
+              "phase": "return-with-focus",
+              "method": "GET",
+              "path": "/scene-library",
+              "startMs": 2501.5358340000002,
+              "status": 200,
+              "endMs": 2891.192417
+            },
+            {
+              "phase": "return-with-focus",
+              "method": "GET",
+              "path": "/documents",
+              "startMs": 2501.6324170000003,
+              "status": 200,
+              "endMs": 2891.211792
+            },
+            {
+              "phase": "return-with-focus",
+              "method": "GET",
+              "path": "/learning-plans",
+              "startMs": 2501.752792,
+              "status": 200,
+              "endMs": 2862.3745
+            },
+            {
+              "phase": "return-with-focus",
+              "method": "GET",
+              "path": "/personas",
+              "startMs": 2501.856375,
+              "status": 200,
+              "endMs": 2862.270084
+            },
+            {
+              "phase": "return-with-focus",
+              "method": "GET",
+              "path": "/personas",
+              "startMs": 2501.954709,
+              "status": 200,
+              "endMs": 2862.250042
+            },
+            {
+              "phase": "return-with-focus",
+              "method": "GET",
+              "path": "/scene-library",
+              "startMs": 2502.052667,
+              "status": 200,
+              "endMs": 2891.2156250000003
+            },
+            {
+              "phase": "return-with-focus",
+              "method": "GET",
+              "path": "/documents",
+              "startMs": 2502.1555,
+              "status": 200,
+              "endMs": 2891.1965840000003
+            },
+            {
+              "phase": "return-with-focus",
+              "method": "GET",
+              "path": "/learning-plans",
+              "startMs": 2502.2578750000002,
+              "status": 200,
+              "endMs": 2891.204292
+            },
+            {
+              "phase": "return-with-focus",
+              "method": "GET",
+              "path": "/personas",
+              "startMs": 2502.358792,
+              "status": 200,
+              "endMs": 2862.356459
+            },
+            {
+              "phase": "return-with-focus",
+              "method": "GET",
+              "path": "/personas",
+              "startMs": 2502.456709,
+              "status": 200,
+              "endMs": 2858.5113340000003
+            },
+            {
+              "phase": "return-with-focus",
+              "method": "GET",
+              "path": "/scene-library",
+              "startMs": 2502.554,
+              "status": 200,
+              "endMs": 2862.397209
+            },
+            {
+              "phase": "return-with-focus",
+              "method": "GET",
+              "path": "/documents",
+              "startMs": 2502.650334,
+              "status": 200,
+              "endMs": 2891.182917
+            },
+            {
+              "phase": "return-with-focus",
+              "method": "GET",
+              "path": "/learning-plans",
+              "startMs": 2502.752209,
+              "status": 200,
+              "endMs": 2891.1877090000003
+            },
+            {
+              "phase": "return-with-focus",
+              "method": "GET",
+              "path": "/personas",
+              "startMs": 2502.851792,
+              "status": 200,
+              "endMs": 2858.497084
+            },
+            {
+              "phase": "return-with-focus",
+              "method": "GET",
+              "path": "/personas",
+              "startMs": 2502.949042,
+              "status": 200,
+              "endMs": 2862.236875
+            },
+            {
+              "phase": "return-with-focus",
+              "method": "GET",
+              "path": "/scene-library",
+              "startMs": 2503.0475,
+              "status": 200,
+              "endMs": 2891.176375
+            },
+            {
+              "phase": "return-with-focus",
+              "method": "GET",
+              "path": "/documents",
+              "startMs": 2503.145959,
+              "status": 200,
+              "endMs": 2862.2165840000002
+            },
+            {
+              "phase": "return-with-focus",
+              "method": "GET",
+              "path": "/learning-plans",
+              "startMs": 2503.247709,
+              "status": 200,
+              "endMs": 2862.4516670000003
+            },
+            {
+              "phase": "return-with-focus",
+              "method": "GET",
+              "path": "/personas",
+              "startMs": 2503.3555,
+              "status": 200,
+              "endMs": 2862.4543750000003
+            },
+            {
+              "phase": "return-with-focus",
+              "method": "GET",
+              "path": "/personas",
+              "startMs": 2503.452875,
+              "status": 200,
+              "endMs": 2862.408917
+            },
+            {
+              "phase": "return-with-focus",
+              "method": "GET",
+              "path": "/scene-library",
+              "startMs": 2503.550084,
+              "status": 200,
+              "endMs": 2862.465584
+            },
+            {
+              "phase": "return-with-focus",
+              "method": "GET",
+              "path": "/documents",
+              "startMs": 2503.649792,
+              "status": 200,
+              "endMs": 2862.498459
+            },
+            {
+              "phase": "return-with-focus",
+              "method": "GET",
+              "path": "/learning-plans",
+              "startMs": 2503.751959,
+              "status": 200,
+              "endMs": 2862.476334
+            },
+            {
+              "phase": "return-with-focus",
+              "method": "GET",
+              "path": "/personas",
+              "startMs": 2503.851,
+              "status": 200,
+              "endMs": 2862.426375
+            },
+            {
+              "phase": "return-with-focus",
+              "method": "GET",
+              "path": "/personas",
+              "startMs": 2505.697917,
+              "status": 200,
+              "endMs": 2862.51175
+            },
+            {
+              "phase": "return-with-focus",
+              "method": "GET",
+              "path": "/scene-library",
+              "startMs": 2505.905209,
+              "status": 200,
+              "endMs": 2873.3672500000002
+            },
+            {
+              "phase": "return-with-focus",
+              "method": "GET",
+              "path": "/study-sessions?persona_id=persona-515b2d42d101443ca2f76bd276b40c10&plan_id=plan-9d44fc0639",
+              "startMs": 2890.155292,
+              "status": 200,
+              "endMs": 2901.591292
+            }
+          ]
+        },
+        "recovery-request-timeline.json": {
+          "before": true,
+          "fixture": {
+            "roomId": "tavern-8d38104ea79e",
+            "historicalRuns": 1
+          },
+          "maxActivePolls": 2,
+          "providerCalls": [
+            {
+              "persona_id": "persona-05e90ac59bf74088a10bcb4db98bddc6",
+              "name": "Focus A recovery",
+              "message": "dedupe-recovery-round"
+            },
+            {
+              "persona_id": "persona-c3cbc05c05d14af98e9a4a074c759478",
+              "name": "Focus B recovery",
+              "message": "dedupe-recovery-round"
+            }
+          ],
+          "runs": [
+            {
+              "id": "tavern-run-16a64e911617",
+              "status": "completed",
+              "parent_run_id": "",
+              "root_run_id": "tavern-run-16a64e911617",
+              "generated_message_ids": [
+                "tavern-message-ac4f498f02bb",
+                "tavern-message-1469079ba47e"
+              ],
+              "expected_room_revision": 1,
+              "terminal_sequence": 6
+            },
+            {
+              "id": "tavern-run-f3cdbb6794fe",
+              "status": "completed",
+              "parent_run_id": "",
+              "root_run_id": "tavern-run-f3cdbb6794fe",
+              "generated_message_ids": [
+                "tavern-message-54e1eeff4057",
+                "tavern-message-d1df2000acd9"
+              ],
+              "expected_room_revision": 0,
+              "terminal_sequence": 3
+            }
+          ],
+          "records": [
+            {
+              "phase": "bootstrap",
+              "method": "GET",
+              "path": "/tavern/rooms?limit=30",
+              "startMs": 265.4365419999999,
+              "status": 200,
+              "endMs": 267.7223750000003
+            },
+            {
+              "phase": "bootstrap",
+              "method": "GET",
+              "path": "/personas",
+              "startMs": 265.6111249999999,
+              "status": 200,
+              "endMs": 267.47904199999994
+            },
+            {
+              "phase": "bootstrap",
+              "method": "GET",
+              "path": "/scene-library",
+              "startMs": 265.62083299999995,
+              "status": 200,
+              "endMs": 267.7197080000001
+            },
+            {
+              "phase": "bootstrap",
+              "method": "GET",
+              "path": "/runtime-settings",
+              "startMs": 265.6818330000001,
+              "status": 200,
+              "endMs": 267.7158330000002
+            },
+            {
+              "phase": "bootstrap",
+              "method": "GET",
+              "path": "/tavern/rooms/tavern-8d38104ea79e?tail=true&limit=40",
+              "startMs": 269.3085000000001,
+              "status": 200,
+              "endMs": 282.92350000000033
+            },
+            {
+              "phase": "bootstrap",
+              "method": "GET",
+              "path": "/tavern/rooms/tavern-8d38104ea79e/runs?limit=50",
+              "startMs": 269.77300000000014,
+              "status": 200,
+              "endMs": 283.1668330000002
+            },
+            {
+              "phase": "bootstrap",
+              "method": "GET",
+              "path": "/tavern/rooms/tavern-8d38104ea79e/run-recovery?limit=50",
+              "startMs": 269.78587500000003,
+              "status": 200,
+              "endMs": 283.1766670000002
+            },
+            {
+              "phase": "poll-and-focus",
+              "method": "POST",
+              "path": "/tavern/rooms/tavern-8d38104ea79e/turns",
+              "startMs": 925.5395830000002,
+              "endMs": 4323.3544999999995,
+              "failure": "net::ERR_FAILED"
+            },
+            {
+              "phase": "poll-and-focus",
+              "method": "GET",
+              "path": "/tavern/rooms/tavern-8d38104ea79e/runs?limit=50",
+              "startMs": 926.2143330000004,
+              "status": 200,
+              "endMs": 2340.651875
+            },
+            {
+              "phase": "poll-and-focus",
+              "method": "GET",
+              "path": "/tavern/rooms/tavern-8d38104ea79e/runs?limit=50",
+              "startMs": 2729.3422080000005,
+              "status": 200,
+              "endMs": 4150.564208
+            },
+            {
+              "phase": "lost-response-readback",
+              "method": "GET",
+              "path": "/tavern/rooms/tavern-8d38104ea79e?tail=true&limit=40",
+              "startMs": 4324.314792000001,
+              "status": 200,
+              "endMs": 4333.329667
+            },
+            {
+              "phase": "lost-response-readback",
+              "method": "GET",
+              "path": "/tavern/rooms/tavern-8d38104ea79e/runs?limit=50",
+              "startMs": 4324.623874999999,
+              "status": 200,
+              "endMs": 5742.7149580000005
+            },
+            {
+              "phase": "lost-response-readback",
+              "method": "GET",
+              "path": "/tavern/rooms/tavern-8d38104ea79e/run-recovery?limit=50",
+              "startMs": 4324.906500000001,
+              "status": 200,
+              "endMs": 4334.962583
+            },
+            {
+              "phase": "lost-response-readback",
+              "method": "GET",
+              "path": "/tavern/rooms?limit=30",
+              "startMs": 4324.9150420000005,
+              "status": 200,
+              "endMs": 4331.828917000001
+            },
+            {
+              "phase": "lost-response-readback",
+              "method": "GET",
+              "path": "/tavern/rooms/tavern-8d38104ea79e/runs?limit=50",
+              "startMs": 4528.685125,
+              "status": 200,
+              "endMs": 5944.47725
+            }
+          ]
+        }
+      }
+    },
+    "after": {
+      "source_base_revision": "9ae0a45",
+      "implementation_file_sha256": {
+        "apps/web/lib/workspace-snapshot-loader.ts": "da1c64df95b9e49b5c09196ce9fb5fc24053c868629ced20e339f7c84dcfeaae",
+        "apps/web/hooks/use-workspace-libraries.ts": "3bd2d49e3852207e425132854f76be352c58bdb696cca263c70bb2d0475ce526",
+        "apps/web/hooks/use-learning-workspace-controller.ts": "aa6ecd8991e1ce79dfe149dec99a6e0e4275bbbb7f8e7caebb80b653cba9eaf1",
+        "apps/web/hooks/use-tavern-mutations.ts": "91bc7152a61bc09a2059f1d6b31ee3b03930644ff6e30770f48c35c13c720f0d",
+        "apps/web/hooks/use-tavern-run-recovery.ts": "014cf5dd82bed9528b478b209bc963b0caf7b9b588d4c0cdaa4d3b5f9b75a042"
+      },
+      "observations": {
+        "resource-request-timeline.json": {
+          "before": false,
+          "fixture": {
+            "roomId": "tavern-950bb215d608",
+            "historicalRuns": 1
+          },
+          "focusCounts": {
+            "/documents": 1,
+            "/learning-plans": 1,
+            "/personas": 1,
+            "/scene-library": 1
+          },
+          "returnCounts": {
+            "/documents": 2,
+            "/learning-plans": 2,
+            "/personas": 2,
+            "/scene-library": 2
+          },
+          "records": [
+            {
+              "phase": "bootstrap",
+              "method": "GET",
+              "path": "/scene-library",
+              "startMs": 223.960666,
+              "status": 200,
+              "endMs": 236.15362499999998
+            },
+            {
+              "phase": "bootstrap",
+              "method": "GET",
+              "path": "/documents",
+              "startMs": 224.16141599999997,
+              "status": 200,
+              "endMs": 236.15904100000006
+            },
+            {
+              "phase": "bootstrap",
+              "method": "GET",
+              "path": "/learning-plans",
+              "startMs": 224.17649999999998,
+              "status": 200,
+              "endMs": 236.162041
+            },
+            {
+              "phase": "bootstrap",
+              "method": "GET",
+              "path": "/personas",
+              "startMs": 224.46887499999997,
+              "status": 200,
+              "endMs": 235.90070800000007
+            },
+            {
+              "phase": "bootstrap",
+              "method": "GET",
+              "path": "/runtime-settings",
+              "startMs": 224.47883300000007,
+              "status": 200,
+              "endMs": 235.90916599999997
+            },
+            {
+              "phase": "bootstrap",
+              "method": "GET",
+              "path": "/study-sessions?persona_id=persona-e06aedf3fc654b719bec141354860df9&plan_id=plan-118dcdc126",
+              "startMs": 265.074458,
+              "status": 200,
+              "endMs": 265.416708
+            },
+            {
+              "phase": "focus-burst",
+              "method": "GET",
+              "path": "/documents",
+              "startMs": 927.9453329999999,
+              "status": 200,
+              "endMs": 1247.7510829999999
+            },
+            {
+              "phase": "focus-burst",
+              "method": "GET",
+              "path": "/learning-plans",
+              "startMs": 928.7567079999999,
+              "status": 200,
+              "endMs": 1247.879708
+            },
+            {
+              "phase": "focus-burst",
+              "method": "GET",
+              "path": "/personas",
+              "startMs": 929.0621659999999,
+              "status": 200,
+              "endMs": 1247.888375
+            },
+            {
+              "phase": "focus-burst",
+              "method": "GET",
+              "path": "/scene-library",
+              "startMs": 930.0762909999999,
+              "status": 200,
+              "endMs": 1247.89875
+            },
+            {
+              "phase": "leave-learning",
+              "method": "GET",
+              "path": "/tavern/rooms?limit=30",
+              "startMs": 1829.6614160000001,
+              "status": 200,
+              "endMs": 1851.611416
+            },
+            {
+              "phase": "leave-learning",
+              "method": "GET",
+              "path": "/personas",
+              "startMs": 1830.262833,
+              "status": 200,
+              "endMs": 2147.279
+            },
+            {
+              "phase": "leave-learning",
+              "method": "GET",
+              "path": "/scene-library",
+              "startMs": 1830.6338749999998,
+              "status": 200,
+              "endMs": 2148.972208
+            },
+            {
+              "phase": "leave-learning",
+              "method": "GET",
+              "path": "/tavern/rooms?limit=30",
+              "startMs": 1831.0917080000002,
+              "status": 200,
+              "endMs": 1851.615333
+            },
+            {
+              "phase": "leave-learning",
+              "method": "GET",
+              "path": "/personas",
+              "startMs": 1831.1276249999999,
+              "status": 200,
+              "endMs": 2147.290375
+            },
+            {
+              "phase": "leave-learning",
+              "method": "GET",
+              "path": "/scene-library",
+              "startMs": 1831.624458,
+              "status": 200,
+              "endMs": 2147.398958
+            },
+            {
+              "phase": "leave-learning",
+              "method": "GET",
+              "path": "/tavern/rooms/tavern-950bb215d608?tail=true&limit=40",
+              "startMs": 2150.3935410000004,
+              "status": 200,
+              "endMs": 2171.534458
+            },
+            {
+              "phase": "leave-learning",
+              "method": "GET",
+              "path": "/tavern/rooms/tavern-950bb215d608/runs?limit=50",
+              "startMs": 2151.0135,
+              "status": 200,
+              "endMs": 2175.624291
+            },
+            {
+              "phase": "leave-learning",
+              "method": "GET",
+              "path": "/tavern/rooms/tavern-950bb215d608/run-recovery?limit=50",
+              "startMs": 2151.04475,
+              "status": 200,
+              "endMs": 2174.24625
+            },
+            {
+              "phase": "return-with-focus",
+              "method": "GET",
+              "path": "/scene-library",
+              "startMs": 2535.697708,
+              "status": 200,
+              "endMs": 2860.6056660000004
+            },
+            {
+              "phase": "return-with-focus",
+              "method": "GET",
+              "path": "/documents",
+              "startMs": 2536.5617500000003,
+              "status": 200,
+              "endMs": 2860.620041
+            },
+            {
+              "phase": "return-with-focus",
+              "method": "GET",
+              "path": "/learning-plans",
+              "startMs": 2536.8722080000002,
+              "status": 200,
+              "endMs": 2862.778666
+            },
+            {
+              "phase": "return-with-focus",
+              "method": "GET",
+              "path": "/personas",
+              "startMs": 2537.7861660000003,
+              "status": 200,
+              "endMs": 2862.635916
+            },
+            {
+              "phase": "return-with-focus",
+              "method": "GET",
+              "path": "/scene-library",
+              "startMs": 2538.032458,
+              "status": 200,
+              "endMs": 2863.2079580000004
+            },
+            {
+              "phase": "return-with-focus",
+              "method": "GET",
+              "path": "/documents",
+              "startMs": 2538.581458,
+              "status": 200,
+              "endMs": 2862.925666
+            },
+            {
+              "phase": "return-with-focus",
+              "method": "GET",
+              "path": "/learning-plans",
+              "startMs": 2538.874875,
+              "status": 200,
+              "endMs": 2863.2012910000003
+            },
+            {
+              "phase": "return-with-focus",
+              "method": "GET",
+              "path": "/personas",
+              "startMs": 2539.0553330000002,
+              "status": 200,
+              "endMs": 2862.9165000000003
+            },
+            {
+              "phase": "return-with-focus",
+              "method": "GET",
+              "path": "/study-sessions?persona_id=persona-e06aedf3fc654b719bec141354860df9&plan_id=plan-118dcdc126",
+              "startMs": 2893.2762500000003,
+              "status": 200,
+              "endMs": 2896.470208
+            }
+          ]
+        },
+        "recovery-request-timeline.json": {
+          "freshRunReadCount": 1,
+          "before": false,
+          "fixture": {
+            "roomId": "tavern-0afe7c932a5d",
+            "historicalRuns": 1
+          },
+          "maxActivePolls": 1,
+          "providerCalls": [
+            {
+              "persona_id": "persona-5f6ec414f3aa47c8a385ec19c6e9b1fd",
+              "name": "Focus A recovery",
+              "message": "dedupe-recovery-round"
+            },
+            {
+              "persona_id": "persona-fb6c4569281f4097b6c5c29f9e82098a",
+              "name": "Focus B recovery",
+              "message": "dedupe-recovery-round"
+            }
+          ],
+          "runs": [
+            {
+              "id": "tavern-run-a7c43d64b8a9",
+              "status": "completed",
+              "parent_run_id": "",
+              "root_run_id": "tavern-run-a7c43d64b8a9",
+              "generated_message_ids": [
+                "tavern-message-8de388d95442",
+                "tavern-message-97b18f34bfd6"
+              ],
+              "expected_room_revision": 1,
+              "terminal_sequence": 6
+            },
+            {
+              "id": "tavern-run-e62f071edd98",
+              "status": "completed",
+              "parent_run_id": "",
+              "root_run_id": "tavern-run-e62f071edd98",
+              "generated_message_ids": [
+                "tavern-message-d1a1cd8bb973",
+                "tavern-message-63191e502896"
+              ],
+              "expected_room_revision": 0,
+              "terminal_sequence": 3
+            }
+          ],
+          "records": [
+            {
+              "phase": "bootstrap",
+              "method": "GET",
+              "path": "/tavern/rooms?limit=30",
+              "startMs": 261.7760410000001,
+              "status": 200,
+              "endMs": 263.80250000000024
+            },
+            {
+              "phase": "bootstrap",
+              "method": "GET",
+              "path": "/personas",
+              "startMs": 261.9146660000001,
+              "status": 200,
+              "endMs": 263.6066249999999
+            },
+            {
+              "phase": "bootstrap",
+              "method": "GET",
+              "path": "/scene-library",
+              "startMs": 262.1199580000002,
+              "status": 200,
+              "endMs": 263.79916600000024
+            },
+            {
+              "phase": "bootstrap",
+              "method": "GET",
+              "path": "/runtime-settings",
+              "startMs": 262.12800000000016,
+              "status": 200,
+              "endMs": 263.7940830000002
+            },
+            {
+              "phase": "bootstrap",
+              "method": "GET",
+              "path": "/tavern/rooms/tavern-0afe7c932a5d?tail=true&limit=40",
+              "startMs": 265.45975,
+              "status": 200,
+              "endMs": 276.80441599999995
+            },
+            {
+              "phase": "bootstrap",
+              "method": "GET",
+              "path": "/tavern/rooms/tavern-0afe7c932a5d/runs?limit=50",
+              "startMs": 265.49566600000026,
+              "status": 200,
+              "endMs": 276.87308299999995
+            },
+            {
+              "phase": "bootstrap",
+              "method": "GET",
+              "path": "/tavern/rooms/tavern-0afe7c932a5d/run-recovery?limit=50",
+              "startMs": 265.5389580000001,
+              "status": 200,
+              "endMs": 276.9525410000001
+            },
+            {
+              "phase": "poll-and-focus",
+              "method": "POST",
+              "path": "/tavern/rooms/tavern-0afe7c932a5d/turns",
+              "startMs": 908.4253330000001,
+              "endMs": 4307.113208,
+              "failure": "net::ERR_FAILED"
+            },
+            {
+              "phase": "poll-and-focus",
+              "method": "GET",
+              "path": "/tavern/rooms/tavern-0afe7c932a5d/runs?limit=50",
+              "startMs": 909.2762910000001,
+              "status": 200,
+              "endMs": 2322.887208
+            },
+            {
+              "phase": "poll-and-focus",
+              "method": "GET",
+              "path": "/tavern/rooms/tavern-0afe7c932a5d/runs?limit=50",
+              "startMs": 2712.505416,
+              "status": 200,
+              "endMs": 4134.725166
+            },
+            {
+              "phase": "lost-response-readback",
+              "method": "GET",
+              "path": "/tavern/rooms/tavern-0afe7c932a5d?tail=true&limit=40",
+              "startMs": 4308.499291,
+              "status": 200,
+              "endMs": 4315.964416
+            },
+            {
+              "phase": "lost-response-readback",
+              "method": "GET",
+              "path": "/tavern/rooms/tavern-0afe7c932a5d/runs?limit=50",
+              "startMs": 4308.516791,
+              "status": 200,
+              "endMs": 5726.469791
+            },
+            {
+              "phase": "lost-response-readback",
+              "method": "GET",
+              "path": "/tavern/rooms/tavern-0afe7c932a5d/run-recovery?limit=50",
+              "startMs": 4309.231458,
+              "status": 200,
+              "endMs": 4319.790083
+            },
+            {
+              "phase": "lost-response-readback",
+              "method": "GET",
+              "path": "/tavern/rooms?limit=30",
+              "startMs": 4309.242166,
+              "status": 200,
+              "endMs": 4321.192666
+            }
+          ]
+        }
+      }
+    }
+  },
+  "post_observation_review": {
+    "change": "Declare stable React ref dependencies in operationIsCurrent and releaseForegroundOperation; refs are created once by the same state owner. No request policy or runtime ordering change.",
+    "current_implementation_file_sha256": {
+      "apps/web/lib/workspace-snapshot-loader.ts": "da1c64df95b9e49b5c09196ce9fb5fc24053c868629ced20e339f7c84dcfeaae",
+      "apps/web/hooks/use-workspace-libraries.ts": "3bd2d49e3852207e425132854f76be352c58bdb696cca263c70bb2d0475ce526",
+      "apps/web/hooks/use-learning-workspace-controller.ts": "aa6ecd8991e1ce79dfe149dec99a6e0e4275bbbb7f8e7caebb80b653cba9eaf1",
+      "apps/web/hooks/use-tavern-mutations.ts": "6590d70a80ef2f3f530dc4f10c198945f9f8f82e508cf88d75c65e75ae7234be",
+      "apps/web/hooks/use-tavern-run-recovery.ts": "014cf5dd82bed9528b478b209bc963b0caf7b9b588d4c0cdaa4d3b5f9b75a042"
+    }
+  }
+}

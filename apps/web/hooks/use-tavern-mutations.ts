@@ -112,20 +112,16 @@ export function useTavernMutations(
 
   const operationIsCurrent = useCallback(
     (operation: MutationOperation): boolean => {
-      return (
-        mountedRef.current && mutationOperationRef.current?.id === operation.id
-      );
+      return mountedRef.current && mutationOperationRef.current?.id === operation.id;
     },
-    [],
+    [mountedRef, mutationOperationRef],
   );
 
   const finishMutation = useCallback(
     (operation: MutationOperation): boolean => {
       if (!operationIsCurrent(operation)) return false;
       mutationOperationRef.current = null;
-      setBusyAction((current) =>
-        current === operation.action ? null : current,
-      );
+      setBusyAction((current) => (current === operation.action ? null : current));
       return true;
     },
     [operationIsCurrent],
@@ -137,7 +133,7 @@ export function useTavernMutations(
       foregroundOperationIdRef.current = null;
       foregroundRunRef.current = "";
     },
-    [],
+    [foregroundOperationIdRef, foregroundRunRef],
   );
 
   const handleCreateRoom = useCallback(
@@ -159,8 +155,7 @@ export function useTavernMutations(
         savedCreation.title === input.title &&
         savedCreation.sceneId === input.sceneId &&
         savedCreation.openingPrompt === input.openingPrompt &&
-        savedCreation.personaIds.join("\u0000") ===
-          input.personaIds.join("\u0000");
+        savedCreation.personaIds.join("\u0000") === input.personaIds.join("\u0000");
       const creationDraft = sameCreation
         ? savedCreation
         : {
@@ -263,10 +258,7 @@ export function useTavernMutations(
         !isTavernRoomStateAtLeast(updated.room, currentDetail.room)
       )
         return;
-      const nextMessages = mergeTavernMessages(
-        messagesRef.current,
-        updated.messages,
-      );
+      const nextMessages = mergeTavernMessages(messagesRef.current, updated.messages);
       const updatedDetail = {
         ...currentDetail,
         room: updated.room,
@@ -278,9 +270,7 @@ export function useTavernMutations(
       setDetail(updatedDetail);
       setMessages(nextMessages);
       setNotice(
-        nextStatus === "archived"
-          ? "酒馆已归档，历史仍可阅读"
-          : "酒馆已恢复使用",
+        nextStatus === "archived" ? "酒馆已归档，历史仍可阅读" : "酒馆已恢复使用",
       );
       await updateRooms(operation.diagnostic);
     } catch (error) {
@@ -313,17 +303,10 @@ export function useTavernMutations(
         | { kind: "continue"; anchorMessageId: string },
       guidance: string,
     ) => {
-      if (
-        !activeRoom ||
-        !roomIsActive ||
-        targetPersonaIds.length < 1 ||
-        runPending
-      )
+      if (!activeRoom || !roomIsActive || targetPersonaIds.length < 1 || runPending)
         return false;
       if (targetPersonaIds.length > 4) {
-        setVisibleError(
-          "每轮最多选择 4 位角色。房间可以保留更多角色供后续选择。",
-        );
+        setVisibleError("每轮最多选择 4 位角色。房间可以保留更多角色供后续选择。");
         return false;
       }
       const roomId = activeRoom.id;
@@ -336,9 +319,7 @@ export function useTavernMutations(
       setVisibleError("");
       setRawError("");
       setNotice(
-        targetPersonaIds.length === 1
-          ? "角色正在回应…"
-          : "角色将按名册顺序依次回应…",
+        targetPersonaIds.length === 1 ? "角色正在回应…" : "角色将按名册顺序依次回应…",
       );
       const savedDraft = readTavernRoomDraft(roomId);
       const sameTargetSet = savedDraft.pendingTurn
@@ -388,6 +369,7 @@ export function useTavernMutations(
         )
           return false;
         if (!syncTurnResult(result)) return false;
+        if (result.run.status !== "pending") releaseForegroundOperation(operation);
         if (input.kind === "user_message" && result.inputMessage) {
           writeTavernRoomDraft(roomId, { message: "", guidance: "" });
         }
@@ -398,9 +380,7 @@ export function useTavernMutations(
         );
         if (result.run.status === "partial" || result.run.status === "failed") {
           setVisibleError(
-            result.run.status === "partial"
-              ? TAVERN_COPY.partial
-              : TAVERN_COPY.failed,
+            result.run.status === "partial" ? TAVERN_COPY.partial : TAVERN_COPY.failed,
           );
         }
         await Promise.all([
@@ -410,6 +390,7 @@ export function useTavernMutations(
         return result.inputMessage !== null || input.kind === "continue";
       } catch (error) {
         if (!operationIsCurrent(operation)) return false;
+        releaseForegroundOperation(operation);
         const recovered = await refreshRoom(operation.diagnostic);
         if (!operationIsCurrent(operation)) return false;
         const recoveredRun = recovered?.runs.find(
@@ -429,9 +410,7 @@ export function useTavernMutations(
             setRawError,
           );
           setNotice(
-            recoveredRun
-              ? RUN_STATUS_LABELS[recoveredRun.status]
-              : "本轮状态仍待确认",
+            recoveredRun ? RUN_STATUS_LABELS[recoveredRun.status] : "本轮状态仍待确认",
           );
         }
         return Boolean(recoveredRun);
@@ -473,11 +452,7 @@ export function useTavernMutations(
     setNotice("正在取消接收本轮结果…");
     setVisibleError("");
     try {
-      const result = await cancelTavernRun(
-        roomId,
-        pendingRun.id,
-        operation.diagnostic,
-      );
+      const result = await cancelTavernRun(roomId, pendingRun.id, operation.diagnostic);
       if (
         !operationIsCurrent(operation) ||
         activeRoomIdRef.current !== roomId ||
@@ -498,9 +473,7 @@ export function useTavernMutations(
       if (operationIsCurrent(operation)) {
         const recovered = await refreshRoom(operation.diagnostic);
         if (!operationIsCurrent(operation)) return false;
-        const recoveredRun = recovered?.runs.find(
-          (run) => run.id === pendingRun.id,
-        );
+        const recoveredRun = recovered?.runs.find((run) => run.id === pendingRun.id);
         if (recoveredRun?.status === "canceled") {
           cancelConfirmed = true;
           writeTavernRoomDraft(roomId, { message: "", guidance: "" });
@@ -538,9 +511,7 @@ export function useTavernMutations(
       roomRefreshVersion.current += 1;
       setGeneratingPersonaIds(
         run.speakerSteps
-          .filter(
-            (step) => step.status === "failed" || step.status === "blocked",
-          )
+          .filter((step) => step.status === "failed" || step.status === "blocked")
           .map((step) => step.personaId),
       );
       setBusyAction("retry");
@@ -564,6 +535,7 @@ export function useTavernMutations(
         )
           return;
         if (!syncTurnResult(result)) return;
+        if (result.run.status !== "pending") releaseForegroundOperation(operation);
         setNotice(
           result.run.status === "completed"
             ? "剩余角色已完成回应"
@@ -584,6 +556,7 @@ export function useTavernMutations(
           setVisibleError,
           setRawError,
         );
+        releaseForegroundOperation(operation);
         await recoverCurrentRoom(operation.diagnostic);
       } finally {
         releaseForegroundOperation(operation);

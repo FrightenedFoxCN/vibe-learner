@@ -31,10 +31,6 @@
 
 ### 性能与 Tavern transport
 
-- [ ] `PERF-WEB-DEDUPE-001` `[P2]` 复核窗口 focus、跨页返回与恢复交错时的资源请求边界。
-  - 2026-10-29 核对：Tavern bootstrap 对 Persona/Scene 已各请求一次；LearningWorkspaceProvider 已限定在 `(learning)` 路由组，根布局只保留不发起学习请求的页面草稿缓存。路由清单与既有验收范围见 `docs/frontend-test-boundaries.md`。
-  - 剩余：以有历史 Room/Run 的请求记录独立复核连续 focus、跨页返回、轮询与恢复并发；区分必要 read-back 与重复请求，保留原始请求计数、时序和 before/after，避免无界刷新。空库首次加载基线不能替代这些场景。
-
 - [ ] `PERF-WEB-BUNDLE-001` `[P2]` 建立 `/`、Settings、Model Usage、Tavern 的 production gzip 基线和 5% 回退门。
 
 - [ ] `TAV-CANCEL-TRANSPORT-001` `[P2]` 建立 capability-aware provider cancellation。

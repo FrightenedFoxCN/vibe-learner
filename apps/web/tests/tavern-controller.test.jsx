@@ -16,9 +16,7 @@ afterEach(cleanup);
 after(() => dom.window.close());
 async function fixture(env = environment()) {
   const view = renderHook(() => useTavernWorkspaceController(env.ports));
-  await waitFor(() =>
-    assert.equal(view.result.current.activeRoom?.id, "room-a"),
-  );
+  await waitFor(() => assert.equal(view.result.current.activeRoom?.id, "room-a"));
   await waitFor(() => assert.equal(view.result.current.busyAction, null));
   return { ...view, ...env };
 }
@@ -60,8 +58,7 @@ test("history paging deduplicates one cursor and ignores its response after refr
     await h.result.current.loadMoreRooms();
   });
   assert.equal(
-    h.calls.filter((c) => c.name === "listTavernRooms" && c.args[0].cursor)
-      .length,
+    h.calls.filter((c) => c.name === "listTavernRooms" && c.args[0].cursor).length,
     1,
   );
   await act(async () => {
@@ -135,10 +132,7 @@ test("an uncertain turn retains its original key and revision until read-back fi
   });
   const writes = h.calls.filter((c) => c.name === "runTavernTurn");
   assert.equal(writes.length, 2);
-  assert.equal(
-    writes[0].args[1].idempotencyKey,
-    writes[1].args[1].idempotencyKey,
-  );
+  assert.equal(writes[0].args[1].idempotencyKey, writes[1].args[1].idempotencyKey);
   assert.equal(
     writes[0].args[1].expectedRoomRevision,
     draft.pendingTurn.expectedRoomRevision,
@@ -152,10 +146,7 @@ test("switching rooms fences late mutations and preserves the old room recovery 
   h.handlers.runTavernTurn = () => pending.promise;
   let turn;
   act(() => {
-    turn = h.result.current.handleTurn(
-      { kind: "user_message", content: "hello" },
-      "",
-    );
+    turn = h.result.current.handleTurn({ kind: "user_message", content: "hello" }, "");
   });
   await act(async () => {
     await h.result.current.openRoom("room-b");
@@ -177,10 +168,7 @@ test("cancel supersedes an in-flight turn and rejects its late completed respons
   h.handlers.listTavernRuns = () => [run("room-a")];
   let turn;
   act(() => {
-    turn = h.result.current.handleTurn(
-      { kind: "user_message", content: "hello" },
-      "",
-    );
+    turn = h.result.current.handleTurn({ kind: "user_message", content: "hello" }, "");
   });
   await waitFor(() => assert.equal(h.result.current.runPending, true));
   const canceled = turnResult(detail(), "canceled");
@@ -345,17 +333,11 @@ test("run-in-progress resumes back off to a maximum ten second delay", async () 
     await act(async () => {
       h.clock.tick(delay - 1);
     });
-    assert.equal(
-      h.calls.filter((c) => c.name === "resumeTavernRun").length,
-      index,
-    );
+    assert.equal(h.calls.filter((c) => c.name === "resumeTavernRun").length, index);
     await act(async () => {
       h.clock.tick(1);
     });
-    assert.equal(
-      h.calls.filter((c) => c.name === "resumeTavernRun").length,
-      index + 1,
-    );
+    assert.equal(h.calls.filter((c) => c.name === "resumeTavernRun").length, index + 1);
   }
 });
 
@@ -382,10 +364,7 @@ test("unmount cancels foreground polling and its late response cannot start reco
     await pending;
   });
   assert.equal(h.clock.pending, 0);
-  assert.equal(
-    h.calls.filter((c) => c.name === "listTavernRuns").length,
-    reads,
-  );
+  assert.equal(h.calls.filter((c) => c.name === "listTavernRuns").length, reads);
   assert.equal(h.calls.filter((c) => c.name === "resumeTavernRun").length, 0);
   assert.equal(h.storage.readTavernRoomDraft("room-a").message, "in-flight");
 });
@@ -466,10 +445,7 @@ test("slow foreground polling retains a single outstanding read", async () => {
   });
   const reads = h.calls.filter((c) => c.name === "listTavernRuns").length;
   await act(async () => h.clock.tick(9000));
-  assert.equal(
-    h.calls.filter((c) => c.name === "listTavernRuns").length,
-    reads,
-  );
+  assert.equal(h.calls.filter((c) => c.name === "listTavernRuns").length, reads);
   h.unmount();
   await act(async () => {
     polling.resolve([]);
@@ -477,6 +453,37 @@ test("slow foreground polling retains a single outstanding read", async () => {
     await pending;
   });
   assert.equal(h.clock.pending, 0);
+});
+
+test("ambiguous response hands off to one fresh read-back and prevents more foreground polls", async () => {
+  const h = await fixture(),
+    write = deferred(),
+    polling = deferred(),
+    readBack = deferred();
+  let readCount = 0;
+  h.handlers.runTavernTurn = () => write.promise;
+  h.handlers.listTavernRuns = () =>
+    ++readCount === 1 ? polling.promise : readBack.promise;
+  let sending;
+  act(() => {
+    sending = h.result.current.handleTurn(
+      { kind: "user_message", content: "read-back" },
+      "",
+    );
+  });
+  assert.equal(readCount, 1);
+  await act(async () => write.reject(new Error("lost response")));
+  assert.equal(readCount, 2);
+  await act(async () => {
+    polling.resolve([]);
+    h.clock.tick(5000);
+  });
+  assert.equal(readCount, 2);
+  await act(async () => {
+    readBack.resolve([]);
+    await sending;
+  });
+  assert.equal(h.calls.filter((call) => call.name === "runTavernTurn").length, 1);
 });
 
 test("an old page with a reused cursor cannot clear the new page request guard", async () => {
@@ -543,8 +550,7 @@ test("creation reuses the persisted request identity and rejects a concurrent cr
     await h.result.current.handleCreateRoom(input);
   });
   assert.equal(
-    h.calls.filter((c) => c.name === "createTavernRoom")[1].args[0]
-      .idempotencyKey,
+    h.calls.filter((c) => c.name === "createTavernRoom")[1].args[0].idempotencyKey,
     key,
   );
   assert.equal(h.result.current.activeRoom.id, "new-room");

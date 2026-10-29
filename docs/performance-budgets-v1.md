@@ -83,6 +83,11 @@ summary is outside loaded pages.
 
 ## Changing a budget
 
+The populated focus/navigation/recovery request-count gate is defined separately
+in [populated resource-read boundaries v1](performance/web-resource-reads-v1.md).
+It retains raw before/after request timelines against historical Room/Run data;
+its dev-server counts are not production latency or bundle-size evidence.
+
 Budget changes require a new document version, code/evidence showing why the old
 gate is no longer representative, and independent review. An implementation
 regression is not a reason to edit the budget in place.
