@@ -8,12 +8,34 @@
 - `P2`：明确且有收益的产品、性能或可靠性工作。
 - `P3`：文档、账务和候选验证。
 
-## UX 与文档
+## 数据一致性与工程重构
 
-- [x] `UX-MODEL-USAGE-001` `[P2]` 让 Model Usage 支持明确时区、按 operation/workflow 分类、筛选和导出。
-  - 2026-09-13：用量记录带出 Harness operation/workflow/stage（无 Harness 的 Settings/Embedding 使用明确 fallback workflow），Model Usage 支持时区、workflow/operation/日期筛选、50 条分页和当前筛选 CSV 导出；页面明确 Token 统计与实际供应商费用的边界。
-  - Planning repair、失败/中断重试和自动下游调用必须可区分；页面统计与 `PLAN-OBSERVABILITY-001` 的 operation 聚合口径一致，不再只展示当前一次成功调用。
-  - Settings 的真实代表请求必须纳入账务或明确标成排除范围；刷新、分页/时间范围与成本估算的统计口径对用户可见，长明细不再无限单页堆叠。
+- [ ] `DOC-PERSISTENCE-CAS-001` `[P1]` 将 Document 运行时写入从整表替换迁移为单记录插入与 revision CAS。
+  - 2026-10-29 审计：`DocumentService.create_document`、`update_study_unit_title` 仍读取全部 Document 后调用 `LocalJsonStore.save_list("documents", ...)`；该方法会覆盖同 ID 行并删除不在传入列表中的行。临时 SQLite 实测：暂停上传 A 的保存，先完成上传 B，再用 A 的旧快照保存，会删除 B 已提交的记录；旧快照也可能覆盖刚提交的解析/Planning 投影。
+  - 以领域 Repository 承接单记录插入、标题更新与 Document/Debug 一致提交；运行时不得通过整表替换删除其他记录，JSON 镜像保留兼容用途。已有 Document processing 和 Planning 的 admission、原子 commit/read-back 边界必须继续保留。
+  - 覆盖两个上传交错、不同 Document 同时改名、改名与解析/Planning commit 竞争、失败回滚和重启读回。Document revision 也是 `PLAN-STUDY-UNIT-REVISION-001` 的前置基础，不重复建立操作身份或 Harness 基础设施。
+  - 代码依据：`services/ai/app/services/documents.py`、`services/ai/app/services/local_store.py`。
+
+- [ ] `ENG-WEB-DECODE-001` `[P2]` 为 Settings、工具配置、模型探测和 Model Usage 补齐领域严格响应解码。
+  - 2026-10-29 审计：`apps/web/lib/api.ts` 仍使用 `any` 与 `String`/`Boolean`/`Number` 强制转换；工具配置中的字符串 `"false"` 会被当作 `true`，缺失字段和未知枚举也可能被默认值掩盖。
+  - 从 `unknown` 严格验证字段、枚举、布尔值和有限数值，明确兼容默认值适用的历史契约；沿用 `strict-response-decode` 和已有诊断边界，并由 `lib/data/*` 暴露领域入口。
+  - 增加畸形响应、字符串布尔值、非法计数和未知状态的行为回归；保持 Python/共享 TypeScript 契约一致，不将类型断言作为运行时验证。
+
+- [ ] `ENG-TAV-WORKSPACE-001` `[P2]` 拆分 Tavern Workspace 的查询、Run 恢复和交互提交职责。
+  - 2026-10-29 审计：`apps/web/components/tavern-workspace.tsx` 的主组件同时拥有房间分页、轮询、恢复、mutation fencing、草稿与界面状态；已有纯状态工具不覆盖完整异步编排。
+  - 参照现有学习工作区的领域 Hook/展示组件边界，注入窄 API、时钟和存储 port；保留原有幂等身份、房间/请求版本 fencing、终态单调性、取消与 retry 语义。
+  - 以行为测试覆盖切房、迟到结果、分页竞争、轮询清理及恢复/提交交错；源码字符串断言不能替代运行时测试。完整设备 UX 仍由 `REL-DESKTOP-001` 独立验收。
+
+- [ ] `ENG-STUDY-TOOLS-001` `[P2]` 按领域职责拆分 Study Session 工具执行器。
+  - 2026-10-29 审计：`services/ai/app/services/study_session_chat_runtime.py` 的 `execute_tool` 集中处理记忆、好感、续接、PDF/图片投影、生成与计划确认等分支。
+  - 拆出领域处理器并复用既有 Tool Manifest 作为唯一目录，保留统一 effect collector、prepared/committed 区分、operation/slot 绑定和原子提交边界；不新增平行工具注册表。
+  - 复用工具契约与 Study effect 回归，覆盖拒绝参数、重复调用、失败回滚、工具预算及 read-back；拆分不得改变模型可见契约或放宽 server-only 字段边界。
+
+- [ ] `ENG-STYLE-GATES-001` `[P3]` 渐进建立前后端代码风格与静态检查门。
+  - 2026-10-29 审计：Web 的 `lint` 仅为 TypeScript 检查别名，Python 未配置 Ruff 等风格检查；类型检查不能覆盖 React Hooks 规则、未使用导入和格式一致性。
+  - 明确格式化与 lint 的职责，优先启用未使用导入、React Hooks 和新增/修改文件的格式检查，接入本地命令及 CI；对既有问题建立显式基线，避免一次性全仓格式化混入功能变更。
+
+## UX 与文档
 
 - [ ] `UX-OUTPUT-LANGUAGE-001` `[P2]` 为 Planning 与 Study 提供显式、可持久化的输出语言偏好。
   - `自动` 模式说明如何根据用户目标、教材与 Persona 决定语言；用户指定法文等语言后，计划指导语、任务与后续 Study 默认保持一致，不因中文产品壳混成中法英三语。
@@ -42,44 +64,30 @@
 
 本节已吸收 2026-09-13 M3 Planning production 配对复测中仍未关闭的工程结论；实验明细由本地归档分支保存。
 
-- [x] `PLAN-NAVIGATION-LIFECYCLE-001` `[P1]` 让 Planning 长任务跨页持续，或在离页前明确提示将取消并展示已发生费用。
-  - 2026-09-13：Planning 生成期间通过统一 AppLink 拦截离页，明确说明任务会中断、已发生 Token/费用不会撤销且费用以供应商账单为准；浏览器关闭/刷新提供 beforeunload 保护，任务身份保留在本地活动标记直到结束。
-  - 当前普通导航会调用 Document/Planning stream cancel；真实请求仍可能完成并计费，但 Learning Plan 不提交。全局 Debug 与返回后的 Plan Workspace 应显示活动、已中断、费用和可恢复状态。
-
 - [ ] `PLAN-PAGE-BOUNDS-001` `[P1]` 将用户显式 PDF 物理页范围变成服务端工具、proposal 与 commit invariant。
   - 2026-09-13 审计：服务端已有 `PlanningIntentV1.pdf_page_ranges`、工具范围拒绝、proposal/schedule anchor/content slice invariant 和 resolved intent；但前端没有用户输入/持久化显式 PDF 页范围，数据模型只有物理页整数，未独立建模印刷页，且尚无端到端验收证明“100–103”贯穿请求、取证、proposal 与 commit。因此保持未完成。
   - 用户指定 PDF 100–103 时，取证工具参数、schedule anchor 和 content slices 必须落在该范围；物理页与印刷页分别建模，不能让模型把印刷 70–73 当成物理 70–73 后成功提交。
   - 本票只负责应用约束；教材语义、公式、旧记号和范围完整性质量由本文件的 `MQ-04` 负责。
 
-- [x] `PLAN-OBSERVABILITY-001` `[P1]` 统一一次 Planning operation 的 provider round、工具、repair、token、时延、终态与产物口径。
-  - 2026-09-13：Plan Workspace 独立展示解析与计划阶段，并将计划 round、工具调用、repair 次数、Token（有供应商 usage 时）、耗时、finish reason、错误和终态纳入同一进度摘要；Model Usage 支持 workflow/operation/date 过滤、时区显示与 CSV 导出，记录可关联 operation/stage。
-  - UI/Model Usage/Harness trace 必须包含 schema repair 和失败前的安全字段级证据，并聚合首次失败、中断、重试及自动下游调用；不能再出现 UI 2 calls、审计 3 completions 的分裂。
-  - 重新界定 Planning trace 的留存、脱敏与访问政策；在 `provider_reasoning_committed=false`、`raw_book_text_committed=false` 时，不得从 API/Debug 暴露完整 thinking 或原始教材输出。
-  - Document 已 committed 而 Planning schema/repair 失败时，Plan Workspace 必须显示 Planning 失败及已发生费用，不能泛化为“教材处理失败”；长最终轮展示已等待/总耗时、超时边界和当前阶段。
-
 - [ ] `PLAN-STUDY-UNIT-REVISION-001` `[P1]` 将 Planning 的 `revise_study_units` 从隐式共享 Document 改写变成可审查的提案与独立确认。
+  - 2026-10-29 审计：`plan_tool_runtime.py` 先替换工具上下文中的 Study Units，`LearningPlanService._build_plan_candidate` 随后把修订写入共享 Document、Sections 与 Debug 投影，并随计划提交；缺少独立预览/确认边界。Document revision 基础见 `DOC-PERSISTENCE-CAS-001`。
   - 模型取证阶段不得在没有预览的情况下替换后续所有 Plan/Study 共用的 Study Units；展示旧/新页范围、标题、分类与保留/删除 diff，并使用 Document revision CAS 提交。
   - 拒绝或跳过修订仍可继续生成保守计划；确认后的 Document、Plan context、Harness effect/trace 与重启 read-back 必须指向同一 revision。
 
 - [ ] `OCR-CHECKPOINT-RECOVERY-001` `[P1]` 让长 OCR 在阶段完成后可读、可续跑。
   - 总 wall-time 在全部页面处理完成后耗尽时，不得抹掉已完成页和 Study Unit；保存有界 checkpoint，并验证重启、超时和重复请求的 read-back/续跑语义。
 
-- [x] `OCR-PROGRESS-UX-001` `[P1]` 向 Plan Workspace 投影长 OCR 的真实进度与可恢复错误。
-  - 2026-09-13：Plan Workspace 独立投影 parser/page/OCR fallback/清理阶段、完成页数/总页数、速率与有证据 ETA；失败显示已完成范围、失败阶段、进度保留提示和拆分/调整配置/重试建议，不覆盖 Document 终态。
-  - 显示总页数、已完成页、当前 text/OCR fallback 阶段、速率与有证据的预计时间/警告；跨领域 notice 不得覆盖当前 Document 终态。
-  - 失败时说明已完成范围、失败阶段、是否保存 checkpoint、同配置重试风险，以及拆分 PDF、调整上限或联系管理员等可行动建议；不直接暴露内部异常码。
-
 ### 性能与 Tavern transport
 
-- [ ] `TAV-FACILITATED-ORDER-001` `[P2]` 统一 Tavern facilitated 的目标选择顺序、服务端 schedule 与 Participant Roster 反馈。
-  - 服务端仍以 participant `display_order` 为权威时，UI 必须在发送前显示实际执行顺序；若产品承诺用户选择顺序，则需在契约、持久化、恢复和 retry 中共同保留该顺序。
+- [ ] `TAV-FACILITATED-ORDER-001` `[P2]` 独立复核 Tavern facilitated 的顺序预览、服务端 schedule 与 Participant Roster 一致性。
+  - 2026-10-29 核对：Interaction Composer 已按 participant `displayOrder` 排序，并在发送前展示“本轮回应：A → B”；Participant Roster 与服务端调度也采用名册顺序，目标选择仍为集合。无需重新实现顺序预览。
+  - 剩余：逆序多选、恢复房间、partial 后 child retry 的独立端到端复核，确认发送前预览、服务端 Speaker Steps 和名册状态始终一致；不把用户点击顺序当作执行顺序。
 
-- [ ] `PERF-WEB-DEDUPE-001` `[P2]` 去除页面内重复资源请求。
-  - Tavern 对 Persona/Scene 各请求一次；窗口 focus 与恢复流程不得造成无界重复刷新。
+- [ ] `PERF-WEB-DEDUPE-001` `[P2]` 复核窗口 focus、跨页返回与恢复交错时的资源请求边界。
+  - 2026-10-29 核对：Tavern bootstrap 对 Persona/Scene 已各请求一次；LearningWorkspaceProvider 已限定在 `(learning)` 路由组，根布局只保留不发起学习请求的页面草稿缓存。路由清单与既有验收范围见 `docs/frontend-test-boundaries.md`。
+  - 剩余：以有历史 Room/Run 的请求记录独立复核连续 focus、跨页返回、轮询与恢复并发；区分必要 read-back 与重复请求，保留原始请求计数、时序和 before/after，避免无界刷新。空库首次加载基线不能替代这些场景。
 
 - [ ] `PERF-WEB-BUNDLE-001` `[P2]` 建立 `/`、Settings、Model Usage、Tavern 的 production gzip 基线和 5% 回退门。
-
-- [ ] `PERF-WEB-PROVIDER-SCOPE-001` `[P3]` 将根布局中的 `LearningWorkspaceProvider` 下沉到实际消费者，避免 Settings、Model Usage、Tavern 等无关路由初始化学习工作区状态和请求。
 
 - [ ] `TAV-CANCEL-TRANSPORT-001` `[P2]` 建立 capability-aware provider cancellation。
   - 可取消 adapter 必须中断本地传输并释放连接/worker；不支持时继续使用 commit fencing 和 truthful UI。
@@ -91,15 +99,6 @@
 - [ ] `STUDY-OP-RECOVERY-UX-001` `[P2]` 覆盖超长轮询、终态刷新、断网和页面恢复文案，不放宽 same-key mismatch 或 `uncertain` 禁止重放。
 
 ## 可靠性、部署与输入边界
-
-- [x] `SETTING-GENERATION-OUTPUT-001` `[P1]` 收口 Persona/Scene 生成的输出预算、截断恢复与错误可观测性。
-  - 2026-09-13：统一结构化生成上限与修复增量；Chat finish_reason length/max_tokens 和 Responses incomplete_details 触发独立截断码，重试预算只增不减；Persona/Scene 前端按 timeout、truncation、schema、provider 等稳定码给出可行动文案，并保留 usage/operation 关联。
-  - 2026-09-13 桌面应用证据：关键词 Scene 连续三次以 `setting_model_invalid_json` 失败，Persona 一次同类失败，provider 输出均贴近当时 1200/1400 token 上限；另一次 Scene 修复请求连续超时。临时缓解已将 Persona/Scene 生成有效上限提到 8192，不将此作为长期预算设计。
-  - 识别 Responses/Chat 的权威 finish reason、`incomplete_details` 和 token 上限命中，将截断映射为独立、可行动的错误；结构化重试必须增加或至少保持预算，不得在重试时降低上限。
-  - 对不支持 web search、输出截断、结构修复失败和超时分别定义有界降级政策；仅在安全且预算允许时切到无联网生成，并保留真实 `used_web_search`/recovery 证据。
-  - 统一 `max_tokens` / `max_output_tokens` 与 `per_call_timeout_ms` 的配置真源、命名、各 workflow 有效值与重试规则；Settings、运行时与诊断导出应能便捷查询“用户配置或非 Harness fallback / workflow manifest 声明 / 本次实际值”，避免分散硬编码或让全局 timeout 文案误导 Harness 工作流。
-  - FastAPI `detail` 字符串必须被前端保留为稳定 error code；Persona/Scene 显示超时、截断、schema 与 provider 错误的可行动文案，Diagnostic/Harness/Model Usage 可按同一 request/operation 关联原因、各次输出预算和终态。
-  - 增加输出恰好命中上限、Responses 不完整终态、重试不降预算、web-search 降级、HTTP 错误文案及真实 MiniMax/Gemini 代表请求的回归门。
 
 - [ ] `REL-DESKTOP-001` `[P2]` 完成真实桌面/浏览器恢复验收。
   - 覆盖慢网、断网、刷新/离页、Settings 未保存变更、编辑器异步返回、删除/归档组合、桌面安装/退出；覆盖 Tavern 无 Persona/无 Room、设备级 IME 和完整焦点顺序。
@@ -167,7 +166,7 @@
 
 ## 持续规则
 
-- 本文件是唯一待办索引；其他文档只描述当前契约、限制和复现方式，不维护平行待办。已实现的 Harness 基础设施、13 个阶段评测套件、SQLite 恢复和已定义输入上限测试不再列为待办。
+- 本文件是唯一待办索引；其他文档只描述当前契约、限制和复现方式，不维护平行待办。已实现的 Harness 基础设施、14 个 Harness 评测套件、SQLite 恢复和已定义输入上限测试不再列为待办。
 - 架构和逐工作流工程说明见 `docs/harness/README.md`，工程约束见 `AGENTS.md`。`QG-002` / `web-strict-decode-adversarial-v1` 保持不可变，扩展使用新版本。
 - Debug 是全局 Overlay，不恢复已删除的 `/debug` 页面。
 - 性能任务必须记录 fixture、环境、raw samples 和 before/after；不得通过放宽既有预算关闭回归。
