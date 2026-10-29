@@ -3,7 +3,7 @@
   "provenance": "developer_authored",
   "required_pass_rate": 1.0,
   "sample_counts": {
-    "document_process_regression": 6,
+    "document_process_regression": 9,
     "page_extraction_regression": 2,
     "section_detection_regression": 2,
     "chunk_building_regression": 4,

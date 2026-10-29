@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 
+import { DocumentCheckpointPanel } from "./document-checkpoint-panel";
 import { DocumentSetup } from "./document-setup";
 import { PlanHistory } from "./plan-history";
 import { PlanOverview } from "./plan-overview";
@@ -40,6 +41,7 @@ export function LearningWorkspace() {
     planStreamStatus,
     processStreamEvents,
     processStreamStatus,
+    processStreamDocumentId,
     sceneLibraryItems,
     selectedSceneLibraryId,
     setSelectedSceneLibraryId,
@@ -155,6 +157,19 @@ export function LearningWorkspace() {
         </div>
 
         <div className="plan-main-column" style={styles.planColumn}>
+          <DocumentCheckpointPanel
+            documentId={processStreamDocumentId}
+            status={processStreamStatus}
+            blocked={isBusy}
+            onContinue={(document) =>
+              void generatePlanWorkflow({
+                mode: "document",
+                processedDocument: document,
+                objective: planSetupCache?.objective ?? "请基于教材生成学习计划",
+                physicalPageRanges: planSetupCache?.physicalPageRanges,
+              })
+            }
+          />
           <PlanOverview
             plan={activePlan}
             document={activeDocument}

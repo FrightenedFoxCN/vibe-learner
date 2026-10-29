@@ -1,3 +1,4 @@
+from app.models.document_checkpoint import DocumentCheckpointResponseV1
 from app.models.pdf_page_scope import DocumentPageNumberingResponseV1
 from app.services.document_page_numbering import read_document_page_numbering
 from app.models.plan_revision import (
@@ -859,6 +860,9 @@ def process_document(
         document = container.document_service.process_document(
             document_id,
             force_ocr=(payload.force_ocr if payload else False),
+            resume_from_operation_id=payload.resume_from_operation_id
+            if payload
+            else None,
             progress_callback=recorder.callback,
             operation_admitted_callback=remember_operation,
         )
@@ -1010,6 +1014,9 @@ def process_document_stream(
             document = container.document_service.process_document(
                 document_id,
                 force_ocr=force_ocr,
+                resume_from_operation_id=payload.resume_from_operation_id
+                if payload
+                else None,
                 progress_callback=report,
                 interrupt_check=interrupt_handle.raise_if_cancelled,
                 operation_admitted_callback=remember_operation,
@@ -1131,6 +1138,36 @@ def get_document_page_numbering(
 ) -> DocumentPageNumberingResponseV1:
     document = container.document_service.require_document(document_id)
     return read_document_page_numbering(document, page_numbers)
+
+
+@router.get(
+    "/documents/{document_id}/checkpoints/{operation_id}",
+    response_model=DocumentCheckpointResponseV1,
+)
+def get_document_checkpoint(
+    document_id: str,
+    operation_id: str,
+    *,
+    container: Container = Depends(get_container),
+):
+    result = container.document_service.checkpoints.public_view(operation_id)
+    if result["document_id"] != document_id:
+        raise HTTPException(404, "document_checkpoint_not_found")
+    return result
+
+
+@router.get(
+    "/documents/{document_id}/checkpoint", response_model=DocumentCheckpointResponseV1
+)
+def get_latest_document_checkpoint(
+    document_id: str, *, container: Container = Depends(get_container)
+):
+    operation = container.document_service.process_repository.latest(
+        document_id=document_id, validate_read_back=False
+    )
+    if operation is None:
+        raise HTTPException(404, "document_checkpoint_not_found")
+    return container.document_service.checkpoints.public_view(operation.operation_id)
 
 
 @router.get("/documents/{document_id}/debug", response_model=DocumentDebugResponse)

@@ -16,12 +16,12 @@ class _StrictModel(BaseModel):
 
 
 DOCUMENT_INPUT_CONTRACT = HarnessContractRef(
-    name="DocumentProcessInputManifest", version="document-process-input-manifest-v1"
+    name="DocumentProcessInputManifest", version="document-process-input-manifest-v2"
 )
 
 
 DOCUMENT_SNAPSHOT_CONTRACT = HarnessContractRef(
-    name="DocumentProcessProtectedInput", version="document-process-protected-input-v1"
+    name="DocumentProcessProtectedInput", version="document-process-protected-input-v2"
 )
 
 
@@ -31,7 +31,8 @@ DOCUMENT_POLICY_CONTRACT = HarnessContractRef(
 
 
 DOCUMENT_ADAPTER_CONTRACT = HarnessContractRef(
-    name="DocumentProcessWorkflowAdapter", version="document-process-workflow-adapter-v1"
+    name="DocumentProcessWorkflowAdapter",
+    version="document-process-workflow-adapter-v2",
 )
 
 
@@ -73,6 +74,13 @@ class DocumentProcessInputManifest(HarnessSafeManifest):
 
     document_id: str
     force_ocr: bool
+
+
+class DocumentProcessInputManifestV2(DocumentProcessInputManifest):
+    trace_safe_fields: ClassVar[frozenset[str]] = frozenset(
+        {"document_id", "force_ocr", "resume_from_operation_id"}
+    )
+    resume_from_operation_id: str | None = None
 
 
 class DocumentProcessRuntimeOutputV1(_StrictModel):
@@ -168,9 +176,7 @@ class DocumentStageInputManifest(HarnessSafeManifest):
 
 class DocumentStageEvidenceV1(_StrictModel):
     schema_name: Literal["DocumentStageEvidence"] = "DocumentStageEvidence"
-    schema_version: Literal["document-stage-evidence-v1"] = (
-        "document-stage-evidence-v1"
-    )
+    schema_version: Literal["document-stage-evidence-v1"] = "document-stage-evidence-v1"
     stage: Literal[
         "page_extraction",
         "section_detection",

@@ -11,6 +11,7 @@ from typing import Callable, Iterable
 
 import fitz
 
+from app.core.execution_budget import check_execution_budget
 from app.services.document_stage_metrics import measure_parser_stage
 
 from app.core.harness_component_versions import (
@@ -81,7 +82,9 @@ class DocumentParser:
         self.runtime_temp_root = runtime_temp_root
         self.ocr_engine_name = ocr_engine_name.strip().lower() or "onnxtr"
         self.ocr_engine = (
-            OnnxtrOcrEngine(runtime_temp_root=runtime_temp_root, model_dir=onnxtr_model_dir)
+            OnnxtrOcrEngine(
+                runtime_temp_root=runtime_temp_root, model_dir=onnxtr_model_dir
+            )
             if self.ocr_engine_name == "onnxtr"
             else None
         )
@@ -95,10 +98,13 @@ class DocumentParser:
         force_ocr: bool = False,
         progress_callback: Callable[[str, dict[str, object]], None] | None = None,
         interrupt_check: Callable[[], None] | None = None,
+        checkpoint=None,
     ) -> DocumentDebugRecord:
         _call_interrupt(interrupt_check)
         parse_started_at = time.perf_counter()
         pdf = fitz.open(stored_path)
+        if checkpoint is not None:
+            checkpoint.set_page_count(pdf.page_count)
         parsed_pages: list[ParsedPage] = []
         pages: list[DocumentPageRecord] = []
         page_texts: list[str] = []
@@ -128,16 +134,23 @@ class DocumentParser:
         with measure_parser_stage("page_extraction"):
             for index, page in enumerate(pdf, start=1):
                 _call_interrupt(interrupt_check)
-                parsed_page = self._parse_page(
-                    page_number=index,
-                    page=page,
-                    force_ocr=force_ocr,
+                check_execution_budget()
+                parsed_page = (
+                    checkpoint.load_page(index) if checkpoint is not None else None
                 )
+                if parsed_page is None:
+                    parsed_page = self._parse_page(
+                        page_number=index, page=page, force_ocr=force_ocr
+                    )
+                    if checkpoint is not None:
+                        checkpoint.save_page(parsed_page)
                 parsed_pages.append(parsed_page)
                 warnings.extend(parsed_page.warnings)
                 if parsed_page.used_ocr:
                     ocr_applied_page_count += 1
-                if _should_emit_page_progress(page_number=index, page_count=pdf.page_count):
+                if _should_emit_page_progress(
+                    page_number=index, page_count=pdf.page_count
+                ):
                     _emit_progress(
                         progress_callback,
                         "page_parsed",
@@ -148,11 +161,15 @@ class DocumentParser:
                             "extraction_source": parsed_page.extraction_source,
                             "used_ocr": parsed_page.used_ocr,
                             "warning_count": len(parsed_page.warnings),
-                            "elapsed_ms": int((time.perf_counter() - parse_started_at) * 1000),
+                            "elapsed_ms": int(
+                                (time.perf_counter() - parse_started_at) * 1000
+                            ),
                         },
                     )
 
-            top_margin_patterns, bottom_margin_patterns = self._detect_margin_patterns(parsed_pages)
+            top_margin_patterns, bottom_margin_patterns = self._detect_margin_patterns(
+                parsed_pages
+            )
             logger.info(
                 "parser.margin_patterns top=%s bottom=%s",
                 len(top_margin_patterns),
@@ -224,18 +241,32 @@ class DocumentParser:
                 )
 
         with measure_parser_stage("section_detection", count_attempt=False):
-            textual_toc_sections = [] if toc_sections else self._build_sections_from_textual_toc(
-                document_id=document_id,
-                fallback_title=title,
-                page_count=len(pages),
-                parsed_pages=parsed_pages,
+            textual_toc_sections = (
+                []
+                if toc_sections
+                else self._build_sections_from_textual_toc(
+                    document_id=document_id,
+                    fallback_title=title,
+                    page_count=len(pages),
+                    parsed_pages=parsed_pages,
+                )
             )
-            section_source = "toc" if toc_sections else "textual_toc" if textual_toc_sections else "heuristic"
-            sections = toc_sections or textual_toc_sections or self._build_sections(
-                document_id=document_id,
-                fallback_title=title,
-                page_count=len(pages),
-                heading_seed=heading_seed,
+            section_source = (
+                "toc"
+                if toc_sections
+                else "textual_toc"
+                if textual_toc_sections
+                else "heuristic"
+            )
+            sections = (
+                toc_sections
+                or textual_toc_sections
+                or self._build_sections(
+                    document_id=document_id,
+                    fallback_title=title,
+                    page_count=len(pages),
+                    heading_seed=heading_seed,
+                )
             )
         _call_interrupt(interrupt_check)
         _emit_progress(
@@ -269,20 +300,26 @@ class DocumentParser:
             )
 
         ocr_applied = ocr_applied_page_count > 0
-        ocr_results = [page.ocr_result for page in parsed_pages if page.ocr_result is not None]
+        ocr_results = [
+            page.ocr_result for page in parsed_pages if page.ocr_result is not None
+        ]
         # Recognition vocabulary is not language detection. Preserve explicit
         # engine evidence only; missing evidence must remain unknown.
         ocr_languages = _unique_preserving_order(
             result.language_hint for result in ocr_results if result.language_hint
         )
         ocr_warnings = _unique_preserving_order(
-            result.warning
-            for result in ocr_results
-            if result.warning
+            result.warning for result in ocr_results if result.warning
         )
-        ocr_engine = next((result.engine_name for result in ocr_results if result.engine_name), None)
-        ocr_model_id = next((result.model_id for result in ocr_results if result.model_id), None)
-        low_density_detected = any(warning.code == "low_text_density" for warning in warnings)
+        ocr_engine = next(
+            (result.engine_name for result in ocr_results if result.engine_name), None
+        )
+        ocr_model_id = next(
+            (result.model_id for result in ocr_results if result.model_id), None
+        )
+        low_density_detected = any(
+            warning.code == "low_text_density" for warning in warnings
+        )
         ocr_unavailable = any(result.status == "unavailable" for result in ocr_results)
         ocr_failed = any(result.status == "failed" for result in ocr_results)
 
@@ -312,7 +349,13 @@ class DocumentParser:
         else:
             ocr_status = "not_required"
 
-        extraction_method = "ocr_forced" if force_ocr else "text_with_ocr_fallback" if ocr_applied else "page_text_dict"
+        extraction_method = (
+            "ocr_forced"
+            if force_ocr
+            else "text_with_ocr_fallback"
+            if ocr_applied
+            else "page_text_dict"
+        )
         logger.info(
             "parser.result document_id=%s pages=%s sections=%s chunks=%s total_characters=%s extraction=%s ocr_status=%s ocr_applied_pages=%s warnings=%s section_source=%s",
             document_id,
@@ -336,7 +379,13 @@ class DocumentParser:
             extraction_method=extraction_method,
             ocr_status=ocr_status,
             ocr_applied=ocr_applied,
-            ocr_language=(ocr_languages[0] if len(ocr_languages) == 1 else "multilingual" if ocr_languages else None),
+            ocr_language=(
+                ocr_languages[0]
+                if len(ocr_languages) == 1
+                else "multilingual"
+                if ocr_languages
+                else None
+            ),
             ocr_engine=ocr_engine,
             ocr_model_id=ocr_model_id,
             ocr_applied_page_count=ocr_applied_page_count,
@@ -366,7 +415,9 @@ class DocumentParser:
             cleaned_ocr = _clean_page_text(ocr_result.text)
             if cleaned_ocr and len(cleaned_ocr) > len(page_text):
                 page_text = cleaned_ocr
-                line_entries = [(line, 0.0) for line in cleaned_ocr.splitlines() if line]
+                line_entries = [
+                    (line, 0.0) for line in cleaned_ocr.splitlines() if line
+                ]
                 dominant_font_size = 0.0
                 used_ocr = True
                 extraction_source = "ocr"
@@ -388,7 +439,8 @@ class DocumentParser:
                 warnings.append(
                     ParseWarning(
                         code="ocr_unavailable",
-                        message=ocr_result.warning or "OCR engine is unavailable for this page.",
+                        message=ocr_result.warning
+                        or "OCR engine is unavailable for this page.",
                         page_number=page_number,
                     )
                 )
@@ -464,7 +516,11 @@ class DocumentParser:
                 if normalized:
                     bottom_counter[normalized] += 1
 
-        threshold = max(MARGIN_MIN_REPEAT, non_empty_pages // 12) if non_empty_pages else MARGIN_MIN_REPEAT
+        threshold = (
+            max(MARGIN_MIN_REPEAT, non_empty_pages // 12)
+            if non_empty_pages
+            else MARGIN_MIN_REPEAT
+        )
         top_patterns = {
             pattern
             for pattern, count in top_counter.items()
@@ -505,7 +561,9 @@ class DocumentParser:
 
         return line_entries[start:end], stripped_count + bottom_removed
 
-    def _extract_text_lines(self, page: fitz.Page) -> tuple[list[tuple[str, float]], float]:
+    def _extract_text_lines(
+        self, page: fitz.Page
+    ) -> tuple[list[tuple[str, float]], float]:
         payload = page.get_text("dict")
         line_entries: list[tuple[str, float]] = []
         all_spans: list[tuple[str, float]] = []
@@ -553,14 +611,22 @@ class DocumentParser:
                 continue
 
             pattern_bonus = (
-                0.35 if any(pattern.match(normalized) for pattern in HEADING_PATTERNS) else 0.0
+                0.35
+                if any(pattern.match(normalized) for pattern in HEADING_PATTERNS)
+                else 0.0
             )
             font_bonus = (
-                0.2 if dominant_font_size and font_size >= dominant_font_size + 1.2 else 0.0
+                0.2
+                if dominant_font_size and font_size >= dominant_font_size + 1.2
+                else 0.0
             )
-            uppercase_bonus = 0.1 if normalized.isupper() and len(normalized) <= 32 else 0.0
+            uppercase_bonus = (
+                0.1 if normalized.isupper() and len(normalized) <= 32 else 0.0
+            )
             length_bonus = 0.12 if 3 <= len(normalized) <= 60 else 0.0
-            confidence = min(0.95, 0.12 + pattern_bonus + font_bonus + uppercase_bonus + length_bonus)
+            confidence = min(
+                0.95, 0.12 + pattern_bonus + font_bonus + uppercase_bonus + length_bonus
+            )
             if confidence < 0.42:
                 continue
             candidates.append(
@@ -593,10 +659,17 @@ class DocumentParser:
             ):
                 marker_index, marker, marker_size = index, normalized, font_size
                 break
-            if re.fullmatch(r"(?:chapter|section|part|appendix)", normalized, re.IGNORECASE):
+            if re.fullmatch(
+                r"(?:chapter|section|part|appendix)", normalized, re.IGNORECASE
+            ):
                 for suffix_index in range(index + 1, min(index + 3, len(line_entries))):
-                    suffix = _clean_text(line_entries[suffix_index][0]).strip(" ,.:;|_-")
-                    if re.fullmatch(r"[0-9IO]{1,3}", suffix, re.IGNORECASE) and "O" in suffix.upper():
+                    suffix = _clean_text(line_entries[suffix_index][0]).strip(
+                        " ,.:;|_-"
+                    )
+                    if (
+                        re.fullmatch(r"[0-9IO]{1,3}", suffix, re.IGNORECASE)
+                        and "O" in suffix.upper()
+                    ):
                         suffix = suffix.upper().replace("I", "1").replace("O", "0")
                     if re.fullmatch(r"\d{1,3}[A-Za-z]?", suffix):
                         marker_index = suffix_index
@@ -685,7 +758,9 @@ class DocumentParser:
         seen_pages: set[int] = set()
         recent_titles: set[str] = set()
 
-        for page_number, text, _font_size, confidence in sorted(heading_seed, key=lambda item: item[0]):
+        for page_number, text, _font_size, confidence in sorted(
+            heading_seed, key=lambda item: item[0]
+        ):
             if confidence < 0.45 or page_number in seen_pages:
                 continue
             cleaned = self._normalize_heading_text(text)
@@ -715,7 +790,12 @@ class DocumentParser:
         )
 
     def _build_sections_from_toc(
-        self, *, document_id: str, stored_path: str, page_count: int, fallback_title: str
+        self,
+        *,
+        document_id: str,
+        stored_path: str,
+        page_count: int,
+        fallback_title: str,
     ) -> list[DocumentSection]:
         pdf = fitz.open(stored_path)
         try:
@@ -766,12 +846,17 @@ class DocumentParser:
         """Recover a chapter outline from a visible contents page without inventing page offsets."""
         scan_limit = min(page_count, max(12, min(40, page_count // 4)))
         for toc_page in parsed_pages[:scan_limit]:
-            lines = [_clean_text(text) for text, _font_size in toc_page.line_entries if _clean_text(text)]
+            lines = [
+                _clean_text(text)
+                for text, _font_size in toc_page.line_entries
+                if _clean_text(text)
+            ]
             marker_index = next(
                 (
                     index
                     for index, line in enumerate(lines)
-                    if line.casefold().strip(" .:-") in {"contents", "table of contents"}
+                    if line.casefold().strip(" .:-")
+                    in {"contents", "table of contents"}
                 ),
                 None,
             )
@@ -792,7 +877,10 @@ class DocumentParser:
                     continue
                 entries.append((match, title, 1))
                 last_page = match
-            if len(entries) < MIN_GOOD_TOC_ENTRIES or len(entries) * 4 < len(titles) * 3:
+            if (
+                len(entries) < MIN_GOOD_TOC_ENTRIES
+                or len(entries) * 4 < len(titles) * 3
+            ):
                 continue
             return self._materialize_sections(
                 document_id=document_id,
@@ -870,7 +958,11 @@ class DocumentParser:
             return None
         best: tuple[float, int] | None = None
         for page in parsed_pages[max(0, page_start - 1) :]:
-            lines = [_clean_text(text) for text, _font_size in page.line_entries[:12] if _clean_text(text)]
+            lines = [
+                _clean_text(text)
+                for text, _font_size in page.line_entries[:12]
+                if _clean_text(text)
+            ]
             candidates: list[str] = []
             for index in range(len(lines)):
                 for width in range(1, min(4, len(lines) - index) + 1):
@@ -893,9 +985,13 @@ class DocumentParser:
             value.strip(),
             flags=re.IGNORECASE,
         )
-        return "".join(character.casefold() for character in normalized if character.isalnum())
+        return "".join(
+            character.casefold() for character in normalized if character.isalnum()
+        )
 
-    def _fallback_sections(self, *, fallback_title: str, page_count: int) -> list[tuple[int, str]]:
+    def _fallback_sections(
+        self, *, fallback_title: str, page_count: int
+    ) -> list[tuple[int, str]]:
         if page_count <= 1:
             return [(1, f"{fallback_title} 全文")]
         if page_count <= 6:
@@ -904,7 +1000,11 @@ class DocumentParser:
                 (max(2, (page_count // 2) + 1), f"{fallback_title} 后半部分"),
             ]
         stride = max(1, page_count // 3)
-        fallback_pages = [1, min(page_count, 1 + stride), min(page_count, 1 + stride * 2)]
+        fallback_pages = [
+            1,
+            min(page_count, 1 + stride),
+            min(page_count, 1 + stride * 2),
+        ]
         return [
             (page_number, f"{fallback_title} 第 {index + 1} 部分")
             for index, page_number in enumerate(dict.fromkeys(fallback_pages))
@@ -923,10 +1023,16 @@ class DocumentParser:
         for section, segment_start, segment_end in self._iter_chunk_segments(sections):
             units: list[tuple[int, str]] = []
             for page_number in range(segment_start, segment_end + 1):
-                page_text = page_texts[page_number - 1] if page_number - 1 < len(page_texts) else ""
+                page_text = (
+                    page_texts[page_number - 1]
+                    if page_number - 1 < len(page_texts)
+                    else ""
+                )
                 if not page_text:
                     continue
-                units.extend((page_number, unit) for unit in self._split_text_units(page_text))
+                units.extend(
+                    (page_number, unit) for unit in self._split_text_units(page_text)
+                )
 
             buffer_parts: list[str] = []
             chunk_page_start: int | None = None
@@ -1015,7 +1121,10 @@ class DocumentParser:
             children = [
                 section
                 for section in fine_sections
-                if coarse.page_start <= section.page_start <= section.page_end <= coarse.page_end
+                if coarse.page_start
+                <= section.page_start
+                <= section.page_end
+                <= coarse.page_end
             ]
             if not children:
                 segments.append((coarse, coarse.page_start, coarse.page_end))
@@ -1033,13 +1142,17 @@ class DocumentParser:
         return segments
 
     def _split_text_units(self, text: str) -> list[str]:
-        paragraphs = [segment.strip() for segment in re.split(r"\n\s*\n", text) if segment.strip()]
+        paragraphs = [
+            segment.strip() for segment in re.split(r"\n\s*\n", text) if segment.strip()
+        ]
         units: list[str] = []
         for paragraph in paragraphs or [text]:
             if len(paragraph) <= 900:
                 units.append(paragraph)
                 continue
-            sentences = re.split(r"(?<=[。！？.!?])\s+|(?<=:)\s+(?=[A-Z0-9])", paragraph)
+            sentences = re.split(
+                r"(?<=[。！？.!?])\s+|(?<=:)\s+(?=[A-Z0-9])", paragraph
+            )
             current = ""
             for sentence in sentences:
                 sentence = sentence.strip()
@@ -1070,7 +1183,9 @@ class DocumentParser:
         return OcrPageResult(
             text=text,
             status="completed" if text.strip() else "failed",
-            engine_name=self.ocr_engine.engine_name if self.ocr_engine is not None else self.ocr_engine_name,
+            engine_name=self.ocr_engine.engine_name
+            if self.ocr_engine is not None
+            else self.ocr_engine_name,
             model_id=self.ocr_engine.model_id if self.ocr_engine is not None else None,
             warning="" if text.strip() else "ocr_empty_result",
         )
@@ -1107,7 +1222,9 @@ class DocumentParser:
         normalized = re.sub(r"\s+", " ", normalized)
         return normalized.strip(" -_:|.,;[]()")
 
-    def _is_recurrent_margin_pattern(self, pattern: str, count: int, threshold: int) -> bool:
+    def _is_recurrent_margin_pattern(
+        self, pattern: str, count: int, threshold: int
+    ) -> bool:
         if count < threshold:
             return False
         if pattern in {"#", ""}:
@@ -1134,14 +1251,20 @@ class DocumentParser:
             return False
         alpha_words = re.findall(r"[A-Za-z]+", normalized)
         title_like_word_count = sum(1 for word in alpha_words if word[:1].isupper())
-        is_title_like = bool(alpha_words) and title_like_word_count >= max(1, len(alpha_words) - 1)
+        is_title_like = bool(alpha_words) and title_like_word_count >= max(
+            1, len(alpha_words) - 1
+        )
         if (
             re.search(r"[.!?]$", normalized)
             and not re.search(r"\d{1,4}$", normalized)
             and not is_title_like
         ):
             return False
-        if len(alpha_words) >= 5 and normalized == normalized.lower() and not re.search(r"\d", normalized):
+        if (
+            len(alpha_words) >= 5
+            and normalized == normalized.lower()
+            and not re.search(r"\d", normalized)
+        ):
             return False
         return True
 
@@ -1191,7 +1314,15 @@ class DocumentParser:
             return 2
         if re.match(r"^\d+\s+[A-Z]", text):
             return 1
-        if lowered.startswith(("chapter ", "part ", "appendix", "solutions for chapter", "solutions to exercises")):
+        if lowered.startswith(
+            (
+                "chapter ",
+                "part ",
+                "appendix",
+                "solutions for chapter",
+                "solutions to exercises",
+            )
+        ):
             return 1
         if re.match(r"^第[一二三四五六七八九十百0-9]+[章节部分]", text):
             return 1
@@ -1206,14 +1337,10 @@ class DocumentParser:
         fallback_title: str | None,
     ) -> list[DocumentSection]:
         coarse_entries = [
-            (page_number, title)
-            for page_number, title, level in entries
-            if level <= 1
+            (page_number, title) for page_number, title, level in entries if level <= 1
         ]
         fine_entries = [
-            (page_number, title)
-            for page_number, title, level in entries
-            if level == 2
+            (page_number, title) for page_number, title, level in entries if level == 2
         ]
 
         if not coarse_entries:
@@ -1232,7 +1359,11 @@ class DocumentParser:
 
         coarse_sections: list[DocumentSection] = []
         for index, (page_number, title) in enumerate(coarse_entries):
-            next_page = coarse_entries[index + 1][0] - 1 if index + 1 < len(coarse_entries) else page_count
+            next_page = (
+                coarse_entries[index + 1][0] - 1
+                if index + 1 < len(coarse_entries)
+                else page_count
+            )
             coarse_sections.append(
                 DocumentSection(
                     id=f"{document_id}:section:l1:{index + 1}",
@@ -1254,9 +1385,16 @@ class DocumentParser:
                 if coarse.page_start <= page_number <= coarse.page_end
             ]
             for index, (page_number, title) in enumerate(children):
-                if page_number == coarse.page_start and title.casefold() == coarse.title.casefold():
+                if (
+                    page_number == coarse.page_start
+                    and title.casefold() == coarse.title.casefold()
+                ):
                     continue
-                next_page = children[index + 1][0] - 1 if index + 1 < len(children) else coarse.page_end
+                next_page = (
+                    children[index + 1][0] - 1
+                    if index + 1 < len(children)
+                    else coarse.page_end
+                )
                 sections.append(
                     DocumentSection(
                         id=f"{document_id}:section:l2:{fine_index}",
@@ -1275,7 +1413,9 @@ class DocumentParser:
     ) -> list[tuple[int, str]]:
         deduped: list[tuple[int, str]] = []
         seen: set[tuple[int, str]] = set()
-        for page_number, title in sorted(entries, key=lambda item: (item[0], item[1].casefold())):
+        for page_number, title in sorted(
+            entries, key=lambda item: (item[0], item[1].casefold())
+        ):
             key = (page_number, title.casefold())
             if key in seen:
                 continue
@@ -1292,7 +1432,18 @@ class DocumentParser:
             return True
         if len(text) > 45 and text.endswith((".", ";", ":", ",")):
             return True
-        if any(keyword in text for keyword in ["Theorem.", "Corollary.", "Definition.", "Proposition.", "Exercise.", "Remark.", "Example."]):
+        if any(
+            keyword in text
+            for keyword in [
+                "Theorem.",
+                "Corollary.",
+                "Definition.",
+                "Proposition.",
+                "Exercise.",
+                "Remark.",
+                "Example.",
+            ]
+        ):
             return True
         alpha_count = sum(char.isalpha() for char in text)
         digit_count = sum(char.isdigit() for char in text)

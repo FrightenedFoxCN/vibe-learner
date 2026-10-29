@@ -16,3 +16,4 @@ export * from "./study-unit-revision";
 export * from "./model-runtime-config";
 export * from "./settings-response-contracts";
 export * from "./pdf-page-scope";
+export * from "./document-checkpoint";

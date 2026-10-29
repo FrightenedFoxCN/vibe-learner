@@ -17,6 +17,7 @@ This repository was last materially updated on 2026-09-10. The codebase is a mon
 - Frontend API client: `apps/web/lib/api.ts`
 - API router: `services/ai/app/api/routes.py`
 - Backend container bootstrap: `services/ai/app/core/bootstrap.py`
+- Document OCR checkpoints: `services/ai/app/models/document_checkpoint.py`, `services/ai/app/persistence/document_checkpoint_repository.py`, and `docs/document-checkpoints.md`. Checkpoint-only work does not prove Document commit; resume admits one distinct child operation per source and never replays a completed child.
 - Document parsing pipeline: `services/ai/app/services/document_parser.py`
 - Document revision/CAS persistence: `services/ai/app/persistence/document_repository.py`; runtime writes must not use `LocalJsonStore.save_list("documents", ...)`.
 - Planning physical page scope: `services/ai/app/models/pdf_page_scope.py`, `apps/web/lib/planning-page-scope.ts`, and `docs/planning-page-scope.md`. Physical PDF positions constrain tools/proposals/commits; PDF metadata printed labels are a separate read-only reference.
@@ -61,7 +62,7 @@ This repository was last materially updated on 2026-09-10. The codebase is a mon
 
 `POST /documents` -> `POST /documents/{id}/process` or `POST /documents/{id}/process/stream`
 
-The backend creates a local document record, parses the uploaded PDF, falls back to OCR when needed, strips noisy structure, builds study units, and stores a debug record for replay and inspection.
+The backend creates a local document record, parses the uploaded PDF, falls back to OCR when needed, strips noisy structure, builds study units, and stores a debug record for replay and inspection. Completed pages/stages have bounded operation-scoped checkpoints; explicit resume reuses authorized saved work and commits through the normal CAS/Harness boundary.
 
 ### 2. Planning
 

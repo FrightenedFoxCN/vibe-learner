@@ -129,24 +129,51 @@ export const HARNESS_STAGE_WORKFLOWS = deepFreeze({
 } as const satisfies Record<HarnessStage, HarnessWorkflow>);
 
 export const HARNESS_COMPONENT_REGISTRATIONS = deepFreeze({
-  study_unit_revision_patch: { ownerModule: "app.models.study_unit_revision", contract: { name: "study_unit_revision_patch", version: "study-unit-revision-patch-v1" } },
-  plan_revision_patch: { ownerModule: "app.models.plan_revision", contract: { name: "plan_revision_patch", version: "plan-revision-patch-v1" } },
-  document_parser: { ownerModule: "app.services.document_parser", contract: { name: "document_parser", version: "document-parser-v1" } },
+  study_unit_revision_patch: {
+    ownerModule: "app.models.study_unit_revision",
+    contract: {
+      name: "study_unit_revision_patch",
+      version: "study-unit-revision-patch-v1",
+    },
+  },
+  plan_revision_patch: {
+    ownerModule: "app.models.plan_revision",
+    contract: { name: "plan_revision_patch", version: "plan-revision-patch-v1" },
+  },
+  document_parser: {
+    ownerModule: "app.services.document_parser",
+    contract: { name: "document_parser", version: "document-parser-v2" },
+  },
   document_page_extractor: {
     ownerModule: "app.services.document_parser",
-    contract: { name: "document_page_extractor", version: "document-page-extractor-v1" },
+    contract: {
+      name: "document_page_extractor",
+      version: "document-page-extractor-v1",
+    },
   },
   document_section_detector: {
     ownerModule: "app.services.document_parser",
-    contract: { name: "document_section_detector", version: "document-section-detector-v1" },
+    contract: {
+      name: "document_section_detector",
+      version: "document-section-detector-v1",
+    },
   },
   document_chunk_builder: {
     ownerModule: "app.services.document_parser",
     contract: { name: "document_chunk_builder", version: "document-chunk-builder-v1" },
   },
-  ocr_engine: { ownerModule: "app.services.ocr_engine", contract: { name: "ocr_engine", version: "ocr-engine-v1" } },
-  study_unit_cleaner: { ownerModule: "app.services.study_arrangement", contract: { name: "study_unit_cleaner", version: "study-unit-cleaner-v1" } },
-  planning_prompt: { ownerModule: "app.services.plan_prompt", contract: { name: "planning_prompt", version: "planning-prompt-v7" } },
+  ocr_engine: {
+    ownerModule: "app.services.ocr_engine",
+    contract: { name: "ocr_engine", version: "ocr-engine-v1" },
+  },
+  study_unit_cleaner: {
+    ownerModule: "app.services.study_arrangement",
+    contract: { name: "study_unit_cleaner", version: "study-unit-cleaner-v1" },
+  },
+  planning_prompt: {
+    ownerModule: "app.services.plan_prompt",
+    contract: { name: "planning_prompt", version: "planning-prompt-v7" },
+  },
   planning_toolset: {
     ownerModule: "app.services.plan_tool_runtime",
     contract: { name: "planning_toolset", version: "planning-toolset-v2" },
@@ -155,10 +182,22 @@ export const HARNESS_COMPONENT_REGISTRATIONS = deepFreeze({
     ownerModule: "app.services.plan_tool_runtime",
     contract: { name: "planning_tool_runtime", version: "planning-tool-runtime-v3" },
   },
-  persona_compiler: { ownerModule: "app.services.persona_cards", contract: { name: "persona_compiler", version: "persona-compiler-v1" } },
-  scene_compiler: { ownerModule: "app.services.scene_setup", contract: { name: "scene_compiler", version: "scene-compiler-v1" } },
-  study_chat_prompt: { ownerModule: "app.services.provider_study", contract: { name: "study_chat_prompt", version: "study-chat-prompt-v2" } },
-  study_grounding: { ownerModule: "app.services.study_grounding", contract: { name: "study_grounding", version: "study-grounding-v1" } },
+  persona_compiler: {
+    ownerModule: "app.services.persona_cards",
+    contract: { name: "persona_compiler", version: "persona-compiler-v1" },
+  },
+  scene_compiler: {
+    ownerModule: "app.services.scene_setup",
+    contract: { name: "scene_compiler", version: "scene-compiler-v1" },
+  },
+  study_chat_prompt: {
+    ownerModule: "app.services.provider_study",
+    contract: { name: "study_chat_prompt", version: "study-chat-prompt-v2" },
+  },
+  study_grounding: {
+    ownerModule: "app.services.study_grounding",
+    contract: { name: "study_grounding", version: "study-grounding-v1" },
+  },
   study_chat_toolset: {
     ownerModule: "app.services.study_session_chat_runtime",
     contract: { name: "study_chat_toolset", version: "study-chat-toolset-v2" },
@@ -169,7 +208,10 @@ export const HARNESS_COMPONENT_REGISTRATIONS = deepFreeze({
   },
   tavern_persona_compiler: {
     ownerModule: "app.services.persona_runtime",
-    contract: { name: "tavern_persona_compiler", version: "tavern-persona-compiler-v1" },
+    contract: {
+      name: "tavern_persona_compiler",
+      version: "tavern-persona-compiler-v1",
+    },
   },
   tavern_actor_prompt: {
     ownerModule: "app.services.tavern_prompt",
@@ -179,7 +221,10 @@ export const HARNESS_COMPONENT_REGISTRATIONS = deepFreeze({
     ownerModule: "app.services.tavern",
     contract: { name: "tavern_scheduler", version: "tavern-schedule-v1" },
   },
-  frontend_decoder: { ownerModule: "apps.web.lib.api", contract: { name: "frontend_decoder", version: "frontend-decoder-v1" } },
+  frontend_decoder: {
+    ownerModule: "apps.web.lib.api",
+    contract: { name: "frontend_decoder", version: "frontend-decoder-v1" },
+  },
 } as const satisfies Record<HarnessComponentName, HarnessComponentRegistration>);
 
 export const HARNESS_OPERATION_STAGE_REGISTRATIONS = deepFreeze({
@@ -213,8 +258,16 @@ export const HARNESS_OPERATION_STAGE_REGISTRATIONS = deepFreeze({
     componentNames: ["study_unit_cleaner"],
     evalRoute: "document.study_unit_cleanup",
   },
-  "planning:study_unit_revision": { ownerModule: "app.services.study_unit_revision", componentNames: ["study_unit_revision_patch"], evalRoute: "planning.study_unit_revision" },
-  "planning:plan_revision": { ownerModule: "app.services.plan_revision", componentNames: ["plan_revision_patch"], evalRoute: "planning.plan_revision" },
+  "planning:study_unit_revision": {
+    ownerModule: "app.services.study_unit_revision",
+    componentNames: ["study_unit_revision_patch"],
+    evalRoute: "planning.study_unit_revision",
+  },
+  "planning:plan_revision": {
+    ownerModule: "app.services.plan_revision",
+    componentNames: ["plan_revision_patch"],
+    evalRoute: "planning.plan_revision",
+  },
   "planning:plan_generation": {
     ownerModule: "app.services.model_provider",
     componentNames: ["planning_prompt", "planning_toolset"],
@@ -237,12 +290,21 @@ export const HARNESS_OPERATION_STAGE_REGISTRATIONS = deepFreeze({
   },
   "study_chat:study_chat_reply": {
     ownerModule: "app.services.study_sessions",
-    componentNames: ["study_chat_prompt", "study_chat_toolset", "study_grounding", "study_visual_grounding"],
+    componentNames: [
+      "study_chat_prompt",
+      "study_chat_toolset",
+      "study_grounding",
+      "study_visual_grounding",
+    ],
     evalRoute: "study_chat.reply",
   },
   "tavern:actor_reply": {
     ownerModule: "app.services.tavern",
-    componentNames: ["tavern_actor_prompt", "tavern_persona_compiler", "tavern_scheduler"],
+    componentNames: [
+      "tavern_actor_prompt",
+      "tavern_persona_compiler",
+      "tavern_scheduler",
+    ],
     evalRoute: "tavern.actor_reply",
   },
   "frontend_decode:response_decode": {
@@ -250,7 +312,10 @@ export const HARNESS_OPERATION_STAGE_REGISTRATIONS = deepFreeze({
     componentNames: ["frontend_decoder"],
     evalRoute: "frontend.response_decode",
   },
-} as const satisfies Record<HarnessOperationStageKey, HarnessOperationStageRegistration>);
+} as const satisfies Record<
+  HarnessOperationStageKey,
+  HarnessOperationStageRegistration
+>);
 
 export interface HarnessOperationStageRegistrySnapshot {
   schema_name: "HarnessOperationStageRegistry";
@@ -296,19 +361,11 @@ export function harnessOperationStageRegistrySnapshot(): HarnessOperationStageRe
 }
 
 export type HarnessAttemptPhase =
-  | "generate"
-  | "decode"
-  | "validate"
-  | "repair"
-  | "commit"
-  | "rollback";
+  "generate" | "decode" | "validate" | "repair" | "commit" | "rollback";
 
 export type HarnessAttemptStatus = "passed" | "failed" | "skipped";
 export type HarnessCommitStatus =
-  | "not_applicable"
-  | "not_committed"
-  | "committed"
-  | "rolled_back";
+  "not_applicable" | "not_committed" | "committed" | "rolled_back";
 export type HarnessDigestScope = "committed_projection" | "committed_batch";
 export type HarnessArtifactType =
   | "document_upload"
@@ -351,15 +408,11 @@ export type HarnessContextEvidencePolicy =
   | "operation_identity"
   | "unsupported";
 export type HarnessCommitEvidencePolicy =
-  | "revision"
-  | "sequence"
-  | "digest"
-  | "unsupported";
-export type HarnessOperationEvidenceScope = "primary_output_only" | "complete_transaction";
+  "revision" | "sequence" | "digest" | "unsupported";
+export type HarnessOperationEvidenceScope =
+  "primary_output_only" | "complete_transaction";
 export type HarnessRollbackEvidencePolicy =
-  | "read_back"
-  | "compensation"
-  | "unsupported";
+  "read_back" | "compensation" | "unsupported";
 
 export interface HarnessResourceEvidencePolicy {
   semantics: HarnessResourceSemantics;
@@ -369,8 +422,18 @@ export interface HarnessResourceEvidencePolicy {
 }
 
 export const HARNESS_RESOURCE_EVIDENCE_POLICIES = {
-  study_unit_revision: { semantics: "immutable", contextEvidence: "protected_snapshot", commitEvidence: "digest", rollbackEvidence: "unsupported" },
-  plan_revision: { semantics: "immutable", contextEvidence: "protected_snapshot", commitEvidence: "digest", rollbackEvidence: "unsupported" },
+  study_unit_revision: {
+    semantics: "immutable",
+    contextEvidence: "protected_snapshot",
+    commitEvidence: "digest",
+    rollbackEvidence: "unsupported",
+  },
+  plan_revision: {
+    semantics: "immutable",
+    contextEvidence: "protected_snapshot",
+    commitEvidence: "digest",
+    rollbackEvidence: "unsupported",
+  },
   document: {
     semantics: "unversioned_mutable",
     contextEvidence: "unsupported",
@@ -504,138 +567,274 @@ export interface HarnessOperationCommitPolicy {
 }
 
 export const HARNESS_OPERATION_COMMIT_POLICIES = deepFreeze({
-  "planning:study_unit_revision:StudyUnitRevisionOutput:study-unit-revision-output-v1:StudyUnitRevisionCommittedProjection:study-unit-revision-commit-v1": {
-    workflow: "planning", stage: "study_unit_revision",
-    traceContract: { name: "StudyUnitRevisionOutput", version: "study-unit-revision-output-v1" },
-    payloadContract: { name: "StudyUnitRevisionCommittedProjection", version: "study-unit-revision-commit-v1" },
-    projectionContract: { name: "StudyUnitRevisionCommittedProjection", version: "study-unit-revision-commit-v1" },
-    bindingContract: { name: "StudyUnitRevisionBinding", version: "study-unit-revision-binding-v1" },
-    digestScope: "committed_projection", evidenceScope: "complete_transaction",
-    subjectResourceType: "frontend_request", subjectResourceCount: 1,
-    statusRules: [{ traceStatus: "failed", commitStatus: "not_committed" }, { traceStatus: "passed", commitStatus: "committed" }],
-    resourceRules: [{ resourceType: "study_unit_revision", committedAttemptedCount: 1, committedResourceCount: 1, notCommittedAttemptedMin: 1, notCommittedAttemptedMax: 1 }],
-  },
-  "planning:plan_revision:PlanRevisionProposal:plan-revision-proposal-v1:PlanRevisionCommittedProjection:plan-revision-committed-projection-v1": {
-    workflow: "planning", stage: "plan_revision",
-    traceContract: { name: "PlanRevisionProposal", version: "plan-revision-proposal-v1" },
-    payloadContract: { name: "PlanRevisionCommittedProjection", version: "plan-revision-committed-projection-v1" },
-    projectionContract: { name: "PlanRevisionCommittedProjection", version: "plan-revision-committed-projection-v1" },
-    bindingContract: { name: "PlanRevisionOperationBinding", version: "plan-revision-operation-binding-v1" },
-    digestScope: "committed_projection", evidenceScope: "complete_transaction",
-    subjectResourceType: "frontend_request", subjectResourceCount: 1,
-    statusRules: [{ traceStatus: "failed", commitStatus: "not_committed" }, { traceStatus: "passed", commitStatus: "committed" }],
-    resourceRules: [{ resourceType: "plan_revision", committedAttemptedCount: 1, committedResourceCount: 1, notCommittedAttemptedMin: 1, notCommittedAttemptedMax: 1 }],
-  },
-  "document_parse:document_parse:DocumentProcessRuntimeOutput:document-process-runtime-output-v1:DocumentProcessCommittedProjection:document-process-committed-projection-v1": {
-    workflow: "document_parse",
-    stage: "document_parse",
-    traceContract: { name: "DocumentProcessRuntimeOutput", version: "document-process-runtime-output-v1" },
-    payloadContract: { name: "DocumentProcessCommittedProjection", version: "document-process-committed-projection-v1" },
-    projectionContract: { name: "DocumentProcessCommittedProjection", version: "document-process-committed-projection-v1" },
-    bindingContract: { name: "DocumentProcessOperationBinding", version: "document-process-operation-binding-v1" },
-    digestScope: "committed_projection",
-    evidenceScope: "complete_transaction",
-    subjectResourceType: "frontend_request",
-    subjectResourceCount: 1,
-    statusRules: [
-      { traceStatus: "failed", commitStatus: "not_committed" },
-      { traceStatus: "passed", commitStatus: "committed" },
-      { traceStatus: "repaired", commitStatus: "committed" },
-    ],
-    resourceRules: [{ resourceType: "document", committedAttemptedCount: 1, committedResourceCount: 1, notCommittedAttemptedMin: 1, notCommittedAttemptedMax: 1 }],
-  },
-  "planning:plan_generation:LearningPlanRuntimeOutput:learning-plan-runtime-output-v2:LearningPlanCommittedProjection:learning-plan-committed-projection-v2": {
-    workflow: "planning",
-    stage: "plan_generation",
-    traceContract: { name: "LearningPlanRuntimeOutput", version: "learning-plan-runtime-output-v2" },
-    payloadContract: { name: "LearningPlanCommittedProjection", version: "learning-plan-committed-projection-v2" },
-    projectionContract: { name: "LearningPlanCommittedProjection", version: "learning-plan-committed-projection-v2" },
-    bindingContract: { name: "LearningPlanOperationBinding", version: "learning-plan-operation-binding-v2" },
-    digestScope: "committed_projection",
-    evidenceScope: "complete_transaction",
-    subjectResourceType: "frontend_request",
-    subjectResourceCount: 1,
-    statusRules: [
-      { traceStatus: "failed", commitStatus: "not_committed" },
-      { traceStatus: "passed", commitStatus: "committed" },
-      { traceStatus: "repaired", commitStatus: "committed" },
-    ],
-    resourceRules: [{ resourceType: "learning_plan", committedAttemptedCount: 1, committedResourceCount: 1, notCommittedAttemptedMin: 1, notCommittedAttemptedMax: 1 }],
-  },
-  "planning:plan_generation:LearningPlanRuntimeOutput:learning-plan-runtime-output-v1:LearningPlanCommittedProjection:learning-plan-committed-projection-v1": {
-    workflow: "planning",
-    stage: "plan_generation",
-    traceContract: { name: "LearningPlanRuntimeOutput", version: "learning-plan-runtime-output-v1" },
-    payloadContract: { name: "LearningPlanCommittedProjection", version: "learning-plan-committed-projection-v1" },
-    projectionContract: { name: "LearningPlanCommittedProjection", version: "learning-plan-committed-projection-v1" },
-    bindingContract: { name: "LearningPlanOperationBinding", version: "learning-plan-operation-binding-v1" },
-    digestScope: "committed_projection",
-    evidenceScope: "complete_transaction",
-    subjectResourceType: "frontend_request",
-    subjectResourceCount: 1,
-    statusRules: [
-      { traceStatus: "failed", commitStatus: "not_committed" },
-      { traceStatus: "passed", commitStatus: "committed" },
-      { traceStatus: "repaired", commitStatus: "committed" },
-    ],
-    resourceRules: [{ resourceType: "learning_plan", committedAttemptedCount: 1, committedResourceCount: 1, notCommittedAttemptedMin: 1, notCommittedAttemptedMax: 1 }],
-  },
-  "tavern:actor_reply:TavernActorReply:tavern-actor-reply-v2:TavernPersonaMessageCommittedProjection:tavern-persona-message-committed-projection-v1": {
-    workflow: "tavern",
-    stage: "actor_reply",
-    traceContract: {
-      name: "TavernActorReply",
-      version: "tavern-actor-reply-v2",
-    },
-    payloadContract: {
-      name: "TavernPersonaMessageCommittedProjection",
-      version: "tavern-persona-message-committed-projection-v1",
-    },
-    projectionContract: {
-      name: "TavernPersonaMessageCommittedProjection",
-      version: "tavern-persona-message-committed-projection-v1",
-    },
-    bindingContract: {
-      name: "TavernPersonaMessageCommitBinding",
-      version: "tavern-persona-message-commit-binding-v1",
-    },
-    digestScope: "committed_projection",
-    evidenceScope: "primary_output_only",
-    subjectResourceType: "tavern_room",
-    subjectResourceCount: 1,
-    statusRules: [
-      { traceStatus: "failed", commitStatus: "not_committed" },
-      { traceStatus: "passed", commitStatus: "committed" },
-      { traceStatus: "repaired", commitStatus: "committed" },
-    ],
-    resourceRules: [
-      {
-        resourceType: "tavern_message",
-        committedAttemptedCount: 1,
-        committedResourceCount: 1,
-        notCommittedAttemptedMin: 1,
-        notCommittedAttemptedMax: 1,
+  "planning:study_unit_revision:StudyUnitRevisionOutput:study-unit-revision-output-v1:StudyUnitRevisionCommittedProjection:study-unit-revision-commit-v1":
+    {
+      workflow: "planning",
+      stage: "study_unit_revision",
+      traceContract: {
+        name: "StudyUnitRevisionOutput",
+        version: "study-unit-revision-output-v1",
       },
-    ],
-  },
-  "study_chat:study_chat_reply:StudyChatReply:study-chat-reply-trace-v1:StudySessionTurnCommittedProjection:study-chat-turn-committed-projection-v1": {
-    workflow: "study_chat",
-    stage: "study_chat_reply",
-    traceContract: { name: "StudyChatReply", version: "study-chat-reply-trace-v1" },
-    payloadContract: { name: "StudySessionTurnCommittedProjection", version: "study-chat-turn-committed-projection-v1" },
-    projectionContract: { name: "StudySessionTurnCommittedProjection", version: "study-chat-turn-committed-projection-v1" },
-    bindingContract: { name: "StudyChatOperationBinding", version: "study-chat-operation-binding-v1" },
-    digestScope: "committed_projection",
-    evidenceScope: "primary_output_only",
-    subjectResourceType: "study_session",
-    subjectResourceCount: 1,
-    statusRules: [
-      { traceStatus: "failed", commitStatus: "not_committed" },
-      { traceStatus: "passed", commitStatus: "committed" },
-      { traceStatus: "repaired", commitStatus: "committed" },
-    ],
-    resourceRules: [{ resourceType: "study_session", committedAttemptedCount: 1, committedResourceCount: 1, notCommittedAttemptedMin: 1, notCommittedAttemptedMax: 1 }],
-  },
+      payloadContract: {
+        name: "StudyUnitRevisionCommittedProjection",
+        version: "study-unit-revision-commit-v1",
+      },
+      projectionContract: {
+        name: "StudyUnitRevisionCommittedProjection",
+        version: "study-unit-revision-commit-v1",
+      },
+      bindingContract: {
+        name: "StudyUnitRevisionBinding",
+        version: "study-unit-revision-binding-v1",
+      },
+      digestScope: "committed_projection",
+      evidenceScope: "complete_transaction",
+      subjectResourceType: "frontend_request",
+      subjectResourceCount: 1,
+      statusRules: [
+        { traceStatus: "failed", commitStatus: "not_committed" },
+        { traceStatus: "passed", commitStatus: "committed" },
+      ],
+      resourceRules: [
+        {
+          resourceType: "study_unit_revision",
+          committedAttemptedCount: 1,
+          committedResourceCount: 1,
+          notCommittedAttemptedMin: 1,
+          notCommittedAttemptedMax: 1,
+        },
+      ],
+    },
+  "planning:plan_revision:PlanRevisionProposal:plan-revision-proposal-v1:PlanRevisionCommittedProjection:plan-revision-committed-projection-v1":
+    {
+      workflow: "planning",
+      stage: "plan_revision",
+      traceContract: {
+        name: "PlanRevisionProposal",
+        version: "plan-revision-proposal-v1",
+      },
+      payloadContract: {
+        name: "PlanRevisionCommittedProjection",
+        version: "plan-revision-committed-projection-v1",
+      },
+      projectionContract: {
+        name: "PlanRevisionCommittedProjection",
+        version: "plan-revision-committed-projection-v1",
+      },
+      bindingContract: {
+        name: "PlanRevisionOperationBinding",
+        version: "plan-revision-operation-binding-v1",
+      },
+      digestScope: "committed_projection",
+      evidenceScope: "complete_transaction",
+      subjectResourceType: "frontend_request",
+      subjectResourceCount: 1,
+      statusRules: [
+        { traceStatus: "failed", commitStatus: "not_committed" },
+        { traceStatus: "passed", commitStatus: "committed" },
+      ],
+      resourceRules: [
+        {
+          resourceType: "plan_revision",
+          committedAttemptedCount: 1,
+          committedResourceCount: 1,
+          notCommittedAttemptedMin: 1,
+          notCommittedAttemptedMax: 1,
+        },
+      ],
+    },
+  "document_parse:document_parse:DocumentProcessRuntimeOutput:document-process-runtime-output-v1:DocumentProcessCommittedProjection:document-process-committed-projection-v1":
+    {
+      workflow: "document_parse",
+      stage: "document_parse",
+      traceContract: {
+        name: "DocumentProcessRuntimeOutput",
+        version: "document-process-runtime-output-v1",
+      },
+      payloadContract: {
+        name: "DocumentProcessCommittedProjection",
+        version: "document-process-committed-projection-v1",
+      },
+      projectionContract: {
+        name: "DocumentProcessCommittedProjection",
+        version: "document-process-committed-projection-v1",
+      },
+      bindingContract: {
+        name: "DocumentProcessOperationBinding",
+        version: "document-process-operation-binding-v1",
+      },
+      digestScope: "committed_projection",
+      evidenceScope: "complete_transaction",
+      subjectResourceType: "frontend_request",
+      subjectResourceCount: 1,
+      statusRules: [
+        { traceStatus: "failed", commitStatus: "not_committed" },
+        { traceStatus: "passed", commitStatus: "committed" },
+        { traceStatus: "repaired", commitStatus: "committed" },
+      ],
+      resourceRules: [
+        {
+          resourceType: "document",
+          committedAttemptedCount: 1,
+          committedResourceCount: 1,
+          notCommittedAttemptedMin: 1,
+          notCommittedAttemptedMax: 1,
+        },
+      ],
+    },
+  "planning:plan_generation:LearningPlanRuntimeOutput:learning-plan-runtime-output-v2:LearningPlanCommittedProjection:learning-plan-committed-projection-v2":
+    {
+      workflow: "planning",
+      stage: "plan_generation",
+      traceContract: {
+        name: "LearningPlanRuntimeOutput",
+        version: "learning-plan-runtime-output-v2",
+      },
+      payloadContract: {
+        name: "LearningPlanCommittedProjection",
+        version: "learning-plan-committed-projection-v2",
+      },
+      projectionContract: {
+        name: "LearningPlanCommittedProjection",
+        version: "learning-plan-committed-projection-v2",
+      },
+      bindingContract: {
+        name: "LearningPlanOperationBinding",
+        version: "learning-plan-operation-binding-v2",
+      },
+      digestScope: "committed_projection",
+      evidenceScope: "complete_transaction",
+      subjectResourceType: "frontend_request",
+      subjectResourceCount: 1,
+      statusRules: [
+        { traceStatus: "failed", commitStatus: "not_committed" },
+        { traceStatus: "passed", commitStatus: "committed" },
+        { traceStatus: "repaired", commitStatus: "committed" },
+      ],
+      resourceRules: [
+        {
+          resourceType: "learning_plan",
+          committedAttemptedCount: 1,
+          committedResourceCount: 1,
+          notCommittedAttemptedMin: 1,
+          notCommittedAttemptedMax: 1,
+        },
+      ],
+    },
+  "planning:plan_generation:LearningPlanRuntimeOutput:learning-plan-runtime-output-v1:LearningPlanCommittedProjection:learning-plan-committed-projection-v1":
+    {
+      workflow: "planning",
+      stage: "plan_generation",
+      traceContract: {
+        name: "LearningPlanRuntimeOutput",
+        version: "learning-plan-runtime-output-v1",
+      },
+      payloadContract: {
+        name: "LearningPlanCommittedProjection",
+        version: "learning-plan-committed-projection-v1",
+      },
+      projectionContract: {
+        name: "LearningPlanCommittedProjection",
+        version: "learning-plan-committed-projection-v1",
+      },
+      bindingContract: {
+        name: "LearningPlanOperationBinding",
+        version: "learning-plan-operation-binding-v1",
+      },
+      digestScope: "committed_projection",
+      evidenceScope: "complete_transaction",
+      subjectResourceType: "frontend_request",
+      subjectResourceCount: 1,
+      statusRules: [
+        { traceStatus: "failed", commitStatus: "not_committed" },
+        { traceStatus: "passed", commitStatus: "committed" },
+        { traceStatus: "repaired", commitStatus: "committed" },
+      ],
+      resourceRules: [
+        {
+          resourceType: "learning_plan",
+          committedAttemptedCount: 1,
+          committedResourceCount: 1,
+          notCommittedAttemptedMin: 1,
+          notCommittedAttemptedMax: 1,
+        },
+      ],
+    },
+  "tavern:actor_reply:TavernActorReply:tavern-actor-reply-v2:TavernPersonaMessageCommittedProjection:tavern-persona-message-committed-projection-v1":
+    {
+      workflow: "tavern",
+      stage: "actor_reply",
+      traceContract: {
+        name: "TavernActorReply",
+        version: "tavern-actor-reply-v2",
+      },
+      payloadContract: {
+        name: "TavernPersonaMessageCommittedProjection",
+        version: "tavern-persona-message-committed-projection-v1",
+      },
+      projectionContract: {
+        name: "TavernPersonaMessageCommittedProjection",
+        version: "tavern-persona-message-committed-projection-v1",
+      },
+      bindingContract: {
+        name: "TavernPersonaMessageCommitBinding",
+        version: "tavern-persona-message-commit-binding-v1",
+      },
+      digestScope: "committed_projection",
+      evidenceScope: "primary_output_only",
+      subjectResourceType: "tavern_room",
+      subjectResourceCount: 1,
+      statusRules: [
+        { traceStatus: "failed", commitStatus: "not_committed" },
+        { traceStatus: "passed", commitStatus: "committed" },
+        { traceStatus: "repaired", commitStatus: "committed" },
+      ],
+      resourceRules: [
+        {
+          resourceType: "tavern_message",
+          committedAttemptedCount: 1,
+          committedResourceCount: 1,
+          notCommittedAttemptedMin: 1,
+          notCommittedAttemptedMax: 1,
+        },
+      ],
+    },
+  "study_chat:study_chat_reply:StudyChatReply:study-chat-reply-trace-v1:StudySessionTurnCommittedProjection:study-chat-turn-committed-projection-v1":
+    {
+      workflow: "study_chat",
+      stage: "study_chat_reply",
+      traceContract: { name: "StudyChatReply", version: "study-chat-reply-trace-v1" },
+      payloadContract: {
+        name: "StudySessionTurnCommittedProjection",
+        version: "study-chat-turn-committed-projection-v1",
+      },
+      projectionContract: {
+        name: "StudySessionTurnCommittedProjection",
+        version: "study-chat-turn-committed-projection-v1",
+      },
+      bindingContract: {
+        name: "StudyChatOperationBinding",
+        version: "study-chat-operation-binding-v1",
+      },
+      digestScope: "committed_projection",
+      evidenceScope: "primary_output_only",
+      subjectResourceType: "study_session",
+      subjectResourceCount: 1,
+      statusRules: [
+        { traceStatus: "failed", commitStatus: "not_committed" },
+        { traceStatus: "passed", commitStatus: "committed" },
+        { traceStatus: "repaired", commitStatus: "committed" },
+      ],
+      resourceRules: [
+        {
+          resourceType: "study_session",
+          committedAttemptedCount: 1,
+          committedResourceCount: 1,
+          notCommittedAttemptedMin: 1,
+          notCommittedAttemptedMax: 1,
+        },
+      ],
+    },
 } as const satisfies Record<string, HarnessOperationCommitPolicy>);
 
 export interface HarnessOperationCommitPolicyRegistrySnapshot {
@@ -677,27 +876,27 @@ export function harnessOperationCommitPolicyRegistrySnapshot(): HarnessOperation
         return leftKey.localeCompare(rightKey);
       })
       .map((policy) => ({
-      workflow: policy.workflow,
-      stage: policy.stage,
-      trace_contract: policy.traceContract,
-      payload_contract: policy.payloadContract,
-      projection_contract: policy.projectionContract,
-      binding_contract: policy.bindingContract,
-      digest_scope: policy.digestScope,
-      evidence_scope: policy.evidenceScope,
-      subject_resource_type: policy.subjectResourceType,
-      subject_resource_count: policy.subjectResourceCount,
-      status_rules: policy.statusRules.map((item) => ({
-        trace_status: item.traceStatus,
-        commit_status: item.commitStatus,
-      })),
-      resource_rules: policy.resourceRules.map((item) => ({
-        resource_type: item.resourceType,
-        committed_attempted_count: item.committedAttemptedCount,
-        committed_resource_count: item.committedResourceCount,
-        not_committed_attempted_min: item.notCommittedAttemptedMin,
-        not_committed_attempted_max: item.notCommittedAttemptedMax,
-      })),
+        workflow: policy.workflow,
+        stage: policy.stage,
+        trace_contract: policy.traceContract,
+        payload_contract: policy.payloadContract,
+        projection_contract: policy.projectionContract,
+        binding_contract: policy.bindingContract,
+        digest_scope: policy.digestScope,
+        evidence_scope: policy.evidenceScope,
+        subject_resource_type: policy.subjectResourceType,
+        subject_resource_count: policy.subjectResourceCount,
+        status_rules: policy.statusRules.map((item) => ({
+          trace_status: item.traceStatus,
+          commit_status: item.commitStatus,
+        })),
+        resource_rules: policy.resourceRules.map((item) => ({
+          resource_type: item.resourceType,
+          committed_attempted_count: item.committedAttemptedCount,
+          committed_resource_count: item.committedResourceCount,
+          not_committed_attempted_min: item.notCommittedAttemptedMin,
+          not_committed_attempted_max: item.notCommittedAttemptedMax,
+        })),
       })),
   };
 }
@@ -819,8 +1018,10 @@ export interface HarnessCommittedResourceRef {
   payloadDigest: string;
 }
 
-export interface HarnessCommittedResourceRefV3
-  extends Omit<HarnessCommittedResourceRef, "resourceType"> {
+export interface HarnessCommittedResourceRefV3 extends Omit<
+  HarnessCommittedResourceRef,
+  "resourceType"
+> {
   resourceType: HarnessResourceType;
 }
 
@@ -838,11 +1039,10 @@ export interface HarnessCommitEvidence {
   rolledBackAt: string | null;
 }
 
-export interface HarnessCommitEvidenceV3
-  extends Omit<
-    HarnessCommitEvidence,
-    "attemptedResourceRefs" | "committedResources"
-  > {
+export interface HarnessCommitEvidenceV3 extends Omit<
+  HarnessCommitEvidence,
+  "attemptedResourceRefs" | "committedResources"
+> {
   attemptedResourceRefs: HarnessResourceRefV3[];
   committedResources: HarnessCommittedResourceRefV3[];
 }
@@ -868,11 +1068,10 @@ export interface HarnessTraceV2 {
   completedAt: string;
 }
 
-export interface HarnessTraceV3
-  extends Omit<
-    HarnessTraceV2,
-    "traceSchemaVersion" | "stage" | "context" | "commitEvidence"
-  > {
+export interface HarnessTraceV3 extends Omit<
+  HarnessTraceV2,
+  "traceSchemaVersion" | "stage" | "context" | "commitEvidence"
+> {
   traceSchemaVersion: "harness-trace-v3";
   stage: HarnessStage;
   context: HarnessContextEnvelopeV3;

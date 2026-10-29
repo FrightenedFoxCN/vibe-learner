@@ -82,6 +82,37 @@ def _parsed(scenario: str):
 
 def _document_stage(stage: str, scenario: str) -> dict:
     report = _parsed(scenario)
+    if stage == "document_parse" and scenario.startswith("checkpoint_"):
+        from app.models.document_checkpoint import DocumentCheckpointSnapshotV1
+
+        raw = {
+            "operation_id": "eval-checkpoint",
+            "document_id": report.document_id,
+            "upload_digest": "a" * 64,
+            "configuration_digest": "b" * 64,
+            "force_ocr": False,
+            "page_count": report.page_count,
+            "pages": [],
+            "report": report.model_dump(mode="json"),
+            "output": {
+                "debug_report": report.model_dump(mode="json"),
+                "study_units": [],
+            },
+        }
+        if scenario == "checkpoint_foreign_scope":
+            raw["document_id"] = "foreign-document"
+        elif scenario == "checkpoint_incomplete_output":
+            raw["output"]["debug_report"]["pages"].pop()
+        elif scenario != "checkpoint_complete_output":
+            raise ValueError("unknown_checkpoint_eval_scenario")
+        try:
+            restored = DocumentCheckpointSnapshotV1.model_validate(raw)
+        except ValidationError:
+            return {"accepted": False}
+        return {
+            "accepted": restored.output is not None
+            and restored.output.debug_report == restored.report
+        }
     if stage == "page_extraction":
         return {
             "page_count": len(report.pages),

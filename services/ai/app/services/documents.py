@@ -11,9 +11,25 @@ from uuid import uuid4
 import fitz
 from fastapi import HTTPException, UploadFile
 
+import hashlib
+from app.models.document_checkpoint import DocumentCheckpointSnapshotV1
+from app.persistence.document_checkpoint_repository import (
+    DocumentCheckpointRepository,
+    ParserCheckpoint,
+)
+from app.persistence.document_process_operation_repository import (
+    DocumentProcessResumeExists,
+)
+from app.services.document_checkpoint_configuration import (
+    configuration_digest as checkpoint_configuration_digest,
+)
 from app.core.logging import get_logger
 from app.models.domain import DocumentDebugRecord, DocumentRecord, DocumentSection
-from app.models.harness import HarnessArtifactType, HarnessStage, canonical_harness_digest
+from app.models.harness import (
+    HarnessArtifactType,
+    HarnessStage,
+    canonical_harness_digest,
+)
 from app.persistence.document_process_operation_repository import (
     DocumentProcessAdmissionRace,
     DocumentProcessAlreadyActive,
@@ -28,7 +44,10 @@ from app.persistence.document_repository import (
     DocumentRevisionConflict,
     StudyUnitNotFound,
 )
-from app.services.document_stage_metrics import collect_parser_measurements, parser_stage_evidence
+from app.services.document_stage_metrics import (
+    collect_parser_measurements,
+    parser_stage_evidence,
+)
 from app.services.document_parser import DocumentParser
 from app.services.local_store import LocalJsonStore
 from app.services.stream_interrupts import StreamInterruptedError
@@ -36,13 +55,16 @@ from app.services.study_arrangement import StudyArrangementService
 from app.models.document_processing import (
     DocumentStageEvidenceV1,
     DocumentStageInputManifest,
-    DocumentProcessInputManifest,
+    DocumentProcessInputManifestV2,
     DocumentProcessRuntimeOutputV1,
 )
 from app.services.harness_broad_adoption import (
     HarnessProposalRuntimeService,
 )
-from app.services.harness_runtime import HarnessOperationRuntime, HarnessRuntimePreparedOutput
+from app.services.harness_runtime import (
+    HarnessOperationRuntime,
+    HarnessRuntimePreparedOutput,
+)
 
 logger = get_logger("vibe_learner.documents")
 
@@ -58,13 +80,15 @@ class DocumentService:
     ) -> None:
         self.store = store
         self.repository = DocumentRepository(store.database)
+        self.checkpoints = DocumentCheckpointRepository(store.database)
         self.parser = parser
         self.arrangement_service = arrangement_service
-        self.process_repository = process_repository or DocumentProcessOperationRepository(
-            store.database
+        self.process_repository = (
+            process_repository or DocumentProcessOperationRepository(store.database)
         )
-        self.harness_service = harness_service or HarnessProposalRuntimeService.from_database(
-            store.database
+        self.harness_service = (
+            harness_service
+            or HarnessProposalRuntimeService.from_database(store.database)
         )
 
     def create_document(self, file: UploadFile) -> DocumentRecord:
@@ -112,26 +136,74 @@ class DocumentService:
         document_id: str,
         *,
         force_ocr: bool = False,
+        resume_from_operation_id: str | None = None,
         progress_callback: Callable[[str, dict[str, object]], None] | None = None,
         interrupt_check: Callable[[], None] | None = None,
         operation_admitted_callback: Callable[[str], None] | None = None,
     ) -> DocumentRecord:
+        checkpoint_enabled = isinstance(self.parser, DocumentParser)
+        source_checkpoint = None
+        upload = Path(self.require_document(document_id).stored_path).read_bytes()
+        upload_digest = hashlib.sha256(upload).hexdigest()
+        configuration_digest = checkpoint_configuration_digest(self.parser)
+        if resume_from_operation_id is not None:
+            if not checkpoint_enabled:
+                raise HTTPException(409, "document_checkpoint_parser_unsupported")
+            source_checkpoint = self.checkpoints.snapshot(resume_from_operation_id)
+            if (
+                source_checkpoint.document_id != document_id
+                or source_checkpoint.force_ocr != force_ocr
+            ):
+                raise HTTPException(409, "document_checkpoint_input_changed")
+            child = self.checkpoints.resume_child(resume_from_operation_id)
+            if child:
+                if operation_admitted_callback is not None:
+                    operation_admitted_callback(child)
+                return self._resume_read_back(child)
+            if (
+                source_checkpoint.upload_digest,
+                source_checkpoint.configuration_digest,
+            ) != (upload_digest, configuration_digest):
+                raise HTTPException(409, "document_checkpoint_input_changed")
         try:
             operation, document = self.process_repository.admit(
                 document_id=document_id,
                 force_ocr=force_ocr,
+                resume_from_operation_id=resume_from_operation_id,
             )
+        except DocumentProcessResumeExists as exc:
+            if operation_admitted_callback is not None:
+                operation_admitted_callback(exc.operation_id)
+            return self._resume_read_back(exc.operation_id)
         except DocumentProcessDocumentNotFound as exc:
             raise HTTPException(status_code=404, detail="document_not_found") from exc
         except DocumentProcessAlreadyActive as exc:
-            raise HTTPException(status_code=409, detail="document_processing_already_active") from exc
-        except (DocumentProcessStateConflict, DocumentProcessAdmissionRace, DocumentRevisionConflict) as exc:
-            raise HTTPException(status_code=409, detail="document_processing_state_conflict") from exc
+            raise HTTPException(
+                status_code=409, detail="document_processing_already_active"
+            ) from exc
+        except (
+            DocumentProcessStateConflict,
+            DocumentProcessAdmissionRace,
+            DocumentRevisionConflict,
+        ) as exc:
+            raise HTTPException(
+                status_code=409, detail="document_processing_state_conflict"
+            ) from exc
         runtime_prepared: HarnessRuntimePreparedOutput | None = None
         harness_runtime: HarnessOperationRuntime | None = None
         cleanup_metrics = {"attempt_count": 0, "duration_ms": 0}
         try:
-            operation_binding = self.process_repository.require_harness_operation(operation.operation_id)
+            operation_binding = self.process_repository.require_harness_operation(
+                operation.operation_id
+            )
+            if checkpoint_enabled:
+                self.checkpoints.initialize(
+                    operation.operation_id,
+                    upload_digest=upload_digest,
+                    configuration_digest=configuration_digest,
+                    force_ocr=force_ocr,
+                )
+
             if operation_admitted_callback is not None:
                 operation_admitted_callback(operation.operation_id)
             _emit_progress(
@@ -151,6 +223,7 @@ class DocumentService:
             )
             _call_interrupt(interrupt_check)
             parser_measurements: dict[str, dict[str, int]] = {}
+
             def generate_document(
                 protected: dict[str, object],
             ) -> DocumentProcessRuntimeOutputV1:
@@ -165,6 +238,40 @@ class DocumentService:
                     upload = base64.b64decode(encoded, validate=True)
                 except ValueError as error:
                     raise RuntimeError("document_upload_snapshot_invalid") from error
+                restored = (
+                    DocumentCheckpointSnapshotV1.model_validate(protected["checkpoint"])
+                    if protected.get("checkpoint") is not None
+                    else None
+                )
+                if restored is not None and (
+                    restored.operation_id,
+                    restored.document_id,
+                    restored.upload_digest,
+                    restored.configuration_digest,
+                    restored.force_ocr,
+                ) != (
+                    resume_from_operation_id,
+                    source_document.id,
+                    hashlib.sha256(upload).hexdigest(),
+                    configuration_digest,
+                    source_force_ocr,
+                ):
+                    raise RuntimeError("document_checkpoint_protected_scope_mismatch")
+                if (
+                    restored is not None
+                    and source_force_ocr
+                    and restored.report is not None
+                    and restored.report.ocr_status
+                    in {"failed", "partial", "unavailable", "required"}
+                ):
+                    restored = restored.model_copy(
+                        update={"report": None, "output": None}
+                    )
+                if restored is not None and restored.output is not None:
+                    self.checkpoints.save_stage(
+                        operation.operation_id, restored.report, restored.output
+                    )
+                    return restored.output
                 suffix = Path(source_document.stored_path).suffix or ".pdf"
                 temp_kwargs: dict[str, object] = {
                     "prefix": "vibe-harness-document-",
@@ -184,18 +291,35 @@ class DocumentService:
                         temp_path = Path(handle.name)
                     try:
                         with collect_parser_measurements(parser_measurements):
-                            report = self.parser.parse(
-                                document_id=source_document.id,
-                                title=source_document.title,
-                                stored_path=str(temp_path),
-                                force_ocr=source_force_ocr,
-                                progress_callback=progress_callback,
-                                interrupt_check=interrupt_check,
+                            parse_options = {}
+                            if checkpoint_enabled:
+                                parse_options["checkpoint"] = ParserCheckpoint(
+                                    self.checkpoints, operation.operation_id, restored
+                                )
+                            report = (
+                                restored.report
+                                if restored is not None and restored.report is not None
+                                else self.parser.parse(
+                                    document_id=source_document.id,
+                                    title=source_document.title,
+                                    stored_path=str(temp_path),
+                                    force_ocr=source_force_ocr,
+                                    progress_callback=progress_callback,
+                                    interrupt_check=interrupt_check,
+                                    **parse_options,
+                                )
                             )
+                            if checkpoint_enabled:
+                                self.checkpoints.save_stage(
+                                    operation.operation_id, report
+                                )
                     except fitz.FileDataError as error:
                         raise RuntimeError("document_process_invalid_pdf") from error
                     units = []
-                    if not (source_force_ocr and report.ocr_status in {"unavailable", "failed", "partial"}):
+                    if not (
+                        source_force_ocr
+                        and report.ocr_status in {"unavailable", "failed", "partial"}
+                    ):
                         cleanup_started_at = time.perf_counter()
                         cleanup_metrics["attempt_count"] += 1
                         try:
@@ -205,28 +329,38 @@ class DocumentService:
                             )
                         finally:
                             cleanup_metrics["duration_ms"] += max(
-                                0, int((time.perf_counter() - cleanup_started_at) * 1000)
+                                0,
+                                int((time.perf_counter() - cleanup_started_at) * 1000),
                             )
-                    return DocumentProcessRuntimeOutputV1(
-                        debug_report=report,
-                        study_units=units,
+                    output = DocumentProcessRuntimeOutputV1(
+                        debug_report=report, study_units=units
                     )
+                    if checkpoint_enabled and not (
+                        source_force_ocr
+                        and report.ocr_status in {"failed", "partial", "unavailable"}
+                    ):
+                        self.checkpoints.save_stage(
+                            operation.operation_id, report, output
+                        )
+                    return output
                 finally:
                     if temp_path is not None:
                         temp_path.unlink(missing_ok=True)
 
             runtime_prepared, harness_runtime = self.harness_service.prepare_document(
                 operation_binding=operation_binding,
-                manifest=DocumentProcessInputManifest(
+                manifest=DocumentProcessInputManifestV2(
                     document_id=document.id,
                     force_ocr=force_ocr,
+                    resume_from_operation_id=resume_from_operation_id,
                 ),
                 protected_input={
                     "document": document.model_dump(mode="json", exclude_none=False),
                     "force_ocr": force_ocr,
-                    "upload_base64": base64.b64encode(
-                        Path(document.stored_path).read_bytes()
-                    ).decode("ascii"),
+                    "upload_base64": base64.b64encode(upload).decode("ascii"),
+                    "checkpoint": source_checkpoint.model_dump(mode="json")
+                    if source_checkpoint
+                    else None,
                 },
                 generate=generate_document,
             )
@@ -244,7 +378,9 @@ class DocumentService:
                 {
                     "document_id": document.id,
                     "study_unit_count": len(study_units),
-                    "plannable_count": len([unit for unit in study_units if unit.include_in_plan]),
+                    "plannable_count": len(
+                        [unit for unit in study_units if unit.include_in_plan]
+                    ),
                 },
             )
             _call_interrupt(interrupt_check)
@@ -295,11 +431,15 @@ class DocumentService:
                 ),
                 artifact_type=HarnessArtifactType.DOCUMENT_UPLOAD,
                 protected_stage_input={
-                    "pages": [item.model_dump(mode="json") for item in debug_report.pages]
+                    "pages": [
+                        item.model_dump(mode="json") for item in debug_report.pages
+                    ]
                 },
             )
             if page_trace.status.value == "failed":
-                raise RuntimeError(page_trace.error_code or "document_page_extraction_stage_failed")
+                raise RuntimeError(
+                    page_trace.error_code or "document_page_extraction_stage_failed"
+                )
             section_trace = self.harness_service.emit_document_stage_evidence(
                 operation_binding=operation_binding,
                 parent_trace_id=parent_trace_id,
@@ -322,11 +462,16 @@ class DocumentService:
                 ),
                 artifact_type=HarnessArtifactType.DOCUMENT_UPLOAD,
                 protected_stage_input={
-                    "sections": [item.model_dump(mode="json") for item in debug_report.sections]
+                    "sections": [
+                        item.model_dump(mode="json") for item in debug_report.sections
+                    ]
                 },
             )
             if section_trace.status.value == "failed":
-                raise RuntimeError(section_trace.error_code or "document_section_detection_stage_failed")
+                raise RuntimeError(
+                    section_trace.error_code
+                    or "document_section_detection_stage_failed"
+                )
             chunk_trace = self.harness_service.emit_document_stage_evidence(
                 operation_binding=operation_binding,
                 parent_trace_id=parent_trace_id,
@@ -349,11 +494,15 @@ class DocumentService:
                 ),
                 artifact_type=HarnessArtifactType.DOCUMENT_UPLOAD,
                 protected_stage_input={
-                    "chunks": [item.model_dump(mode="json") for item in debug_report.chunks]
+                    "chunks": [
+                        item.model_dump(mode="json") for item in debug_report.chunks
+                    ]
                 },
             )
             if chunk_trace.status.value == "failed":
-                raise RuntimeError(chunk_trace.error_code or "document_chunk_building_stage_failed")
+                raise RuntimeError(
+                    chunk_trace.error_code or "document_chunk_building_stage_failed"
+                )
             ocr_trace = self.harness_service.emit_ocr_stage_evidence(
                 document_id=document.id,
                 input_manifest=DocumentStageInputManifest(
@@ -381,14 +530,19 @@ class DocumentService:
                             "ocr_applied": debug_report.ocr_applied,
                             "ocr_engine": debug_report.ocr_engine,
                             "pages": [
-                                {"page_number": item.page_number, "extraction_source": item.extraction_source}
+                                {
+                                    "page_number": item.page_number,
+                                    "extraction_source": item.extraction_source,
+                                }
                                 for item in debug_report.pages
                             ],
                         }
                     ),
                 ),
                 protected_stage_input={
-                    "pages": [item.model_dump(mode="json") for item in debug_report.pages]
+                    "pages": [
+                        item.model_dump(mode="json") for item in debug_report.pages
+                    ]
                 },
             )
             cleanup_trace = self.harness_service.emit_study_unit_cleanup_evidence(
@@ -410,12 +564,21 @@ class DocumentService:
                     ),
                 ),
                 protected_stage_input={
-                    "study_units": [item.model_dump(mode="json") for item in study_units]
+                    "study_units": [
+                        item.model_dump(mode="json") for item in study_units
+                    ]
                 },
             )
             if cleanup_trace.status.value == "failed":
-                raise RuntimeError(cleanup_trace.error_code or "document_study_unit_cleanup_stage_failed")
-            if force_ocr and debug_report.ocr_status in {"unavailable", "failed", "partial"}:
+                raise RuntimeError(
+                    cleanup_trace.error_code
+                    or "document_study_unit_cleanup_stage_failed"
+                )
+            if force_ocr and debug_report.ocr_status in {
+                "unavailable",
+                "failed",
+                "partial",
+            }:
                 raise RuntimeError(f"document_ocr_{debug_report.ocr_status}")
             self.process_repository.commit_success(
                 operation_id=operation.operation_id,
@@ -455,7 +618,9 @@ class DocumentService:
             )
             self._mirror_current_document_projection(document.id)
             logger.exception("document.processing.invalid_pdf id=%s", document.id)
-            raise HTTPException(status_code=400, detail="invalid_or_unsupported_pdf") from exc
+            raise HTTPException(
+                status_code=400, detail="invalid_or_unsupported_pdf"
+            ) from exc
         except Exception as exc:
             self.process_repository.mark_failed(
                 operation_id=operation.operation_id,
@@ -500,12 +665,27 @@ class DocumentService:
         )
         return document
 
+    def _resume_read_back(self, operation_id: str) -> DocumentRecord:
+        from app.persistence.document_process_operation_repository import (
+            DocumentProcessReadBackError,
+        )
+
+        try:
+            self.process_repository.require(
+                operation_id=operation_id, validate_read_back=True
+            )
+        except DocumentProcessReadBackError as exc:
+            raise HTTPException(409, "document_checkpoint_commit_superseded") from exc
+        return self.checkpoints.committed_read_back(operation_id)
+
     def recover_abandoned_operations(self) -> int:
         recovered = self.process_repository.recover_abandoned()
         for operation in recovered:
             self._mirror_current_document_projection(operation.document_id)
         if recovered:
-            logger.warning("document.processing.recovered_abandoned count=%s", len(recovered))
+            logger.warning(
+                "document.processing.recovered_abandoned count=%s", len(recovered)
+            )
         return len(recovered)
 
     def list_documents(self) -> list[DocumentRecord]:
@@ -538,12 +718,16 @@ class DocumentService:
             raise HTTPException(409, "document_revision_conflict") from exc
         except DocumentProcessingConflict as exc:
             raise HTTPException(409, "document_processing_already_active") from exc
-        debug_report = self.store.load_item("document_debug", document_id, DocumentDebugRecord)
+        debug_report = self.store.load_item(
+            "document_debug", document_id, DocumentDebugRecord
+        )
         self._mirror_current_document_projection(document_id, debug_report=debug_report)
         return document
 
     def require_debug_report(self, document_id: str) -> DocumentDebugRecord:
-        report = self.store.load_item("document_debug", document_id, DocumentDebugRecord)
+        report = self.store.load_item(
+            "document_debug", document_id, DocumentDebugRecord
+        )
         if report is None:
             raise HTTPException(status_code=404, detail="document_debug_not_found")
         return report
@@ -599,5 +783,7 @@ def _call_interrupt(callback: Callable[[], None] | None) -> None:
 
 def _document_process_error_code(exc: Exception) -> str:
     name = type(exc).__name__.strip().lower()
-    normalized = "".join(character if character.isalnum() else "_" for character in name)
+    normalized = "".join(
+        character if character.isalnum() else "_" for character in name
+    )
     return f"document_process_{normalized or 'failed'}"[:128]

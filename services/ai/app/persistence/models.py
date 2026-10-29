@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from sqlalchemy import (
+    Boolean,
     CheckConstraint,
     ForeignKey,
     ForeignKeyConstraint,
@@ -198,10 +199,15 @@ class HarnessArtifactRow(Base):
     digest_algorithm: Mapped[str] = mapped_column(String(32))
     payload_digest: Mapped[str] = mapped_column(String(64))
     payload: Mapped[bytes] = mapped_column(LargeBinary)
-    expires_at: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
-    deleted_at: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    expires_at: Mapped[str | None] = mapped_column(
+        String(64), nullable=True, index=True
+    )
+    deleted_at: Mapped[str | None] = mapped_column(
+        String(64), nullable=True, index=True
+    )
     registered_principal_id: Mapped[str] = mapped_column(
-        String(64), ForeignKey("harness_artifact_principals.principal_id", ondelete="RESTRICT")
+        String(64),
+        ForeignKey("harness_artifact_principals.principal_id", ondelete="RESTRICT"),
     )
     schema_name: Mapped[str] = mapped_column(String(64))
     schema_version: Mapped[str] = mapped_column(String(64))
@@ -220,10 +226,16 @@ class HarnessArtifactGrantRow(Base):
 
     grant_id: Mapped[str] = mapped_column(String(64), primary_key=True)
     harness_operation_id: Mapped[str] = mapped_column(
-        String(64), ForeignKey("harness_operation_bindings.harness_operation_id", ondelete="RESTRICT"), index=True
+        String(64),
+        ForeignKey(
+            "harness_operation_bindings.harness_operation_id", ondelete="RESTRICT"
+        ),
+        index=True,
     )
     principal_id: Mapped[str] = mapped_column(
-        String(64), ForeignKey("harness_artifact_principals.principal_id", ondelete="RESTRICT"), index=True
+        String(64),
+        ForeignKey("harness_artifact_principals.principal_id", ondelete="RESTRICT"),
+        index=True,
     )
     issued_at: Mapped[str] = mapped_column(String(64))
     expires_at: Mapped[str] = mapped_column(String(64), index=True)
@@ -235,12 +247,19 @@ class HarnessArtifactGrantRow(Base):
 class HarnessArtifactGrantScopeRow(Base):
     __tablename__ = "harness_artifact_grant_scopes"
     __table_args__ = (
-        UniqueConstraint("grant_id", "artifact_id", "permission", name="uq_harness_artifact_grant_scope"),
+        UniqueConstraint(
+            "grant_id",
+            "artifact_id",
+            "permission",
+            name="uq_harness_artifact_grant_scope",
+        ),
     )
 
     scope_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     grant_id: Mapped[str] = mapped_column(
-        String(64), ForeignKey("harness_artifact_grants.grant_id", ondelete="RESTRICT"), index=True
+        String(64),
+        ForeignKey("harness_artifact_grants.grant_id", ondelete="RESTRICT"),
+        index=True,
     )
     # Keep a durable scope/audit reference after retention deletes content.
     artifact_id: Mapped[str] = mapped_column(String(64), index=True)
@@ -268,7 +287,9 @@ class HarnessArtifactAccessAuditRow(Base):
         String(64),
         nullable=True,
     )
-    presented_principal_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    presented_principal_id: Mapped[str | None] = mapped_column(
+        String(64), nullable=True
+    )
     grant_subject_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
     artifact_id: Mapped[str] = mapped_column(String(64), index=True)
     artifact_type: Mapped[str] = mapped_column(String(64))
@@ -574,6 +595,48 @@ class DocumentProcessOperationRow(Base):
     completed_at: Mapped[str] = mapped_column(String(64), default="")
 
 
+class DocumentCheckpointRow(Base):
+    __tablename__ = "document_checkpoints"
+    operation_id: Mapped[str] = mapped_column(
+        String(64),
+        ForeignKey("document_process_operations.operation_id"),
+        primary_key=True,
+    )
+    document_id: Mapped[str] = mapped_column(String(64), index=True)
+    upload_digest: Mapped[str] = mapped_column(String(64))
+    configuration_digest: Mapped[str] = mapped_column(String(64))
+    force_ocr: Mapped[bool] = mapped_column(Boolean)
+    page_count: Mapped[int] = mapped_column(Integer, default=0)
+    byte_count: Mapped[int] = mapped_column(Integer, default=0)
+    storage_limited: Mapped[bool] = mapped_column(Boolean, default=False)
+    report: Mapped[dict | None] = mapped_column(NULLABLE_JSON_PAYLOAD, nullable=True)
+    output: Mapped[dict | None] = mapped_column(NULLABLE_JSON_PAYLOAD, nullable=True)
+    stage_digest: Mapped[str] = mapped_column(String(64), default="")
+    committed_document: Mapped[dict | None] = mapped_column(
+        NULLABLE_JSON_PAYLOAD, nullable=True
+    )
+
+
+class DocumentCheckpointPageRow(Base):
+    __tablename__ = "document_checkpoint_pages"
+    operation_id: Mapped[str] = mapped_column(
+        String(64), ForeignKey("document_checkpoints.operation_id"), primary_key=True
+    )
+    page_number: Mapped[int] = mapped_column(Integer, primary_key=True)
+    payload: Mapped[dict] = mapped_column(JSON_PAYLOAD)
+    payload_digest: Mapped[str] = mapped_column(String(64))
+
+
+class DocumentCheckpointResumeRow(Base):
+    __tablename__ = "document_checkpoint_resumes"
+    source_operation_id: Mapped[str] = mapped_column(
+        String(64), ForeignKey("document_checkpoints.operation_id"), primary_key=True
+    )
+    child_operation_id: Mapped[str] = mapped_column(
+        String(64), ForeignKey("document_process_operations.operation_id"), unique=True
+    )
+
+
 class LearningPlanOperationRow(Base):
     __tablename__ = "learning_plan_operations"
     __table_args__ = (
@@ -674,18 +737,32 @@ class LearningPlanRevisionRow(Base):
 
 class PlanRevisionOperationRow(Base):
     __tablename__ = "plan_revision_operations"
-    __table_args__ = (UniqueConstraint("plan_id", "client_request_id", name="uq_plan_revision_request"),)
+    __table_args__ = (
+        UniqueConstraint(
+            "plan_id", "client_request_id", name="uq_plan_revision_request"
+        ),
+    )
     operation_id: Mapped[str] = mapped_column(String(80), primary_key=True)
-    harness_operation_id: Mapped[str | None] = mapped_column(String(64), ForeignKey("harness_operation_bindings.harness_operation_id"), unique=True)
+    harness_operation_id: Mapped[str | None] = mapped_column(
+        String(64),
+        ForeignKey("harness_operation_bindings.harness_operation_id"),
+        unique=True,
+    )
     plan_id: Mapped[str] = mapped_column(String(64), index=True)
     client_request_id: Mapped[str] = mapped_column(String(80))
     base_revision: Mapped[int] = mapped_column(Integer)
     status: Mapped[str] = mapped_column(String(24))
     request: Mapped[dict[str, Any]] = mapped_column(JSON_PAYLOAD)
     base_plan: Mapped[dict[str, Any]] = mapped_column(JSON_PAYLOAD)
-    proposal: Mapped[dict[str, Any] | None] = mapped_column(NULLABLE_JSON_PAYLOAD, nullable=True)
-    preview_receipt: Mapped[dict[str, Any] | None] = mapped_column(NULLABLE_JSON_PAYLOAD, nullable=True)
-    decision_receipt: Mapped[dict[str, Any] | None] = mapped_column(NULLABLE_JSON_PAYLOAD, nullable=True)
+    proposal: Mapped[dict[str, Any] | None] = mapped_column(
+        NULLABLE_JSON_PAYLOAD, nullable=True
+    )
+    preview_receipt: Mapped[dict[str, Any] | None] = mapped_column(
+        NULLABLE_JSON_PAYLOAD, nullable=True
+    )
+    decision_receipt: Mapped[dict[str, Any] | None] = mapped_column(
+        NULLABLE_JSON_PAYLOAD, nullable=True
+    )
     error_code: Mapped[str] = mapped_column(String(160), default="")
     created_at: Mapped[str] = mapped_column(String(64))
 
@@ -700,7 +777,9 @@ class StudyUnitRevisionOperationRow(Base):
     )
     operation_id: Mapped[str] = mapped_column(String(80), primary_key=True)
     harness_operation_id: Mapped[str] = mapped_column(
-        String(64), ForeignKey("harness_operation_bindings.harness_operation_id"), unique=True,
+        String(64),
+        ForeignKey("harness_operation_bindings.harness_operation_id"),
+        unique=True,
     )
     plan_id: Mapped[str] = mapped_column(String(64), unique=True)
     document_id: Mapped[str] = mapped_column(String(64), index=True)
@@ -708,7 +787,9 @@ class StudyUnitRevisionOperationRow(Base):
     preview: Mapped[dict[str, Any]] = mapped_column(JSON_PAYLOAD)
     base_debug_report: Mapped[dict[str, Any]] = mapped_column(JSON_PAYLOAD)
     status: Mapped[str] = mapped_column(String(24), default="ready")
-    decision_receipt: Mapped[dict[str, Any] | None] = mapped_column(NULLABLE_JSON_PAYLOAD, nullable=True)
+    decision_receipt: Mapped[dict[str, Any] | None] = mapped_column(
+        NULLABLE_JSON_PAYLOAD, nullable=True
+    )
     error_code: Mapped[str] = mapped_column(String(160), default="")
     updated_at: Mapped[str] = mapped_column(String(64))
 
@@ -787,7 +868,9 @@ class StudyChatOperationRow(Base):
             "harness_operation_id",
             name="uq_study_chat_operation_harness_operation",
         ),
-        CheckConstraint("claim_count IN (0, 1)", name="ck_study_chat_operation_claim_count"),
+        CheckConstraint(
+            "claim_count IN (0, 1)", name="ck_study_chat_operation_claim_count"
+        ),
         CheckConstraint(
             "(status IN ('admitted', 'running') AND active_slot = 1) OR "
             "(status IN ('committed', 'not_committed', 'uncertain') AND active_slot IS NULL)",
@@ -851,7 +934,9 @@ class StudyChatOperationRow(Base):
     provider_started_at: Mapped[str] = mapped_column(String(64), default="")
     execution_deadline_at: Mapped[str] = mapped_column(String(64), default="")
     heartbeat_at: Mapped[str] = mapped_column(String(64), default="")
-    committed_session_revision: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    committed_session_revision: Mapped[int | None] = mapped_column(
+        Integer, nullable=True
+    )
     committed_turn_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
     committed_turn_sequence: Mapped[int | None] = mapped_column(Integer, nullable=True)
     response_schema_version: Mapped[str] = mapped_column(String(64), default="")
@@ -883,11 +968,15 @@ class TavernRoomRow(Base):
     )
 
     id: Mapped[str] = mapped_column(String(64), primary_key=True)
-    creation_key: Mapped[str | None] = mapped_column(String(80), unique=True, nullable=True)
+    creation_key: Mapped[str | None] = mapped_column(
+        String(80), unique=True, nullable=True
+    )
     creation_input_digest: Mapped[str] = mapped_column(String(64), default="")
     title: Mapped[str] = mapped_column(Text, default="")
     status: Mapped[str] = mapped_column(String(32), index=True, default="active")
-    scene_profile: Mapped[dict[str, Any] | None] = mapped_column(JSON_PAYLOAD, nullable=True)
+    scene_profile: Mapped[dict[str, Any] | None] = mapped_column(
+        JSON_PAYLOAD, nullable=True
+    )
     harness_policy: Mapped[dict[str, Any]] = mapped_column(JSON_PAYLOAD, default=dict)
     revision: Mapped[int] = mapped_column(Integer, default=0)
     last_sequence: Mapped[int] = mapped_column(Integer, default=0)
@@ -897,7 +986,11 @@ class TavernRoomRow(Base):
 
 class TavernParticipantRow(Base):
     __tablename__ = "tavern_participants"
-    __table_args__ = (UniqueConstraint("room_id", "display_order", name="uq_tavern_participant_order"),)
+    __table_args__ = (
+        UniqueConstraint(
+            "room_id", "display_order", name="uq_tavern_participant_order"
+        ),
+    )
 
     room_id: Mapped[str] = mapped_column(
         String(64),
@@ -972,7 +1065,9 @@ class TavernRunStepRow(Base):
     persona_id: Mapped[str] = mapped_column(String(64), index=True)
     participant_prompt_hash: Mapped[str] = mapped_column(String(64), default="")
     status: Mapped[str] = mapped_column(String(32), index=True, default="pending")
-    message_id: Mapped[str | None] = mapped_column(String(64), unique=True, nullable=True)
+    message_id: Mapped[str | None] = mapped_column(
+        String(64), unique=True, nullable=True
+    )
     reply_to_message_id: Mapped[str] = mapped_column(String(64), default="")
     error_code: Mapped[str] = mapped_column(String(128), default="")
     started_at: Mapped[str] = mapped_column(String(64), default="")
@@ -985,7 +1080,9 @@ class TavernRunStepRow(Base):
 
 class TavernMessageRow(Base):
     __tablename__ = "tavern_messages"
-    __table_args__ = (UniqueConstraint("room_id", "sequence", name="uq_tavern_message_sequence"),)
+    __table_args__ = (
+        UniqueConstraint("room_id", "sequence", name="uq_tavern_message_sequence"),
+    )
 
     id: Mapped[str] = mapped_column(String(64), primary_key=True)
     room_id: Mapped[str] = mapped_column(
@@ -1089,7 +1186,11 @@ class PlanningTraceRow(Base):
 
 class StreamReportRow(Base):
     __tablename__ = "stream_reports"
-    __table_args__ = (UniqueConstraint("category", "document_id", name="uq_stream_reports_category_document"),)
+    __table_args__ = (
+        UniqueConstraint(
+            "category", "document_id", name="uq_stream_reports_category_document"
+        ),
+    )
 
     record_id: Mapped[str] = mapped_column(String(128), primary_key=True)
     category: Mapped[str] = mapped_column(String(64), index=True)

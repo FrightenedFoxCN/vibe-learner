@@ -35,7 +35,10 @@ from app.models.harness import (
     HarnessWorkflow,
     canonical_harness_digest,
 )
-from app.models.harness_runtime_commit import HarnessTransactionFinalizer, HarnessRuntimePreparedOutput
+from app.models.harness_runtime_commit import (
+    HarnessTransactionFinalizer,
+    HarnessRuntimePreparedOutput,
+)
 from app.models.domain import DocumentDebugRecord, DocumentRecord, DocumentSection
 from app.models.harness_operation import (
     HarnessDomainOperationKind,
@@ -52,6 +55,8 @@ from app.persistence.harness_operation_repository import (
 )
 from app.persistence.models import (
     DocumentDebugRow,
+    DocumentCheckpointRow,
+    DocumentCheckpointResumeRow,
     DocumentProcessOperationRow,
     DocumentRow,
 )
@@ -75,6 +80,7 @@ class DocumentProcessOperationRepository:
         *,
         document_id: str,
         force_ocr: bool,
+        resume_from_operation_id: str | None = None,
     ) -> tuple[DocumentProcessOperationRecord, DocumentRecord]:
         operation_id = f"document-process-op-{uuid4().hex[:16]}"
         request_payload = DocumentProcessRequestPayload(
@@ -87,6 +93,33 @@ class DocumentProcessOperationRepository:
                 document_row = session.get(DocumentRow, document_id)
                 if document_row is None:
                     raise DocumentProcessDocumentNotFound(document_id)
+                if resume_from_operation_id is not None:
+                    source = session.get(
+                        DocumentProcessOperationRow, resume_from_operation_id
+                    )
+                    if (
+                        source is None
+                        or source.document_id != document_id
+                        or source.status not in {"failed", "interrupted"}
+                    ):
+                        raise DocumentProcessStateConflict(document_id)
+                    self.harness_operations.require_domain_in_session(
+                        session,
+                        domain_operation_kind=HarnessDomainOperationKind.DOCUMENT_PROCESS,
+                        domain_operation_id=source.operation_id,
+                    )
+                    child = session.get(
+                        DocumentCheckpointResumeRow, source.operation_id
+                    )
+                    if child is not None:
+                        raise DocumentProcessResumeExists(child.child_operation_id)
+                    base = DocumentRecord.model_validate(source.base_document_payload)
+                    if (
+                        document_row.revision != base.revision + 2
+                        or document_row.status == "processing"
+                        or bool(source.request_payload.get("force_ocr")) != force_ocr
+                    ):
+                        raise DocumentProcessStateConflict(document_id)
                 active = session.scalar(
                     select(DocumentProcessOperationRow).where(
                         DocumentProcessOperationRow.document_id == document_id,
@@ -103,14 +136,18 @@ class DocumentProcessOperationRepository:
                 processing_document.revision += 1
                 processing_document.updated_at = now
                 replace_document_in_session(
-                    session, processing_document, expected_revision=base_document.revision
+                    session,
+                    processing_document,
+                    expected_revision=base_document.revision,
                 )
                 row = DocumentProcessOperationRow(
                     operation_id=operation_id,
                     document_id=document_id,
                     request_schema_version=DOCUMENT_PROCESS_REQUEST_SCHEMA_VERSION,
                     fingerprint_contract_version=DOCUMENT_PROCESS_FINGERPRINT_CONTRACT_VERSION,
-                    request_fingerprint=document_process_request_fingerprint(request_payload),
+                    request_fingerprint=document_process_request_fingerprint(
+                        request_payload
+                    ),
                     request_payload=request_payload.model_dump(mode="json"),
                     status=DocumentProcessOperationStatus.RUNNING.value,
                     active_slot=1,
@@ -132,12 +169,30 @@ class DocumentProcessOperationRepository:
                     domain_operation_id=operation_id,
                     admitted_at=now,
                 )
+                if resume_from_operation_id is not None:
+                    session.add(
+                        DocumentCheckpointResumeRow(
+                            source_operation_id=resume_from_operation_id,
+                            child_operation_id=operation_id,
+                        )
+                    )
                 session.flush()
                 return _from_row(row), processing_document
         except IntegrityError as exc:
+            if resume_from_operation_id is not None:
+                with self.database.session() as session:
+                    child = session.get(
+                        DocumentCheckpointResumeRow, resume_from_operation_id
+                    )
+                    if child is not None:
+                        raise DocumentProcessResumeExists(
+                            child.child_operation_id
+                        ) from exc
             active = self.get_active(document_id=document_id)
             if active is not None:
-                raise DocumentProcessAlreadyActive(document_id, active.operation_id) from exc
+                raise DocumentProcessAlreadyActive(
+                    document_id, active.operation_id
+                ) from exc
             raise DocumentProcessAdmissionRace(document_id) from exc
 
     def commit_success(
@@ -153,7 +208,9 @@ class DocumentProcessOperationRepository:
         debug_payload = debug_report.model_dump(mode="json")
         now = _now()
         with self.database.session() as session:
-            operation = session.get(DocumentProcessOperationRow, operation_id, with_for_update=True)
+            operation = session.get(
+                DocumentProcessOperationRow, operation_id, with_for_update=True
+            )
             if operation is None:
                 raise DocumentProcessOperationNotFound(operation_id)
             if operation.status != DocumentProcessOperationStatus.RUNNING.value:
@@ -171,12 +228,17 @@ class DocumentProcessOperationRepository:
                 harness_runtime=harness_runtime,
                 runtime_prepared=runtime_prepared,
             )
-            if operation.document_id != document.id or debug_report.document_id != document.id:
+            if (
+                operation.document_id != document.id
+                or debug_report.document_id != document.id
+            ):
                 raise DocumentProcessProjectionIdentityMismatch(operation_id)
             if runtime_prepared is not None:
                 _validate_runtime_document_projection(
                     runtime_prepared=runtime_prepared,
-                    base=DocumentRecord.model_validate(operation.base_document_payload or {}),
+                    base=DocumentRecord.model_validate(
+                        operation.base_document_payload or {}
+                    ),
                     document=document,
                     debug_report=debug_report,
                 )
@@ -200,7 +262,9 @@ class DocumentProcessOperationRepository:
             operation.status = DocumentProcessOperationStatus.COMMITTED.value
             operation.active_slot = None
             operation.projection_state = DocumentProcessProjectionState.COMMITTED.value
-            operation.document_digest = document_process_projection_digest(document_payload)
+            operation.document_digest = document_process_projection_digest(
+                document_payload
+            )
             operation.debug_digest = document_process_projection_digest(debug_payload)
             operation.commit_contract_version = DOCUMENT_PROCESS_COMMIT_CONTRACT_VERSION
             operation.error_code = ""
@@ -249,6 +313,9 @@ class DocumentProcessOperationRepository:
                         rollback_reason_code="",
                     ),
                 )
+            checkpoint = session.get(DocumentCheckpointRow, operation_id)
+            if checkpoint is not None:
+                checkpoint.committed_document = document_payload
             self._inject("before_terminal_commit")
 
         return self.require(operation_id=operation_id, validate_read_back=True)
@@ -291,10 +358,13 @@ class DocumentProcessOperationRepository:
         recovered_ids: list[str] = []
         with self.database.session() as session:
             rows = session.scalars(
-                select(DocumentProcessOperationRow).where(
-                    DocumentProcessOperationRow.status == DocumentProcessOperationStatus.RUNNING.value,
+                select(DocumentProcessOperationRow)
+                .where(
+                    DocumentProcessOperationRow.status
+                    == DocumentProcessOperationStatus.RUNNING.value,
                     DocumentProcessOperationRow.active_slot == 1,
-                ).with_for_update()
+                )
+                .with_for_update()
             ).all()
             for row in rows:
                 if not _lock_running_operation_in_session(session, row):
@@ -305,7 +375,9 @@ class DocumentProcessOperationRepository:
                 now = _now()
                 row.status = DocumentProcessOperationStatus.FAILED.value
                 row.active_slot = None
-                row.projection_state = DocumentProcessProjectionState.NOT_COMMITTED.value
+                row.projection_state = (
+                    DocumentProcessProjectionState.NOT_COMMITTED.value
+                )
                 resolution = self.harness_operations.resolve_domain_in_session(
                     session,
                     domain_operation_kind=HarnessDomainOperationKind.DOCUMENT_PROCESS,
@@ -362,7 +434,10 @@ class DocumentProcessOperationRepository:
             if row is None:
                 return None
             record = _from_row(row)
-            if validate_read_back and record.status == DocumentProcessOperationStatus.COMMITTED:
+            if (
+                validate_read_back
+                and record.status == DocumentProcessOperationStatus.COMMITTED
+            ):
                 _validate_read_back(
                     record,
                     document_row=session.get(DocumentRow, document_id),
@@ -381,7 +456,10 @@ class DocumentProcessOperationRepository:
             if row is None:
                 raise DocumentProcessOperationNotFound(operation_id)
             record = _from_row(row)
-            if validate_read_back and record.status == DocumentProcessOperationStatus.COMMITTED:
+            if (
+                validate_read_back
+                and record.status == DocumentProcessOperationStatus.COMMITTED
+            ):
                 _validate_read_back(
                     record,
                     document_row=session.get(DocumentRow, record.document_id),
@@ -401,7 +479,9 @@ class DocumentProcessOperationRepository:
     ) -> DocumentProcessOperationRecord:
         now = _now()
         with self.database.session() as session:
-            row = session.get(DocumentProcessOperationRow, operation_id, with_for_update=True)
+            row = session.get(
+                DocumentProcessOperationRow, operation_id, with_for_update=True
+            )
             if row is None:
                 raise DocumentProcessOperationNotFound(operation_id)
             if row.status == DocumentProcessOperationStatus.COMMITTED.value:
@@ -487,7 +567,8 @@ class DocumentProcessOperationRepository:
         )
         if (
             binding is None
-            or binding.domain_operation_kind != HarnessDomainOperationKind.DOCUMENT_PROCESS
+            or binding.domain_operation_kind
+            != HarnessDomainOperationKind.DOCUMENT_PROCESS
             or current is None
             or current.trace_id != runtime_prepared.execution.trace_id
             or current.harness_operation_id != binding.harness_operation_id
@@ -495,11 +576,13 @@ class DocumentProcessOperationRepository:
             or current.stage != HarnessStage.DOCUMENT_PARSE
             or current.trace_slot != 0
             or current.parent_trace_id is not None
-            or current.trace_contract != HarnessContractRef(
+            or current.trace_contract
+            != HarnessContractRef(
                 name="DocumentProcessRuntimeOutput",
                 version="document-process-runtime-output-v1",
             )
-            or runtime_prepared.execution.harness_operation_id != binding.harness_operation_id
+            or runtime_prepared.execution.harness_operation_id
+            != binding.harness_operation_id
         ):
             raise ValueError("document_process_runtime_binding_mismatch")
         attempts = current.attempt_records
@@ -509,7 +592,8 @@ class DocumentProcessOperationRepository:
             or attempts[-1].phase != HarnessAttemptPhase.VALIDATE
             or attempts[-1].status != HarnessAttemptStatus.PASSED
             or attempts[-1].output_digest != runtime_prepared.output_digest
-            or canonical_harness_digest(runtime_prepared.output) != runtime_prepared.output_digest
+            or canonical_harness_digest(runtime_prepared.output)
+            != runtime_prepared.output_digest
         ):
             raise ValueError("document_process_runtime_output_mismatch")
 
@@ -554,21 +638,23 @@ def _validate_runtime_document_projection(
     expected.debug_ready = True
     expected.revision = base.revision + 2
     expected.updated_at = document.updated_at
-    if (
-        canonical_harness_digest(document) != canonical_harness_digest(expected)
-        or canonical_harness_digest(debug_report) != canonical_harness_digest(report)
-    ):
+    if canonical_harness_digest(document) != canonical_harness_digest(
+        expected
+    ) or canonical_harness_digest(debug_report) != canonical_harness_digest(report):
         raise ValueError("document_process_runtime_projection_mismatch")
 
 
-def _lock_running_operation_in_session(session: Session, row: DocumentProcessOperationRow) -> bool:
+def _lock_running_operation_in_session(
+    session: Session, row: DocumentProcessOperationRow
+) -> bool:
     # SQLite ignores FOR UPDATE. A conditional no-op write serializes terminal
     # transitions before reading/restoring the Document on both databases.
     result = session.execute(
         update(DocumentProcessOperationRow)
         .where(
             DocumentProcessOperationRow.operation_id == row.operation_id,
-            DocumentProcessOperationRow.status == DocumentProcessOperationStatus.RUNNING.value,
+            DocumentProcessOperationRow.status
+            == DocumentProcessOperationStatus.RUNNING.value,
         )
         .values(updated_at=DocumentProcessOperationRow.updated_at)
         .execution_options(synchronize_session=False)
@@ -607,7 +693,9 @@ def _restore_document_in_session(
     terminal.updated_at = now
     terminal.revision = expected_revision + 1
     try:
-        replace_document_in_session(session, terminal, expected_revision=expected_revision)
+        replace_document_in_session(
+            session, terminal, expected_revision=expected_revision
+        )
     except DocumentRevisionConflict:
         # A newer projection owns the row; failed cleanup cannot restore over it.
         return
@@ -663,7 +751,9 @@ def _validate_read_back(
     document_digest = document_process_projection_digest(document_row.payload or {})
     debug_digest = document_process_projection_digest(debug_row.payload or {})
     if document_digest != record.document_digest:
-        raise DocumentProcessReadBackError(record.operation_id, "document_digest_mismatch")
+        raise DocumentProcessReadBackError(
+            record.operation_id, "document_digest_mismatch"
+        )
     if debug_digest != record.debug_digest:
         raise DocumentProcessReadBackError(record.operation_id, "debug_digest_mismatch")
 
@@ -682,7 +772,9 @@ class DocumentProcessDocumentNotFound(DocumentProcessError):
 
 class DocumentProcessAlreadyActive(DocumentProcessError):
     def __init__(self, document_id: str, operation_id: str) -> None:
-        super().__init__(f"document_process_already_active:{document_id}:{operation_id}")
+        super().__init__(
+            f"document_process_already_active:{document_id}:{operation_id}"
+        )
         self.document_id = document_id
         self.operation_id = operation_id
 
@@ -712,3 +804,8 @@ class DocumentProcessReadBackError(DocumentProcessError):
         super().__init__(f"document_process_read_back_failed:{reason}")
         self.operation_id = operation_id
         self.reason = reason
+
+
+class DocumentProcessResumeExists(RuntimeError):
+    def __init__(self, operation_id):
+        self.operation_id = operation_id

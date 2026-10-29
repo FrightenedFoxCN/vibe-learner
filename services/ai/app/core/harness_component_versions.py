@@ -8,7 +8,7 @@ drift can be checked without making the Harness model import domain services.
 DOCUMENT_PAGE_EXTRACTOR_CONTRACT_VERSION = "document-page-extractor-v1"
 DOCUMENT_SECTION_DETECTOR_CONTRACT_VERSION = "document-section-detector-v1"
 DOCUMENT_CHUNK_BUILDER_CONTRACT_VERSION = "document-chunk-builder-v1"
-DOCUMENT_PARSER_CONTRACT_VERSION = "document-parser-v1"
+DOCUMENT_PARSER_CONTRACT_VERSION = "document-parser-v2"
 OCR_ENGINE_CONTRACT_VERSION = "ocr-engine-v1"
 STUDY_UNIT_CLEANER_CONTRACT_VERSION = "study-unit-cleaner-v1"
 PLANNING_PROMPT_CONTRACT_VERSION = "planning-prompt-v7"
@@ -26,7 +26,9 @@ STUDY_VISUAL_GROUNDING_CONTRACT_VERSION = "study-visual-grounding-v1"
 STUDY_CHAT_WORKFLOW_ADAPTER_CONTRACT_VERSION = "study-chat-workflow-adapter-v1"
 STUDY_CHAT_TRACE_CONTRACT_VERSION = "study-chat-reply-trace-v1"
 STUDY_CHAT_COMMIT_CONTRACT_VERSION = "study-chat-turn-commit-v1"
-STUDY_CHAT_COMMITTED_PROJECTION_CONTRACT_VERSION = "study-chat-turn-committed-projection-v1"
+STUDY_CHAT_COMMITTED_PROJECTION_CONTRACT_VERSION = (
+    "study-chat-turn-committed-projection-v1"
+)
 
 TAVERN_ACTOR_REPLY_CONTRACT_NAME = "TavernActorReply"
 TAVERN_ACTOR_REPLY_CONTRACT_VERSION = "tavern-actor-reply-v1"
@@ -37,15 +39,11 @@ TAVERN_MESSAGE_COMMITTED_PROJECTION_CONTRACT_NAME = (
 TAVERN_MESSAGE_COMMITTED_PROJECTION_CONTRACT_VERSION = (
     "tavern-persona-message-committed-projection-v1"
 )
-TAVERN_MESSAGE_COMMIT_BINDING_CONTRACT_NAME = (
-    "TavernPersonaMessageCommitBinding"
-)
+TAVERN_MESSAGE_COMMIT_BINDING_CONTRACT_NAME = "TavernPersonaMessageCommitBinding"
 TAVERN_MESSAGE_COMMIT_BINDING_CONTRACT_VERSION = (
     "tavern-persona-message-commit-binding-v1"
 )
-TAVERN_MESSAGE_COMMIT_METADATA_CONTRACT_NAME = (
-    "TavernPersonaMessageCommitMetadata"
-)
+TAVERN_MESSAGE_COMMIT_METADATA_CONTRACT_NAME = "TavernPersonaMessageCommitMetadata"
 TAVERN_MESSAGE_COMMIT_METADATA_CONTRACT_VERSION = (
     "tavern-persona-message-commit-metadata-v1"
 )

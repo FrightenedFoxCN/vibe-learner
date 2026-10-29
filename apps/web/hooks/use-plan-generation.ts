@@ -24,6 +24,7 @@ export interface GeneratePlanInput {
   file?: File | null;
   objective: string;
   physicalPageRanges?: string;
+  processedDocument?: DocumentRecord;
 }
 
 type StreamEventItem = { stage: string; payload: Record<string, unknown> };
@@ -153,7 +154,14 @@ export function usePlanGeneration(
       const sceneProfile = selectedScene ? structuredClone(selectedScene) : undefined;
       let nextDocument: DocumentRecord | null = null;
 
-      if (input.mode === "document") {
+      if (input.mode === "document" && input.processedDocument) {
+        nextDocument = structuredClone(input.processedDocument);
+        options.onDocument(nextDocument);
+        processingCompletedRef.current = true;
+        setProcessStreamDocumentId(nextDocument.id);
+        setPlanStreamDocumentId(nextDocument.id);
+        setProcessStreamStatus("completed");
+      } else if (input.mode === "document") {
         if (!input.file) {
           throw new Error("missing_plan_source_document");
         }

@@ -607,6 +607,25 @@ Response fields:
 - raw parse artifacts: `pages[]`, `sections[]`, `chunks[]`, `warnings[]`
 - cleaned plan-facing `study_units[]`
 
+### Document processing checkpoints
+
+GET `/documents/{document_id}/checkpoint` reads the latest saved work; GET
+`/documents/{document_id}/checkpoints/{operation_id}` reads an exact operation.
+Both return `document-checkpoint-response-v1`: operation/document identity, process
+status, total/saved page counts, `stage` (`pages`, `parsed`, `study_units`), the
+original `force_ocr`, `storage_limited`, nullable `child_operation_id`, up to 64
+recent `pages` previews, saved `study_units`, `projection_state` (`checkpoint_only`
+or `committed`) and nullable committed `result`. GET never executes OCR.
+
+POST `/documents/{id}/process` and `/process/stream` additionally accept optional
+`resume_from_operation_id`. It binds one explicit resume to one saved source and
+requires matching `force_ocr`; a unique child is allocated atomically with process
+admission. Repeated requests return that child's result or 409 while it is not
+committed, and never start another child/parser. Changed upload/configuration or
+stale Document revision returns 409. Missing/legacy-unbound checkpoints return 404.
+Stage/receipt corruption fails closed. See [checkpoint lifecycle, capacity and
+validation](document-checkpoints.md).
+
 ### `GET /documents/{document_id}/page-numbering`
 
 Requires 1–64 distinct `page_numbers` query values in the current Document's

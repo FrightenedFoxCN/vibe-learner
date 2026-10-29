@@ -2069,6 +2069,33 @@
         "accepted": false,
         "error_code": "harness_decode_invalid"
       }
+    },
+    {
+      "case_id": "document_parse-checkpoint_complete_output",
+      "stage": "document_parse",
+      "scenario": "checkpoint_complete_output",
+      "input": null,
+      "expected": {
+        "accepted": true
+      }
+    },
+    {
+      "case_id": "document_parse-checkpoint_foreign_scope",
+      "stage": "document_parse",
+      "scenario": "checkpoint_foreign_scope",
+      "input": null,
+      "expected": {
+        "accepted": false
+      }
+    },
+    {
+      "case_id": "document_parse-checkpoint_incomplete_output",
+      "stage": "document_parse",
+      "scenario": "checkpoint_incomplete_output",
+      "input": null,
+      "expected": {
+        "accepted": false
+      }
     }
   ]
 }

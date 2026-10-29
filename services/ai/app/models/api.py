@@ -109,7 +109,9 @@ class _PersonaMutationRequest(BaseModel):
     @field_validator("available_emotions", "available_actions")
     @classmethod
     def validate_runtime_tokens(cls, values: list[str] | None) -> list[str] | None:
-        if values is not None and any(not value.strip() or len(value) > 64 for value in values):
+        if values is not None and any(
+            not value.strip() or len(value) > 64 for value in values
+        ):
             raise ValueError("persona_runtime_token_invalid")
         return values
 
@@ -459,7 +461,9 @@ class RuntimeSettingsProbeRequest(BaseModel):
     def validate_features(self) -> "RuntimeSettingsProbeRequest":
         allowed = {"plan", "study", "persona", "scene", "tavern"}
         normalized = [item.strip() for item in self.features if item.strip()]
-        if len(normalized) != len(set(normalized)) or any(item not in allowed for item in normalized):
+        if len(normalized) != len(set(normalized)) or any(
+            item not in allowed for item in normalized
+        ):
             raise ValueError("invalid_runtime_probe_features")
         if normalized and not self.model.strip():
             raise ValueError("runtime_probe_model_required")
@@ -576,6 +580,9 @@ class StreamReportResponse(StreamReportRecord):
 
 class ProcessDocumentRequest(BaseModel):
     force_ocr: bool = False
+    resume_from_operation_id: str | None = Field(
+        default=None, min_length=1, max_length=64
+    )
 
 
 class StudyUnitTitleUpdateRequest(BaseModel):
@@ -719,7 +726,10 @@ class CreateStudySessionRequest(BaseModel):
             return value
         if value.get("study_unit_id") is None and value.get("section_id") is not None:
             value["study_unit_id"] = value.get("section_id")
-        if value.get("study_unit_title") is None and value.get("section_title") is not None:
+        if (
+            value.get("study_unit_title") is None
+            and value.get("section_title") is not None
+        ):
             value["study_unit_title"] = value.get("section_title")
         return value
 
@@ -983,7 +993,9 @@ class TokenUsageCallRecord(BaseModel):
 
 
 class TokenUsageStatsResponse(BaseModel):
-    contract_version: Literal["model-usage-stats-response-v1"] = "model-usage-stats-response-v1"
+    contract_version: Literal["model-usage-stats-response-v1"] = (
+        "model-usage-stats-response-v1"
+    )
     buckets: list[TokenUsageDailyBucket]
     records: list[TokenUsageCallRecord] = []
     total_prompt_tokens: UsageCounter

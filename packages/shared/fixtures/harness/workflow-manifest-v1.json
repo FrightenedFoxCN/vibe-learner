@@ -122,7 +122,7 @@
         "status": "registered",
         "contract": {
           "name": "DocumentProcessWorkflowManifestEntry",
-          "version": "document-process-workflow-manifest-v1"
+          "version": "document-process-workflow-manifest-v2"
         }
       },
       "owner_module": "app.services.document_parser",
@@ -130,14 +130,14 @@
         "status": "registered",
         "contract": {
           "name": "DocumentProcessWorkflowAdapter",
-          "version": "document-process-workflow-adapter-v1"
+          "version": "document-process-workflow-adapter-v2"
         }
       },
       "input_contract": {
         "status": "registered",
         "contract": {
           "name": "DocumentProcessInputManifest",
-          "version": "document-process-input-manifest-v1"
+          "version": "document-process-input-manifest-v2"
         }
       },
       "proposal_contract": {
@@ -161,7 +161,7 @@
             "status": "registered",
             "contract": {
               "name": "document_parser",
-              "version": "document-parser-v1"
+              "version": "document-parser-v2"
             }
           }
         }

@@ -33,13 +33,6 @@
   - 覆盖 DMG/NSIS/AppImage 安装、unsigned 限制和 SHA-256 校验。
   - 使用全新临时数据目录走通一次 mock 主流程和一次桌面安装流程。
 
-### Planning → Study 工作流
-
-本节已吸收 2026-09-13 M3 Planning production 配对复测中仍未关闭的工程结论；实验明细由本地归档分支保存。
-
-- [ ] `OCR-CHECKPOINT-RECOVERY-001` `[P1]` 让长 OCR 在阶段完成后可读、可续跑。
-  - 总 wall-time 在全部页面处理完成后耗尽时，不得抹掉已完成页和 Study Unit；保存有界 checkpoint，并验证重启、超时和重复请求的 read-back/续跑语义。
-
 ### 性能与 Tavern transport
 
 - [ ] `TAV-FACILITATED-ORDER-001` `[P2]` 独立复核 Tavern facilitated 的顺序预览、服务端 schedule 与 Participant Roster 一致性。

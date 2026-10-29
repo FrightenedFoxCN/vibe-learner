@@ -7,6 +7,8 @@
 | `npm run test:ai:transactions` | 数据库写集、引用作用域与完整审计；不启动 API/provider |
 | `npm run test:ai:lifecycle` | 导入、应用启动/退出、实例隔离与恢复边界 |
 | `npm run test:ai:migrations` | Alembic SQLite schema、升级与 eval admission；不执行模型 |
+| `npm run test:ai:document:checkpoints` | 已完成页/阶段持久化、时限/重启、摘要/配置、容量、并发续跑与 HTTP/TS 读回 |
+| `npm run test:acceptance:document-checkpoints` | 三个真实子进程的 OCR 中途退出、只运行剩余页及重复请求零 parser 调用 |
 | `npm run test:ai:study:decode` | 完整嵌套 Study reply 解码及私有评分材料 |
 | `npm run test:ai:study:tools` | Session 工具领域处理器、Tool Manifest 契约、投影、逐字记忆与跨处理器 effect overlay；拒绝参数、重复调用预算、统一槽位、提交读回和整批回滚 |
 | `npm run test:ai:study:application` | Study admission、CAS、effects、receipt、v3 trace 与故障恢复 |

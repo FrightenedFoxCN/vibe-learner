@@ -12,3 +12,5 @@ Document stream 的 `page_parsed` 等名称是 UI progress event；`page_extract
 
 Document CAS 的必要回归为 `tests.test_document_repository`、`tests.test_document_process_operation` 和 `tests.test_learning_plan_operation`。可在 `services/ai` 运行 `LITELLM_LOCAL_MODEL_COST_MAP=True PYTHONPATH=. uv run python tests/acceptance/document_cas_probe.py`，用临时 SQLite、真实 PDF parser 和 HTTP 接口复核并发上传、过期/缺失 revision 拒绝及应用实例重启后的 Document/Debug 读回；该探针不调用真实 provider。
 
+
+Document parser v2 将完成页、完整 report 和清洗输出写入独立的有界 checkpoint；外层超时/失败不把这些中间成果投影为已提交教材。显式续跑在同一事务分配新 process operation/Harness binding 与唯一 source-child 关系，复用授权快照内的已完成工作，再走原有严格验证与 CAS 原子提交。重复来源请求只读同一 child，不重放 parser；输入/配置变化、过期 revision、摘要损坏和终态旧写者失败关闭。API、容量、UI 和进程退出验证见 [Document OCR checkpoints](../document-checkpoints.md)。

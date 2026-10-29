@@ -22,9 +22,7 @@ export const PLANNING_TOOL_EVAL_SUITE = {
 } as const satisfies HarnessContractRef;
 
 export type HarnessManifestSlotStatus =
-  | "registered"
-  | "not_applicable"
-  | "unregistered";
+  "registered" | "not_applicable" | "unregistered";
 
 export type HarnessManifestNotApplicableReason =
   | "no_model_proposal"
@@ -173,13 +171,43 @@ type StageVocabulary = {
 };
 
 const STAGE_VOCABULARY: StageVocabulary[] = [
-  { workflow: "planning", stage: "study_unit_revision", ownerModule: "app.services.study_unit_revision", components: [{ name: "study_unit_revision_patch", contract: { name: "study_unit_revision_patch", version: "study-unit-revision-patch-v1" } }], evalRoute: "planning.study_unit_revision" },
-  { workflow: "planning", stage: "plan_revision", ownerModule: "app.services.plan_revision", components: [{ name: "plan_revision_patch", contract: { name: "plan_revision_patch", version: "plan-revision-patch-v1" } }], evalRoute: "planning.plan_revision" },
+  {
+    workflow: "planning",
+    stage: "study_unit_revision",
+    ownerModule: "app.services.study_unit_revision",
+    components: [
+      {
+        name: "study_unit_revision_patch",
+        contract: {
+          name: "study_unit_revision_patch",
+          version: "study-unit-revision-patch-v1",
+        },
+      },
+    ],
+    evalRoute: "planning.study_unit_revision",
+  },
+  {
+    workflow: "planning",
+    stage: "plan_revision",
+    ownerModule: "app.services.plan_revision",
+    components: [
+      {
+        name: "plan_revision_patch",
+        contract: { name: "plan_revision_patch", version: "plan-revision-patch-v1" },
+      },
+    ],
+    evalRoute: "planning.plan_revision",
+  },
   {
     workflow: "document_parse",
     stage: "document_parse",
     ownerModule: "app.services.document_parser",
-    components: [{ name: "document_parser", contract: { name: "document_parser", version: "document-parser-v1" } }],
+    components: [
+      {
+        name: "document_parser",
+        contract: { name: "document_parser", version: "document-parser-v2" },
+      },
+    ],
     evalRoute: "document.parse",
   },
   {
@@ -231,14 +259,24 @@ const STAGE_VOCABULARY: StageVocabulary[] = [
     workflow: "ocr",
     stage: "ocr_page",
     ownerModule: "app.services.ocr_engine",
-    components: [{ name: "ocr_engine", contract: { name: "ocr_engine", version: "ocr-engine-v1" } }],
+    components: [
+      {
+        name: "ocr_engine",
+        contract: { name: "ocr_engine", version: "ocr-engine-v1" },
+      },
+    ],
     evalRoute: "document.ocr_page",
   },
   {
     workflow: "study_unit_cleanup",
     stage: "study_unit_cleanup",
     ownerModule: "app.services.study_arrangement",
-    components: [{ name: "study_unit_cleaner", contract: { name: "study_unit_cleaner", version: "study-unit-cleaner-v1" } }],
+    components: [
+      {
+        name: "study_unit_cleaner",
+        contract: { name: "study_unit_cleaner", version: "study-unit-cleaner-v1" },
+      },
+    ],
     evalRoute: "document.study_unit_cleanup",
   },
   {
@@ -246,7 +284,10 @@ const STAGE_VOCABULARY: StageVocabulary[] = [
     stage: "plan_generation",
     ownerModule: "app.services.model_provider",
     components: [
-      { name: "planning_prompt", contract: { name: "planning_prompt", version: "planning-prompt-v7" } },
+      {
+        name: "planning_prompt",
+        contract: { name: "planning_prompt", version: "planning-prompt-v7" },
+      },
       {
         name: "planning_toolset",
         contract: { name: "planning_toolset", version: "planning-toolset-v2" },
@@ -277,14 +318,24 @@ const STAGE_VOCABULARY: StageVocabulary[] = [
     workflow: "persona",
     stage: "persona_generation",
     ownerModule: "app.services.persona_cards",
-    components: [{ name: "persona_compiler", contract: { name: "persona_compiler", version: "persona-compiler-v1" } }],
+    components: [
+      {
+        name: "persona_compiler",
+        contract: { name: "persona_compiler", version: "persona-compiler-v1" },
+      },
+    ],
     evalRoute: "persona.generation",
   },
   {
     workflow: "scene",
     stage: "scene_generation",
     ownerModule: "app.services.scene_setup",
-    components: [{ name: "scene_compiler", contract: { name: "scene_compiler", version: "scene-compiler-v1" } }],
+    components: [
+      {
+        name: "scene_compiler",
+        contract: { name: "scene_compiler", version: "scene-compiler-v1" },
+      },
+    ],
     evalRoute: "scene.generation",
   },
   {
@@ -292,10 +343,25 @@ const STAGE_VOCABULARY: StageVocabulary[] = [
     stage: "study_chat_reply",
     ownerModule: "app.services.study_sessions",
     components: [
-      { name: "study_chat_prompt", contract: { name: "study_chat_prompt", version: "study-chat-prompt-v2" } },
-      { name: "study_chat_toolset", contract: { name: "study_chat_toolset", version: "study-chat-toolset-v2" } },
-      { name: "study_grounding", contract: { name: "study_grounding", version: "study-grounding-v1" } },
-      { name: "study_visual_grounding", contract: { name: "study_visual_grounding", version: "study-visual-grounding-v1" } },
+      {
+        name: "study_chat_prompt",
+        contract: { name: "study_chat_prompt", version: "study-chat-prompt-v2" },
+      },
+      {
+        name: "study_chat_toolset",
+        contract: { name: "study_chat_toolset", version: "study-chat-toolset-v2" },
+      },
+      {
+        name: "study_grounding",
+        contract: { name: "study_grounding", version: "study-grounding-v1" },
+      },
+      {
+        name: "study_visual_grounding",
+        contract: {
+          name: "study_visual_grounding",
+          version: "study-visual-grounding-v1",
+        },
+      },
     ],
     evalRoute: "study_chat.reply",
   },
@@ -326,7 +392,12 @@ const STAGE_VOCABULARY: StageVocabulary[] = [
     workflow: "frontend_decode",
     stage: "response_decode",
     ownerModule: "apps.web.lib.api",
-    components: [{ name: "frontend_decoder", contract: { name: "frontend_decoder", version: "frontend-decoder-v1" } }],
+    components: [
+      {
+        name: "frontend_decoder",
+        contract: { name: "frontend_decoder", version: "frontend-decoder-v1" },
+      },
+    ],
     evalRoute: "frontend.response_decode",
   },
 ];
@@ -342,9 +413,10 @@ const registeredContract = (
   status: "registered",
   contract: contract(name, version),
 });
-const registeredString = (
-  value: string,
-): HarnessManifestRegisteredStringSlotV1 => ({ status: "registered", value });
+const registeredString = (value: string): HarnessManifestRegisteredStringSlotV1 => ({
+  status: "registered",
+  value,
+});
 const notApplicable = (
   reason: HarnessManifestNotApplicableReason,
 ): HarnessManifestNotApplicableSlotV1 => ({ status: "not_applicable", reason });
@@ -401,8 +473,8 @@ const componentContracts = (
   workflow: HarnessWorkflow,
   stage: HarnessStage,
 ): HarnessManifestComponentContractV1[] =>
-  vocabularyFor(workflow, stage).components
-    .map((component) => ({
+  vocabularyFor(workflow, stage)
+    .components.map((component) => ({
       component_name: component.name,
       contract: component.contract
         ? registeredContract(component.contract.name, component.contract.version)
@@ -471,10 +543,7 @@ const TAVERN_ENTRY: HarnessWorkflowManifestEntryV1 = {
     "TavernActorInputManifest",
     "tavern-actor-input-manifest-v1",
   ),
-  proposal_contract: registeredContract(
-    "TavernActorReply",
-    "tavern-actor-reply-v1",
-  ),
+  proposal_contract: registeredContract("TavernActorReply", "tavern-actor-reply-v1"),
   output_contract: registeredContract(
     "TavernPersonaMessageCommittedProjection",
     "tavern-persona-message-committed-projection-v1",
@@ -511,30 +580,69 @@ const TAVERN_ENTRY: HarnessWorkflowManifestEntryV1 = {
       ),
     },
   },
-  decoder_route: registeredString(
-    "app.services.tavern_harness.TavernActorHarness",
-  ),
+  decoder_route: registeredString("app.services.tavern_harness.TavernActorHarness"),
   eval_route: registeredString("tavern.actor_reply"),
   eval_suites: registeredContracts(TAVERN_IDENTITY_EVAL_SUITE),
 };
 
 const STUDY_ENTRY: HarnessWorkflowManifestEntryV1 = {
-  key: "study_chat:study_chat_reply", workflow: "study_chat", stage: "study_chat_reply",
-  registration: registeredContract("StudyChatReplyWorkflowManifestEntry", "study-chat-reply-workflow-manifest-v1"),
+  key: "study_chat:study_chat_reply",
+  workflow: "study_chat",
+  stage: "study_chat_reply",
+  registration: registeredContract(
+    "StudyChatReplyWorkflowManifestEntry",
+    "study-chat-reply-workflow-manifest-v1",
+  ),
   owner_module: "app.services.study_sessions",
-  owner_adapter: registeredContract("StudyChatWorkflowAdapter", "study-chat-workflow-adapter-v1"),
-  input_contract: registeredContract("StudyChatInputManifest", "study-chat-input-manifest-v1"),
-  proposal_contract: registeredContract("StudyChatReplyProposal", "study-chat-reply-proposal-v1"),
-  output_contract: registeredContract("StudySessionTurnCommittedProjection", "study-chat-turn-committed-projection-v1"),
+  owner_adapter: registeredContract(
+    "StudyChatWorkflowAdapter",
+    "study-chat-workflow-adapter-v1",
+  ),
+  input_contract: registeredContract(
+    "StudyChatInputManifest",
+    "study-chat-input-manifest-v1",
+  ),
+  proposal_contract: registeredContract(
+    "StudyChatReplyProposal",
+    "study-chat-reply-proposal-v1",
+  ),
+  output_contract: registeredContract(
+    "StudySessionTurnCommittedProjection",
+    "study-chat-turn-committed-projection-v1",
+  ),
   component_contracts: componentContracts("study_chat", "study_chat_reply"),
   prompt_contract: registeredContract("StudyChatPrompt", "study-chat-prompt-v2"),
-  policy_contract: registeredContract("StudyChatHarnessPolicy", "study-chat-harness-v1"),
-  toolset_contract: registeredContract("ToolManifestRegistry", HARNESS_WORKFLOW_MANIFEST_TOOL_MANIFEST_VERSION),
+  policy_contract: registeredContract(
+    "StudyChatHarnessPolicy",
+    "study-chat-harness-v1",
+  ),
+  toolset_contract: registeredContract(
+    "ToolManifestRegistry",
+    HARNESS_WORKFLOW_MANIFEST_TOOL_MANIFEST_VERSION,
+  ),
   attempt_ceiling: { max_attempts: 3, max_repair_attempts: 2 },
   execution_budget: { ...DEFAULT_BUDGET },
-  allowed_artifact_types: artifactAllowlist("document_upload", "planning_context", "scene_snapshot", "study_session_snapshot"),
-  allowed_effect_adapters: registeredContracts(contract("StudyChatEffectBatch", "study-chat-effect-batch-v1")),
-  commit_policy: { status: "registered", key: { workflow: "study_chat", stage: "study_chat_reply", trace_contract: contract("StudyChatReply", "study-chat-reply-trace-v1"), payload_contract: contract("StudySessionTurnCommittedProjection", "study-chat-turn-committed-projection-v1") } },
+  allowed_artifact_types: artifactAllowlist(
+    "document_upload",
+    "planning_context",
+    "scene_snapshot",
+    "study_session_snapshot",
+  ),
+  allowed_effect_adapters: registeredContracts(
+    contract("StudyChatEffectBatch", "study-chat-effect-batch-v1"),
+  ),
+  commit_policy: {
+    status: "registered",
+    key: {
+      workflow: "study_chat",
+      stage: "study_chat_reply",
+      trace_contract: contract("StudyChatReply", "study-chat-reply-trace-v1"),
+      payload_contract: contract(
+        "StudySessionTurnCommittedProjection",
+        "study-chat-turn-committed-projection-v1",
+      ),
+    },
+  },
   decoder_route: registeredString("app.services.study_v3.StudyV3ReplyAdapter"),
   eval_route: registeredString("study_chat.reply"),
   eval_suites: registeredContracts(contract("study_chat_eval", "study-chat-eval-v1")),
@@ -543,16 +651,43 @@ const STUDY_ENTRY: HarnessWorkflowManifestEntryV1 = {
 // Independently typed projection: the golden test must compare two sources,
 // not compare a fixture to an unchecked cast of that same fixture.
 export const STAGE_EVAL_SUITES: Record<string, HarnessContractRef> = {
-  "document_parse:document_parse": contract("document_process_regression", "document-process-regression-v1"),
-  "document_parse:page_extraction": contract("page_extraction_regression", "page-extraction-regression-v1"),
-  "document_parse:section_detection": contract("section_detection_regression", "section-detection-regression-v1"),
-  "document_parse:chunk_building": contract("chunk_building_regression", "chunk-building-regression-v1"),
+  "document_parse:document_parse": contract(
+    "document_process_regression",
+    "document-process-regression-v1",
+  ),
+  "document_parse:page_extraction": contract(
+    "page_extraction_regression",
+    "page-extraction-regression-v1",
+  ),
+  "document_parse:section_detection": contract(
+    "section_detection_regression",
+    "section-detection-regression-v1",
+  ),
+  "document_parse:chunk_building": contract(
+    "chunk_building_regression",
+    "chunk-building-regression-v1",
+  ),
   "ocr:ocr_page": contract("ocr_page_regression", "ocr-page-regression-v1"),
-  "study_unit_cleanup:study_unit_cleanup": contract("study_unit_cleanup_regression", "study-unit-cleanup-regression-v1"),
-  "planning:plan_generation": contract("plan_generation_regression", "plan-generation-regression-v1"),
-  "persona:persona_generation": contract("persona_generation_regression", "persona-generation-regression-v1"),
-  "scene:scene_generation": contract("scene_generation_regression", "scene-generation-regression-v1"),
-  "frontend_decode:response_decode": contract("frontend_decode_regression", "frontend-decode-regression-v1"),
+  "study_unit_cleanup:study_unit_cleanup": contract(
+    "study_unit_cleanup_regression",
+    "study-unit-cleanup-regression-v1",
+  ),
+  "planning:plan_generation": contract(
+    "plan_generation_regression",
+    "plan-generation-regression-v1",
+  ),
+  "persona:persona_generation": contract(
+    "persona_generation_regression",
+    "persona-generation-regression-v1",
+  ),
+  "scene:scene_generation": contract(
+    "scene_generation_regression",
+    "scene-generation-regression-v1",
+  ),
+  "frontend_decode:response_decode": contract(
+    "frontend_decode_regression",
+    "frontend-decode-regression-v1",
+  ),
 };
 
 const executableEntry = (
@@ -573,13 +708,25 @@ const executableEntry = (
     evalSuites?: HarnessContractRef[];
   },
 ): HarnessWorkflowManifestEntryV1 => ({
-  ...unregisteredEntry(workflow, stage, { artifactTypes: options.artifacts, noEffects: true, noCommit: true }),
-  registration: registeredContract(options.registration.name, options.registration.version),
+  ...unregisteredEntry(workflow, stage, {
+    artifactTypes: options.artifacts,
+    noEffects: true,
+    noCommit: true,
+  }),
+  registration: registeredContract(
+    options.registration.name,
+    options.registration.version,
+  ),
   owner_adapter: registeredContract(options.adapter.name, options.adapter.version),
   input_contract: registeredContract(options.input.name, options.input.version),
-  proposal_contract: registeredContract(options.proposal.name, options.proposal.version),
+  proposal_contract: registeredContract(
+    options.proposal.name,
+    options.proposal.version,
+  ),
   output_contract: registeredContract(options.output.name, options.output.version),
-  prompt_contract: options.prompt ? registeredContract(options.prompt.name, options.prompt.version) : notApplicable("no_prompt"),
+  prompt_contract: options.prompt
+    ? registeredContract(options.prompt.name, options.prompt.version)
+    : notApplicable("no_prompt"),
   policy_contract: registeredContract(options.policy.name, options.policy.version),
   toolset_contract: options.toolset ?? notApplicable("no_tools"),
   commit_policy: options.commit ?? notApplicable("no_commit"),
@@ -593,119 +740,278 @@ const executableEntry = (
 
 const entries: HarnessWorkflowManifestEntryV1[] = [
   executableEntry("planning", "study_unit_revision", {
-    registration: contract("StudyUnitRevisionManifest", "study-unit-revision-manifest-v1"),
+    registration: contract(
+      "StudyUnitRevisionManifest",
+      "study-unit-revision-manifest-v1",
+    ),
     adapter: contract("StudyUnitRevisionAdapter", "study-unit-revision-adapter-v1"),
     input: contract("StudyUnitRevisionInputManifest", "study-unit-revision-input-v1"),
     proposal: contract("StudyUnitRevisionOutput", "study-unit-revision-output-v1"),
-    output: contract("StudyUnitRevisionCommittedProjection", "study-unit-revision-commit-v1"),
-    artifacts: ["planning_context"], decoder: "app.services.study_unit_revision.StudyUnitRevisionService",
+    output: contract(
+      "StudyUnitRevisionCommittedProjection",
+      "study-unit-revision-commit-v1",
+    ),
+    artifacts: ["planning_context"],
+    decoder: "app.services.study_unit_revision.StudyUnitRevisionService",
     prompt: contract("StudyUnitRevisionPrompt", "study-unit-revision-prompt-v1"),
     policy: contract("StudyUnitRevisionPolicy", "study-unit-revision-policy-v1"),
-    evalSuites: [contract("study_unit_revision_regression", "study-unit-revision-regression-v1")],
-    commit: { status: "registered", key: { workflow: "planning", stage: "study_unit_revision", trace_contract: contract("StudyUnitRevisionOutput", "study-unit-revision-output-v1"), payload_contract: contract("StudyUnitRevisionCommittedProjection", "study-unit-revision-commit-v1") } },
+    evalSuites: [
+      contract("study_unit_revision_regression", "study-unit-revision-regression-v1"),
+    ],
+    commit: {
+      status: "registered",
+      key: {
+        workflow: "planning",
+        stage: "study_unit_revision",
+        trace_contract: contract(
+          "StudyUnitRevisionOutput",
+          "study-unit-revision-output-v1",
+        ),
+        payload_contract: contract(
+          "StudyUnitRevisionCommittedProjection",
+          "study-unit-revision-commit-v1",
+        ),
+      },
+    },
   }),
   executableEntry("planning", "plan_revision", {
     registration: contract("PlanRevisionManifest", "plan-revision-manifest-v1"),
     adapter: contract("PlanRevisionAdapter", "plan-revision-adapter-v1"),
     input: contract("PlanRevisionInputManifest", "plan-revision-input-v1"),
     proposal: contract("PlanRevisionProposal", "plan-revision-proposal-v1"),
-    output: contract("PlanRevisionCommittedProjection", "plan-revision-committed-projection-v1"),
-    artifacts: ["planning_context"], decoder: "app.services.plan_revision.PlanRevisionService",
+    output: contract(
+      "PlanRevisionCommittedProjection",
+      "plan-revision-committed-projection-v1",
+    ),
+    artifacts: ["planning_context"],
+    decoder: "app.services.plan_revision.PlanRevisionService",
     prompt: contract("PlanRevisionPrompt", "plan-revision-prompt-v1"),
     policy: contract("PlanRevisionPolicy", "plan-revision-policy-v1"),
     evalSuites: [contract("plan_revision_regression", "plan-revision-regression-v1")],
-    commit: { status: "registered", key: { workflow: "planning", stage: "plan_revision", trace_contract: contract("PlanRevisionProposal", "plan-revision-proposal-v1"), payload_contract: contract("PlanRevisionCommittedProjection", "plan-revision-committed-projection-v1") } },
+    commit: {
+      status: "registered",
+      key: {
+        workflow: "planning",
+        stage: "plan_revision",
+        trace_contract: contract("PlanRevisionProposal", "plan-revision-proposal-v1"),
+        payload_contract: contract(
+          "PlanRevisionCommittedProjection",
+          "plan-revision-committed-projection-v1",
+        ),
+      },
+    },
   }),
   executableEntry("document_parse", "document_parse", {
-    registration: contract("DocumentProcessWorkflowManifestEntry", "document-process-workflow-manifest-v1"),
-    adapter: contract("DocumentProcessWorkflowAdapter", "document-process-workflow-adapter-v1"),
-    input: contract("DocumentProcessInputManifest", "document-process-input-manifest-v1"),
-    proposal: contract("DocumentProcessRuntimeOutput", "document-process-runtime-output-v1"),
-    output: contract("DocumentProcessCommittedProjection", "document-process-committed-projection-v1"),
+    registration: contract(
+      "DocumentProcessWorkflowManifestEntry",
+      "document-process-workflow-manifest-v2",
+    ),
+    adapter: contract(
+      "DocumentProcessWorkflowAdapter",
+      "document-process-workflow-adapter-v2",
+    ),
+    input: contract(
+      "DocumentProcessInputManifest",
+      "document-process-input-manifest-v2",
+    ),
+    proposal: contract(
+      "DocumentProcessRuntimeOutput",
+      "document-process-runtime-output-v1",
+    ),
+    output: contract(
+      "DocumentProcessCommittedProjection",
+      "document-process-committed-projection-v1",
+    ),
     artifacts: ["document_upload"],
     decoder: "app.services.harness_broad_adoption.DocumentProcessWorkflowAdapter",
     policy: contract("DocumentProcessHarnessPolicy", "document-process-harness-v1"),
-    commit: { status: "registered", key: { workflow: "document_parse", stage: "document_parse", trace_contract: contract("DocumentProcessRuntimeOutput", "document-process-runtime-output-v1"), payload_contract: contract("DocumentProcessCommittedProjection", "document-process-committed-projection-v1") } },
+    commit: {
+      status: "registered",
+      key: {
+        workflow: "document_parse",
+        stage: "document_parse",
+        trace_contract: contract(
+          "DocumentProcessRuntimeOutput",
+          "document-process-runtime-output-v1",
+        ),
+        payload_contract: contract(
+          "DocumentProcessCommittedProjection",
+          "document-process-committed-projection-v1",
+        ),
+      },
+    },
   }),
   executableEntry("document_parse", "page_extraction", {
-    registration: contract("DocumentPageExtractionWorkflowManifestEntry", "document-page-extraction-workflow-manifest-v1"),
-    adapter: contract("DocumentStageWorkflowAdapter", "document-stage-workflow-adapter-v1"),
+    registration: contract(
+      "DocumentPageExtractionWorkflowManifestEntry",
+      "document-page-extraction-workflow-manifest-v1",
+    ),
+    adapter: contract(
+      "DocumentStageWorkflowAdapter",
+      "document-stage-workflow-adapter-v1",
+    ),
     input: contract("DocumentStageInputManifest", "document-stage-input-manifest-v1"),
     proposal: contract("DocumentStageEvidence", "document-stage-evidence-v1"),
     output: contract("DocumentStageEvidence", "document-stage-evidence-v1"),
     artifacts: ["document_upload"],
-    decoder: "app.services.harness_broad_adoption.HarnessProposalRuntimeService.emit_document_stage_evidence",
+    decoder:
+      "app.services.harness_broad_adoption.HarnessProposalRuntimeService.emit_document_stage_evidence",
     policy: contract("DocumentStageHarnessPolicy", "document-stage-harness-v1"),
   }),
   executableEntry("document_parse", "section_detection", {
-    registration: contract("DocumentSectionDetectionWorkflowManifestEntry", "document-section-detection-workflow-manifest-v1"),
-    adapter: contract("DocumentStageWorkflowAdapter", "document-stage-workflow-adapter-v1"),
+    registration: contract(
+      "DocumentSectionDetectionWorkflowManifestEntry",
+      "document-section-detection-workflow-manifest-v1",
+    ),
+    adapter: contract(
+      "DocumentStageWorkflowAdapter",
+      "document-stage-workflow-adapter-v1",
+    ),
     input: contract("DocumentStageInputManifest", "document-stage-input-manifest-v1"),
     proposal: contract("DocumentStageEvidence", "document-stage-evidence-v1"),
     output: contract("DocumentStageEvidence", "document-stage-evidence-v1"),
     artifacts: ["document_debug", "document_upload"],
-    decoder: "app.services.harness_broad_adoption.HarnessProposalRuntimeService.emit_document_stage_evidence",
+    decoder:
+      "app.services.harness_broad_adoption.HarnessProposalRuntimeService.emit_document_stage_evidence",
     policy: contract("DocumentStageHarnessPolicy", "document-stage-harness-v1"),
   }),
   executableEntry("document_parse", "chunk_building", {
-    registration: contract("DocumentChunkBuildingWorkflowManifestEntry", "document-chunk-building-workflow-manifest-v1"),
-    adapter: contract("DocumentStageWorkflowAdapter", "document-stage-workflow-adapter-v1"),
+    registration: contract(
+      "DocumentChunkBuildingWorkflowManifestEntry",
+      "document-chunk-building-workflow-manifest-v1",
+    ),
+    adapter: contract(
+      "DocumentStageWorkflowAdapter",
+      "document-stage-workflow-adapter-v1",
+    ),
     input: contract("DocumentStageInputManifest", "document-stage-input-manifest-v1"),
     proposal: contract("DocumentStageEvidence", "document-stage-evidence-v1"),
     output: contract("DocumentStageEvidence", "document-stage-evidence-v1"),
     artifacts: ["document_debug", "document_upload"],
-    decoder: "app.services.harness_broad_adoption.HarnessProposalRuntimeService.emit_document_stage_evidence",
+    decoder:
+      "app.services.harness_broad_adoption.HarnessProposalRuntimeService.emit_document_stage_evidence",
     policy: contract("DocumentStageHarnessPolicy", "document-stage-harness-v1"),
   }),
   executableEntry("ocr", "ocr_page", {
-    registration: contract("OcrPageWorkflowManifestEntry", "ocr-page-workflow-manifest-v1"),
-    adapter: contract("DocumentStageWorkflowAdapter", "document-stage-workflow-adapter-v1"),
+    registration: contract(
+      "OcrPageWorkflowManifestEntry",
+      "ocr-page-workflow-manifest-v1",
+    ),
+    adapter: contract(
+      "DocumentStageWorkflowAdapter",
+      "document-stage-workflow-adapter-v1",
+    ),
     input: contract("DocumentStageInputManifest", "document-stage-input-manifest-v1"),
     proposal: contract("DocumentStageEvidence", "document-stage-evidence-v1"),
     output: contract("DocumentStageEvidence", "document-stage-evidence-v1"),
     artifacts: ["document_upload", "ocr_page"],
-    decoder: "app.services.harness_broad_adoption.HarnessProposalRuntimeService.emit_ocr_stage_evidence",
+    decoder:
+      "app.services.harness_broad_adoption.HarnessProposalRuntimeService.emit_ocr_stage_evidence",
     policy: contract("DocumentStageHarnessPolicy", "document-stage-harness-v1"),
   }),
   executableEntry("study_unit_cleanup", "study_unit_cleanup", {
-    registration: contract("StudyUnitCleanupWorkflowManifestEntry", "study-unit-cleanup-workflow-manifest-v1"),
-    adapter: contract("DocumentStageWorkflowAdapter", "document-stage-workflow-adapter-v1"),
+    registration: contract(
+      "StudyUnitCleanupWorkflowManifestEntry",
+      "study-unit-cleanup-workflow-manifest-v1",
+    ),
+    adapter: contract(
+      "DocumentStageWorkflowAdapter",
+      "document-stage-workflow-adapter-v1",
+    ),
     input: contract("DocumentStageInputManifest", "document-stage-input-manifest-v1"),
     proposal: contract("DocumentStageEvidence", "document-stage-evidence-v1"),
     output: contract("DocumentStageEvidence", "document-stage-evidence-v1"),
     artifacts: ["document_debug", "study_unit_input"],
-    decoder: "app.services.harness_broad_adoption.HarnessProposalRuntimeService.emit_study_unit_cleanup_evidence",
+    decoder:
+      "app.services.harness_broad_adoption.HarnessProposalRuntimeService.emit_study_unit_cleanup_evidence",
     policy: contract("DocumentStageHarnessPolicy", "document-stage-harness-v1"),
   }),
   executableEntry("planning", "plan_generation", {
-    registration: contract("LearningPlanWorkflowManifestEntry", "learning-plan-workflow-manifest-v2"),
-    adapter: contract("LearningPlanWorkflowAdapter", "learning-plan-workflow-adapter-v2"),
+    registration: contract(
+      "LearningPlanWorkflowManifestEntry",
+      "learning-plan-workflow-manifest-v2",
+    ),
+    adapter: contract(
+      "LearningPlanWorkflowAdapter",
+      "learning-plan-workflow-adapter-v2",
+    ),
     input: contract("LearningPlanInputManifest", "learning-plan-input-manifest-v1"),
     proposal: contract("LearningPlanRuntimeOutput", "learning-plan-runtime-output-v2"),
-    output: contract("LearningPlanCommittedProjection", "learning-plan-committed-projection-v2"),
-    artifacts: ["document_debug", "persona_snapshot", "planning_context", "scene_snapshot", "study_unit_input"],
+    output: contract(
+      "LearningPlanCommittedProjection",
+      "learning-plan-committed-projection-v2",
+    ),
+    artifacts: [
+      "document_debug",
+      "persona_snapshot",
+      "planning_context",
+      "scene_snapshot",
+      "study_unit_input",
+    ],
     decoder: "app.services.harness_broad_adoption.LearningPlanWorkflowAdapter",
     prompt: contract("LearningPlanPrompt", "planning-prompt-v7"),
     policy: contract("LearningPlanHarnessPolicy", "learning-plan-harness-v1"),
     toolset: TOOL_MANIFEST_SLOT,
-    commit: { status: "registered", key: { workflow: "planning", stage: "plan_generation", trace_contract: contract("LearningPlanRuntimeOutput", "learning-plan-runtime-output-v2"), payload_contract: contract("LearningPlanCommittedProjection", "learning-plan-committed-projection-v2") } },
+    commit: {
+      status: "registered",
+      key: {
+        workflow: "planning",
+        stage: "plan_generation",
+        trace_contract: contract(
+          "LearningPlanRuntimeOutput",
+          "learning-plan-runtime-output-v2",
+        ),
+        payload_contract: contract(
+          "LearningPlanCommittedProjection",
+          "learning-plan-committed-projection-v2",
+        ),
+      },
+    },
   }),
   executableEntry("planning", "planning_tool_execution", {
-    registration: contract("PlanningToolExecutionWorkflowManifestEntry", "planning-tool-execution-workflow-manifest-v1"),
-    adapter: contract("PlanningToolExecutionWorkflowAdapter", "planning-tool-execution-workflow-adapter-v1"),
-    input: contract("PlanningToolExecutionInputManifest", "planning-tool-execution-input-manifest-v1"),
-    proposal: contract("PlanningToolExecutionEvidence", "planning-tool-execution-evidence-v1"),
-    output: contract("PlanningToolExecutionEvidence", "planning-tool-execution-evidence-v1"),
+    registration: contract(
+      "PlanningToolExecutionWorkflowManifestEntry",
+      "planning-tool-execution-workflow-manifest-v1",
+    ),
+    adapter: contract(
+      "PlanningToolExecutionWorkflowAdapter",
+      "planning-tool-execution-workflow-adapter-v1",
+    ),
+    input: contract(
+      "PlanningToolExecutionInputManifest",
+      "planning-tool-execution-input-manifest-v1",
+    ),
+    proposal: contract(
+      "PlanningToolExecutionEvidence",
+      "planning-tool-execution-evidence-v1",
+    ),
+    output: contract(
+      "PlanningToolExecutionEvidence",
+      "planning-tool-execution-evidence-v1",
+    ),
     artifacts: ["document_debug", "planning_context", "study_unit_input"],
-    decoder: "app.services.harness_broad_adoption.HarnessProposalRuntimeService.emit_planning_tool_evidence",
-    policy: contract("PlanningToolExecutionHarnessPolicy", "planning-tool-execution-harness-v1"),
+    decoder:
+      "app.services.harness_broad_adoption.HarnessProposalRuntimeService.emit_planning_tool_evidence",
+    policy: contract(
+      "PlanningToolExecutionHarnessPolicy",
+      "planning-tool-execution-harness-v1",
+    ),
     toolset: TOOL_MANIFEST_SLOT,
     evalSuites: [PLANNING_TOOL_EVAL_SUITE],
   }),
   executableEntry("persona", "persona_generation", {
-    registration: contract("PersonaGenerationWorkflowManifestEntry", "persona-generation-workflow-manifest-v1"),
-    adapter: contract("PersonaGenerationWorkflowAdapter", "persona-generation-workflow-adapter-v1"),
-    input: contract("PersonaGenerationInputManifest", "persona-generation-input-manifest-v1"),
+    registration: contract(
+      "PersonaGenerationWorkflowManifestEntry",
+      "persona-generation-workflow-manifest-v1",
+    ),
+    adapter: contract(
+      "PersonaGenerationWorkflowAdapter",
+      "persona-generation-workflow-adapter-v1",
+    ),
+    input: contract(
+      "PersonaGenerationInputManifest",
+      "persona-generation-input-manifest-v1",
+    ),
     proposal: contract("PersonaGenerationProposal", "persona-generation-proposal-v1"),
     output: contract("PersonaGenerationProposal", "persona-generation-proposal-v1"),
     artifacts: ["persona_snapshot"],
@@ -714,11 +1020,23 @@ const entries: HarnessWorkflowManifestEntryV1[] = [
     policy: contract("PersonaGenerationHarnessPolicy", "persona-generation-harness-v2"),
   }),
   executableEntry("scene", "scene_generation", {
-    registration: contract("SceneGenerationWorkflowManifestEntry", "scene-generation-workflow-manifest-v1"),
-    adapter: contract("SceneGenerationWorkflowAdapter", "scene-generation-workflow-adapter-v1"),
-    input: contract("SceneGenerationInputManifest", "scene-generation-input-manifest-v1"),
+    registration: contract(
+      "SceneGenerationWorkflowManifestEntry",
+      "scene-generation-workflow-manifest-v1",
+    ),
+    adapter: contract(
+      "SceneGenerationWorkflowAdapter",
+      "scene-generation-workflow-adapter-v1",
+    ),
+    input: contract(
+      "SceneGenerationInputManifest",
+      "scene-generation-input-manifest-v1",
+    ),
     proposal: contract("SceneTreeProposal", "scene-tree-proposal-v1"),
-    output: contract("SceneTreeGeneratedProjection", "scene-tree-generated-projection-v1"),
+    output: contract(
+      "SceneTreeGeneratedProjection",
+      "scene-tree-generated-projection-v1",
+    ),
     artifacts: ["persona_snapshot", "scene_snapshot"],
     decoder: "app.services.harness_broad_adoption.SceneGenerationWorkflowAdapter",
     prompt: contract("SceneGenerationPrompt", "scene-generation-prompt-v1"),
@@ -727,8 +1045,14 @@ const entries: HarnessWorkflowManifestEntryV1[] = [
   STUDY_ENTRY,
   TAVERN_ENTRY,
   executableEntry("frontend_decode", "response_decode", {
-    registration: contract("FrontendDecodeWorkflowManifestEntry", "frontend-decode-workflow-manifest-v1"),
-    adapter: contract("FrontendDecodeWorkflowAdapter", "frontend-decode-workflow-adapter-v1"),
+    registration: contract(
+      "FrontendDecodeWorkflowManifestEntry",
+      "frontend-decode-workflow-manifest-v1",
+    ),
+    adapter: contract(
+      "FrontendDecodeWorkflowAdapter",
+      "frontend-decode-workflow-adapter-v1",
+    ),
     input: contract("FrontendDecodeInputManifest", "frontend-decode-input-manifest-v1"),
     proposal: contract("FrontendDecodeResponse", "frontend-decode-response-v1"),
     output: contract("FrontendDecodeResponse", "frontend-decode-response-v1"),
@@ -774,14 +1098,18 @@ const canonicalJson = (value: unknown): string => {
   return JSON.stringify(value);
 };
 
-export function validateHarnessWorkflowManifest(value: unknown): asserts value is HarnessWorkflowManifestV1 {
+export function validateHarnessWorkflowManifest(
+  value: unknown,
+): asserts value is HarnessWorkflowManifestV1 {
   if (canonicalJson(value) !== canonicalJson(HARNESS_WORKFLOW_MANIFEST)) {
     throw new Error("harness_workflow_manifest_registry_drift");
   }
 }
 
 export function harnessWorkflowManifestSnapshot(): HarnessWorkflowManifestV1 {
-  return JSON.parse(JSON.stringify(HARNESS_WORKFLOW_MANIFEST)) as HarnessWorkflowManifestV1;
+  return JSON.parse(
+    JSON.stringify(HARNESS_WORKFLOW_MANIFEST),
+  ) as HarnessWorkflowManifestV1;
 }
 
 export function requireExecutableWorkflowManifestEntry(

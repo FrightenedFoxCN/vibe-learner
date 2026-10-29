@@ -343,3 +343,29 @@ test("PDF physical scope reaches the planning input and out-of-bounds input neve
   assert.equal(requests.length, 1);
   assert.match(h.calls.notices.at(-1), /超出 PDF/);
 });
+
+test("a resumed committed Document can start planning without another upload or parse", async () => {
+  const requests = [];
+  const view = fixture({
+    createLearningPlanStream: async (goal) => {
+      requests.push(goal);
+      return plan("after-checkpoint");
+    },
+  });
+  await act(async () => {
+    await view.result.current.generatePlanWorkflow({
+      mode: "document",
+      processedDocument: {
+        id: "saved-document",
+        status: "processed",
+        pageCount: 3,
+        updatedAt: "saved-revision",
+      },
+      objective: "Continue studying",
+    });
+  });
+  assert.equal(requests[0].documentId, "saved-document");
+  assert.equal(requests[0].expectedDocumentUpdatedAt, "saved-revision");
+  assert.equal(view.calls.plans[0].id, "after-checkpoint");
+  assert.equal(view.calls.documents[0].id, "saved-document");
+});

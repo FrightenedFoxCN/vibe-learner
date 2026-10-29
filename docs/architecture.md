@@ -47,6 +47,16 @@ Route tests use instance-level dependency overrides in `tests.support.api`.
 `npm run test:ai:lifecycle` separately tests real lifespan and import behavior;
 route fault tests do not implicitly initialize the normal runtime database.
 
+## Document checkpoint boundary
+
+Document parsing saves operation-fenced page and stage checkpoints separately
+from the authoritative Document/Debug projection. A unique source-child relation
+is admitted atomically with each explicit resumed process operation and its
+Harness binding. Completed work enters the child's authorized protected snapshot;
+normal strict decode, CAS and atomic terminal commit still apply. Checkpoint-only
+work remains visible as intermediate data and cannot be consumed as a processed
+textbook. See [Document OCR checkpoints](document-checkpoints.md).
+
 ## Study Chat application boundary
 
 `StudyChatApplication` owns admission, protected context, attachment staging,

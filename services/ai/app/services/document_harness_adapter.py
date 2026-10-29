@@ -3,6 +3,7 @@ from __future__ import annotations
 from app.services.harness_domain_port import HarnessDomainExecutionPort
 from app.models.document_processing import (
     DocumentProcessInputManifest,
+    DocumentProcessInputManifestV2,
     DocumentProcessRuntimeOutputV1,
     DocumentStageInputManifest,
     DocumentStageEvidenceV1,
@@ -25,8 +26,14 @@ from app.models.harness import (
     HarnessTraceV3,
     HarnessWorkflow,
 )
-from app.models.harness_operation import HarnessDomainOperationKind, HarnessOperationBindingV1
-from app.services.harness_runtime import HarnessOperationRuntime, HarnessRuntimePreparedOutput
+from app.models.harness_operation import (
+    HarnessDomainOperationKind,
+    HarnessOperationBindingV1,
+)
+from app.services.harness_runtime import (
+    HarnessOperationRuntime,
+    HarnessRuntimePreparedOutput,
+)
 
 
 class DocumentHarnessAdapter:
@@ -41,6 +48,9 @@ class DocumentHarnessAdapter:
         protected_input: dict[str, object],
         generate: Callable[[dict[str, object]], DocumentProcessRuntimeOutputV1],
     ) -> tuple[HarnessRuntimePreparedOutput, HarnessOperationRuntime]:
+        manifest = DocumentProcessInputManifestV2.model_validate(
+            manifest.model_dump(mode="python")
+        )
         return self.runtime.prepare_existing_operation(
             operation_binding=operation_binding,
             workflow=HarnessWorkflow.DOCUMENT_PARSE,

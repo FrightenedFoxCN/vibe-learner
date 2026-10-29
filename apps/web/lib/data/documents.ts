@@ -1,5 +1,6 @@
 export {
   getDocumentDebug,
+  getDocumentCheckpoint,
   getDocumentPageNumbering,
   getDocumentPlanEvents,
   getDocumentPlanningContext,

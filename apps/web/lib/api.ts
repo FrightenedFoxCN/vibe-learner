@@ -1,3 +1,4 @@
+import { decodeDocumentCheckpoint } from "./document-checkpoint-decode";
 import { decodeDocumentPageNumbering } from "./document-page-numbering-decode";
 import { decodePlanRevision } from "./plan-revision-decode";
 import { decodeStudyUnitRevision } from "./study-unit-revision-decode";
@@ -1599,6 +1600,7 @@ export async function processDocument(
   options?: {
     diagnostic?: DiagnosticContext;
     forceOcr?: boolean;
+    resumeFromOperationId?: string;
   },
 ): Promise<DocumentRecord> {
   const diagnosticResponse = await request(
@@ -1610,6 +1612,7 @@ export async function processDocument(
       },
       body: JSON.stringify({
         force_ocr: Boolean(options?.forceOcr),
+        resume_from_operation_id: options?.resumeFromOperationId,
       }),
     },
     options?.diagnostic,
@@ -1629,6 +1632,7 @@ export async function processDocumentStream(
   options: {
     diagnostic?: DiagnosticContext;
     forceOcr?: boolean;
+    resumeFromOperationId?: string;
     signal?: AbortSignal;
   },
   onEvent: (event: StreamEvent) => void,
@@ -1643,6 +1647,7 @@ export async function processDocumentStream(
       signal: options.signal,
       body: JSON.stringify({
         force_ocr: Boolean(options.forceOcr),
+        resume_from_operation_id: options.resumeFromOperationId,
       }),
     },
     options?.diagnostic,
@@ -2434,5 +2439,18 @@ export async function getDocumentPageNumbering(documentId: string, pages: number
     response,
     () => decodeDocumentPageNumbering(raw, documentId, pages),
     "document-page-numbering-v1",
+  );
+}
+
+export async function getDocumentCheckpoint(documentId: string, operationId?: string) {
+  const path = operationId
+    ? `checkpoints/${encodeURIComponent(operationId)}`
+    : "checkpoint";
+  const response = await request(`${AI_BASE_URL()}/documents/${documentId}/${path}`);
+  const raw = await readJson<unknown>(response);
+  return diagnosticDecode(
+    response,
+    () => decodeDocumentCheckpoint(raw, documentId, operationId),
+    "document-checkpoint-response-v1",
   );
 }

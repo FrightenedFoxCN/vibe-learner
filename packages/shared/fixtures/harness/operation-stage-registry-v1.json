@@ -23,7 +23,7 @@
       "owner_module": "app.services.document_parser",
       "contract": {
         "name": "document_parser",
-        "version": "document-parser-v1"
+        "version": "document-parser-v2"
       }
     },
     {
