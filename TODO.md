@@ -15,11 +15,6 @@
   - 参照现有学习工作区的领域 Hook/展示组件边界，注入窄 API、时钟和存储 port；保留原有幂等身份、房间/请求版本 fencing、终态单调性、取消与 retry 语义。
   - 以行为测试覆盖切房、迟到结果、分页竞争、轮询清理及恢复/提交交错；源码字符串断言不能替代运行时测试。完整设备 UX 仍由 `REL-DESKTOP-001` 独立验收。
 
-- [ ] `ENG-STUDY-TOOLS-001` `[P2]` 按领域职责拆分 Study Session 工具执行器。
-  - 2026-10-29 审计：`services/ai/app/services/study_session_chat_runtime.py` 的 `execute_tool` 集中处理记忆、好感、续接、PDF/图片投影、生成与计划确认等分支。
-  - 拆出领域处理器并复用既有 Tool Manifest 作为唯一目录，保留统一 effect collector、prepared/committed 区分、operation/slot 绑定和原子提交边界；不新增平行工具注册表。
-  - 复用工具契约与 Study effect 回归，覆盖拒绝参数、重复调用、失败回滚、工具预算及 read-back；拆分不得改变模型可见契约或放宽 server-only 字段边界。
-
 - [ ] `ENG-STYLE-GATES-001` `[P3]` 渐进建立前后端代码风格与静态检查门。
   - 2026-10-29 审计：Web 的 `lint` 仅为 TypeScript 检查别名，Python 未配置 Ruff 等风格检查；类型检查不能覆盖 React Hooks 规则、未使用导入和格式一致性。
   - 明确格式化与 lint 的职责，优先启用未使用导入、React Hooks 和新增/修改文件的格式检查，接入本地命令及 CI；对既有问题建立显式基线，避免一次性全仓格式化混入功能变更。

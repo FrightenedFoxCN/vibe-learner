@@ -1156,6 +1156,176 @@ class StudyChatEffectsTests(unittest.TestCase):
             self._commit(running, collector.prepared_batch())
         self.assertEqual(self.sessions.require("session-effect").turns, [])
 
+    def test_session_tool_handlers_share_one_overlay_and_atomic_commit(self) -> None:
+        running, collector, attachment, results = self._prepare_session_tool_batch(
+            "handlers-commit"
+        )
+        prepared = collector.prepared_batch()
+        self.assertEqual([effect.slot for effect in prepared.effects], list(range(6)))
+        self.assertEqual(
+            {effect.operation_id for effect in prepared.effects}, {running.operation_id}
+        )
+        self.assertTrue(
+            all(
+                result["application_result"]["effect_state"] == "prepared"
+                for result in results
+            )
+        )
+        self.assertTrue(
+            all(
+                result["application_result"]["committed"] is False for result in results
+            )
+        )
+        before = self.sessions.require("session-effect")
+        self.assertEqual(before.session_memory, [])
+        self.assertEqual(before.affinity_state.score, 0)
+        self.assertIsNone(before.projected_pdf)
+        self.assertEqual(before.plan_confirmations, [])
+        committed, payload = self._commit(
+            running, prepared, learner_attachments=[attachment]
+        )
+        self.assertEqual(committed.session_memory[0].content, "second value")
+        self.assertEqual(committed.affinity_state.score, 3)
+        self.assertEqual(len(committed.pending_follow_ups), 3)
+        self.assertEqual(committed.projected_pdf.source_id, attachment.attachment_id)
+        self.assertEqual(committed.plan_confirmations[0].action_type, "update_plan")
+        self.assertEqual(len(payload["_committed_effect_batch"]["effects"]), 6)
+        recovered = self.operations.require(
+            session_id=running.session_id, client_request_id=running.client_request_id
+        )
+        self.assertEqual(recovered.status.value, "committed")
+        self.assertEqual(
+            recovered.response_payload["_committed_effect_batch"],
+            payload["_committed_effect_batch"],
+        )
+        self.assertEqual(self.sessions.require("session-effect"), committed)
+
+    def test_session_tool_handler_batch_rolls_back_together_on_adapter_failure(
+        self,
+    ) -> None:
+        from app.services import study_chat_effects
+
+        running, collector, attachment, _ = self._prepare_session_tool_batch(
+            "handlers-rollback"
+        )
+        before = self.sessions.require("session-effect")
+        apply_effect = study_chat_effects._apply_prepared_effect
+        calls = 0
+
+        def fail_after_memory(**kwargs):
+            nonlocal calls
+            calls += 1
+            if calls == 2:
+                raise RuntimeError("forced_handler_batch_failure")
+            return apply_effect(**kwargs)
+
+        with patch(
+            "app.services.study_chat_effects._apply_prepared_effect",
+            side_effect=fail_after_memory,
+        ):
+            with self.assertRaisesRegex(RuntimeError, "forced_handler_batch_failure"):
+                self._commit(
+                    running,
+                    collector.prepared_batch(),
+                    learner_attachments=[attachment],
+                )
+        self.assertEqual(self.sessions.require("session-effect"), before)
+        self.assertIsNone(
+            self.operations.require(
+                session_id=running.session_id,
+                client_request_id=running.client_request_id,
+            ).response_payload
+        )
+
+    def _prepare_session_tool_batch(self, request_id):
+        import json
+        from app.services.model_provider import MockModelProvider
+        from app.services.plans import LearningPlanService
+        from app.services.provider_study import _execute_chat_tool_call
+        from app.services.study_arrangement import StudyArrangementService
+        from app.services.study_session_chat_runtime import StudySessionChatToolRuntime
+        from app.services.study_sessions import StudySessionService
+        from app.services.tool_provider_projection import ToolExecutionBudgetTracker
+
+        running = self._running_operation(request_id)
+        collector = StudyChatEffectCollector(
+            operation_id=running.operation_id,
+            session_id="session-effect",
+            plan_id="plan-effect",
+            allowed_schedule_ids={"schedule-1"},
+        )
+        attachment = LearnerAttachmentRecord(
+            attachment_id="handler-image",
+            name="diagram.png",
+            mime_type="image/png",
+            kind="image",
+            image_url="data:image/png;base64,aW1hZ2U=",
+        )
+        runtime = StudySessionChatToolRuntime(
+            session_service=StudySessionService(self.store, repository=self.sessions),
+            plan_service=LearningPlanService(
+                self.store, StudyArrangementService(), MockModelProvider()
+            ),
+            session_id="session-effect",
+            plan_id="plan-effect",
+            effect_collector=collector,
+            transient_attachments=[attachment],
+        )
+        budget = ToolExecutionBudgetTracker()
+
+        def call(name, arguments):
+            return _execute_chat_tool_call(
+                {
+                    "id": "repeated-provider-correlation",
+                    "type": "function",
+                    "function": {"name": name, "arguments": json.dumps(arguments)},
+                },
+                section_id="unit",
+                section_context="",
+                learner_message="hello",
+                memory_hits=[],
+                debug_report=None,
+                document_path=None,
+                session_tool_runtime=runtime,
+                budget_tracker=budget,
+            )
+
+        invalid = call("update_affinity_state", {"delta": "3"})
+        self.assertFalse(invalid["result"]["ok"])
+        self.assertIsNone(collector.prepared_batch())
+        results = [
+            call("write_session_memory", {"key": "focus", "content": "first value"})
+        ]
+        rejected = call(
+            "write_session_memory", {"key": "focus", "content": "not admitted"}
+        )
+        self.assertFalse(rejected["result"]["ok"])
+        self.assertEqual(rejected["result"]["error"], "tool_round_budget_exceeded")
+        self.assertEqual(len(collector.prepared_batch().effects), 1)
+        budget.begin_round()
+        results.append(
+            call("write_session_memory", {"key": "focus", "content": "second value"})
+        )
+        results.append(
+            call("update_affinity_state", {"delta": 3, "reason": "Practice"})
+        )
+        results.append(
+            call(
+                "schedule_session_follow_up",
+                {"delay_seconds": 30, "prompt": "Continue"},
+            )
+        )
+        results.append(
+            call("project_uploaded_image", {"attachment_id": attachment.attachment_id})
+        )
+        results.append(call("update_learning_plan", {"course_title": "Proposed title"}))
+        overlay = call("read_session_memory", {"key": "focus"})
+        self.assertEqual(
+            overlay["application_result"]["memory_items"][0]["content"], "second value"
+        )
+        self.assertTrue(all(result["result"]["ok"] for result in results))
+        return running, collector, attachment, results
+
     def _commit(self, running, prepared_effect_batch, learner_attachments=None):
         result = StudyChatResult(reply="ignored", citations=[], character_events=[])
         return self.sessions.commit_chat_operation_turn(

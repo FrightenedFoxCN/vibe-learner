@@ -57,6 +57,12 @@ kept in the committed payload and filtered at that public projection boundary.
 `StudySessionRepository.commit_chat_operation_turn` remains the single owner of
 the atomic Session/Turn/effects/receipt/terminal-trace transaction.
 
+`StudySessionChatToolRuntime` delegates memory, affinity, follow-up, projection,
+image generation and Plan confirmation execution to `services/study_tools/`.
+These handlers share one operation context and effect collector; the existing
+Tool Manifest adapters, provider decoding/budgets and final commit boundary stay
+in place. See [Study Chat Harness](harness/study-chat.md).
+
 Study decode, application/commit and API projection tests run independently via
 `test:ai:study:decode`, `test:ai:study:application` and `test:ai:study:api`.
 

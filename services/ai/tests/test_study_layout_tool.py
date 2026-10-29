@@ -79,7 +79,7 @@ class StudyLayoutToolTests(unittest.TestCase):
         )
         runtime = self._runtime(service, multimodal=True)
         with patch(
-            "app.services.study_session_chat_runtime.read_page_range_images",
+            "app.services.study_tools.projection_read.read_page_range_images",
             return_value={"images": [{"image_url": _png_data_url()}]},
         ):
             result = runtime.execute_tool(

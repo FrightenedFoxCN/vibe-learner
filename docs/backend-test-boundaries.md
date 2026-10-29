@@ -8,6 +8,7 @@
 | `npm run test:ai:lifecycle` | 导入、应用启动/退出、实例隔离与恢复边界 |
 | `npm run test:ai:migrations` | Alembic SQLite schema、升级与 eval admission；不执行模型 |
 | `npm run test:ai:study:decode` | 完整嵌套 Study reply 解码及私有评分材料 |
+| `npm run test:ai:study:tools` | Session 工具领域处理器、Tool Manifest 契约、投影、逐字记忆与跨处理器 effect overlay；拒绝参数、重复调用预算、统一槽位、提交读回和整批回滚 |
 | `npm run test:ai:study:application` | Study admission、CAS、effects、receipt、v3 trace 与故障恢复 |
 | `npm run test:ai:study:api` | 公开响应及失败投影、服务端私有字段隔离 |
 | `npm run test:ai:harness:contracts` | 领域 schema/常量及 persistence 依赖边界 |
