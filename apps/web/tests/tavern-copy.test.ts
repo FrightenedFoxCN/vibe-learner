@@ -1,12 +1,42 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { TAVERN_COPY_CONTRACT, RUN_STATUS_LABELS, STEP_STATUS_LABELS, TAVERN_COPY, tavernFailureNotice } from "../lib/tavern-copy.ts";
+import {
+  TAVERN_COPY_CONTRACT,
+  RUN_STATUS_LABELS,
+  STEP_STATUS_LABELS,
+  TAVERN_COPY,
+  tavernFailureNotice,
+} from "../lib/tavern-copy.ts";
 
 test("versioned Tavern run/step copy covers the complete product state vocabulary", () => {
   assert.equal(TAVERN_COPY_CONTRACT, "tavern-copy-v1");
-  assert.deepEqual(Object.keys(RUN_STATUS_LABELS).sort(), ["canceled", "completed", "failed", "partial", "pending"]);
-  assert.deepEqual(Object.keys(STEP_STATUS_LABELS).sort(), ["blocked", "canceled", "completed", "failed", "generating", "idle", "pending", "previous_blocked", "previous_canceled", "previous_completed", "previous_failed"]);
-  for (const [key, pattern] of [["partial", /部分角色/], ["failed", /本轮未完成/], ["completed", /已完成/], ["pending", /等待/], ["canceled", /已取消/]] as const) {
+  assert.deepEqual(Object.keys(RUN_STATUS_LABELS).sort(), [
+    "canceled",
+    "completed",
+    "failed",
+    "partial",
+    "pending",
+  ]);
+  assert.deepEqual(Object.keys(STEP_STATUS_LABELS).sort(), [
+    "blocked",
+    "canceled",
+    "completed",
+    "failed",
+    "generating",
+    "idle",
+    "pending",
+    "previous_blocked",
+    "previous_canceled",
+    "previous_completed",
+    "previous_failed",
+  ]);
+  for (const [key, pattern] of [
+    ["partial", /部分角色/],
+    ["failed", /本轮未完成/],
+    ["completed", /已完成/],
+    ["pending", /等待/],
+    ["canceled", /已取消/],
+  ] as const) {
     assert.match(RUN_STATUS_LABELS[key], pattern);
   }
   for (const key of ["blocked", "previous_blocked"] as const) {
@@ -17,14 +47,20 @@ test("versioned Tavern run/step copy covers the complete product state vocabular
 });
 
 test("recovery, archive and cancel copy describes retained results and honest provider limits", () => {
-  for (const text of [TAVERN_COPY.partial, TAVERN_COPY.retryIncomplete, TAVERN_COPY.recovered]) assert.match(text, /不会重复生成/);
+  for (const text of [
+    TAVERN_COPY.partial,
+    TAVERN_COPY.retryIncomplete,
+    TAVERN_COPY.recovered,
+  ])
+    assert.match(text, /不会重复生成/);
   assert.match(TAVERN_COPY.failed, /恢复入口/);
   assert.match(TAVERN_COPY.blocked, /前序.*暂未执行/);
   assert.match(TAVERN_COPY.retryScope, /先前未完成/);
   assert.match(TAVERN_COPY.archived, /只读/);
-  assert.match(TAVERN_COPY.canceled, /模型请求可能仍运行到超时/);
+  assert.match(TAVERN_COPY.canceled, /上游计算或计费是否停止仍以服务商为准/);
   assert.match(TAVERN_COPY.cancelUnconfirmed, /尚未确认.*刷新/);
-  for (const text of Object.values(TAVERN_COPY)) assert.doesNotMatch(text, /叶节点|暴露为|failure_code|error_code|tavern_/);
+  for (const text of Object.values(TAVERN_COPY))
+    assert.doesNotMatch(text, /叶节点|暴露为|failure_code|error_code|tavern_/);
 });
 
 test("structured stale/archive/retry failures stay actionable and never expose unrecognized codes", () => {

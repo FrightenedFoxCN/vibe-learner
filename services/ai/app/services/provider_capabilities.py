@@ -19,8 +19,13 @@ from app.models.domain import (
 from app.models.planning import PlanScheduleChapterProposalV1
 from app.models.study_unit_revision import StudyUnitSuggestionsV1
 from app.models.study_chat_operation import StudyChatMessageKind
-from app.models.tavern import TavernActorReply, TavernMessageRecord, TavernParticipantRecord
+from app.models.tavern import (
+    TavernActorReply,
+    TavernMessageRecord,
+    TavernParticipantRecord,
+)
 from app.models.study_question import StudyQuestionProposalV1
+from app.services.provider_cancellation import ProviderCancellationCapability
 
 
 @dataclass
@@ -126,6 +131,9 @@ class StudyModelCapability:
 
 
 class TavernModelCapability:
+    def tavern_cancellation_capability(self) -> ProviderCancellationCapability:
+        return ProviderCancellationCapability(adapter="unsupported")
+
     def generate_tavern_actor_reply(
         self,
         *,
@@ -218,7 +226,9 @@ class ImageModelCapability:
 
 
 class ExerciseModelCapability:
-    exercise_implementation: Literal["local_heuristic", "remote", "unsupported"] = "unsupported"
+    exercise_implementation: Literal["local_heuristic", "remote", "unsupported"] = (
+        "unsupported"
+    )
 
     def generate_exercise(
         self, *, persona: PersonaProfile, section_id: str, topic: str
@@ -231,12 +241,18 @@ class ExerciseModelCapability:
         raise NotImplementedError
 
 
-class TeachingModelCapability(StudyModelCapability, EmbeddingModelCapability, ExerciseModelCapability):
+class TeachingModelCapability(
+    StudyModelCapability, EmbeddingModelCapability, ExerciseModelCapability
+):
     """Tutor operations require chat, memory embeddings and local exercises."""
 
 
 class ModelProvider(
-    TeachingModelCapability, PlanningModelCapability, TavernModelCapability,
-    PersonaModelCapability, SceneModelCapability, ImageModelCapability,
+    TeachingModelCapability,
+    PlanningModelCapability,
+    TavernModelCapability,
+    PersonaModelCapability,
+    SceneModelCapability,
+    ImageModelCapability,
 ):
     """Compatibility aggregate; domain services should accept a narrow capability."""

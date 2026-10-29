@@ -1232,7 +1232,7 @@ Resumes a pending run after a process or worker interruption. Completed steps an
 
 Atomically changes a pending run and its pending/generating steps to `canceled`. Repeating cancel on the same canceled run is idempotent and returns `200`; other terminal states return `409`.
 
-Cancel immediately prevents message commit and prevents later provider fallback/recovery calls. The current synchronous provider transport cannot abort an already-issued upstream request, so that request may continue until its configured timeout even though its result is rejected. UI copy must describe this as canceling receipt of the result, not as guaranteed termination of model compute.
+Cancel immediately prevents message commit and later provider fallback/recovery. For the compatible Chat Completions adapter, the active worker detects the canceled claim, cancels its HTTP task and closes its owned response/client; other synchronous provider protocols retain their timeout fallback. The cancellation response proves the database fence and can return before local transport cleanup finishes. It does not prove that upstream computation or billing stopped. UI copy describes canceling receipt with that provider boundary. Capability routing and reproducible socket/worker evidence are in [Tavern provider cancellation](tavern-provider-cancellation.md).
 
 ### `POST /tavern/rooms/{room_id}/runs/{run_id}/retry`
 

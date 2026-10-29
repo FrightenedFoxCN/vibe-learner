@@ -138,8 +138,7 @@ class TavernRepository:
                 room_id_query.order_by(
                     TavernRoomRow.updated_at.desc(),
                     TavernRoomRow.id.desc(),
-                )
-                .limit(bounded_limit + 1)
+                ).limit(bounded_limit + 1)
             ).all()
             room_ids = fetched_room_ids[:bounded_limit]
             if not room_ids:
@@ -163,7 +162,9 @@ class TavernRepository:
             )
 
         room_rows_by_id: dict[str, TavernRoomRow] = {}
-        participants_by_room: defaultdict[str, list[TavernParticipantRow]] = defaultdict(list)
+        participants_by_room: defaultdict[str, list[TavernParticipantRow]] = (
+            defaultdict(list)
+        )
         for room_row, participant_row in room_participant_rows:
             room_rows_by_id[room_row.id] = room_row
             if participant_row is not None:
@@ -172,8 +173,12 @@ class TavernRepository:
             TavernRoomSummary(
                 id=row.id,
                 title=row.title,
-                participant_persona_ids=[item.persona_id for item in participants_by_room[row.id]],
-                participant_names=[item.display_name for item in participants_by_room[row.id]],
+                participant_persona_ids=[
+                    item.persona_id for item in participants_by_room[row.id]
+                ],
+                participant_names=[
+                    item.display_name for item in participants_by_room[row.id]
+                ],
                 message_count=int(counts.get(row.id, 0)),
                 revision=row.revision,
                 status=TavernRoomStatus(row.status),
@@ -220,9 +225,7 @@ class TavernRepository:
                 selected_rows = message_rows[:bounded_limit]
                 has_more = len(message_rows) > bounded_limit
                 next_after_sequence = (
-                    selected_rows[-1].sequence
-                    if has_more and selected_rows
-                    else None
+                    selected_rows[-1].sequence if has_more and selected_rows else None
                 )
                 next_before_sequence = None
             else:
@@ -240,9 +243,7 @@ class TavernRepository:
                 has_more = len(message_rows) > bounded_limit
                 next_after_sequence = None
                 next_before_sequence = (
-                    selected_rows[0].sequence
-                    if has_more and selected_rows
-                    else None
+                    selected_rows[0].sequence if has_more and selected_rows else None
                 )
             message_count = int(
                 session.scalar(
@@ -297,11 +298,15 @@ class TavernRepository:
                 .order_by(TavernRunRow.created_at.desc(), TavernRunRow.id.desc())
                 .limit(bounded_limit)
             ).all()
-            step_rows = session.scalars(
-                select(TavernRunStepRow)
-                .where(TavernRunStepRow.run_id.in_([row.id for row in rows]))
-                .order_by(TavernRunStepRow.run_id, TavernRunStepRow.step_index)
-            ).all() if rows else []
+            step_rows = (
+                session.scalars(
+                    select(TavernRunStepRow)
+                    .where(TavernRunStepRow.run_id.in_([row.id for row in rows]))
+                    .order_by(TavernRunStepRow.run_id, TavernRunStepRow.step_index)
+                ).all()
+                if rows
+                else []
+            )
         steps_by_run: defaultdict[str, list[TavernRunStepRow]] = defaultdict(list)
         for step_row in step_rows:
             steps_by_run[step_row.run_id].append(step_row)
@@ -345,10 +350,14 @@ class TavernRepository:
                 if existing is not None:
                     return existing
 
-                pending_run_exists = select(TavernRunRow.id).where(
-                    TavernRunRow.room_id == run.room_id,
-                    TavernRunRow.status == TavernRunStatus.PENDING.value,
-                ).exists()
+                pending_run_exists = (
+                    select(TavernRunRow.id)
+                    .where(
+                        TavernRunRow.room_id == run.room_id,
+                        TavernRunRow.status == TavernRunStatus.PENDING.value,
+                    )
+                    .exists()
+                )
                 claimed = session.execute(
                     update(TavernRoomRow)
                     .where(
@@ -389,9 +398,7 @@ class TavernRepository:
                         domain_operation_kind=HarnessDomainOperationKind.TAVERN_RUN,
                         domain_operation_id=run.parent_run_id,
                     )
-                    parent_harness_operation_id = (
-                        parent_binding.harness_operation_id
-                    )
+                    parent_harness_operation_id = parent_binding.harness_operation_id
                 self.harness_operations._admit_domain_in_session(
                     session,
                     domain_row=run_row,
@@ -463,8 +470,7 @@ class TavernRepository:
                 select(TavernRunStepRow)
                 .where(
                     TavernRunStepRow.run_id == run_id,
-                    TavernRunStepRow.status
-                    != TavernSpeakerStepStatus.COMPLETED.value,
+                    TavernRunStepRow.status != TavernSpeakerStepStatus.COMPLETED.value,
                 )
                 .order_by(TavernRunStepRow.step_index)
             ).all()
@@ -610,17 +616,24 @@ class TavernRepository:
                 raise LookupError("tavern_run_not_found")
             if run_claim.rowcount != 1:
                 raise TavernRunTerminalConflict(run_id, run_row.status)
-            run_pending = select(TavernRunRow.id).where(
-                TavernRunRow.id == run_id,
-                TavernRunRow.status == TavernRunStatus.PENDING.value,
-            ).exists()
+            run_pending = (
+                select(TavernRunRow.id)
+                .where(
+                    TavernRunRow.id == run_id,
+                    TavernRunRow.status == TavernRunStatus.PENDING.value,
+                )
+                .exists()
+            )
             claim_conditions = [
                 TavernRunStepRow.run_id == run_id,
                 TavernRunStepRow.step_index == step_index,
                 (
                     (TavernRunStepRow.status == TavernSpeakerStepStatus.PENDING.value)
                     | (
-                        (TavernRunStepRow.status == TavernSpeakerStepStatus.GENERATING.value)
+                        (
+                            TavernRunStepRow.status
+                            == TavernSpeakerStepStatus.GENERATING.value
+                        )
                         & (TavernRunStepRow.lease_expires_at <= canonical_started_at)
                     )
                 ),
@@ -628,12 +641,16 @@ class TavernRepository:
                 run_pending,
             ]
             if step_index > 0:
-                previous_step_completed = select(TavernRunStepRow.run_id).where(
-                    TavernRunStepRow.run_id == run_id,
-                    TavernRunStepRow.step_index == step_index - 1,
-                    TavernRunStepRow.status
-                    == TavernSpeakerStepStatus.COMPLETED.value,
-                ).exists()
+                previous_step_completed = (
+                    select(TavernRunStepRow.run_id)
+                    .where(
+                        TavernRunStepRow.run_id == run_id,
+                        TavernRunStepRow.step_index == step_index - 1,
+                        TavernRunStepRow.status
+                        == TavernSpeakerStepStatus.COMPLETED.value,
+                    )
+                    .exists()
+                )
                 claim_conditions.append(previous_step_completed)
             claimed = session.execute(
                 update(TavernRunStepRow)
@@ -662,9 +679,15 @@ class TavernRepository:
                         TavernRunStepRow.step_index == step_index,
                         TavernRunStepRow.claim_count >= max_claims,
                         (
-                            (TavernRunStepRow.status == TavernSpeakerStepStatus.PENDING.value)
+                            (
+                                TavernRunStepRow.status
+                                == TavernSpeakerStepStatus.PENDING.value
+                            )
                             | (
-                                (TavernRunStepRow.status == TavernSpeakerStepStatus.GENERATING.value)
+                                (
+                                    TavernRunStepRow.status
+                                    == TavernSpeakerStepStatus.GENERATING.value
+                                )
                                 & (
                                     TavernRunStepRow.lease_expires_at
                                     <= canonical_started_at
@@ -763,17 +786,20 @@ class TavernRepository:
             )
             if run_claim.rowcount != 1:
                 return None
-            run_pending = select(TavernRunRow.id).where(
-                TavernRunRow.id == run_id,
-                TavernRunRow.status == TavernRunStatus.PENDING.value,
-            ).exists()
+            run_pending = (
+                select(TavernRunRow.id)
+                .where(
+                    TavernRunRow.id == run_id,
+                    TavernRunRow.status == TavernRunStatus.PENDING.value,
+                )
+                .exists()
+            )
             renewed = session.execute(
                 update(TavernRunStepRow)
                 .where(
                     TavernRunStepRow.run_id == run_id,
                     TavernRunStepRow.step_index == step_index,
-                    TavernRunStepRow.status
-                    == TavernSpeakerStepStatus.GENERATING.value,
+                    TavernRunStepRow.status == TavernSpeakerStepStatus.GENERATING.value,
                     TavernRunStepRow.lease_owner == lease_owner,
                     TavernRunStepRow.claim_count == claim_count,
                     TavernRunStepRow.lease_expires_at > canonical_now,
@@ -793,10 +819,14 @@ class TavernRepository:
     ) -> bool:
         with self.database.session() as session:
             canonical_now = _canonical_utc_timestamp(_database_utc_now(session))
-            run_pending = select(TavernRunRow.id).where(
-                TavernRunRow.id == run_id,
-                TavernRunRow.status == TavernRunStatus.PENDING.value,
-            ).exists()
+            run_pending = (
+                select(TavernRunRow.id)
+                .where(
+                    TavernRunRow.id == run_id,
+                    TavernRunRow.status == TavernRunStatus.PENDING.value,
+                )
+                .exists()
+            )
             return bool(
                 session.scalar(
                     select(TavernRunStepRow.run_id).where(
@@ -829,7 +859,10 @@ class TavernRepository:
         finalize_run: bool,
         lease_owner: str,
         claim_count: int,
-        runtime_commit: Callable[[Any, TavernMessageRecord, TavernRunRecord, TavernSpeakerStepRecord], None] | None = None,
+        runtime_commit: Callable[
+            [Any, TavernMessageRecord, TavernRunRecord, TavernSpeakerStepRecord], None
+        ]
+        | None = None,
     ) -> TavernRunRecord:
         with self.database.session() as session:
             canonical_now = _canonical_utc_timestamp(_database_utc_now(session))
@@ -922,12 +955,11 @@ class TavernRepository:
                 session.flush()
                 hydrated = self._hydrate_run(session, run_row)
                 current_step = next(
-                    item for item in hydrated.speaker_steps
+                    item
+                    for item in hydrated.speaker_steps
                     if item.step_index == step_index
                 )
-                anchor_row = session.get(
-                    TavernMessageRow, step_row.reply_to_message_id
-                )
+                anchor_row = session.get(TavernMessageRow, step_row.reply_to_message_id)
                 if anchor_row is None:
                     raise LookupError("tavern_actor_commit_reply_anchor_not_found")
                 runtime_commit(
@@ -942,13 +974,13 @@ class TavernRepository:
                 if message_row is None:
                     raise LookupError("tavern_message_not_found")
                 message_payload = dict(message_row.payload or {})
-                message_payload["harness_trace"] = (
-                    message.harness_trace.model_dump(mode="json", exclude_none=False)
+                message_payload["harness_trace"] = message.harness_trace.model_dump(
+                    mode="json", exclude_none=False
                 )
                 message_row.payload = message_payload
                 step_payload = dict(step_row.payload or {})
-                step_payload["harness_trace"] = (
-                    message.harness_trace.model_dump(mode="json", exclude_none=False)
+                step_payload["harness_trace"] = message.harness_trace.model_dump(
+                    mode="json", exclude_none=False
                 )
                 step_row.payload = step_payload
             if finalize_run:
@@ -1049,7 +1081,8 @@ class TavernRepository:
                 session.scalar(
                     select(func.count(TavernRunStepRow.step_index)).where(
                         TavernRunStepRow.run_id == run_id,
-                        TavernRunStepRow.status == TavernSpeakerStepStatus.COMPLETED.value,
+                        TavernRunStepRow.status
+                        == TavernSpeakerStepStatus.COMPLETED.value,
                     )
                 )
                 or 0
@@ -1078,6 +1111,7 @@ class TavernRepository:
         run_id: str,
         step_index: int,
         harness_trace,
+        claim_count: int,
     ) -> None:
         """Attach late fenced evidence to a canceled step without reviving it."""
 
@@ -1088,7 +1122,10 @@ class TavernRepository:
             row = session.get(TavernRunStepRow, (run_id, step_index))
             if row is None:
                 raise LookupError("tavern_run_step_not_found")
-            if row.status != TavernSpeakerStepStatus.CANCELED.value:
+            if (
+                row.status != TavernSpeakerStepStatus.CANCELED.value
+                or row.claim_count != claim_count
+            ):
                 return
             payload = dict(row.payload or {})
             payload["harness_trace"] = strict_trace.model_dump(
@@ -1290,10 +1327,14 @@ class TavernRepository:
         expected_revision: int,
     ) -> TavernRoomDetail:
         with self.database.session() as session:
-            pending_run_exists = select(TavernRunRow.id).where(
-                TavernRunRow.room_id == room.id,
-                TavernRunRow.status == TavernRunStatus.PENDING.value,
-            ).exists()
+            pending_run_exists = (
+                select(TavernRunRow.id)
+                .where(
+                    TavernRunRow.room_id == room.id,
+                    TavernRunRow.status == TavernRunStatus.PENDING.value,
+                )
+                .exists()
+            )
             # Claim the room before checking history, so admission cannot race
             # the history guard. A rejected update rolls this transaction back.
             claimed = session.execute(
@@ -1307,13 +1348,18 @@ class TavernRepository:
             )
             if claimed.rowcount != 1:
                 self._raise_room_claim_failure(session, room_id=room.id)
-            current_orders = dict(session.execute(
-                select(TavernParticipantRow.persona_id, TavernParticipantRow.display_order)
-                .where(TavernParticipantRow.room_id == room.id)
-            ).all())
+            current_orders = dict(
+                session.execute(
+                    select(
+                        TavernParticipantRow.persona_id,
+                        TavernParticipantRow.display_order,
+                    ).where(TavernParticipantRow.room_id == room.id)
+                ).all()
+            )
             next_orders = {item.persona_id: item.display_order for item in participants}
             changed_persona_ids = {
-                persona_id for persona_id, order in current_orders.items()
+                persona_id
+                for persona_id, order in current_orders.items()
                 if next_orders.get(persona_id) != order
             }
             if changed_persona_ids:
@@ -1335,13 +1381,15 @@ class TavernRepository:
                     .limit(1)
                 )
                 if referenced_message_persona or referenced_step_persona:
-                    raise TavernParticipantHistoryConflict(
-                        sorted(changed_persona_ids)
-                    )
-            pending_run_exists = select(TavernRunRow.id).where(
-                TavernRunRow.room_id == room.id,
-                TavernRunRow.status == TavernRunStatus.PENDING.value,
-            ).exists()
+                    raise TavernParticipantHistoryConflict(sorted(changed_persona_ids))
+            pending_run_exists = (
+                select(TavernRunRow.id)
+                .where(
+                    TavernRunRow.room_id == room.id,
+                    TavernRunRow.status == TavernRunStatus.PENDING.value,
+                )
+                .exists()
+            )
             updated = session.execute(
                 update(TavernRoomRow)
                 .where(
@@ -1370,7 +1418,9 @@ class TavernRepository:
             room.revision = room_row.revision
             room.last_sequence = room_row.last_sequence
             session.execute(
-                delete(TavernParticipantRow).where(TavernParticipantRow.room_id == room.id)
+                delete(TavernParticipantRow).where(
+                    TavernParticipantRow.room_id == room.id
+                )
             )
             session.add_all(_participant_to_row(item) for item in participants)
         return self.require_room(room.id)
@@ -1388,10 +1438,14 @@ class TavernRepository:
 
     def delete_room(self, room_id: str, *, expected_revision: int) -> bool:
         with self.database.session() as session:
-            pending_run_exists = select(TavernRunRow.id).where(
-                TavernRunRow.room_id == room_id,
-                TavernRunRow.status == TavernRunStatus.PENDING.value,
-            ).exists()
+            pending_run_exists = (
+                select(TavernRunRow.id)
+                .where(
+                    TavernRunRow.room_id == room_id,
+                    TavernRunRow.status == TavernRunStatus.PENDING.value,
+                )
+                .exists()
+            )
             claimed = session.execute(
                 update(TavernRoomRow)
                 .where(
@@ -1414,7 +1468,9 @@ class TavernRepository:
                 if pending_id is not None:
                     raise TavernRunInProgress(pending_id)
                 raise TavernRevisionConflict(room.revision)
-            session.execute(delete(TavernMessageRow).where(TavernMessageRow.room_id == room_id))
+            session.execute(
+                delete(TavernMessageRow).where(TavernMessageRow.room_id == room_id)
+            )
             session.execute(
                 delete(TavernRunStepRow).where(
                     TavernRunStepRow.run_id.in_(
@@ -1424,7 +1480,9 @@ class TavernRepository:
             )
             session.execute(delete(TavernRunRow).where(TavernRunRow.room_id == room_id))
             session.execute(
-                delete(TavernParticipantRow).where(TavernParticipantRow.room_id == room_id)
+                delete(TavernParticipantRow).where(
+                    TavernParticipantRow.room_id == room_id
+                )
             )
             session.execute(delete(TavernRoomRow).where(TavernRoomRow.id == room_id))
         return True
@@ -1452,7 +1510,9 @@ def _room_to_row(room: TavernRoomRecord) -> TavernRoomRow:
         creation_input_digest=room.creation_input_digest,
         title=room.title,
         status=room.status.value,
-        scene_profile=(room.scene_profile.model_dump(mode="json") if room.scene_profile else None),
+        scene_profile=(
+            room.scene_profile.model_dump(mode="json") if room.scene_profile else None
+        ),
         harness_policy=room.harness_policy.model_dump(mode="json"),
         revision=room.revision,
         last_sequence=room.last_sequence,
@@ -1520,7 +1580,9 @@ def _message_to_row(item: TavernMessageRecord) -> TavernMessageRow:
             "addressed_participant_ids": item.addressed_participant_ids,
             "reply_to_message_id": item.reply_to_message_id,
             "harness_trace": (
-                item.harness_trace.model_dump(mode="json") if item.harness_trace else None
+                item.harness_trace.model_dump(mode="json")
+                if item.harness_trace
+                else None
             ),
             "commit_metadata": (
                 item.commit_metadata.model_dump(mode="json")
@@ -1585,7 +1647,9 @@ def _run_from_row(
         parent_run_id=row.parent_run_id or "",
         root_run_id=str(payload.get("root_run_id") or row.id),
         input_message_id=row.input_message_id or None,
-        anchor_message_id=str(payload.get("anchor_message_id") or row.input_message_id or ""),
+        anchor_message_id=str(
+            payload.get("anchor_message_id") or row.input_message_id or ""
+        ),
         scheduled_participant_ids=[
             str(item)
             for item in (
@@ -1856,9 +1920,7 @@ class TavernStepClaimsExhausted(RuntimeError):
 
 def _database_utc_now(session) -> datetime:
     if session.bind is not None and session.bind.dialect.name == "sqlite":
-        value = session.scalar(
-            select(func.strftime("%Y-%m-%dT%H:%M:%f", "now"))
-        )
+        value = session.scalar(select(func.strftime("%Y-%m-%dT%H:%M:%f", "now")))
     elif session.bind is not None and session.bind.dialect.name == "postgresql":
         value = session.scalar(select(func.clock_timestamp()))
     else:

@@ -7,6 +7,7 @@ from app.services.mock_language import (
 )
 
 from threading import Lock
+from app.services.provider_cancellation import ProviderCancellationCapability
 
 from app.services.provider_transport import (
     ProviderTransport,
@@ -1065,11 +1066,25 @@ class OpenAIModelProvider(ModelProvider):
         required_target_id: str = "",
         should_continue: Callable[[], bool] | None = None,
     ) -> TavernActorReply:
+        adapter = self._sdk_adapter()
+        request = self._request_openai_chat_completion
+        cancellation = adapter.tavern_cancellation_capability(self.chat_model)
+        logger.info(
+            "model.tavern.transport adapter=%s local_transport_cancellation=%s",
+            cancellation.adapter,
+            cancellation.local_transport,
+        )
+        if cancellation.local_transport:
+            from functools import partial
+
+            request = partial(
+                adapter.request_tavern_completion, should_continue=should_continue
+            )
         return RemoteTavernProvider(
             chat_model=self.chat_model,
             chat_temperature=self.chat_temperature,
             chat_max_tokens=self.chat_max_tokens,
-            request=self._request_openai_chat_completion,
+            request=request,
         ).generate_tavern_actor_reply(
             persona=persona,
             participants=participants,
@@ -1082,6 +1097,9 @@ class OpenAIModelProvider(ModelProvider):
             required_target_id=required_target_id,
             should_continue=should_continue,
         )
+
+    def tavern_cancellation_capability(self) -> ProviderCancellationCapability:
+        return self._sdk_adapter().tavern_cancellation_capability(self.chat_model)
 
     @operation_snapshot
     def assist_persona_setting(
@@ -1250,6 +1268,7 @@ class OpenAIModelProvider(ModelProvider):
                 sdk=self.sdk.error_types,
                 token_usage_service=self.token_usage_service,
             ),
+            cancellable_chat=getattr(self.sdk, "cancellable_chat", None),
         )
 
     def _settings_provider(self) -> RemoteSettingsProvider:

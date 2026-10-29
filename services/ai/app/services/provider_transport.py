@@ -1,4 +1,5 @@
 """Shared, injectable provider transport policy; no model/SDK import required."""
+
 from __future__ import annotations
 
 from app.core.execution_budget import (
@@ -15,10 +16,16 @@ from typing import Any, Callable
 from app.core.logging import get_logger
 from app.core.diagnostic_provider import ProviderObservation
 from app.services.model_recovery import record_model_recovery
+from app.services.provider_cancellation import (
+    ProviderRequestCanceled,
+    check_provider_cancellation,
+)
 
 logger = get_logger("vibe_learner.provider_transport")
 
-LITELLM_TRANSIENT_RETRYABLE_STATUS_CODES = frozenset({"408", "409", "425", "500", "502", "503", "504"})
+LITELLM_TRANSIENT_RETRYABLE_STATUS_CODES = frozenset(
+    {"408", "409", "425", "500", "502", "503", "504"}
+)
 
 
 class ModelRequestError(RuntimeError):
@@ -53,6 +60,7 @@ class ProviderTransport:
         request_kind: str,
         model: str,
         invoke: Callable[[], Any],
+        should_continue: Callable[[], bool] | None = None,
     ) -> tuple[dict[str, Any], int]:
         observation = ProviderObservation(
             request_kind,
@@ -66,17 +74,18 @@ class ProviderTransport:
             # Budget failures are local runtime failures, not upstream errors.
             try:
                 check_execution_budget()
+                check_provider_cancellation(should_continue)
             except Exception:
                 observation.finish(failed=True)
                 raise
             attempt += 1
-            observation.timeout = execution_call_timeout_seconds(
-                self.timeout_seconds
-            )
+            observation.timeout = execution_call_timeout_seconds(self.timeout_seconds)
             observation.begin_attempt(attempt)
             try:
                 raw_result = invoke()
-                raw_payload = _normalize_completed_tool_indexes(_normalize_litellm_payload(raw_result))
+                raw_payload = _normalize_completed_tool_indexes(
+                    _normalize_litellm_payload(raw_result)
+                )
                 observation.end_attempt(raw_payload)
                 elapsed_ms = int((self.clock() - started_at) * 1000)
                 if attempt > 1:
@@ -95,11 +104,20 @@ class ProviderTransport:
                     )
                 observation.finish()
                 return raw_payload, elapsed_ms
+            except ProviderRequestCanceled:
+                observation.end_attempt(failed=True)
+                observation.finish(failed=True)
+                raise
             except Exception as exc:
                 observation.end_attempt(failed=True)
-                if _is_litellm_retryable_error(exc, sdk=self.sdk) and attempt <= LITELLM_TRANSIENT_RETRY_COUNT:
+                if (
+                    _is_litellm_retryable_error(exc, sdk=self.sdk)
+                    and attempt <= LITELLM_TRANSIENT_RETRY_COUNT
+                ):
                     retry_delay_seconds = min(0.4 * attempt, 1.2)
-                    status_code, error_code, error_message = _extract_litellm_exception_details(exc)
+                    status_code, error_code, error_message = (
+                        _extract_litellm_exception_details(exc)
+                    )
                     logger.warning(
                         "model.%s.retry provider=litellm model=%s attempt=%s max_retries=%s delay_ms=%s status=%s upstream_code=%s upstream_message=%s",
                         request_kind,
@@ -111,7 +129,19 @@ class ProviderTransport:
                         error_code or "unknown",
                         error_message,
                     )
-                    self.sleep(retry_delay_seconds)
+                    if should_continue is None:
+                        self.sleep(retry_delay_seconds)
+                    else:
+                        remaining = retry_delay_seconds
+                        while remaining > 0:
+                            try:
+                                check_provider_cancellation(should_continue)
+                            except ProviderRequestCanceled:
+                                observation.finish(failed=True)
+                                raise
+                            interval = min(remaining, 0.05)
+                            self.sleep(interval)
+                            remaining -= interval
                     continue
                 mapped_error = self.map_error(exc, request_kind=request_kind)
                 if isinstance(mapped_error, ModelRequestError):
@@ -121,7 +151,9 @@ class ProviderTransport:
 
     def map_error(self, exc: Exception, *, request_kind: str) -> RuntimeError:
         if _is_litellm_unsupported_params_error(exc):
-            status_code, error_code, error_message = _extract_litellm_exception_details(exc)
+            status_code, error_code, error_message = _extract_litellm_exception_details(
+                exc
+            )
             logger.warning(
                 "model.%s.unsupported_params provider=litellm status=%s upstream_code=%s",
                 request_kind,
@@ -177,9 +209,15 @@ class ProviderTransport:
         usage = raw_payload.get("usage") if isinstance(raw_payload, dict) else None
         if not isinstance(usage, dict):
             return
-        prompt_tokens = _coerce_int(usage.get(prompt_key) or usage.get("prompt_tokens"), default=0)
-        completion_tokens = _coerce_int(usage.get(completion_key) or usage.get("completion_tokens"), default=0)
-        total_tokens = _coerce_int(usage.get("total_tokens"), default=prompt_tokens + completion_tokens)
+        prompt_tokens = _coerce_int(
+            usage.get(prompt_key) or usage.get("prompt_tokens"), default=0
+        )
+        completion_tokens = _coerce_int(
+            usage.get(completion_key) or usage.get("completion_tokens"), default=0
+        )
+        total_tokens = _coerce_int(
+            usage.get("total_tokens"), default=prompt_tokens + completion_tokens
+        )
         try:
             self.token_usage_service.record(
                 feature=feature,
@@ -189,7 +227,10 @@ class ProviderTransport:
                 total_tokens=total_tokens,
             )
         except Exception:
-            logger.exception("token_usage.record failed feature=%s model=%s", feature, model)
+            logger.exception(
+                "token_usage.record failed feature=%s model=%s", feature, model
+            )
+
 
 def _coerce_int(value: Any, *, default: int) -> int:
     try:
@@ -221,15 +262,24 @@ def _normalize_completed_tool_indexes(payload: dict[str, Any]) -> dict[str, Any]
             continue
         projected = []
         for call in calls:
-            if (isinstance(call, dict) and type(call.get("index")) is int
+            if (
+                isinstance(call, dict)
+                and type(call.get("index")) is int
                 and 0 <= call["index"] <= 2_147_483_647
                 and set(call) == {"id", "type", "function", "index"}
-                and isinstance(call["id"], str) and bool(call["id"])
+                and isinstance(call["id"], str)
+                and bool(call["id"])
                 and call["type"] == "function"
                 and isinstance(call["function"], dict)
                 and set(call["function"]) == {"name", "arguments"}
-                and all(isinstance(call["function"][key], str) for key in ("name", "arguments"))):
-                projected.append({key: value for key, value in call.items() if key != "index"})
+                and all(
+                    isinstance(call["function"][key], str)
+                    for key in ("name", "arguments")
+                )
+            ):
+                projected.append(
+                    {key: value for key, value in call.items() if key != "index"}
+                )
             else:
                 projected.append(call)
         normalized.append({**choice, "message": {**message, "tool_calls": projected}})
@@ -306,15 +356,15 @@ def _extract_litellm_exception_details(exc: Exception) -> tuple[str, str, str]:
         )
 
     for candidate in body_candidates:
-        error_code, error_message = _extract_litellm_error_from_body(candidate, fallback_message=error_message)
+        error_code, error_message = _extract_litellm_error_from_body(
+            candidate, fallback_message=error_message
+        )
         if error_code:
             break
 
     if not error_code:
         error_code = str(
-            getattr(exc, "code", "")
-            or getattr(exc, "type", "")
-            or type(exc).__name__
+            getattr(exc, "code", "") or getattr(exc, "type", "") or type(exc).__name__
         ).strip()
 
     return status_code or "unknown", error_code or "unknown", error_message or str(exc)
@@ -361,7 +411,10 @@ def _is_litellm_rate_limit_error(exc: Exception, *, sdk: Any = None) -> bool:
     rate_limit_cls = getattr(sdk, "RateLimitError", None) if sdk is not None else None
     if rate_limit_cls is not None and isinstance(exc, rate_limit_cls):
         return True
-    return _extract_litellm_status_code(exc) == "429" or "ratelimit" in type(exc).__name__.lower()
+    return (
+        _extract_litellm_status_code(exc) == "429"
+        or "ratelimit" in type(exc).__name__.lower()
+    )
 
 
 def _is_litellm_unsupported_params_error(exc: Exception) -> bool:
@@ -376,11 +429,17 @@ def _is_litellm_timeout_error(exc: Exception, *, sdk: Any = None) -> bool:
         return True
     class_name = type(exc).__name__.lower()
     message = str(exc).lower()
-    return isinstance(exc, TimeoutError) or "timeout" in class_name or "timed out" in message
+    return (
+        isinstance(exc, TimeoutError)
+        or "timeout" in class_name
+        or "timed out" in message
+    )
 
 
 def _is_litellm_network_error(exc: Exception, *, sdk: Any = None) -> bool:
-    connection_cls = getattr(sdk, "APIConnectionError", None) if sdk is not None else None
+    connection_cls = (
+        getattr(sdk, "APIConnectionError", None) if sdk is not None else None
+    )
     if connection_cls is not None and isinstance(exc, connection_cls):
         return True
     class_name = type(exc).__name__.lower()
@@ -397,7 +456,9 @@ def _is_litellm_network_error(exc: Exception, *, sdk: Any = None) -> bool:
 
 
 def _is_litellm_retryable_error(exc: Exception, *, sdk: Any = None) -> bool:
-    if _is_litellm_timeout_error(exc, sdk=sdk) or _is_litellm_network_error(exc, sdk=sdk):
+    if _is_litellm_timeout_error(exc, sdk=sdk) or _is_litellm_network_error(
+        exc, sdk=sdk
+    ):
         return True
     status_code = _extract_litellm_status_code(exc)
     return status_code in LITELLM_TRANSIENT_RETRYABLE_STATUS_CODES

@@ -70,7 +70,8 @@
     "style:baseline": "node scripts/style/check.mjs --write-baseline",
     "test:style": "node --test scripts/style/gates.test.mjs",
     "test:ai:document:input-limits": "cd services/ai && LITELLM_LOCAL_MODEL_COST_MAP=True UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m unittest tests.test_document_input_limits",
-    "test:ai:output-language": "cd services/ai && LITELLM_LOCAL_MODEL_COST_MAP=True UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m unittest tests.test_output_language"
+    "test:ai:output-language": "cd services/ai && LITELLM_LOCAL_MODEL_COST_MAP=True UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m unittest tests.test_output_language",
+    "test:acceptance:tavern-transport-cancel": "cd services/ai && LITELLM_LOCAL_MODEL_COST_MAP=True UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m tests.acceptance.tavern_transport_cancel_probe"
   },
   "dependencies": {
     "rehype-katex": "^7.0.1"

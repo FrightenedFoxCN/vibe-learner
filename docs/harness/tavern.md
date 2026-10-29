@@ -11,7 +11,7 @@ Tavern 是独立于 Study Session 的领域。一次 direct/facilitated run 在 
 
 ## Commit 和恢复
 
-step 使用数据库时钟 lease、heartbeat、owner/claim fencing，最多 3 claims。取消会立即 fence 后续 persistence；已经发出的同步 provider 请求只能 best-effort 等待自身 timeout。
+step 使用数据库时钟 lease、heartbeat、owner/claim fencing，最多 3 claims。取消会立即 fence 后续 persistence。已确认 OpenAI 兼容 Chat Completions 路由使用拥有独立客户端的可取消 HTTP adapter；其他同步 provider 保留 timeout/commit fencing 边界。generation 中断后的真实终态 v3 trace 可按 claim count 关联到 canceled Step，不能复活步骤或追加 Message。本地断连不证明上游停止计算或计费。能力、清理和真实 HTTP 验收见 [Tavern 请求取消](../tavern-provider-cancellation.md)。
 
 每个通过校验的 actor 单独 append 一个 monotonic room-sequence Message，并原子写 server-only operation/effect receipt。authoritative read-back 必须在一个数据库快照中核对 Message、Run、Step、Participant 和 reply anchor。commit policy 为 `primary_output_only`，只证明该 Message。
 

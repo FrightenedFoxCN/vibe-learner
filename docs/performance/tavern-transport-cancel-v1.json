@@ -1,0 +1,68 @@
+{
+  "contract": "tavern-transport-cancel-probe-v1",
+  "source_revision": "49f58356c43a738780c045c88ea69f7dfce97498",
+  "worktree_state": "dirty",
+  "implementation_sha256": {
+    "services/ai/app/services/provider_cancellation.py": "9779106fac1541582f99b9303f366655c46202ba2cc2a3cfc222b5e6a75b0beb",
+    "services/ai/app/services/provider_http_chat.py": "c35c152359b991e32c31f3c402c640881777bc963d406bd7a4ed9450379aa332",
+    "services/ai/app/services/provider_sdk.py": "69e9642759e4522f6d76a3a3d4acf1a101259aa593dbc79439f4d5261ace916b",
+    "services/ai/app/services/provider_transport.py": "413a9d391dac9d0c2bd79d02b0b174e40a2f52a68e3b742f616161a4ac3d1177",
+    "services/ai/app/services/model_provider.py": "2bec71009ebebe5d732397aaab91eb62dc80d5ae27e2465a18a9b13f17f42daf",
+    "services/ai/tests/test_provider_cancellation.py": "2a645fad58ae72ced04239a6ea68866049a3108e08d93c49e32ad29c33d7b822",
+    "services/ai/app/services/provider_capabilities.py": "5f813434f4dd5afc80a4c86d984d92a83374cd9252aeeabd9cf6a32d56530552",
+    "services/ai/app/services/tavern.py": "b37db5e931cf9887c2fb067a721d318ba490c5de6bb6bc2c82efb9592013ac9a",
+    "services/ai/app/persistence/tavern_repository.py": "b9679ce0263abb539e6ce49d76ef7cf9b7c3b19c4eb0cce6f63b00dbfadc335b"
+  },
+  "environment": {
+    "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+    "python": "3.13.5",
+    "network": "loopback-only",
+    "production_adapter": "compatible-chat-http-v1",
+    "live_provider_calls": 0
+  },
+  "status": "passed",
+  "tests": 5,
+  "cases": [
+    {
+      "case": "hold_headers",
+      "adapter": "compatible-chat-http-v1",
+      "issued_path": "/v1/chat/completions",
+      "local_socket_eof": true,
+      "worker_return_ms": 253.69849998969585,
+      "same_worker_pool_completed_next_request": true,
+      "requests_before_next_operation": 1,
+      "upstream_execution_stopped": null,
+      "upstream_billing_stopped": null
+    },
+    {
+      "case": "hold_body",
+      "adapter": "compatible-chat-http-v1",
+      "issued_path": "/v1/chat/completions",
+      "local_socket_eof": true,
+      "worker_return_ms": 253.37354198563844,
+      "same_worker_pool_completed_next_request": true,
+      "requests_before_next_operation": 1,
+      "upstream_execution_stopped": null,
+      "upstream_billing_stopped": null
+    },
+    {
+      "case": "tavern_cancel",
+      "run_status": "canceled",
+      "cancel_http_status": 200,
+      "original_worker_http_status": 409,
+      "local_socket_eof": true,
+      "worker_return_ms": 278.8805840536952,
+      "canceled_actor_messages": 0,
+      "lease_thread_stopped": true,
+      "resume_replayed_provider": false,
+      "same_worker_pool_completed_next_operation": true,
+      "upstream_execution_stopped": null,
+      "upstream_billing_stopped": null
+    }
+  ],
+  "limitations": [
+    "Socket EOF proves local disconnect only",
+    "Provider computation/billing stop remains unverified",
+    "Other native LiteLLM protocols retain synchronous fallback"
+  ]
+}

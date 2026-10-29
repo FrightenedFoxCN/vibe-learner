@@ -906,7 +906,7 @@ export function InteractionComposer({
       </div>
       {busy ? (
         <p className="tavern-panel-footnote" role="status">
-          请求已交给服务器。取消会立即拒收结果，但已发出的模型请求可能运行到超时。
+          请求已交给服务器。取消会拒收结果并尝试中断本地请求，上游计算和计费可能继续。
         </p>
       ) : null}
     </section>

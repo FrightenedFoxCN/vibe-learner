@@ -9,6 +9,7 @@
 | [Harness 工程手册](harness/README.md) | 按用户工作流整理的生命周期、数据库、模型约束、恢复与预算 |
 | [Tavern 架构](tavern-architecture.md) | 房间、消息、调度、事务和恢复 |
 | [Tavern 回应顺序验收](tavern-order-acceptance.md) | 真实后端逆序选择、房间恢复和部分失败子重试的证据与复现 |
+| [Tavern 请求取消](tavern-provider-cancellation.md) | 可取消传输能力、本地连接/线程释放、数据库取消与上游计费边界 |
 | [API 参考](api-reference.md) | HTTP 和流式协议 |
 | [诊断审计统计](diagnostic-audit.md) | 统计分组、分位数、去重与未知数据语义 |
 | [诊断存储策略](diagnostic-storage-policy.md) | 已验证的分库配额、留存与恢复例外；200 MiB 非安装硬上限 |

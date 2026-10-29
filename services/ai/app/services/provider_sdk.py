@@ -1,4 +1,5 @@
-"""Injected LiteLLM request adaptation with immutable operation endpoints."""
+"""Injected provider request adaptation with immutable operation endpoints."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -9,6 +10,7 @@ from typing import Any, Callable
 from app.core.execution_budget import execution_call_timeout_seconds
 from app.core.logging import get_logger
 from app.services.provider_transport import ProviderTransport
+from app.services.provider_cancellation import ProviderCancellationCapability
 
 REASONING_CHAT_MODEL_RE = re.compile(
     r"^(?:gpt-5(?:[.-]|$)|o[134](?:[.-]|$))",
@@ -27,6 +29,7 @@ class ProviderSDK:
     responses: Callable[..., Any] | None = None
     embedding: Callable[..., Any] | None = None
     error_types: Any = None
+    cancellable_chat: Callable[..., Any] | None = None
 
     @classmethod
     def load(cls) -> ProviderSDK:
@@ -35,7 +38,9 @@ class ProviderSDK:
             from litellm import completion, responses, embedding
         except ImportError:
             return cls()
-        return cls(completion, responses, embedding, litellm)
+        from app.services.provider_http_chat import request_compatible_chat
+
+        return cls(completion, responses, embedding, litellm, request_compatible_chat)
 
 
 @dataclass(frozen=True)
@@ -54,6 +59,60 @@ class ProviderRequestAdapter:
     embedding: Callable[..., Any] | None
     providers: frozenset[str]
     transport: ProviderTransport
+    cancellable_chat: Callable[..., Any] | None = None
+
+    def tavern_cancellation_capability(
+        self, model: str
+    ) -> ProviderCancellationCapability:
+        normalized = _normalize_litellm_model_name(
+            model=model, api_base=self.chat_base_url, providers=self.providers
+        )
+        explicit_route = _litellm_model_has_provider_prefix(normalized, self.providers)
+        compatible = normalized.startswith("openai/") or (
+            not explicit_route
+            and self.chat_base_url.rstrip("/") == "https://api.openai.com/v1"
+        )
+        supported = (
+            self.cancellable_chat is not None
+            and bool(self.chat_base_url)
+            and compatible
+        )
+        return ProviderCancellationCapability(
+            adapter="compatible-chat-http-v1" if supported else "litellm-sync",
+            local_transport=supported,
+        )
+
+    def request_tavern_completion(
+        self,
+        payload: dict[str, Any],
+        *,
+        request_kind: str,
+        model: str,
+        should_continue: Callable[[], bool] | None = None,
+    ) -> tuple[dict[str, Any], int]:
+        if not self.tavern_cancellation_capability(model).local_transport:
+            return self.request_chat_completion(
+                payload, request_kind=request_kind, model=model
+            )
+        resolved = self._normalize_litellm_payload_model(
+            payload, api_base=self.chat_base_url
+        )
+        if resolved["model"].startswith("openai/"):
+            resolved["model"] = resolved["model"][len("openai/") :]
+        raw, elapsed = self.transport.execute(
+            request_kind=request_kind,
+            model=model,
+            should_continue=should_continue,
+            invoke=lambda: self.cancellable_chat(
+                payload=resolved,
+                api_base=self.chat_base_url,
+                api_key=self.chat_api_key,
+                timeout_seconds=execution_call_timeout_seconds(self.timeout_seconds),
+                should_continue=should_continue,
+            ),
+        )
+        self._record_token_usage(raw, feature=request_kind, model=model)
+        return raw, elapsed
 
     def request_chat_completion(
         self,
@@ -72,10 +131,16 @@ class ProviderRequestAdapter:
             # unions (anyOf: [integer, null]). An omitted optional argument has
             # the same meaning for our tool contracts, so project the concrete
             # branch while leaving the canonical Pydantic/OpenAI schema intact.
-            resolved_payload["tools"] = _normalize_gemini_tools(resolved_payload.get("tools"))
+            resolved_payload["tools"] = _normalize_gemini_tools(
+                resolved_payload.get("tools")
+            )
         tools_enabled = "tools" in payload
         tool_round = len(
-            [message for message in resolved_payload.get("messages", []) if message.get("role") == "tool"]
+            [
+                message
+                for message in resolved_payload.get("messages", [])
+                if message.get("role") == "tool"
+            ]
         )
         logger.info(
             "model.%s.request provider=litellm model=%s tool_round=%s tools_enabled=%s",
@@ -105,7 +170,6 @@ class ProviderRequestAdapter:
         )
         self._record_token_usage(raw_payload, feature=request_kind, model=model)
         return raw_payload, elapsed_ms
-
 
     def request_response(
         self,
@@ -140,9 +204,10 @@ class ProviderRequestAdapter:
                 ),
             ),
         )
-        self._record_token_usage_responses(raw_payload, feature=request_kind, model=model)
+        self._record_token_usage_responses(
+            raw_payload, feature=request_kind, model=model
+        )
         return raw_payload, elapsed_ms
-
 
     def request_embeddings(
         self,
@@ -168,10 +233,13 @@ class ProviderRequestAdapter:
                 ),
             ),
         )
-        logger.info("model.embedding.request provider=litellm model=%s elapsed_ms=%s", model, elapsed_ms)
+        logger.info(
+            "model.embedding.request provider=litellm model=%s elapsed_ms=%s",
+            model,
+            elapsed_ms,
+        )
         self._record_token_usage(raw_payload, feature="embedding", model=model)
         return raw_payload, elapsed_ms
-
 
     def _record_token_usage(
         self,
@@ -182,10 +250,17 @@ class ProviderRequestAdapter:
         prompt_key: str = "prompt_tokens",
         completion_key: str = "completion_tokens",
     ) -> None:
-        return self.transport.record_usage(raw_payload, feature=feature, model=model, prompt_key=prompt_key, completion_key=completion_key)
+        return self.transport.record_usage(
+            raw_payload,
+            feature=feature,
+            model=model,
+            prompt_key=prompt_key,
+            completion_key=completion_key,
+        )
 
-
-    def _record_token_usage_responses(self, raw_payload: dict[str, Any], *, feature: str, model: str) -> None:
+    def _record_token_usage_responses(
+        self, raw_payload: dict[str, Any], *, feature: str, model: str
+    ) -> None:
         self._record_token_usage(
             raw_payload,
             feature=feature,
@@ -193,7 +268,6 @@ class ProviderRequestAdapter:
             prompt_key="input_tokens",
             completion_key="output_tokens",
         )
-
 
     def _resolve_request_endpoint(self, request_kind: str) -> tuple[str, str]:
         if request_kind == "plan":
@@ -204,11 +278,9 @@ class ProviderRequestAdapter:
             return self.chat_base_url, self.chat_api_key
         return self.base_url, self.api_key
 
-
     def _require_litellm_sdk(self, client: Any, *, feature: str) -> None:
         if client is None:
             raise RuntimeError(f"litellm_sdk_not_installed:{feature}")
-
 
     def _build_litellm_request_kwargs(
         self,
@@ -224,11 +296,12 @@ class ProviderRequestAdapter:
             kwargs["api_base"] = api_base
         if api_key:
             kwargs["api_key"] = api_key
-        forced_provider = _infer_openai_compatible_provider(model=model, api_base=api_base, providers=self.providers)
+        forced_provider = _infer_openai_compatible_provider(
+            model=model, api_base=api_base, providers=self.providers
+        )
         if forced_provider:
             kwargs["custom_llm_provider"] = forced_provider
         return kwargs
-
 
     def _normalize_litellm_payload_model(
         self,
@@ -255,10 +328,10 @@ class ProviderRequestAdapter:
             )
         return adapted_payload
 
-
-    def _map_litellm_request_error(self, exc: Exception, *, request_kind: str) -> RuntimeError:
+    def _map_litellm_request_error(
+        self, exc: Exception, *, request_kind: str
+    ) -> RuntimeError:
         return self.transport.map_error(exc, request_kind=request_kind)
-
 
     def _execute_litellm_request(
         self,
@@ -267,8 +340,9 @@ class ProviderRequestAdapter:
         model: str,
         invoke: Callable[[], Any],
     ) -> tuple[dict[str, Any], int]:
-        return self.transport.execute(request_kind=request_kind, model=model, invoke=invoke)
-
+        return self.transport.execute(
+            request_kind=request_kind, model=model, invoke=invoke
+        )
 
 
 def adapt_openai_compatible_payload(
@@ -307,13 +381,21 @@ def _normalize_gemini_schema(value: Any) -> Any:
         return value
     nullable = value.get("anyOf")
     if isinstance(nullable, list) and len(nullable) == 2:
-        concrete = next((item for item in nullable if isinstance(item, dict) and item.get("type") != "null"), None)
-        has_null = any(isinstance(item, dict) and item.get("type") == "null" for item in nullable)
+        concrete = next(
+            (
+                item
+                for item in nullable
+                if isinstance(item, dict) and item.get("type") != "null"
+            ),
+            None,
+        )
+        has_null = any(
+            isinstance(item, dict) and item.get("type") == "null" for item in nullable
+        )
         if concrete is not None and has_null:
             value = {key: item for key, item in value.items() if key != "anyOf"}
             value.update(concrete)
     return {key: _normalize_gemini_schema(item) for key, item in value.items()}
-
 
 
 def _bare_model_id(model: str) -> str:
@@ -323,20 +405,24 @@ def _bare_model_id(model: str) -> str:
     return normalized
 
 
-
-def _normalize_litellm_model_name(*, model: str, api_base: str, providers: frozenset[str]) -> str:
+def _normalize_litellm_model_name(
+    *, model: str, api_base: str, providers: frozenset[str]
+) -> str:
     normalized = model.strip()
     if not normalized:
         return normalized
     if _litellm_model_has_provider_prefix(normalized, providers):
         return normalized
-    if _infer_openai_compatible_provider(model=normalized, api_base=api_base, providers=providers):
+    if _infer_openai_compatible_provider(
+        model=normalized, api_base=api_base, providers=providers
+    ):
         return f"openai/{normalized}"
     return normalized
 
 
-
-def _infer_openai_compatible_provider(*, model: str, api_base: str, providers: frozenset[str]) -> str | None:
+def _infer_openai_compatible_provider(
+    *, model: str, api_base: str, providers: frozenset[str]
+) -> str | None:
     if not model.strip():
         return None
     if _litellm_model_has_provider_prefix(model, providers):
@@ -349,7 +435,6 @@ def _infer_openai_compatible_provider(*, model: str, api_base: str, providers: f
     return "openai"
 
 
-
 def _litellm_model_has_provider_prefix(model: str, providers: frozenset[str]) -> bool:
     if "/" not in model:
         return False
@@ -357,7 +442,6 @@ def _litellm_model_has_provider_prefix(model: str, providers: frozenset[str]) ->
     if not provider:
         return False
     return provider in providers
-
 
 
 def _known_litellm_providers(sdk: Any) -> set[str]:

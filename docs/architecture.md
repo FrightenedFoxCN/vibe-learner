@@ -293,7 +293,7 @@ Tavern is independent from Study Session and has no textbook/citation requiremen
 5. Partial/failed/blocked steps remain durable and can receive a scoped child retry.
 6. Lease heartbeat, owner/claim fencing, bounded takeover, resume, and cancel prevent stale workers from committing.
 
-Cancel fences the result and future recovery calls, but the current synchronous provider request may continue until provider timeout. A recent run listing is bounded (default 50) and is not an authoritative retry-chain aggregate.
+Cancel fences the result and future recovery calls. The compatible Chat Completions adapter also cancels and closes its owned local HTTP request; other synchronous protocols retain their timeout fallback. Local cleanup does not prove that upstream computation or billing stopped; see [Tavern provider cancellation](tavern-provider-cancellation.md). A recent run listing is bounded (default 50) and is not an authoritative retry-chain aggregate.
 
 The browser `Tavern Workspace` implements:
 

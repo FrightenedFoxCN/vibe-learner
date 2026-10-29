@@ -230,11 +230,7 @@ class TavernService:
         room = self.repository.get_room(
             room_id,
             after_sequence=after_sequence,
-            before_sequence=(
-                2**63 - 1
-                if tail
-                else before_sequence
-            ),
+            before_sequence=(2**63 - 1 if tail else before_sequence),
             limit=limit,
         )
         if room is None:
@@ -387,7 +383,9 @@ class TavernService:
             except TavernRevisionConflict as exc:
                 raise HTTPException(status_code=409, detail=str(exc)) from exc
 
-    def run_turn(self, *, room_id: str, payload: TavernTurnRequest) -> TavernTurnResponse:
+    def run_turn(
+        self, *, room_id: str, payload: TavernTurnRequest
+    ) -> TavernTurnResponse:
         digest_payload = payload.model_dump(mode="json", exclude={"idempotency_key"})
         digest_payload["target_persona_ids"] = sorted(payload.target_persona_ids)
         request_digest = tavern_payload_digest(digest_payload)
@@ -445,7 +443,9 @@ class TavernService:
         else:
             latest = self.repository.get_latest_message(room_id)
             if latest is None or latest.id != payload.input.anchor_message_id:
-                raise HTTPException(status_code=409, detail="tavern_continue_anchor_stale")
+                raise HTTPException(
+                    status_code=409, detail="tavern_continue_anchor_stale"
+                )
             anchor_message_id = latest.id
             trigger_kind = TavernRunTriggerKind.CONTINUE
 
@@ -487,7 +487,9 @@ class TavernService:
         )
         if duplicate is not None:
             if duplicate.request_digest and duplicate.request_digest != digest:
-                raise HTTPException(status_code=409, detail="tavern_idempotency_key_reused:retry")
+                raise HTTPException(
+                    status_code=409, detail="tavern_idempotency_key_reused:retry"
+                )
             return self._resume_or_replay_run(duplicate)
 
         detail = self.require_room(room_id)
@@ -524,29 +526,40 @@ class TavernService:
         remaining_ids = [
             step.persona_id
             for step in source.speaker_steps
-            if step.status in {TavernSpeakerStepStatus.FAILED, TavernSpeakerStepStatus.BLOCKED}
+            if step.status
+            in {TavernSpeakerStepStatus.FAILED, TavernSpeakerStepStatus.BLOCKED}
         ]
         if not remaining_ids:
-            raise HTTPException(status_code=409, detail="tavern_run_has_no_remaining_steps")
+            raise HTTPException(
+                status_code=409, detail="tavern_run_has_no_remaining_steps"
+            )
         participant_map = {item.persona_id: item for item in detail.participants}
         try:
             scheduled = [participant_map[item] for item in remaining_ids]
         except KeyError as exc:
-            raise HTTPException(status_code=409, detail="tavern_retry_participant_changed") from exc
-        source_steps_by_persona = {step.persona_id: step for step in source.speaker_steps}
+            raise HTTPException(
+                status_code=409, detail="tavern_retry_participant_changed"
+            ) from exc
+        source_steps_by_persona = {
+            step.persona_id: step for step in source.speaker_steps
+        }
         if any(
             source_steps_by_persona[item.persona_id].participant_prompt_hash
             != item.prompt_hash
             for item in scheduled
         ):
-            raise HTTPException(status_code=409, detail="tavern_retry_participant_changed")
+            raise HTTPException(
+                status_code=409, detail="tavern_retry_participant_changed"
+            )
         completed_steps = [
             step
             for step in source.speaker_steps
             if step.status == TavernSpeakerStepStatus.COMPLETED and step.message_id
         ]
         anchor_message_id = (
-            completed_steps[-1].message_id if completed_steps else source.anchor_message_id
+            completed_steps[-1].message_id
+            if completed_steps
+            else source.anchor_message_id
         )
         root = self.repository.get_run(source.root_run_id or source.id)
         if root is None:
@@ -659,7 +672,9 @@ class TavernService:
         if root.input_message_id:
             input_message = self.repository.get_message(root.input_message_id)
             if input_message is None:
-                raise HTTPException(status_code=409, detail="tavern_run_input_message_missing")
+                raise HTTPException(
+                    status_code=409, detail="tavern_run_input_message_missing"
+                )
             input_content = input_message.content
         try:
             operation_binding = self.repository.require_harness_operation(run.id)
@@ -755,21 +770,21 @@ class TavernService:
                     execution_stage = "actor_generation"
                     generated, prepared_runtime, step_runtime = (
                         self._prepare_actor_v3_message(
-                        run=run,
-                        step_index=index,
-                        trace_slot=(
-                            index * self.max_step_claims + expected_claim_count - 1
-                        ),
-                        operation_binding=operation_binding,
-                        actor=actor,
-                        detail=detail,
-                        recent_messages=recent_messages,
-                        input_content=input_content,
-                        required_target_id=required_target_id,
-                        reply_anchor=anchor_message,
-                        step=step,
-                        expected_claim_count=expected_claim_count,
-                        should_continue=heartbeat.should_continue,
+                            run=run,
+                            step_index=index,
+                            trace_slot=(
+                                index * self.max_step_claims + expected_claim_count - 1
+                            ),
+                            operation_binding=operation_binding,
+                            actor=actor,
+                            detail=detail,
+                            recent_messages=recent_messages,
+                            input_content=input_content,
+                            required_target_id=required_target_id,
+                            reply_anchor=anchor_message,
+                            step=step,
+                            expected_claim_count=expected_claim_count,
+                            should_continue=heartbeat.should_continue,
                         )
                     )
                     heartbeat.ensure_active()
@@ -873,6 +888,12 @@ class TavernService:
                 except TavernStepClaimConflict as conflict:
                     raise self._step_conflict_response(run.id, conflict) from conflict
                 if failed_run.status == TavernRunStatus.CANCELED:
+                    self.repository.record_terminal_step_trace(
+                        run_id=run.id,
+                        step_index=index,
+                        harness_trace=exc.trace,
+                        claim_count=expected_claim_count,
+                    )
                     raise HTTPException(
                         status_code=409,
                         detail=f"tavern_run_canceled:{run.id}",
@@ -904,7 +925,10 @@ class TavernService:
                         error_code="tavern_step_claim_fenced",
                     )
                     current = self.repository.get_run(run.id)
-                    if current is not None and current.status == TavernRunStatus.CANCELED:
+                    if (
+                        current is not None
+                        and current.status == TavernRunStatus.CANCELED
+                    ):
                         terminal = self.harness_runtime_repository.get(
                             prepared_runtime.execution.trace_id
                         )
@@ -913,6 +937,7 @@ class TavernService:
                                 run_id=run.id,
                                 step_index=index,
                                 harness_trace=terminal.terminal_trace,
+                                claim_count=expected_claim_count,
                             )
                 raise self._step_conflict_response(run.id, exc) from exc
             except TavernRunTerminalConflict as exc:
@@ -954,6 +979,7 @@ class TavernService:
                             commit_evidence=non_commit_evidence,
                             error_code=_error_code(exc),
                         ).trace
+
                 try:
                     failed_run = self.repository.fail_step(
                         run_id=run.id,
@@ -1013,7 +1039,9 @@ class TavernService:
         step: TavernSpeakerStepRecord,
         expected_claim_count: int,
         should_continue: Callable[[], bool] | None = None,
-    ) -> tuple[TavernMessageRecord, HarnessRuntimePreparedOutput, HarnessOperationRuntime]:
+    ) -> tuple[
+        TavernMessageRecord, HarnessRuntimePreparedOutput, HarnessOperationRuntime
+    ]:
         """Resolve protected context and validate one actor output before commit."""
 
         # The protected snapshot is the complete deterministic stage input.
@@ -1414,8 +1442,12 @@ class TavernService:
             )
             recent_messages = prompt_preflight.recent_messages
             raw_reply = self._generate_actor_reply(
-                run=run, actor=actor, detail=detail, recent_messages=recent_messages,
-                input_content=input_content, guidance=run.guidance,
+                run=run,
+                actor=actor,
+                detail=detail,
+                recent_messages=recent_messages,
+                input_content=input_content,
+                guidance=run.guidance,
                 required_target_id=required_target_id,
                 should_continue=should_continue,
             )
@@ -1501,9 +1533,15 @@ class TavernService:
         )
 
     def _generate_actor_reply(
-        self, *, run: TavernRunRecord, actor: TavernParticipantRecord,
-        detail: TavernRoomDetail, recent_messages: list[TavernMessageRecord],
-        input_content: str, guidance: str, required_target_id: str,
+        self,
+        *,
+        run: TavernRunRecord,
+        actor: TavernParticipantRecord,
+        detail: TavernRoomDetail,
+        recent_messages: list[TavernMessageRecord],
+        input_content: str,
+        guidance: str,
+        required_target_id: str,
         should_continue: Callable[[], bool] | None = None,
     ) -> TavernActorReply:
         """Single provider boundary, kept separate from semantic validation."""
@@ -1526,7 +1564,9 @@ class TavernService:
 
     def _replay_run(self, run: TavernRunRecord) -> TavernTurnResponse:
         if run.status == TavernRunStatus.PENDING:
-            raise HTTPException(status_code=409, detail=f"tavern_run_in_progress:{run.id}")
+            raise HTTPException(
+                status_code=409, detail=f"tavern_run_in_progress:{run.id}"
+            )
         return TavernTurnResponse(
             run=run,
             input_message=(
@@ -1545,12 +1585,8 @@ class TavernService:
         detail = self.require_room(run.room_id)
         if detail.room.status != TavernRoomStatus.ACTIVE:
             raise HTTPException(status_code=409, detail="tavern_room_not_active")
-        if (
-            detail.room.revision != run.expected_room_revision + 1
-            or (
-                run.context_digest
-                and run.context_digest != _room_context_digest(detail)
-            )
+        if detail.room.revision != run.expected_room_revision + 1 or (
+            run.context_digest and run.context_digest != _room_context_digest(detail)
         ):
             raise HTTPException(status_code=409, detail="tavern_run_context_changed")
         participant_map = {item.persona_id: item for item in detail.participants}
@@ -1560,7 +1596,9 @@ class TavernService:
             != step.participant_prompt_hash
             for step in run.speaker_steps
         ):
-            raise HTTPException(status_code=409, detail="tavern_run_participant_changed")
+            raise HTTPException(
+                status_code=409, detail="tavern_run_participant_changed"
+            )
         try:
             return self._execute_run(
                 run=run,
