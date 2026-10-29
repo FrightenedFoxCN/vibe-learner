@@ -256,6 +256,8 @@ export function decodeDocumentRecord(
 
   return {
     id,
+    // Historical v1 Document snapshots omit the initial revision.
+    revision: value.revision === undefined ? 0 : decoder.integer(value.revision, `${path}.revision`),
     title: decoder.string(decoder.field(value, "title", path), `${path}.title`, true),
     originalFilename: decoder.string(
       decoder.field(value, "original_filename", path),

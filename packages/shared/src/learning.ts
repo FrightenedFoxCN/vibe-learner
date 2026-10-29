@@ -759,6 +759,7 @@ export interface DialogueTurnRecord {
 
 export interface DocumentRecord {
   id: string;
+  revision: number;
   title: string;
   originalFilename: string;
   storedPath: string;

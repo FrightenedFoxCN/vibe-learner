@@ -257,6 +257,7 @@ export function useLearningWorkspaceController({
 
   const { renamePlanTitle, removePlan, renameStudyUnitTitle, updatePlanProgress, answerPlanQuestion, isMutating } = usePlanMutations({
     plans: state.planHistory,
+    documents: state.documents,
     onPlan: (plan) => dispatch({ type: "plan_updated", plan }),
     onDocumentAndPlans: (payload) => dispatch({ type: "document_and_plans_updated", ...payload }),
     onNotice: (notice) => dispatch({ type: "notice_set", notice }),

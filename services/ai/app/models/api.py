@@ -528,6 +528,7 @@ class ProcessDocumentRequest(BaseModel):
 
 class StudyUnitTitleUpdateRequest(BaseModel):
     title: str = Field(min_length=1)
+    expected_revision: int = Field(ge=0, strict=True)
 
 
 class LearningPlanCreateRequest(LearningGoalInput):

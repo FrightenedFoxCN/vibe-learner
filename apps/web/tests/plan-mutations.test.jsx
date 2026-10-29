@@ -19,6 +19,7 @@ function fixture() {
   ].map(name => [name, (...args) => { const pending = deferred(); calls.push({ name, args, ...pending }); return pending.promise; }]));
   const options = {
     plans: [{ id: "p", revision: 7 }],
+    documents: [{ id: "doc", revision: 4 }],
     onPlan: plan => events.push(["plan", plan]), onDeleted: id => events.push(["delete", id]),
     onDocumentAndPlans: payload => events.push(["document", payload]), onNotice: notice => events.push(["notice", notice]),
   };
@@ -66,7 +67,7 @@ test("unmount suppresses abandoned projections and does not retry a committed wr
   act(() => { save = h.result.current.renameStudyUnitTitle("doc", "unit", "  Unit  "); });
   h.unmount();
   await act(async () => { h.calls[0].resolve({ document: { id: "doc" }, plans: [] }); assert.equal(await save, false); });
-  assert.deepEqual(h.calls[0].args, ["doc", "unit", "Unit"]);
+  assert.deepEqual(h.calls[0].args, ["doc", "unit", "Unit", 4]);
   assert.equal(h.calls.length, 1);
   assert.deepEqual(h.events, []);
 });

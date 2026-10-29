@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from tests.support.migrations import alembic_config
 from io import StringIO
+import json
 import os
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -9,13 +10,15 @@ import unittest
 from unittest.mock import patch
 
 from alembic import command
-from sqlalchemy import inspect
+from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.engine import Engine
 
 from app.persistence.database import Database
+from app.persistence.document_repository import DocumentRepository
+from tests.support.planning_operations import planning_document
 
 
-ALEMBIC_HEAD = "20260914_0022"
+ALEMBIC_HEAD = "20261029_0023"
 
 
 def _normalize_sql(expression: object) -> str:
@@ -85,6 +88,37 @@ def _schema_signature(engine: Engine) -> dict[str, object]:
 
 
 class AlembicSqliteTests(unittest.TestCase):
+    def test_document_revision_upgrade_preserves_legacy_payload_and_digest(self) -> None:
+        payload = planning_document().model_dump(mode="json")
+        self.assertNotIn("revision", payload)
+        for migration in ("alembic", "runtime"):
+            with self.subTest(migration=migration), TemporaryDirectory() as temp_dir:
+                url = f"sqlite:///{Path(temp_dir) / 'legacy.db'}"
+                config = alembic_config(url)
+                with patch.dict(os.environ, {"DATABASE_URL": url}):
+                    command.upgrade(config, "20260914_0022")
+                engine = create_engine(url)
+                with engine.begin() as connection:
+                    connection.execute(
+                        text("INSERT INTO documents (id, payload) VALUES (:id, :payload)"),
+                        {"id": payload["id"], "payload": json.dumps(payload)},
+                    )
+                engine.dispose()
+                if migration == "alembic":
+                    with patch.dict(os.environ, {"DATABASE_URL": url}):
+                        command.upgrade(config, "head")
+                database = Database(url)
+                try:
+                    database.create_schema()
+                    document = DocumentRepository(database).get(payload["id"])
+                    self.assertEqual(document.revision, 0)
+                    self.assertEqual(document.model_dump(mode="json"), payload)
+                    with database.engine.connect() as connection:
+                        stored = connection.execute(text("SELECT payload FROM documents")).scalar_one()
+                    self.assertEqual(json.loads(stored), payload)
+                finally:
+                    database.dispose()
+
     def test_fresh_sqlite_upgrade_reaches_head_and_matches_runtime_schema(self) -> None:
         with TemporaryDirectory() as temp_dir:
             migrated_url = f"sqlite:///{Path(temp_dir) / 'migrated.db'}"

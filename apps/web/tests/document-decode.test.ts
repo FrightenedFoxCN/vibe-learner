@@ -79,6 +79,14 @@ function wireDocument() {
   };
 }
 
+test("Document revision defaults only for legacy snapshots and rejects malformed CAS tokens", () => {
+  assert.equal(decodeDocumentRecord(wireDocument()).revision, 0);
+  assert.equal(decodeDocumentRecord({ ...wireDocument(), revision: 4 }).revision, 4);
+  for (const revision of [null, "4", -1, 1.5, true, Number.NaN]) {
+    assert.throws(() => decodeDocumentRecord({ ...wireDocument(), revision }), DocumentDecodeError);
+  }
+});
+
 function wireDebug() {
   return {
     document_id: "document-1",

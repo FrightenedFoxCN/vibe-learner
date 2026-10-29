@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from typing import Callable
 from uuid import uuid4
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -42,6 +42,11 @@ from app.models.harness_operation import (
     HarnessOperationBindingV1,
 )
 from app.persistence.database import Database
+from app.persistence.document_repository import (
+    DocumentRevisionConflict,
+    document_from_row,
+    replace_document_in_session,
+)
 from app.persistence.harness_operation_repository import (
     HarnessOperationBindingRepository,
 )
@@ -90,13 +95,16 @@ class DocumentProcessOperationRepository:
                 )
                 if active is not None:
                     raise DocumentProcessAlreadyActive(document_id, active.operation_id)
-                base_document = DocumentRecord.model_validate(document_row.payload or {})
+                base_document = document_from_row(document_row)
                 if base_document.status == "processing":
                     raise DocumentProcessStateConflict(document_id)
                 processing_document = base_document.model_copy(deep=True)
                 processing_document.status = "processing"
+                processing_document.revision += 1
                 processing_document.updated_at = now
-                _apply_document_row(document_row, processing_document)
+                replace_document_in_session(
+                    session, processing_document, expected_revision=base_document.revision
+                )
                 row = DocumentProcessOperationRow(
                     operation_id=operation_id,
                     document_id=document_id,
@@ -145,10 +153,12 @@ class DocumentProcessOperationRepository:
         debug_payload = debug_report.model_dump(mode="json")
         now = _now()
         with self.database.session() as session:
-            operation = session.get(DocumentProcessOperationRow, operation_id)
+            operation = session.get(DocumentProcessOperationRow, operation_id, with_for_update=True)
             if operation is None:
                 raise DocumentProcessOperationNotFound(operation_id)
             if operation.status != DocumentProcessOperationStatus.RUNNING.value:
+                raise DocumentProcessOperationNotRunning(operation_id, operation.status)
+            if not _lock_running_operation_in_session(session, operation):
                 raise DocumentProcessOperationNotRunning(operation_id, operation.status)
             binding = self.harness_operations.require_domain_in_session(
                 session,
@@ -173,6 +183,12 @@ class DocumentProcessOperationRepository:
             document_row = session.get(DocumentRow, document.id)
             if document_row is None:
                 raise DocumentProcessDocumentNotFound(document.id)
+            base = DocumentRecord.model_validate(operation.base_document_payload or {})
+            self._inject("before_document_projection")
+            replace_document_in_session(
+                session, document, expected_revision=base.revision + 1
+            )
+            self._inject("after_document_projection")
 
             self._inject("before_debug_projection")
             debug_row = session.get(DocumentDebugRow, document.id) or DocumentDebugRow()
@@ -180,10 +196,6 @@ class DocumentProcessOperationRepository:
             session.add(debug_row)
             session.flush()
             self._inject("after_debug_projection")
-
-            _apply_document_row(document_row, document)
-            session.flush()
-            self._inject("after_document_projection")
 
             operation.status = DocumentProcessOperationStatus.COMMITTED.value
             operation.active_slot = None
@@ -282,14 +294,14 @@ class DocumentProcessOperationRepository:
                 select(DocumentProcessOperationRow).where(
                     DocumentProcessOperationRow.status == DocumentProcessOperationStatus.RUNNING.value,
                     DocumentProcessOperationRow.active_slot == 1,
-                )
+                ).with_for_update()
             ).all()
             for row in rows:
+                if not _lock_running_operation_in_session(session, row):
+                    continue
                 document_row = session.get(DocumentRow, row.document_id)
                 if document_row is not None:
-                    base = DocumentRecord.model_validate(row.base_document_payload or {})
-                    failed_document = _failed_document_from_base(base, now=_now())
-                    _apply_document_row(document_row, failed_document)
+                    _restore_document_in_session(session, row, document_row, now=_now())
                 now = _now()
                 row.status = DocumentProcessOperationStatus.FAILED.value
                 row.active_slot = None
@@ -389,12 +401,14 @@ class DocumentProcessOperationRepository:
     ) -> DocumentProcessOperationRecord:
         now = _now()
         with self.database.session() as session:
-            row = session.get(DocumentProcessOperationRow, operation_id)
+            row = session.get(DocumentProcessOperationRow, operation_id, with_for_update=True)
             if row is None:
                 raise DocumentProcessOperationNotFound(operation_id)
             if row.status == DocumentProcessOperationStatus.COMMITTED.value:
                 return _from_row(row)
             if row.status != DocumentProcessOperationStatus.RUNNING.value:
+                return _from_row(row)
+            if not _lock_running_operation_in_session(session, row):
                 return _from_row(row)
             resolution = self.harness_operations.resolve_domain_in_session(
                 session,
@@ -409,14 +423,9 @@ class DocumentProcessOperationRepository:
             )
             document_row = session.get(DocumentRow, row.document_id)
             if document_row is not None:
-                base = DocumentRecord.model_validate(row.base_document_payload or {})
-                terminal_document = (
-                    base.model_copy(deep=True)
-                    if restore_base
-                    else _failed_document_from_base(base, now=now)
+                _restore_document_in_session(
+                    session, row, document_row, now=now, restore_base=restore_base
                 )
-                terminal_document.updated_at = now
-                _apply_document_row(document_row, terminal_document)
             row.status = status.value
             row.active_slot = None
             row.projection_state = DocumentProcessProjectionState.NOT_COMMITTED.value
@@ -543,6 +552,7 @@ def _validate_runtime_document_projection(
         (page.text_preview for page in report.pages if page.text_preview), ""
     )
     expected.debug_ready = True
+    expected.revision = base.revision + 2
     expected.updated_at = document.updated_at
     if (
         canonical_harness_digest(document) != canonical_harness_digest(expected)
@@ -551,17 +561,56 @@ def _validate_runtime_document_projection(
         raise ValueError("document_process_runtime_projection_mismatch")
 
 
-def _apply_document_row(row: DocumentRow, document: DocumentRecord) -> None:
-    payload = document.model_dump(mode="json")
-    row.id = document.id
-    row.title = document.title
-    row.original_filename = document.original_filename
-    row.stored_path = document.stored_path
-    row.status = document.status
-    row.ocr_status = document.ocr_status
-    row.created_at = document.created_at
-    row.updated_at = document.updated_at
-    row.payload = payload
+def _lock_running_operation_in_session(session: Session, row: DocumentProcessOperationRow) -> bool:
+    # SQLite ignores FOR UPDATE. A conditional no-op write serializes terminal
+    # transitions before reading/restoring the Document on both databases.
+    result = session.execute(
+        update(DocumentProcessOperationRow)
+        .where(
+            DocumentProcessOperationRow.operation_id == row.operation_id,
+            DocumentProcessOperationRow.status == DocumentProcessOperationStatus.RUNNING.value,
+        )
+        .values(updated_at=DocumentProcessOperationRow.updated_at)
+        .execution_options(synchronize_session=False)
+    )
+    if result.rowcount == 1:
+        return True
+    session.refresh(row)
+    return False
+
+
+def _restore_document_in_session(
+    session: Session,
+    operation: DocumentProcessOperationRow,
+    row: DocumentRow,
+    *,
+    now: str,
+    restore_base: bool = False,
+) -> None:
+    base = DocumentRecord.model_validate(operation.base_document_payload or {})
+    expected_revision = base.revision + 1
+    if (
+        row.revision == 0
+        and base.revision == 0
+        and row.status == "processing"
+        and row.updated_at == operation.created_at
+    ):
+        # An in-flight pre-migration admission did not increment revision.
+        expected_revision = 0
+    if row.revision != expected_revision or row.status != "processing":
+        return
+    terminal = (
+        base.model_copy(deep=True)
+        if restore_base
+        else _failed_document_from_base(base, now=now)
+    )
+    terminal.updated_at = now
+    terminal.revision = expected_revision + 1
+    try:
+        replace_document_in_session(session, terminal, expected_revision=expected_revision)
+    except DocumentRevisionConflict:
+        # A newer projection owns the row; failed cleanup cannot restore over it.
+        return
 
 
 def _apply_debug_row(row: DocumentDebugRow, report: DocumentDebugRecord) -> None:

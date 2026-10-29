@@ -260,6 +260,9 @@ class DocumentDebugRecord(BaseModel):
 
 class DocumentRecord(BaseModel):
     id: str
+    # Missing revision denotes a legacy baseline. Preserve its original v1
+    # snapshot/digest bytes until the first database-authoritative mutation.
+    revision: int = Field(default=0, ge=0, strict=True, exclude_if=lambda value: value == 0)
     title: str
     original_filename: str
     stored_path: str

@@ -10,12 +10,6 @@
 
 ## 数据一致性与工程重构
 
-- [ ] `DOC-PERSISTENCE-CAS-001` `[P1]` 将 Document 运行时写入从整表替换迁移为单记录插入与 revision CAS。
-  - 2026-10-29 审计：`DocumentService.create_document`、`update_study_unit_title` 仍读取全部 Document 后调用 `LocalJsonStore.save_list("documents", ...)`；该方法会覆盖同 ID 行并删除不在传入列表中的行。临时 SQLite 实测：暂停上传 A 的保存，先完成上传 B，再用 A 的旧快照保存，会删除 B 已提交的记录；旧快照也可能覆盖刚提交的解析/Planning 投影。
-  - 以领域 Repository 承接单记录插入、标题更新与 Document/Debug 一致提交；运行时不得通过整表替换删除其他记录，JSON 镜像保留兼容用途。已有 Document processing 和 Planning 的 admission、原子 commit/read-back 边界必须继续保留。
-  - 覆盖两个上传交错、不同 Document 同时改名、改名与解析/Planning commit 竞争、失败回滚和重启读回。Document revision 也是 `PLAN-STUDY-UNIT-REVISION-001` 的前置基础，不重复建立操作身份或 Harness 基础设施。
-  - 代码依据：`services/ai/app/services/documents.py`、`services/ai/app/services/local_store.py`。
-
 - [ ] `ENG-WEB-DECODE-001` `[P2]` 为 Settings、工具配置、模型探测和 Model Usage 补齐领域严格响应解码。
   - 2026-10-29 审计：`apps/web/lib/api.ts` 仍使用 `any` 与 `String`/`Boolean`/`Number` 强制转换；工具配置中的字符串 `"false"` 会被当作 `true`，缺失字段和未知枚举也可能被默认值掩盖。
   - 从 `unknown` 严格验证字段、枚举、布尔值和有限数值，明确兼容默认值适用的历史契约；沿用 `strict-response-decode` 和已有诊断边界，并由 `lib/data/*` 暴露领域入口。
@@ -70,7 +64,7 @@
   - 本票只负责应用约束；教材语义、公式、旧记号和范围完整性质量由本文件的 `MQ-04` 负责。
 
 - [ ] `PLAN-STUDY-UNIT-REVISION-001` `[P1]` 将 Planning 的 `revise_study_units` 从隐式共享 Document 改写变成可审查的提案与独立确认。
-  - 2026-10-29 审计：`plan_tool_runtime.py` 先替换工具上下文中的 Study Units，`LearningPlanService._build_plan_candidate` 随后把修订写入共享 Document、Sections 与 Debug 投影，并随计划提交；缺少独立预览/确认边界。Document revision 基础见 `DOC-PERSISTENCE-CAS-001`。
+  - 2026-10-29 审计：`plan_tool_runtime.py` 先替换工具上下文中的 Study Units，`LearningPlanService._build_plan_candidate` 随后把修订写入共享 Document、Sections 与 Debug 投影，并随计划提交；缺少独立预览/确认边界。Document revision CAS 已由 `DocumentRepository` 提供，复用该边界。
   - 模型取证阶段不得在没有预览的情况下替换后续所有 Plan/Study 共用的 Study Units；展示旧/新页范围、标题、分类与保留/删除 diff，并使用 Document revision CAS 提交。
   - 拒绝或跳过修订仍可继续生成保守计划；确认后的 Document、Plan context、Harness effect/trace 与重启 read-back 必须指向同一 revision。
 

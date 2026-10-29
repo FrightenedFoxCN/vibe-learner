@@ -96,6 +96,7 @@ class HarnessBroadCommitBindingTests(unittest.TestCase):
         document.chunk_count = len(report.chunks)
         document.preview_excerpt = report.pages[0].text_preview
         document.debug_ready = True
+        document.revision += 1
         return operation, document, report, prepared, runtime
 
     def _commit_document(self, case, *, prepared=None, document=None, report=None):

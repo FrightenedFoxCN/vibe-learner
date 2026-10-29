@@ -339,6 +339,15 @@ class LocalJsonStore:
             pass
 
     def load_list(self, name: str, model: type[T]) -> list[T]:
+        if name == "documents":
+            from app.persistence.document_repository import DocumentRepository
+
+            repository = DocumentRepository(self._db)
+            documents = repository.list()
+            if documents:
+                return documents  # type: ignore[return-value]
+            repository.import_legacy(self._legacy.load_list(name, model))
+            return repository.list()  # type: ignore[return-value]
         if name == "plans":
             from app.persistence.learning_plan_repository import LearningPlanRepository
             repository = LearningPlanRepository(self._db)
@@ -370,6 +379,14 @@ class LocalJsonStore:
         return legacy_items
 
     def save_list(self, name: str, items: list[BaseModel]) -> None:
+        if name == "documents":
+            from app.models.domain import DocumentRecord
+            from app.persistence.document_repository import DocumentRepository
+
+            DocumentRepository(self._db).import_legacy([
+                DocumentRecord.model_validate(item.model_dump(mode="json")) for item in items
+            ])
+            return
         if name == "plans":
             from app.models.domain import LearningPlanRecord
             from app.persistence.learning_plan_repository import LearningPlanRepository

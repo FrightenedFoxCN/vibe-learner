@@ -412,6 +412,7 @@ Lists uploaded documents.
 Each document includes:
 
 - base metadata: `id`, `title`, `original_filename`, `stored_path`
+- CAS watermark: `revision` (a nonnegative integer; omitted legacy revision is `0`)
 - processing state: `status`, `ocr_status`, `debug_ready`
 - derived counts: `page_count`, `chunk_count`, `study_unit_count`
 - cleaned plan-facing `sections[]`
@@ -426,6 +427,15 @@ Form field:
 - `file`
 
 Returns a `DocumentRecord`.
+
+### `PATCH /documents/{document_id}/study-units/{study_unit_id}`
+
+Renames one Study Unit with `{ "title": "New title", "expected_revision": 2 }`.
+The Document, projected Section title, and Debug Study Unit title commit in one
+transaction. The response contains `document` and the updated related `plans`.
+Missing or invalid revision returns `422`; a stale revision or an active
+Document process returns `409`. Reload the Document before retrying a conflict.
+Document/Debug atomicity does not extend to the subsequent per-Plan title updates.
 
 ### `POST /documents/{document_id}/process`
 

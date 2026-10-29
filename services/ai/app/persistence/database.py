@@ -75,6 +75,12 @@ class Database:
                 )
             }
 
+            if "documents" in table_names:
+                if "revision" not in self._sqlite_column_names(connection, "documents"):
+                    connection.exec_driver_sql(
+                        "ALTER TABLE documents ADD COLUMN revision INTEGER NOT NULL DEFAULT 0"
+                    )
+
             if "learning_plans" in table_names:
                 plan_columns = self._sqlite_column_names(connection, "learning_plans")
                 for column in ("revision", "deleted"):

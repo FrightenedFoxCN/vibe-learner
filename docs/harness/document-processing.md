@@ -4,7 +4,11 @@ Document processing 的主 operation 为 `document_parse:document_parse`；page 
 
 主 admission 写 `document_process_operations` 与 immutable Harness binding。上传文件、OCR page 和 debug/context 数据作为 protected artifacts；parser/heuristic 结果经 bounded DTO adapter 校验。Document、debug report、operation receipt 与 terminal trace 在 repository transaction 中 finalize；子阶段 evidence 只证明对应 stage，不等于整个文档已提交。
 
+Document 写入由 `DocumentRepository` 以单行插入和 revision CAS 承接。解析 admission 与终态投影分别推进 revision；失败恢复只可恢复自己占用的 processing revision，不能覆盖更晚投影。Study Unit 标题更新要求 `expected_revision`，并在同一事务提交 Document/Debug；processing 期间拒绝改名。Planning 的 Document 写入也使用同一 SQL revision fence，保留既有 admission、摘要校验和原子终态边界。revision 是应用拥有的并发元数据，不进入模型 proposal；历史 revision 0 不加入原 v1 快照序列化。
+
 OCR 和清洗目前仍以 heuristic 为主，是质量风险而不是绕开 Harness 的理由。proposal 中不能生成 committed Document/Study Unit identity、revision 或 timestamp。失败时保留原 Document 基线并把 operation 标成 failed/interrupted；post-cutoff legacy rows 无真实 binding 时只能只读，不能伪造 v3 trace。
 
 Document stream 的 `page_parsed` 等名称是 UI progress event；`page_extraction` 等才是 operation stage；generate/decode/validate/repair/commit 是 stage 内 attempt phase。三套词汇不得混用。
+
+Document CAS 的必要回归为 `tests.test_document_repository`、`tests.test_document_process_operation` 和 `tests.test_learning_plan_operation`。可在 `services/ai` 运行 `LITELLM_LOCAL_MODEL_COST_MAP=True PYTHONPATH=. uv run python tests/acceptance/document_cas_probe.py`，用临时 SQLite、真实 PDF parser 和 HTTP 接口复核并发上传、过期/缺失 revision 拒绝及应用实例重启后的 Document/Debug 读回；该探针不调用真实 provider。
 

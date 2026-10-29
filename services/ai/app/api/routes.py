@@ -740,6 +740,7 @@ def update_study_unit_title(
         document_id=document_id,
         study_unit_id=study_unit_id,
         title=payload.title,
+        expected_revision=payload.expected_revision,
     )
     plans = container.plan_service.update_study_unit_title(
         document_id=document_id,

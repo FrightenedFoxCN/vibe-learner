@@ -148,6 +148,16 @@ See `plan-text-contract.md` before changing these meanings.
 
 `POST /documents` stores the upload and creates a document shell.
 
+`DocumentRepository` inserts one row per upload and fences mutations with a
+database revision predicate. Study Unit title updates require the caller's
+`expected_revision` and commit Document/Debug together. Processing admission,
+successful projection commits, and failure restoration advance the same
+revision; cleanup cannot restore over a newer writer. Planning holds a revision
+fence even when its Document snapshot is unchanged, and advances revision only
+when it changes that projection. Legacy list imports insert missing rows and
+reject divergence without replacing or deleting runtime rows. Revision 0 is
+omitted from legacy payload serialization to preserve historical v1 digests.
+
 `POST /documents/{id}/process` or `/process/stream` then runs:
 
 1. PDF text extraction;

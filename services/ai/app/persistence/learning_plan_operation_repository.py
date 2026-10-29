@@ -49,6 +49,11 @@ from app.models.planning import (
     planning_projection_digest,
 )
 from app.persistence.database import Database
+from app.persistence.document_repository import (
+    document_from_row,
+    fence_document_in_session,
+    replace_document_in_session,
+)
 from app.persistence.harness_operation_repository import (
     HarnessOperationBindingRepository,
 )
@@ -355,7 +360,13 @@ class LearningPlanOperationRepository:
 
             self._inject("before_document_projection")
             if document_row is not None and document is not None:
-                _apply_document_row(document_row, document)
+                current_document = document_from_row(document_row)
+                if document == current_document:
+                    fence_document_in_session(session, document)
+                else:
+                    replace_document_in_session(
+                        session, document, expected_revision=current_document.revision
+                    )
                 session.flush()
             self._inject("after_document_projection")
 
@@ -760,18 +771,6 @@ def _validate_current_projection(session, record: LearningPlanOperationRecord) -
             raise LearningPlanReadBackError(record.operation_id, "trace_missing")
         if planning_projection_digest(trace_row.payload or {}) != projection.trace_digest:
             raise LearningPlanReadBackError(record.operation_id, "trace_digest_mismatch")
-
-
-def _apply_document_row(row: DocumentRow, document: DocumentRecord) -> None:
-    row.id = document.id
-    row.title = document.title
-    row.original_filename = document.original_filename
-    row.stored_path = document.stored_path
-    row.status = document.status
-    row.ocr_status = document.ocr_status
-    row.created_at = document.created_at
-    row.updated_at = document.updated_at
-    row.payload = document.model_dump(mode="json")
 
 
 def _apply_debug_row(row: DocumentDebugRow, report: DocumentDebugRecord) -> None:

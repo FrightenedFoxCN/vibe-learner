@@ -21,6 +21,7 @@ from app.persistence.learning_plan_operation_repository import (
     LearningPlanStaleDebugProjection,
     LearningPlanStaleDocument,
 )
+from app.persistence.document_repository import DocumentRevisionConflict, DocumentRepository, replace_document_in_session
 from app.services.local_store import LocalJsonStore
 from app.services.model_provider import MockModelProvider, PlanModelReply
 from app.services.persona import PersonaEngine
@@ -42,6 +43,34 @@ class LearningPlanOperationTests(unittest.TestCase):
     def tearDown(self) -> None:
         self.store.close()
         self.temp_dir.cleanup()
+
+    def test_title_wins_between_planning_validation_and_sql_write(self) -> None:
+        def rename_before_write(stage):
+            if stage == "before_document_projection":
+                DocumentRepository(self.store.database).rename_study_unit(
+                    document_id=self.document.id,
+                    study_unit_id=self.document.study_units[0].id,
+                    title="Concurrent rename",
+                    expected_revision=0,
+                )
+
+        repository = LearningPlanOperationRepository(self.store.database, fault_injector=rename_before_write)
+        provider = MockModelProvider()
+        service = LearningPlanService(self.store, StudyArrangementService(), provider, operation_repository=repository)
+        goal = self._goal("plan-cas-window")
+        with patch.object(provider, "generate_learning_plan", return_value=planning_reply(self.document)):
+            with self.assertRaises(DocumentRevisionConflict):
+                service.create_plan(
+                    goal=goal,
+                    document=self.document.model_copy(deep=True),
+                    persona_name=self.persona.name,
+                    persona=self.persona,
+                    debug_report=self.debug.model_copy(deep=True),
+                )
+        self.assertEqual(service.list_plans(), [])
+        current = DocumentRepository(self.store.database).get(self.document.id)
+        self.assertEqual((current.revision, current.study_units[0].title), (1, "Concurrent rename"))
+        self.assertEqual(service.require_operation(client_request_id=goal.client_request_id).status, LearningPlanOperationStatus.NOT_COMMITTED)
 
     def test_success_commits_all_projections_and_duplicate_reuses_snapshot(self) -> None:
         provider = MockModelProvider()
@@ -211,8 +240,10 @@ class LearningPlanOperationTests(unittest.TestCase):
         def mutate_document_then_reply(**_kwargs) -> PlanModelReply:
             changed = self.document.model_copy(deep=True)
             changed.title = "Concurrent title"
+            changed.revision += 1
             changed.updated_at = "2026-08-24T10:01:00+00:00"
-            self.store.save_list("documents", [changed])
+            with self.store.database.session() as session:
+                replace_document_in_session(session, changed, expected_revision=self.document.revision)
             return planning_reply(self.document)
 
         with patch.object(

@@ -505,6 +505,7 @@ class DocumentRow(Base):
     __tablename__ = "documents"
 
     id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    revision: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
     title: Mapped[str] = mapped_column(Text, default="")
     original_filename: Mapped[str] = mapped_column(Text, default="")
     stored_path: Mapped[str] = mapped_column(Text, default="")

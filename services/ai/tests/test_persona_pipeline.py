@@ -5504,6 +5504,7 @@ class PersonaPipelineTests(ContainerTestCase):
             document_id=document.id,
             study_unit_id="doc-unit-rename:study-unit:1",
             title="Vector Foundations",
+            expected_revision=self.document_service.require_document(document.id).revision,
         )
         updated_plans = self.plan_service.update_study_unit_title(
             document_id=document.id,

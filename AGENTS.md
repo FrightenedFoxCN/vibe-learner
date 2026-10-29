@@ -18,6 +18,7 @@ This repository was last materially updated on 2026-09-10. The codebase is a mon
 - API router: `services/ai/app/api/routes.py`
 - Backend container bootstrap: `services/ai/app/core/bootstrap.py`
 - Document parsing pipeline: `services/ai/app/services/document_parser.py`
+- Document revision/CAS persistence: `services/ai/app/persistence/document_repository.py`; runtime writes must not use `LocalJsonStore.save_list("documents", ...)`.
 - Study-unit cleanup and plan heuristics: `services/ai/app/services/study_arrangement.py`
 - Plan revision/CAS: `services/ai/app/persistence/learning_plan_repository.py`, `services/ai/app/services/plan_revision.py`, and `docs/plan-revision.md`.
 - Plan prompting and tool context: `services/ai/app/services/plan_prompt.py`
@@ -45,7 +46,8 @@ This repository was last materially updated on 2026-09-10. The codebase is a mon
 
 - Frontend runs separately from backend.
 - Backend defaults to local SQLite and can use PostgreSQL through `DATABASE_URL`.
-- `LocalJsonStore` is now a compatibility/database wrapper and still mirrors several legacy aggregates to JSON under `services/ai/data/`; do not route new append-heavy domains through `save_list`. For Study Sessions specifically, `save_list("sessions")` is insert-only legacy import, rejects same-ID divergence, and never replaces/deletes runtime rows.
+- `LocalJsonStore` is now a compatibility/database wrapper and still mirrors several legacy aggregates to JSON under `services/ai/data/`; do not route new append-heavy domains through `save_list`. For Documents and Study Sessions, `save_list` is insert-only legacy import, rejects same-ID divergence, and never replaces/deletes runtime rows.
+- Documents use single-row inserts and revision CAS. Study Unit title changes commit Document/Debug together and require `expected_revision`; parsing and Planning commits fence the same Document revision. Legacy revision 0 is omitted from payloads to preserve historical v1 snapshot digests.
 - Study Sessions are database-authoritative. The legacy `sessions.json` is import compatibility only; normal Session writes use row CAS and do not synchronously rewrite the full JSON list.
 - Uploaded files are stored under `services/ai/data/uploads/`.
 - Document debug artifacts live under `services/ai/data/document_debug/`.

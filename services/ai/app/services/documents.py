@@ -21,6 +21,13 @@ from app.persistence.document_process_operation_repository import (
     DocumentProcessOperationRepository,
     DocumentProcessStateConflict,
 )
+from app.persistence.document_repository import (
+    DocumentNotFound,
+    DocumentProcessingConflict,
+    DocumentRepository,
+    DocumentRevisionConflict,
+    StudyUnitNotFound,
+)
 from app.services.document_stage_metrics import collect_parser_measurements, parser_stage_evidence
 from app.services.document_parser import DocumentParser
 from app.services.local_store import LocalJsonStore
@@ -50,6 +57,7 @@ class DocumentService:
         harness_service: HarnessProposalRuntimeService | None = None,
     ) -> None:
         self.store = store
+        self.repository = DocumentRepository(store.database)
         self.parser = parser
         self.arrangement_service = arrangement_service
         self.process_repository = process_repository or DocumentProcessOperationRepository(
@@ -84,9 +92,12 @@ class DocumentService:
             preview_excerpt="",
             debug_ready=False,
         )
-        documents = self._load_documents()
-        documents.append(document)
-        self._save_documents(documents)
+        try:
+            self.repository.insert(document)
+        except Exception:
+            stored_path.unlink(missing_ok=True)
+            raise
+        self._mirror_current_document_projection(document.id)
         logger.info(
             "document.created id=%s filename=%s size_bytes=%s stored_path=%s",
             document.id,
@@ -114,7 +125,7 @@ class DocumentService:
             raise HTTPException(status_code=404, detail="document_not_found") from exc
         except DocumentProcessAlreadyActive as exc:
             raise HTTPException(status_code=409, detail="document_processing_already_active") from exc
-        except (DocumentProcessStateConflict, DocumentProcessAdmissionRace) as exc:
+        except (DocumentProcessStateConflict, DocumentProcessAdmissionRace, DocumentRevisionConflict) as exc:
             raise HTTPException(status_code=409, detail="document_processing_state_conflict") from exc
         runtime_prepared: HarnessRuntimePreparedOutput | None = None
         harness_runtime: HarnessOperationRuntime | None = None
@@ -259,6 +270,7 @@ class DocumentService:
                 "",
             )
             document.debug_ready = True
+            document.revision += 1
             document.updated_at = _now()
             parent_trace_id = runtime_prepared.execution.trace_id
             page_trace = self.harness_service.emit_document_stage_evidence(
@@ -505,40 +517,29 @@ class DocumentService:
         document_id: str,
         study_unit_id: str,
         title: str,
+        expected_revision: int,
     ) -> DocumentRecord:
         normalized_title = title.strip()
         if not normalized_title:
             raise HTTPException(status_code=422, detail="study_unit_title_required")
 
-        documents = self._load_documents()
-        document = self.require_document(document_id, documents)
-
-        updated = False
-        for unit in document.study_units:
-            if unit.id != study_unit_id:
-                continue
-            unit.title = normalized_title
-            updated = True
-            break
-
-        if not updated:
-            raise HTTPException(status_code=404, detail="study_unit_not_found")
-
-        for section in document.sections:
-            if section.id == study_unit_id:
-                section.title = normalized_title
-
-        document.updated_at = _now()
-        self._save_documents(documents)
-
+        try:
+            document = self.repository.rename_study_unit(
+                document_id=document_id,
+                study_unit_id=study_unit_id,
+                title=normalized_title,
+                expected_revision=expected_revision,
+            )
+        except DocumentNotFound as exc:
+            raise HTTPException(404, "document_not_found") from exc
+        except StudyUnitNotFound as exc:
+            raise HTTPException(404, "study_unit_not_found") from exc
+        except DocumentRevisionConflict as exc:
+            raise HTTPException(409, "document_revision_conflict") from exc
+        except DocumentProcessingConflict as exc:
+            raise HTTPException(409, "document_processing_already_active") from exc
         debug_report = self.store.load_item("document_debug", document_id, DocumentDebugRecord)
-        if debug_report is not None:
-            for unit in debug_report.study_units:
-                if unit.id == study_unit_id:
-                    unit.title = normalized_title
-                    break
-            self.store.save_item("document_debug", document_id, debug_report)
-
+        self._mirror_current_document_projection(document_id, debug_report=debug_report)
         return document
 
     def require_debug_report(self, document_id: str) -> DocumentDebugRecord:
@@ -551,6 +552,10 @@ class DocumentService:
         self, document_id: str, documents: list[DocumentRecord] | None = None
     ) -> DocumentRecord:
         if documents is None:
+            document = self.repository.get(document_id)
+            if document is not None:
+                return document
+            # Trigger an initial legacy import when the database is empty.
             documents = self._load_documents()
         for document in documents:
             if document.id == document_id:
@@ -559,9 +564,6 @@ class DocumentService:
 
     def _load_documents(self) -> list[DocumentRecord]:
         return self.store.load_list("documents", DocumentRecord)
-
-    def _save_documents(self, documents: list[DocumentRecord]) -> None:
-        self.store.save_list("documents", documents)
 
     def _mirror_current_document_projection(
         self,

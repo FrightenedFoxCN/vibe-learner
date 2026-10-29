@@ -1594,7 +1594,8 @@ export async function listLearningPlans(): Promise<LearningPlan[]> {
 export async function updateDocumentStudyUnitTitle(
   documentId: string,
   studyUnitId: string,
-  title: string
+  title: string,
+  expectedRevision: number,
 ): Promise<DocumentStudyUnitUpdatePayload> {
   const diagnosticResponse = await request(`${AI_BASE_URL()}/documents/${documentId}/study-units/${studyUnitId}`, {
       method: "PATCH",
@@ -1602,11 +1603,15 @@ export async function updateDocumentStudyUnitTitle(
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        title
+        title,
+        expected_revision: expectedRevision,
       })
     });
   const payload = await readJson<unknown>(diagnosticResponse);
   const decoded = diagnosticDecode(diagnosticResponse, () => decodeDocumentStudyUnitUpdate(payload, documentId));
+  if (decoded.document.revision !== expectedRevision + 1) {
+    throw new DocumentDecodeError("document_study_unit_update.document.revision", "unexpected_committed_revision");
+  }
   if (!decoded.document.studyUnits.some((unit) => unit.id === studyUnitId)) {
     throw new DocumentDecodeError(
       "document_study_unit_update.document.study_units",

@@ -22,6 +22,7 @@ const defaultPort: PlanMutationPort = {
 };
 interface PlanMutationOptions {
   plans?: LearningPlan[];
+  documents?: DocumentRecord[];
   onPlan: (plan: LearningPlan) => void;
   onDeleted: (id: string) => void;
   onDocumentAndPlans: (payload: { document: DocumentRecord; plans: LearningPlan[] }) => void;
@@ -74,7 +75,11 @@ export function usePlanMutations(options: PlanMutationOptions, port: PlanMutatio
         "计划已删除。", "删除计划失败", "workflow:plan_delete:error"),
     renameStudyUnitTitle: (documentId: string, studyUnitId: string, title: string) =>
       !documentId || !studyUnitId || !title.trim() ? Promise.resolve(false) :
-        mutate(`document:${documentId}`, () => port.updateDocumentStudyUnitTitle(documentId, studyUnitId, title.trim()),
+        mutate(`document:${documentId}`, () => {
+          const document = current.current.documents?.find(item => item.id === documentId);
+          if (!document) throw new Error("教材状态尚未加载，请刷新后重试。");
+          return port.updateDocumentStudyUnitTitle(documentId, studyUnitId, title.trim(), document.revision);
+        },
           payload => current.current.onDocumentAndPlans(payload), "学习单元已更新。", "更新学习单元失败", "workflow:study_unit_title_update:error"),
     updatePlanProgress: (input: Parameters<PlanMutationPort["updateLearningPlanProgress"]>[0]) =>
       !input.planId || !input.scheduleIds.length || !input.status.trim() ? Promise.resolve(false) :

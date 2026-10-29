@@ -402,6 +402,7 @@ class LearningPlanService:
     ]:
         _call_interrupt(interrupt_check)
         progress_document_id = document.id if document is not None else ""
+        base_document_digest = canonical_harness_digest(document) if document is not None else ""
         if document is not None and debug_report is not None and not document.study_units:
             study_units = self.arrangement_service.build_study_units(
                 document=document,
@@ -575,6 +576,9 @@ class LearningPlanService:
         if model_plan.debug_trace is not None:
             model_plan.debug_trace.plan_id = plan.id
         plan = self._refresh_plan_derived_fields(plan)
+        if document is not None and canonical_harness_digest(document) != base_document_digest:
+            document.revision += 1
+            document.updated_at = _now()
         return plan, document, debug_report, model_plan.debug_trace
 
     def recover_abandoned_operations(self) -> int:
@@ -764,13 +768,6 @@ class LearningPlanService:
 
     def _load_plans(self) -> list[LearningPlanRecord]:
         return [self._refresh_plan_derived_fields(plan) for plan in self.store.load_list("plans", LearningPlanRecord)]
-
-    def _persist_document(self, document: DocumentRecord) -> None:
-        documents = self.store.load_list("documents", DocumentRecord)
-        updated = [item if item.id != document.id else document for item in documents]
-        if not any(item.id == document.id for item in documents):
-            updated.append(document)
-        self.store.save_list("documents", updated)
 
     def _goal_only_document_title(self, goal: LearningGoalInput) -> str:
         objective = " ".join((goal.objective or "").split()).strip(" 。.!！?？;；：:")
