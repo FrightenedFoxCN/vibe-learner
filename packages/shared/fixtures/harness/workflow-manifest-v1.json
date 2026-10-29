@@ -804,7 +804,7 @@
         "status": "registered",
         "contract": {
           "name": "LearningPlanWorkflowManifestEntry",
-          "version": "learning-plan-workflow-manifest-v1"
+          "version": "learning-plan-workflow-manifest-v2"
         }
       },
       "owner_module": "app.services.model_provider",
@@ -812,7 +812,7 @@
         "status": "registered",
         "contract": {
           "name": "LearningPlanWorkflowAdapter",
-          "version": "learning-plan-workflow-adapter-v1"
+          "version": "learning-plan-workflow-adapter-v2"
         }
       },
       "input_contract": {
@@ -826,14 +826,14 @@
         "status": "registered",
         "contract": {
           "name": "LearningPlanRuntimeOutput",
-          "version": "learning-plan-runtime-output-v1"
+          "version": "learning-plan-runtime-output-v2"
         }
       },
       "output_contract": {
         "status": "registered",
         "contract": {
           "name": "LearningPlanCommittedProjection",
-          "version": "learning-plan-committed-projection-v1"
+          "version": "learning-plan-committed-projection-v2"
         }
       },
       "component_contracts": [
@@ -843,7 +843,7 @@
             "status": "registered",
             "contract": {
               "name": "planning_prompt",
-              "version": "planning-prompt-v6"
+              "version": "planning-prompt-v7"
             }
           }
         },
@@ -853,7 +853,7 @@
             "status": "registered",
             "contract": {
               "name": "planning_toolset",
-          "version": "planning-toolset-v2"
+              "version": "planning-toolset-v2"
             }
           }
         }
@@ -862,7 +862,7 @@
         "status": "registered",
         "contract": {
           "name": "LearningPlanPrompt",
-          "version": "planning-prompt-v6"
+          "version": "planning-prompt-v7"
         }
       },
       "policy_contract": {
@@ -912,11 +912,11 @@
           "stage": "plan_generation",
           "trace_contract": {
             "name": "LearningPlanRuntimeOutput",
-            "version": "learning-plan-runtime-output-v1"
+            "version": "learning-plan-runtime-output-v2"
           },
           "payload_contract": {
             "name": "LearningPlanCommittedProjection",
-            "version": "learning-plan-committed-projection-v1"
+            "version": "learning-plan-committed-projection-v2"
           }
         }
       },
@@ -1110,7 +1110,7 @@
             "status": "registered",
             "contract": {
               "name": "planning_tool_runtime",
-              "version": "planning-tool-runtime-v2"
+              "version": "planning-tool-runtime-v3"
             }
           }
         },
@@ -1120,7 +1120,7 @@
             "status": "registered",
             "contract": {
               "name": "planning_toolset",
-          "version": "planning-toolset-v2"
+              "version": "planning-toolset-v2"
             }
           }
         }
@@ -1185,6 +1185,131 @@
           {
             "name": "planning_tool_eval",
             "version": "planning-tool-eval-v1"
+          }
+        ]
+      }
+    },
+    {
+      "key": "planning:study_unit_revision",
+      "workflow": "planning",
+      "stage": "study_unit_revision",
+      "registration": {
+        "status": "registered",
+        "contract": {
+          "name": "StudyUnitRevisionManifest",
+          "version": "study-unit-revision-manifest-v1"
+        }
+      },
+      "owner_module": "app.services.study_unit_revision",
+      "owner_adapter": {
+        "status": "registered",
+        "contract": {
+          "name": "StudyUnitRevisionAdapter",
+          "version": "study-unit-revision-adapter-v1"
+        }
+      },
+      "input_contract": {
+        "status": "registered",
+        "contract": {
+          "name": "StudyUnitRevisionInputManifest",
+          "version": "study-unit-revision-input-v1"
+        }
+      },
+      "proposal_contract": {
+        "status": "registered",
+        "contract": {
+          "name": "StudyUnitRevisionOutput",
+          "version": "study-unit-revision-output-v1"
+        }
+      },
+      "output_contract": {
+        "status": "registered",
+        "contract": {
+          "name": "StudyUnitRevisionCommittedProjection",
+          "version": "study-unit-revision-commit-v1"
+        }
+      },
+      "component_contracts": [
+        {
+          "component_name": "study_unit_revision_patch",
+          "contract": {
+            "status": "registered",
+            "contract": {
+              "name": "study_unit_revision_patch",
+              "version": "study-unit-revision-patch-v1"
+            }
+          }
+        }
+      ],
+      "prompt_contract": {
+        "status": "registered",
+        "contract": {
+          "name": "StudyUnitRevisionPrompt",
+          "version": "study-unit-revision-prompt-v1"
+        }
+      },
+      "policy_contract": {
+        "status": "registered",
+        "contract": {
+          "name": "StudyUnitRevisionPolicy",
+          "version": "study-unit-revision-policy-v1"
+        }
+      },
+      "toolset_contract": {
+        "status": "not_applicable",
+        "reason": "no_tools"
+      },
+      "attempt_ceiling": {
+        "max_attempts": 3,
+        "max_repair_attempts": 2
+      },
+      "execution_budget": {
+        "max_provider_calls": 3,
+        "max_tool_calls": 16,
+        "max_input_tokens": 64000,
+        "max_output_tokens": 8192,
+        "max_wall_time_ms": 180000,
+        "per_call_timeout_ms": 120000
+      },
+      "allowed_artifact_types": {
+        "status": "registered",
+        "artifact_types": [
+          "planning_context"
+        ]
+      },
+      "allowed_effect_adapters": {
+        "status": "not_applicable",
+        "reason": "no_effects"
+      },
+      "commit_policy": {
+        "status": "registered",
+        "key": {
+          "workflow": "planning",
+          "stage": "study_unit_revision",
+          "trace_contract": {
+            "name": "StudyUnitRevisionOutput",
+            "version": "study-unit-revision-output-v1"
+          },
+          "payload_contract": {
+            "name": "StudyUnitRevisionCommittedProjection",
+            "version": "study-unit-revision-commit-v1"
+          }
+        }
+      },
+      "decoder_route": {
+        "status": "registered",
+        "value": "app.services.study_unit_revision.StudyUnitRevisionService"
+      },
+      "eval_route": {
+        "status": "registered",
+        "value": "planning.study_unit_revision"
+      },
+      "eval_suites": {
+        "status": "registered",
+        "contracts": [
+          {
+            "name": "study_unit_revision_regression",
+            "version": "study-unit-revision-regression-v1"
           }
         ]
       }

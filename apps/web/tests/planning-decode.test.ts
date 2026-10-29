@@ -33,6 +33,7 @@ function wirePlanningContext() {
   };
   return {
     document_id: "document-1",
+    document_revision: 0,
     course_outline: [{ ...section, children: [] }],
     study_units: [unit],
     detail_map: {

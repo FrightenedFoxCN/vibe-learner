@@ -71,7 +71,7 @@
       "owner_module": "app.services.plan_prompt",
       "contract": {
         "name": "planning_prompt",
-        "version": "planning-prompt-v6"
+        "version": "planning-prompt-v7"
       }
     },
     {
@@ -79,7 +79,7 @@
       "owner_module": "app.services.plan_tool_runtime",
       "contract": {
         "name": "planning_tool_runtime",
-        "version": "planning-tool-runtime-v2"
+        "version": "planning-tool-runtime-v3"
       }
     },
     {
@@ -87,7 +87,7 @@
       "owner_module": "app.services.plan_tool_runtime",
       "contract": {
         "name": "planning_toolset",
-          "version": "planning-toolset-v2"
+        "version": "planning-toolset-v2"
       }
     },
     {
@@ -128,6 +128,14 @@
       "contract": {
         "name": "study_unit_cleaner",
         "version": "study-unit-cleaner-v1"
+      }
+    },
+    {
+      "component_name": "study_unit_revision_patch",
+      "owner_module": "app.models.study_unit_revision",
+      "contract": {
+        "name": "study_unit_revision_patch",
+        "version": "study-unit-revision-patch-v1"
       }
     },
     {
@@ -255,6 +263,15 @@
         "planning_toolset"
       ],
       "eval_route": "planning.tool_execution"
+    },
+    {
+      "workflow": "planning",
+      "stage": "study_unit_revision",
+      "owner_module": "app.services.study_unit_revision",
+      "component_names": [
+        "study_unit_revision_patch"
+      ],
+      "eval_route": "planning.study_unit_revision"
     },
     {
       "workflow": "scene",

@@ -30,6 +30,8 @@ flowchart LR
 
 There is no background queue, authentication layer, Live2D runtime, or TTS service in the current repository.
 
+Planning tool suggestions do not silently rewrite textbook units. Generation saves a conservative Plan and, when proposed, a separately admitted Study Unit preview. Explicit acceptance uses Document revision CAS and commits Document/Debug, an immutable receipt and a terminal v3 trace together. Existing plans retain their original unit snapshots. See [Study Unit revision](study-unit-revision.md).
+
 ## Application lifecycle
 
 `create_app(settings=...)` builds an application without opening a database.

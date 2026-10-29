@@ -26,6 +26,7 @@ from app.models.api import BatchCreatePersonaCardsRequest, CreatePersonaCardRequ
 from app.models.domain import PersonaCardRecord, PersonaSlot, PlanGenerationTraceRecord
 from app.models.harness import HarnessStage, canonical_harness_digest
 from app.models.harness_operation import HarnessDomainOperationKind
+from app.models.study_unit_revision import StudyUnitRevisionDecisionV1, StudyUnitRevisionResponseV1
 from app.models.stream import (
     DOCUMENT_STREAM_PROJECTION_CONTRACT,
     LEARNING_PLAN_STREAM_PROJECTION_CONTRACT,
@@ -753,6 +754,19 @@ def update_study_unit_title(
     )
 
 
+@router.get("/learning-plans/{plan_id}/study-unit-revision", response_model=StudyUnitRevisionResponseV1)
+def get_study_unit_revision(plan_id: str, *, container: Container = Depends(get_container)):
+    return container.study_unit_revision_service.repository.get(plan_id)
+
+
+@router.post("/learning-plans/{plan_id}/study-unit-revision/{operation_id}/decision", response_model=StudyUnitRevisionResponseV1)
+def decide_study_unit_revision(
+    plan_id: str, operation_id: str, payload: StudyUnitRevisionDecisionV1,
+    *, container: Container = Depends(get_container),
+):
+    return container.study_unit_revision_service.decide(plan_id, operation_id, payload.decision)
+
+
 @router.post("/documents/{document_id}/process/stream")
 def process_document_stream(
     document_id: str, payload: ProcessDocumentRequest | None = None
@@ -925,8 +939,12 @@ def get_document_process_events(document_id: str, *, container: Container = Depe
     response_model=DocumentPlanningContextResponse,
 )
 def get_document_planning_context(document_id: str, *, container: Container = Depends(get_container)) -> DocumentPlanningContextResponse:
-    document = container.document_service.require_document(document_id)
-    report = container.document_service.require_debug_report(document_id)
+    snapshot = container.document_service.repository.get_with_debug(document_id)
+    if snapshot is None:
+        raise HTTPException(404, "document_not_found")
+    document, report = snapshot
+    if report is None:
+        raise HTTPException(404, "document_debug_not_found")
     study_units = document.study_units or report.study_units
     planning_context = build_learning_plan_context(
         study_units=study_units,
@@ -934,8 +952,12 @@ def get_document_planning_context(document_id: str, *, container: Container = De
     )
     payload = {
         "document_id": document_id,
+        "document_revision": document.revision,
         "course_outline": planning_context["course_outline"],
-        "study_units": planning_context["study_units"],
+        "study_units": [
+            {**unit, "unit_id": unit["detail_tool_target_id"]}
+            for unit in planning_context["study_units"]
+        ],
         "detail_map": planning_context["detail_map"],
         "available_tools": get_learning_plan_tool_specs(
             study_units=study_units,

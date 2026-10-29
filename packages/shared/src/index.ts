@@ -12,4 +12,5 @@ export * from "./tool-manifest";
 export * from "./diagnostic";
 export * from "./diagnostic-export";
 export * from "./plan-revision";
+export * from "./study-unit-revision";
 export * from "./model-runtime-config";

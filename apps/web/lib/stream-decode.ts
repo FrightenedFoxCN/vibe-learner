@@ -443,10 +443,10 @@ export function decodeStreamEvent(
       streamKind === "document_process" ? "document" : "learning_plan";
     const expectedProjectionContract =
       streamKind === "document_process" ? "document-record-v1" : "learning-plan-record-v1";
-    const expectedCommitContract =
+    const expectedCommitContracts =
       streamKind === "document_process"
-        ? "document-process-commit-v1"
-        : "learning-plan-commit-v1";
+        ? ["document-process-commit-v1"]
+        : ["learning-plan-commit-v1", "learning-plan-commit-v2"];
     decoder.equal(
       terminalEvidence.resourceType ?? "",
       expectedResourceType,
@@ -457,9 +457,9 @@ export function decodeStreamEvent(
       expectedProjectionContract,
       `${path}.terminal_evidence.projection_contract_version`,
     );
-    decoder.equal(
+    decoder.enumeration(
       terminalEvidence.commitContractVersion ?? "",
-      expectedCommitContract,
+      expectedCommitContracts,
       `${path}.terminal_evidence.commit_contract_version`,
     );
     const projectionId = decoder.string(

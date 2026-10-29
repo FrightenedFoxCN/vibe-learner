@@ -284,7 +284,7 @@ class RemotePlanningProvider(PlanningModelCapability):
             overview=proposal.overview,
             today_tasks=list(proposal.today_tasks),
             schedule=schedule_items,
-            revised_study_units=active_study_units if _study_units_changed(study_units, active_study_units) else None,
+            study_unit_suggestions=active_tool_runtime.proposed_study_units(),
             planning_questions=planning_questions,
             debug_trace=final_trace,
             output_language=proposal.output_language,
@@ -467,22 +467,3 @@ def _merge_plan_generation_traces(
         for index, item in enumerate(second.rounds)
     ]
     return first.model_copy(update={"rounds": [*first.rounds, *repaired_rounds]})
-
-
-
-def _study_units_changed(
-    original_units: list[StudyUnitRecord],
-    current_units: list[StudyUnitRecord],
-) -> bool:
-    if len(original_units) != len(current_units):
-        return True
-    for original, current in zip(original_units, current_units):
-        if (
-            original.id != current.id
-            or original.title != current.title
-            or original.page_start != current.page_start
-            or original.page_end != current.page_end
-            or original.include_in_plan != current.include_in_plan
-        ):
-            return True
-    return False

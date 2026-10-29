@@ -1,0 +1,93 @@
+{
+  "schema_version": "stage-regression-cases-v1",
+  "provenance": "developer_authored",
+  "cases": [
+    {
+      "case_id": "study-unit-revision-retain-identity",
+      "stage": "study_unit_revision",
+      "scenario": "retain_identity",
+      "input": null,
+      "expected": {
+        "accepted": true,
+        "revision_advanced_once": true,
+        "base_unchanged": true,
+        "debug_matches": true,
+        "identity_retained": true,
+        "excluded_from_sections": true
+      }
+    },
+    {
+      "case_id": "study-unit-revision-split",
+      "stage": "study_unit_revision",
+      "scenario": "split",
+      "input": null,
+      "expected": {
+        "accepted": true,
+        "revision_advanced_once": true,
+        "base_unchanged": true,
+        "debug_matches": true,
+        "identity_retained": false,
+        "excluded_from_sections": true
+      }
+    },
+    {
+      "case_id": "study-unit-revision-exclude-front-matter",
+      "stage": "study_unit_revision",
+      "scenario": "exclude_front_matter",
+      "input": null,
+      "expected": {
+        "accepted": true,
+        "revision_advanced_once": true,
+        "base_unchanged": true,
+        "debug_matches": true,
+        "identity_retained": false,
+        "excluded_from_sections": true
+      }
+    },
+    {
+      "case_id": "study-unit-revision-overlap",
+      "stage": "study_unit_revision",
+      "scenario": "overlap",
+      "input": null,
+      "expected": {
+        "accepted": false
+      }
+    },
+    {
+      "case_id": "study-unit-revision-outside-document",
+      "stage": "study_unit_revision",
+      "scenario": "outside_document",
+      "input": null,
+      "expected": {
+        "accepted": false
+      }
+    },
+    {
+      "case_id": "study-unit-revision-owned-id",
+      "stage": "study_unit_revision",
+      "scenario": "owned_id",
+      "input": null,
+      "expected": {
+        "accepted": false
+      }
+    },
+    {
+      "case_id": "study-unit-revision-no-plannable",
+      "stage": "study_unit_revision",
+      "scenario": "no_plannable",
+      "input": null,
+      "expected": {
+        "accepted": false
+      }
+    },
+    {
+      "case_id": "study-unit-revision-blank-title",
+      "stage": "study_unit_revision",
+      "scenario": "blank_title",
+      "input": null,
+      "expected": {
+        "accepted": false
+      }
+    }
+  ]
+}

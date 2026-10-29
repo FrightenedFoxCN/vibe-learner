@@ -442,7 +442,7 @@ class PlanningContractTests(unittest.TestCase):
             scene_profile=None,
         )
         with patch.object(arrangement, "build_goal_only_plan", side_effect=build_with_stale_scene):
-            candidate, _, _, _ = service._build_plan_candidate(
+            candidate, _, _, _, _ = service._build_plan_candidate(
                 goal=goal,
                 document=None,
                 persona_name="Aurora",

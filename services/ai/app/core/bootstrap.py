@@ -26,6 +26,8 @@ from app.services.local_store import LegacyLocalJsonStore, LocalJsonStore
 from app.services.pedagogy import PedagogyOrchestrator
 from app.services.performance import PerformanceMapper
 from app.services.plans import LearningPlanService
+from app.services.study_unit_revision import StudyUnitRevisionService
+from app.persistence.study_unit_revision_repository import StudyUnitRevisionRepository
 from app.services.persona_cards import PersonaCardLibraryService
 from app.services.persona import PersonaEngine
 from app.services.reusable_scene_nodes import ReusableSceneNodeLibraryService
@@ -119,6 +121,9 @@ class Container:
             self.document_parser,
             self.study_arrangement_service,
             harness_service=self.harness_proposal_runtime,
+        )
+        self.study_unit_revision_service = StudyUnitRevisionService(
+            StudyUnitRevisionRepository(self.database), self.harness_proposal_runtime, self.store,
         )
         self.plan_service = LearningPlanService(
             self.store,

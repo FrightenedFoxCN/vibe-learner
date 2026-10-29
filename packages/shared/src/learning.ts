@@ -338,6 +338,7 @@ export interface PlanningToolSpec {
 
 export interface DocumentPlanningContext {
   documentId: string;
+  documentRevision: number;
   courseOutline: PlanningOutlineNode[];
   studyUnits: PlanningStudyUnitContext[];
   detailMap: Record<string, StudyUnitPlanningDetail>;

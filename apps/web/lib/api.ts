@@ -1,4 +1,5 @@
 import { decodePlanRevision } from "./plan-revision-decode";
+import { decodeStudyUnitRevision } from "./study-unit-revision-decode";
 import { studyDiagnosticContext } from "./study-diagnostic-context";
 import { createDiagnosticId, diagnosticContext, diagnosticDecode, recordDecodeFailure, diagnosticFetch, type DiagnosticContext } from "./diagnostics";
 import { MODEL_RUNTIME_CONFIG } from "@vibe-learner/shared/model-runtime-config";
@@ -2082,4 +2083,22 @@ export async function listPlanRevisions(planId: string): Promise<number[]> {
     throw new PlanningDecodeError("plan_revision_history", "invalid_history");
   }
   return raw.revisions as number[];
+}
+
+export async function getStudyUnitRevision(planId: string, documentId: string) {
+  const response = await request(`${AI_BASE_URL()}/learning-plans/${planId}/study-unit-revision`);
+  const raw = await readJson<unknown>(response);
+  return diagnosticDecode(response, () => decodeStudyUnitRevision(raw, planId, documentId));
+}
+
+export async function decideStudyUnitRevision(planId: string, documentId: string, operationId: string, decision: "accept" | "reject") {
+  const response = await request(`${AI_BASE_URL()}/learning-plans/${planId}/study-unit-revision/${operationId}/decision`, {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ decision }),
+  });
+  const raw = await readJson<unknown>(response);
+  return diagnosticDecode(response, () => {
+    const value = decodeStudyUnitRevision(raw, planId, documentId);
+    if (value.preview.operationId !== operationId) throw new PlanningDecodeError("study_unit_revision", "identity_mismatch");
+    return value;
+  });
 }

@@ -8,6 +8,7 @@ from pydantic import (
     model_validator,
 )
 from app.models.harness import HarnessContractRef, HarnessSafeManifest
+from app.models.study_unit_revision import StudyUnitRevisionPreviewV1
 from app.models.domain import (
     DocumentDebugRecord,
     DocumentRecord,
@@ -31,7 +32,7 @@ PLAN_SNAPSHOT_CONTRACT = HarnessContractRef(
 
 
 PLAN_PROMPT_CONTRACT = HarnessContractRef(
-    name="LearningPlanPrompt", version="planning-prompt-v6"
+    name="LearningPlanPrompt", version="planning-prompt-v7"
 )
 
 
@@ -41,12 +42,12 @@ PLAN_POLICY_CONTRACT = HarnessContractRef(
 
 
 PLAN_ADAPTER_CONTRACT = HarnessContractRef(
-    name="LearningPlanWorkflowAdapter", version="learning-plan-workflow-adapter-v1"
+    name="LearningPlanWorkflowAdapter", version="learning-plan-workflow-adapter-v2"
 )
 
 
 PLAN_TRACE_CONTRACT = HarnessContractRef(
-    name="LearningPlanRuntimeOutput", version="learning-plan-runtime-output-v1"
+    name="LearningPlanRuntimeOutput", version="learning-plan-runtime-output-v2"
 )
 
 
@@ -114,6 +115,19 @@ class LearningPlanRuntimeOutputV1(_StrictModel):
             or self.debug_report.document_id != self.document.id
         ):
             raise ValueError("learning_plan_debug_identity_invalid")
+        return self
+
+
+class LearningPlanRuntimeOutputV2(LearningPlanRuntimeOutputV1):
+    schema_version: Literal["learning-plan-runtime-output-v2"] = "learning-plan-runtime-output-v2"
+    study_unit_revision: StudyUnitRevisionPreviewV1 | None = None
+
+    @model_validator(mode="after")
+    def validate_revision(self):
+        if self.study_unit_revision is not None:
+            if (self.study_unit_revision.plan_id != self.plan.id
+                    or self.study_unit_revision.base_document != self.document):
+                raise ValueError("learning_plan_unit_revision_preview_scope_mismatch")
         return self
 
 

@@ -21,7 +21,7 @@ from app.models.document_processing import (
 )
 from app.models.planning_runtime import (
     LearningPlanInputManifest,
-    LearningPlanRuntimeOutputV1,
+    LearningPlanRuntimeOutputV2,
     PlanningToolExecutionEvidenceV1,
     PlanningToolExecutionInputManifest,
 )
@@ -132,7 +132,7 @@ class HarnessBroadCommitBindingTests(unittest.TestCase):
                 persona_name=self.persona.name, persona=self.persona,
                 debug_report=debug.model_copy(deep=True),
             )
-        output = LearningPlanRuntimeOutputV1(
+        output = LearningPlanRuntimeOutputV2(
             plan=candidate[0], document=candidate[1], debug_report=candidate[2], trace=candidate[3]
         )
         prepared, runtime = self.plans.harness_service.prepare_plan(

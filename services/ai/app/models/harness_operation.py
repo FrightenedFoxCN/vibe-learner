@@ -23,6 +23,7 @@ class HarnessDomainOperationKind(StrEnum):
     DOCUMENT_OCR = "document_ocr"
     STUDY_UNIT_CLEANUP = "study_unit_cleanup"
     LEARNING_PLAN_REVISION = "learning_plan_revision"
+    STUDY_UNIT_REVISION = "study_unit_revision"
     LEARNING_PLAN_GENERATION = "learning_plan_generation"
     PERSONA_GENERATION = "persona_generation"
     SCENE_GENERATION = "scene_generation"
@@ -49,6 +50,7 @@ HARNESS_DOMAIN_OPERATION_ROUTES = MappingProxyType(
             HarnessStage.STUDY_UNIT_CLEANUP,
         ),
         HarnessDomainOperationKind.LEARNING_PLAN_REVISION: (HarnessWorkflow.PLANNING, HarnessStage.PLAN_REVISION),
+        HarnessDomainOperationKind.STUDY_UNIT_REVISION: (HarnessWorkflow.PLANNING, HarnessStage.STUDY_UNIT_REVISION),
         HarnessDomainOperationKind.LEARNING_PLAN_GENERATION: (
             HarnessWorkflow.PLANNING,
             HarnessStage.PLAN_GENERATION,

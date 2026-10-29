@@ -307,7 +307,7 @@ class Database:
                 ddl = connection.exec_driver_sql(
                     "SELECT sql FROM sqlite_master WHERE type='table' AND name=?", (table,)
                 ).scalar_one_or_none()
-                if ddl and ("frontend_decode" not in str(ddl) or (table == "harness_operation_bindings" and "learning_plan_revision" not in str(ddl))):
+                if ddl and ("frontend_decode" not in str(ddl) or (table == "harness_operation_bindings" and "study_unit_revision" not in str(ddl))):
                     rebuild.append(table)
             if not rebuild:
                 return

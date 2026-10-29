@@ -751,13 +751,33 @@ _ENTRIES = (
         ),
     ),
     _executable_entry(
+        HarnessWorkflow.PLANNING, HarnessStage.STUDY_UNIT_REVISION,
+        registration=("StudyUnitRevisionManifest", "study-unit-revision-manifest-v1"),
+        adapter=("StudyUnitRevisionAdapter", "study-unit-revision-adapter-v1"),
+        input_contract=("StudyUnitRevisionInputManifest", "study-unit-revision-input-v1"),
+        proposal_contract=("StudyUnitRevisionOutput", "study-unit-revision-output-v1"),
+        output_contract=("StudyUnitRevisionCommittedProjection", "study-unit-revision-commit-v1"),
+        artifact_types=(HarnessArtifactType.PLANNING_CONTEXT,),
+        decoder_route="app.services.study_unit_revision.StudyUnitRevisionService",
+        prompt=("StudyUnitRevisionPrompt", "study-unit-revision-prompt-v1"),
+        policy=("StudyUnitRevisionPolicy", "study-unit-revision-policy-v1"),
+        eval_suites=(HarnessContractRef(name="study_unit_revision_regression", version="study-unit-revision-regression-v1"),),
+        commit_policy=HarnessManifestRegisteredCommitPolicySlotV1(
+            key=HarnessManifestCommitPolicyKeyV1(
+                workflow=HarnessWorkflow.PLANNING, stage=HarnessStage.STUDY_UNIT_REVISION,
+                trace_contract=_contract("StudyUnitRevisionOutput", "study-unit-revision-output-v1"),
+                payload_contract=_contract("StudyUnitRevisionCommittedProjection", "study-unit-revision-commit-v1"),
+            )
+        ),
+    ),
+    _executable_entry(
         HarnessWorkflow.PLANNING,
         HarnessStage.PLAN_GENERATION,
-        registration=("LearningPlanWorkflowManifestEntry", "learning-plan-workflow-manifest-v1"),
-        adapter=("LearningPlanWorkflowAdapter", "learning-plan-workflow-adapter-v1"),
+        registration=("LearningPlanWorkflowManifestEntry", "learning-plan-workflow-manifest-v2"),
+        adapter=("LearningPlanWorkflowAdapter", "learning-plan-workflow-adapter-v2"),
         input_contract=("LearningPlanInputManifest", "learning-plan-input-manifest-v1"),
-        proposal_contract=("LearningPlanRuntimeOutput", "learning-plan-runtime-output-v1"),
-        output_contract=("LearningPlanCommittedProjection", "learning-plan-committed-projection-v1"),
+        proposal_contract=("LearningPlanRuntimeOutput", "learning-plan-runtime-output-v2"),
+        output_contract=("LearningPlanCommittedProjection", "learning-plan-committed-projection-v2"),
         artifact_types=(
             HarnessArtifactType.DOCUMENT_DEBUG,
             HarnessArtifactType.PERSONA_SNAPSHOT,
@@ -766,15 +786,15 @@ _ENTRIES = (
             HarnessArtifactType.STUDY_UNIT_INPUT,
         ),
         decoder_route="app.services.harness_broad_adoption.LearningPlanWorkflowAdapter",
-        prompt=("LearningPlanPrompt", "planning-prompt-v6"),
+        prompt=("LearningPlanPrompt", "planning-prompt-v7"),
         policy=("LearningPlanHarnessPolicy", "learning-plan-harness-v1"),
         toolset=_TOOL_MANIFEST_SLOT,
         commit_policy=HarnessManifestRegisteredCommitPolicySlotV1(
             key=HarnessManifestCommitPolicyKeyV1(
                 workflow=HarnessWorkflow.PLANNING,
                 stage=HarnessStage.PLAN_GENERATION,
-                trace_contract=_contract("LearningPlanRuntimeOutput", "learning-plan-runtime-output-v1"),
-                payload_contract=_contract("LearningPlanCommittedProjection", "learning-plan-committed-projection-v1"),
+                trace_contract=_contract("LearningPlanRuntimeOutput", "learning-plan-runtime-output-v2"),
+                payload_contract=_contract("LearningPlanCommittedProjection", "learning-plan-committed-projection-v2"),
             )
         ),
     ),

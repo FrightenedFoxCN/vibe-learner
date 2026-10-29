@@ -295,6 +295,7 @@ class PlanningToolSpecResponse(BaseModel):
 
 class DocumentPlanningContextResponse(BaseModel):
     document_id: str
+    document_revision: int = Field(ge=0)
     course_outline: list[PlanningOutlineNodeResponse]
     study_units: list[PlanningStudyUnitContextResponse]
     detail_map: dict[str, StudyUnitPlanningDetailResponse]

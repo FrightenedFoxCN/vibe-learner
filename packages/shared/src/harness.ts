@@ -39,6 +39,7 @@ export type HarnessStage =
   | "chunk_building"
   | "ocr_page"
   | "study_unit_cleanup"
+  | "study_unit_revision"
   | "plan_revision"
   | "plan_generation"
   | "planning_tool_execution"
@@ -55,6 +56,7 @@ export type HarnessComponentName =
   | "document_chunk_builder"
   | "ocr_engine"
   | "study_unit_cleaner"
+  | "study_unit_revision_patch"
   | "plan_revision_patch"
   | "planning_prompt"
   | "planning_toolset"
@@ -98,6 +100,7 @@ export type HarnessOperationStageKey =
   | "document_parse:chunk_building"
   | "ocr:ocr_page"
   | "study_unit_cleanup:study_unit_cleanup"
+  | "planning:study_unit_revision"
   | "planning:plan_revision"
   | "planning:plan_generation"
   | "planning:planning_tool_execution"
@@ -114,6 +117,7 @@ export const HARNESS_STAGE_WORKFLOWS = deepFreeze({
   chunk_building: "document_parse",
   ocr_page: "ocr",
   study_unit_cleanup: "study_unit_cleanup",
+  study_unit_revision: "planning",
   plan_revision: "planning",
   plan_generation: "planning",
   planning_tool_execution: "planning",
@@ -125,6 +129,7 @@ export const HARNESS_STAGE_WORKFLOWS = deepFreeze({
 } as const satisfies Record<HarnessStage, HarnessWorkflow>);
 
 export const HARNESS_COMPONENT_REGISTRATIONS = deepFreeze({
+  study_unit_revision_patch: { ownerModule: "app.models.study_unit_revision", contract: { name: "study_unit_revision_patch", version: "study-unit-revision-patch-v1" } },
   plan_revision_patch: { ownerModule: "app.models.plan_revision", contract: { name: "plan_revision_patch", version: "plan-revision-patch-v1" } },
   document_parser: { ownerModule: "app.services.document_parser", contract: { name: "document_parser", version: "document-parser-v1" } },
   document_page_extractor: {
@@ -141,14 +146,14 @@ export const HARNESS_COMPONENT_REGISTRATIONS = deepFreeze({
   },
   ocr_engine: { ownerModule: "app.services.ocr_engine", contract: { name: "ocr_engine", version: "ocr-engine-v1" } },
   study_unit_cleaner: { ownerModule: "app.services.study_arrangement", contract: { name: "study_unit_cleaner", version: "study-unit-cleaner-v1" } },
-  planning_prompt: { ownerModule: "app.services.plan_prompt", contract: { name: "planning_prompt", version: "planning-prompt-v6" } },
+  planning_prompt: { ownerModule: "app.services.plan_prompt", contract: { name: "planning_prompt", version: "planning-prompt-v7" } },
   planning_toolset: {
     ownerModule: "app.services.plan_tool_runtime",
     contract: { name: "planning_toolset", version: "planning-toolset-v2" },
   },
   planning_tool_runtime: {
     ownerModule: "app.services.plan_tool_runtime",
-    contract: { name: "planning_tool_runtime", version: "planning-tool-runtime-v2" },
+    contract: { name: "planning_tool_runtime", version: "planning-tool-runtime-v3" },
   },
   persona_compiler: { ownerModule: "app.services.persona_cards", contract: { name: "persona_compiler", version: "persona-compiler-v1" } },
   scene_compiler: { ownerModule: "app.services.scene_setup", contract: { name: "scene_compiler", version: "scene-compiler-v1" } },
@@ -208,6 +213,7 @@ export const HARNESS_OPERATION_STAGE_REGISTRATIONS = deepFreeze({
     componentNames: ["study_unit_cleaner"],
     evalRoute: "document.study_unit_cleanup",
   },
+  "planning:study_unit_revision": { ownerModule: "app.services.study_unit_revision", componentNames: ["study_unit_revision_patch"], evalRoute: "planning.study_unit_revision" },
   "planning:plan_revision": { ownerModule: "app.services.plan_revision", componentNames: ["plan_revision_patch"], evalRoute: "planning.plan_revision" },
   "planning:plan_generation": {
     ownerModule: "app.services.model_provider",
@@ -321,6 +327,7 @@ export type HarnessResourceType =
   | "document_page"
   | "document_debug"
   | "study_unit"
+  | "study_unit_revision"
   | "plan_revision"
   | "learning_plan"
   | "planning_trace"
@@ -362,6 +369,7 @@ export interface HarnessResourceEvidencePolicy {
 }
 
 export const HARNESS_RESOURCE_EVIDENCE_POLICIES = {
+  study_unit_revision: { semantics: "immutable", contextEvidence: "protected_snapshot", commitEvidence: "digest", rollbackEvidence: "unsupported" },
   plan_revision: { semantics: "immutable", contextEvidence: "protected_snapshot", commitEvidence: "digest", rollbackEvidence: "unsupported" },
   document: {
     semantics: "unversioned_mutable",
@@ -496,6 +504,17 @@ export interface HarnessOperationCommitPolicy {
 }
 
 export const HARNESS_OPERATION_COMMIT_POLICIES = deepFreeze({
+  "planning:study_unit_revision:StudyUnitRevisionOutput:study-unit-revision-output-v1:StudyUnitRevisionCommittedProjection:study-unit-revision-commit-v1": {
+    workflow: "planning", stage: "study_unit_revision",
+    traceContract: { name: "StudyUnitRevisionOutput", version: "study-unit-revision-output-v1" },
+    payloadContract: { name: "StudyUnitRevisionCommittedProjection", version: "study-unit-revision-commit-v1" },
+    projectionContract: { name: "StudyUnitRevisionCommittedProjection", version: "study-unit-revision-commit-v1" },
+    bindingContract: { name: "StudyUnitRevisionBinding", version: "study-unit-revision-binding-v1" },
+    digestScope: "committed_projection", evidenceScope: "complete_transaction",
+    subjectResourceType: "frontend_request", subjectResourceCount: 1,
+    statusRules: [{ traceStatus: "failed", commitStatus: "not_committed" }, { traceStatus: "passed", commitStatus: "committed" }],
+    resourceRules: [{ resourceType: "study_unit_revision", committedAttemptedCount: 1, committedResourceCount: 1, notCommittedAttemptedMin: 1, notCommittedAttemptedMax: 1 }],
+  },
   "planning:plan_revision:PlanRevisionProposal:plan-revision-proposal-v1:PlanRevisionCommittedProjection:plan-revision-committed-projection-v1": {
     workflow: "planning", stage: "plan_revision",
     traceContract: { name: "PlanRevisionProposal", version: "plan-revision-proposal-v1" },
@@ -524,6 +543,24 @@ export const HARNESS_OPERATION_COMMIT_POLICIES = deepFreeze({
       { traceStatus: "repaired", commitStatus: "committed" },
     ],
     resourceRules: [{ resourceType: "document", committedAttemptedCount: 1, committedResourceCount: 1, notCommittedAttemptedMin: 1, notCommittedAttemptedMax: 1 }],
+  },
+  "planning:plan_generation:LearningPlanRuntimeOutput:learning-plan-runtime-output-v2:LearningPlanCommittedProjection:learning-plan-committed-projection-v2": {
+    workflow: "planning",
+    stage: "plan_generation",
+    traceContract: { name: "LearningPlanRuntimeOutput", version: "learning-plan-runtime-output-v2" },
+    payloadContract: { name: "LearningPlanCommittedProjection", version: "learning-plan-committed-projection-v2" },
+    projectionContract: { name: "LearningPlanCommittedProjection", version: "learning-plan-committed-projection-v2" },
+    bindingContract: { name: "LearningPlanOperationBinding", version: "learning-plan-operation-binding-v2" },
+    digestScope: "committed_projection",
+    evidenceScope: "complete_transaction",
+    subjectResourceType: "frontend_request",
+    subjectResourceCount: 1,
+    statusRules: [
+      { traceStatus: "failed", commitStatus: "not_committed" },
+      { traceStatus: "passed", commitStatus: "committed" },
+      { traceStatus: "repaired", commitStatus: "committed" },
+    ],
+    resourceRules: [{ resourceType: "learning_plan", committedAttemptedCount: 1, committedResourceCount: 1, notCommittedAttemptedMin: 1, notCommittedAttemptedMax: 1 }],
   },
   "planning:plan_generation:LearningPlanRuntimeOutput:learning-plan-runtime-output-v1:LearningPlanCommittedProjection:learning-plan-committed-projection-v1": {
     workflow: "planning",

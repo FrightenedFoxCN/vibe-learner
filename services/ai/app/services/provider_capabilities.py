@@ -17,6 +17,7 @@ from app.models.domain import (
     StudyUnitRecord,
 )
 from app.models.planning import PlanScheduleChapterProposalV1
+from app.models.study_unit_revision import StudyUnitSuggestionsV1
 from app.models.study_chat_operation import StudyChatMessageKind
 from app.models.tavern import TavernActorReply, TavernMessageRecord, TavernParticipantRecord
 from app.models.study_question import StudyQuestionProposalV1
@@ -55,10 +56,10 @@ class PlanModelReply:
     overview: str
     today_tasks: list[str]
     schedule: list[PlanScheduleItem]
-    revised_study_units: list[StudyUnitRecord] | None = None
     planning_questions: list[PlanningQuestionRecord] | None = None
     debug_trace: PlanGenerationTraceRecord | None = None
     output_language: str = "unknown"
+    study_unit_suggestions: StudyUnitSuggestionsV1 | None = None
 
 
 class PlanningModelCapability:

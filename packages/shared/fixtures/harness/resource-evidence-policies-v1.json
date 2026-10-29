@@ -80,6 +80,13 @@
       "rollback_evidence": "unsupported"
     },
     {
+      "resource_type": "study_unit_revision",
+      "semantics": "immutable",
+      "context_evidence": "protected_snapshot",
+      "commit_evidence": "digest",
+      "rollback_evidence": "unsupported"
+    },
+    {
       "resource_type": "tavern_message",
       "semantics": "append_only",
       "context_evidence": "unsupported",

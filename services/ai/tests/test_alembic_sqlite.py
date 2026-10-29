@@ -18,7 +18,7 @@ from app.persistence.document_repository import DocumentRepository
 from tests.support.planning_operations import planning_document
 
 
-ALEMBIC_HEAD = "20261029_0023"
+ALEMBIC_HEAD = "20261029_0024"
 
 
 def _normalize_sql(expression: object) -> str:
@@ -88,6 +88,38 @@ def _schema_signature(engine: Engine) -> dict[str, object]:
 
 
 class AlembicSqliteTests(unittest.TestCase):
+    def test_unit_revision_upgrade_preserves_admissions_and_guards(self) -> None:
+        from app.models.harness_operation import HarnessDomainOperationKind
+        from app.persistence.harness_operation_repository import HarnessOperationBindingRepository
+        from app.persistence.harness_workflow_operation_repository import HarnessWorkflowOperationRepository
+        from sqlalchemy.exc import DatabaseError
+        for mode in ("alembic", "runtime"):
+            with self.subTest(mode=mode), TemporaryDirectory() as folder:
+                url = f"sqlite:///{Path(folder) / 'populated.db'}"
+                config = alembic_config(url)
+                with patch.dict(os.environ, {"DATABASE_URL": url}):
+                    command.upgrade(config, "20261029_0023")
+                database = Database(url)
+                binding = HarnessWorkflowOperationRepository(database).admit(
+                    kind=HarnessDomainOperationKind.FRONTEND_DECODE,
+                    request_manifest={"fixture": "migration"})
+                if mode == "alembic":
+                    with patch.dict(os.environ, {"DATABASE_URL": url}):
+                        command.upgrade(config, "head")
+                else:
+                    database.create_schema()
+                restored = HarnessOperationBindingRepository(database).require_domain(
+                    domain_operation_kind=binding.domain_operation_kind,
+                    domain_operation_id=binding.domain_operation_id)
+                self.assertEqual(restored, binding)
+                with database.engine.connect() as connection:
+                    self.assertEqual(connection.exec_driver_sql("PRAGMA foreign_key_check").all(), [])
+                    self.assertIn("study_unit_revision", next(item["sqltext"] for item in inspect(connection).get_check_constraints(
+                        "harness_operation_bindings") if item["name"] == "ck_harness_operation_binding_route"))
+                with self.assertRaises(DatabaseError), database.engine.begin() as connection:
+                    connection.execute(text("UPDATE harness_operation_bindings SET domain_operation_id='tampered'"))
+                database.dispose()
+
     def test_document_revision_upgrade_preserves_legacy_payload_and_digest(self) -> None:
         payload = planning_document().model_dump(mode="json")
         self.assertNotIn("revision", payload)

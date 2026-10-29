@@ -3,6 +3,8 @@ export {
   cancelStreamRun,
   createLearningPlan,
   createLearningPlanStream,
+  getStudyUnitRevision,
+  decideStudyUnitRevision,
   deleteLearningPlan,
   listLearningPlans,
   updateLearningPlanProgress,

@@ -54,6 +54,8 @@ class HarnessOperationBindingRow(Base):
             "AND workflow = 'planning' AND entry_stage = 'plan_generation') OR "
             "(domain_operation_kind = 'learning_plan_revision' "
             "AND workflow = 'planning' AND entry_stage = 'plan_revision') OR "
+            "(domain_operation_kind = 'study_unit_revision' "
+            "AND workflow = 'planning' AND entry_stage = 'study_unit_revision') OR "
             "(domain_operation_kind = 'persona_generation' "
             "AND workflow = 'persona' AND entry_stage = 'persona_generation') OR "
             "(domain_operation_kind = 'scene_generation' "
@@ -686,6 +688,29 @@ class PlanRevisionOperationRow(Base):
     decision_receipt: Mapped[dict[str, Any] | None] = mapped_column(NULLABLE_JSON_PAYLOAD, nullable=True)
     error_code: Mapped[str] = mapped_column(String(160), default="")
     created_at: Mapped[str] = mapped_column(String(64))
+
+
+class StudyUnitRevisionOperationRow(Base):
+    __tablename__ = "study_unit_revision_operations"
+    __table_args__ = (
+        CheckConstraint(
+            "status IN ('ready', 'applying', 'accepted', 'rejected', 'conflict', 'failed')",
+            name="ck_study_unit_revision_status",
+        ),
+    )
+    operation_id: Mapped[str] = mapped_column(String(80), primary_key=True)
+    harness_operation_id: Mapped[str] = mapped_column(
+        String(64), ForeignKey("harness_operation_bindings.harness_operation_id"), unique=True,
+    )
+    plan_id: Mapped[str] = mapped_column(String(64), unique=True)
+    document_id: Mapped[str] = mapped_column(String(64), index=True)
+    parent_operation_id: Mapped[str] = mapped_column(String(64))
+    preview: Mapped[dict[str, Any]] = mapped_column(JSON_PAYLOAD)
+    base_debug_report: Mapped[dict[str, Any]] = mapped_column(JSON_PAYLOAD)
+    status: Mapped[str] = mapped_column(String(24), default="ready")
+    decision_receipt: Mapped[dict[str, Any] | None] = mapped_column(NULLABLE_JSON_PAYLOAD, nullable=True)
+    error_code: Mapped[str] = mapped_column(String(160), default="")
+    updated_at: Mapped[str] = mapped_column(String(64))
 
 
 class StudySessionRow(Base):

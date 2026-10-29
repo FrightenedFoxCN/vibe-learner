@@ -17,6 +17,7 @@
 | [解析与规划数据流](parsing-and-planning-data-flow.md) | Document → Study Unit → Learning Plan |
 | [章节与日程](study-chapter-and-schedule.md) | 领域术语和 Session 范围 |
 | [计划修订](plan-revision.md) | Plan CAS、修订预览、接受/拒绝、历史回滚与恢复 |
+| [教材单元修订](study-unit-revision.md) | Planning 建议、独立确认、Document CAS 与查询恢复 |
 | [计划文本契约](plan-text-contract.md) | 面向学习者的文本字段语义 |
 | [模型运行时质量](model-runtime-quality.md) | 已采用的规划、记忆、多模态和 Provider 边界 |
 | [规划 Prompt 契约](learning-plan-prompt-contract.md) | Prompt 结构和模型输入 |

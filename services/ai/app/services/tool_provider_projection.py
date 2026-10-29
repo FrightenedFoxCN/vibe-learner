@@ -422,7 +422,7 @@ def adapt_tool_runtime_result(
     if entry.workflow == HarnessWorkflow.PLANNING:
         payload = {
             "schema_name": "planning-tool-result",
-            "schema_version": "planning-tool-result-v1",
+            "schema_version": entry.result_contract.version,
             **raw_result,
             "ok": True,
             "tool_name": entry.canonical_name,

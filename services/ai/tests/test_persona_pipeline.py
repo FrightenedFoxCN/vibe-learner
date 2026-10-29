@@ -2465,7 +2465,7 @@ class PersonaPipelineTests(ContainerTestCase):
         self.assertEqual(follow_up_content[1]["type"], "image_url")
         self.assertEqual(follow_up_content[1]["image_url"]["url"], "data:image/png;base64,AAA")
 
-    def test_revise_study_units_tool_updates_active_segmentation(self) -> None:
+    def test_revise_study_units_tool_records_suggestion_without_changing_context(self) -> None:
         debug_report = DocumentDebugRecord.model_validate(
             {
                 "document_id": "doc-1",
@@ -2562,9 +2562,11 @@ class PersonaPipelineTests(ContainerTestCase):
         self.assertEqual(execution.result["study_unit_count"], 2)
         self.assertEqual(
             [unit.id for unit in runtime.current_study_units()],
-            ["doc-1:study-unit:llm:1", "doc-1:study-unit:llm:2"],
+            ["unit-1"],
         )
-        self.assertIn("doc-1:study-unit:llm:1", runtime.context.detail_map)
+        self.assertEqual(list(runtime.context.detail_map), ["unit-1"])
+        self.assertTrue(execution.result["requires_confirmation"])
+        self.assertEqual(len(runtime.proposed_study_units().study_units), 2)
 
     def test_document_planning_trace_route_wraps_trace_payload(self) -> None:
         trace = PlanGenerationTraceRecord.model_validate(
@@ -3871,12 +3873,12 @@ class PersonaPipelineTests(ContainerTestCase):
                 debug_report=debug_report,
             )
 
-        self.assertIsNotNone(reply.revised_study_units)
+        self.assertIsNotNone(reply.study_unit_suggestions)
         self.assertEqual(
-            [unit.id for unit in reply.revised_study_units or []],
-            ["doc-1:study-unit:llm:1", "doc-1:study-unit:llm:2"],
+            [unit.title for unit in reply.study_unit_suggestions.study_units],
+            ["Chapter 1 Foundations", "Chapter 2 Practice"],
         )
-        self.assertEqual(reply.schedule[0].unit_id, "doc-1:study-unit:llm:1")
+        self.assertEqual(reply.schedule[0].unit_id, "unit-1")
 
     def test_openai_provider_multimodal_tool_call_appends_page_images(self) -> None:
         persona = self.persona_engine.require_persona("mentor-aurora")
@@ -4220,130 +4222,6 @@ class PersonaPipelineTests(ContainerTestCase):
         self.assertEqual(plan.course_title, "Linear Algebra / Chapter 1 Vectors")
         self.assertEqual(plan.overview, "Model-crafted overview")
         self.assertEqual(plan.schedule[0].title, "Chapter 1 Vectors 精读")
-
-    def test_plan_service_persists_model_revised_study_units(self) -> None:
-        arrangement_service = StudyArrangementService()
-        store = LocalJsonStore(Path(self.temp_dir.name) / "plan-revision-case")
-        provider = MockModelProvider()
-        service = LearningPlanService(store, arrangement_service, provider)
-        persona = self.persona_engine.require_persona("mentor-aurora")
-        document = DocumentResponse.model_validate(
-            {
-                "id": "doc-revise",
-                "title": "Discrete Mathematics",
-                "original_filename": "discrete.pdf",
-                "stored_path": "/tmp/discrete.pdf",
-                "status": "processed",
-                "ocr_status": "completed",
-                "created_at": "2026-04-09T00:00:00+00:00",
-                "updated_at": "2026-04-09T00:00:00+00:00",
-                "sections": [],
-                "study_units": [
-                    {
-                        "id": "doc-revise:study-unit:1",
-                        "document_id": "doc-revise",
-                        "title": "Wrong Combined Unit",
-                        "page_start": 1,
-                        "page_end": 20,
-                        "unit_kind": "chapter",
-                        "include_in_plan": True,
-                        "source_section_ids": ["raw-1"],
-                        "summary": "旧划分。",
-                        "confidence": 0.7,
-                    }
-                ],
-                "study_unit_count": 1,
-                "page_count": 20,
-                "chunk_count": 5,
-                "preview_excerpt": "sample",
-                "debug_ready": True,
-            }
-        )
-        store.save_list("documents", [document])
-        debug_report = DocumentDebugRecord.model_validate(
-            {
-                "document_id": "doc-revise",
-                "parser_name": "parser",
-                "processed_at": "2026-04-09T00:00:00+00:00",
-                "page_count": 20,
-                "total_characters": 2000,
-                "extraction_method": "text",
-                "ocr_applied": False,
-                "pages": [],
-                "sections": [],
-                "study_units": document.study_units,
-                "chunks": [],
-                "warnings": [],
-                "dominant_language_hint": "en",
-            }
-        )
-        store.save_item("document_debug", document.id, debug_report)
-
-        with patch.object(
-            provider,
-            "generate_learning_plan",
-            return_value=PlanModelReply(
-                course_title="Discrete Mathematics / Revised",
-                overview="Model-crafted revised overview",
-                today_tasks=["从修正后的第一章开始。"],
-                schedule=[
-                    PlanScheduleItem(
-                        unit_id="doc-revise:study-unit:llm:1",
-                        title="Chapter 1 Foundations 精读",
-                        focus="修正后的第一章。",
-                        activity_type="learn",
-                        duration_minutes=45,
-                        schedule_chapters=[
-                            _schedule_chapter_record(
-                                chapter_id="doc-revise:study-unit:llm:1:chapter-1",
-                                title="Chapter 1 Foundations",
-                                page_start=1,
-                                page_end=10,
-                            )
-                        ],
-                    )
-                ],
-                revised_study_units=[
-                    StudyUnitRecord(
-                        id="doc-revise:study-unit:llm:1",
-                        document_id="doc-revise",
-                        title="Chapter 1 Foundations",
-                        page_start=1,
-                        page_end=10,
-                        summary="第一章",
-                        confidence=0.95,
-                    ),
-                    StudyUnitRecord(
-                        id="doc-revise:study-unit:llm:2",
-                        document_id="doc-revise",
-                        title="Chapter 2 Practice",
-                        page_start=11,
-                        page_end=20,
-                        summary="第二章",
-                        confidence=0.95,
-                    ),
-                ],
-            ),
-        ):
-            plan = service.create_plan(
-                goal=LearningGoalInput(
-                    document_id=document.id,
-                    persona_id=persona.id,
-                    objective="纠正章节划分",
-                ),
-                document=document,
-                persona_name=persona.name,
-                persona=persona,
-                debug_report=debug_report,
-            )
-
-        saved_document = store.load_list("documents", DocumentResponse)[0]
-        saved_debug = store.load_item("document_debug", "doc-revise", DocumentDebugRecord)
-        self.assertEqual([unit.id for unit in plan.study_units], ["doc-revise:study-unit:llm:1", "doc-revise:study-unit:llm:2"])
-        self.assertEqual(plan.schedule[0].unit_id, "doc-revise:study-unit:llm:1")
-        self.assertEqual(saved_document.sections[0].id, "doc-revise:study-unit:llm:1")
-        self.assertIsNotNone(saved_debug)
-        self.assertEqual(saved_debug.study_units[1].id, "doc-revise:study-unit:llm:2")
 
 
     def test_plan_service_updates_plan_title(self) -> None:

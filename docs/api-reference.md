@@ -118,7 +118,7 @@ This reference covers **79 business HTTP operations across 60 unique paths**: 68
 | `GET` | `/study-sessions/{session_id}/attachments/{attachment_id}/file` | Read a stored attachment. |
 | `GET` | `/study-sessions/{session_id}/attachments/{attachment_id}/pages/{page_number}/image` | Render/serve one attachment PDF page image. |
 
-### Learning Plans, streams, exercises, and grading (12)
+### Learning Plans, streams, exercises, and grading (18)
 
 | Method | Path | Purpose |
 |---|---|---|
@@ -135,11 +135,15 @@ This reference covers **79 business HTTP operations across 60 unique paths**: 68
 | `GET` | `/learning-plans/{plan_id}/revisions/{request_id}` | Query-only revision recovery; request ID is the client ID. |
 | `POST` | `/learning-plans/{plan_id}/revisions/{request_id}/decision` | `decision`: `accept` or `reject`; acceptance uses the admitted base revision. |
 | `GET` | `/learning-plans/{plan_id}/revision-history` | Available revision numbers, newest first. |
-
-Current Plan DTOs include `revision`. Title/progress/question PATCH requests accept optional `expected_revision` and return 409 on stale writes. Question answers are saved without implicit model rewriting. Revision responses include status, base Plan, strict proposal and accepted result. Preview/rollback preserve the existing schedule IDs and current progress; [full contract and recovery semantics](plan-revision.md).
+| `GET` | `/learning-plans/{plan_id}/study-unit-revision` | Read a saved textbook-unit suggestion and decision; 404 if none was proposed. |
+| `POST` | `/learning-plans/{plan_id}/study-unit-revision/{operation_id}/decision` | Accept or reject the saved textbook-unit suggestion; accept uses its immutable base Document revision. |
 | `POST` | `/stream-runs/{stream_id}/cancel` | Mark a processing/planning stream as canceled. |
 | `POST` | `/exercises/generate` | Generate a structured exercise. |
 | `POST` | `/submissions/grade` | Grade one structured submission. |
+
+Current Plan DTOs include `revision`. Title/progress/question PATCH requests accept optional `expected_revision` and return 409 on stale writes. Question answers are saved without implicit model rewriting. Revision responses include status, base Plan, strict proposal and accepted result. Preview/rollback preserve the existing schedule IDs and current progress; [full contract and recovery semantics](plan-revision.md).
+
+Textbook-unit suggestion responses contain `preview`, `status`, `result`, `planning_context_revision` and `error_code`. The preview contains the immutable base Document and proposed content, including physical page ranges, classification and inclusion. States are `ready`, `applying`, `accepted`, `rejected`, `conflict` and `failed`; only `accepted` has a result. Decisions accept `{ "decision": "accept" | "reject" }`. A stale Document/Debug produces `conflict`; a different terminal decision returns 409. Ambiguous writes recover with GET, and matching repeated terminal decisions return the existing result. [Full lifecycle](study-unit-revision.md).
 
 ### Tavern (11)
 
@@ -581,6 +585,7 @@ Returns the debug-facing planning context after cleanup.
 Response fields:
 
 - `document_id`
+- `document_revision`: Document/Debug snapshot revision, read in one database query
 - `course_outline[]`: coarse level-1 sections plus level-2 children, kept for Debug Overlay inspection
 - `study_units[]`: plan-facing unit list with summaries and subsection titles
 - `detail_map`: detailed per-unit structure and chunk excerpts

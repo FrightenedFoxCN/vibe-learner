@@ -44,13 +44,14 @@ class PlanningProviderTests(unittest.TestCase):
                 provider.generate_plan_revision(plan=plan, instruction="Edit")
             self.assertEqual(request.call_count, 1)
 
-    def test_repair_uses_post_tool_units_and_cannot_mutate_them_again(self) -> None:
+    def test_repair_keeps_saved_units_after_revision_suggestion(self) -> None:
         from types import SimpleNamespace
         from app.models.domain import PlanGenerationTraceRecord
 
         unit = StudyUnitRecord(id="unit-1", document_id="doc-1", title="Basics",
             page_start=1, page_end=5, source_section_ids=["section-1"])
-        revised = unit.model_copy(update={"id": "unit-revised"})
+        from app.models.study_unit_revision import StudyUnitSuggestionsV1
+        suggestions = StudyUnitSuggestionsV1.model_validate({"study_units": [{"title": "Proposed", "page_start": 1, "page_end": 5}]})
         calls = []
         evidence = [
             {"role": "assistant", "content": "", "tool_calls": [{"id": "image-1", "type": "function", "function": {"name": "read_page_range_images", "arguments": "{}"}}]},
@@ -62,12 +63,12 @@ class PlanningProviderTests(unittest.TestCase):
             calls.append(kwargs)
             payload = valid_proposal_payload()
             if len(calls) == 1:
-                kwargs["tool_runtime"].context.study_units[:] = [revised]
+                kwargs["tool_runtime"].context.study_unit_suggestions[:] = [suggestions]
                 payload["schedule"][0]["unit_index"] = 1
             else:
                 context = json.loads(kwargs["messages"][1]["content"])
                 self.assertEqual(context["allowed_units"][0]["unit_index"], 0)
-                self.assertEqual(context["allowed_units"][0]["detail_tool_target_id"], revised.id)
+                self.assertEqual(context["allowed_units"][0]["detail_tool_target_id"], unit.id)
                 self.assertIn("candidate_output", context)
                 self.assertFalse(kwargs["tool_runtime"].has_tools())
                 self.assertEqual(len(kwargs["messages"]), 2)
@@ -80,8 +81,8 @@ class PlanningProviderTests(unittest.TestCase):
             goal=LearningGoalInput(document_id="doc-1", persona_id="persona-1", objective="Learn"),
             study_units=[unit])
         self.assertEqual(len(calls), 2)
-        self.assertEqual(result.schedule[0].unit_id, revised.id)
-        self.assertEqual(result.revised_study_units[0].id, revised.id)
+        self.assertEqual(result.schedule[0].unit_id, unit.id)
+        self.assertEqual(result.study_unit_suggestions, suggestions)
 
 
     def test_fallback_retains_tool_policy_and_only_runs_once(self):

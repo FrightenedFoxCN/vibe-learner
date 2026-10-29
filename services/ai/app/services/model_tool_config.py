@@ -29,7 +29,7 @@ _TOOL_UI_CATALOG: dict[str, dict[str, dict[str, str]]] = {
             "category_label": "规划分析",
         },
         "revise_study_units": {
-            "label": "学习单元重编排",
+            "label": "学习单元修订提案",
             "category": "planning",
             "category_label": "规划分析",
         },

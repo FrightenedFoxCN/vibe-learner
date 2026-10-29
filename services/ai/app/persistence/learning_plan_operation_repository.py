@@ -40,7 +40,7 @@ from app.models.planning import (
     LEARNING_PLAN_COMMIT_CONTRACT_VERSION,
     LEARNING_PLAN_OPERATION_FINGERPRINT_VERSION,
     LEARNING_PLAN_OPERATION_REQUEST_SCHEMA_VERSION,
-    LearningPlanCommittedProjectionV1,
+    LearningPlanCommittedProjectionV2,
     LearningPlanOperationRecord,
     LearningPlanOperationRequestV1,
     LearningPlanOperationStatus,
@@ -65,6 +65,8 @@ from app.persistence.models import (
     LearningPlanRevisionRow,
     PlanningTraceRow,
 )
+from app.models.study_unit_revision import StudyUnitRevisionPreviewV1
+from app.persistence.study_unit_revision_repository import StudyUnitRevisionRepository
 
 
 class LearningPlanOperationRepository:
@@ -251,6 +253,7 @@ class LearningPlanOperationRepository:
         trace: PlanGenerationTraceRecord | None,
         harness_runtime: HarnessTransactionFinalizer | None = None,
         runtime_prepared: HarnessRuntimePreparedOutput | None = None,
+        study_unit_revision: StudyUnitRevisionPreviewV1 | None = None,
     ) -> LearningPlanOperationRecord:
         now = _now()
         with self.database.session() as session:
@@ -281,6 +284,7 @@ class LearningPlanOperationRepository:
                         (document, output.document),
                         (debug_report, output.debug_report),
                         (trace, output.trace),
+                        (study_unit_revision, output.study_unit_revision),
                     )
                 ):
                     raise ValueError("learning_plan_runtime_projection_mismatch")
@@ -394,7 +398,15 @@ class LearningPlanOperationRepository:
             session.flush()
             self._inject("after_plan_projection")
 
-            projection = LearningPlanCommittedProjectionV1(
+            revision_binding = None
+            if study_unit_revision is not None:
+                if debug_report is None:
+                    raise ValueError("study_unit_revision_debug_required")
+                revision_binding = StudyUnitRevisionRepository(self.database).admit_preview_in_session(
+                    session, preview=study_unit_revision, debug=debug_report,
+                )
+            self._inject("after_unit_revision_admission")
+            projection = LearningPlanCommittedProjectionV2(
                 operation_id=operation.operation_id,
                 client_request_id=operation.client_request_id,
                 plan_id=plan.id,
@@ -419,6 +431,8 @@ class LearningPlanOperationRepository:
                     if trace is not None
                     else ""
                 ),
+                study_unit_revision=study_unit_revision,
+                study_unit_revision_binding=revision_binding,
             )
             operation.status = LearningPlanOperationStatus.COMMITTED.value
             operation.active_slot = None
@@ -433,6 +447,9 @@ class LearningPlanOperationRepository:
             operation.updated_at = now
             operation.completed_at = now
             session.flush()
+            if study_unit_revision is not None:
+                revisions = StudyUnitRevisionRepository(self.database)
+                revisions.validate_preview_in_session(session, study_unit_revision)
             if (harness_runtime is None) != (runtime_prepared is None):
                 raise ValueError("learning_plan_runtime_commit_pair_required")
             if harness_runtime is not None and runtime_prepared is not None:
@@ -445,7 +462,7 @@ class LearningPlanOperationRepository:
                         effect_batch_id=f"learning-plan-commit-{operation_id}",
                         payload_contract=HarnessContractRef(
                             name="LearningPlanCommittedProjection",
-                            version="learning-plan-committed-projection-v1",
+                            version="learning-plan-committed-projection-v2",
                         ),
                         digest_algorithm=HarnessDigestAlgorithm.SHA256,
                         digest_scope=HarnessDigestScope.COMMITTED_PROJECTION,
@@ -545,7 +562,7 @@ class LearningPlanOperationRepository:
                         effect_batch_id=f"learning-plan-commit-{operation_id}",
                         payload_contract=HarnessContractRef(
                             name="LearningPlanCommittedProjection",
-                            version="learning-plan-committed-projection-v1",
+                            version="learning-plan-committed-projection-v2",
                         ),
                         digest_algorithm=HarnessDigestAlgorithm.SHA256,
                         digest_scope=HarnessDigestScope.COMMITTED_PROJECTION,
@@ -569,7 +586,7 @@ class LearningPlanOperationRepository:
         if harness_runtime is None or runtime_prepared is None:
             return
         from app.models.planning_runtime import (
-            LearningPlanRuntimeOutputV1,
+            LearningPlanRuntimeOutputV2,
         )
 
         current = harness_runtime.get_execution_in_session(
@@ -587,14 +604,14 @@ class LearningPlanOperationRepository:
             or current.parent_trace_id is not None
             or current.trace_contract != HarnessContractRef(
                 name="LearningPlanRuntimeOutput",
-                version="learning-plan-runtime-output-v1",
+                version="learning-plan-runtime-output-v2",
             )
             or runtime_prepared.execution.harness_operation_id != binding.harness_operation_id
         ):
             raise ValueError("learning_plan_runtime_binding_mismatch")
         attempts = current.attempt_records
         if (
-            not isinstance(runtime_prepared.output, LearningPlanRuntimeOutputV1)
+            not isinstance(runtime_prepared.output, LearningPlanRuntimeOutputV2)
             or not attempts
             or attempts[-1].phase != HarnessAttemptPhase.VALIDATE
             or attempts[-1].status != HarnessAttemptStatus.PASSED
@@ -735,7 +752,7 @@ def _validate_committed_projection_snapshot(record: LearningPlanOperationRecord)
         return
     if record.committed_projection is None:
         raise LearningPlanReadBackError(record.operation_id, "projection_missing")
-    LearningPlanCommittedProjectionV1.model_validate(
+    type(record.committed_projection).model_validate(
         record.committed_projection.model_dump(mode="json")
     )
 

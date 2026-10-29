@@ -27,7 +27,7 @@ from app.services.provider_study import (
 from app.services.provider_callbacks import _call_interrupt, _emit_progress
 from app.services.provider_planning import (
     RemotePlanningProvider, PlanningProposalDecodeError, _decode_learning_plan_proposal,
-    _study_units_changed, _validate_learning_plan_proposal_refs,
+    _validate_learning_plan_proposal_refs,
 )
 from app.services.provider_payload import (
     _extract_choice_content, _extract_json_payload, _escape_invalid_backslashes_in_json_strings,

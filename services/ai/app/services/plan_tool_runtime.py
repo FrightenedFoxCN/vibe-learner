@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any, Callable
 from uuid import uuid4
+from pydantic import ValidationError
 
 from app.core.harness_component_versions import (
     PLANNING_TOOL_RUNTIME_CONTRACT_VERSION,
@@ -23,9 +24,9 @@ from app.models.tool_manifest import (
     ToolManifestEntryV1,
     resolve_tool_manifest_entry,
 )
+from app.models.study_unit_revision import StudyUnitSuggestionsV1
 from app.services.model_tool_config import PLAN_STAGE, TOOL_CATALOG
 from app.services.plan_prompt import (
-    build_study_unit_detail_map,
     read_page_range_content,
     read_page_range_images,
 )
@@ -60,6 +61,7 @@ class PlanToolRuntimeContext:
     planning_questions: list[PlanningQuestionRecord]
     progress_callback: Callable[[str, dict[str, object]], None] | None
     planning_intent: PlanningIntentV1 = field(default_factory=PlanningIntentV1)
+    study_unit_suggestions: list[StudyUnitSuggestionsV1] = field(default_factory=list)
 
 
 @dataclass(frozen=True)
@@ -105,6 +107,10 @@ class PlanToolRuntime:
 
     def current_planning_questions(self) -> list[PlanningQuestionRecord]:
         return list(self.context.planning_questions)
+
+    def proposed_study_units(self) -> StudyUnitSuggestionsV1 | None:
+        values = self.context.study_unit_suggestions
+        return values[-1].model_copy(deep=True) if values else None
 
     def public_specs(self) -> list[dict[str, str]]:
         return [
@@ -535,33 +541,30 @@ def _execute_revise_study_units(
             page_count=debug_report.page_count,
             raw_sections=debug_report.sections,
         )
+        suggestions = StudyUnitSuggestionsV1.model_validate(arguments)
     except ValueError as exc:
+        reason = "study_unit_suggestions_invalid" if isinstance(exc, ValidationError) else str(exc)
         return PlanToolResult(
             payload={
                 "ok": False,
                 "error": "invalid_study_unit_revision",
-                "detail": str(exc),
+                "detail": reason,
                 **({"recovery": {
                     "kind": "non_overlapping_physical_pages",
                     "document_page_count": debug_report.page_count,
-                }} if str(exc).endswith(("_overlaps_previous", "_page_out_of_range", "_invalid_page_range"))
+                }} if reason.endswith(("_overlaps_previous", "_page_out_of_range", "_invalid_page_range"))
                     and debug_report.page_count > 0 else {}),
             },
-            trace_summary=f"学习单元重编排无效：{exc}",
+            trace_summary=f"学习单元修订建议无效：{reason}",
             follow_up_messages=[],
         )
 
-    context.study_units[:] = revised_units
-    next_detail_map = build_study_unit_detail_map(
-        study_units=revised_units,
-        debug_report=debug_report,
-    )
-    context.detail_map.clear()
-    context.detail_map.update(next_detail_map)
+    context.study_unit_suggestions[:] = [suggestions]
     return PlanToolResult(
         payload={
             "ok": True,
             "tool_name": "revise_study_units",
+            "requires_confirmation": True,
             "rationale": str(arguments.get("rationale") or ""),
             "study_unit_count": len(revised_units),
             "plannable_count": len([unit for unit in revised_units if unit.include_in_plan]),
@@ -580,7 +583,10 @@ def _execute_revise_study_units(
             revised_units=revised_units,
             rationale=str(arguments.get("rationale") or ""),
         ),
-        follow_up_messages=[],
+        follow_up_messages=[{
+            "role": "user",
+            "content": "单元修订仅已保存为待确认提案。当前教材和工具上下文没有变化；最终计划的 unit_index 必须继续引用初始 study_units，不能使用提案单元。用户确认后才会应用修订。",
+        }],
     )
 
 
@@ -667,7 +673,7 @@ def _validate_revised_study_units(
                 title=title,
                 page_start=page_start,
                 page_end=page_end,
-                unit_kind="chapter" if include_in_plan else "chapter",
+                unit_kind=raw_unit.get("unit_kind", "chapter"),
                 include_in_plan=include_in_plan,
                 source_section_ids=source_section_ids,
                 summary=summary,
@@ -762,7 +768,7 @@ def _build_study_unit_revision_summary(
     ]
     if len(revised_units) > 4:
         parts.append(f"另有 {len(revised_units) - 4} 个学习单元")
-    summary = f"已重编排为 {len(revised_units)} 个学习单元：" + "；".join(parts)
+    summary = f"已提出 {len(revised_units)} 个学习单元的待确认修订：" + "；".join(parts)
     if rationale:
         summary += f"；原因：{rationale}"
     return summary

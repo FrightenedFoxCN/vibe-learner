@@ -659,7 +659,7 @@ export function decodeDocumentPlanningContext(
     },
   );
   decoder.unique(availableTools.map((tool) => tool.name), `${path}.available_tools.name`);
-  return { documentId, courseOutline, studyUnits, detailMap, availableTools };
+  return { documentId, documentRevision: decoder.integer(decoder.field(value, "document_revision", path), `${path}.document_revision`), courseOutline, studyUnits, detailMap, availableTools };
 }
 
 function decodePlanStudyUnit(

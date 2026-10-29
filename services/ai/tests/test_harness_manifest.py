@@ -132,6 +132,7 @@ class HarnessWorkflowManifestTests(unittest.TestCase):
             (HarnessWorkflow.STUDY_UNIT_CLEANUP, HarnessStage.STUDY_UNIT_CLEANUP),
             (HarnessWorkflow.PLANNING, HarnessStage.PLAN_GENERATION),
             (HarnessWorkflow.PLANNING, HarnessStage.PLAN_REVISION),
+            (HarnessWorkflow.PLANNING, HarnessStage.STUDY_UNIT_REVISION),
             (HarnessWorkflow.PLANNING, HarnessStage.PLANNING_TOOL_EXECUTION),
             (HarnessWorkflow.PERSONA, HarnessStage.PERSONA_GENERATION),
             (HarnessWorkflow.SCENE, HarnessStage.SCENE_GENERATION),

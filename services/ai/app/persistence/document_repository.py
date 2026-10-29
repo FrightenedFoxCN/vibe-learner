@@ -56,6 +56,21 @@ class DocumentRepository:
             ).all()
             return [document_from_row(row) for row in rows]
 
+    def get_with_debug(self, document_id: str) -> tuple[DocumentRecord, DocumentDebugRecord | None] | None:
+        with self.database.session() as session:
+            pair = session.execute(
+                select(DocumentRow, DocumentDebugRow)
+                .outerjoin(DocumentDebugRow, DocumentDebugRow.document_id == DocumentRow.id)
+                .where(DocumentRow.id == document_id)
+            ).one_or_none()
+            if pair is None:
+                return None
+            document_row, debug_row = pair
+            return (
+                document_from_row(document_row),
+                DocumentDebugRecord.model_validate(debug_row.payload) if debug_row is not None else None,
+            )
+
     def import_legacy(self, documents: list[DocumentRecord]) -> None:
         unique: dict[str, DocumentRecord] = {}
         for document in documents:

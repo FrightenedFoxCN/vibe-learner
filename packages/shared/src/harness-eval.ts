@@ -653,7 +653,7 @@ export function decodeHarnessEvalCase(raw: unknown, path = "eval_case"): Harness
   literal(field(value, "schema_name"), "HarnessEvalCase", `${path}.schema_name`);
   literal(field(value, "schema_version"), HARNESS_EVAL_CASE_SCHEMA_VERSION, `${path}.schema_version`);
   const workflow = enumeration(field(value, "workflow"), ["document_parse", "ocr", "study_unit_cleanup", "planning", "persona", "scene", "study_chat", "tavern", "frontend_decode"] as const, `${path}.workflow`);
-  const stage = enumeration(field(value, "stage"), ["document_parse", "page_extraction", "section_detection", "chunk_building", "ocr_page", "study_unit_cleanup", "plan_generation", "planning_tool_execution", "persona_generation", "scene_generation", "study_chat_reply", "actor_reply", "response_decode"] as const, `${path}.stage`);
+  const stage = enumeration(field(value, "stage"), ["document_parse", "page_extraction", "section_detection", "chunk_building", "ocr_page", "study_unit_cleanup", "plan_generation", "plan_revision", "study_unit_revision", "planning_tool_execution", "persona_generation", "scene_generation", "study_chat_reply", "actor_reply", "response_decode"] as const, `${path}.stage`);
   const evalRoute = string(field(value, "eval_route"), `${path}.eval_route`);
   const registration = HARNESS_OPERATION_STAGE_REGISTRATIONS[`${workflow}:${stage}` as HarnessOperationStageKey];
   if (!registration || registration.evalRoute !== evalRoute) fail(`${path}.eval_route`, "route_mismatch");

@@ -15,6 +15,8 @@ from app.models.domain import (
     PlanGenerationTraceRecord,
     SceneProfileRecord,
 )
+from app.models.study_unit_revision import StudyUnitRevisionPreviewV1, StudyUnitSuggestionV1
+from app.models.harness_operation import HarnessOperationBindingV1
 
 
 PLANNING_TOOL_ARGUMENT_CONTRACT_VERSION = "planning-tool-arguments-v1"
@@ -25,7 +27,7 @@ LEARNING_PLAN_OPERATION_REQUEST_SCHEMA_VERSION = "learning-plan-operation-reques
 LEARNING_PLAN_OPERATION_FINGERPRINT_LEGACY_VERSION = "learning-plan-operation-fingerprint-v1"
 LEARNING_PLAN_OPERATION_FINGERPRINT_VERSION = "learning-plan-operation-fingerprint-v2"
 LEARNING_PLAN_COMMITTED_PROJECTION_VERSION = "learning-plan-committed-projection-v1"
-LEARNING_PLAN_COMMIT_CONTRACT_VERSION = "learning-plan-commit-v1"
+LEARNING_PLAN_COMMIT_CONTRACT_VERSION = "learning-plan-commit-v2"
 
 
 class _StrictPlanningModel(BaseModel):
@@ -72,6 +74,11 @@ class ReviseStudyUnitsArgumentsV1(_StrictPlanningModel):
     rationale: Annotated[str, Field(max_length=2000)] = ""
 
 
+class ReviseStudyUnitsArgumentsV2(_StrictPlanningModel):
+    study_units: list[StudyUnitSuggestionV1] = Field(min_length=1, max_length=24)
+    rationale: Annotated[str, Field(max_length=2000)] = ""
+
+
 class ReadPageRangeContentArgumentsV1(_StrictPlanningModel):
     page_start: int = Field(ge=1)
     page_end: int = Field(ge=1)
@@ -100,7 +107,7 @@ PlanningToolArguments: TypeAlias = (
     GetStudyUnitDetailArgumentsV1
     | AskPlanningQuestionArgumentsV1
     | EstimatePlanCompletionArgumentsV1
-    | ReviseStudyUnitsArgumentsV1
+    | ReviseStudyUnitsArgumentsV2
     | ReadPageRangeContentArgumentsV1
     | ReadPageRangeImagesArgumentsV1
 )
@@ -211,6 +218,11 @@ class ReviseStudyUnitsResultV1(PlanningToolResultBaseV1):
     study_units: list[RevisedStudyUnitResultV1] = Field(min_length=1, max_length=24)
 
 
+class ReviseStudyUnitsResultV2(ReviseStudyUnitsResultV1):
+    schema_version: Literal["planning-tool-result-v2"] = "planning-tool-result-v2"
+    requires_confirmation: Literal[True] = True
+
+
 class ReadPageRangeContentResultV1(PlanningToolResultBaseV1):
     tool_name: Literal["read_page_range_content"] = "read_page_range_content"
     page_start: int = Field(ge=1)
@@ -235,7 +247,7 @@ PlanningToolSuccessResult: TypeAlias = (
     GetStudyUnitDetailResultV1
     | AskPlanningQuestionResultV1
     | EstimatePlanCompletionResultV1
-    | ReviseStudyUnitsResultV1
+    | ReviseStudyUnitsResultV2
     | ReadPageRangeContentResultV1
     | ReadPageRangeImagesResultV1
 )
@@ -326,7 +338,7 @@ PLANNING_TOOL_ARGUMENT_MODELS: dict[str, type[_StrictPlanningModel]] = {
     "get_study_unit_detail": GetStudyUnitDetailArgumentsV1,
     "ask_planning_question": AskPlanningQuestionArgumentsV1,
     "estimate_plan_completion": EstimatePlanCompletionArgumentsV1,
-    "revise_study_units": ReviseStudyUnitsArgumentsV1,
+    "revise_study_units": ReviseStudyUnitsArgumentsV2,
     "read_page_range_content": ReadPageRangeContentArgumentsV1,
     "read_page_range_images": ReadPageRangeImagesArgumentsV1,
 }
@@ -335,7 +347,7 @@ PLANNING_TOOL_RESULT_MODELS: dict[str, type[_StrictPlanningModel]] = {
     "get_study_unit_detail": GetStudyUnitDetailResultV1,
     "ask_planning_question": AskPlanningQuestionResultV1,
     "estimate_plan_completion": EstimatePlanCompletionResultV1,
-    "revise_study_units": ReviseStudyUnitsResultV1,
+    "revise_study_units": ReviseStudyUnitsResultV2,
     "read_page_range_content": ReadPageRangeContentResultV1,
     "read_page_range_images": ReadPageRangeImagesResultV1,
 }
@@ -439,6 +451,26 @@ class LearningPlanCommittedProjectionV1(_StrictPlanningModel):
         return self
 
 
+class LearningPlanCommittedProjectionV2(LearningPlanCommittedProjectionV1):
+    schema_version: Literal["learning-plan-committed-projection-v2"] = "learning-plan-committed-projection-v2"
+    study_unit_revision: StudyUnitRevisionPreviewV1 | None = None
+    study_unit_revision_binding: HarnessOperationBindingV1 | None = None
+
+    @model_validator(mode="after")
+    def validate_unit_revision(self):
+        preview, binding = self.study_unit_revision, self.study_unit_revision_binding
+        if (preview is None) != (binding is None):
+            raise ValueError("learning_plan_unit_revision_binding_required")
+        if preview is not None:
+            if (preview.plan_id != self.plan_id or preview.parent_operation_id != self.operation_id
+                    or preview.base_document != self.document
+                    or preview.base_debug_digest != self.debug_digest
+                    or binding.domain_operation_id != preview.operation_id
+                    or binding.domain_operation_kind.value != "study_unit_revision"):
+                raise ValueError("learning_plan_unit_revision_scope_mismatch")
+        return self
+
+
 class LearningPlanOperationRecord(_StrictPlanningModel):
     operation_id: str
     client_request_id: str
@@ -457,7 +489,10 @@ class LearningPlanOperationRecord(_StrictPlanningModel):
     plan_id: str = ""
     commit_contract_version: str = ""
     committed_projection_digest: str = ""
-    committed_projection: LearningPlanCommittedProjectionV1 | None = None
+    committed_projection: Annotated[
+        LearningPlanCommittedProjectionV1 | LearningPlanCommittedProjectionV2,
+        Field(discriminator="schema_version"),
+    ] | None = None
     error_code: str = ""
     created_at: str
     updated_at: str
@@ -503,7 +538,7 @@ class LearningPlanOperationRecord(_StrictPlanningModel):
             if (
                 not self.completed_at
                 or not self.plan_id
-                or self.commit_contract_version != LEARNING_PLAN_COMMIT_CONTRACT_VERSION
+                or self.commit_contract_version not in {"learning-plan-commit-v1", LEARNING_PLAN_COMMIT_CONTRACT_VERSION}
                 or not self.committed_projection_digest
                 or self.committed_projection is None
                 or self.error_code
@@ -512,6 +547,11 @@ class LearningPlanOperationRecord(_StrictPlanningModel):
             projection_digest = planning_projection_digest(
                 self.committed_projection.model_dump(mode="json")
             )
+            expected_contract = ("learning-plan-commit-v2"
+                                 if isinstance(self.committed_projection, LearningPlanCommittedProjectionV2)
+                                 else "learning-plan-commit-v1")
+            if self.commit_contract_version != expected_contract:
+                raise ValueError("committed_plan_contract_projection_mismatch")
             if projection_digest != self.committed_projection_digest:
                 raise ValueError("committed_plan_projection_digest_mismatch")
         else:

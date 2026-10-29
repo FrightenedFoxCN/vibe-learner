@@ -379,7 +379,7 @@ class PlanningIntentTests(unittest.TestCase):
         service = LearningPlanService(
             self.store, StudyArrangementService(), MockModelProvider()
         )
-        plan, _, _, _ = service._build_plan_candidate(
+        plan, _, _, _, _ = service._build_plan_candidate(
             goal=goal,
             document=document,
             persona_name="Test Mentor",
@@ -421,7 +421,7 @@ class PlanningIntentTests(unittest.TestCase):
             persona_id="persona-1",
             objective="Infer a useful plan",
         )
-        plan, _, _, _ = service._build_plan_candidate(
+        plan, _, _, _, _ = service._build_plan_candidate(
             goal=goal,
             document=document,
             persona_name="Test Mentor",
@@ -539,7 +539,7 @@ class PlanningIntentTests(unittest.TestCase):
             objective="Étudier précisément les pages demandées",
             planning_intent=intent,
         )
-        plan, _, _, _ = service._build_plan_candidate(
+        plan, _, _, _, _ = service._build_plan_candidate(
             goal=goal,
             document=document,
             persona_name="Mentor",

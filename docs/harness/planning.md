@@ -17,7 +17,9 @@
 4. 最终 proposal 先严格解码，再允许一次本地 JSON repair；仍不合法才发起一次 tools-disabled strict contract repair runner。
 5. chapter refs、页范围、coverage/workload 和 planning intent 再做领域校验；失败为 not committed，不把部分 proposal 写成 Plan。
 
-工具造成的 Study Unit revision/question state 是 parent-operation 作用域；纯读工具不产生 durable effect。页范围错误只允许附带应用拥有的 recovery metadata，provider trace/public projection 不泄露该 metadata。
+`revise_study_units` 的 v2 参数/结果契约只记录待确认建议，保留原工具上下文和当前计划的 `unit_index`。生成事务采用 `LearningPlanRuntimeOutputV2` / `LearningPlanCommittedProjectionV2`，同时保存保守 Plan、不可变预览和独立的 `study_unit_revision` admission binding；历史 v1 保持可读。澄清问题仍由 parent operation 保存，纯读工具不产生 durable effect。
+
+用户在 Plan Workspace 独立确认后，`planning:study_unit_revision` 从授权快照构造应用投影，原子提交 Document revision CAS、Debug、decision receipt 和 terminal v3 trace。拒绝或跳过不改变教材和计划；查询不重放生成或确认。页范围错误只允许附带应用拥有的 recovery metadata，provider trace/public projection 不泄露该 metadata。完整边界与验证入口见 [Study Unit 修订](../study-unit-revision.md)。
 
 调用和 token 预算见 [配置与预算](configuration.md)，Plan CAS 细节见 [Plan revision](../plan-revision.md)。
 

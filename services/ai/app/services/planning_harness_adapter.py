@@ -3,7 +3,7 @@ from __future__ import annotations
 from app.services.harness_domain_port import HarnessDomainExecutionPort
 from app.models.planning_runtime import (
     LearningPlanInputManifest,
-    LearningPlanRuntimeOutputV1,
+    LearningPlanRuntimeOutputV2,
     PlanningToolExecutionInputManifest,
     PlanningToolExecutionEvidenceV1,
     PLAN_INPUT_CONTRACT,
@@ -39,7 +39,7 @@ class PlanningHarnessAdapter:
         operation_binding: HarnessOperationBindingV1,
         manifest: LearningPlanInputManifest,
         protected_input: dict[str, object],
-        generate: Callable[[dict[str, object]], LearningPlanRuntimeOutputV1],
+        generate: Callable[[dict[str, object]], LearningPlanRuntimeOutputV2],
     ) -> tuple[HarnessRuntimePreparedOutput, HarnessOperationRuntime]:
         return self.runtime.prepare_existing_operation(
             operation_binding=operation_binding,
@@ -55,7 +55,7 @@ class PlanningHarnessAdapter:
             trace_contract=PLAN_TRACE_CONTRACT,
             protected_input=protected_input,
             generate=generate,
-            output_type=LearningPlanRuntimeOutputV1,
+            output_type=LearningPlanRuntimeOutputV2,
         )
 
     def emit_planning_tool_evidence(

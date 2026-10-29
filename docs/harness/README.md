@@ -7,7 +7,7 @@
 | 用户工作流 | Harness workflow / 入口 stage | 文档 |
 | --- | --- | --- |
 | 上传并处理教材 | `document_parse:document_parse`，并包含 page extraction、section detection、chunk building、OCR、Study Unit cleanup 子阶段 | [Document / OCR / Study Unit](document-processing.md) |
-| 生成或修订学习计划 | `planning:plan_generation`、`planning:planning_tool_execution`、`planning:plan_revision` | [Planning](planning.md) |
+| 生成或修订学习计划、确认教材单元建议 | `planning:plan_generation`、`planning:planning_tool_execution`、`planning:plan_revision`、`planning:study_unit_revision` | [Planning](planning.md) |
 | 生成人设卡或辅助编辑 | `persona:persona_generation` | [Persona generation](persona-generation.md) |
 | 生成场景树 | `scene:scene_generation` | [Scene generation](scene-generation.md) |
 | Study Dialog 对话 | `study_chat:study_chat_reply` | [Study Chat](study-chat.md) |

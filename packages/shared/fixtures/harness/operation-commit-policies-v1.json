@@ -98,6 +98,53 @@
     },
     {
       "workflow": "planning",
+      "stage": "plan_generation",
+      "trace_contract": {
+        "name": "LearningPlanRuntimeOutput",
+        "version": "learning-plan-runtime-output-v2"
+      },
+      "payload_contract": {
+        "name": "LearningPlanCommittedProjection",
+        "version": "learning-plan-committed-projection-v2"
+      },
+      "projection_contract": {
+        "name": "LearningPlanCommittedProjection",
+        "version": "learning-plan-committed-projection-v2"
+      },
+      "binding_contract": {
+        "name": "LearningPlanOperationBinding",
+        "version": "learning-plan-operation-binding-v2"
+      },
+      "digest_scope": "committed_projection",
+      "evidence_scope": "complete_transaction",
+      "subject_resource_type": "frontend_request",
+      "subject_resource_count": 1,
+      "status_rules": [
+        {
+          "trace_status": "failed",
+          "commit_status": "not_committed"
+        },
+        {
+          "trace_status": "passed",
+          "commit_status": "committed"
+        },
+        {
+          "trace_status": "repaired",
+          "commit_status": "committed"
+        }
+      ],
+      "resource_rules": [
+        {
+          "resource_type": "learning_plan",
+          "committed_attempted_count": 1,
+          "committed_resource_count": 1,
+          "not_committed_attempted_min": 1,
+          "not_committed_attempted_max": 1
+        }
+      ]
+    },
+    {
+      "workflow": "planning",
       "stage": "plan_revision",
       "trace_contract": {
         "name": "PlanRevisionProposal",
@@ -132,6 +179,49 @@
       "resource_rules": [
         {
           "resource_type": "plan_revision",
+          "committed_attempted_count": 1,
+          "committed_resource_count": 1,
+          "not_committed_attempted_min": 1,
+          "not_committed_attempted_max": 1
+        }
+      ]
+    },
+    {
+      "workflow": "planning",
+      "stage": "study_unit_revision",
+      "trace_contract": {
+        "name": "StudyUnitRevisionOutput",
+        "version": "study-unit-revision-output-v1"
+      },
+      "payload_contract": {
+        "name": "StudyUnitRevisionCommittedProjection",
+        "version": "study-unit-revision-commit-v1"
+      },
+      "projection_contract": {
+        "name": "StudyUnitRevisionCommittedProjection",
+        "version": "study-unit-revision-commit-v1"
+      },
+      "binding_contract": {
+        "name": "StudyUnitRevisionBinding",
+        "version": "study-unit-revision-binding-v1"
+      },
+      "digest_scope": "committed_projection",
+      "evidence_scope": "complete_transaction",
+      "subject_resource_type": "frontend_request",
+      "subject_resource_count": 1,
+      "status_rules": [
+        {
+          "trace_status": "failed",
+          "commit_status": "not_committed"
+        },
+        {
+          "trace_status": "passed",
+          "commit_status": "committed"
+        }
+      ],
+      "resource_rules": [
+        {
+          "resource_type": "study_unit_revision",
           "committed_attempted_count": 1,
           "committed_resource_count": 1,
           "not_committed_attempted_min": 1,

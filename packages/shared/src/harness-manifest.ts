@@ -173,6 +173,7 @@ type StageVocabulary = {
 };
 
 const STAGE_VOCABULARY: StageVocabulary[] = [
+  { workflow: "planning", stage: "study_unit_revision", ownerModule: "app.services.study_unit_revision", components: [{ name: "study_unit_revision_patch", contract: { name: "study_unit_revision_patch", version: "study-unit-revision-patch-v1" } }], evalRoute: "planning.study_unit_revision" },
   { workflow: "planning", stage: "plan_revision", ownerModule: "app.services.plan_revision", components: [{ name: "plan_revision_patch", contract: { name: "plan_revision_patch", version: "plan-revision-patch-v1" } }], evalRoute: "planning.plan_revision" },
   {
     workflow: "document_parse",
@@ -245,7 +246,7 @@ const STAGE_VOCABULARY: StageVocabulary[] = [
     stage: "plan_generation",
     ownerModule: "app.services.model_provider",
     components: [
-      { name: "planning_prompt", contract: { name: "planning_prompt", version: "planning-prompt-v6" } },
+      { name: "planning_prompt", contract: { name: "planning_prompt", version: "planning-prompt-v7" } },
       {
         name: "planning_toolset",
         contract: { name: "planning_toolset", version: "planning-toolset-v2" },
@@ -262,7 +263,7 @@ const STAGE_VOCABULARY: StageVocabulary[] = [
         name: "planning_tool_runtime",
         contract: {
           name: "planning_tool_runtime",
-          version: "planning-tool-runtime-v2",
+          version: "planning-tool-runtime-v3",
         },
       },
       {
@@ -591,6 +592,18 @@ const executableEntry = (
 });
 
 const entries: HarnessWorkflowManifestEntryV1[] = [
+  executableEntry("planning", "study_unit_revision", {
+    registration: contract("StudyUnitRevisionManifest", "study-unit-revision-manifest-v1"),
+    adapter: contract("StudyUnitRevisionAdapter", "study-unit-revision-adapter-v1"),
+    input: contract("StudyUnitRevisionInputManifest", "study-unit-revision-input-v1"),
+    proposal: contract("StudyUnitRevisionOutput", "study-unit-revision-output-v1"),
+    output: contract("StudyUnitRevisionCommittedProjection", "study-unit-revision-commit-v1"),
+    artifacts: ["planning_context"], decoder: "app.services.study_unit_revision.StudyUnitRevisionService",
+    prompt: contract("StudyUnitRevisionPrompt", "study-unit-revision-prompt-v1"),
+    policy: contract("StudyUnitRevisionPolicy", "study-unit-revision-policy-v1"),
+    evalSuites: [contract("study_unit_revision_regression", "study-unit-revision-regression-v1")],
+    commit: { status: "registered", key: { workflow: "planning", stage: "study_unit_revision", trace_contract: contract("StudyUnitRevisionOutput", "study-unit-revision-output-v1"), payload_contract: contract("StudyUnitRevisionCommittedProjection", "study-unit-revision-commit-v1") } },
+  }),
   executableEntry("planning", "plan_revision", {
     registration: contract("PlanRevisionManifest", "plan-revision-manifest-v1"),
     adapter: contract("PlanRevisionAdapter", "plan-revision-adapter-v1"),
@@ -665,17 +678,17 @@ const entries: HarnessWorkflowManifestEntryV1[] = [
     policy: contract("DocumentStageHarnessPolicy", "document-stage-harness-v1"),
   }),
   executableEntry("planning", "plan_generation", {
-    registration: contract("LearningPlanWorkflowManifestEntry", "learning-plan-workflow-manifest-v1"),
-    adapter: contract("LearningPlanWorkflowAdapter", "learning-plan-workflow-adapter-v1"),
+    registration: contract("LearningPlanWorkflowManifestEntry", "learning-plan-workflow-manifest-v2"),
+    adapter: contract("LearningPlanWorkflowAdapter", "learning-plan-workflow-adapter-v2"),
     input: contract("LearningPlanInputManifest", "learning-plan-input-manifest-v1"),
-    proposal: contract("LearningPlanRuntimeOutput", "learning-plan-runtime-output-v1"),
-    output: contract("LearningPlanCommittedProjection", "learning-plan-committed-projection-v1"),
+    proposal: contract("LearningPlanRuntimeOutput", "learning-plan-runtime-output-v2"),
+    output: contract("LearningPlanCommittedProjection", "learning-plan-committed-projection-v2"),
     artifacts: ["document_debug", "persona_snapshot", "planning_context", "scene_snapshot", "study_unit_input"],
     decoder: "app.services.harness_broad_adoption.LearningPlanWorkflowAdapter",
-    prompt: contract("LearningPlanPrompt", "planning-prompt-v6"),
+    prompt: contract("LearningPlanPrompt", "planning-prompt-v7"),
     policy: contract("LearningPlanHarnessPolicy", "learning-plan-harness-v1"),
     toolset: TOOL_MANIFEST_SLOT,
-    commit: { status: "registered", key: { workflow: "planning", stage: "plan_generation", trace_contract: contract("LearningPlanRuntimeOutput", "learning-plan-runtime-output-v1"), payload_contract: contract("LearningPlanCommittedProjection", "learning-plan-committed-projection-v1") } },
+    commit: { status: "registered", key: { workflow: "planning", stage: "plan_generation", trace_contract: contract("LearningPlanRuntimeOutput", "learning-plan-runtime-output-v2"), payload_contract: contract("LearningPlanCommittedProjection", "learning-plan-committed-projection-v2") } },
   }),
   executableEntry("planning", "planning_tool_execution", {
     registration: contract("PlanningToolExecutionWorkflowManifestEntry", "planning-tool-execution-workflow-manifest-v1"),

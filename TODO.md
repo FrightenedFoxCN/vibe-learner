@@ -63,11 +63,6 @@
   - 用户指定 PDF 100–103 时，取证工具参数、schedule anchor 和 content slices 必须落在该范围；物理页与印刷页分别建模，不能让模型把印刷 70–73 当成物理 70–73 后成功提交。
   - 本票只负责应用约束；教材语义、公式、旧记号和范围完整性质量由本文件的 `MQ-04` 负责。
 
-- [ ] `PLAN-STUDY-UNIT-REVISION-001` `[P1]` 将 Planning 的 `revise_study_units` 从隐式共享 Document 改写变成可审查的提案与独立确认。
-  - 2026-10-29 审计：`plan_tool_runtime.py` 先替换工具上下文中的 Study Units，`LearningPlanService._build_plan_candidate` 随后把修订写入共享 Document、Sections 与 Debug 投影，并随计划提交；缺少独立预览/确认边界。Document revision CAS 已由 `DocumentRepository` 提供，复用该边界。
-  - 模型取证阶段不得在没有预览的情况下替换后续所有 Plan/Study 共用的 Study Units；展示旧/新页范围、标题、分类与保留/删除 diff，并使用 Document revision CAS 提交。
-  - 拒绝或跳过修订仍可继续生成保守计划；确认后的 Document、Plan context、Harness effect/trace 与重启 read-back 必须指向同一 revision。
-
 - [ ] `OCR-CHECKPOINT-RECOVERY-001` `[P1]` 让长 OCR 在阶段完成后可读、可续跑。
   - 总 wall-time 在全部页面处理完成后耗尽时，不得抹掉已完成页和 Study Unit；保存有界 checkpoint，并验证重启、超时和重复请求的 read-back/续跑语义。
 
@@ -160,7 +155,7 @@
 
 ## 持续规则
 
-- 本文件是唯一待办索引；其他文档只描述当前契约、限制和复现方式，不维护平行待办。已实现的 Harness 基础设施、14 个 Harness 评测套件、SQLite 恢复和已定义输入上限测试不再列为待办。
+- 本文件是唯一待办索引；其他文档只描述当前契约、限制和复现方式，不维护平行待办。已实现的 Harness 基础设施、15 个 Harness 评测套件、SQLite 恢复和已定义输入上限测试不再列为待办。
 - 架构和逐工作流工程说明见 `docs/harness/README.md`，工程约束见 `AGENTS.md`。`QG-002` / `web-strict-decode-adversarial-v1` 保持不可变，扩展使用新版本。
 - Debug 是全局 Overlay，不恢复已删除的 `/debug` 页面。
 - 性能任务必须记录 fixture、环境、raw samples 和 before/after；不得通过放宽既有预算关闭回归。

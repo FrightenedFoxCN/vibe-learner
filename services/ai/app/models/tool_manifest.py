@@ -462,7 +462,7 @@ _PLANNING_META: dict[str, tuple[str, str, str, str]] = {
     "get_study_unit_detail": ("学习单元详情", "planning", "规划分析", "读取单个学习单元的细节结构与切块摘录，用于精细规划。"),
     "ask_planning_question": ("计划澄清提问", "planning", "规划分析", "在目标或边界不清时，向学习者提出一个具体确认问题，并保留保守假设。"),
     "estimate_plan_completion": ("学习单元结构估分", "planning", "规划分析", "根据学习单元页跨度、子标题数量与覆盖比例评估结构元数据；不读取计划活动，不评价目标覆盖、事实正确性或活动可执行性。"),
-    "revise_study_units": ("学习单元重编排", "planning", "规划分析", "在章节切分明显错误时，允许模型重写完整学习单元列表。"),
+    "revise_study_units": ("学习单元修订建议", "planning", "规划分析", "在章节切分明显错误时，提出待用户确认的完整学习单元列表。提案不改变当前上下文；最终计划仍须引用原 study_units。"),
     "read_page_range_content": ("页范围文本读取", "sensory", "感官工具", "读取教材页范围文本，补充计划生成需要的上下文细节。"),
     "read_page_range_images": ("页范围图像读取", "sensory", "感官工具", "渲染教材页图像，用于公式、图表、版式等视觉线索判断。"),
 }
@@ -538,10 +538,10 @@ def _planning_entry(
         execution_stage=HarnessStage.PLANNING_TOOL_EXECUTION,
         canonical_name=name,
         owner_module="app.services.plan_tool_runtime",
-        runtime_adapter=_adapter(f"plan_tool_runtime.{name}"),
+        runtime_adapter=_adapter(f"plan_tool_runtime.{name}", "tool-runtime-adapter-v2" if name == "revise_study_units" else TOOL_RUNTIME_ADAPTER_CONTRACT_VERSION),
         display=_display(_PLANNING_META[name]),
-        input_contract=_contract(input_model, PLANNING_TOOL_ARGUMENT_CONTRACT_VERSION),
-        result_contract=_contract(result_model, PLANNING_TOOL_RESULT_CONTRACT_VERSION),
+        input_contract=_contract(input_model, "planning-tool-arguments-v2" if name == "revise_study_units" else PLANNING_TOOL_ARGUMENT_CONTRACT_VERSION),
+        result_contract=_contract(result_model, "planning-tool-result-v2" if name == "revise_study_units" else PLANNING_TOOL_RESULT_CONTRACT_VERSION),
         provider_projection_contract=_adapter(
             "openai_function_projection",
             TOOL_PROVIDER_PROJECTION_CONTRACT_VERSION,

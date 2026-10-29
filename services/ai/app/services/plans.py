@@ -66,11 +66,12 @@ from app.services.harness_broad_adoption import (
 )
 from app.models.planning_runtime import (
     LearningPlanInputManifest,
-    LearningPlanRuntimeOutputV1,
+    LearningPlanRuntimeOutputV2,
     PlanningToolExecutionEvidenceV1,
     PlanningToolExecutionInputManifest,
 )
 from app.services.harness_runtime import HarnessOperationRuntime, HarnessRuntimePreparedOutput
+from app.models.study_unit_revision import StudyUnitRevisionPreviewV1
 
 
 class LearningPlanService:
@@ -206,7 +207,7 @@ class LearningPlanService:
 
             def generate_plan(
                 protected: dict[str, object],
-            ) -> LearningPlanRuntimeOutputV1:
+            ) -> LearningPlanRuntimeOutputV2:
                 protected_goal = LearningGoalInput.model_validate(protected["goal"])
                 protected_document = (
                     DocumentRecord.model_validate(protected["document"])
@@ -228,12 +229,14 @@ class LearningPlanService:
                     progress_callback=progress_callback,
                     interrupt_check=interrupt_check,
                     provider_start_callback=mark_provider_started,
+                    source_operation_id=operation.operation_id,
                 )
-                return LearningPlanRuntimeOutputV1(
+                return LearningPlanRuntimeOutputV2(
                     plan=result[0],
                     document=result[1],
                     debug_report=result[2],
                     trace=result[3],
+                    study_unit_revision=result[4],
                 )
 
             runtime_prepared, harness_runtime = self.harness_service.prepare_plan(
@@ -261,7 +264,7 @@ class LearningPlanService:
                 },
                 generate=generate_plan,
             )
-            runtime_output = LearningPlanRuntimeOutputV1.model_validate(
+            runtime_output = LearningPlanRuntimeOutputV2.model_validate(
                 runtime_prepared.output
             )
             plan, projected_document, projected_debug, trace = (
@@ -331,6 +334,7 @@ class LearningPlanService:
                 trace=trace,
                 harness_runtime=harness_runtime,
                 runtime_prepared=runtime_prepared,
+                study_unit_revision=runtime_output.study_unit_revision,
             )
         except StreamInterruptedError:
             self.operation_repository.mark_terminal(
@@ -394,11 +398,13 @@ class LearningPlanService:
         progress_callback: Callable[[str, dict[str, object]], None] | None = None,
         interrupt_check: Callable[[], None] | None = None,
         provider_start_callback: Callable[[], None] | None = None,
+        source_operation_id: str = "",
     ) -> tuple[
         LearningPlanRecord,
         DocumentRecord | None,
         DocumentDebugRecord | None,
         PlanGenerationTraceRecord | None,
+        StudyUnitRevisionPreviewV1 | None,
     ]:
         _call_interrupt(interrupt_check)
         progress_document_id = document.id if document is not None else ""
@@ -511,15 +517,6 @@ class LearningPlanService:
             interrupt_check=interrupt_check,
         )
         _call_interrupt(interrupt_check)
-        if model_plan.revised_study_units:
-            plan.study_units = model_plan.revised_study_units
-            if document is not None:
-                document.study_units = model_plan.revised_study_units
-                document.study_unit_count = len(model_plan.revised_study_units)
-                document.sections = _project_sections_from_study_units(model_plan.revised_study_units)
-                document.updated_at = _now()
-                if debug_report is not None:
-                    debug_report.study_units = model_plan.revised_study_units
         unit_by_id = {unit.id: unit for unit in plan.study_units}
         filtered_schedule: list[StudyScheduleRecord] = []
         for index, item in enumerate(model_plan.schedule):
@@ -579,7 +576,19 @@ class LearningPlanService:
         if document is not None and canonical_harness_digest(document) != base_document_digest:
             document.revision += 1
             document.updated_at = _now()
-        return plan, document, debug_report, model_plan.debug_trace
+        preview = None
+        if model_plan.study_unit_suggestions is not None:
+            if document is None or debug_report is None or not source_operation_id:
+                raise ValueError("study_unit_revision_document_admission_required")
+            preview = StudyUnitRevisionPreviewV1(
+                operation_id=f"unit-revision-{uuid4().hex}",
+                plan_id=plan.id,
+                parent_operation_id=source_operation_id,
+                base_document=document.model_copy(deep=True),
+                base_debug_digest=canonical_harness_digest(debug_report),
+                suggestions=model_plan.study_unit_suggestions,
+            )
+        return plan, document, debug_report, model_plan.debug_trace, preview
 
     def recover_abandoned_operations(self) -> int:
         recovered = self.operation_repository.recover_abandoned()
@@ -940,21 +949,6 @@ def _call_interrupt(callback: Callable[[], None] | None) -> None:
     if callback is None:
         return
     callback()
-
-
-def _project_sections_from_study_units(study_units: list[StudyUnitRecord]) -> list[DocumentSection]:
-    return [
-        DocumentSection(
-            id=str(unit.id),
-            document_id=str(unit.document_id),
-            title=str(unit.title),
-            page_start=int(unit.page_start),
-            page_end=int(unit.page_end),
-            level=1,
-        )
-        for unit in study_units
-        if bool(unit.include_in_plan)
-    ]
 
 
 def _learning_plan_failure_status(
