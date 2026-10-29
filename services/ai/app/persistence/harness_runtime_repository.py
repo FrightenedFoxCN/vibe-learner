@@ -20,6 +20,7 @@ from app.models.harness import (
 from app.models.harness_manifest import (
     HarnessManifestRegisteredContractSlotV1,
     require_executable_workflow_manifest_entry,
+    validate_harness_context_manifest_inputs,
 )
 from app.models.harness_operation import HarnessOperationBindingV1
 from app.models.harness_runtime import (
@@ -41,6 +42,21 @@ from app.persistence.models import (
 
 
 MAX_RUNTIME_CLAIMS = 3
+
+
+def _require_current_context(context: HarnessContextEnvelopeV3) -> None:
+    entry = require_executable_workflow_manifest_entry(context.workflow, context.stage)
+    try:
+        validate_harness_context_manifest_inputs(
+            entry=entry,
+            input_contract=context.input_contract,
+            prompt_contract=context.prompt_contract,
+            policy_contract=context.policy_contract,
+            component_contracts=tuple(context.component_versions),
+            artifact_types=tuple(item.artifact_type for item in context.snapshot_refs),
+        )
+    except ValueError as error:
+        raise HarnessRuntimeError("harness_runtime_context_manifest_drift") from error
 
 
 class HarnessRuntimeRepository:
@@ -66,10 +82,13 @@ class HarnessRuntimeRepository:
             operation_binding.workflow,
             stage,
         )
-        if not isinstance(
-            entry.owner_adapter,
-            HarnessManifestRegisteredContractSlotV1,
-        ) or entry.owner_adapter.contract.to_harness_ref() != adapter_contract:
+        if (
+            not isinstance(
+                entry.owner_adapter,
+                HarnessManifestRegisteredContractSlotV1,
+            )
+            or entry.owner_adapter.contract.to_harness_ref() != adapter_contract
+        ):
             raise HarnessRuntimeError("harness_runtime_adapter_contract_mismatch")
         if (
             context.operation_id != operation_binding.harness_operation_id
@@ -87,19 +106,27 @@ class HarnessRuntimeRepository:
                 HarnessOperationBindingRow,
                 operation_binding.harness_operation_id,
             )
-            if authoritative is None or _binding_from_row(authoritative) != operation_binding:
+            if (
+                authoritative is None
+                or _binding_from_row(authoritative) != operation_binding
+            ):
                 raise HarnessRuntimeError("harness_runtime_operation_binding_invalid")
             if parent_trace_id is not None:
                 parent = session.get(HarnessRuntimeExecutionRow, parent_trace_id)
                 if parent is None:
                     raise HarnessRuntimeError("harness_runtime_parent_trace_not_found")
-                if parent.trace_id == trace_id or parent.workflow != context.workflow.value:
+                if (
+                    parent.trace_id == trace_id
+                    or parent.workflow != context.workflow.value
+                ):
                     raise HarnessRuntimeError("harness_runtime_parent_trace_invalid")
                 if parent.harness_operation_id not in {
                     operation_binding.harness_operation_id,
                     operation_binding.parent_harness_operation_id,
                 }:
-                    raise HarnessRuntimeError("harness_runtime_parent_operation_mismatch")
+                    raise HarnessRuntimeError(
+                        "harness_runtime_parent_operation_mismatch"
+                    )
             existing = session.get(HarnessRuntimeExecutionRow, trace_id)
             if existing is not None:
                 self._require_prepare_identity(
@@ -113,6 +140,7 @@ class HarnessRuntimeRepository:
                     parent_trace_id=parent_trace_id,
                 )
                 return _from_row(existing)
+            _require_current_context(context)
             now = _database_utc_now(session)
             row = HarnessRuntimeExecutionRow(
                 trace_id=trace_id,
@@ -162,9 +190,14 @@ class HarnessRuntimeRepository:
         if not 1 <= limit <= 100:
             raise ValueError("harness_trace_scan_limit")
         with self.database.session() as session:
-            return tuple(session.scalars(select(HarnessRuntimeExecutionRow.trace_id)
-                .where(HarnessRuntimeExecutionRow.trace_id > after)
-                .order_by(HarnessRuntimeExecutionRow.trace_id).limit(limit)))
+            return tuple(
+                session.scalars(
+                    select(HarnessRuntimeExecutionRow.trace_id)
+                    .where(HarnessRuntimeExecutionRow.trace_id > after)
+                    .order_by(HarnessRuntimeExecutionRow.trace_id)
+                    .limit(limit)
+                )
+            )
 
     def list_operation_traces(
         self,
@@ -203,6 +236,9 @@ class HarnessRuntimeRepository:
             now = _database_utc_now(session)
             if row.state == HarnessRuntimeState.TERMINAL.value:
                 return None
+            _require_current_context(
+                HarnessContextEnvelopeV3.model_validate(row.context_payload)
+            )
             active = (
                 row.state == HarnessRuntimeState.CLAIMED.value
                 and bool(row.lease_expires_at)
@@ -272,7 +308,8 @@ class HarnessRuntimeRepository:
                 update(HarnessRuntimeExecutionRow)
                 .where(
                     HarnessRuntimeExecutionRow.trace_id == row.trace_id,
-                    HarnessRuntimeExecutionRow.state == HarnessRuntimeState.CLAIMED.value,
+                    HarnessRuntimeExecutionRow.state
+                    == HarnessRuntimeState.CLAIMED.value,
                     HarnessRuntimeExecutionRow.claim_owner == claim.claim_owner,
                     HarnessRuntimeExecutionRow.claim_token == claim.claim_token,
                     HarnessRuntimeExecutionRow.claim_count == claim.claim_count,
@@ -302,22 +339,35 @@ class HarnessRuntimeRepository:
     ) -> HarnessAttemptRecord:
         with self.database.session() as session:
             return self.append_attempt_in_session(
-                session, claim=claim, phase=phase, status=status,
-                duration_ms=duration_ms, output_digest=output_digest,
+                session,
+                claim=claim,
+                phase=phase,
+                status=status,
+                duration_ms=duration_ms,
+                output_digest=output_digest,
                 error_code=error_code,
             )
 
     def append_attempt_in_session(
-        self, session: Session, *, claim: HarnessRuntimeClaimV1,
-        phase: HarnessAttemptPhase, status: HarnessAttemptStatus,
-        duration_ms: int, output_digest: str | None = None, error_code: str = "",
+        self,
+        session: Session,
+        *,
+        claim: HarnessRuntimeClaimV1,
+        phase: HarnessAttemptPhase,
+        status: HarnessAttemptStatus,
+        duration_ms: int,
+        output_digest: str | None = None,
+        error_code: str = "",
     ) -> HarnessAttemptRecord:
         row, now = self._require_active_claim(session, claim)
         index = len(row.attempt_records) + 1
         attempt = HarnessAttemptRecord(
             attempt_id=expected_harness_runtime_attempt_id(row.trace_id, index),
-            attempt_index=index, phase=phase, status=status,
-            output_digest=output_digest, error_code=error_code,
+            attempt_index=index,
+            phase=phase,
+            status=status,
+            output_digest=output_digest,
+            error_code=error_code,
             duration_ms=duration_ms,
         )
         attempts = [*row.attempt_records, attempt.model_dump(mode="json")]
@@ -343,7 +393,10 @@ class HarnessRuntimeRepository:
             return check
 
     def append_check_in_session(
-        self, session: Session, *, claim: HarnessRuntimeClaimV1,
+        self,
+        session: Session,
+        *,
+        claim: HarnessRuntimeClaimV1,
         check: HarnessCheckV2,
     ) -> HarnessCheckV2:
         row, now = self._require_active_claim(session, claim)
@@ -399,9 +452,13 @@ class HarnessRuntimeRepository:
             )
             .values(
                 state=HarnessRuntimeState.TERMINAL.value,
-                claim_owner="", claim_token="", lease_expires_at="",
+                claim_owner="",
+                claim_token="",
+                lease_expires_at="",
                 terminal_trace=strict_trace.model_dump(mode="json", exclude_none=False),
-                terminal_trace_digest=harness_runtime_terminal_trace_digest(strict_trace),
+                terminal_trace_digest=harness_runtime_terminal_trace_digest(
+                    strict_trace
+                ),
                 updated_at=_wire(now),
             )
         )
@@ -507,12 +564,10 @@ class HarnessRuntimeRepository:
             HarnessStage(row.stage),
         )
         generated = sum(
-            item["phase"] == HarnessAttemptPhase.GENERATE.value
-            for item in attempts
+            item["phase"] == HarnessAttemptPhase.GENERATE.value for item in attempts
         )
         repaired = sum(
-            item["phase"] == HarnessAttemptPhase.REPAIR.value
-            for item in attempts
+            item["phase"] == HarnessAttemptPhase.REPAIR.value for item in attempts
         )
         if generated > entry.attempt_ceiling.max_attempts:
             raise HarnessRuntimeError("harness_runtime_attempt_limit_exceeded")

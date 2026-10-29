@@ -18,7 +18,7 @@ The frontend fetches the saved preview on mount, fences late responses after nav
 
 - Current Planning runtime/creation projections use v2; the v1 DTOs and commit policy remain available for historical read-back.
 - The revise tool has v2 arguments/results and adapter behavior; its result explicitly requires confirmation. Other Planning tools retain their versions.
-- Alembic `20261029_0024` adds `study_unit_revision_operations` and widens the closed admission route. SQLite runtime schema repair preserves existing admissions and guards. PostgreSQL DDL retains JSONB; actual PostgreSQL acceptance remains under `REL-POSTGRES-001`.
+- Alembic `20261029_0024` adds `study_unit_revision_operations` and widens the closed admission route. SQLite runtime schema repair preserves existing admissions and guards. PostgreSQL DDL retains JSONB; actual migration and recovery evidence is in [PostgreSQL 迁移与恢复验收](postgres-recovery-acceptance.md).
 - The local complete-transaction policy covers Document/Debug, the acceptance receipt and trace. Compatibility JSON mirrors run afterward and are not the authoritative commit.
 
 ## Focused verification

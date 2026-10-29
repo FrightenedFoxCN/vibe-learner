@@ -1,0 +1,559 @@
+{
+  "contract": "postgres-recovery-probe-v1",
+  "source_revision": "bbc84c7e99f0e2193506eebc5059436915e9f1a1",
+  "scopes": [
+    {
+      "schema": "vibe_pg_accept_4e211ebd989f4d3ca24db64eae87dae4",
+      "label": "historical_upgrade"
+    },
+    {
+      "schema": "vibe_pg_accept_d28ebaba6f984aef989eb37ea9e1b765",
+      "label": "document_pending"
+    },
+    {
+      "schema": "vibe_pg_accept_a38ba9d5eac1449cab529c16ac34e83f",
+      "label": "document_committed"
+    },
+    {
+      "schema": "vibe_pg_accept_3b716328efa24214a79a611584143eeb",
+      "label": "plan_pending"
+    },
+    {
+      "schema": "vibe_pg_accept_e5fb659c010b4ba7a6f3e78c9ef4f8d1",
+      "label": "plan_issued"
+    },
+    {
+      "schema": "vibe_pg_accept_a6c88f04362d476eae241abe663feb3b",
+      "label": "plan_committed"
+    },
+    {
+      "schema": "vibe_pg_accept_79ab10d5cbd4401a893fe21359284a02",
+      "label": "document_fault_before_debug_projection"
+    },
+    {
+      "schema": "vibe_pg_accept_bf9c5f2804b44664a467d262114187af",
+      "label": "document_fault_after_debug_projection"
+    },
+    {
+      "schema": "vibe_pg_accept_8f4b36bb24124919a43bcb2f347d5347",
+      "label": "document_fault_after_document_projection"
+    },
+    {
+      "schema": "vibe_pg_accept_f8cbdc02ce614c28abb8db48c16f1f30",
+      "label": "document_fault_before_terminal_commit"
+    },
+    {
+      "schema": "vibe_pg_accept_0b6ac6eed00a4e1daaa121e0d381ff67",
+      "label": "plan_fault_before_document_projection"
+    },
+    {
+      "schema": "vibe_pg_accept_b408c6136d6c4f27b4d90a7d63c11793",
+      "label": "plan_fault_after_document_projection"
+    },
+    {
+      "schema": "vibe_pg_accept_cd861cb1a39640eab33acf1279c17f35",
+      "label": "plan_fault_after_debug_projection"
+    },
+    {
+      "schema": "vibe_pg_accept_3e004d429c524b89923c97bfb401521f",
+      "label": "plan_fault_after_trace_projection"
+    },
+    {
+      "schema": "vibe_pg_accept_71f85b4b04cb42709aa6c0de5197fe04",
+      "label": "plan_fault_after_plan_projection"
+    },
+    {
+      "schema": "vibe_pg_accept_ca9389ee59aa42ee963a3e64eefe0ba0",
+      "label": "plan_fault_before_terminal_commit"
+    },
+    {
+      "schema": "vibe_pg_accept_81dd3ac7cc3545909411e84f04d854e6",
+      "label": "study_admitted"
+    },
+    {
+      "schema": "vibe_pg_accept_c217956406ca4c3d841e3dca703dc9d7",
+      "label": "study_claimed"
+    },
+    {
+      "schema": "vibe_pg_accept_17db5e4a02224fddb9f383d18435254c",
+      "label": "study_issued"
+    },
+    {
+      "schema": "vibe_pg_accept_bb5cdce770bb441aabc57a19bbeff184",
+      "label": "tavern_pending"
+    },
+    {
+      "schema": "vibe_pg_accept_38dbfeb361b04d4184d6ce01439b52ec",
+      "label": "tavern_partial"
+    },
+    {
+      "schema": "vibe_pg_accept_3814006700bf46c18fa99c2794a6c9f2",
+      "label": "study_commit_after_session"
+    },
+    {
+      "schema": "vibe_pg_accept_acc6f55280df47d0b8106029091329bf",
+      "label": "study_commit_after_trace"
+    },
+    {
+      "schema": "vibe_pg_accept_5fc5f60982294e21b04971f17181d837",
+      "label": "study_commit_after_receipt"
+    },
+    {
+      "schema": "vibe_pg_accept_cd4e66ae71ec40738f19f8d84e378b9f",
+      "label": "study_commit_after_commit"
+    },
+    {
+      "schema": "vibe_pg_accept_f47c615f15e34834983b9415d03d031e",
+      "label": "concurrent_cas"
+    }
+  ],
+  "checks": [
+    {
+      "case": "genuine_historical_upgrade",
+      "from": "20260914_0022",
+      "to": "20261029_0026",
+      "receipts_unchanged": true,
+      "domain_read_back": [
+        "document",
+        "planning",
+        "study",
+        "tavern"
+      ]
+    },
+    {
+      "case": "document_pending",
+      "schema": "vibe_pg_accept_d28ebaba6f984aef989eb37ea9e1b765",
+      "abrupt_worker_exit": 73,
+      "domain_recovery_assertions": "passed",
+      "postgres_constraints_validated": true
+    },
+    {
+      "case": "document_committed",
+      "schema": "vibe_pg_accept_a38ba9d5eac1449cab529c16ac34e83f",
+      "abrupt_worker_exit": 73,
+      "domain_recovery_assertions": "passed",
+      "postgres_constraints_validated": true
+    },
+    {
+      "case": "plan_pending",
+      "schema": "vibe_pg_accept_3b716328efa24214a79a611584143eeb",
+      "abrupt_worker_exit": 73,
+      "domain_recovery_assertions": "passed",
+      "postgres_constraints_validated": true
+    },
+    {
+      "case": "plan_issued",
+      "schema": "vibe_pg_accept_e5fb659c010b4ba7a6f3e78c9ef4f8d1",
+      "abrupt_worker_exit": 73,
+      "domain_recovery_assertions": "passed",
+      "postgres_constraints_validated": true
+    },
+    {
+      "case": "plan_committed",
+      "schema": "vibe_pg_accept_a6c88f04362d476eae241abe663feb3b",
+      "abrupt_worker_exit": 73,
+      "domain_recovery_assertions": "passed",
+      "postgres_constraints_validated": true
+    },
+    {
+      "case": "document_fault_before_debug_projection",
+      "schema": "vibe_pg_accept_79ab10d5cbd4401a893fe21359284a02",
+      "abrupt_worker_exit": 73,
+      "domain_recovery_assertions": "passed",
+      "postgres_constraints_validated": true
+    },
+    {
+      "case": "document_fault_after_debug_projection",
+      "schema": "vibe_pg_accept_bf9c5f2804b44664a467d262114187af",
+      "abrupt_worker_exit": 73,
+      "domain_recovery_assertions": "passed",
+      "postgres_constraints_validated": true
+    },
+    {
+      "case": "document_fault_after_document_projection",
+      "schema": "vibe_pg_accept_8f4b36bb24124919a43bcb2f347d5347",
+      "abrupt_worker_exit": 73,
+      "domain_recovery_assertions": "passed",
+      "postgres_constraints_validated": true
+    },
+    {
+      "case": "document_fault_before_terminal_commit",
+      "schema": "vibe_pg_accept_f8cbdc02ce614c28abb8db48c16f1f30",
+      "abrupt_worker_exit": 73,
+      "domain_recovery_assertions": "passed",
+      "postgres_constraints_validated": true
+    },
+    {
+      "case": "plan_fault_before_document_projection",
+      "schema": "vibe_pg_accept_0b6ac6eed00a4e1daaa121e0d381ff67",
+      "abrupt_worker_exit": 73,
+      "domain_recovery_assertions": "passed",
+      "postgres_constraints_validated": true
+    },
+    {
+      "case": "plan_fault_after_document_projection",
+      "schema": "vibe_pg_accept_b408c6136d6c4f27b4d90a7d63c11793",
+      "abrupt_worker_exit": 73,
+      "domain_recovery_assertions": "passed",
+      "postgres_constraints_validated": true
+    },
+    {
+      "case": "plan_fault_after_debug_projection",
+      "schema": "vibe_pg_accept_cd861cb1a39640eab33acf1279c17f35",
+      "abrupt_worker_exit": 73,
+      "domain_recovery_assertions": "passed",
+      "postgres_constraints_validated": true
+    },
+    {
+      "case": "plan_fault_after_trace_projection",
+      "schema": "vibe_pg_accept_3e004d429c524b89923c97bfb401521f",
+      "abrupt_worker_exit": 73,
+      "domain_recovery_assertions": "passed",
+      "postgres_constraints_validated": true
+    },
+    {
+      "case": "plan_fault_after_plan_projection",
+      "schema": "vibe_pg_accept_71f85b4b04cb42709aa6c0de5197fe04",
+      "abrupt_worker_exit": 73,
+      "domain_recovery_assertions": "passed",
+      "postgres_constraints_validated": true
+    },
+    {
+      "case": "plan_fault_before_terminal_commit",
+      "schema": "vibe_pg_accept_ca9389ee59aa42ee963a3e64eefe0ba0",
+      "abrupt_worker_exit": 73,
+      "domain_recovery_assertions": "passed",
+      "postgres_constraints_validated": true
+    },
+    {
+      "case": "study_admitted",
+      "schema": "vibe_pg_accept_81dd3ac7cc3545909411e84f04d854e6",
+      "abrupt_worker_exit": 73,
+      "domain_recovery_assertions": "passed",
+      "postgres_constraints_validated": true
+    },
+    {
+      "case": "study_claimed",
+      "schema": "vibe_pg_accept_c217956406ca4c3d841e3dca703dc9d7",
+      "abrupt_worker_exit": 73,
+      "domain_recovery_assertions": "passed",
+      "postgres_constraints_validated": true
+    },
+    {
+      "case": "study_issued",
+      "schema": "vibe_pg_accept_17db5e4a02224fddb9f383d18435254c",
+      "abrupt_worker_exit": 73,
+      "domain_recovery_assertions": "passed",
+      "postgres_constraints_validated": true
+    },
+    {
+      "case": "tavern_pending",
+      "schema": "vibe_pg_accept_bb5cdce770bb441aabc57a19bbeff184",
+      "abrupt_worker_exit": 73,
+      "domain_recovery_assertions": "passed",
+      "postgres_constraints_validated": true
+    },
+    {
+      "case": "tavern_partial",
+      "schema": "vibe_pg_accept_38dbfeb361b04d4184d6ce01439b52ec",
+      "abrupt_worker_exit": 73,
+      "domain_recovery_assertions": "passed",
+      "postgres_constraints_validated": true
+    },
+    {
+      "case": "study_commit_after_session",
+      "root": "/tmp/vibe-postgres-acceptance-20261030-final/study-after_session",
+      "session_id": "session-d855de0a64",
+      "client_request_id": "pg-study-commit-request",
+      "status": "uncertain",
+      "session_revision": 0,
+      "turns": 0,
+      "response_digest": "",
+      "abrupt_worker_exit": 73
+    },
+    {
+      "case": "study_commit_after_trace",
+      "root": "/tmp/vibe-postgres-acceptance-20261030-final/study-after_trace",
+      "session_id": "session-202af80515",
+      "client_request_id": "pg-study-commit-request",
+      "status": "uncertain",
+      "session_revision": 0,
+      "turns": 0,
+      "response_digest": "",
+      "abrupt_worker_exit": 73
+    },
+    {
+      "case": "study_commit_after_receipt",
+      "root": "/tmp/vibe-postgres-acceptance-20261030-final/study-after_receipt",
+      "session_id": "session-4ab0aab4b5",
+      "client_request_id": "pg-study-commit-request",
+      "status": "uncertain",
+      "session_revision": 0,
+      "turns": 0,
+      "response_digest": "",
+      "abrupt_worker_exit": 73
+    },
+    {
+      "case": "study_commit_after_commit",
+      "root": "/tmp/vibe-postgres-acceptance-20261030-final/study-after_commit",
+      "session_id": "session-ae986ea859",
+      "client_request_id": "pg-study-commit-request",
+      "status": "committed",
+      "session_revision": 1,
+      "turns": 1,
+      "response_digest": "cf55ac0f7ec322bb9befda7c878af84556ea2005a923d1c846934dff0556813f",
+      "abrupt_worker_exit": 73
+    },
+    {
+      "case": "document_concurrent_cas",
+      "outcomes": [
+        "committed",
+        "conflict"
+      ],
+      "revision": 1
+    },
+    {
+      "case": "planning_concurrent_cas",
+      "outcomes": [
+        "committed",
+        "conflict"
+      ],
+      "revision": 1
+    },
+    {
+      "case": "study_concurrent_cas_and_rollback",
+      "revision": 2,
+      "both_writers_retained": true,
+      "rollback_exact": true
+    },
+    {
+      "case": "application_http_restart",
+      "visit": 0,
+      "pid": 156,
+      "domains": [
+        "document",
+        "planning",
+        "study",
+        "tavern"
+      ],
+      "provider_calls": 0,
+      "after_database_restart": false
+    },
+    {
+      "case": "application_http_restart",
+      "visit": 1,
+      "pid": 160,
+      "domains": [
+        "document",
+        "planning",
+        "study",
+        "tavern"
+      ],
+      "provider_calls": 0,
+      "after_database_restart": false
+    },
+    {
+      "case": "study_commit_after_session_http",
+      "pid": 161,
+      "status": "uncertain",
+      "provider_calls": 0,
+      "after_database_restart": false
+    },
+    {
+      "case": "study_commit_after_trace_http",
+      "pid": 172,
+      "status": "uncertain",
+      "provider_calls": 0,
+      "after_database_restart": false
+    },
+    {
+      "case": "study_commit_after_receipt_http",
+      "pid": 176,
+      "status": "uncertain",
+      "provider_calls": 0,
+      "after_database_restart": false
+    },
+    {
+      "case": "study_commit_after_commit_http",
+      "pid": 180,
+      "status": "committed",
+      "provider_calls": 0,
+      "after_database_restart": false
+    },
+    {
+      "case": "harness_runtime_executions_immutable_guard",
+      "state": "terminal",
+      "rejected": true,
+      "record_unchanged": true
+    },
+    {
+      "case": "harness_effect_journal_immutable_guard",
+      "state": "terminal",
+      "rejected": true,
+      "record_unchanged": true
+    },
+    {
+      "case": "harness_runtime_executions_nonterminal_immutable_guard",
+      "state": "claimed",
+      "rejected": true,
+      "record_unchanged": true
+    },
+    {
+      "case": "harness_effect_journal_nonterminal_immutable_guard",
+      "state": "prepared",
+      "rejected": true,
+      "record_unchanged": true
+    },
+    {
+      "case": "database_restart_cas_http",
+      "pid": 1694,
+      "revision": 2,
+      "provider_calls": 0
+    },
+    {
+      "case": "application_http_restart",
+      "visit": 0,
+      "pid": 1698,
+      "domains": [
+        "document",
+        "planning",
+        "study",
+        "tavern"
+      ],
+      "provider_calls": 0,
+      "after_database_restart": true
+    },
+    {
+      "case": "application_http_restart",
+      "visit": 1,
+      "pid": 1709,
+      "domains": [
+        "document",
+        "planning",
+        "study",
+        "tavern"
+      ],
+      "provider_calls": 0,
+      "after_database_restart": true
+    },
+    {
+      "case": "study_commit_after_session_http",
+      "pid": 1716,
+      "status": "uncertain",
+      "provider_calls": 0,
+      "after_database_restart": true
+    },
+    {
+      "case": "study_commit_after_trace_http",
+      "pid": 1720,
+      "status": "uncertain",
+      "provider_calls": 0,
+      "after_database_restart": true
+    },
+    {
+      "case": "study_commit_after_receipt_http",
+      "pid": 1731,
+      "status": "uncertain",
+      "provider_calls": 0,
+      "after_database_restart": true
+    },
+    {
+      "case": "study_commit_after_commit_http",
+      "pid": 1735,
+      "status": "committed",
+      "provider_calls": 0,
+      "after_database_restart": true
+    }
+  ],
+  "postgres_version": "PostgreSQL 17.11 on aarch64-unknown-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit",
+  "initial_database_start": "2026-10-29T18:09:04.217539+00:00",
+  "historical": {
+    "head": "20260914_0022",
+    "document_id": "doc-024993bab0",
+    "plan_id": "plan-fa9291893a",
+    "session_id": "session-d240d4dee6",
+    "room_id": "tavern-75e4cea6c31b",
+    "run_id": "tavern-run-d97be5f0b56c",
+    "persona_id": "mentor-aurora",
+    "receipts": {
+      "document_process_operations": [
+        "a525267e4eb5178e8f13c45b9c2aeb18ba593e06208dedd458e85f741e121dc0"
+      ],
+      "learning_plan_operations": [
+        "e12288bda9113aa31668ca9139f379d9012210b32a1c70bd5cb88cb22922c97b"
+      ],
+      "study_chat_operations": [
+        "3804810069aede352443bd5609a875a19881d7c05855b7c9aa8a325218c4043e"
+      ]
+    },
+    "payload_digests": {
+      "document": "a913a475d22701a05470f596c88875cf9e22f389ed49500cdcea378422bbc21b",
+      "chat_receipt": "38aab606ee773be574fc605b7c4fb1eac53894bb425e8fc7509109c83c0f3f83",
+      "tavern_turn": "f81aa6ec648e2f47b34a18843a313f2d1dadd9f3f5eae12308cf919419a019dd"
+    },
+    "seed_backend": "old-version SQLite; exact rows restored into old Alembic PostgreSQL schema"
+  },
+  "historical_root": "/tmp/vibe-postgres-acceptance-20261030-final/historical-358d5d55",
+  "crash_matrix_status": "passed",
+  "study_commit_cases": [
+    {
+      "case": "study_commit_after_session",
+      "root": "/tmp/vibe-postgres-acceptance-20261030-final/study-after_session",
+      "session_id": "session-d855de0a64",
+      "client_request_id": "pg-study-commit-request",
+      "status": "uncertain",
+      "session_revision": 0,
+      "turns": 0,
+      "response_digest": "",
+      "abrupt_worker_exit": 73
+    },
+    {
+      "case": "study_commit_after_trace",
+      "root": "/tmp/vibe-postgres-acceptance-20261030-final/study-after_trace",
+      "session_id": "session-202af80515",
+      "client_request_id": "pg-study-commit-request",
+      "status": "uncertain",
+      "session_revision": 0,
+      "turns": 0,
+      "response_digest": "",
+      "abrupt_worker_exit": 73
+    },
+    {
+      "case": "study_commit_after_receipt",
+      "root": "/tmp/vibe-postgres-acceptance-20261030-final/study-after_receipt",
+      "session_id": "session-4ab0aab4b5",
+      "client_request_id": "pg-study-commit-request",
+      "status": "uncertain",
+      "session_revision": 0,
+      "turns": 0,
+      "response_digest": "",
+      "abrupt_worker_exit": 73
+    },
+    {
+      "case": "study_commit_after_commit",
+      "root": "/tmp/vibe-postgres-acceptance-20261030-final/study-after_commit",
+      "session_id": "session-ae986ea859",
+      "client_request_id": "pg-study-commit-request",
+      "status": "committed",
+      "session_revision": 1,
+      "turns": 1,
+      "response_digest": "cf55ac0f7ec322bb9befda7c878af84556ea2005a923d1c846934dff0556813f",
+      "abrupt_worker_exit": 73
+    }
+  ],
+  "cas_session": {
+    "root": "/tmp/vibe-postgres-acceptance-20261030-final/cas",
+    "session_id": "session-6b72ad5861"
+  },
+  "restarted_database_start": "2026-10-29T18:29:13.130755+00:00",
+  "status": "passed",
+  "owned_schemas_cleaned": true,
+  "environment": {
+    "postgres_version": "PostgreSQL 17.11 on aarch64-unknown-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit",
+    "database_start_before": "2026-10-29T18:09:04.217539+00:00",
+    "database_start_after": "2026-10-29T18:29:13.130755+00:00",
+    "provider_calls": 0,
+    "seed_provenance": "old-version SQLite synthetic records restored into old Alembic PostgreSQL schema",
+    "schema_count": 26
+  }
+}

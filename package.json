@@ -39,7 +39,7 @@
     "test:ai:study:tools": "cd services/ai && LITELLM_LOCAL_MODEL_COST_MAP=True UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m unittest tests.test_tool_manifest tests.test_provider_study tests.test_study_chat_effects tests.test_study_grounding tests.test_study_layout_tool tests.test_study_tool_images",
     "test:ai:study:decode": "cd services/ai && LITELLM_LOCAL_MODEL_COST_MAP=True UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m unittest tests.test_study_chat_reply_decode",
     "test:ai:harness:contracts": "cd services/ai && UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m unittest tests.test_persona_generation_contracts tests.test_scene_generation_contracts tests.test_document_processing_contracts tests.test_planning_runtime_contracts tests.test_harness_persistence_boundary",
-    "test:ai:harness:commit": "cd services/ai && LITELLM_LOCAL_MODEL_COST_MAP=True UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m unittest tests.test_harness_broad_commit_binding tests.test_document_process_operation tests.test_learning_plan_operation tests.test_harness_runtime",
+    "test:ai:harness:commit": "cd services/ai && LITELLM_LOCAL_MODEL_COST_MAP=True UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m unittest tests.test_harness_broad_commit_binding tests.test_document_process_operation tests.test_learning_plan_operation tests.test_harness_runtime tests.test_harness_context_history",
     "test:ai:provider:contracts": "cd services/ai && LITELLM_LOCAL_MODEL_COST_MAP=True UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m unittest tests.test_provider_capabilities tests.test_provider_exercises",
     "test:ai:provider:transport": "cd services/ai && UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m unittest tests.test_provider_transport",
     "test:ai:provider:embedding": "cd services/ai && UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m unittest tests.test_provider_embedding",
@@ -56,7 +56,7 @@
     "test:web:workspace": "npm --workspace @vibe-learner/web run test:workspace",
     "test:acceptance:web-routes": "npm --workspace @vibe-learner/web run test:routes",
     "test:ai:migrations": "cd services/ai && LITELLM_LOCAL_MODEL_COST_MAP=True UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m unittest tests.test_alembic_sqlite tests.test_frontend_eval_admission",
-    "test:ai:harness:runtime": "cd services/ai && LITELLM_LOCAL_MODEL_COST_MAP=True UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m unittest tests.test_harness_runtime",
+    "test:ai:harness:runtime": "cd services/ai && LITELLM_LOCAL_MODEL_COST_MAP=True UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m unittest tests.test_harness_runtime tests.test_harness_context_history",
     "test:ai:harness:performance": "cd services/ai && LITELLM_LOCAL_MODEL_COST_MAP=True UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m unittest tests.test_harness_performance",
     "test:ai:limits": "cd services/ai && LITELLM_LOCAL_MODEL_COST_MAP=True UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m unittest tests.test_wave45_input_limits",
     "test:acceptance:process-crash": "cd services/ai && LITELLM_LOCAL_MODEL_COST_MAP=True UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m unittest tests.test_wave45_process_recovery",
@@ -71,7 +71,8 @@
     "test:style": "node --test scripts/style/gates.test.mjs",
     "test:ai:document:input-limits": "cd services/ai && LITELLM_LOCAL_MODEL_COST_MAP=True UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m unittest tests.test_document_input_limits",
     "test:ai:output-language": "cd services/ai && LITELLM_LOCAL_MODEL_COST_MAP=True UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m unittest tests.test_output_language",
-    "test:acceptance:tavern-transport-cancel": "cd services/ai && LITELLM_LOCAL_MODEL_COST_MAP=True UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m tests.acceptance.tavern_transport_cancel_probe"
+    "test:acceptance:tavern-transport-cancel": "cd services/ai && LITELLM_LOCAL_MODEL_COST_MAP=True UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m tests.acceptance.tavern_transport_cancel_probe",
+    "test:acceptance:postgres": "cd services/ai && LITELLM_LOCAL_MODEL_COST_MAP=True UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run --frozen python -m tests.acceptance.postgres_recovery_probe"
   },
   "dependencies": {
     "rehype-katex": "^7.0.1"

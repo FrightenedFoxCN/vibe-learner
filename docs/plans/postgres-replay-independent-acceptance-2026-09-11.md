@@ -1,10 +1,12 @@
 # PostgreSQL 与受保护制品独立验收（2026-09-11）
 
+后续状态（2026-10-30）：PostgreSQL 的剩余范围已完成，见[迁移与恢复验收](../postgres-recovery-acceptance.md)。以下保留当时的独立审查范围和结论；制品完整重放仍以 `TODO.md` 为准。
+
 执行者：独立子智能体；未修改产品代码，未接触用户数据库或真实模型 provider。阅读了根 AGENTS.md、Harness 架构、统一 TODO 及架构重构归档。
 
 ## 账目核对
 
-原代码解耦归档（Git `e13fd02:docs/plans/architecture-refactor.md`）的 PostgreSQL 22 项准确对应 `test_transaction_validation`（16）和 `test_tavern_reference_scope`（6）。范围是写集合追踪、引用约束和事务提交/回滚路径，使用 `create_schema()` 建库；既不运行完整 Alembic 升级，也不覆盖领域 CAS 或服务/数据库重启。因此它与仍开放的 `REL-POSTGRES-001` 不冲突，不能以归档 22 项直接关闭该待办。
+原代码解耦归档（Git `e13fd02:docs/plans/architecture-refactor.md`）的 PostgreSQL 22 项准确对应 `test_transaction_validation`（16）和 `test_tavern_reference_scope`（6）。范围是写集合追踪、引用约束和事务提交/回滚路径，使用 `create_schema()` 建库；既不运行完整 Alembic 升级，也不覆盖领域 CAS 或服务/数据库重启。因此它与当时仍开放的 `REL-POSTGRES-001` 不冲突，不能以归档 22 项直接关闭该待办。
 
 ## 本轮 PostgreSQL 实测
 
@@ -20,7 +22,7 @@
 
 复现脚本：[independent_postgres_20260911.py](acceptance/independent_postgres_20260911.py)。从 `services/ai` 执行，显式设置 `VIBE_INDEPENDENT_POSTGRES_URL` 和 `PYTHONPATH=.`；首次执行写入/CAS/回滚，重启隔离 PostgreSQL 后加参数 `read` 只读检查。脚本会删除并重建 `independent-cas` 测试 Session，只允许在专用一次性数据库执行。
 
-`REL-POSTGRES-001` **仍不建议整体关闭**：本轮补足了空库迁移、一个真实并发 CAS、事务回滚和数据库重启持久性，但尚未移植 SQLite 完整领域恢复矩阵。剩余包括带数据旧版本迁移、Document/Planning/Study/Tavern admission/lease/commit 中断窗口、应用 HTTP 重启 read-back，以及需要支持时的迁移降级/再升级。数据库重启后的普通记录持久性不能代替操作不确定态恢复。
+`REL-POSTGRES-001` **在本报告当时仍不建议整体关闭**：本轮补足了空库迁移、一个真实并发 CAS、事务回滚和数据库重启持久性，但尚未移植 SQLite 完整领域恢复矩阵。剩余包括带数据旧版本迁移、Document/Planning/Study/Tavern admission/lease/commit 中断窗口、应用 HTTP 重启 read-back，以及需要支持时的迁移降级/再升级。数据库重启后的普通记录持久性不能代替操作不确定态恢复。2026-10-30 的后续实测已覆盖这些 PostgreSQL 范围，详见本目录的新报告。
 
 ## 本轮受保护制品复核
 

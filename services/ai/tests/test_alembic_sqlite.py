@@ -18,7 +18,7 @@ from app.persistence.document_repository import DocumentRepository
 from tests.support.planning_operations import planning_document
 
 
-ALEMBIC_HEAD = "20261029_0025"
+ALEMBIC_HEAD = "20261029_0026"
 
 
 def _normalize_sql(expression: object) -> str:

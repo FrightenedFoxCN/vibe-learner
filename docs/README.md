@@ -33,6 +33,7 @@
 | [代码风格门](code-style.md) | ESLint、Ruff、格式化、既有基线与 CI |
 | [前端测试边界](frontend-test-boundaries.md) | 独立数据/Hook/组件模块与生产浏览器验收 |
 | [后端测试边界](backend-test-boundaries.md) | 领域契约、生命周期、事务与进程中断门 |
+| [PostgreSQL 迁移与恢复](postgres-recovery-acceptance.md) | 旧版本带数据迁移、24 个进程中断窗口、CAS、回滚与 HTTP / 数据库重启实测 |
 | [场景编辑器](scene-setup.md) | 层级场景和保存结构 |
 
 修改前先阅读对应领域文档及 [AGENTS](../AGENTS.md)。未完成任务只由根 TODO 维护；已完成的阶段计划、逐日进展、实验原始数据和重复审查记录不在当前目录重复维护。
@@ -45,7 +46,7 @@
 
 - [0.3.3 发布记录](releases/0.3.3.md)：完成事项、证据入口与保留限制。
 - [启动性能协议](performance/backend-startup-v1.md)、[房间分页 HTTP](performance/tavern-room-http-v1.md)、[React 渲染](performance/tavern-room-react-v1.md)：可重放测量与原始样本。
-- [尚未完成的 PostgreSQL / 制品重放验收](plans/postgres-replay-independent-acceptance-2026-09-11.md)。
+- [PostgreSQL / 制品重放历史独立验收](plans/postgres-replay-independent-acceptance-2026-09-11.md)；PostgreSQL 后续范围见[迁移与恢复实测](postgres-recovery-acceptance.md)。
 - [用户手册验收进度](plans/acceptance-audit-2026-09-11.md)。
 - [诊断测量基线](performance/diagnostic-local-baseline-v1.md)：诊断存储与导出协议。
 

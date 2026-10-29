@@ -20,6 +20,7 @@
 | `npm run test:ai:limits` | Persona/Scene/Planning/Study/Tavern 输入边界；无数据库 |
 | `npm run test:ai:provider` | 独立能力、SDK 适配、配置快照、传输与本地 fallback；各能力亦有独立脚本 |
 | `npm run test:acceptance:process-crash` | 24 个真实子进程退出场景；重启后的持久状态和恢复证据 |
+| `npm run test:acceptance:postgres -- --database-url <loopback-test-url> --root <temporary-root> --phase <phase>` | 隔离 schema 内旧版本带数据升级、24 个进程中断窗口、CAS、事务回滚、应用 HTTP / 数据库重启；[分阶段复现](postgres-recovery-acceptance.md) |
 | `npm run test:acceptance:recovery-limits` | 进程中断、容量、领域恢复、真实 HTTP 重启读回和 Web 严格解码聚合门 |
 | `npm run check:release` | shared/Web、13 个 eval suite、全部后端测试和生产 Web 构建 |
 

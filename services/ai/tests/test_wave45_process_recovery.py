@@ -33,7 +33,6 @@ from app.models.scene_generation import (
     SceneGenerationInputManifest,
     SceneGenerationProposalV1,
 )
-from app.services.local_store import LocalJsonStore
 from app.services.model_provider import MockModelProvider
 from app.services.persona import PersonaEngine
 from app.services.plans import LearningPlanService
@@ -41,8 +40,14 @@ from app.services.study_arrangement import StudyArrangementService
 from sqlalchemy import text
 from tests.support.document_operations import create_document
 from tests.support.document_operations import FakeStudyArrangement, FakeDocumentParser
-from tests.support.planning_operations import planning_debug, planning_document, planning_goal, planning_reply
+from tests.support.planning_operations import (
+    planning_debug,
+    planning_document,
+    planning_goal,
+    planning_reply,
+)
 from tests.support.scene_proposals import layer, scene
+from tests.support.process_database import open_process_store
 
 
 def crash(*args, **kwargs):
@@ -51,16 +56,14 @@ def crash(*args, **kwargs):
 
 
 def child(root: Path, scenario: str):
-    store = LocalJsonStore(root)
+    store = open_process_store(root)
     if scenario.startswith("document"):
         service = DocumentService(store, FakeDocumentParser(), FakeStudyArrangement())
         if scenario.startswith("document_fault_"):
             service.process_repository.fault_injector = lambda stage: (
                 crash() if stage == scenario.removeprefix("document_fault_") else None
             )
-        document = create_document(
-            service, "synthetic.pdf"
-        )
+        document = create_document(service, "synthetic.pdf")
         (root / "identity.json").write_text(json.dumps({"document": document.id}))
         if scenario == "document_pending":
             service.process_repository.admit(document_id=document.id, force_ocr=False)
@@ -84,7 +87,9 @@ def child(root: Path, scenario: str):
                 store, StudyArrangementService(), provider, operation_repository=repo
             )
             with patch.object(
-                provider, "generate_learning_plan", return_value=planning_reply(document)
+                provider,
+                "generate_learning_plan",
+                return_value=planning_reply(document),
             ):
                 result = service.create_plan(
                     goal=planning_goal(document, scenario, persona.id),
@@ -273,7 +278,7 @@ class Wave45ProcessRecoveryTests(unittest.TestCase):
             with self.subTest(scenario=scenario), TemporaryDirectory() as folder:
                 root = Path(folder)
                 self.run_child(root, scenario)
-                store = LocalJsonStore(root)
+                store = open_process_store(root)
                 try:
                     parser = FakeDocumentParser()
                     service = DocumentService(store, parser, FakeStudyArrangement())
@@ -316,7 +321,7 @@ class Wave45ProcessRecoveryTests(unittest.TestCase):
             with self.subTest(scenario=scenario), TemporaryDirectory() as folder:
                 root = Path(folder)
                 self.run_child(root, scenario)
-                store = LocalJsonStore(root)
+                store = open_process_store(root)
                 try:
                     repo = LearningPlanOperationRepository(store.database)
                     op = repo.get_by_client_request_id(client_request_id=scenario)
@@ -389,7 +394,7 @@ class Wave45ProcessRecoveryTests(unittest.TestCase):
                 ):
                     root = Path(folder)
                     self.run_child(root, f"{workflow}_fault_{boundary}")
-                    store = LocalJsonStore(root)
+                    store = open_process_store(root)
                     try:
                         if workflow == "document":
                             service = DocumentService(
@@ -461,7 +466,7 @@ class Wave45ProcessRecoveryTests(unittest.TestCase):
             with self.subTest(scenario=scenario), TemporaryDirectory() as folder:
                 root = Path(folder)
                 self.run_child(root, scenario)
-                store = LocalJsonStore(root)
+                store = open_process_store(root)
                 try:
                     op_id = json.loads((root / "identity.json").read_text())[
                         "operation"
@@ -513,7 +518,7 @@ class Wave45ProcessRecoveryTests(unittest.TestCase):
             with self.subTest(scenario=scenario), TemporaryDirectory() as folder:
                 root = Path(folder)
                 self.run_child(root, scenario)
-                store = LocalJsonStore(root)
+                store = open_process_store(root)
                 try:
                     repo = TavernRepository(store.database)
                     room_id = json.loads((root / "identity.json").read_text())["room"]
@@ -566,7 +571,7 @@ class Wave45ProcessRecoveryTests(unittest.TestCase):
                 ):
                     root = Path(folder)
                     self.run_child(root, f"{workflow}_{phase}")
-                    store = LocalJsonStore(root)
+                    store = open_process_store(root)
                     try:
                         repo = HarnessWorkflowOperationRepository(store.database)
                         with store.database.engine.connect() as conn:
