@@ -88,6 +88,12 @@ jobs:
         timeout-minutes: 15
         run: npm install
 
+      - name: Check code style
+        timeout-minutes: 5
+        run: |
+          uv sync --project services/ai --frozen --only-group dev
+          npm run style:all
+
       - name: Validate shared contracts
         timeout-minutes: 10
         run: npm run test:contracts

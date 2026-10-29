@@ -9,7 +9,7 @@
     "build:desktop": "next build",
     "start": "next start",
     "check": "tsc --noEmit",
-    "lint": "npm run check",
+    "lint": "node ../../scripts/style/check.mjs --kind javascript --lint-only",
     "test:tavern": "node --experimental-strip-types --test tests/tavern-workspace-state.test.ts tests/tavern-copy.test.ts tests/tavern-real-response-decode.test.ts && npm run test:tavern:controller",
     "test:tavern:controller": "TSX_TSCONFIG_PATH=tests/tsconfig.json node --import tsx --test tests/tavern-controller.test.jsx tests/tavern-panels.test.jsx",
     "test:tavern:controller:browser": "playwright test --config playwright.tavern-controller.config.ts",

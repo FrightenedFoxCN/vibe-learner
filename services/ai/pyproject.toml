@@ -22,3 +22,16 @@ dependencies = [
 
 [tool.uv]
 package = false
+
+[dependency-groups]
+dev = [
+    "ruff==0.14.0",
+]
+
+[tool.ruff]
+required-version = "==0.14.0"
+target-version = "py312"
+line-length = 88
+
+[tool.ruff.lint]
+select = ["F401", "F841"]

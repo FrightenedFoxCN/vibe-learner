@@ -20,7 +20,11 @@ export function ProjectedImageViewer({
   onInsertReference,
 }: ProjectedImageViewerProps) {
   const imageShellRef = useRef<HTMLDivElement | null>(null);
-  const dragStateRef = useRef<{ pointerId: number; startX: number; startY: number } | null>(null);
+  const dragStateRef = useRef<{
+    pointerId: number;
+    startX: number;
+    startY: number;
+  } | null>(null);
   const draftRegionRef = useRef<PdfRect | null>(null);
   const [draftRegion, setDraftRegion] = useState<PdfRect | null>(null);
   const [selectedRegion, setSelectedRegion] = useState<PdfRect | null>(null);
@@ -49,7 +53,8 @@ export function ProjectedImageViewer({
 
   const handlePointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
     const dragState = dragStateRef.current;
-    if (!dragState || dragState.pointerId !== event.pointerId || !imageShellRef.current) return;
+    if (!dragState || dragState.pointerId !== event.pointerId || !imageShellRef.current)
+      return;
     event.preventDefault();
     const rect = imageShellRef.current.getBoundingClientRect();
     const nextRegion = buildRect(
@@ -82,7 +87,7 @@ export function ProjectedImageViewer({
     if (!selectedRegion || !onInsertReference) return;
     onInsertReference(
       `请结合当前投射图片《${title}》这个选区回答：` +
-      ` [x=${selectedRegion.x.toFixed(3)}, y=${selectedRegion.y.toFixed(3)}, w=${selectedRegion.width.toFixed(3)}, h=${selectedRegion.height.toFixed(3)}]`
+        ` [x=${selectedRegion.x.toFixed(3)}, y=${selectedRegion.y.toFixed(3)}, w=${selectedRegion.width.toFixed(3)}, h=${selectedRegion.height.toFixed(3)}]`,
     );
     clearSelection();
   };
@@ -104,7 +109,7 @@ export function ProjectedImageViewer({
             <MaterialIcon name="input" size={15} />
           </button>
         ) : null}
-        {(selectedRegion || draftRegion) ? (
+        {selectedRegion || draftRegion ? (
           <button
             type="button"
             style={styles.iconButton}
@@ -125,7 +130,6 @@ export function ProjectedImageViewer({
         onPointerUp={finishRegionSelection}
         onPointerCancel={finishRegionSelection}
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={fileUrl} alt={title} style={styles.image} />
 
         <div style={styles.overlayStage}>
@@ -145,12 +149,17 @@ export function ProjectedImageViewer({
                 title={overlay.label || overlay.quoteText || overlay.kind}
               >
                 {index === 0 && (overlay.label || overlay.quoteText) ? (
-                  <span style={{ ...styles.overlayLabel, background: overlay.color ?? "#F97316" }}>
+                  <span
+                    style={{
+                      ...styles.overlayLabel,
+                      background: overlay.color ?? "#F97316",
+                    }}
+                  >
                     {overlay.label || overlay.quoteText}
                   </span>
                 ) : null}
               </div>
-            ))
+            )),
           )}
 
           {selectedRegion ? (
@@ -182,7 +191,12 @@ export function ProjectedImageViewer({
   );
 }
 
-function buildRect(startX: number, startY: number, endX: number, endY: number): PdfRect {
+function buildRect(
+  startX: number,
+  startY: number,
+  endX: number,
+  endY: number,
+): PdfRect {
   return {
     x: Math.min(startX, endX),
     y: Math.min(startY, endY),

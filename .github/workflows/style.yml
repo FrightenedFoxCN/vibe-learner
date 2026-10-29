@@ -1,0 +1,45 @@
+name: Code Style
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: style-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  style:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.13.6"
+      - name: Install locked development tools
+        run: |
+          npm ci --ignore-scripts
+          uv sync --project services/ai --frozen --only-group dev
+      - name: Verify style gate behavior
+        run: npm run test:style
+      - name: Check lint baseline and changed-file formatting
+        env:
+          STYLE_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          if [ -n "$STYLE_BASE" ] && ! [[ "$STYLE_BASE" =~ ^0+$ ]]; then
+            npm run style:check -- --base "$STYLE_BASE" --all
+          else
+            npm run style:check -- --all
+          fi

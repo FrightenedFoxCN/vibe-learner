@@ -22,6 +22,7 @@
 | [模型运行时质量](model-runtime-quality.md) | 已采用的规划、记忆、多模态和 Provider 边界 |
 | [规划 Prompt 契约](learning-plan-prompt-contract.md) | Prompt 结构和模型输入 |
 | [学习工作区](frontend-learning-workspace.md) | Plan/Study 前端职责 |
+| [代码风格门](code-style.md) | ESLint、Ruff、格式化、既有基线与 CI |
 | [前端测试边界](frontend-test-boundaries.md) | 独立数据/Hook/组件模块与生产浏览器验收 |
 | [后端测试边界](backend-test-boundaries.md) | 领域契约、生命周期、事务与进程中断门 |
 | [场景编辑器](scene-setup.md) | 层级场景和保存结构 |

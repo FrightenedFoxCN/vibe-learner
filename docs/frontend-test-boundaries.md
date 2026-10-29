@@ -42,6 +42,7 @@
 | `npm --workspace @vibe-learner/web run test:workspace:libraries` | 学习域 Persona/Scene 库刷新归属、失败保留、实时选择与事件订阅清理 |
 | `npm run test:web:reliability` | 领域 decoder/recovery 单元测试与组件测试 |
 | `npm run check:web` | Web 类型约束 |
+| `npm run style:check` | ESLint/Ruff 既有问题基线及新增/修改代码格式；规则和 CI 见[代码风格门](code-style.md) |
 | `npm run build:web` | 生产 Web 构建 |
 | `npm run test:acceptance:web-routes` | 构建后启动独立本机服务，以 Chromium 验证路由请求和用户导航 |
 

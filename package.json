@@ -14,7 +14,7 @@
     "dev:desktop": "npm --workspace @vibe-learner/desktop run dev",
     "build:desktop": "npm --workspace @vibe-learner/desktop run build",
     "check:web": "npm --workspace @vibe-learner/web run check",
-    "lint:web": "npm run check:web",
+    "lint:web": "node scripts/style/check.mjs --kind javascript --lint-only",
     "test:contracts": "tsc -p packages/shared/tsconfig.json && tsc -p packages/shared/tsconfig.contracts.json && node packages/shared/tests/harness-policy-registry.mjs && node packages/shared/tests/harness-artifact-access.mjs && node packages/shared/tests/harness-eval-contract.mjs && node packages/shared/tests/harness-manifest.mjs && node packages/shared/tests/tool-manifest.mjs && node packages/shared/tests/model-runtime-config.mjs",
     "test:web:tavern": "npm --workspace @vibe-learner/web run test:tavern",
     "test:web:reliability": "npm --workspace @vibe-learner/web run test:reliability",
@@ -27,7 +27,7 @@
     "test:acceptance:recovery-limits": "cd services/ai && LITELLM_LOCAL_MODEL_COST_MAP=True UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m unittest tests.test_wave45_process_recovery tests.test_wave45_input_limits tests.test_document_process_operation tests.test_learning_plan_operation tests.test_harness_runtime tests.test_harness_performance tests.test_harness_recovery_migration tests.test_harness_effect_journal tests.test_harness_artifact_resolver tests.test_study_chat_operation tests.test_study_chat_application tests.test_study_chat_projection tests.test_study_chat_public_failure tests.test_study_v3_runtime tests.test_study_chat_effects tests.test_tavern_facilitated tests.test_tavern_api tests.test_tavern_prompt_safety tests.test_scene_schema_ownership tests.test_persona_lifecycle && npm run test:web:reliability",
     "test:ai": "cd services/ai && UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m unittest discover -s tests",
     "test": "npm run test:ai",
-    "check": "npm run test:contracts && npm run check:web && npm run test:web:reliability && npm run eval:harness:pr",
+    "check": "npm run style:check && npm run test:contracts && npm run check:web && npm run test:web:reliability && npm run eval:harness:pr",
     "check:release": "npm run check && npm run test:ai && npm run build:web",
     "eval:harness:stages": "cd services/ai && LITELLM_LOCAL_MODEL_COST_MAP=True UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m app.services.harness_stage_evals",
     "test:ai:transactions": "cd services/ai && UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m unittest tests.test_transaction_validation tests.test_tavern_reference_scope tests.test_tavern_invariant_scanner",
@@ -60,12 +60,25 @@
     "test:acceptance:process-crash": "cd services/ai && LITELLM_LOCAL_MODEL_COST_MAP=True UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m unittest tests.test_wave45_process_recovery",
     "eval:harness:plan-revision": "cd services/ai && LITELLM_LOCAL_MODEL_COST_MAP=True UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m app.services.plan_revision_evals",
     "eval:harness:study-unit-revision": "cd services/ai && LITELLM_LOCAL_MODEL_COST_MAP=True UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m app.services.study_unit_revision_evals",
-    "test:acceptance:startup": "cd services/ai && UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python tests/acceptance/backend_startup_probe.py"
+    "test:acceptance:startup": "cd services/ai && UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python tests/acceptance/backend_startup_probe.py",
+    "style:check": "node scripts/style/check.mjs",
+    "lint:ai": "node scripts/style/check.mjs --kind python --lint-only",
+    "format:check": "node scripts/style/check.mjs --format-only",
+    "style:all": "node scripts/style/check.mjs --all",
+    "style:baseline": "node scripts/style/check.mjs --write-baseline",
+    "test:style": "node --test scripts/style/gates.test.mjs"
   },
   "dependencies": {
     "rehype-katex": "^7.0.1"
   },
   "engines": {
     "node": ">=26 <27"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "8.72.1",
+    "@typescript-eslint/parser": "8.72.1",
+    "eslint": "10.13.0",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "prettier": "3.9.10"
   }
 }
