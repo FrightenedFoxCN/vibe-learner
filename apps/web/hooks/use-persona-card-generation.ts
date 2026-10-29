@@ -4,10 +4,21 @@ import { useEffect, useRef, useState } from "react";
 import type { PersonaCard, ModelRecovery } from "@vibe-learner/shared";
 import { diagnosticContext, type DiagnosticContext } from "../lib/diagnostics";
 import { generatePersonaCards } from "../lib/data/persona-cards";
-import { AsyncResultFence, type AsyncResultScope, type AsyncResultTicket } from "../lib/async-result-fence";
+import {
+  AsyncResultFence,
+  type AsyncResultScope,
+  type AsyncResultTicket,
+} from "../lib/async-result-fence";
 import { isApiHttpError } from "../lib/http-error";
-import { buildDraftWithInsertedCards, collectReferenceHintsFromCards } from "../lib/persona-editor-model";
-import { clearPersonaDraftForGeneratedBackfill, mergeReferenceHints, type PersonaDraft } from "../lib/persona-draft";
+import {
+  buildDraftWithInsertedCards,
+  collectReferenceHintsFromCards,
+} from "../lib/persona-editor-model";
+import {
+  clearPersonaDraftForGeneratedBackfill,
+  mergeReferenceHints,
+  type PersonaDraft,
+} from "../lib/persona-draft";
 import { humanizeSettingGenerationError } from "../lib/generation-error-copy";
 
 interface GeneratedPersonaMeta {
@@ -18,50 +29,92 @@ interface GeneratedPersonaMeta {
 
 type CardGenerationMode = "keywords" | "long_text";
 
-export function usePersonaCardGeneration({ draft, updatePersonaDraft, currentPersonaAsyncScope, beginDiagnosticAction = diagnosticContext }: {
-  beginDiagnosticAction?: () => DiagnosticContext;
-  draft: PersonaDraft;
-  updatePersonaDraft: (draft: PersonaDraft) => void;
-  currentPersonaAsyncScope: (fieldTarget: string) => AsyncResultScope;
-}, generate = generatePersonaCards) {
+export function usePersonaCardGeneration(
+  {
+    draft,
+    updatePersonaDraft,
+    currentPersonaAsyncScope,
+    beginDiagnosticAction = diagnosticContext,
+  }: {
+    beginDiagnosticAction?: () => DiagnosticContext;
+    draft: PersonaDraft;
+    updatePersonaDraft: (draft: PersonaDraft) => void;
+    currentPersonaAsyncScope: (fieldTarget: string) => AsyncResultScope;
+  },
+  generate = generatePersonaCards,
+) {
   const [generatedCards, setGeneratedCards] = useState<PersonaCard[]>([]);
-  const [cardGenerationMode, setCardGenerationMode] = useState<CardGenerationMode>("keywords");
+  const [selectedGeneratedCardIds, setSelectedGeneratedCardIds] = useState<string[]>(
+    [],
+  );
+  const [cardGenerationMode, setCardGenerationMode] =
+    useState<CardGenerationMode>("keywords");
   const [cardKeywordInput, setCardKeywordInput] = useState("");
   const [cardLongTextFile, setCardLongTextFile] = useState<File | null>(null);
   const [cardGenerateCount, setCardGenerateCount] = useState("");
   const [clearBeforeBackfill, setClearBeforeBackfill] = useState(false);
-  const [cardActionPending, setCardActionPending] = useState<null | "generate_keywords" | "generate_long_text">(null);
+  const [cardActionPending, setCardActionPending] = useState<
+    null | "generate_keywords" | "generate_long_text"
+  >(null);
   const [cardMessage, setCardMessage] = useState("");
   const [cardError, setCardError] = useState("");
   const [cardModelRecoveries, setCardModelRecoveries] = useState<ModelRecovery[]>([]);
-  const [generatedPersonaMeta, setGeneratedPersonaMeta] = useState<GeneratedPersonaMeta>({
-    summary: "",
-    relationship: "",
-    learnerAddress: "",
-  });
+  const [generatedPersonaMeta, setGeneratedPersonaMeta] =
+    useState<GeneratedPersonaMeta>({
+      summary: "",
+      relationship: "",
+      learnerAddress: "",
+    });
 
   const cardGenerationFenceRef = useRef(new AsyncResultFence());
   const mountedRef = useRef(true);
-  const canApply = (ticket: AsyncResultTicket) => mountedRef.current && cardGenerationFenceRef.current.decide(ticket, currentPersonaAsyncScope("persona-card-candidate")) === "apply";
+  const canApply = (ticket: AsyncResultTicket) =>
+    mountedRef.current &&
+    cardGenerationFenceRef.current.decide(
+      ticket,
+      currentPersonaAsyncScope("persona-card-candidate"),
+    ) === "apply";
   useEffect(() => {
+    const fence = cardGenerationFenceRef.current;
     mountedRef.current = true;
-    return () => { mountedRef.current = false; cardGenerationFenceRef.current.invalidate(); };
+    return () => {
+      mountedRef.current = false;
+      fence.invalidate();
+    };
   }, []);
   function resetCardGeneration() {
     cardGenerationFenceRef.current.invalidate();
     setCardActionPending(null);
     setGeneratedCards([]);
+    setSelectedGeneratedCardIds([]);
     setGeneratedPersonaMeta({ summary: "", relationship: "", learnerAddress: "" });
-    setCardMessage(""); setCardError(""); setCardModelRecoveries([]);
+    setCardMessage("");
+    setCardError("");
+    setCardModelRecoveries([]);
   }
   function applyGeneratedCardsToDraft() {
-    if (!generatedCards.length && !generatedPersonaMeta.summary && !generatedPersonaMeta.relationship && !generatedPersonaMeta.learnerAddress) {
-      setCardError("当前没有可回填的生成人格内容。");
+    const selectedCards = generatedCards.filter((card) =>
+      selectedGeneratedCardIds.includes(card.id),
+    );
+    if (
+      (!selectedCards.length && generatedCards.length) ||
+      (!generatedCards.length &&
+        !generatedPersonaMeta.summary &&
+        !generatedPersonaMeta.relationship &&
+        !generatedPersonaMeta.learnerAddress)
+    ) {
+      setCardError(
+        generatedCards.length
+          ? "请先选择至少一张人格卡片。"
+          : "当前没有可回填的生成人格内容。",
+      );
       return false;
     }
     if (
       clearBeforeBackfill &&
-      !window.confirm("应用后会清空现有摘要、关系、称呼、参考提示和全部插槽。是否继续？")
+      !window.confirm(
+        "应用后会清空现有摘要、关系、称呼、参考提示和全部插槽。是否继续？",
+      )
     ) {
       return false;
     }
@@ -70,15 +123,16 @@ export function usePersonaCardGeneration({ draft, updatePersonaDraft, currentPer
     const baseDraft = clearBeforeBackfill
       ? clearPersonaDraftForGeneratedBackfill(draft)
       : draft;
-    const insertion = buildDraftWithInsertedCards(baseDraft, generatedCards);
+    const insertion = buildDraftWithInsertedCards(baseDraft, selectedCards);
     updatePersonaDraft({
       ...insertion.draft,
       summary: generatedPersonaMeta.summary || insertion.draft.summary,
       relationship: generatedPersonaMeta.relationship || insertion.draft.relationship,
-      learnerAddress: generatedPersonaMeta.learnerAddress || insertion.draft.learnerAddress,
+      learnerAddress:
+        generatedPersonaMeta.learnerAddress || insertion.draft.learnerAddress,
       referenceHints: mergeReferenceHints(
         insertion.draft.referenceHints,
-        collectReferenceHintsFromCards(generatedCards)
+        collectReferenceHintsFromCards(selectedCards),
       ),
     });
     const metaParts = [
@@ -89,10 +143,29 @@ export function usePersonaCardGeneration({ draft, updatePersonaDraft, currentPer
     const summary = [
       clearBeforeBackfill ? "已清空摘要、关系、称呼、参考提示和全部插槽" : "",
       metaParts.length ? `已回填${metaParts.join("、")}` : "",
-      insertion.insertedCount ? `并插入 ${insertion.insertedCount} 张卡片` : generatedCards.length ? "卡片已存在，未重复插入" : "",
-    ].filter(Boolean).join("，");
+      insertion.insertedCount
+        ? `并插入 ${insertion.insertedCount} 张卡片`
+        : selectedCards.length
+          ? "卡片已存在，未重复插入"
+          : "",
+    ]
+      .filter(Boolean)
+      .join("，");
     setCardMessage(summary || "已将本轮生成内容应用到当前编辑区。");
     return true;
+  }
+
+  function toggleGeneratedCardSelection(cardId: string) {
+    setSelectedGeneratedCardIds((current) =>
+      current.includes(cardId)
+        ? current.filter((id) => id !== cardId)
+        : [...current, cardId],
+    );
+  }
+
+  function rejectGeneratedCard(cardId: string) {
+    setGeneratedCards((current) => current.filter((card) => card.id !== cardId));
+    setSelectedGeneratedCardIds((current) => current.filter((id) => id !== cardId));
   }
 
   function insertCardsIntoDraft(cards: PersonaCard[], insertIndex?: number) {
@@ -107,7 +180,7 @@ export function usePersonaCardGeneration({ draft, updatePersonaDraft, currentPer
       ...insertion.draft,
       referenceHints: mergeReferenceHints(
         insertion.draft.referenceHints,
-        collectReferenceHintsFromCards(cards)
+        collectReferenceHintsFromCards(cards),
       ),
     });
     if (!insertion.insertedCount) {
@@ -124,7 +197,9 @@ export function usePersonaCardGeneration({ draft, updatePersonaDraft, currentPer
     setCardError("");
     setCardMessage("");
     setCardModelRecoveries([]);
-    setCardActionPending(mode === "keywords" ? "generate_keywords" : "generate_long_text");
+    setCardActionPending(
+      mode === "keywords" ? "generate_keywords" : "generate_long_text",
+    );
     try {
       let inputText = "";
       if (mode === "keywords") {
@@ -156,15 +231,19 @@ export function usePersonaCardGeneration({ draft, updatePersonaDraft, currentPer
         }
         count = parsedCount;
       }
-      const result = await generate({
-        mode,
-        inputText,
-        count,
-      }, beginDiagnosticAction());
+      const result = await generate(
+        {
+          mode,
+          inputText,
+          count,
+        },
+        beginDiagnosticAction(),
+      );
       if (!canApply(ticket)) {
         return;
       }
       setGeneratedCards(result.items);
+      setSelectedGeneratedCardIds(result.items.map((card) => card.id));
       setGeneratedPersonaMeta({
         summary: result.summary,
         relationship: result.relationship,
@@ -178,7 +257,7 @@ export function usePersonaCardGeneration({ draft, updatePersonaDraft, currentPer
             : result.usedModel === "mock"
               ? "本地模拟结果。"
               : ""
-        }`
+        }`,
       );
     } catch (error) {
       if (canApply(ticket)) {
@@ -193,6 +272,7 @@ export function usePersonaCardGeneration({ draft, updatePersonaDraft, currentPer
 
   return {
     generatedCards,
+    selectedGeneratedCardIds,
     cardGenerationMode,
     setCardGenerationMode,
     cardKeywordInput,
@@ -211,6 +291,8 @@ export function usePersonaCardGeneration({ draft, updatePersonaDraft, currentPer
     cardModelRecoveries,
     generatedPersonaMeta,
     applyGeneratedCardsToDraft,
+    toggleGeneratedCardSelection,
+    rejectGeneratedCard,
     insertCardsIntoDraft,
     handleGenerateCards,
     resetCardGeneration,

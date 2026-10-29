@@ -1,16 +1,31 @@
 "use client";
 
 import { Fragment, useRef, useState } from "react";
-import { PERSONA_SLOT_KIND_LABELS, PERSONA_SLOT_KINDS, type PersonaCard, type PersonaProfile, type PersonaSlotKind } from "@vibe-learner/shared";
+import {
+  PERSONA_SLOT_KIND_LABELS,
+  PERSONA_SLOT_KINDS,
+  type PersonaCard,
+  type PersonaProfile,
+  type PersonaSlotKind,
+} from "@vibe-learner/shared";
 import { AsyncFeedback } from "../async-feedback";
 import { TopNav } from "../../components/top-nav";
 import { MaterialIcon } from "../../components/material-icon";
 import { ModelFallbackNotice } from "../../components/model-fallback-notice";
 import { ProviderTruth } from "../../components/provider-truth";
+import { collectReferenceHintsFromCards } from "../../lib/persona-editor-model";
 
 import type { PersonaWorkspaceController } from "../../hooks/use-persona-workspace-controller";
-import { PersonaCardView, PersonaProfileCard, IconGlyphButton } from "./persona-library-cards";
-import { styles, BASIC_PANE_WIDTH, SIDEBAR_PANE_WIDTH } from "./persona-workspace-styles";
+import {
+  PersonaCardView,
+  PersonaProfileCard,
+  IconGlyphButton,
+} from "./persona-library-cards";
+import {
+  styles,
+  BASIC_PANE_WIDTH,
+  SIDEBAR_PANE_WIDTH,
+} from "./persona-workspace-styles";
 
 const SLOT_KIND_HINTS: Record<string, string> = {
   worldview: "描述人格对学习、知识、成长的基本信念，会长期影响讲解立场。",
@@ -20,10 +35,14 @@ const SLOT_KIND_HINTS: Record<string, string> = {
   narrative_mode: "描述叙事密度，建议直接使用“稳态导学”或“轻剧情陪伴”等中文表达。",
   encouragement_style: "描述鼓励策略，应当具体可执行，避免泛泛鼓励。",
   correction_style: "描述纠错方式，建议先指出可改进点，再给下一步动作。",
-  custom: "自定义插槽，用于补充特殊设定。"
+  custom: "自定义插槽，用于补充特殊设定。",
 };
 
-export function PersonaWorkspaceView({ controller }: { controller: PersonaWorkspaceController }) {
+export function PersonaWorkspaceView({
+  controller,
+}: {
+  controller: PersonaWorkspaceController;
+}) {
   const [cardKind, setCardKind] = useState("");
   const [personaSource, setPersonaSource] = useState("");
   const feedbackAction = useRef<Element | null>(null);
@@ -50,6 +69,7 @@ export function PersonaWorkspaceView({ controller }: { controller: PersonaWorksp
     configMessage,
     configError,
     generatedCards,
+    selectedGeneratedCardIds,
     cardGenerationMode,
     setCardGenerationMode,
     cardKeywordInput,
@@ -65,6 +85,8 @@ export function PersonaWorkspaceView({ controller }: { controller: PersonaWorksp
     cardError,
     generatedPersonaMeta,
     applyGeneratedCardsToDraft,
+    toggleGeneratedCardSelection,
+    rejectGeneratedCard,
     insertCardsIntoDraft,
     handleGenerateCards,
     cardSearchQuery,
@@ -125,35 +147,99 @@ export function PersonaWorkspaceView({ controller }: { controller: PersonaWorksp
     toggleSidebarSection,
     handleDeletePersonaCard,
   } = controller;
-  const visibleCards = filteredPersonaCards.filter(card => !cardKind || card.kind === cardKind);
+  const visibleCards = filteredPersonaCards.filter(
+    (card) => !cardKind || card.kind === cardKind,
+  );
+  const selectedGeneratedCards = generatedCards.filter((card) =>
+    selectedGeneratedCardIds.includes(card.id),
+  );
+  const generatedReferenceHints =
+    collectReferenceHintsFromCards(selectedGeneratedCards);
+  const existingReferenceHints = draft.referenceHints;
+  const referenceAdded = generatedReferenceHints.filter(
+    (item) => !existingReferenceHints.includes(item),
+  );
+  const referenceRetained = generatedReferenceHints.filter((item) =>
+    existingReferenceHints.includes(item),
+  );
+  const referenceRemoved = clearBeforeBackfill
+    ? existingReferenceHints.filter((item) => !generatedReferenceHints.includes(item))
+    : [];
   const visibleBuiltin = personaSource === "user" ? [] : builtinPersonas;
   const visibleUser = personaSource === "builtin" ? [] : userPersonas;
-  const renderPersonaCard = (card: PersonaCard) => <PersonaCardView
-    key={card.id} card={card} dragging={draggingPersonaCardId === card.id}
-    deletePending={cardDeletePendingId === card.id} onDragStart={handlePersonaCardDragStart}
-    onDragEnd={handlePersonaCardDragEnd} onInsert={card => insertCardsIntoDraft([card])} onDelete={handleDeletePersonaCard}
-  />;
-  const renderPersonaLibraryCard = (persona: PersonaProfile) => <PersonaProfileCard
-    key={persona.id} persona={persona} isSelected={persona.id === selectedPersonaId}
-    deletePending={personaDeletePendingId === persona.id} onActivate={activateLibraryPersona} onDelete={handleDeletePersona}
-  />;
-return (
-    <main onClickCapture={(event) => { feedbackAction.current = (event.target as Element).closest("button, input, select"); }} className="with-app-nav persona-workspace-page" style={styles.page}>
+  const renderPersonaCard = (card: PersonaCard) => (
+    <PersonaCardView
+      key={card.id}
+      card={card}
+      dragging={draggingPersonaCardId === card.id}
+      deletePending={cardDeletePendingId === card.id}
+      onDragStart={handlePersonaCardDragStart}
+      onDragEnd={handlePersonaCardDragEnd}
+      onInsert={(card) => insertCardsIntoDraft([card])}
+      onDelete={handleDeletePersonaCard}
+    />
+  );
+  const renderPersonaLibraryCard = (persona: PersonaProfile) => (
+    <PersonaProfileCard
+      key={persona.id}
+      persona={persona}
+      isSelected={persona.id === selectedPersonaId}
+      deletePending={personaDeletePendingId === persona.id}
+      onActivate={activateLibraryPersona}
+      onDelete={handleDeletePersona}
+    />
+  );
+  return (
+    <main
+      onClickCapture={(event) => {
+        feedbackAction.current = (event.target as Element).closest(
+          "button, input, select",
+        );
+      }}
+      className="with-app-nav persona-workspace-page"
+      style={styles.page}
+    >
       <TopNav currentPath="/persona-spectrum" />
 
       <div style={styles.heading}>
         <div style={styles.headingRow}>
           <h1 style={styles.pageTitle}>人格色谱</h1>
           <ProviderTruth scope="persona" />
-          <AsyncFeedback actionRef={feedbackAction} synchronousError={saveError}
-            pending={savingPersona || assistPending || slotAssistIndex !== null || Boolean(cardActionPending) || Boolean(personaDeletePendingId) || Boolean(cardDeletePendingId)}
-            error={[saveError, assistError, configError, cardError, personaLibraryError].filter(Boolean).join("；")}
-            message={savingPersona ? "正在保存人格…" : assistPending ? "正在生成建议…" : slotAssistIndex !== null || cardActionPending ? pageNotice : personaLibraryMessage || cardMessage || configMessage || pageNotice}
+          <AsyncFeedback
+            actionRef={feedbackAction}
+            synchronousError={saveError}
+            pending={
+              savingPersona ||
+              assistPending ||
+              slotAssistIndex !== null ||
+              Boolean(cardActionPending) ||
+              Boolean(personaDeletePendingId) ||
+              Boolean(cardDeletePendingId)
+            }
+            error={[saveError, assistError, configError, cardError, personaLibraryError]
+              .filter(Boolean)
+              .join("；")}
+            message={
+              savingPersona
+                ? "正在保存人格…"
+                : assistPending
+                  ? "正在生成建议…"
+                  : slotAssistIndex !== null || cardActionPending
+                    ? pageNotice
+                    : personaLibraryMessage ||
+                      cardMessage ||
+                      configMessage ||
+                      pageNotice
+            }
           />
         </div>
       </div>
 
-      {loadError ? <div role="alert" style={styles.errorBanner}>加载失败: {loadError}</div> : null}
+      {loadError ? (
+        <div role="alert" style={styles.errorBanner}>
+          加载失败: {loadError}
+        </div>
+      ) : null}
 
       <div
         style={{
@@ -187,19 +273,27 @@ return (
                   <div ref={rewritePopoverRef} style={styles.rewritePopoverWrap}>
                     <button
                       type="button"
-                      style={{ ...styles.basicIconButton, ...(assistPending ? styles.basicIconButtonDisabled : {}) }}
+                      style={{
+                        ...styles.basicIconButton,
+                        ...(assistPending ? styles.basicIconButtonDisabled : {}),
+                      }}
                       disabled={assistPending}
                       onClick={() => setIsRewritePopoverOpen((current) => !current)}
                       title={assistPending ? "AI 重写中" : "AI 重写"}
                       aria-label={assistPending ? "AI 重写中" : "AI 重写"}
                     >
-                      <MaterialIcon name={assistPending ? "hourglass_top" : "auto_awesome"} size={16} />
+                      <MaterialIcon
+                        name={assistPending ? "hourglass_top" : "auto_awesome"}
+                        size={16}
+                      />
                     </button>
                     {isRewritePopoverOpen ? (
                       <div style={styles.rewritePopover}>
                         <div style={styles.rewritePopoverSection}>
                           <span style={styles.panelTitle}>保留原文比例</span>
-                          <span style={styles.rewritePopoverValue}>{(retainRatio * 100).toFixed(0)}%</span>
+                          <span style={styles.rewritePopoverValue}>
+                            {(retainRatio * 100).toFixed(0)}%
+                          </span>
                         </div>
                         <input
                           style={styles.range}
@@ -209,13 +303,21 @@ return (
                           max={1}
                           step={0.05}
                           value={retainRatio}
-                          onChange={(e) => updatePersonaAssistInput(() => setRetainRatio(Number(e.target.value)))}
+                          onChange={(e) =>
+                            updatePersonaAssistInput(() =>
+                              setRetainRatio(Number(e.target.value)),
+                            )
+                          }
                         />
-                        <p style={styles.rewritePopoverHint}>数值越高，AI 重写时越接近原始设定。</p>
+                        <p style={styles.rewritePopoverHint}>
+                          数值越高，AI 重写时越接近原始设定。
+                        </p>
                         <button
                           type="button"
                           style={styles.rewritePopoverButton}
-                          onClick={() => { void handleAssistSetting(); }}
+                          onClick={() => {
+                            void handleAssistSetting();
+                          }}
                         >
                           开始重写
                         </button>
@@ -224,7 +326,11 @@ return (
                   </div>
                   <button
                     type="button"
-                    style={{ ...styles.basicIconButton, ...styles.basicIconButtonPrimary, ...(savingPersona ? styles.basicIconButtonDisabled : {}) }}
+                    style={{
+                      ...styles.basicIconButton,
+                      ...styles.basicIconButtonPrimary,
+                      ...(savingPersona ? styles.basicIconButtonDisabled : {}),
+                    }}
                     disabled={savingPersona}
                     onClick={handleNewPersonaDraft}
                     title={savingPersona ? "保存中" : "新建人格草稿"}
@@ -234,7 +340,12 @@ return (
                   </button>
                   <button
                     type="button"
-                    style={{ ...styles.basicIconButton, ...(!selectedPersona || savingPersona ? styles.basicIconButtonDisabled : {}) }}
+                    style={{
+                      ...styles.basicIconButton,
+                      ...(!selectedPersona || savingPersona
+                        ? styles.basicIconButtonDisabled
+                        : {}),
+                    }}
                     disabled={!selectedPersona || savingPersona}
                     onClick={handleDuplicatePersonaDraft}
                     title={savingPersona ? "保存中" : "复制为新人格"}
@@ -244,9 +355,16 @@ return (
                   </button>
                   <button
                     type="button"
-                    style={{ ...styles.basicIconButton, ...(!selectedPersona || savingPersona ? styles.basicIconButtonDisabled : {}) }}
+                    style={{
+                      ...styles.basicIconButton,
+                      ...(!selectedPersona || savingPersona
+                        ? styles.basicIconButtonDisabled
+                        : {}),
+                    }}
                     disabled={!selectedPersona || savingPersona}
-                    onClick={() => { void handleReloadSelectedPersona(); }}
+                    onClick={() => {
+                      void handleReloadSelectedPersona();
+                    }}
                     title={savingPersona ? "保存中" : "重新载入人格"}
                     aria-label={savingPersona ? "保存中" : "重新载入人格"}
                   >
@@ -254,11 +372,32 @@ return (
                   </button>
                   <button
                     type="button"
-                    style={{ ...styles.basicIconButton, ...(savingPersona || isReadonlyPersona ? styles.basicIconButtonDisabled : {}) }}
+                    style={{
+                      ...styles.basicIconButton,
+                      ...(savingPersona || isReadonlyPersona
+                        ? styles.basicIconButtonDisabled
+                        : {}),
+                    }}
                     disabled={savingPersona || isReadonlyPersona}
-                    onClick={() => void (selectedPersonaId ? handleUpdatePersona() : handleCreatePersona())}
-                    title={savingPersona ? "保存中" : selectedPersonaId ? "更新人格" : "创建人格"}
-                    aria-label={savingPersona ? "保存中" : selectedPersonaId ? "更新人格" : "创建人格"}
+                    onClick={() =>
+                      void (selectedPersonaId
+                        ? handleUpdatePersona()
+                        : handleCreatePersona())
+                    }
+                    title={
+                      savingPersona
+                        ? "保存中"
+                        : selectedPersonaId
+                          ? "更新人格"
+                          : "创建人格"
+                    }
+                    aria-label={
+                      savingPersona
+                        ? "保存中"
+                        : selectedPersonaId
+                          ? "更新人格"
+                          : "创建人格"
+                    }
                   >
                     <MaterialIcon name="save" size={16} />
                   </button>
@@ -266,121 +405,200 @@ return (
               </div>
               <section style={styles.basicPaneCard}>
                 <div style={styles.basicPanePrimarySection}>
-                <div style={styles.fieldGroup}>
-                <label htmlFor="persona-select" style={styles.fieldLabel}>人格</label>
-                <select
-                  style={styles.select}
-                  id="persona-select"
-                  value={selectedPersonaId}
-                  onChange={(event) => {
-                    void activatePersonaDraft(event.target.value);
-                  }}
-                >
-                  <option value="">新建人格（未保存）</option>
-                  {personas.map((p) => (
-                    <option key={p.id} value={p.id}>{p.name}（{p.source === "builtin" ? "内置" : "用户"}）</option>
-                  ))}
-                </select>
-              </div>
+                  <div style={styles.fieldGroup}>
+                    <label htmlFor="persona-select" style={styles.fieldLabel}>
+                      人格
+                    </label>
+                    <select
+                      style={styles.select}
+                      id="persona-select"
+                      value={selectedPersonaId}
+                      onChange={(event) => {
+                        void activatePersonaDraft(event.target.value);
+                      }}
+                    >
+                      <option value="">新建人格（未保存）</option>
+                      {personas.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.name}（{p.source === "builtin" ? "内置" : "用户"}）
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
-              <div style={styles.fieldGroup}>
-                <label htmlFor="persona-draft-name" style={styles.fieldLabel}>名称</label>
-                <input id="persona-draft-name" style={styles.input} value={draft.name} onChange={(e) => updateDraft("name", e.target.value)} />
-              </div>
+                  <div style={styles.fieldGroup}>
+                    <label htmlFor="persona-draft-name" style={styles.fieldLabel}>
+                      名称
+                    </label>
+                    <input
+                      id="persona-draft-name"
+                      style={styles.input}
+                      value={draft.name}
+                      onChange={(e) => updateDraft("name", e.target.value)}
+                    />
+                  </div>
 
-              <div style={styles.summaryFieldGroup}>
-                <label style={styles.fieldLabel}>摘要</label>
-                <textarea aria-label="摘要" style={styles.summaryTextarea} value={draft.summary} onChange={(e) => updateDraft("summary", e.target.value)} />
-              </div>
+                  <div style={styles.summaryFieldGroup}>
+                    <label style={styles.fieldLabel}>摘要</label>
+                    <textarea
+                      aria-label="摘要"
+                      style={styles.summaryTextarea}
+                      value={draft.summary}
+                      onChange={(e) => updateDraft("summary", e.target.value)}
+                    />
+                  </div>
 
-              <div style={styles.compactGrid}>
-                <div style={styles.fieldGroup}>
-                  <label style={styles.fieldLabel}>关系</label>
-                  <input
-                    style={styles.input}
-                    aria-label="关系"
-                    value={draft.relationship}
-                    onChange={(e) => updateDraft("relationship", e.target.value)}
-                    placeholder="例如：师生、学伴、导师"
-                  />
-                </div>
-                <div style={styles.fieldGroup}>
-                  <label style={styles.fieldLabel}>学习者称呼</label>
-                  <input
-                    style={styles.input}
-                    aria-label="学习者称呼"
-                    value={draft.learnerAddress}
-                    onChange={(e) => updateDraft("learnerAddress", e.target.value)}
-                    placeholder="例如：同学、伙伴、学员"
-                  />
-                </div>
-              </div>
-
-              <ModelFallbackNotice recoveries={assistModelRecoveries} />
-        {assistError ? <span style={styles.errorInline}>{assistError}</span> : null}
-                </div>
-
-              <div style={{ ...styles.basicPaneSection, ...styles.basicPaneSectionSeparated }}>
-                <div style={styles.fieldGroup}>
-                  <button
-                    type="button"
-                    style={styles.collapsibleFieldToggle}
-                    aria-expanded={isSystemPromptExpanded}
-                    onClick={() => setIsSystemPromptExpanded((current) => !current)}
-                  >
-                    <span style={styles.fieldLabel}>附加系统约束（可选）</span>
-                    <span style={styles.sidebarToggleIcon}>
-                      <MaterialIcon name={isSystemPromptExpanded ? "expand_more" : "chevron_right"} size={16} />
-                    </span>
-                  </button>
-                  {isSystemPromptExpanded ? (
-                    <>
-                      <textarea
-                        style={styles.textareaLg}
-                        aria-label="附加系统约束"
-                        value={draft.systemPrompt}
-                        onChange={(e) => updateDraft("systemPrompt", e.target.value)}
-                        placeholder="例如：始终优先引用教材原话；避免过度角色扮演；默认先给步骤再给总结。"
+                  <div style={styles.compactGrid}>
+                    <div style={styles.fieldGroup}>
+                      <label style={styles.fieldLabel}>关系</label>
+                      <input
+                        style={styles.input}
+                        aria-label="关系"
+                        value={draft.relationship}
+                        onChange={(e) => updateDraft("relationship", e.target.value)}
+                        placeholder="例如：师生、学伴、导师"
                       />
-                      {systemPromptSuggestion ? (
-                        <div style={styles.promptSuggestionCard}>
-                          <div style={styles.promptSuggestionHeader}>
-                            <span style={styles.panelTitle}>AI 建议</span>
-                            <span style={styles.promptSuggestionSource}>{systemPromptSuggestionSource || "AI 生成"}</span>
-                          </div>
-                          <p style={styles.promptSuggestionNote}>
-                            这只会写入上面的附加约束。
-                          </p>
-                          <p style={styles.promptSuggestionBody}>{systemPromptSuggestion}</p>
-                          <div style={styles.actionsRow}>
-                            <button type="button" style={styles.primaryBtn} onClick={applySystemPromptSuggestion}>
-                              应用建议
-                            </button>
-                            <button type="button" style={styles.ghostBtn} onClick={dismissSystemPromptSuggestion}>
-                              忽略建议
-                            </button>
-                          </div>
-                        </div>
-                      ) : null}
-                    </>
+                    </div>
+                    <div style={styles.fieldGroup}>
+                      <label style={styles.fieldLabel}>学习者称呼</label>
+                      <input
+                        style={styles.input}
+                        aria-label="学习者称呼"
+                        value={draft.learnerAddress}
+                        onChange={(e) => updateDraft("learnerAddress", e.target.value)}
+                        placeholder="例如：同学、伙伴、学员"
+                      />
+                    </div>
+                  </div>
+
+                  <ModelFallbackNotice recoveries={assistModelRecoveries} />
+                  {assistError ? (
+                    <span style={styles.errorInline}>{assistError}</span>
                   ) : null}
                 </div>
-              </div>
 
-              <section style={{ ...styles.basicPaneSection, ...styles.basicPaneSectionSeparated }}>
-                <div style={styles.actionsRow}>
-                  <button style={styles.ghostBtn} type="button" onClick={handleDownloadTemplate}>下载模板</button>
-                  <button style={styles.ghostBtn} type="button" onClick={handleExportConfig}>导出配置</button>
-                  <button type="button" style={styles.ghostBtn} onClick={() => configImportInputRef.current?.click()}>导入配置</button>
-                  <input ref={configImportInputRef} type="file" accept="application/json,.json" style={styles.hiddenInput} onChange={handleImportConfig} />
+                <div
+                  style={{
+                    ...styles.basicPaneSection,
+                    ...styles.basicPaneSectionSeparated,
+                  }}
+                >
+                  <div style={styles.fieldGroup}>
+                    <button
+                      type="button"
+                      style={styles.collapsibleFieldToggle}
+                      aria-expanded={isSystemPromptExpanded}
+                      onClick={() => setIsSystemPromptExpanded((current) => !current)}
+                    >
+                      <span style={styles.fieldLabel}>附加系统约束（可选）</span>
+                      <span style={styles.sidebarToggleIcon}>
+                        <MaterialIcon
+                          name={
+                            isSystemPromptExpanded ? "expand_more" : "chevron_right"
+                          }
+                          size={16}
+                        />
+                      </span>
+                    </button>
+                    {isSystemPromptExpanded ? (
+                      <>
+                        <textarea
+                          style={styles.textareaLg}
+                          aria-label="附加系统约束"
+                          value={draft.systemPrompt}
+                          onChange={(e) => updateDraft("systemPrompt", e.target.value)}
+                          placeholder="例如：始终优先引用教材原话；避免过度角色扮演；默认先给步骤再给总结。"
+                        />
+                        {systemPromptSuggestion ? (
+                          <div style={styles.promptSuggestionCard}>
+                            <div style={styles.promptSuggestionHeader}>
+                              <span style={styles.panelTitle}>AI 建议</span>
+                              <span style={styles.promptSuggestionSource}>
+                                {systemPromptSuggestionSource || "AI 生成"}
+                              </span>
+                            </div>
+                            <p style={styles.promptSuggestionNote}>
+                              这只会写入上面的附加约束。
+                            </p>
+                            <p style={styles.promptSuggestionBody}>
+                              {systemPromptSuggestion}
+                            </p>
+                            <div style={styles.actionsRow}>
+                              <button
+                                type="button"
+                                style={styles.primaryBtn}
+                                onClick={applySystemPromptSuggestion}
+                              >
+                                应用建议
+                              </button>
+                              <button
+                                type="button"
+                                style={styles.ghostBtn}
+                                onClick={dismissSystemPromptSuggestion}
+                              >
+                                忽略建议
+                              </button>
+                            </div>
+                          </div>
+                        ) : null}
+                      </>
+                    ) : null}
+                  </div>
                 </div>
-                {saveError ? <span style={styles.errorInline}>{saveError}</span> : null}
-                {isReadonlyPersona ? (
-                  <span style={styles.mutedText}>内置人格只读；点击复制按钮可保留当前设定并另存为新人格。</span>
-                ) : null}
-                {configMessage ? <span role="status" style={styles.mutedText}>{configMessage}</span> : null}
-                {configError ? <span style={styles.errorInline}>{configError}</span> : null}
-              </section>
+
+                <section
+                  style={{
+                    ...styles.basicPaneSection,
+                    ...styles.basicPaneSectionSeparated,
+                  }}
+                >
+                  <div style={styles.actionsRow}>
+                    <button
+                      style={styles.ghostBtn}
+                      type="button"
+                      onClick={handleDownloadTemplate}
+                    >
+                      下载模板
+                    </button>
+                    <button
+                      style={styles.ghostBtn}
+                      type="button"
+                      onClick={handleExportConfig}
+                    >
+                      导出配置
+                    </button>
+                    <button
+                      type="button"
+                      style={styles.ghostBtn}
+                      onClick={() => configImportInputRef.current?.click()}
+                    >
+                      导入配置
+                    </button>
+                    <input
+                      ref={configImportInputRef}
+                      type="file"
+                      accept="application/json,.json"
+                      style={styles.hiddenInput}
+                      onChange={handleImportConfig}
+                    />
+                  </div>
+                  {saveError ? (
+                    <span style={styles.errorInline}>{saveError}</span>
+                  ) : null}
+                  {isReadonlyPersona ? (
+                    <span style={styles.mutedText}>
+                      内置人格只读；点击复制按钮可保留当前设定并另存为新人格。
+                    </span>
+                  ) : null}
+                  {configMessage ? (
+                    <span role="status" style={styles.mutedText}>
+                      {configMessage}
+                    </span>
+                  ) : null}
+                  {configError ? (
+                    <span style={styles.errorInline}>{configError}</span>
+                  ) : null}
+                </section>
               </section>
             </div>
             <div
@@ -392,214 +610,344 @@ return (
               <div style={styles.panelHeader}>
                 <span style={styles.panelTitle}>人格插槽</span>
                 <div style={styles.panelHeaderActions}>
-                  <details className="secondary-actions"><summary>批量操作</summary><button type="button" style={styles.ghostBtn} onClick={() => { if (window.confirm(`将清空当前 ${draft.slots.length} 个插槽，是否继续？`)) handleClearSlots(); }} disabled={!draft.slots.length}>清空全部插槽</button><button type="button" style={styles.ghostBtn} onClick={handleSortSlotsByPriority}>按优先级整理</button></details>
-                  <button type="button" style={styles.ghostBtn} onClick={() => handleAddSlot("custom")}>添加</button>
-
+                  <details className="secondary-actions">
+                    <summary>批量操作</summary>
+                    <button
+                      type="button"
+                      style={styles.ghostBtn}
+                      onClick={() => {
+                        if (
+                          window.confirm(
+                            `将清空当前 ${draft.slots.length} 个插槽，是否继续？`,
+                          )
+                        )
+                          handleClearSlots();
+                      }}
+                      disabled={!draft.slots.length}
+                    >
+                      清空全部插槽
+                    </button>
+                    <button
+                      type="button"
+                      style={styles.ghostBtn}
+                      onClick={handleSortSlotsByPriority}
+                    >
+                      按优先级整理
+                    </button>
+                  </details>
+                  <button
+                    type="button"
+                    style={styles.ghostBtn}
+                    onClick={() => handleAddSlot("custom")}
+                  >
+                    添加
+                  </button>
                 </div>
               </div>
               <div style={styles.panelBody}>
-              <div style={styles.slotPaneContent}>
-              <div
-                style={{
-                  ...styles.slotDropArea,
-                  ...((slotInsertIndex !== null || draggingSlotIndex !== null) ? styles.slotDropZoneActive : null),
-                }}
-              >
-                <div style={styles.slotList}>
+                <div style={styles.slotPaneContent}>
                   <div
                     style={{
-                      ...styles.slotInsertMarker,
-                      ...(slotInsertIndex === 0 ? styles.slotInsertMarkerActive : null),
+                      ...styles.slotDropArea,
+                      ...(slotInsertIndex !== null || draggingSlotIndex !== null
+                        ? styles.slotDropZoneActive
+                        : null),
                     }}
-                    onDragOver={(event) => {
-                      if (!draggingPersonaCardId && draggingSlotIndex === null) return;
-                      event.preventDefault();
-                      handleSlotInsertDragOver(0);
-                    }}
-                    onDrop={(event) => {
-                      if (!draggingPersonaCardId && draggingSlotIndex === null) return;
-                      event.preventDefault();
-                      handleSlotInsertDrop(0);
-                    }}
-                  />
-                  {draft.slots.length ? draft.slots.map((slot, index) => (
-                    <Fragment key={`${slot.kind}:${slot.label}:${index}`}>
-                      <div
-                        style={{
-                          ...styles.slotCard,
-                          ...(draggingSlotIndex === index ? styles.slotCardDragging : null),
-                          ...(movePulse?.index === index
-                            ? movePulse.direction === -1
-                              ? styles.slotCardMoveUp
-                              : styles.slotCardMoveDown
-                            : null),
-                        }}
-                        onDragOver={(event) => handleSlotCardDragOver(event, index)}
-                        onDrop={(event) => handleSlotCardDrop(event, index)}
-                      >
-                        <div
-                          style={styles.slotHeader}
-                          onClick={() => setExpandedSlotIndex((prev) => (prev === index ? null : index))}
-                        >
-                          <div style={styles.slotHeaderMain}>
-                            <span
-                              style={styles.dragHandle}
-                              title="拖动排序"
-                                aria-label="拖动排序"
-                              draggable
-                              onDragStart={(e) => { e.stopPropagation(); handleDragStart(index); }}
-                              onDragEnd={handleDragEnd}
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <MaterialIcon name="drag_indicator" size={16} />
-                            </span>
-                            <select
-                              style={styles.slotKindSelect}
-                              aria-label={`插槽 ${index + 1} 类型`}
-                              value={slot.kind}
-                              onChange={(e) => handleUpdateSlot(index, "kind", e.target.value)}
-                              disabled={Boolean(slot.locked)}
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              {!PERSONA_SLOT_KINDS.some((kind) => kind === slot.kind) ? (
-                                <option
-                              value={slot.kind}>{slot.label || slot.kind}（自定义）</option>
-                              ) : null}
-                              {PERSONA_SLOT_KINDS.map((k) => (
-                                <option key={k} value={k}>{PERSONA_SLOT_KIND_LABELS[k]}</option>
-                              ))}
-                            </select>
-                            <input
-                              style={styles.slotLabelInput}
-                              aria-label={`插槽 ${index + 1} 标签`}
-                              value={slot.label}
-                              placeholder="显示标签"
-                              onChange={(e) => handleUpdateSlot(index, "label", e.target.value)}
-                              disabled={Boolean(slot.locked)}
-                              onClick={(e) => e.stopPropagation()}
-                            />
-                            <div style={styles.slotHeaderActions}>
-                              <button
-                                type="button"
-                                style={styles.slotToggleBtn}
-                                aria-label={`${expandedSlotIndex === index ? "收起" : "展开"}插槽 ${slot.label || index + 1}`}
-                                aria-expanded={expandedSlotIndex === index}
-                                onClick={(e) => { e.stopPropagation(); setExpandedSlotIndex((prev) => (prev === index ? null : index)); }}
-                              >
-                                <MaterialIcon name={expandedSlotIndex === index ? "expand_more" : "chevron_right"} size={16} />
-                              </button>
-                              <button
-                                type="button"
-                                style={styles.removeBtn}
-                                aria-label={`删除插槽 ${slot.label || index + 1}`}
-                                onClick={(e) => { e.stopPropagation(); handleRemoveSlot(index); }}
-                              ><MaterialIcon name="close" size={16} /></button>
-                            </div>
-                          </div>
-                          {expandedSlotIndex !== index ? (
-                            <span style={styles.slotPreview}>{slot.content.slice(0, 56) || "—"}</span>
-                          ) : null}
-                        </div>
-                        {expandedSlotIndex === index ? (
-                          <>
-                            <textarea
-                              style={styles.slotContent}
-                              aria-label={`插槽 ${index + 1} 内容`}
-                              value={slot.content}
-                              placeholder={`请填写"${PERSONA_SLOT_KIND_LABELS[slot.kind as PersonaSlotKind] ?? slot.kind}"的具体内容。`}
-                              onChange={(e) => handleUpdateSlot(index, "content", e.target.value)}
-                              disabled={Boolean(slot.locked)}
-                            />
-                            <div style={styles.weightRow}>
-                              <span style={styles.fieldLabel}>权重 {slot.weight ?? 50}</span>
-                              <input
-                                style={styles.range}
-                                type="range"
-                          aria-label={`插槽 ${index + 1} 权重`}
-                                min={0}
-                                max={100}
-                                step={1}
-                                value={slot.weight ?? 50}
-                                onChange={(e) => handleUpdateSlot(index, "weight", Number(e.target.value))}
-                                disabled={Boolean(slot.locked)}
-                              />
-                            </div>
-                            <div style={styles.actionsRow}>
-                              <IconGlyphButton icon="arrow_upward" label="上移" onClick={() => handleMoveSlot(index, -1)} />
-                              <IconGlyphButton icon="arrow_downward" label="下移" onClick={() => handleMoveSlot(index, 1)} />
-                              <button
-                                type="button"
-                                style={styles.iconBtn}
-                                title={slot.locked ? "解锁" : "锁定"}
-                                aria-label={slot.locked ? "解锁" : "锁定"}
-                                onClick={() => handleUpdateSlot(index, "locked", !slot.locked)}
-                              >
-                                <MaterialIcon name={slot.locked ? "lock_open" : "lock"} size={15} />
-                              </button>
-                              <button
-                                type="button"
-                                style={styles.iconBtn}
-                                title="AI 重写"
-                                aria-label="AI 重写"
-                                onClick={() => void handleAssistSlot(index)}
-                                disabled={assistPending || slotAssistIndex === index || Boolean(slot.locked)}
-                              >
-                                <MaterialIcon name={slotAssistIndex === index ? "hourglass_top" : "auto_awesome"} size={15} />
-                              </button>
-                            </div>
-                          </>
-                        ) : null}
-                      </div>
+                  >
+                    <div style={styles.slotList}>
                       <div
                         style={{
                           ...styles.slotInsertMarker,
-                          ...(slotInsertIndex === index + 1 ? styles.slotInsertMarkerActive : null),
+                          ...(slotInsertIndex === 0
+                            ? styles.slotInsertMarkerActive
+                            : null),
                         }}
                         onDragOver={(event) => {
-                          if (!draggingPersonaCardId && draggingSlotIndex === null) return;
+                          if (!draggingPersonaCardId && draggingSlotIndex === null)
+                            return;
                           event.preventDefault();
-                          handleSlotInsertDragOver(index + 1);
+                          handleSlotInsertDragOver(0);
                         }}
                         onDrop={(event) => {
-                          if (!draggingPersonaCardId && draggingSlotIndex === null) return;
+                          if (!draggingPersonaCardId && draggingSlotIndex === null)
+                            return;
                           event.preventDefault();
-                          handleSlotInsertDrop(index + 1);
+                          handleSlotInsertDrop(0);
                         }}
                       />
-                    </Fragment>
-                  )) : (
-                    <div
-                      style={{
-                        ...styles.emptySlotDropTarget,
-                        ...(slotInsertIndex === 0 ? styles.emptySlotDropTargetActive : null),
-                      }}
-                      onDragOver={(event) => {
-                        if (!draggingPersonaCardId) return;
-                        event.preventDefault();
-                        handleSlotInsertDragOver(0);
-                      }}
-                      onDrop={(event) => {
-                        if (!draggingPersonaCardId) return;
-                        event.preventDefault();
-                        handleSlotInsertDrop(0);
-                      }}
-                    >
-                      拖到这里插入第一张人格卡片
+                      {draft.slots.length ? (
+                        draft.slots.map((slot, index) => (
+                          <Fragment key={`${slot.kind}:${slot.label}:${index}`}>
+                            <div
+                              style={{
+                                ...styles.slotCard,
+                                ...(draggingSlotIndex === index
+                                  ? styles.slotCardDragging
+                                  : null),
+                                ...(movePulse?.index === index
+                                  ? movePulse.direction === -1
+                                    ? styles.slotCardMoveUp
+                                    : styles.slotCardMoveDown
+                                  : null),
+                              }}
+                              onDragOver={(event) =>
+                                handleSlotCardDragOver(event, index)
+                              }
+                              onDrop={(event) => handleSlotCardDrop(event, index)}
+                            >
+                              <div
+                                style={styles.slotHeader}
+                                onClick={() =>
+                                  setExpandedSlotIndex((prev) =>
+                                    prev === index ? null : index,
+                                  )
+                                }
+                              >
+                                <div style={styles.slotHeaderMain}>
+                                  <span
+                                    style={styles.dragHandle}
+                                    title="拖动排序"
+                                    aria-label="拖动排序"
+                                    draggable
+                                    onDragStart={(e) => {
+                                      e.stopPropagation();
+                                      handleDragStart(index);
+                                    }}
+                                    onDragEnd={handleDragEnd}
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    <MaterialIcon name="drag_indicator" size={16} />
+                                  </span>
+                                  <select
+                                    style={styles.slotKindSelect}
+                                    aria-label={`插槽 ${index + 1} 类型`}
+                                    value={slot.kind}
+                                    onChange={(e) =>
+                                      handleUpdateSlot(index, "kind", e.target.value)
+                                    }
+                                    disabled={Boolean(slot.locked)}
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    {!PERSONA_SLOT_KINDS.some(
+                                      (kind) => kind === slot.kind,
+                                    ) ? (
+                                      <option value={slot.kind}>
+                                        {slot.label || slot.kind}（自定义）
+                                      </option>
+                                    ) : null}
+                                    {PERSONA_SLOT_KINDS.map((k) => (
+                                      <option key={k} value={k}>
+                                        {PERSONA_SLOT_KIND_LABELS[k]}
+                                      </option>
+                                    ))}
+                                  </select>
+                                  <input
+                                    style={styles.slotLabelInput}
+                                    aria-label={`插槽 ${index + 1} 标签`}
+                                    value={slot.label}
+                                    placeholder="显示标签"
+                                    onChange={(e) =>
+                                      handleUpdateSlot(index, "label", e.target.value)
+                                    }
+                                    disabled={Boolean(slot.locked)}
+                                    onClick={(e) => e.stopPropagation()}
+                                  />
+                                  <div style={styles.slotHeaderActions}>
+                                    <button
+                                      type="button"
+                                      style={styles.slotToggleBtn}
+                                      aria-label={`${expandedSlotIndex === index ? "收起" : "展开"}插槽 ${slot.label || index + 1}`}
+                                      aria-expanded={expandedSlotIndex === index}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setExpandedSlotIndex((prev) =>
+                                          prev === index ? null : index,
+                                        );
+                                      }}
+                                    >
+                                      <MaterialIcon
+                                        name={
+                                          expandedSlotIndex === index
+                                            ? "expand_more"
+                                            : "chevron_right"
+                                        }
+                                        size={16}
+                                      />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      style={styles.removeBtn}
+                                      aria-label={`删除插槽 ${slot.label || index + 1}`}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleRemoveSlot(index);
+                                      }}
+                                    >
+                                      <MaterialIcon name="close" size={16} />
+                                    </button>
+                                  </div>
+                                </div>
+                                {expandedSlotIndex !== index ? (
+                                  <span style={styles.slotPreview}>
+                                    {slot.content.slice(0, 56) || "—"}
+                                  </span>
+                                ) : null}
+                              </div>
+                              {expandedSlotIndex === index ? (
+                                <>
+                                  <textarea
+                                    style={styles.slotContent}
+                                    aria-label={`插槽 ${index + 1} 内容`}
+                                    value={slot.content}
+                                    placeholder={`请填写"${PERSONA_SLOT_KIND_LABELS[slot.kind as PersonaSlotKind] ?? slot.kind}"的具体内容。`}
+                                    onChange={(e) =>
+                                      handleUpdateSlot(index, "content", e.target.value)
+                                    }
+                                    disabled={Boolean(slot.locked)}
+                                  />
+                                  <div style={styles.weightRow}>
+                                    <span style={styles.fieldLabel}>
+                                      权重 {slot.weight ?? 50}
+                                    </span>
+                                    <input
+                                      style={styles.range}
+                                      type="range"
+                                      aria-label={`插槽 ${index + 1} 权重`}
+                                      min={0}
+                                      max={100}
+                                      step={1}
+                                      value={slot.weight ?? 50}
+                                      onChange={(e) =>
+                                        handleUpdateSlot(
+                                          index,
+                                          "weight",
+                                          Number(e.target.value),
+                                        )
+                                      }
+                                      disabled={Boolean(slot.locked)}
+                                    />
+                                  </div>
+                                  <div style={styles.actionsRow}>
+                                    <IconGlyphButton
+                                      icon="arrow_upward"
+                                      label="上移"
+                                      onClick={() => handleMoveSlot(index, -1)}
+                                    />
+                                    <IconGlyphButton
+                                      icon="arrow_downward"
+                                      label="下移"
+                                      onClick={() => handleMoveSlot(index, 1)}
+                                    />
+                                    <button
+                                      type="button"
+                                      style={styles.iconBtn}
+                                      title={slot.locked ? "解锁" : "锁定"}
+                                      aria-label={slot.locked ? "解锁" : "锁定"}
+                                      onClick={() =>
+                                        handleUpdateSlot(index, "locked", !slot.locked)
+                                      }
+                                    >
+                                      <MaterialIcon
+                                        name={slot.locked ? "lock_open" : "lock"}
+                                        size={15}
+                                      />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      style={styles.iconBtn}
+                                      title="AI 重写"
+                                      aria-label="AI 重写"
+                                      onClick={() => void handleAssistSlot(index)}
+                                      disabled={
+                                        assistPending ||
+                                        slotAssistIndex === index ||
+                                        Boolean(slot.locked)
+                                      }
+                                    >
+                                      <MaterialIcon
+                                        name={
+                                          slotAssistIndex === index
+                                            ? "hourglass_top"
+                                            : "auto_awesome"
+                                        }
+                                        size={15}
+                                      />
+                                    </button>
+                                  </div>
+                                </>
+                              ) : null}
+                            </div>
+                            <div
+                              style={{
+                                ...styles.slotInsertMarker,
+                                ...(slotInsertIndex === index + 1
+                                  ? styles.slotInsertMarkerActive
+                                  : null),
+                              }}
+                              onDragOver={(event) => {
+                                if (
+                                  !draggingPersonaCardId &&
+                                  draggingSlotIndex === null
+                                )
+                                  return;
+                                event.preventDefault();
+                                handleSlotInsertDragOver(index + 1);
+                              }}
+                              onDrop={(event) => {
+                                if (
+                                  !draggingPersonaCardId &&
+                                  draggingSlotIndex === null
+                                )
+                                  return;
+                                event.preventDefault();
+                                handleSlotInsertDrop(index + 1);
+                              }}
+                            />
+                          </Fragment>
+                        ))
+                      ) : (
+                        <div
+                          style={{
+                            ...styles.emptySlotDropTarget,
+                            ...(slotInsertIndex === 0
+                              ? styles.emptySlotDropTargetActive
+                              : null),
+                          }}
+                          onDragOver={(event) => {
+                            if (!draggingPersonaCardId) return;
+                            event.preventDefault();
+                            handleSlotInsertDragOver(0);
+                          }}
+                          onDrop={(event) => {
+                            if (!draggingPersonaCardId) return;
+                            event.preventDefault();
+                            handleSlotInsertDrop(0);
+                          }}
+                        >
+                          拖到这里插入第一张人格卡片
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-              </div>
-              </div>
-
-              <div style={{ ...styles.basicPaneSection, ...styles.basicPaneSectionSeparated }}>
-                <div style={styles.fieldGroup}>
-                  <div style={styles.fieldHeaderRow}>
-                    <label style={styles.fieldLabel}>运行时人格提示词预览</label>
                   </div>
-                  <pre style={styles.runtimePromptPreview}>{runtimePromptPreview}</pre>
+                </div>
+
+                <div
+                  style={{
+                    ...styles.basicPaneSection,
+                    ...styles.basicPaneSectionSeparated,
+                  }}
+                >
+                  <div style={styles.fieldGroup}>
+                    <div style={styles.fieldHeaderRow}>
+                      <label style={styles.fieldLabel}>运行时人格提示词预览</label>
+                    </div>
+                    <pre style={styles.runtimePromptPreview}>
+                      {runtimePromptPreview}
+                    </pre>
+                  </div>
                 </div>
               </div>
-              </div>{/* panelBody */}
+              {/* panelBody */}
             </div>
           </div>
         </div>
@@ -612,9 +960,23 @@ return (
           }}
         >
           <div style={styles.sidebarSection}>
-            <button type="button" style={styles.sidebarSectionHeader} aria-expanded={!collapsedSidebarSections.includes("generate")} onClick={() => toggleSidebarSection("generate")}>
+            <button
+              type="button"
+              style={styles.sidebarSectionHeader}
+              aria-expanded={!collapsedSidebarSections.includes("generate")}
+              onClick={() => toggleSidebarSection("generate")}
+            >
               <span style={styles.panelTitle}>生成卡片</span>
-              <span style={styles.sidebarToggleIcon}><MaterialIcon name={collapsedSidebarSections.includes("generate") ? "chevron_right" : "expand_more"} size={16} /></span>
+              <span style={styles.sidebarToggleIcon}>
+                <MaterialIcon
+                  name={
+                    collapsedSidebarSections.includes("generate")
+                      ? "chevron_right"
+                      : "expand_more"
+                  }
+                  size={16}
+                />
+              </span>
             </button>
             {!collapsedSidebarSections.includes("generate") ? (
               <div style={styles.sidebarSectionBody}>
@@ -627,7 +989,11 @@ return (
                     max={24}
                     step={1}
                     value={cardGenerateCount}
-                    onChange={(e) => updatePersonaAssistInput(() => setCardGenerateCount(e.target.value))}
+                    onChange={(e) =>
+                      updatePersonaAssistInput(() =>
+                        setCardGenerateCount(e.target.value),
+                      )
+                    }
                     placeholder="留空由模型决定，填写后精确生成 1–24 张"
                   />
                 </label>
@@ -635,15 +1001,31 @@ return (
                   <div style={styles.modeSwitch}>
                     <button
                       type="button"
-                      style={cardGenerationMode === "keywords" ? styles.modeSwitchButtonActive : styles.modeSwitchButton}
-                      onClick={() => updatePersonaAssistInput(() => setCardGenerationMode("keywords"))}
+                      style={
+                        cardGenerationMode === "keywords"
+                          ? styles.modeSwitchButtonActive
+                          : styles.modeSwitchButton
+                      }
+                      onClick={() =>
+                        updatePersonaAssistInput(() =>
+                          setCardGenerationMode("keywords"),
+                        )
+                      }
                     >
                       关键词搜索
                     </button>
                     <button
                       type="button"
-                      style={cardGenerationMode === "long_text" ? styles.modeSwitchButtonActive : styles.modeSwitchButton}
-                      onClick={() => updatePersonaAssistInput(() => setCardGenerationMode("long_text"))}
+                      style={
+                        cardGenerationMode === "long_text"
+                          ? styles.modeSwitchButtonActive
+                          : styles.modeSwitchButton
+                      }
+                      onClick={() =>
+                        updatePersonaAssistInput(() =>
+                          setCardGenerationMode("long_text"),
+                        )
+                      }
                     >
                       长文本提取
                     </button>
@@ -655,20 +1037,32 @@ return (
                     onClick={() => void handleGenerateCards(cardGenerationMode)}
                     title={
                       cardGenerationMode === "keywords"
-                        ? (cardActionPending === "generate_keywords" ? "生成中" : "根据关键词生成人格卡片")
-                        : (cardActionPending === "generate_long_text" ? "提取中" : "根据长文本提取人格卡片")
+                        ? cardActionPending === "generate_keywords"
+                          ? "生成中"
+                          : "根据关键词生成人格卡片"
+                        : cardActionPending === "generate_long_text"
+                          ? "提取中"
+                          : "根据长文本提取人格卡片"
                     }
                     aria-label={
                       cardGenerationMode === "keywords"
-                        ? (cardActionPending === "generate_keywords" ? "生成中" : "根据关键词生成人格卡片")
-                        : (cardActionPending === "generate_long_text" ? "提取中" : "根据长文本提取人格卡片")
+                        ? cardActionPending === "generate_keywords"
+                          ? "生成中"
+                          : "根据关键词生成人格卡片"
+                        : cardActionPending === "generate_long_text"
+                          ? "提取中"
+                          : "根据长文本提取人格卡片"
                     }
                   >
                     <MaterialIcon
                       name={
                         cardGenerationMode === "keywords"
-                          ? (cardActionPending === "generate_keywords" ? "hourglass_top" : "auto_awesome")
-                          : (cardActionPending === "generate_long_text" ? "hourglass_top" : "description")
+                          ? cardActionPending === "generate_keywords"
+                            ? "hourglass_top"
+                            : "auto_awesome"
+                          : cardActionPending === "generate_long_text"
+                            ? "hourglass_top"
+                            : "description"
                       }
                       size={14}
                     />
@@ -679,8 +1073,12 @@ return (
                     <input
                       style={styles.input}
                       aria-label="卡片生成关键词"
-                        value={cardKeywordInput}
-                      onChange={(e) => updatePersonaAssistInput(() => setCardKeywordInput(e.target.value))}
+                      value={cardKeywordInput}
+                      onChange={(e) =>
+                        updatePersonaAssistInput(() =>
+                          setCardKeywordInput(e.target.value),
+                        )
+                      }
                       placeholder="例如：冷静学术、学院派导师、侦探式推理"
                     />
                   </label>
@@ -691,53 +1089,166 @@ return (
                       aria-label="长文本文件"
                       accept=".txt,.md,text/plain,text/markdown"
                       style={styles.fileInput}
-                      onChange={(event) => updatePersonaAssistInput(() => setCardLongTextFile(event.target.files?.[0] ?? null))}
+                      onChange={(event) =>
+                        updatePersonaAssistInput(() =>
+                          setCardLongTextFile(event.target.files?.[0] ?? null),
+                        )
+                      }
                     />
-                    {cardLongTextFile ? <span style={styles.mutedText}>{cardLongTextFile.name}</span> : null}
+                    {cardLongTextFile ? (
+                      <span style={styles.mutedText}>{cardLongTextFile.name}</span>
+                    ) : null}
                   </label>
                 )}
                 {cardError ? <p style={styles.errorText}>{cardError}</p> : null}
-                {cardMessage ? <p role="status" style={styles.sidebarHint}>{cardMessage}</p> : null}
-                {(generatedCards.length || generatedPersonaMeta.summary || generatedPersonaMeta.relationship || generatedPersonaMeta.learnerAddress) ? (
+                {cardMessage ? (
+                  <p role="status" style={styles.sidebarHint}>
+                    {cardMessage}
+                  </p>
+                ) : null}
+                {generatedCards.length ||
+                generatedPersonaMeta.summary ||
+                generatedPersonaMeta.relationship ||
+                generatedPersonaMeta.learnerAddress ? (
                   <div style={styles.generatedResultCard}>
-                    <strong style={styles.generatedResultTitle}>{generatedPersonaMeta.summary || "本轮生成人格草案"}</strong>
+                    <strong style={styles.generatedResultTitle}>
+                      {generatedPersonaMeta.summary || "本轮生成人格草案"}
+                    </strong>
                     <p style={styles.generatedResultMeta}>
                       {generatedCards.length} 张卡片
-                      {generatedPersonaMeta.relationship ? ` · ${generatedPersonaMeta.relationship}` : ""}
-                      {generatedPersonaMeta.learnerAddress ? ` · 称呼：${generatedPersonaMeta.learnerAddress}` : ""}
+                      {generatedPersonaMeta.relationship
+                        ? ` · ${generatedPersonaMeta.relationship}`
+                        : ""}
+                      {generatedPersonaMeta.learnerAddress
+                        ? ` · 称呼：${generatedPersonaMeta.learnerAddress}`
+                        : ""}
                     </p>
                     {generatedCards.length ? (
                       <ul style={styles.generatedCardPreviewList}>
                         {generatedCards.map((card) => (
                           <li key={card.id} style={styles.generatedCardPreviewItem}>
+                            <label style={styles.checkboxRow}>
+                              <input
+                                type="checkbox"
+                                checked={selectedGeneratedCardIds.includes(card.id)}
+                                onChange={() => toggleGeneratedCardSelection(card.id)}
+                                aria-label={`选择${card.title}`}
+                              />
+                              <span>纳入批量应用</span>
+                            </label>
                             <strong>{card.title}</strong>
-                            <span>{card.label}：{card.content}</span>
-                            <button type="button" style={styles.ghostBtn} onClick={() => insertCardsIntoDraft([card])}>仅合并这张卡片</button>
+                            <span>
+                              {card.label}：{card.content}
+                            </span>
+                            <button
+                              type="button"
+                              style={styles.ghostBtn}
+                              onClick={() => insertCardsIntoDraft([card])}
+                            >
+                              仅合并这张卡片
+                            </button>
+                            <button
+                              type="button"
+                              style={styles.ghostBtn}
+                              onClick={() => rejectGeneratedCard(card.id)}
+                            >
+                              拒绝这张卡片
+                            </button>
                           </li>
                         ))}
                       </ul>
                     ) : null}
                     <div className="proposal-diff">
-                      {!draft.name.trim() ? <p role="note">名称尚未填写：应用后请填写名称再保存。</p> : null}
-                      {([['摘要', draft.summary, generatedPersonaMeta.summary], ['关系', draft.relationship, generatedPersonaMeta.relationship], ['称呼', draft.learnerAddress, generatedPersonaMeta.learnerAddress]] as const).map(([label, before, proposed]) => <p key={label}><strong>{label}</strong><br /><del>{before || '空'}</del> → <ins>{proposed || (clearBeforeBackfill ? '将清空' : before || '保持为空')}</ins></p>)}
-                      <p>插槽：{clearBeforeBackfill ? `删除现有 ${draft.slots.length} 个，再插入候选卡片` : '保留现有插槽，合并候选卡片（自动去重）'}。参考提示：{clearBeforeBackfill ? '清空现有提示后从候选卡片收集' : '保留并合并'}。</p>
+                      {!draft.name.trim() ? (
+                        <p role="note">名称尚未填写：应用后请填写名称再保存。</p>
+                      ) : null}
+                      {(
+                        [
+                          ["摘要", draft.summary, generatedPersonaMeta.summary],
+                          [
+                            "关系",
+                            draft.relationship,
+                            generatedPersonaMeta.relationship,
+                          ],
+                          [
+                            "称呼",
+                            draft.learnerAddress,
+                            generatedPersonaMeta.learnerAddress,
+                          ],
+                        ] as const
+                      ).map(([label, before, proposed]) => (
+                        <p key={label}>
+                          <strong>{label}</strong>
+                          <br />
+                          <del>{before || "空"}</del> →{" "}
+                          <ins>
+                            {proposed ||
+                              (clearBeforeBackfill ? "将清空" : before || "保持为空")}
+                          </ins>
+                        </p>
+                      ))}
+                      <p>
+                        批量应用：已选择 {selectedGeneratedCardIds.length}/
+                        {generatedCards.length} 张卡片。插槽：
+                        {clearBeforeBackfill
+                          ? `删除现有 ${draft.slots.length} 个，再插入已选卡片`
+                          : "保留现有插槽，合并已选卡片（自动去重）"}
+                        。
+                      </p>
+                      <details>
+                        <summary>查看完整参考提示 diff</summary>
+                        <p>
+                          新增：
+                          {referenceAdded.length ? referenceAdded.join("、") : "无"}
+                        </p>
+                        <p>
+                          保留：
+                          {referenceRetained.length
+                            ? referenceRetained.join("、")
+                            : "无"}
+                        </p>
+                        {clearBeforeBackfill ? (
+                          <p>
+                            清空：
+                            {referenceRemoved.length
+                              ? referenceRemoved.join("、")
+                              : "无"}
+                          </p>
+                        ) : null}
+                      </details>
                     </div>
-                    <details className="secondary-actions"><summary>替换选项（会清空当前内容）</summary>
-                <label style={styles.checkboxRow}>
-                  <input
-                    type="checkbox"
-                    checked={clearBeforeBackfill}
-                    onChange={(event) => setClearBeforeBackfill(event.target.checked)}
-                  />
-                  <span style={styles.checkboxLabel}>应用前清空摘要、关系、称呼、参考提示和全部插槽</span>
-                </label>
+                    <details className="secondary-actions">
+                      <summary>替换选项（会清空当前内容）</summary>
+                      <label style={styles.checkboxRow}>
+                        <input
+                          type="checkbox"
+                          checked={clearBeforeBackfill}
+                          onChange={(event) =>
+                            setClearBeforeBackfill(event.target.checked)
+                          }
+                        />
+                        <span style={styles.checkboxLabel}>
+                          应用前清空摘要、关系、称呼、参考提示和全部插槽
+                        </span>
+                      </label>
                     </details>
                     <div style={styles.sidebarActionRow}>
                       <button
                         style={styles.sidebarIconButton}
                         type="button"
-                        disabled={!(generatedCards.length || generatedPersonaMeta.summary || generatedPersonaMeta.relationship || generatedPersonaMeta.learnerAddress)}
-                        onClick={() => { const applied = applyGeneratedCardsToDraft(); if (applied && !draft.name.trim()) document.getElementById("persona-draft-name")?.focus(); }}
+                        disabled={
+                          !(
+                            generatedCards.length ||
+                            generatedPersonaMeta.summary ||
+                            generatedPersonaMeta.relationship ||
+                            generatedPersonaMeta.learnerAddress
+                          )
+                        }
+                        onClick={() => {
+                          const applied = applyGeneratedCardsToDraft();
+                          if (applied && !draft.name.trim())
+                            document.getElementById("persona-draft-name")?.focus();
+                        }}
                         title="应用到当前编辑区"
                         aria-label="应用到当前编辑区"
                       >
@@ -751,9 +1262,23 @@ return (
           </div>
 
           <div style={styles.sidebarSection}>
-            <button type="button" style={styles.sidebarSectionHeader} aria-expanded={!collapsedSidebarSections.includes("results")} onClick={() => toggleSidebarSection("results")}>
+            <button
+              type="button"
+              style={styles.sidebarSectionHeader}
+              aria-expanded={!collapsedSidebarSections.includes("results")}
+              onClick={() => toggleSidebarSection("results")}
+            >
               <span style={styles.panelTitle}>卡片库</span>
-              <span style={styles.sidebarToggleIcon}><MaterialIcon name={collapsedSidebarSections.includes("results") ? "chevron_right" : "expand_more"} size={16} /></span>
+              <span style={styles.sidebarToggleIcon}>
+                <MaterialIcon
+                  name={
+                    collapsedSidebarSections.includes("results")
+                      ? "chevron_right"
+                      : "expand_more"
+                  }
+                  size={16}
+                />
+              </span>
             </button>
             {!collapsedSidebarSections.includes("results") ? (
               <div style={styles.sidebarSectionBody}>
@@ -764,21 +1289,51 @@ return (
                   onChange={(e) => setCardSearchQuery(e.target.value)}
                   placeholder="搜索标题、内容、标签、关键词"
                 />
-                <select className="library-filter" aria-label="筛选卡片类型" value={cardKind} onChange={event => setCardKind(event.target.value)}><option value="">全部类型</option>{PERSONA_SLOT_KINDS.map(kind => <option key={kind} value={kind}>{PERSONA_SLOT_KIND_LABELS[kind]}</option>)}</select>
-                <p role="status" style={styles.sidebarHint}>{visibleCards.length} 张卡片</p>
+                <select
+                  className="library-filter"
+                  aria-label="筛选卡片类型"
+                  value={cardKind}
+                  onChange={(event) => setCardKind(event.target.value)}
+                >
+                  <option value="">全部类型</option>
+                  {PERSONA_SLOT_KINDS.map((kind) => (
+                    <option key={kind} value={kind}>
+                      {PERSONA_SLOT_KIND_LABELS[kind]}
+                    </option>
+                  ))}
+                </select>
+                <p role="status" style={styles.sidebarHint}>
+                  {visibleCards.length} 张卡片
+                </p>
                 {visibleCards.length ? (
                   <div style={styles.cardList}>
                     {visibleCards.map((card) => renderPersonaCard(card))}
                   </div>
-                ) : <p style={styles.sidebarHint}>没有匹配的卡片，请调整搜索或筛选。</p>}
+                ) : (
+                  <p style={styles.sidebarHint}>没有匹配的卡片，请调整搜索或筛选。</p>
+                )}
               </div>
             ) : null}
           </div>
 
           <div style={styles.sidebarSection}>
-            <button type="button" style={styles.sidebarSectionHeader} aria-expanded={!collapsedSidebarSections.includes("persona-library")} onClick={() => toggleSidebarSection("persona-library")}>
+            <button
+              type="button"
+              style={styles.sidebarSectionHeader}
+              aria-expanded={!collapsedSidebarSections.includes("persona-library")}
+              onClick={() => toggleSidebarSection("persona-library")}
+            >
               <span style={styles.panelTitle}>人格库</span>
-              <span style={styles.sidebarToggleIcon}><MaterialIcon name={collapsedSidebarSections.includes("persona-library") ? "chevron_right" : "expand_more"} size={16} /></span>
+              <span style={styles.sidebarToggleIcon}>
+                <MaterialIcon
+                  name={
+                    collapsedSidebarSections.includes("persona-library")
+                      ? "chevron_right"
+                      : "expand_more"
+                  }
+                  size={16}
+                />
+              </span>
             </button>
             {!collapsedSidebarSections.includes("persona-library") ? (
               <div style={styles.sidebarSectionBody}>
@@ -789,11 +1344,30 @@ return (
                   onChange={(e) => setPersonaLibraryQuery(e.target.value)}
                   placeholder="搜索人格名称、摘要、关系或称呼"
                 />
-                <select className="library-filter" aria-label="筛选人格来源" value={personaSource} onChange={event => setPersonaSource(event.target.value)}><option value="">全部来源</option><option value="builtin">内置人格</option><option value="user">用户人格</option></select>
-                <p role="status" style={styles.sidebarHint}>{visibleBuiltin.length + visibleUser.length} 个人格</p>
-                {!visibleBuiltin.length && !visibleUser.length ? <p style={styles.sidebarHint}>没有匹配的人格，请调整搜索或筛选。</p> : null}
-                {personaLibraryMessage ? <p role="status" style={styles.sidebarHint}>{personaLibraryMessage}</p> : null}
-                {personaLibraryError ? <p style={styles.errorText}>{personaLibraryError}</p> : null}
+                <select
+                  className="library-filter"
+                  aria-label="筛选人格来源"
+                  value={personaSource}
+                  onChange={(event) => setPersonaSource(event.target.value)}
+                >
+                  <option value="">全部来源</option>
+                  <option value="builtin">内置人格</option>
+                  <option value="user">用户人格</option>
+                </select>
+                <p role="status" style={styles.sidebarHint}>
+                  {visibleBuiltin.length + visibleUser.length} 个人格
+                </p>
+                {!visibleBuiltin.length && !visibleUser.length ? (
+                  <p style={styles.sidebarHint}>没有匹配的人格，请调整搜索或筛选。</p>
+                ) : null}
+                {personaLibraryMessage ? (
+                  <p role="status" style={styles.sidebarHint}>
+                    {personaLibraryMessage}
+                  </p>
+                ) : null}
+                {personaLibraryError ? (
+                  <p style={styles.errorText}>{personaLibraryError}</p>
+                ) : null}
 
                 {visibleBuiltin.length ? (
                   <div style={styles.cardList}>
@@ -809,7 +1383,6 @@ return (
               </div>
             ) : null}
           </div>
-
         </aside>
       </div>
     </main>

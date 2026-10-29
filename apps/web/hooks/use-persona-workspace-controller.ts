@@ -1,7 +1,21 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type ChangeEvent, type DragEvent as ReactDragEvent } from "react";
-import { PERSONA_SLOT_KIND_LABELS, type CreatePersonaInput, type PersonaProfile, type PersonaSlot, type PersonaSlotKind, renderPersonaRuntimeInstruction } from "@vibe-learner/shared";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type DragEvent as ReactDragEvent,
+} from "react";
+import {
+  PERSONA_SLOT_KIND_LABELS,
+  type CreatePersonaInput,
+  type PersonaProfile,
+  type PersonaSlot,
+  type PersonaSlotKind,
+  renderPersonaRuntimeInstruction,
+} from "@vibe-learner/shared";
 import { importJsonDraft } from "../lib/bounded-json-import";
 import { exportJson } from "../lib/export-json";
 import { usePageDebugSnapshot } from "../components/page-debug-context";
@@ -12,37 +26,63 @@ import { usePersonaAssist } from "./use-persona-assist";
 import { usePersonaDraft } from "./use-persona-draft";
 import { usePersonaCardGeneration } from "./use-persona-card-generation";
 import { matchesPersonaCard, matchesPersonaProfile } from "../lib/persona-editor-model";
-import { clampPersonaWeight, createPersonaInputToDraft, draftToCreatePersonaInput, duplicatePersonaDraft, EMPTY_PERSONA_DRAFT, normalizeImportedPersonaConfig, type PersonaDraft } from "../lib/persona-draft";
+import {
+  clampPersonaWeight,
+  createPersonaInputToDraft,
+  draftToCreatePersonaInput,
+  duplicatePersonaDraft,
+  EMPTY_PERSONA_DRAFT,
+  normalizeImportedPersonaConfig,
+  type PersonaDraft,
+} from "../lib/persona-draft";
 
 const DEFAULT_CONFIG_TEMPLATE: CreatePersonaInput = {
   name: "模板教师",
   summary: "示例人格：强调章节脉络与可执行反馈。",
   relationship: "标准导学教师",
   learnerAddress: "同学",
-  systemPrompt: "优先基于章节内容讲解，通过递进式提问推进理解，并给出简洁可执行的反馈。",
+  systemPrompt:
+    "优先基于章节内容讲解，通过递进式提问推进理解，并给出简洁可执行的反馈。",
   referenceHints: [],
   slots: [
-    { kind: "worldview", label: "世界观起点", content: "来自学院导学中心，擅长把抽象概念拆成可验证的小步任务，并用温和语气引导学习者持续推进。" },
+    {
+      kind: "worldview",
+      label: "世界观起点",
+      content:
+        "来自学院导学中心，擅长把抽象概念拆成可验证的小步任务，并用温和语气引导学习者持续推进。",
+    },
     { kind: "teaching_method", label: "教学方法", content: "结构化、引导式推进" },
     { kind: "narrative_mode", label: "叙事模式", content: "稳态导学" },
-    { kind: "encouragement_style", label: "鼓励策略", content: "强调小步成功与可见进展" },
-    { kind: "correction_style", label: "纠错策略", content: "准确指出问题，同时保持温和语气" }
+    {
+      kind: "encouragement_style",
+      label: "鼓励策略",
+      content: "强调小步成功与可见进展",
+    },
+    {
+      kind: "correction_style",
+      label: "纠错策略",
+      content: "准确指出问题，同时保持温和语气",
+    },
   ],
   availableEmotions: ["calm", "encouraging", "serious"],
   availableActions: ["idle", "nod", "point", "pause"],
-  defaultSpeechStyle: "warm"
+  defaultSpeechStyle: "warm",
 };
 
 export function usePersonaWorkspaceController() {
   const configImportInputRef = useRef<HTMLInputElement>(null);
   const personaLibrary = usePersonaLibrary();
-  const { personas, personaCards, listPersonas, listPersonaCards, deletePersonaCard } = personaLibrary;
+  const { personas, personaCards, listPersonas, listPersonaCards, deletePersonaCard } =
+    personaLibrary;
   const configImportFenceRef = useRef(new AsyncResultFence());
   const cardDeleteOwnerRef = useRef<object | null>(null);
-  useEffect(() => () => {
-    configImportFenceRef.current.invalidate();
-    cardDeleteOwnerRef.current = null;
-  }, []);
+  useEffect(
+    () => () => {
+      configImportFenceRef.current.invalidate();
+      cardDeleteOwnerRef.current = null;
+    },
+    [],
+  );
 
   const personaEditor = usePersonaDraft({
     personas,
@@ -84,11 +124,17 @@ export function usePersonaWorkspaceController() {
     handleAssistSetting,
     resetPersonaAssist,
     clearAssistError,
-  } = usePersonaAssist({ draft, updatePersonaDraft, currentPersonaAsyncScope, onSettingStarted: () => setIsRewritePopoverOpen(false) });
+  } = usePersonaAssist({
+    draft,
+    updatePersonaDraft,
+    currentPersonaAsyncScope,
+    onSettingStarted: () => setIsRewritePopoverOpen(false),
+  });
   const [configMessage, setConfigMessage] = useState("");
   const [configError, setConfigError] = useState("");
   const {
     generatedCards,
+    selectedGeneratedCardIds,
     cardGenerationMode,
     setCardGenerationMode,
     cardKeywordInput,
@@ -107,30 +153,57 @@ export function usePersonaWorkspaceController() {
     cardModelRecoveries,
     generatedPersonaMeta,
     applyGeneratedCardsToDraft,
+    toggleGeneratedCardSelection,
+    rejectGeneratedCard,
     insertCardsIntoDraft,
     handleGenerateCards,
     resetCardGeneration,
-  } = usePersonaCardGeneration({ draft, updatePersonaDraft, currentPersonaAsyncScope, beginDiagnosticAction: personaEditor.beginDiagnosticAction });
+  } = usePersonaCardGeneration({
+    draft,
+    updatePersonaDraft,
+    currentPersonaAsyncScope,
+    beginDiagnosticAction: personaEditor.beginDiagnosticAction,
+  });
   const [cardSearchQuery, setCardSearchQuery] = useState("");
   const [cardDeletePendingId, setCardDeletePendingId] = useState("");
   const [draggingPersonaCardId, setDraggingPersonaCardId] = useState("");
   const [slotInsertIndex, setSlotInsertIndex] = useState<number | null>(null);
   const [draggingSlotIndex, setDraggingSlotIndex] = useState<number | null>(null);
   const [expandedSlotIndex, setExpandedSlotIndex] = useState<number | null>(null);
-  const [movePulse, setMovePulse] = useState<{ index: number; direction: -1 | 1 } | null>(null);
+  const [movePulse, setMovePulse] = useState<{
+    index: number;
+    direction: -1 | 1;
+  } | null>(null);
 
   const [isCompactLayout, setIsCompactLayout] = useState(false);
   const [isRewritePopoverOpen, setIsRewritePopoverOpen] = useState(false);
   const [isSystemPromptExpanded, setIsSystemPromptExpanded] = useState(false);
-  const [collapsedSidebarSections, setCollapsedSidebarSections] = useState<string[]>(["persona-library"]);
+  const [collapsedSidebarSections, setCollapsedSidebarSections] = useState<string[]>([
+    "persona-library",
+  ]);
   const [personaLibraryQuery, setPersonaLibraryQuery] = useState("");
   const {
-    savingPersona, saveError, setSaveError, loadError, setLoadError,
-    personaDeletePendingId, personaLibraryMessage, setPersonaLibraryMessage, personaLibraryError, setPersonaLibraryError,
-    handleCreatePersona, handleUpdatePersona, handleReloadSelectedPersona, handleDeletePersona,
+    savingPersona,
+    saveError,
+    setSaveError,
+    loadError,
+    setLoadError,
+    personaDeletePendingId,
+    personaLibraryMessage,
+    setPersonaLibraryMessage,
+    personaLibraryError,
+    setPersonaLibraryError,
+    handleCreatePersona,
+    handleUpdatePersona,
+    handleReloadSelectedPersona,
+    handleDeletePersona,
   } = usePersonaPersistence({
-    editor: personaEditor, library: personaLibrary,
-    onStarted: () => { setConfigError(""); setConfigMessage(""); },
+    editor: personaEditor,
+    library: personaLibrary,
+    onStarted: () => {
+      setConfigError("");
+      setConfigMessage("");
+    },
     onPromptDismiss: () => dismissSystemPromptSuggestion(),
   });
   const rewritePopoverRef = useRef<HTMLDivElement | null>(null);
@@ -188,42 +261,46 @@ export function usePersonaWorkspaceController() {
       }
     }
     void bootstrap();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const selectedPersona = useMemo(
     () => personas.find((p) => p.id === selectedPersonaId) ?? null,
-    [personas, selectedPersonaId]
+    [personas, selectedPersonaId],
   );
   const isReadonlyPersona = selectedPersona?.source === "builtin";
   const filteredPersonaCards = useMemo(
     () => personaCards.filter((card) => matchesPersonaCard(card, cardSearchQuery)),
-    [personaCards, cardSearchQuery]
+    [personaCards, cardSearchQuery],
   );
   const filteredPersonas = useMemo(
-    () => personas.filter((persona) => matchesPersonaProfile(persona, personaLibraryQuery)),
-    [personas, personaLibraryQuery]
+    () =>
+      personas.filter((persona) => matchesPersonaProfile(persona, personaLibraryQuery)),
+    [personas, personaLibraryQuery],
   );
   const builtinPersonas = useMemo(
     () => filteredPersonas.filter((persona) => persona.source === "builtin"),
-    [filteredPersonas]
+    [filteredPersonas],
   );
   const userPersonas = useMemo(
     () => filteredPersonas.filter((persona) => persona.source === "user"),
-    [filteredPersonas]
+    [filteredPersonas],
   );
   const runtimePromptPreview = useMemo(
-    () => renderPersonaRuntimeInstruction({
-      name: draft.name,
-      summary: draft.summary,
-      relationship: draft.relationship,
-      learnerAddress: draft.learnerAddress,
-      systemPrompt: draft.systemPrompt,
-      referenceHints: draft.referenceHints,
-      slots: draft.slots,
-      defaultSpeechStyle: draft.defaultSpeechStyle,
-    }),
-    [draft]
+    () =>
+      renderPersonaRuntimeInstruction({
+        name: draft.name,
+        summary: draft.summary,
+        relationship: draft.relationship,
+        learnerAddress: draft.learnerAddress,
+        systemPrompt: draft.systemPrompt,
+        referenceHints: draft.referenceHints,
+        slots: draft.slots,
+        defaultSpeechStyle: draft.defaultSpeechStyle,
+      }),
+    [draft],
   );
   const pageNotice = useMemo(() => {
     if (savingPersona) {
@@ -263,7 +340,14 @@ export function usePersonaWorkspaceController() {
     () => ({
       title: "人格页调试面板",
       subtitle: "查看草稿、卡片状态和错误。",
-      error: [loadError, saveError, assistError, configError, cardError, personaLibraryError]
+      error: [
+        loadError,
+        saveError,
+        assistError,
+        configError,
+        cardError,
+        personaLibraryError,
+      ]
         .filter(Boolean)
         .join("；"),
       summary: [
@@ -276,18 +360,27 @@ export function usePersonaWorkspaceController() {
         { label: "人格库", value: String(personas.length) },
         { label: "附加约束建议", value: systemPromptSuggestion ? "待确认" : "无" },
         { label: "回填前清空", value: clearBeforeBackfill ? "开启" : "关闭" },
-        { label: "AI 恢复记录", value: String(assistModelRecoveries.length + cardModelRecoveries.length) }
+        {
+          label: "AI 恢复记录",
+          value: String(assistModelRecoveries.length + cardModelRecoveries.length),
+        },
       ],
       details: [
         { title: "当前选中人格", value: selectedPersona },
         { title: "编辑草稿", value: draft },
         { title: "运行时人格提示词预览", value: runtimePromptPreview },
-        { title: "附加约束建议", value: { source: systemPromptSuggestionSource, value: systemPromptSuggestion } },
+        {
+          title: "附加约束建议",
+          value: {
+            source: systemPromptSuggestionSource,
+            value: systemPromptSuggestion,
+          },
+        },
         { title: "生成摘要信息", value: generatedPersonaMeta },
         { title: "生成卡片（前 24 条）", value: generatedCards.slice(0, 24) },
         { title: "设定/槽位辅助恢复记录", value: assistModelRecoveries },
-        { title: "卡片生成恢复记录", value: cardModelRecoveries }
-      ]
+        { title: "卡片生成恢复记录", value: cardModelRecoveries },
+      ],
     }),
     [
       assistError,
@@ -308,8 +401,8 @@ export function usePersonaWorkspaceController() {
       runtimePromptPreview,
       assistModelRecoveries,
       systemPromptSuggestion,
-      systemPromptSuggestionSource
-    ]
+      systemPromptSuggestionSource,
+    ],
   );
 
   usePageDebugSnapshot(debugSnapshot);
@@ -333,7 +426,7 @@ export function usePersonaWorkspaceController() {
           locked: false,
           sortOrder: prev.slots.length * 10,
         },
-      ]
+      ],
     }));
   }
 
@@ -344,7 +437,11 @@ export function usePersonaWorkspaceController() {
     setSlotInsertIndex(null);
   }
 
-  function handleUpdateSlot(index: number, field: keyof PersonaSlot, value: PersonaSlot[keyof PersonaSlot]) {
+  function handleUpdateSlot(
+    index: number,
+    field: keyof PersonaSlot,
+    value: PersonaSlot[keyof PersonaSlot],
+  ) {
     if (assistError) clearAssistError();
     updatePersonaDraft((prev) => {
       const next = [...prev.slots];
@@ -353,13 +450,17 @@ export function usePersonaWorkspaceController() {
         nextValue = clampPersonaWeight(Number(value));
       }
       next[index] = { ...next[index], [field]: nextValue };
-      if (field === "kind") next[index].label = PERSONA_SLOT_KIND_LABELS[value as PersonaSlotKind] ?? value;
+      if (field === "kind")
+        next[index].label = PERSONA_SLOT_KIND_LABELS[value as PersonaSlotKind] ?? value;
       return { ...prev, slots: next };
     });
   }
 
   function handleRemoveSlot(index: number) {
-    updatePersonaDraft((prev) => ({ ...prev, slots: prev.slots.filter((_, i) => i !== index) }));
+    updatePersonaDraft((prev) => ({
+      ...prev,
+      slots: prev.slots.filter((_, i) => i !== index),
+    }));
   }
 
   function handleMoveSlot(index: number, direction: -1 | 1) {
@@ -400,7 +501,12 @@ export function usePersonaWorkspaceController() {
 
   function reorderSlots(fromIndex: number, insertIndex: number) {
     updatePersonaDraft((prev) => {
-      if (fromIndex < 0 || insertIndex < 0 || fromIndex >= prev.slots.length || insertIndex > prev.slots.length) {
+      if (
+        fromIndex < 0 ||
+        insertIndex < 0 ||
+        fromIndex >= prev.slots.length ||
+        insertIndex > prev.slots.length
+      ) {
         return prev;
       }
       const targetIndex = fromIndex < insertIndex ? insertIndex - 1 : insertIndex;
@@ -412,7 +518,7 @@ export function usePersonaWorkspaceController() {
       next.splice(targetIndex, 0, moved);
       return {
         ...prev,
-        slots: next.map((slot, i) => ({ ...slot, sortOrder: i * 10 }))
+        slots: next.map((slot, i) => ({ ...slot, sortOrder: i * 10 })),
       };
     });
   }
@@ -426,13 +532,19 @@ export function usePersonaWorkspaceController() {
     setSlotInsertIndex(index);
   }
 
-  function resolveSlotInsertIndex(event: ReactDragEvent<HTMLDivElement>, index: number) {
+  function resolveSlotInsertIndex(
+    event: ReactDragEvent<HTMLDivElement>,
+    index: number,
+  ) {
     const rect = event.currentTarget.getBoundingClientRect();
     const offsetY = event.clientY - rect.top;
     return offsetY < rect.height / 2 ? index : index + 1;
   }
 
-  function handleSlotCardDragOver(event: ReactDragEvent<HTMLDivElement>, index: number) {
+  function handleSlotCardDragOver(
+    event: ReactDragEvent<HTMLDivElement>,
+    index: number,
+  ) {
     if (!draggingPersonaCardId && draggingSlotIndex === null) {
       return;
     }
@@ -497,14 +609,20 @@ export function usePersonaWorkspaceController() {
     markPersonaDraftSaved(EMPTY_PERSONA_DRAFT);
     replacePersonaDraft(duplicated, false);
     dismissSystemPromptSuggestion();
-    setPersonaLibraryMessage(`已复制为新草稿「${duplicated.name}」，保存后创建新人格。`);
+    setPersonaLibraryMessage(
+      `已复制为新草稿「${duplicated.name}」，保存后创建新人格。`,
+    );
   }
 
   async function handleExportConfig() {
-    setConfigError(""); setConfigMessage("");
+    setConfigError("");
+    setConfigMessage("");
     try {
       const payload = draftToCreatePersonaInput(draft);
-      const baseName = (payload.name || "persona-config").trim().toLowerCase().replace(/\s+/g, "-");
+      const baseName = (payload.name || "persona-config")
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, "-");
       const saved = await exportJson(`${baseName || "persona-config"}.json`, payload);
       setConfigMessage(saved ? "已导出当前配置。" : "已取消导出。");
     } catch {
@@ -513,9 +631,13 @@ export function usePersonaWorkspaceController() {
   }
 
   async function handleDownloadTemplate() {
-    setConfigError(""); setConfigMessage("");
+    setConfigError("");
+    setConfigMessage("");
     try {
-      const saved = await exportJson("persona-config-template.json", DEFAULT_CONFIG_TEMPLATE);
+      const saved = await exportJson(
+        "persona-config-template.json",
+        DEFAULT_CONFIG_TEMPLATE,
+      );
       setConfigMessage(saved ? "已下载配置模板，可直接导入后编辑。" : "已取消下载。");
     } catch {
       setConfigError("模板下载失败，请检查保存位置后重试。");
@@ -523,13 +645,11 @@ export function usePersonaWorkspaceController() {
   }
 
   async function handleImportConfig(event: ChangeEvent<HTMLInputElement>) {
-    setConfigError(""); setConfigMessage("");
+    setConfigError("");
+    setConfigMessage("");
     const file = event.target.files?.[0];
     if (!file) return;
-    if (
-      isDraftDirty &&
-      !window.confirm("导入配置会覆盖当前未保存草稿。是否继续？")
-    ) {
+    if (isDraftDirty && !window.confirm("导入配置会覆盖当前未保存草稿。是否继续？")) {
       event.target.value = "";
       return;
     }
@@ -538,15 +658,22 @@ export function usePersonaWorkspaceController() {
       currentPersonaAsyncScope(fieldTarget),
     );
     try {
-      const applied = await importJsonDraft(file, "persona",
-        raw => createPersonaInputToDraft(normalizeImportedPersonaConfig(raw as Record<string, unknown>)),
-        value => applyAsyncResult({
-          fence: configImportFenceRef.current,
-          ticket,
-          currentScope: currentPersonaAsyncScope(fieldTarget),
-          value,
-          apply: updatePersonaDraft,
-        }) === "apply");
+      const applied = await importJsonDraft(
+        file,
+        "persona",
+        (raw) =>
+          createPersonaInputToDraft(
+            normalizeImportedPersonaConfig(raw as Record<string, unknown>),
+          ),
+        (value) =>
+          applyAsyncResult({
+            fence: configImportFenceRef.current,
+            ticket,
+            currentScope: currentPersonaAsyncScope(fieldTarget),
+            value,
+            apply: updatePersonaDraft,
+          }) === "apply",
+      );
       if (!applied) return;
       setConfigMessage("配置导入成功，已应用到当前编辑区。");
     } catch (error) {
@@ -575,11 +702,11 @@ export function usePersonaWorkspaceController() {
   }
 
   function toggleSidebarSection(key: string) {
-    setCollapsedSidebarSections((current) => (
+    setCollapsedSidebarSections((current) =>
       current.includes(key)
         ? current.filter((item) => item !== key)
-        : [...current, key]
-    ));
+        : [...current, key],
+    );
   }
 
   async function handleDeletePersonaCard(cardId: string) {
@@ -629,6 +756,7 @@ export function usePersonaWorkspaceController() {
     configMessage,
     configError,
     generatedCards,
+    selectedGeneratedCardIds,
     cardGenerationMode,
     setCardGenerationMode,
     cardKeywordInput,
@@ -644,6 +772,8 @@ export function usePersonaWorkspaceController() {
     cardError,
     generatedPersonaMeta,
     applyGeneratedCardsToDraft,
+    toggleGeneratedCardSelection,
+    rejectGeneratedCard,
     insertCardsIntoDraft,
     handleGenerateCards,
     cardSearchQuery,
@@ -706,4 +836,6 @@ export function usePersonaWorkspaceController() {
   };
 }
 
-export type PersonaWorkspaceController = ReturnType<typeof usePersonaWorkspaceController>;
+export type PersonaWorkspaceController = ReturnType<
+  typeof usePersonaWorkspaceController
+>;
