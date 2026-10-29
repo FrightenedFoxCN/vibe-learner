@@ -49,6 +49,7 @@ export function TavernWorkspace({
     retryableRuns,
     facilitatedRecovery,
     participantStates,
+    activeReplyPersonaIds,
     roomButtons,
     handleCreateRoom,
     handleArchiveToggle,
@@ -176,8 +177,7 @@ export function TavernWorkspace({
                   roomIds: roomButtons.map((room) => room.id),
                   loadingMore: loadingMoreRooms,
                 });
-                if (samples.length > 2000)
-                  samples.splice(0, samples.length - 2000);
+                if (samples.length > 2000) samples.splice(0, samples.length - 2000);
               }}
             >
               {sessionPanel}
@@ -208,6 +208,7 @@ export function TavernWorkspace({
               roomActive={Boolean(roomIsActive)}
               participants={detail?.participants ?? []}
               selectedIds={targetPersonaIds}
+              activeReplyIds={activeReplyPersonaIds}
               latestMessage={latestMessage}
               recovery={facilitatedRecovery}
               busy={
@@ -228,9 +229,8 @@ export function TavernWorkspace({
             <ParticipantRoster
               states={participantStates}
               selectedIds={targetPersonaIds}
-              disabled={
-                !roomIsActive || mutationBusy || runPending || loadingOlder
-              }
+              activeReplyIds={activeReplyPersonaIds}
+              disabled={!roomIsActive || mutationBusy || runPending || loadingOlder}
               onToggle={handleTargetToggle}
             />
             <ReliabilityDetails

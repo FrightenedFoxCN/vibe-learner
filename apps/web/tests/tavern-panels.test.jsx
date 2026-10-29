@@ -5,15 +5,11 @@ import { after, afterEach, test } from "node:test";
 import { act, cleanup, fireEvent, render } from "@testing-library/react";
 import {
   InteractionComposer,
+  ParticipantRoster,
   TavernSessionPanel,
   TavernConversationPanel,
 } from "../components/tavern-workspace-panels.tsx";
-import {
-  deferred,
-  detail,
-  environment,
-  message,
-} from "./support/tavern-controller.js";
+import { deferred, detail, environment, message } from "./support/tavern-controller.js";
 
 afterEach(cleanup);
 after(() => dom.window.close());
@@ -80,6 +76,45 @@ test("Composer uses roster order and respects Enter, Shift+Enter and composition
   assert.equal(writes.length, 1);
   assert.equal(writes[0][0].content, "hello");
   assert.equal(input.value, "hello");
+});
+
+test("active retry recipients override next-round selection and clear back to that selection after completion", () => {
+  const props = composer({
+    selectedIds: ["p1"],
+    activeReplyIds: ["p2"],
+    busy: true,
+    retrying: true,
+  });
+  const view = render(<InteractionComposer {...props} />);
+  assert.match(view.container.textContent, /本轮回应：p2/);
+  view.rerender(
+    <InteractionComposer
+      {...props}
+      activeReplyIds={[]}
+      busy={false}
+      retrying={false}
+    />,
+  );
+  assert.match(view.container.textContent, /本轮回应：p1/);
+});
+
+test("Roster labels a selected actor outside the in-flight retry as a next-round target", () => {
+  const participants = detail().participants;
+  const view = render(
+    <ParticipantRoster
+      states={participants.map((participant, index) => ({
+        participant,
+        state: index ? "generating" : "idle",
+      }))}
+      selectedIds={["p1"]}
+      activeReplyIds={["p2"]}
+      disabled
+      onToggle={() => assert.fail("disabled selection")}
+    />,
+  );
+  const next = view.getByRole("checkbox", { name: /p1/ });
+  assert.match(next.closest("label").textContent, /下轮目标/);
+  assert.equal(next.disabled, true);
 });
 
 test("Composer focuses cleared input only after confirmation settles and cancels focus on unmount", async () => {
@@ -149,9 +184,6 @@ test("empty Conversation names the next action without referring to desktop plac
       onLoadOlder={async () => false}
     />,
   );
-  assert.match(
-    view.container.textContent,
-    /先创建或打开一个酒馆，然后开始对话/,
-  );
+  assert.match(view.container.textContent, /先创建或打开一个酒馆，然后开始对话/);
   assert.doesNotMatch(view.container.textContent, /左侧/);
 });

@@ -19,10 +19,7 @@ import {
   tavernRoomSummaryButtons,
 } from "../lib/tavern-workspace-state";
 
-import type {
-  BusyAction,
-  MutationOperation,
-} from "../lib/tavern-workspace-ports";
+import type { BusyAction, MutationOperation } from "../lib/tavern-workspace-ports";
 
 export function useTavernWorkspaceState() {
   const [rooms, setRooms] = useState<TavernRoomSummary[]>([]);
@@ -35,13 +32,9 @@ export function useTavernWorkspaceState() {
   const [detail, setDetail] = useState<TavernRoomDetail | null>(null);
   const [messages, setMessages] = useState<TavernMessage[]>([]);
   const [runs, setRuns] = useState<TavernRun[]>([]);
-  const [recoveryChains, setRecoveryChains] = useState<
-    TavernRunRecoveryChain[]
-  >([]);
+  const [recoveryChains, setRecoveryChains] = useState<TavernRunRecoveryChain[]>([]);
   const [targetPersonaIds, setTargetPersonaIds] = useState<string[]>([]);
-  const [generatingPersonaIds, setGeneratingPersonaIds] = useState<string[]>(
-    [],
-  );
+  const [generatingPersonaIds, setGeneratingPersonaIds] = useState<string[]>([]);
   const [showSetup, setShowSetup] = useState(false);
   const [busyAction, setBusyAction] = useState<BusyAction>("bootstrap");
   const [loadingOlder, setLoadingOlder] = useState(false);
@@ -80,6 +73,12 @@ export function useTavernWorkspaceState() {
   const roomBusy = busyAction === "room" || busyAction === "bootstrap";
   const mutationBusy = busyAction !== null && !roomBusy;
   const runPending = hasActiveTavernRun(runs);
+  const activeReplyPersonaIds = useMemo(
+    () =>
+      runs.find((run) => run.status === "pending")?.scheduledParticipantIds ??
+      generatingPersonaIds,
+    [runs, generatingPersonaIds],
+  );
   const latestMessage = latestTavernMessage(messages);
   const retryableRuns = useMemo(
     () =>
@@ -94,11 +93,7 @@ export function useTavernWorkspaceState() {
   );
   const participantStates = useMemo(
     () =>
-      projectParticipantStates(
-        detail?.participants ?? [],
-        runs,
-        generatingPersonaIds,
-      ),
+      projectParticipantStates(detail?.participants ?? [], runs, generatingPersonaIds),
     [detail?.participants, generatingPersonaIds, runs],
   );
   const roomButtons = useMemo(
@@ -201,6 +196,7 @@ export function useTavernWorkspaceState() {
     retryableRuns,
     facilitatedRecovery,
     participantStates,
+    activeReplyPersonaIds,
     roomButtons,
   };
 }

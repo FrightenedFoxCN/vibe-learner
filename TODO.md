@@ -31,10 +31,6 @@
 
 ### 性能与 Tavern transport
 
-- [ ] `TAV-FACILITATED-ORDER-001` `[P2]` 独立复核 Tavern facilitated 的顺序预览、服务端 schedule 与 Participant Roster 一致性。
-  - 2026-10-29 核对：Interaction Composer 已按 participant `displayOrder` 排序，并在发送前展示“本轮回应：A → B”；Participant Roster 与服务端调度也采用名册顺序，目标选择仍为集合。无需重新实现顺序预览。
-  - 剩余：逆序多选、恢复房间、partial 后 child retry 的独立端到端复核，确认发送前预览、服务端 Speaker Steps 和名册状态始终一致；不把用户点击顺序当作执行顺序。
-
 - [ ] `PERF-WEB-DEDUPE-001` `[P2]` 复核窗口 focus、跨页返回与恢复交错时的资源请求边界。
   - 2026-10-29 核对：Tavern bootstrap 对 Persona/Scene 已各请求一次；LearningWorkspaceProvider 已限定在 `(learning)` 路由组，根布局只保留不发起学习请求的页面草稿缓存。路由清单与既有验收范围见 `docs/frontend-test-boundaries.md`。
   - 剩余：以有历史 Room/Run 的请求记录独立复核连续 focus、跨页返回、轮询与恢复并发；区分必要 read-back 与重复请求，保留原始请求计数、时序和 before/after，避免无界刷新。空库首次加载基线不能替代这些场景。

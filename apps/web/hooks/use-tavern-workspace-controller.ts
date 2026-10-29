@@ -23,9 +23,7 @@ export function useTavernWorkspaceController(
         return current.filter((id) => id !== personaId);
       }
       if (current.length >= 4) {
-        setVisibleError(
-          "一次多人互动最多选择 4 位角色。你可以在下一轮更换目标。",
-        );
+        setVisibleError("一次多人互动最多选择 4 位角色。你可以在下一轮更换目标。");
         return current;
       }
       setVisibleError("");
@@ -63,6 +61,7 @@ export function useTavernWorkspaceController(
     retryableRuns,
     facilitatedRecovery,
     participantStates,
+    activeReplyPersonaIds,
     roomButtons,
   } = state;
   const { openRoom, refreshRoom, loadMoreRooms, handleLoadOlder } = queries;
@@ -96,6 +95,7 @@ export function useTavernWorkspaceController(
     retryableRuns,
     facilitatedRecovery,
     participantStates,
+    activeReplyPersonaIds,
     roomButtons,
     openRoom,
     refreshRoom,

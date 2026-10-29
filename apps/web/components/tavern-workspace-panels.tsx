@@ -22,11 +22,7 @@ import {
 
 import { type SceneLibraryItemPayload } from "../lib/api";
 import { AppLink } from "../lib/app-navigation";
-import {
-  RUN_STATUS_LABELS,
-  STEP_STATUS_LABELS,
-  TAVERN_COPY,
-} from "../lib/tavern-copy";
+import { RUN_STATUS_LABELS, STEP_STATUS_LABELS, TAVERN_COPY } from "../lib/tavern-copy";
 import {
   authoritativeFacilitatedRecovery,
   projectParticipantStates,
@@ -172,9 +168,7 @@ export function TavernSessionPanel({
           ))}
         </div>
       ) : (
-        <p className="tavern-empty-copy">
-          还没有房间。选择 1–6 位人格即可创建。
-        </p>
+        <p className="tavern-empty-copy">还没有房间。选择 1–6 位人格即可创建。</p>
       )}
       <div className="tavern-room-page-status">
         {pageError ? <p role="alert">{pageError}</p> : null}
@@ -186,11 +180,7 @@ export function TavernSessionPanel({
             disabled={busy || loadingMore}
           >
             <MaterialIcon name="expand_more" size={16} />
-            {loadingMore
-              ? "正在载入…"
-              : pageError
-                ? "重试载入更多"
-                : "载入更多房间"}
+            {loadingMore ? "正在载入…" : pageError ? "重试载入更多" : "载入更多房间"}
           </button>
         ) : rooms.length ? (
           <p>{historyTruncated ? "已显示最近 100 个房间" : "已显示全部房间"}</p>
@@ -236,8 +226,7 @@ export function TavernSetupPanel({
 
   const togglePersona = (personaId: string) => {
     setSelectedIds((current) => {
-      if (current.includes(personaId))
-        return current.filter((id) => id !== personaId);
+      if (current.includes(personaId)) return current.filter((id) => id !== personaId);
       if (current.length >= 6) {
         setValidation("每个酒馆最多加入 6 位人格。");
         return current;
@@ -277,11 +266,7 @@ export function TavernSetupPanel({
           <h2 id="tavern-setup-title">创建房间</h2>
         </div>
         {onCancel ? (
-          <button
-            type="button"
-            className="tavern-text-button"
-            onClick={onCancel}
-          >
+          <button type="button" className="tavern-text-button" onClick={onCancel}>
             收起
           </button>
         ) : null}
@@ -363,11 +348,7 @@ export function TavernSetupPanel({
           />
         </label>
         {validation ? (
-          <p
-            id="tavern-setup-error"
-            className="tavern-field-error"
-            role="alert"
-          >
+          <p id="tavern-setup-error" className="tavern-field-error" role="alert">
             {validation}
           </p>
         ) : null}
@@ -454,8 +435,7 @@ export function TavernConversationPanel({
           scrollBox.getBoundingClientRect().top;
         scrollBox.scrollTop += currentViewportOffset - anchor.viewportOffset;
       } else {
-        scrollBox.scrollTop =
-          anchor.top + scrollBox.scrollHeight - anchor.height;
+        scrollBox.scrollTop = anchor.top + scrollBox.scrollHeight - anchor.height;
       }
       scrollBox.style.scrollBehavior = priorBehavior;
       pendingOlderAnchorRef.current = null;
@@ -555,9 +535,7 @@ export function TavernConversationPanel({
               <div className="tavern-message-body">
                 <RichTextMessage content={message.content} />
                 {message.action ? (
-                  <p className="tavern-message-action">
-                    动作：{message.action}
-                  </p>
+                  <p className="tavern-message-action">动作：{message.action}</p>
                 ) : null}
                 {message.addressedParticipantIds.length ? (
                   <p className="tavern-message-addressed">
@@ -579,11 +557,13 @@ export function TavernConversationPanel({
 export function ParticipantRoster({
   states,
   selectedIds,
+  activeReplyIds = [],
   disabled,
   onToggle,
 }: {
   states: ReturnType<typeof projectParticipantStates>;
   selectedIds: string[];
+  activeReplyIds?: string[];
   disabled: boolean;
   onToggle: (personaId: string) => void;
 }) {
@@ -606,7 +586,10 @@ export function ParticipantRoster({
             const displayName = participant.displayName || "未命名角色";
             const stateLabel =
               selected && state === "idle"
-                ? "本轮目标"
+                ? activeReplyIds.length &&
+                  !activeReplyIds.includes(participant.personaId)
+                  ? "下轮目标"
+                  : "本轮目标"
                 : STEP_STATUS_LABELS[state];
             return (
               <label
@@ -647,6 +630,7 @@ export function InteractionComposer({
   roomActive,
   participants,
   selectedIds,
+  activeReplyIds = [],
   latestMessage,
   recovery,
   busy,
@@ -664,6 +648,7 @@ export function InteractionComposer({
   roomActive: boolean;
   participants: TavernParticipant[];
   selectedIds: string[];
+  activeReplyIds?: string[];
   latestMessage: TavernMessage | null;
   recovery: ReturnType<typeof authoritativeFacilitatedRecovery>;
   busy: boolean;
@@ -701,16 +686,18 @@ export function InteractionComposer({
   );
   const recipientNames = [...participants]
     .sort((left, right) => left.displayOrder - right.displayOrder)
-    .filter((participant) => selectedIds.includes(participant.personaId))
+    .filter((participant) =>
+      (activeReplyIds.length ? activeReplyIds : selectedIds).includes(
+        participant.personaId,
+      ),
+    )
     .map((participant) => namesById.get(participant.personaId))
     .filter(Boolean);
   const unfinishedNames =
     recovery?.unfinishedPersonaIds.map(
       (personaId) => namesById.get(personaId) || "房间角色",
     ) ?? [];
-  const showRecovery = Boolean(
-    roomActive && recovery && (!canCancel || retrying),
-  );
+  const showRecovery = Boolean(roomActive && recovery && (!canCancel || retrying));
   const canRun =
     roomActive && selectedIds.length >= 1 && selectedIds.length <= 4 && !busy;
 
@@ -759,10 +746,7 @@ export function InteractionComposer({
   const sendMessage = async () => {
     const content = message.trim();
     if (!content || !canRun) return;
-    const completed = await onTurn(
-      { kind: "user_message", content },
-      guidance.trim(),
-    );
+    const completed = await onTurn({ kind: "user_message", content }, guidance.trim());
     if (completed) {
       setMessage("");
       setGuidance("");
@@ -819,11 +803,7 @@ export function InteractionComposer({
           : "请先选择至少一位角色"}
       </p>
       {showRecovery && recovery ? (
-        <div
-          className="tavern-recovery-callout"
-          role="status"
-          aria-live="polite"
-        >
+        <div className="tavern-recovery-callout" role="status" aria-live="polite">
           <div>
             <strong>
               {recovery.chainStatus === "recovered"
@@ -832,14 +812,12 @@ export function InteractionComposer({
             </strong>
             {recovery.chainStatus === "recovered" ? (
               <p>
-                {recovery.completedCount}/{recovery.totalCount}{" "}
-                {TAVERN_COPY.recovered}
+                {recovery.completedCount}/{recovery.totalCount} {TAVERN_COPY.recovered}
               </p>
             ) : (
               <p>
                 {recovery.completedCount}/{recovery.totalCount} 位已回应；
-                {unfinishedNames.join("、")}{" "}
-                尚未完成。已保存的回应不会重复生成。
+                {unfinishedNames.join("、")} 尚未完成。已保存的回应不会重复生成。
               </p>
             )}
           </div>
@@ -1046,8 +1024,7 @@ export function ReliabilityDetails({
 }
 
 function messageAuthorLabel(message: TavernMessage): string {
-  if (message.authorKind === "persona")
-    return message.personaName || "房间角色";
+  if (message.authorKind === "persona") return message.personaName || "房间角色";
   if (message.authorKind === "user") return "你";
   if (message.authorKind === "director") return "导演引导";
   return "系统";
