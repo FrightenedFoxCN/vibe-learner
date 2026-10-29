@@ -1,3 +1,4 @@
+import { wireModelTools } from "../support/model-config-wire";
 import { test, expect } from "@playwright/test";
 import { observeRequests } from "./api-fixture";
 
@@ -11,7 +12,7 @@ test("Sensory filters, disclosure and scoped bulk saves preserve focused control
       const body = route.request().postDataJSON(); writes.push(body);
       for (const toggle of body.toggles) tools.find(tool => tool.name === toggle.tool_name)!.enabled = toggle.enabled;
     }
-    await route.fulfill({ json: payload });
+    await route.fulfill({ json: wireModelTools(payload.stages) });
   });
   await page.goto("/sensory-tools");
   await expect(page.getByText("找到 18 个工具", { exact: true })).toBeVisible();
@@ -65,7 +66,7 @@ test("Sensory failed saves announce the error without stealing a later search fo
       await route.fulfill({ status: 503, json: { detail: "暂时无法保存" } });
       return;
     }
-    await route.fulfill({ json: { stages: [{ name: "study", label: "学习", stage_enabled: true, tools: [{ name: "read", label: "阅读工具", category: "read", enabled: false, available: true }] }] } });
+    await route.fulfill({ json: wireModelTools([{ name: "study", label: "学习", stage_enabled: true, tools: [{ name: "read", label: "阅读工具", category: "read", enabled: false, available: true }] }]) });
   });
   await page.goto("/sensory-tools");
   await page.getByRole("checkbox", { name: "阅读工具", exact: true }).click();

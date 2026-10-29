@@ -8,6 +8,9 @@
 | `npm run test:web:workspace` | 快照查询、草稿生命周期与生成 Hook；注入依赖，无网络 |
 | `npm --workspace @vibe-learner/web run test:workspace:data` | 只运行首次加载、刷新竞争、失效与重试模块 |
 | `npm --workspace @vibe-learner/web run test:workspace:generation` | 完整生成 Hook 的取消、过期请求、卸载、视图切换、Scene 快照和文档成功流程 |
+| `npm --workspace @vibe-learner/web run test:settings:decode` | Settings、工具配置、模型探测、用量统计的严格解码与真实 API 诊断归属；错误读回不重放写请求 |
+| `cd services/ai && uv run python -m unittest tests.test_settings_response_contracts` | 临时后端当前 HTTP DTO 交给 Node 中的生产 decoder 验证；Python/TS 共享版本与枚举 fixture |
+| `cd apps/web && npx playwright test --config playwright.settings-decode.config.ts` | 开发服务上的畸形响应界面：Settings 不初始化自动保存、字符串 false 不启用工具、用量非法计数不显示为零 |
 | `npm --workspace @vibe-learner/web run test:settings:save` | 保存协调器的队列/防抖/失败/恢复原值；完整 Hook 的 pagehide 与卸载，不读取或切片源码 |
 | `npm --workspace @vibe-learner/web run test:scene:generation` | Scene 候选生成的文件读取竞争、旧错误、草稿变更、卸载与输入校验；不启动数据库或模型 |
 | `npm --workspace @vibe-learner/web run test:scene:dialog` | 生产 Chromium 的模态焦点、Tab/Escape、背景 inert、取消与确认删除后的焦点；需先构建 |

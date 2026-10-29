@@ -10,11 +10,6 @@
 
 ## 数据一致性与工程重构
 
-- [ ] `ENG-WEB-DECODE-001` `[P2]` 为 Settings、工具配置、模型探测和 Model Usage 补齐领域严格响应解码。
-  - 2026-10-29 审计：`apps/web/lib/api.ts` 仍使用 `any` 与 `String`/`Boolean`/`Number` 强制转换；工具配置中的字符串 `"false"` 会被当作 `true`，缺失字段和未知枚举也可能被默认值掩盖。
-  - 从 `unknown` 严格验证字段、枚举、布尔值和有限数值，明确兼容默认值适用的历史契约；沿用 `strict-response-decode` 和已有诊断边界，并由 `lib/data/*` 暴露领域入口。
-  - 增加畸形响应、字符串布尔值、非法计数和未知状态的行为回归；保持 Python/共享 TypeScript 契约一致，不将类型断言作为运行时验证。
-
 - [ ] `ENG-TAV-WORKSPACE-001` `[P2]` 拆分 Tavern Workspace 的查询、Run 恢复和交互提交职责。
   - 2026-10-29 审计：`apps/web/components/tavern-workspace.tsx` 的主组件同时拥有房间分页、轮询、恢复、mutation fencing、草稿与界面状态；已有纯状态工具不覆盖完整异步编排。
   - 参照现有学习工作区的领域 Hook/展示组件边界，注入窄 API、时钟和存储 port；保留原有幂等身份、房间/请求版本 fencing、终态单调性、取消与 retry 语义。

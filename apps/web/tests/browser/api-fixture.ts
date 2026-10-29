@@ -1,3 +1,4 @@
+import responses from "../../../../packages/shared/fixtures/settings/responses-v1.json" with { type: "json" };
 import type { Page } from "@playwright/test";
 
 export async function observeRequests(page: Page) {
@@ -16,8 +17,9 @@ export async function observeRequests(page: Page) {
       reference_hints: [], slots: [], available_emotions: ["calm"], available_actions: ["point"],
       default_speech_style: "clear",
     }] };
-    if (path === "/runtime-settings") json = { plan_provider: "mock" };
-    if (path === "/model-tools/config" || path === "/model-usage/stats") json = {};
+    if (path === "/runtime-settings") json = { ...responses.runtime_settings, show_debug_info: false };
+    if (path === "/model-tools/config") json = { contract_version: responses.contracts.modelTools, updated_at: "", stages: [] };
+    if (path === "/model-usage/stats") json = { contract_version: responses.contracts.modelUsage, buckets: [], records: [], total_prompt_tokens: 0, total_completion_tokens: 0, total_tokens: 0 };
     if (path === "/tavern/rooms") json = { contract_version: "tavern-room-list-v1", items: [], next_cursor: null };
     await route.fulfill({ json });
   });

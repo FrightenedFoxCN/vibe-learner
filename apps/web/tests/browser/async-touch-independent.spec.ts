@@ -1,3 +1,4 @@
+import { wireModelTools } from "../support/model-config-wire";
 import { test, expect } from "@playwright/test";
 import { observeRequests } from "./api-fixture";
 import { tavernFixture } from "./tavern-copy-fixture";
@@ -48,7 +49,7 @@ for (const path of ["/persona-spectrum","/scene-setup","/sensory-tools","/tavern
 const api="http://127.0.0.1:18999";
 async function sensory(page:any) {
  const config={updated_at:"2026-09-11T00:00:00Z",stages:[{name:"study",label:"学习工具",description:"Independent populated fixture",stage_enabled:true,audit_basis:[],stage_disabled_reason:"",tools:[{name:"read",label:"独立阅读工具",description:"Read",category:"reading",category_label:"阅读",enabled:true,available:true,effective_enabled:true,audit_basis:[],unavailable_reason:""}]}]};
- await page.route(`${api}/model-tools/config`,(r:any)=>r.fulfill({json:config})); return config;
+ await page.route(`${api}/model-tools/config`,(r:any)=>r.fulfill({json:wireModelTools(config.stages)})); return config;
 }
 for(const kind of ["persona","scene","sensory","tavern"]){
  for(const outcome of (kind==="persona"?["success","failure","moved-focus","residual-error"]:["success","failure","moved-focus"])){

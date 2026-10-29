@@ -1,0 +1,178 @@
+{
+  "contracts": {
+    "runtimeSettings": "runtime-settings-response-v1",
+    "modelTools": "model-tool-config-response-v1",
+    "modelProbe": "runtime-model-probe-response-v1",
+    "modelUsage": "model-usage-stats-response-v1"
+  },
+  "vocabularies": {
+    "capability_statuses": [
+      "supported",
+      "unsupported",
+      "unknown"
+    ],
+    "capability_sources": [
+      "metadata",
+      "model_name",
+      "unavailable"
+    ],
+    "readiness_statuses": [
+      "ready",
+      "unsupported",
+      "failed",
+      "not_tested"
+    ],
+    "probe_features": [
+      "plan",
+      "study",
+      "persona",
+      "scene",
+      "tavern"
+    ]
+  },
+  "runtime_settings": {
+    "contract_version": "runtime-settings-response-v1",
+    "updated_at": "2026-10-29T00:00:00Z",
+    "plan_provider": "mock",
+    "openai_api_key": "",
+    "openai_api_key_configured": false,
+    "openai_base_url": "https://api.openai.com/v1",
+    "openai_plan_api_key": "",
+    "openai_plan_api_key_configured": false,
+    "openai_plan_base_url": "",
+    "openai_plan_model": "gpt-4.1-mini",
+    "openai_setting_api_key": "",
+    "openai_setting_api_key_configured": false,
+    "openai_setting_base_url": "",
+    "openai_setting_model": "gpt-4.1-mini",
+    "openai_setting_web_search_enabled": true,
+    "openai_chat_api_key": "",
+    "openai_chat_api_key_configured": false,
+    "openai_chat_base_url": "",
+    "openai_chat_model": "gpt-4.1-mini",
+    "openai_chat_temperature": 0.35,
+    "openai_setting_temperature": 0.4,
+    "openai_setting_max_tokens": 900,
+    "openai_chat_max_tokens": 800,
+    "openai_chat_history_messages": 8,
+    "openai_chat_tool_max_rounds": 4,
+    "openai_embedding_model": "text-embedding-3-small",
+    "openai_chat_model_multimodal": false,
+    "openai_timeout_seconds": 30,
+    "openai_plan_model_multimodal": false,
+    "openai_plan_fallback_model": "",
+    "openai_plan_fallback_disable_tools": true,
+    "show_debug_info": true
+  },
+  "model_tools": {
+    "contract_version": "model-tool-config-response-v1",
+    "updated_at": "2026-10-29T00:00:00Z",
+    "stages": [
+      {
+        "name": "study_chat",
+        "label": "Study",
+        "description": "Study tools",
+        "stage_enabled": true,
+        "audit_basis": [],
+        "stage_disabled_reason": "",
+        "tools": [
+          {
+            "name": "read_page_range_content",
+            "label": "Read pages",
+            "description": "Read textbook pages",
+            "category": "sensory",
+            "category_label": "Sensory",
+            "enabled": true,
+            "available": false,
+            "effective_enabled": false,
+            "audit_basis": [],
+            "unavailable_reason": "No textbook"
+          }
+        ]
+      }
+    ]
+  },
+  "model_probe": {
+    "contract_version": "runtime-model-probe-response-v1",
+    "available": true,
+    "models": [
+      "fixture-model"
+    ],
+    "capabilities": {
+      "fixture-model": {
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "tool_types": [
+          "function"
+        ],
+        "multimodal": {
+          "status": "supported",
+          "source": "metadata",
+          "note": ""
+        },
+        "web_search": {
+          "status": "unknown",
+          "source": "unavailable",
+          "note": ""
+        }
+      }
+    },
+    "feature_readiness": {
+      "plan": {
+        "model": "fixture-model",
+        "status": "ready",
+        "code": "",
+        "note": "Fixture only",
+        "parameter_adjustments": []
+      }
+    },
+    "error": ""
+  },
+  "model_usage": {
+    "contract_version": "model-usage-stats-response-v1",
+    "buckets": [
+      {
+        "date": "2026-10-29",
+        "feature": "chat",
+        "model": "fixture-model",
+        "prompt_tokens": 150,
+        "completion_tokens": 50,
+        "total_tokens": 207
+      }
+    ],
+    "records": [
+      {
+        "id": "call-1",
+        "created_at": "2026-10-29T01:00:00Z",
+        "feature": "chat",
+        "model": "fixture-model",
+        "operation_id": "",
+        "workflow": "study_chat",
+        "stage": "study_chat_reply",
+        "prompt_tokens": 100,
+        "completion_tokens": 40,
+        "total_tokens": 147
+      },
+      {
+        "id": "call-2",
+        "created_at": "2026-10-29T00:00:00Z",
+        "feature": "chat",
+        "model": "fixture-model",
+        "operation_id": "",
+        "workflow": "study_chat",
+        "stage": "study_chat_reply",
+        "prompt_tokens": 50,
+        "completion_tokens": 10,
+        "total_tokens": 60
+      }
+    ],
+    "total_prompt_tokens": 150,
+    "total_completion_tokens": 50,
+    "total_tokens": 207
+  }
+}

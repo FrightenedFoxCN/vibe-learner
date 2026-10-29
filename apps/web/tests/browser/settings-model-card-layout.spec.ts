@@ -1,3 +1,4 @@
+import responses from "../../../../packages/shared/fixtures/settings/responses-v1.json" with { type: "json" };
 import { expect, test } from "@playwright/test";
 
 import { observeRequests } from "./api-fixture";
@@ -9,6 +10,7 @@ test("Settings model-card headings keep one font metric and baseline", async ({ 
   await observeRequests(page);
   await page.route(`${api}/runtime-settings`, route => route.fulfill({
     json: {
+      ...responses.runtime_settings,
       plan_provider: "litellm",
       openai_plan_model: "MiniMax-M3",
       openai_chat_model: "MiniMax-M3",
@@ -70,6 +72,7 @@ test("Settings model-card headings keep one font metric and baseline", async ({ 
 test("Settings probes lock only a shared connection and explain unknown capability", async ({ page }) => {
   await observeRequests(page);
   await page.route(`${api}/runtime-settings`, route => route.fulfill({ json: {
+    ...responses.runtime_settings,
     plan_provider: "litellm",
     openai_api_key: "shared-key", openai_base_url: "https://shared.example/v1",
     openai_plan_model: "MiniMax-M3", openai_plan_base_url: "",

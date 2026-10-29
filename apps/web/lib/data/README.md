@@ -30,6 +30,8 @@ Each domain structure now has one frontend entrypoint under `apps/web/lib/data/`
   Used by: `app/model-usage/page.tsx`.
   Owns: model usage stats read.
 
+Settings、Model Tools、Model Probe 和 Model Usage 的响应分别由 `runtime-settings-decode.ts`、`model-tools-decode.ts`、`model-usage-decode.ts` 从 `unknown` 验证；版本和历史兼容规则见 `docs/api-reference.md`。
+
 `apps/web/lib/api.ts` remains as a compatibility aggregator for transport and normalization internals. New page-level imports should prefer `lib/data/*`.
 
 ## Page Consumption Map

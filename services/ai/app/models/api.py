@@ -1,7 +1,20 @@
 import json
-from typing import Literal
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+
+from app.core.model_runtime_limits import (
+    CHAT_HISTORY_MESSAGES_MAX,
+    CHAT_HISTORY_MESSAGES_MIN,
+    CHAT_TOOL_MAX_ROUNDS_MAX,
+    CHAT_TOOL_MAX_ROUNDS_MIN,
+    MODEL_MAX_TOKENS_MAX,
+    MODEL_MAX_TOKENS_MIN,
+    MODEL_TEMPERATURE_MAX,
+    MODEL_TEMPERATURE_MIN,
+    PROVIDER_TIMEOUT_SECONDS_MAX,
+    PROVIDER_TIMEOUT_SECONDS_MIN,
+)
 
 from app.models.domain import (
     CharacterStateEvent,
@@ -318,9 +331,9 @@ class ModelToolConfigItemResponse(BaseModel):
     description: str
     category: str
     category_label: str
-    enabled: bool
-    available: bool
-    effective_enabled: bool
+    enabled: bool = Field(strict=True)
+    available: bool = Field(strict=True)
+    effective_enabled: bool = Field(strict=True)
     audit_basis: list[str]
     unavailable_reason: str = ""
 
@@ -329,49 +342,75 @@ class ModelToolStageResponse(BaseModel):
     name: str
     label: str
     description: str
-    stage_enabled: bool
+    stage_enabled: bool = Field(strict=True)
     audit_basis: list[str]
     stage_disabled_reason: str = ""
     tools: list[ModelToolConfigItemResponse]
 
 
 class ModelToolConfigResponse(BaseModel):
+    contract_version: Literal["model-tool-config-response-v1"] = (
+        "model-tool-config-response-v1"
+    )
     updated_at: str
     stages: list[ModelToolStageResponse]
 
 
 class RuntimeSettingsResponse(BaseModel):
+    contract_version: Literal["runtime-settings-response-v1"] = (
+        "runtime-settings-response-v1"
+    )
     updated_at: str
-    plan_provider: str
+    plan_provider: Literal["mock", "litellm", "openai"]
     openai_api_key: str
-    openai_api_key_configured: bool = False
+    openai_api_key_configured: bool = Field(default=False, strict=True)
     openai_base_url: str
     openai_plan_api_key: str
-    openai_plan_api_key_configured: bool = False
+    openai_plan_api_key_configured: bool = Field(default=False, strict=True)
     openai_plan_base_url: str
     openai_plan_model: str
     openai_setting_api_key: str
-    openai_setting_api_key_configured: bool = False
+    openai_setting_api_key_configured: bool = Field(default=False, strict=True)
     openai_setting_base_url: str
     openai_setting_model: str
-    openai_setting_web_search_enabled: bool
+    openai_setting_web_search_enabled: bool = Field(strict=True)
     openai_chat_api_key: str
-    openai_chat_api_key_configured: bool = False
+    openai_chat_api_key_configured: bool = Field(default=False, strict=True)
     openai_chat_base_url: str
     openai_chat_model: str
-    openai_chat_temperature: float
-    openai_setting_temperature: float
-    openai_setting_max_tokens: int
-    openai_chat_max_tokens: int
-    openai_chat_history_messages: int
-    openai_chat_tool_max_rounds: int
+    openai_chat_temperature: float = Field(
+        strict=True,
+        ge=MODEL_TEMPERATURE_MIN,
+        le=MODEL_TEMPERATURE_MAX,
+        allow_inf_nan=False,
+    )
+    openai_setting_temperature: float = Field(
+        strict=True,
+        ge=MODEL_TEMPERATURE_MIN,
+        le=MODEL_TEMPERATURE_MAX,
+        allow_inf_nan=False,
+    )
+    openai_setting_max_tokens: int = Field(
+        strict=True, ge=MODEL_MAX_TOKENS_MIN, le=MODEL_MAX_TOKENS_MAX
+    )
+    openai_chat_max_tokens: int = Field(
+        strict=True, ge=MODEL_MAX_TOKENS_MIN, le=MODEL_MAX_TOKENS_MAX
+    )
+    openai_chat_history_messages: int = Field(
+        strict=True, ge=CHAT_HISTORY_MESSAGES_MIN, le=CHAT_HISTORY_MESSAGES_MAX
+    )
+    openai_chat_tool_max_rounds: int = Field(
+        strict=True, ge=CHAT_TOOL_MAX_ROUNDS_MIN, le=CHAT_TOOL_MAX_ROUNDS_MAX
+    )
     openai_embedding_model: str
-    openai_chat_model_multimodal: bool
-    openai_timeout_seconds: int
-    openai_plan_model_multimodal: bool
+    openai_chat_model_multimodal: bool = Field(strict=True)
+    openai_timeout_seconds: int = Field(
+        strict=True, ge=PROVIDER_TIMEOUT_SECONDS_MIN, le=PROVIDER_TIMEOUT_SECONDS_MAX
+    )
+    openai_plan_model_multimodal: bool = Field(strict=True)
     openai_plan_fallback_model: str
-    openai_plan_fallback_disable_tools: bool
-    show_debug_info: bool
+    openai_plan_fallback_disable_tools: bool = Field(strict=True)
+    show_debug_info: bool = Field(strict=True)
 
 
 class UpdateRuntimeSettingsRequest(BaseModel):
@@ -430,8 +469,8 @@ class RuntimeSettingsProbeRequest(BaseModel):
 
 
 class RuntimeCapabilitySignalResponse(BaseModel):
-    status: str = "unknown"
-    source: str = "unavailable"
+    status: Literal["supported", "unsupported", "unknown"] = "unknown"
+    source: Literal["metadata", "model_name", "unavailable"] = "unavailable"
     note: str = ""
 
 
@@ -439,23 +478,35 @@ class RuntimeModelCapabilityResponse(BaseModel):
     input_modalities: list[str] = Field(default_factory=list)
     output_modalities: list[str] = Field(default_factory=list)
     tool_types: list[str] = Field(default_factory=list)
-    multimodal: RuntimeCapabilitySignalResponse = Field(default_factory=RuntimeCapabilitySignalResponse)
-    web_search: RuntimeCapabilitySignalResponse = Field(default_factory=RuntimeCapabilitySignalResponse)
+    multimodal: RuntimeCapabilitySignalResponse = Field(
+        default_factory=RuntimeCapabilitySignalResponse
+    )
+    web_search: RuntimeCapabilitySignalResponse = Field(
+        default_factory=RuntimeCapabilitySignalResponse
+    )
 
 
 class RuntimeFeatureReadinessResponse(BaseModel):
     model: str
-    status: str
+    status: Literal["ready", "unsupported", "failed", "not_tested"]
     code: str = ""
     note: str = ""
     parameter_adjustments: list[str] = Field(default_factory=list)
 
 
 class RuntimeSettingsProbeResponse(BaseModel):
-    available: bool
+    contract_version: Literal["runtime-model-probe-response-v1"] = (
+        "runtime-model-probe-response-v1"
+    )
+    available: bool = Field(strict=True)
     models: list[str]
-    capabilities: dict[str, RuntimeModelCapabilityResponse] = Field(default_factory=dict)
-    feature_readiness: dict[str, RuntimeFeatureReadinessResponse] = Field(default_factory=dict)
+    capabilities: dict[str, RuntimeModelCapabilityResponse] = Field(
+        default_factory=dict
+    )
+    feature_readiness: dict[
+        Literal["plan", "study", "persona", "scene", "tavern"],
+        RuntimeFeatureReadinessResponse,
+    ] = Field(default_factory=dict)
     error: str = ""
 
 
@@ -906,13 +957,16 @@ class SubmissionGradeResponse(BaseModel):
     character_events: list[CharacterStateEvent]
 
 
+UsageCounter = Annotated[int, Field(strict=True, ge=0, le=9_007_199_254_740_991)]
+
+
 class TokenUsageDailyBucket(BaseModel):
     date: str
     feature: str
     model: str
-    prompt_tokens: int
-    completion_tokens: int
-    total_tokens: int
+    prompt_tokens: UsageCounter
+    completion_tokens: UsageCounter
+    total_tokens: UsageCounter
 
 
 class TokenUsageCallRecord(BaseModel):
@@ -923,17 +977,18 @@ class TokenUsageCallRecord(BaseModel):
     operation_id: str = ""
     workflow: str = ""
     stage: str = ""
-    prompt_tokens: int
-    completion_tokens: int
-    total_tokens: int
+    prompt_tokens: UsageCounter
+    completion_tokens: UsageCounter
+    total_tokens: UsageCounter
 
 
 class TokenUsageStatsResponse(BaseModel):
+    contract_version: Literal["model-usage-stats-response-v1"] = "model-usage-stats-response-v1"
     buckets: list[TokenUsageDailyBucket]
     records: list[TokenUsageCallRecord] = []
-    total_prompt_tokens: int
-    total_completion_tokens: int
-    total_tokens: int
+    total_prompt_tokens: UsageCounter
+    total_completion_tokens: UsageCounter
+    total_tokens: UsageCounter
 
 
 DocumentStudyUnitUpdateResponse.model_rebuild()

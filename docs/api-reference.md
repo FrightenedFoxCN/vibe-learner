@@ -1,5 +1,33 @@
 # API Reference
 
+## Settings and model response decoding
+
+Settings, tool configuration, model probes and token usage now carry `contract_version`:
+`runtime-settings-response-v1`, `model-tool-config-response-v1`,
+`runtime-model-probe-response-v1`, and `model-usage-stats-response-v1` respectively.
+The browser validates all fields from `unknown`, requires actual booleans and
+finite, bounded numbers, and rejects unsupported versions and unknown closed
+status/source/feature values. Additional fields remain additive. Probe readiness
+is bound to the requested model and feature set; a failed model listing can still
+coexist with a callable feature result.
+
+Missing versions identify historical unversioned responses. Only these absent
+fields receive compatibility defaults: Settings `*_api_key_configured=false`;
+tool/stage reason strings `""`; probe capabilities/readiness maps, modality/tool
+arrays and adjustment arrays empty, capability status/source `unknown/unavailable`,
+and notes/codes/errors `""`; usage `records=[]` and record correlation strings `""`.
+Other fields remain required. Explicit nulls or values of the wrong type never
+receive defaults. The legacy provider alias `openai` normalizes to `litellm`.
+
+Usage counters are nonnegative safe integers. Totals must match returned buckets
+and, when present, records. Each provider counter remains independent;
+`total_tokens` is not assumed to equal prompt plus completion tokens. Model names,
+modalities and tool identifiers are extensible strings rather than a model-name
+allowlist. The version/enumeration fixture is
+`packages/shared/fixtures/settings/responses-v1.json`, verified against current
+Python DTOs and browser decoders. All these API entrypoints retain request-owned
+`decode_failed` diagnostics without including response values or credentials.
+
 ## Base URL
 
 - Local backend default: `http://127.0.0.1:8000`

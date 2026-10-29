@@ -2,7 +2,10 @@ import { decodePlanRevision } from "./plan-revision-decode";
 import { decodeStudyUnitRevision } from "./study-unit-revision-decode";
 import { studyDiagnosticContext } from "./study-diagnostic-context";
 import { createDiagnosticId, diagnosticContext, diagnosticDecode, recordDecodeFailure, diagnosticFetch, type DiagnosticContext } from "./diagnostics";
-import { MODEL_RUNTIME_CONFIG } from "@vibe-learner/shared/model-runtime-config";
+import { SETTINGS_RESPONSE_CONTRACTS } from "@vibe-learner/shared/settings-response-contracts";
+import { decodeRuntimeSettings, decodeRuntimeModelProbe } from "./runtime-settings-decode";
+import { decodeModelToolConfig } from "./model-tools-decode";
+import { decodeModelUsageStats } from "./model-usage-decode";
 import type {
   CreatePersonaInput,
   CreatePersonaCardInput,
@@ -522,96 +525,6 @@ function normalizePlanningTraceResponse(
   };
 }
 
-function normalizeModelToolConfig(record: any): ModelToolConfig {
-  return {
-    updatedAt: String(record.updated_at ?? ""),
-    stages: (record.stages ?? []).map((stage: any) => ({
-      name: String(stage.name ?? ""),
-      label: String(stage.label ?? stage.name ?? ""),
-      description: String(stage.description ?? ""),
-      stageEnabled: Boolean(stage.stage_enabled),
-      auditBasis: Array.isArray(stage.audit_basis)
-        ? stage.audit_basis.map((item: unknown) => String(item))
-        : [],
-      stageDisabledReason: String(stage.stage_disabled_reason ?? ""),
-      tools: (stage.tools ?? []).map((tool: any) => ({
-        name: String(tool.name ?? ""),
-        label: String(tool.label ?? tool.name ?? ""),
-        description: String(tool.description ?? ""),
-        category: String(tool.category ?? ""),
-        categoryLabel: String(tool.category_label ?? tool.category ?? ""),
-        enabled: Boolean(tool.enabled),
-        available: Boolean(tool.available),
-        effectiveEnabled: Boolean(tool.effective_enabled),
-        auditBasis: Array.isArray(tool.audit_basis)
-          ? tool.audit_basis.map((item: unknown) => String(item))
-          : [],
-        unavailableReason: String(tool.unavailable_reason ?? "")
-      }))
-    }))
-  };
-}
-
-function normalizeRuntimeSettings(record: any): RuntimeSettings {
-  return {
-    updatedAt: String(record.updated_at ?? ""),
-    planProvider: (record.plan_provider === "mock" ? "mock" : "litellm") as "mock" | "litellm",
-    openaiApiKey: String(record.openai_api_key ?? ""),
-    openaiApiKeyConfigured: Boolean(record.openai_api_key_configured),
-    openaiBaseUrl: String(record.openai_base_url ?? "https://api.openai.com/v1"),
-    openaiPlanApiKey: String(record.openai_plan_api_key ?? ""),
-    openaiPlanApiKeyConfigured: Boolean(record.openai_plan_api_key_configured),
-    openaiPlanBaseUrl: String(record.openai_plan_base_url ?? "https://api.openai.com/v1"),
-    openaiPlanModel: String(record.openai_plan_model ?? MODEL_RUNTIME_CONFIG.defaultModelName),
-    openaiSettingApiKey: String(record.openai_setting_api_key ?? ""),
-    openaiSettingApiKeyConfigured: Boolean(record.openai_setting_api_key_configured),
-    openaiSettingBaseUrl: String(record.openai_setting_base_url ?? "https://api.openai.com/v1"),
-    openaiSettingModel: String(record.openai_setting_model ?? MODEL_RUNTIME_CONFIG.defaultModelName),
-    openaiSettingWebSearchEnabled: Boolean(record.openai_setting_web_search_enabled ?? true),
-    openaiChatApiKey: String(record.openai_chat_api_key ?? ""),
-    openaiChatApiKeyConfigured: Boolean(record.openai_chat_api_key_configured),
-    openaiChatBaseUrl: String(record.openai_chat_base_url ?? "https://api.openai.com/v1"),
-    openaiChatModel: String(record.openai_chat_model ?? MODEL_RUNTIME_CONFIG.defaultModelName),
-    openaiChatTemperature: Number(record.openai_chat_temperature ?? 0.35),
-    openaiSettingTemperature: Number(record.openai_setting_temperature ?? 0.4),
-    openaiSettingMaxTokens: Number(
-      record.openai_setting_max_tokens ?? MODEL_RUNTIME_CONFIG.settingMaxTokens.default,
-    ),
-    openaiChatMaxTokens: Number(
-      record.openai_chat_max_tokens ?? MODEL_RUNTIME_CONFIG.chatMaxTokens.default,
-    ),
-    openaiChatHistoryMessages: Number(record.openai_chat_history_messages ?? 8),
-    openaiChatToolMaxRounds: Number(
-      record.openai_chat_tool_max_rounds ?? MODEL_RUNTIME_CONFIG.chatToolMaxRounds.default,
-    ),
-    openaiEmbeddingModel: String(
-      record.openai_embedding_model ?? MODEL_RUNTIME_CONFIG.defaultEmbeddingModel,
-    ),
-    openaiChatModelMultimodal: Boolean(record.openai_chat_model_multimodal),
-    openaiTimeoutSeconds: Number(record.openai_timeout_seconds ?? 30),
-    openaiPlanModelMultimodal: Boolean(record.openai_plan_model_multimodal),
-    openaiPlanFallbackModel: String(record.openai_plan_fallback_model ?? ""),
-    openaiPlanFallbackDisableTools: Boolean(record.openai_plan_fallback_disable_tools),
-    showDebugInfo: Boolean(record.show_debug_info)
-  };
-}
-
-function normalizeRuntimeCapabilitySignal(record: any): import("@vibe-learner/shared").RuntimeCapabilitySignal {
-  const status = String(record?.status ?? "unknown");
-  const source = String(record?.source ?? "unavailable");
-  return {
-    status:
-      status === "supported" || status === "unsupported" || status === "unknown"
-        ? status
-        : "unknown",
-    source:
-      source === "metadata" || source === "model_name" || source === "unavailable"
-        ? source
-        : "unavailable",
-    note: String(record?.note ?? "")
-  };
-}
-
 function normalizeStreamReport(
   record: unknown,
   expectedDocumentId: string,
@@ -1064,8 +977,8 @@ export async function getDocumentPlanningTrace(
 
 export async function getModelToolConfig(): Promise<ModelToolConfig> {
   const diagnosticResponse = await request(`${AI_BASE_URL()}/model-tools/config`);
-  const payload = await readJson<any>(diagnosticResponse);
-  return diagnosticDecode(diagnosticResponse, () => normalizeModelToolConfig(payload));
+  const payload = await readJson<unknown>(diagnosticResponse);
+  return diagnosticDecode(diagnosticResponse, () => decodeModelToolConfig(payload), SETTINGS_RESPONSE_CONTRACTS.modelTools);
 }
 
 export async function updateModelToolConfig(
@@ -1084,14 +997,14 @@ export async function updateModelToolConfig(
         }))
       })
     });
-  const payload = await readJson<any>(diagnosticResponse);
-  return diagnosticDecode(diagnosticResponse, () => normalizeModelToolConfig(payload));
+  const payload = await readJson<unknown>(diagnosticResponse);
+  return diagnosticDecode(diagnosticResponse, () => decodeModelToolConfig(payload), SETTINGS_RESPONSE_CONTRACTS.modelTools);
 }
 
 export async function getRuntimeSettings(): Promise<RuntimeSettings> {
   const diagnosticResponse = await request(`${AI_BASE_URL()}/runtime-settings`);
-  const payload = await readJson<any>(diagnosticResponse);
-  return diagnosticDecode(diagnosticResponse, () => normalizeRuntimeSettings(payload));
+  const payload = await readJson<unknown>(diagnosticResponse);
+  return diagnosticDecode(diagnosticResponse, () => decodeRuntimeSettings(payload), SETTINGS_RESPONSE_CONTRACTS.runtimeSettings);
 }
 
 export async function getSceneSetupState(): Promise<SceneSetupStatePayload> {
@@ -1313,8 +1226,8 @@ export async function updateRuntimeSettings(
         show_debug_info: patch.showDebugInfo
       })
     }, context);
-  const payload = await readJson<any>(diagnosticResponse);
-  return diagnosticDecode(diagnosticResponse, () => normalizeRuntimeSettings(payload));
+  const payload = await readJson<unknown>(diagnosticResponse);
+  return diagnosticDecode(diagnosticResponse, () => decodeRuntimeSettings(payload), SETTINGS_RESPONSE_CONTRACTS.runtimeSettings);
 }
 
 export async function applyRuntimeSessionSecrets(patch: {
@@ -1335,16 +1248,16 @@ export async function applyRuntimeSessionSecrets(patch: {
         openai_chat_api_key: patch.openaiChatApiKey
       })
     }, context);
-  const payload = await readJson<any>(diagnosticResponse);
-  return diagnosticDecode(diagnosticResponse, () => normalizeRuntimeSettings(payload));
+  const payload = await readJson<unknown>(diagnosticResponse);
+  return diagnosticDecode(diagnosticResponse, () => decodeRuntimeSettings(payload), SETTINGS_RESPONSE_CONTRACTS.runtimeSettings);
 }
 
 export async function clearRuntimeSessionSecrets(): Promise<RuntimeSettings> {
   const diagnosticResponse = await request(`${AI_BASE_URL()}/runtime-settings/session-secrets`, {
       method: "DELETE"
     });
-  const payload = await readJson<any>(diagnosticResponse);
-  return diagnosticDecode(diagnosticResponse, () => normalizeRuntimeSettings(payload));
+  const payload = await readJson<unknown>(diagnosticResponse);
+  return diagnosticDecode(diagnosticResponse, () => decodeRuntimeSettings(payload), SETTINGS_RESPONSE_CONTRACTS.runtimeSettings);
 }
 
 export async function probeRuntimeOpenAIModels(input: {
@@ -1365,58 +1278,10 @@ export async function probeRuntimeOpenAIModels(input: {
         features: input.features ?? []
       })
     });
-  const payload = await readJson<any>(diagnosticResponse);
-  return {
-    available: Boolean(payload.available),
-    models: Array.isArray(payload.models)
-      ? payload.models.map((item: unknown) => String(item))
-      : [],
-    capabilities:
-      payload.capabilities && typeof payload.capabilities === "object"
-        ? Object.fromEntries(
-            Object.entries(payload.capabilities).map(([modelId, capability]) => [
-              String(modelId),
-              {
-                inputModalities: Array.isArray((capability as any)?.input_modalities)
-                  ? (capability as any).input_modalities.map((item: unknown) => String(item))
-                  : [],
-                outputModalities: Array.isArray((capability as any)?.output_modalities)
-                  ? (capability as any).output_modalities.map((item: unknown) => String(item))
-                  : [],
-                toolTypes: Array.isArray((capability as any)?.tool_types)
-                  ? (capability as any).tool_types.map((item: unknown) => String(item))
-                  : [],
-                multimodal: normalizeRuntimeCapabilitySignal((capability as any)?.multimodal),
-                webSearch: normalizeRuntimeCapabilitySignal((capability as any)?.web_search)
-              }
-            ])
-          )
-        : {},
-    featureReadiness:
-      payload.feature_readiness && typeof payload.feature_readiness === "object"
-        ? Object.fromEntries(
-            Object.entries(payload.feature_readiness).map(([feature, readiness]) => {
-              const status = String((readiness as any)?.status ?? "not_tested");
-              return [
-                feature,
-                {
-                  model: String((readiness as any)?.model ?? ""),
-                  status:
-                    status === "ready" || status === "unsupported" || status === "failed"
-                      ? status
-                      : "not_tested",
-                  code: String((readiness as any)?.code ?? ""),
-                  note: String((readiness as any)?.note ?? ""),
-                  parameterAdjustments: Array.isArray((readiness as any)?.parameter_adjustments)
-                    ? (readiness as any).parameter_adjustments.map((item: unknown) => String(item))
-                    : []
-                }
-              ];
-            })
-          )
-        : {},
-    error: String(payload.error ?? "")
-  };
+  const payload = await readJson<unknown>(diagnosticResponse);
+  return diagnosticDecode(diagnosticResponse, () => decodeRuntimeModelProbe(payload, {
+    model: input.model, features: input.features,
+  }), SETTINGS_RESPONSE_CONTRACTS.modelProbe);
 }
 
 export async function getDocumentProcessEvents(documentId: string): Promise<StreamReport> {
@@ -2024,34 +1889,9 @@ export async function resolveStudyPlanConfirmation(input: {
 
 export async function getModelUsageStats(): Promise<TokenUsageStats> {
   const response = await request(`${AI_BASE_URL()}/model-usage/stats`);
-  const raw = await readJson<any>(response);
-  return {
-    buckets: (raw.buckets ?? []).map((b: any) => ({
-      date: String(b.date ?? ""),
-      feature: String(b.feature ?? ""),
-      model: String(b.model ?? ""),
-      promptTokens: Number(b.prompt_tokens ?? 0),
-      completionTokens: Number(b.completion_tokens ?? 0),
-      totalTokens: Number(b.total_tokens ?? 0),
-    })),
-    records: (raw.records ?? []).map((item: any) => ({
-      id: String(item.id ?? ""),
-      createdAt: String(item.created_at ?? ""),
-      feature: String(item.feature ?? ""),
-      model: String(item.model ?? ""),
-      operationId: String(item.operation_id ?? ""),
-      workflow: String(item.workflow ?? ""),
-      stage: String(item.stage ?? ""),
-      promptTokens: Number(item.prompt_tokens ?? 0),
-      completionTokens: Number(item.completion_tokens ?? 0),
-      totalTokens: Number(item.total_tokens ?? 0),
-    })),
-    totalPromptTokens: Number(raw.total_prompt_tokens ?? 0),
-    totalCompletionTokens: Number(raw.total_completion_tokens ?? 0),
-    totalTokens: Number(raw.total_tokens ?? 0),
-  };
+  const raw = await readJson<unknown>(response);
+  return diagnosticDecode(response, () => decodeModelUsageStats(raw), SETTINGS_RESPONSE_CONTRACTS.modelUsage);
 }
-
 
 export async function createPlanRevision(planId: string, input: { clientRequestId: string; baseRevision: number; instruction?: string; rollbackRevision?: number }) {
   const response = await request(`${AI_BASE_URL()}/learning-plans/${planId}/revisions`, {

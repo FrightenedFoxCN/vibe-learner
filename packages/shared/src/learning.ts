@@ -1,3 +1,4 @@
+import type { RUNTIME_CAPABILITY_STATUSES, RUNTIME_CAPABILITY_SOURCES, RUNTIME_PROBE_FEATURES, RUNTIME_READINESS_STATUSES } from "./settings-response-contracts";
 import type { CharacterStateEvent } from "./character";
 import type { HarnessTraceV3 } from "./harness";
 
@@ -442,9 +443,9 @@ export interface RuntimeSettingsPatch {
   showDebugInfo?: boolean;
 }
 
-export type RuntimeCapabilityStatus = "supported" | "unsupported" | "unknown";
+export type RuntimeCapabilityStatus = (typeof RUNTIME_CAPABILITY_STATUSES)[number];
 
-export type RuntimeCapabilitySource = "metadata" | "model_name" | "unavailable";
+export type RuntimeCapabilitySource = (typeof RUNTIME_CAPABILITY_SOURCES)[number];
 
 export interface RuntimeCapabilitySignal {
   status: RuntimeCapabilityStatus;
@@ -460,8 +461,8 @@ export interface RuntimeModelCapability {
   webSearch: RuntimeCapabilitySignal;
 }
 
-export type RuntimeFeatureProbeName = "plan" | "study" | "persona" | "scene" | "tavern";
-export type RuntimeFeatureReadinessStatus = "ready" | "unsupported" | "failed" | "not_tested";
+export type RuntimeFeatureProbeName = (typeof RUNTIME_PROBE_FEATURES)[number];
+export type RuntimeFeatureReadinessStatus = (typeof RUNTIME_READINESS_STATUSES)[number];
 
 export interface RuntimeFeatureReadiness {
   model: string;
