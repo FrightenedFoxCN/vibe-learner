@@ -193,3 +193,16 @@ test("scene proposal review exposes full fields and deterministic structural con
   assert.match(view.container.textContent, /交互：查看.*移动/);
   assert.match(view.container.textContent, /标签：教学.*实验/);
 });
+
+test("scene proposal review flags explicit parent and child rule polarity conflicts", () => {
+  const layers = [
+    {
+      ...INITIAL_SCENE[0],
+      rules: "实验室禁止进入",
+      children: [{ ...INITIAL_SCENE[0].children[0], rules: "实验室允许进入" }],
+    },
+  ];
+  const view = render(<SceneProposalPreview current={[]} proposed={layers} />);
+  assert.match(view.container.textContent, /规则“实验室 进入”与父级/);
+  assert.match(view.container.textContent, /禁止约束冲突/);
+});

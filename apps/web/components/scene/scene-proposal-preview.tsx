@@ -68,6 +68,21 @@ function findObject(
   return before.find((candidate) => identity(candidate) === key);
 }
 
+function ruleClaims(rules: string): Map<string, "allow" | "deny"> {
+  const claims = new Map<string, "allow" | "deny">();
+  for (const clause of rules
+    .split(/[。；;\n]+/)
+    .map((part) => part.trim())
+    .filter(Boolean)) {
+    const match = clause.match(/^(.*?)(禁止|不得|不允许|不可|不能|允许|可以)(.+)$/);
+    if (!match) continue;
+    const [, subject, marker, action] = match;
+    const key = `${subject.trim()}=>${action.trim()}`;
+    claims.set(key, /禁止|不得|不允许|不可|不能/.test(marker) ? "deny" : "allow");
+  }
+  return claims;
+}
+
 /** Detect deterministic structural/reference conflicts without claiming semantic rule validation. */
 export function findSceneProposalConflicts(
   layers: SceneLayer[],
@@ -105,6 +120,24 @@ export function findSceneProposalConflicts(
             message: `物体复用引用 ${reuseKey} 与 ${previous} 重复。`,
           });
         else objectReuse.set(reuseKey, objectPath);
+      }
+    }
+  }
+  const flattened = flatten(layers);
+  for (const child of flattened) {
+    const childClaims = ruleClaims(child.layer.rules);
+    for (const parent of flattened.filter((candidate) =>
+      child.path.startsWith(`${candidate.path} / `),
+    )) {
+      const parentClaims = ruleClaims(parent.layer.rules);
+      for (const [key, polarity] of childClaims) {
+        const parentPolarity = parentClaims.get(key);
+        if (parentPolarity && parentPolarity !== polarity) {
+          conflicts.push({
+            path: child.path,
+            message: `规则“${key.replace("=>", " ")}”与父级 ${parent.path} 的${polarity === "allow" ? "禁止" : "允许"}约束冲突。`,
+          });
+        }
       }
     }
   }
