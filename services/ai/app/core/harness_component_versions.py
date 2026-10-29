@@ -7,8 +7,8 @@ drift can be checked without making the Harness model import domain services.
 
 DOCUMENT_PAGE_EXTRACTOR_CONTRACT_VERSION = "document-page-extractor-v1"
 DOCUMENT_SECTION_DETECTOR_CONTRACT_VERSION = "document-section-detector-v1"
-DOCUMENT_CHUNK_BUILDER_CONTRACT_VERSION = "document-chunk-builder-v1"
-DOCUMENT_PARSER_CONTRACT_VERSION = "document-parser-v2"
+DOCUMENT_CHUNK_BUILDER_CONTRACT_VERSION = "document-chunk-builder-v2"
+DOCUMENT_PARSER_CONTRACT_VERSION = "document-parser-v3"
 OCR_ENGINE_CONTRACT_VERSION = "ocr-engine-v1"
 STUDY_UNIT_CLEANER_CONTRACT_VERSION = "study-unit-cleaner-v1"
 PLANNING_PROMPT_CONTRACT_VERSION = "planning-prompt-v7"

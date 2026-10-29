@@ -205,7 +205,7 @@ const STAGE_VOCABULARY: StageVocabulary[] = [
     components: [
       {
         name: "document_parser",
-        contract: { name: "document_parser", version: "document-parser-v2" },
+        contract: { name: "document_parser", version: "document-parser-v3" },
       },
     ],
     evalRoute: "document.parse",
@@ -249,7 +249,7 @@ const STAGE_VOCABULARY: StageVocabulary[] = [
         name: "document_chunk_builder",
         contract: {
           name: "document_chunk_builder",
-          version: "document-chunk-builder-v1",
+          version: "document-chunk-builder-v2",
         },
       },
     ],

@@ -23,6 +23,15 @@ from app.persistence.document_process_operation_repository import (
 from app.services.document_checkpoint_configuration import (
     configuration_digest as checkpoint_configuration_digest,
 )
+from app.models.document_input_limits import (
+    DocumentInputLimitError,
+    DOCUMENT_MAX_TEXT_UNIT_CHARS,
+)
+from app.services.document_input_validation import (
+    read_bounded_upload,
+    read_bounded_document,
+    validate_upload_pdf_metadata,
+)
 from app.core.logging import get_logger
 from app.models.domain import DocumentDebugRecord, DocumentRecord, DocumentSection
 from app.models.harness import (
@@ -96,7 +105,11 @@ class DocumentService:
         suffix = Path(file.filename or "document.pdf").suffix or ".pdf"
         stored_name = f"{document_id}{suffix}"
         stored_path = self.store.upload_root / stored_name
-        contents = file.file.read()
+        try:
+            contents = read_bounded_upload(file.file)
+            validate_upload_pdf_metadata(contents)
+        except DocumentInputLimitError as exc:
+            raise HTTPException(413, exc.detail()) from exc
         stored_path.write_bytes(contents)
 
         document = DocumentRecord(
@@ -143,7 +156,12 @@ class DocumentService:
     ) -> DocumentRecord:
         checkpoint_enabled = isinstance(self.parser, DocumentParser)
         source_checkpoint = None
-        upload = Path(self.require_document(document_id).stored_path).read_bytes()
+        try:
+            upload = read_bounded_document(
+                self.require_document(document_id).stored_path
+            )
+        except DocumentInputLimitError as exc:
+            raise HTTPException(413, exc.detail()) from exc
         upload_digest = hashlib.sha256(upload).hexdigest()
         configuration_digest = checkpoint_configuration_digest(self.parser)
         if resume_from_operation_id is not None:
@@ -609,6 +627,12 @@ class DocumentService:
                 )
                 self._mirror_current_document_projection(document.id)
                 logger.exception("document.processing.failed id=%s", document.id)
+                if str(exc) == "document_text_unit_too_large":
+                    error = DocumentInputLimitError(
+                        "document_text_unit_too_large",
+                        limit=DOCUMENT_MAX_TEXT_UNIT_CHARS,
+                    )
+                    raise HTTPException(413, error.detail()) from exc
                 raise
             self.process_repository.mark_failed(
                 operation_id=operation.operation_id,
@@ -782,6 +806,8 @@ def _call_interrupt(callback: Callable[[], None] | None) -> None:
 
 
 def _document_process_error_code(exc: Exception) -> str:
+    if str(exc) == "document_text_unit_too_large":
+        return "document_text_unit_too_large"
     name = type(exc).__name__.strip().lower()
     normalized = "".join(
         character if character.isalnum() else "_" for character in name

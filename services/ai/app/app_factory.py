@@ -9,6 +9,7 @@ from app.services.diagnostic_index import DiagnosticHarnessIndex
 from app.persistence.harness_runtime_repository import HarnessRuntimeRepository
 from app.persistence.database import Database
 from app.api.diagnostic_middleware import DiagnosticMiddleware
+from app.api.document_upload_limit import DocumentUploadLimitMiddleware
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -21,17 +22,26 @@ from app.core.settings import Settings
 from app.core.bootstrap import Container
 
 
-def create_app(*, settings: Settings | None = None, container_factory: Callable[[Settings], Container] = Container) -> FastAPI:
+def create_app(
+    *,
+    settings: Settings | None = None,
+    container_factory: Callable[[Settings], Container] = Container,
+) -> FastAPI:
     configure_logging()
     settings = settings if settings is not None else Settings.from_env()
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
-        diagnostics = DiagnosticStore(settings.resolved_storage_root / "diagnostics" / "events.sqlite3")
+        diagnostics = DiagnosticStore(
+            settings.resolved_storage_root / "diagnostics" / "events.sqlite3"
+        )
         app.state.diagnostics = diagnostics
         diagnostics.start()
         diagnostics.emit("lifecycle_started")
-        desktop_spool = DesktopDiagnosticSpool(diagnostics, settings.resolved_storage_root / "diagnostics" / "desktop-spool")
+        desktop_spool = DesktopDiagnosticSpool(
+            diagnostics,
+            settings.resolved_storage_root / "diagnostics" / "desktop-spool",
+        )
         app.state.desktop_diagnostic_spool = desktop_spool
         desktop_spool.start()
         container = None
@@ -41,7 +51,12 @@ def create_app(*, settings: Settings | None = None, container_factory: Callable[
             container.start()
             app.state.container = container
             if isinstance(container.database, Database):
-                index = DiagnosticHarnessIndex(HarnessRuntimeRepository(container.database), settings.resolved_storage_root / "diagnostics" / "harness-index.sqlite3")
+                index = DiagnosticHarnessIndex(
+                    HarnessRuntimeRepository(container.database),
+                    settings.resolved_storage_root
+                    / "diagnostics"
+                    / "harness-index.sqlite3",
+                )
                 app.state.diagnostic_index = index
                 index.start()
             yield
@@ -58,6 +73,7 @@ def create_app(*, settings: Settings | None = None, container_factory: Callable[
                 diagnostics.close()
 
     app = FastAPI(title="Vibe Learner AI Service", version="0.3.6", lifespan=lifespan)
+    app.add_middleware(DocumentUploadLimitMiddleware)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=list(settings.allowed_origins),

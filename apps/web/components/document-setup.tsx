@@ -1,5 +1,7 @@
 "use client";
 
+import { documentUploadError } from "../lib/document-upload-validation";
+
 import type { CSSProperties } from "react";
 import { useEffect, useRef, useState } from "react";
 import type { PersonaProfile } from "@vibe-learner/shared";
@@ -77,6 +79,8 @@ export function DocumentSetup({
       pageScopeError = error instanceof Error ? error.message : "PDF 页范围无效";
     }
   }
+  const uploadError =
+    generationMode === "document" && file ? documentUploadError(file) : "";
   const [showRoundDetails, setShowRoundDetails] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -96,7 +100,7 @@ export function DocumentSetup({
     planStreamEvents.length > 0 ||
     planRoundSummary.rounds.length > 0;
   const isGenerateDisabled =
-    Boolean(pageScopeError) ||
+    Boolean(pageScopeError || uploadError) ||
     isBusy ||
     (generationMode === "document" && !file) ||
     Boolean(generationBlockedReason);
@@ -110,7 +114,7 @@ export function DocumentSetup({
     (processStreamStatus !== "idle" || processStreamEvents.length > 0);
 
   const handleGenerate = () => {
-    if (pageScopeError || (generationMode === "document" && !file)) {
+    if (pageScopeError || uploadError || (generationMode === "document" && !file)) {
       return;
     }
     console.info("[vibe-learner] ui:upload_click", {
@@ -235,6 +239,14 @@ export function DocumentSetup({
                 </span>
               </div>
             </div>
+            {generationMode === "document" && (
+              <div style={styles.field}>
+                <small>
+                  每份 PDF 最多 64 MiB、512 个物理页；超限请拆分或压缩后上传。
+                </small>
+                {uploadError && <p role="alert">{uploadError}</p>}
+              </div>
+            )}
             {generationMode === "document" && (
               <div style={styles.field}>
                 <label htmlFor="plan-physical-pages" style={styles.fieldLabel}>

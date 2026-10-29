@@ -160,6 +160,30 @@
       }
     },
     {
+      "case_id": "chunk_building-oversized-preserved",
+      "stage": "chunk_building",
+      "scenario": "oversized-preserved",
+      "input": null,
+      "expected": {
+        "nonempty": true,
+        "bounded": true,
+        "unique": true,
+        "attributed": true,
+        "text_preserved": true,
+        "counts_match": true
+      }
+    },
+    {
+      "case_id": "chunk_building-hard-limit-refused",
+      "stage": "chunk_building",
+      "scenario": "hard-limit-refused",
+      "input": null,
+      "expected": {
+        "rejected": true,
+        "error_code": "document_text_unit_too_large"
+      }
+    },
+    {
       "case_id": "ocr_page-gain",
       "stage": "ocr_page",
       "scenario": "gain",

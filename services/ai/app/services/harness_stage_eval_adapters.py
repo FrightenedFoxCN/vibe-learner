@@ -13,6 +13,10 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 import fitz
+from app.models.document_input_limits import (
+    DOCUMENT_MAX_TEXT_UNIT_CHARS,
+    DocumentInputLimitError,
+)
 from app.models.domain import (
     DocumentRecord,
     DocumentSection,
@@ -183,9 +187,16 @@ def _chunks(scenario: str) -> dict:
         )
     if scenario == "unicode":
         pages = ["向量张成空间。" * 300, "线性映射保留加法。" * 300]
-    chunks = parser._build_chunks(
-        document_id="eval-document", sections=sections, page_texts=pages
-    )
+    if scenario == "oversized-preserved":
+        pages = ["汉" * 2000, ""]
+    if scenario == "hard-limit-refused":
+        pages = ["汉" * (DOCUMENT_MAX_TEXT_UNIT_CHARS + 1), ""]
+    try:
+        chunks = parser._build_chunks(
+            document_id="eval-document", sections=sections, page_texts=pages
+        )
+    except DocumentInputLimitError as error:
+        return {"rejected": True, "error_code": error.code}
     joined = "".join(c.content for c in chunks)
     expected = "".join(pages)
     return {

@@ -6,7 +6,7 @@
     "document_process_regression": 9,
     "page_extraction_regression": 2,
     "section_detection_regression": 2,
-    "chunk_building_regression": 4,
+    "chunk_building_regression": 6,
     "ocr_page_regression": 5,
     "study_unit_cleanup_regression": 3,
     "plan_generation_regression": 8,

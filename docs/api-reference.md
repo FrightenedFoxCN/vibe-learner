@@ -96,11 +96,12 @@ This reference covers **79 business HTTP operations across 60 unique paths**: 68
 | `POST` | `/reusable-scene-nodes` | Store a reusable node. |
 | `DELETE` | `/reusable-scene-nodes/{node_id}` | Delete a reusable node. |
 
-### Documents and parse/plan evidence (13)
+### Documents and parse/plan evidence
 
 | Method | Path | Purpose |
 |---|---|---|
 | `GET` | `/documents` | List documents. |
+| `GET` | `/documents/input-limits` | Read `document-input-limits-v1`: file bytes, multipart overhead, physical pages and indivisible-text policy. |
 | `POST` | `/documents` | Upload a document. |
 | `POST` | `/documents/{document_id}/process` | Process a document synchronously. |
 | `POST` | `/documents/{document_id}/process/stream` | Process through NDJSON events. |
@@ -114,6 +115,17 @@ This reference covers **79 business HTTP operations across 60 unique paths**: 68
 | `GET` | `/documents/{document_id}/planning-context` | Read cleaned Study Units, detail map, and planner tools. |
 | `GET` | `/documents/{document_id}/planning-trace` | Read the persisted model/tool planning trace. |
 | `GET` | `/documents/{document_id}/plan-events` | Read persisted plan stream events. |
+
+Document uploads allow one file up to 64 MiB and 512 physical PDF pages; the full
+multipart request is capped at 65 MiB before multipart parsing, including chunked
+requests. Overflow returns HTTP 413 with `document-input-error-v1` detail and a
+split/re-export recovery instruction, without creating a stored upload or
+Document row. Processing/resume preflights legacy files before admission. A
+1,400-character chunk target does not truncate text: indivisible units are kept
+with a warning up to 65,536 characters, then rejected. Already-started processing
+streams report `stream_error`; completed page checkpoints remain uncommitted.
+Exact boundaries, error codes and the distinction from runtime budgets are in
+[Document input limits](document-input-limits.md).
 
 ### Personas and persona cards (12)
 

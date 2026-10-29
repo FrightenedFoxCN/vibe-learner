@@ -7,7 +7,7 @@
       "owner_module": "app.services.document_parser",
       "contract": {
         "name": "document_chunk_builder",
-        "version": "document-chunk-builder-v1"
+        "version": "document-chunk-builder-v2"
       }
     },
     {
@@ -23,7 +23,7 @@
       "owner_module": "app.services.document_parser",
       "contract": {
         "name": "document_parser",
-        "version": "document-parser-v2"
+        "version": "document-parser-v3"
       }
     },
     {

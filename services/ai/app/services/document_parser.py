@@ -11,6 +11,11 @@ from typing import Callable, Iterable
 
 import fitz
 
+from app.models.document_input_limits import (
+    DOCUMENT_MAX_TEXT_UNIT_CHARS,
+    DocumentInputLimitError,
+)
+from app.services.document_input_validation import validate_pdf_page_count
 from app.core.execution_budget import check_execution_budget
 from app.services.document_stage_metrics import measure_parser_stage
 
@@ -102,7 +107,33 @@ class DocumentParser:
     ) -> DocumentDebugRecord:
         _call_interrupt(interrupt_check)
         parse_started_at = time.perf_counter()
-        pdf = fitz.open(stored_path)
+        with fitz.open(stored_path) as pdf:
+            validate_pdf_page_count(pdf.page_count)
+            return self._parse_pdf(
+                pdf=pdf,
+                document_id=document_id,
+                title=title,
+                stored_path=stored_path,
+                force_ocr=force_ocr,
+                progress_callback=progress_callback,
+                interrupt_check=interrupt_check,
+                checkpoint=checkpoint,
+                parse_started_at=parse_started_at,
+            )
+
+    def _parse_pdf(
+        self,
+        *,
+        pdf: fitz.Document,
+        document_id: str,
+        title: str,
+        stored_path: str,
+        force_ocr: bool,
+        progress_callback: Callable[[str, dict[str, object]], None] | None,
+        interrupt_check: Callable[[], None] | None,
+        checkpoint,
+        parse_started_at: float,
+    ) -> DocumentDebugRecord:
         if checkpoint is not None:
             checkpoint.set_page_count(pdf.page_count)
         parsed_pages: list[ParsedPage] = []
@@ -291,6 +322,14 @@ class DocumentParser:
             },
         )
 
+        oversized = [chunk for chunk in chunks if chunk.char_count > CHUNK_MAX_CHARS]
+        if oversized:
+            warnings.append(
+                ParseWarning(
+                    code="oversized_text_unit_preserved",
+                    message=f"Preserved {len(oversized)} indivisible text units above the {CHUNK_MAX_CHARS}-character packing target without truncation.",
+                )
+            )
         if not chunks:
             warnings.append(
                 ParseWarning(
@@ -1167,6 +1206,12 @@ class DocumentParser:
             if current:
                 units.append(current)
 
+        if any(len(unit) > DOCUMENT_MAX_TEXT_UNIT_CHARS for unit in units):
+            raise DocumentInputLimitError(
+                "document_text_unit_too_large",
+                limit=DOCUMENT_MAX_TEXT_UNIT_CHARS,
+                actual=max(map(len, units)),
+            )
         merged: list[str] = []
         for unit in units:
             if merged and len(unit) < 180 and len(merged[-1]) + len(unit) < 900:

@@ -1,3 +1,4 @@
+import { documentUploadError } from "./document-upload-validation";
 import { decodeDocumentCheckpoint } from "./document-checkpoint-decode";
 import { decodeDocumentPageNumbering } from "./document-page-numbering-decode";
 import { decodePlanRevision } from "./plan-revision-decode";
@@ -1574,6 +1575,8 @@ export async function uploadDocument(
   file: File,
   options?: { signal?: AbortSignal; diagnostic?: DiagnosticContext },
 ): Promise<DocumentRecord> {
+  const validation = documentUploadError(file);
+  if (validation) throw new Error(validation);
   const form = new FormData();
   form.append("file", file);
   const diagnosticResponse = await request(

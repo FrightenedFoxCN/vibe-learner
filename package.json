@@ -68,7 +68,8 @@
     "format:check": "node scripts/style/check.mjs --format-only",
     "style:all": "node scripts/style/check.mjs --all",
     "style:baseline": "node scripts/style/check.mjs --write-baseline",
-    "test:style": "node --test scripts/style/gates.test.mjs"
+    "test:style": "node --test scripts/style/gates.test.mjs",
+    "test:ai:document:input-limits": "cd services/ai && LITELLM_LOCAL_MODEL_COST_MAP=True UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m unittest tests.test_document_input_limits"
   },
   "dependencies": {
     "rehype-katex": "^7.0.1"

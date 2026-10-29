@@ -66,7 +66,8 @@
     "test:diagnostics:imports": "TSX_TSCONFIG_PATH=tests/tsconfig.json node --import tsx --test tests/diagnostic-import.test.jsx",
     "test:study:question:browser": "playwright test tests/browser/study-question-a11y-independent.spec.ts",
     "test:study-unit-revision:browser": "playwright test --config playwright.study-unit-revision.config.ts",
-    "test:tavern:copy:browser": "playwright test tests/browser/tavern-copy-independent.spec.ts"
+    "test:tavern:copy:browser": "playwright test tests/browser/tavern-copy-independent.spec.ts",
+    "test:workspace:input-limits": "TSX_TSCONFIG_PATH=tests/tsconfig.json node --import tsx --test tests/document-input-limits.test.jsx"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.8.0",

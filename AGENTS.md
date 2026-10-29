@@ -19,6 +19,7 @@ This repository was last materially updated on 2026-09-10. The codebase is a mon
 - Backend container bootstrap: `services/ai/app/core/bootstrap.py`
 - Document OCR checkpoints: `services/ai/app/models/document_checkpoint.py`, `services/ai/app/persistence/document_checkpoint_repository.py`, and `docs/document-checkpoints.md`. Checkpoint-only work does not prove Document commit; resume admits one distinct child operation per source and never replays a completed child.
 - Document parsing pipeline: `services/ai/app/services/document_parser.py`
+- Document input bounds: `services/ai/app/models/document_input_limits.py`, `services/ai/app/api/document_upload_limit.py`, and `docs/document-input-limits.md`. Keep byte/page preflight before storage/admission; the 1,400-character chunk target is separate from the 65,536-character indivisible-unit limit.
 - Document revision/CAS persistence: `services/ai/app/persistence/document_repository.py`; runtime writes must not use `LocalJsonStore.save_list("documents", ...)`.
 - Planning physical page scope: `services/ai/app/models/pdf_page_scope.py`, `apps/web/lib/planning-page-scope.ts`, and `docs/planning-page-scope.md`. Physical PDF positions constrain tools/proposals/commits; PDF metadata printed labels are a separate read-only reference.
 - Study-unit cleanup and plan heuristics: `services/ai/app/services/study_arrangement.py`

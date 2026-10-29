@@ -1,3 +1,4 @@
+from app.models.document_input_limits import DocumentInputLimitsV1
 from app.models.document_checkpoint import DocumentCheckpointResponseV1
 from app.models.pdf_page_scope import DocumentPageNumberingResponseV1
 from app.services.document_page_numbering import read_document_page_numbering
@@ -815,6 +816,11 @@ def list_documents(
             for document in container.document_service.list_documents()
         ]
     )
+
+
+@router.get("/documents/input-limits", response_model=DocumentInputLimitsV1)
+def get_document_input_limits() -> DocumentInputLimitsV1:
+    return DocumentInputLimitsV1()
 
 
 @router.post("/documents", response_model=DocumentResponse)
@@ -2686,6 +2692,12 @@ def get_model_usage_stats(
 
 def _stringify_error(exc: Exception) -> str:
     detail = getattr(exc, "detail", None)
+    if (
+        isinstance(detail, dict)
+        and detail.get("contract_version") == "document-input-error-v1"
+        and isinstance(detail.get("message"), str)
+    ):
+        return detail["message"]
     if detail is not None:
         return str(detail)
     return str(exc)

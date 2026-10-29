@@ -89,6 +89,12 @@ regression is not a reason to edit the budget in place.
 
 ## Harness runtime budgets
 
+Document upload admission also enforces fixed [input limits](document-input-limits.md):
+64 MiB per file, 65 MiB per full multipart body, 512 physical pages and 65,536
+characters per indivisible text unit. These are rejection boundaries; the
+256-page text-PDF stress regression does not certify live OCR throughput at the
+maximum. Harness snapshot/time budgets below continue to apply independently.
+
 ### Executable limits
 
 `app.models.harness_performance` owns `harness-performance-budget-v1`.

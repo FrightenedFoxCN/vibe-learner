@@ -142,7 +142,7 @@ export const HARNESS_COMPONENT_REGISTRATIONS = deepFreeze({
   },
   document_parser: {
     ownerModule: "app.services.document_parser",
-    contract: { name: "document_parser", version: "document-parser-v2" },
+    contract: { name: "document_parser", version: "document-parser-v3" },
   },
   document_page_extractor: {
     ownerModule: "app.services.document_parser",
@@ -160,7 +160,7 @@ export const HARNESS_COMPONENT_REGISTRATIONS = deepFreeze({
   },
   document_chunk_builder: {
     ownerModule: "app.services.document_parser",
-    contract: { name: "document_chunk_builder", version: "document-chunk-builder-v1" },
+    contract: { name: "document_chunk_builder", version: "document-chunk-builder-v2" },
   },
   ocr_engine: {
     ownerModule: "app.services.ocr_engine",
