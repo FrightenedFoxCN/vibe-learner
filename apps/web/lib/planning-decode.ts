@@ -58,8 +58,16 @@ const PLANNING_TOOL_NAMES = [
   "read_page_range_images",
 ] as const;
 const MODEL_RECOVERY_SCHEMA_VERSIONS = ["model-recovery-v1"] as const;
-const TOOL_ARGUMENT_CONTRACT_VERSIONS = ["", "planning-tool-arguments-v1", "planning-tool-arguments-v2"] as const;
-const TOOL_RESULT_CONTRACT_VERSIONS = ["", "planning-tool-result-v1", "planning-tool-result-v2"] as const;
+const TOOL_ARGUMENT_CONTRACT_VERSIONS = [
+  "",
+  "planning-tool-arguments-v1",
+  "planning-tool-arguments-v2",
+] as const;
+const TOOL_RESULT_CONTRACT_VERSIONS = [
+  "",
+  "planning-tool-result-v1",
+  "planning-tool-result-v2",
+] as const;
 
 export class PlanningDecodeError extends Error {
   readonly code = "planning_response_decode_error";
@@ -92,7 +100,10 @@ function decodeIntentValue<T>(
   const rawValue = decoder.field(value, "value", path);
   if (status === "unknown") {
     if (rawValue !== null) {
-      throw new PlanningDecodeError(`${path}.value`, "unknown_intent_must_not_have_value");
+      throw new PlanningDecodeError(
+        `${path}.value`,
+        "unknown_intent_must_not_have_value",
+      );
     }
     return { status, value: null };
   }
@@ -111,17 +122,36 @@ function decodePlanningIntent(raw: unknown, path: string): PlanningIntent {
     pdfPageRanges: decodeIntentValue(
       decoder.field(value, "pdf_page_ranges", path),
       `${path}.pdf_page_ranges`,
-      (rawRanges, rangesPath) => decoder.array(rawRanges, rangesPath, (rawRange, rangePath) => {
-        const range = decoder.record(rawRange, rangePath);
-        const pageStart = decoder.integer(
-          decoder.field(range, "page_start", rangePath), `${rangePath}.page_start`, 1,
-        );
-        const pageEnd = decoder.integer(
-          decoder.field(range, "page_end", rangePath), `${rangePath}.page_end`, 1,
-        );
-        decoder.range(pageStart, pageEnd, rangePath);
-        return { pageStart, pageEnd };
-      }),
+      (rawRanges, rangesPath) => {
+        const ranges = decoder.array(rawRanges, rangesPath, (rawRange, rangePath) => {
+          const range = decoder.record(rawRange, rangePath);
+          const pageStart = decoder.integer(
+            decoder.field(range, "page_start", rangePath),
+            `${rangePath}.page_start`,
+            1,
+          );
+          const pageEnd = decoder.integer(
+            decoder.field(range, "page_end", rangePath),
+            `${rangePath}.page_end`,
+            1,
+          );
+          decoder.range(pageStart, pageEnd, rangePath);
+          return { pageStart, pageEnd };
+        });
+        const ordered = [...ranges].sort((a, b) => a.pageStart - b.pageStart);
+        if (
+          !ranges.length ||
+          ordered.some(
+            (range, index) =>
+              index > 0 && range.pageStart <= ordered[index - 1].pageEnd,
+          )
+        )
+          throw new PlanningDecodeError(
+            rangesPath,
+            "empty_or_overlapping_physical_ranges",
+          );
+        return ranges;
+      },
     ),
     outlineTargets: decodeIntentValue(
       decoder.field(value, "outline_targets", path),
@@ -185,17 +215,24 @@ function decodeResolvedPlanningIntent(
     (rawRange, rangePath) => {
       const range = decoder.record(rawRange, rangePath);
       const pageStart = decoder.integer(
-        decoder.field(range, "page_start", rangePath), `${rangePath}.page_start`, 1,
+        decoder.field(range, "page_start", rangePath),
+        `${rangePath}.page_start`,
+        1,
       );
       const pageEnd = decoder.integer(
-        decoder.field(range, "page_end", rangePath), `${rangePath}.page_end`, 1,
+        decoder.field(range, "page_end", rangePath),
+        `${rangePath}.page_end`,
+        1,
       );
       decoder.range(pageStart, pageEnd, rangePath);
       return { pageStart, pageEnd };
     },
   );
   if (pdfPageRanges.length === 0) {
-    throw new PlanningDecodeError(`${pageEntry.entryPath}.value`, "expected_non_empty_array");
+    throw new PlanningDecodeError(
+      `${pageEntry.entryPath}.value`,
+      "expected_non_empty_array",
+    );
   }
   const outlineEntry = source("outline_targets");
   const outlineTargets = decoder.stringArray(
@@ -207,12 +244,16 @@ function decodeResolvedPlanningIntent(
   const sessionEntry = source("session_count");
   const sessionCount = decoder.integer(
     decoder.field(sessionEntry.entry, "value", sessionEntry.entryPath),
-    `${sessionEntry.entryPath}.value`, 1, 24,
+    `${sessionEntry.entryPath}.value`,
+    1,
+    24,
   );
   const minutesEntry = source("minutes_per_session");
   const minutesPerSession = decoder.integer(
     decoder.field(minutesEntry.entry, "value", minutesEntry.entryPath),
-    `${minutesEntry.entryPath}.value`, 1, 480,
+    `${minutesEntry.entryPath}.value`,
+    1,
+    480,
   );
   const languageEntry = source("output_language");
   const resolvedLanguage = decoder.string(
@@ -225,71 +266,152 @@ function decodeResolvedPlanningIntent(
     resolvedSource: "user_explicit" | "model_inferred",
     sourcePath: string,
   ) => {
-    const expected = intentValue.status === "user_explicit" ? "user_explicit" : "model_inferred";
+    const expected =
+      intentValue.status === "user_explicit" ? "user_explicit" : "model_inferred";
     if (resolvedSource !== expected) {
       throw new PlanningDecodeError(sourcePath, "resolved_intent_source_mismatch");
     }
   };
   assertSource(intent.pdfPageRanges, pageEntry.source, `${pageEntry.entryPath}.source`);
-  assertSource(intent.outlineTargets, outlineEntry.source, `${outlineEntry.entryPath}.source`);
-  assertSource(intent.sessionCount, sessionEntry.source, `${sessionEntry.entryPath}.source`);
-  assertSource(intent.minutesPerSession, minutesEntry.source, `${minutesEntry.entryPath}.source`);
-  assertSource(intent.outputLanguage, languageEntry.source, `${languageEntry.entryPath}.source`);
+  assertSource(
+    intent.outlineTargets,
+    outlineEntry.source,
+    `${outlineEntry.entryPath}.source`,
+  );
+  assertSource(
+    intent.sessionCount,
+    sessionEntry.source,
+    `${sessionEntry.entryPath}.source`,
+  );
+  assertSource(
+    intent.minutesPerSession,
+    minutesEntry.source,
+    `${minutesEntry.entryPath}.source`,
+  );
+  assertSource(
+    intent.outputLanguage,
+    languageEntry.source,
+    `${languageEntry.entryPath}.source`,
+  );
 
-  const sameJson = (left: unknown, right: unknown) => JSON.stringify(left) === JSON.stringify(right);
-  if (intent.pdfPageRanges.status === "user_explicit" && !sameJson(pdfPageRanges, intent.pdfPageRanges.value)) {
-    throw new PlanningDecodeError(`${pageEntry.entryPath}.value`, "explicit_resolved_value_mismatch");
-  }
-  if (intent.outlineTargets.status === "user_explicit" && !sameJson(outlineTargets, intent.outlineTargets.value)) {
-    throw new PlanningDecodeError(`${outlineEntry.entryPath}.value`, "explicit_resolved_value_mismatch");
-  }
-  if (intent.sessionCount.status === "user_explicit" && sessionCount !== intent.sessionCount.value) {
-    throw new PlanningDecodeError(`${sessionEntry.entryPath}.value`, "explicit_resolved_value_mismatch");
-  }
-  if (intent.minutesPerSession.status === "user_explicit" && minutesPerSession !== intent.minutesPerSession.value) {
-    throw new PlanningDecodeError(`${minutesEntry.entryPath}.value`, "explicit_resolved_value_mismatch");
+  const sameJson = (left: unknown, right: unknown) =>
+    JSON.stringify(left) === JSON.stringify(right);
+  if (
+    intent.pdfPageRanges.status === "user_explicit" &&
+    !sameJson(pdfPageRanges, intent.pdfPageRanges.value)
+  ) {
+    throw new PlanningDecodeError(
+      `${pageEntry.entryPath}.value`,
+      "explicit_resolved_value_mismatch",
+    );
   }
   if (
-    intent.outputLanguage.status === "user_explicit"
-    && resolvedLanguage.toLocaleLowerCase() !== intent.outputLanguage.value.toLocaleLowerCase()
+    intent.outlineTargets.status === "user_explicit" &&
+    !sameJson(outlineTargets, intent.outlineTargets.value)
   ) {
-    throw new PlanningDecodeError(`${languageEntry.entryPath}.value`, "explicit_resolved_value_mismatch");
+    throw new PlanningDecodeError(
+      `${outlineEntry.entryPath}.value`,
+      "explicit_resolved_value_mismatch",
+    );
+  }
+  if (
+    intent.sessionCount.status === "user_explicit" &&
+    sessionCount !== intent.sessionCount.value
+  ) {
+    throw new PlanningDecodeError(
+      `${sessionEntry.entryPath}.value`,
+      "explicit_resolved_value_mismatch",
+    );
+  }
+  if (
+    intent.minutesPerSession.status === "user_explicit" &&
+    minutesPerSession !== intent.minutesPerSession.value
+  ) {
+    throw new PlanningDecodeError(
+      `${minutesEntry.entryPath}.value`,
+      "explicit_resolved_value_mismatch",
+    );
+  }
+  if (
+    intent.outputLanguage.status === "user_explicit" &&
+    resolvedLanguage.toLocaleLowerCase() !==
+      intent.outputLanguage.value.toLocaleLowerCase()
+  ) {
+    throw new PlanningDecodeError(
+      `${languageEntry.entryPath}.value`,
+      "explicit_resolved_value_mismatch",
+    );
   }
   if (sessionCount !== schedule.length) {
-    throw new PlanningDecodeError(`${sessionEntry.entryPath}.value`, "resolved_session_count_mismatch");
+    throw new PlanningDecodeError(
+      `${sessionEntry.entryPath}.value`,
+      "resolved_session_count_mismatch",
+    );
   }
   const durations = new Set(schedule.map((item) => item.durationMinutes));
-  if (durations.size !== 1 || durations.has(undefined) || !durations.has(minutesPerSession)) {
-    throw new PlanningDecodeError(`${minutesEntry.entryPath}.value`, "resolved_minutes_mismatch");
+  if (
+    durations.size !== 1 ||
+    durations.has(undefined) ||
+    !durations.has(minutesPerSession)
+  ) {
+    throw new PlanningDecodeError(
+      `${minutesEntry.entryPath}.value`,
+      "resolved_minutes_mismatch",
+    );
   }
   if (resolvedLanguage.toLocaleLowerCase() !== outputLanguage.toLocaleLowerCase()) {
-    throw new PlanningDecodeError(`${languageEntry.entryPath}.value`, "resolved_language_mismatch");
+    throw new PlanningDecodeError(
+      `${languageEntry.entryPath}.value`,
+      "resolved_language_mismatch",
+    );
   }
   if (intent.pdfPageRanges.status === "user_explicit") {
-    const requestedPages = new Set(intent.pdfPageRanges.value.flatMap((range) =>
-      Array.from({ length: range.pageEnd - range.pageStart + 1 }, (_, offset) => range.pageStart + offset)));
+    const requestedPages = new Set(
+      intent.pdfPageRanges.value.flatMap((range) =>
+        Array.from(
+          { length: range.pageEnd - range.pageStart + 1 },
+          (_, offset) => range.pageStart + offset,
+        ),
+      ),
+    );
     const coveredPages = new Set<number>();
-    for (const slice of schedule.flatMap((item) => item.scheduleChapters)
+    for (const slice of schedule
+      .flatMap((item) => item.scheduleChapters)
       .flatMap((chapter) => chapter.contentSlices)) {
-      if (!intent.pdfPageRanges.value.some((range) =>
-        slice.pageStart >= range.pageStart && slice.pageEnd <= range.pageEnd)) {
-        throw new PlanningDecodeError(`${pageEntry.entryPath}.value`, "schedule_outside_explicit_page_scope");
+      if (
+        !intent.pdfPageRanges.value.some(
+          (range) =>
+            slice.pageStart >= range.pageStart && slice.pageEnd <= range.pageEnd,
+        )
+      ) {
+        throw new PlanningDecodeError(
+          `${pageEntry.entryPath}.value`,
+          "schedule_outside_explicit_page_scope",
+        );
       }
-      for (let page = slice.pageStart; page <= slice.pageEnd; page += 1) coveredPages.add(page);
+      for (let page = slice.pageStart; page <= slice.pageEnd; page += 1)
+        coveredPages.add(page);
     }
     if ([...requestedPages].some((page) => !coveredPages.has(page))) {
-      throw new PlanningDecodeError(`${pageEntry.entryPath}.value`, "explicit_page_scope_incomplete");
+      throw new PlanningDecodeError(
+        `${pageEntry.entryPath}.value`,
+        "explicit_page_scope_incomplete",
+      );
     }
   }
   if (intent.outlineTargets.status === "user_explicit") {
     const allowedTargets = new Set(intent.outlineTargets.value);
-    const scheduleTargets = schedule.flatMap((item) => item.scheduleChapters)
+    const scheduleTargets = schedule
+      .flatMap((item) => item.scheduleChapters)
       .flatMap((chapter) => [
         ...chapter.sourceSectionIds,
         ...chapter.contentSlices.flatMap((slice) => slice.sourceSectionIds),
       ]);
     if (scheduleTargets.some((target) => !allowedTargets.has(target))) {
-      throw new PlanningDecodeError(`${outlineEntry.entryPath}.value`, "schedule_outside_explicit_outline_scope");
+      throw new PlanningDecodeError(
+        `${outlineEntry.entryPath}.value`,
+        "schedule_outside_explicit_outline_scope",
+      );
     }
   }
   if (pageEntry.source === "model_inferred") {
@@ -301,18 +423,30 @@ function decodeResolvedPlanningIntent(
     const merged: Array<{ pageStart: number; pageEnd: number }> = [];
     for (const [pageStart, pageEnd] of spans) {
       const previous = merged.at(-1);
-      if (previous && pageStart <= previous.pageEnd + 1) previous.pageEnd = Math.max(previous.pageEnd, pageEnd);
+      if (previous && pageStart <= previous.pageEnd + 1)
+        previous.pageEnd = Math.max(previous.pageEnd, pageEnd);
       else merged.push({ pageStart, pageEnd });
     }
     if (!sameJson(pdfPageRanges, merged)) {
-      throw new PlanningDecodeError(`${pageEntry.entryPath}.value`, "resolved_page_ranges_mismatch");
+      throw new PlanningDecodeError(
+        `${pageEntry.entryPath}.value`,
+        "resolved_page_ranges_mismatch",
+      );
     }
   }
   if (outlineEntry.source === "model_inferred") {
-    const actual = [...new Set(schedule.flatMap((item) => item.scheduleChapters)
-      .flatMap((chapter) => chapter.sourceSectionIds))].sort();
+    const actual = [
+      ...new Set(
+        schedule
+          .flatMap((item) => item.scheduleChapters)
+          .flatMap((chapter) => chapter.sourceSectionIds),
+      ),
+    ].sort();
     if (!sameJson(outlineTargets, actual)) {
-      throw new PlanningDecodeError(`${outlineEntry.entryPath}.value`, "resolved_outline_targets_mismatch");
+      throw new PlanningDecodeError(
+        `${outlineEntry.entryPath}.value`,
+        "resolved_outline_targets_mismatch",
+      );
     }
   }
   return {
@@ -375,8 +509,14 @@ function decodeOutlineNode(raw: unknown, path: string): PlanningOutlineNode {
     `${path}.children`,
     decodePlanningSection,
   );
-  decoder.unique(children.map((child) => child.sectionId), `${path}.children.section_id`);
-  decoder.nonDecreasing(children.map((child) => child.pageStart), `${path}.children.page_start`);
+  decoder.unique(
+    children.map((child) => child.sectionId),
+    `${path}.children.section_id`,
+  );
+  decoder.nonDecreasing(
+    children.map((child) => child.pageStart),
+    `${path}.children.page_start`,
+  );
   for (const [index, child] of children.entries()) {
     if (
       child.level <= section.level ||
@@ -407,7 +547,11 @@ function decodePlanningStudyUnit(raw: unknown, path: string): PlanningStudyUnitC
       `${path}.page_end`,
       1,
     ),
-    summary: decoder.string(decoder.field(value, "summary", path), `${path}.summary`, true),
+    summary: decoder.string(
+      decoder.field(value, "summary", path),
+      `${path}.summary`,
+      true,
+    ),
     unitKind: decoder.enumeration(
       decoder.field(value, "unit_kind", path),
       STUDY_UNIT_KINDS,
@@ -459,7 +603,11 @@ function decodeChunkExcerpt(raw: unknown, path: string): PlanningChunkExcerpt {
       decoder.field(value, "char_count", path),
       `${path}.char_count`,
     ),
-    content: decoder.string(decoder.field(value, "content", path), `${path}.content`, true),
+    content: decoder.string(
+      decoder.field(value, "content", path),
+      `${path}.content`,
+      true,
+    ),
   };
   decoder.range(chunk.pageStart, chunk.pageEnd, `${path}.page_range`);
   return chunk;
@@ -499,7 +647,10 @@ function decodeStudyUnitDetail(raw: unknown, path: string): StudyUnitPlanningDet
     `${path}.chunk_excerpts`,
     decodeChunkExcerpt,
   );
-  decoder.unique(chunkExcerpts.map((chunk) => chunk.chunkId), `${path}.chunk_excerpts.chunk_id`);
+  decoder.unique(
+    chunkExcerpts.map((chunk) => chunk.chunkId),
+    `${path}.chunk_excerpts.chunk_id`,
+  );
   decoder.nonDecreasing(
     chunkExcerpts.map((chunk) => chunk.pageStart),
     `${path}.chunk_excerpts.page_start`,
@@ -526,7 +677,11 @@ function decodeStudyUnitDetail(raw: unknown, path: string): StudyUnitPlanningDet
       `${path}.page_end`,
       1,
     ),
-    summary: decoder.string(decoder.field(value, "summary", path), `${path}.summary`, true),
+    summary: decoder.string(
+      decoder.field(value, "summary", path),
+      `${path}.summary`,
+      true,
+    ),
     unitKind: decoder.enumeration(
       decoder.field(value, "unit_kind", path),
       STUDY_UNIT_KINDS,
@@ -551,7 +706,10 @@ function decodeStudyUnitDetail(raw: unknown, path: string): StudyUnitPlanningDet
   };
   decoder.range(detail.pageStart, detail.pageEnd, `${path}.page_range`);
   if (detail.chunkCount < detail.chunkExcerpts.length) {
-    throw new PlanningDecodeError(`${path}.chunk_count`, "chunk_count_below_excerpt_count");
+    throw new PlanningDecodeError(
+      `${path}.chunk_count`,
+      "chunk_count_below_excerpt_count",
+    );
   }
   return detail;
 }
@@ -589,7 +747,10 @@ export function decodeDocumentPlanningContext(
     `${path}.study_units`,
     decodePlanningStudyUnit,
   );
-  decoder.unique(studyUnits.map((unit) => unit.unitId), `${path}.study_units.unit_id`);
+  decoder.unique(
+    studyUnits.map((unit) => unit.unitId),
+    `${path}.study_units.unit_id`,
+  );
   decoder.nonDecreasing(
     studyUnits.map((unit) => unit.pageStart),
     `${path}.study_units.page_start`,
@@ -607,7 +768,10 @@ export function decodeDocumentPlanningContext(
     decoder.equal(detail.unitId, key, `${path}.detail_map.${key}.unit_id`);
     return [key, detail] as const;
   });
-  decoder.unique(detailEntries.map(([key]) => key), `${path}.detail_map.keys`);
+  decoder.unique(
+    detailEntries.map(([key]) => key),
+    `${path}.detail_map.keys`,
+  );
   const detailMap = Object.fromEntries(detailEntries);
   const unitIds = studyUnits.map((unit) => unit.unitId);
   const detailIds = detailEntries.map(([key]) => key);
@@ -615,7 +779,10 @@ export function decodeDocumentPlanningContext(
     unitIds.length !== detailIds.length ||
     unitIds.some((unitId) => !Object.prototype.hasOwnProperty.call(detailMap, unitId))
   ) {
-    throw new PlanningDecodeError(`${path}.detail_map`, "study_unit_detail_set_mismatch");
+    throw new PlanningDecodeError(
+      `${path}.detail_map`,
+      "study_unit_detail_set_mismatch",
+    );
   }
   for (const [index, unit] of studyUnits.entries()) {
     const detail = detailMap[unit.unitId];
@@ -628,9 +795,13 @@ export function decodeDocumentPlanningContext(
       detail.unitKind !== unit.unitKind ||
       detail.includeInPlan !== unit.includeInPlan ||
       detail.relatedSectionIds.length !== unit.relatedSectionIds.length ||
-      detail.relatedSectionIds.some((id, refIndex) => id !== unit.relatedSectionIds[refIndex]) ||
+      detail.relatedSectionIds.some(
+        (id, refIndex) => id !== unit.relatedSectionIds[refIndex],
+      ) ||
       detail.subsectionTitles.length !== unit.subsectionTitles.length ||
-      detail.subsectionTitles.some((title, titleIndex) => title !== unit.subsectionTitles[titleIndex])
+      detail.subsectionTitles.some(
+        (title, titleIndex) => title !== unit.subsectionTitles[titleIndex],
+      )
     ) {
       throw new PlanningDecodeError(
         `${path}.study_units[${index}]`,
@@ -658,14 +829,24 @@ export function decodeDocumentPlanningContext(
       };
     },
   );
-  decoder.unique(availableTools.map((tool) => tool.name), `${path}.available_tools.name`);
-  return { documentId, documentRevision: decoder.integer(decoder.field(value, "document_revision", path), `${path}.document_revision`), courseOutline, studyUnits, detailMap, availableTools };
+  decoder.unique(
+    availableTools.map((tool) => tool.name),
+    `${path}.available_tools.name`,
+  );
+  return {
+    documentId,
+    documentRevision: decoder.integer(
+      decoder.field(value, "document_revision", path),
+      `${path}.document_revision`,
+    ),
+    courseOutline,
+    studyUnits,
+    detailMap,
+    availableTools,
+  };
 }
 
-function decodePlanStudyUnit(
-  raw: unknown,
-  path: string,
-): StudyUnit {
+function decodePlanStudyUnit(raw: unknown, path: string): StudyUnit {
   const value = decoder.record(raw, path);
   const unit: StudyUnit = {
     id: decoder.string(decoder.field(value, "id", path), `${path}.id`),
@@ -698,7 +879,11 @@ function decodePlanStudyUnit(
       decoder.field(value, "source_section_ids", path),
       `${path}.source_section_ids`,
     ),
-    summary: decoder.string(decoder.field(value, "summary", path), `${path}.summary`, true),
+    summary: decoder.string(
+      decoder.field(value, "summary", path),
+      `${path}.summary`,
+      true,
+    ),
     confidence: decoder.finiteNumber(
       decoder.field(value, "confidence", path),
       `${path}.confidence`,
@@ -819,7 +1004,13 @@ function decodeScheduleChapter(
     decoder.field(value, "content_slices", path),
     `${path}.content_slices`,
     (item, itemPath) =>
-      decodeContentSlice(item, itemPath, anchorPageStart, anchorPageEnd, allowedSectionIds),
+      decodeContentSlice(
+        item,
+        itemPath,
+        anchorPageStart,
+        anchorPageEnd,
+        allowedSectionIds,
+      ),
   );
   if (contentSlices.length === 0) {
     throw new PlanningDecodeError(`${path}.content_slices`, "expected_non_empty_array");
@@ -844,7 +1035,10 @@ function decodeScheduleItem(
   unitMap: ReadonlyMap<string, StudyUnit>,
 ): StudyScheduleItem {
   const value = decoder.record(raw, path);
-  const unitId = decoder.string(decoder.field(value, "unit_id", path), `${path}.unit_id`);
+  const unitId = decoder.string(
+    decoder.field(value, "unit_id", path),
+    `${path}.unit_id`,
+  );
   const unit = unitMap.get(unitId);
   if (!unit) {
     throw new PlanningDecodeError(`${path}.unit_id`, "unknown_study_unit_reference");
@@ -858,24 +1052,36 @@ function decodeScheduleItem(
     (item, itemPath) => decodeScheduleChapter(item, itemPath, unit),
   );
   if (scheduleChapters.length === 0) {
-    throw new PlanningDecodeError(`${path}.schedule_chapters`, "expected_non_empty_array");
+    throw new PlanningDecodeError(
+      `${path}.schedule_chapters`,
+      "expected_non_empty_array",
+    );
   }
-  decoder.unique(scheduleChapters.map((chapter) => chapter.id), `${path}.schedule_chapters.id`);
+  decoder.unique(
+    scheduleChapters.map((chapter) => chapter.id),
+    `${path}.schedule_chapters.id`,
+  );
   decoder.nonDecreasing(
     scheduleChapters.map((chapter) => chapter.anchorPageStart),
     `${path}.schedule_chapters.anchor_page_start`,
   );
-  const coverageMode = value.coverage_mode === null || value.coverage_mode === undefined
-    ? undefined
-    : decoder.enumeration(
-        value.coverage_mode,
-        ["complete", "selective", "overview"] as const,
-        `${path}.coverage_mode`,
-      );
-  const workloadRationale = value.workload_rationale === null || value.workload_rationale === undefined
-    ? undefined
-    : decoder.string(value.workload_rationale, `${path}.workload_rationale`, true);
-  if (coverageMode && coverageMode !== "complete" && (workloadRationale?.trim().length ?? 0) < 40) {
+  const coverageMode =
+    value.coverage_mode === null || value.coverage_mode === undefined
+      ? undefined
+      : decoder.enumeration(
+          value.coverage_mode,
+          ["complete", "selective", "overview"] as const,
+          `${path}.coverage_mode`,
+        );
+  const workloadRationale =
+    value.workload_rationale === null || value.workload_rationale === undefined
+      ? undefined
+      : decoder.string(value.workload_rationale, `${path}.workload_rationale`, true);
+  if (
+    coverageMode &&
+    coverageMode !== "complete" &&
+    (workloadRationale?.trim().length ?? 0) < 40
+  ) {
     throw new PlanningDecodeError(
       `${path}.workload_rationale`,
       "overload_requires_sufficient_rationale",
@@ -893,7 +1099,14 @@ function decodeScheduleItem(
     ),
     ...(value.duration_minutes === null || value.duration_minutes === undefined
       ? {}
-      : { durationMinutes: decoder.integer(value.duration_minutes, `${path}.duration_minutes`, 1, 480) }),
+      : {
+          durationMinutes: decoder.integer(
+            value.duration_minutes,
+            `${path}.duration_minutes`,
+            1,
+            480,
+          ),
+        }),
     ...(coverageMode ? { coverageMode } : {}),
     ...(workloadRationale === undefined ? {} : { workloadRationale }),
     status: decoder.enumeration(
@@ -941,7 +1154,11 @@ function decodeSceneObject(
       true,
     ),
     tags: decoder.string(decoder.field(value, "tags", path), `${path}.tags`, true),
-    reuseId: decoder.string(decoder.field(value, "reuse_id", path), `${path}.reuse_id`, true),
+    reuseId: decoder.string(
+      decoder.field(value, "reuse_id", path),
+      `${path}.reuse_id`,
+      true,
+    ),
     reuseHint: decoder.string(
       decoder.field(value, "reuse_hint", path),
       `${path}.reuse_hint`,
@@ -977,16 +1194,28 @@ function decodeSceneNode(
       `${path}.scope_label`,
       true,
     ),
-    summary: decoder.string(decoder.field(value, "summary", path), `${path}.summary`, true),
+    summary: decoder.string(
+      decoder.field(value, "summary", path),
+      `${path}.summary`,
+      true,
+    ),
     atmosphere: decoder.string(
       decoder.field(value, "atmosphere", path),
       `${path}.atmosphere`,
       true,
     ),
     rules: decoder.string(decoder.field(value, "rules", path), `${path}.rules`, true),
-    entrance: decoder.string(decoder.field(value, "entrance", path), `${path}.entrance`, true),
+    entrance: decoder.string(
+      decoder.field(value, "entrance", path),
+      `${path}.entrance`,
+      true,
+    ),
     tags: decoder.string(decoder.field(value, "tags", path), `${path}.tags`, true),
-    reuseId: decoder.string(decoder.field(value, "reuse_id", path), `${path}.reuse_id`, true),
+    reuseId: decoder.string(
+      decoder.field(value, "reuse_id", path),
+      `${path}.reuse_id`,
+      true,
+    ),
     reuseHint: decoder.string(
       decoder.field(value, "reuse_hint", path),
       `${path}.reuse_hint`,
@@ -1005,7 +1234,10 @@ function decodeSceneNode(
   };
 }
 
-function resolveSelectedScenePath(tree: SceneTreeNode[], selectedPath: string[]): boolean {
+function resolveSelectedScenePath(
+  tree: SceneTreeNode[],
+  selectedPath: string[],
+): boolean {
   if (selectedPath.length === 0) return tree.length === 0;
   let nodes = tree;
   for (const title of selectedPath) {
@@ -1034,7 +1266,10 @@ function decodeSceneProfile(raw: unknown, path: string): SceneProfile {
     `${path}.selected_path`,
   );
   if (sceneTree.length > 0 && !resolveSelectedScenePath(sceneTree, selectedPath)) {
-    throw new PlanningDecodeError(`${path}.selected_path`, "invalid_scene_selected_path");
+    throw new PlanningDecodeError(
+      `${path}.selected_path`,
+      "invalid_scene_selected_path",
+    );
   }
   return {
     sceneName: decoder.string(
@@ -1044,7 +1279,11 @@ function decodeSceneProfile(raw: unknown, path: string): SceneProfile {
     ),
     sceneId: decoder.string(decoder.field(value, "scene_id", path), `${path}.scene_id`),
     title: decoder.string(decoder.field(value, "title", path), `${path}.title`, true),
-    summary: decoder.string(decoder.field(value, "summary", path), `${path}.summary`, true),
+    summary: decoder.string(
+      decoder.field(value, "summary", path),
+      `${path}.summary`,
+      true,
+    ),
     tags: decoder.stringArray(decoder.field(value, "tags", path), `${path}.tags`, true),
     selectedPath,
     focusObjectNames: decoder.stringArray(
@@ -1090,9 +1329,16 @@ export function decodeLearningPlan(
     const decodedTrace = decodeHarnessTraceV3(
       decoder.field(value, "harness_trace", path),
       `${path}.harness_trace`,
-      (tracePath, reason) => { throw new PlanningDecodeError(tracePath, reason); },
+      (tracePath, reason) => {
+        throw new PlanningDecodeError(tracePath, reason);
+      },
     );
-    if (decodedTrace.workflow !== "planning" || decodedTrace.stage !== "plan_generation" || !["passed", "repaired"].includes(decodedTrace.status) || decodedTrace.commitEvidence.status !== "committed") {
+    if (
+      decodedTrace.workflow !== "planning" ||
+      decodedTrace.stage !== "plan_generation" ||
+      !["passed", "repaired"].includes(decodedTrace.status) ||
+      decodedTrace.commitEvidence.status !== "committed"
+    ) {
       throw new PlanningDecodeError(
         `${path}.harness_trace`,
         "learning_plan_harness_trace_invalid",
@@ -1118,7 +1364,10 @@ export function decodeLearningPlan(
     `${path}.creation_mode`,
   );
   if ((creationMode === "document") !== Boolean(documentId)) {
-    throw new PlanningDecodeError(`${path}.document_id`, "creation_mode_document_identity_mismatch");
+    throw new PlanningDecodeError(
+      `${path}.document_id`,
+      "creation_mode_document_identity_mismatch",
+    );
   }
   const studyUnits = decoder.array(
     decoder.field(value, "study_units", path),
@@ -1131,15 +1380,24 @@ export function decodeLearningPlan(
     documentId,
     `${path}.study_units`,
   );
-  decoder.unique(studyUnits.map((unit) => unit.id), `${path}.study_units.id`);
-  decoder.nonDecreasing(studyUnits.map((unit) => unit.pageStart), `${path}.study_units.page_start`);
+  decoder.unique(
+    studyUnits.map((unit) => unit.id),
+    `${path}.study_units.id`,
+  );
+  decoder.nonDecreasing(
+    studyUnits.map((unit) => unit.pageStart),
+    `${path}.study_units.page_start`,
+  );
   const unitMap = new Map(studyUnits.map((unit) => [unit.id, unit]));
   const schedule = decoder.array(
     decoder.field(value, "schedule", path),
     `${path}.schedule`,
     (item, itemPath) => decodeScheduleItem(item, itemPath, unitMap),
   );
-  decoder.unique(schedule.map((item) => item.id), `${path}.schedule.id`);
+  decoder.unique(
+    schedule.map((item) => item.id),
+    `${path}.schedule.id`,
+  );
   decoder.unique(
     schedule.flatMap((item) => item.scheduleChapters.map((chapter) => chapter.id)),
     `${path}.schedule.schedule_chapters.id`,
@@ -1152,37 +1410,70 @@ export function decodeLearningPlan(
   );
   const progressSummary = {
     totalScheduleCount: decoder.integer(
-      decoder.field(progressSummaryValue, "total_schedule_count", `${path}.progress_summary`),
+      decoder.field(
+        progressSummaryValue,
+        "total_schedule_count",
+        `${path}.progress_summary`,
+      ),
       `${path}.progress_summary.total_schedule_count`,
     ),
     completedScheduleCount: decoder.integer(
-      decoder.field(progressSummaryValue, "completed_schedule_count", `${path}.progress_summary`),
+      decoder.field(
+        progressSummaryValue,
+        "completed_schedule_count",
+        `${path}.progress_summary`,
+      ),
       `${path}.progress_summary.completed_schedule_count`,
     ),
     inProgressScheduleCount: decoder.integer(
-      decoder.field(progressSummaryValue, "in_progress_schedule_count", `${path}.progress_summary`),
+      decoder.field(
+        progressSummaryValue,
+        "in_progress_schedule_count",
+        `${path}.progress_summary`,
+      ),
       `${path}.progress_summary.in_progress_schedule_count`,
     ),
     pendingScheduleCount: decoder.integer(
-      decoder.field(progressSummaryValue, "pending_schedule_count", `${path}.progress_summary`),
+      decoder.field(
+        progressSummaryValue,
+        "pending_schedule_count",
+        `${path}.progress_summary`,
+      ),
       `${path}.progress_summary.pending_schedule_count`,
     ),
     blockedScheduleCount: decoder.integer(
-      decoder.field(progressSummaryValue, "blocked_schedule_count", `${path}.progress_summary`),
+      decoder.field(
+        progressSummaryValue,
+        "blocked_schedule_count",
+        `${path}.progress_summary`,
+      ),
       `${path}.progress_summary.blocked_schedule_count`,
     ),
     completionPercent: decoder.integer(
-      decoder.field(progressSummaryValue, "completion_percent", `${path}.progress_summary`),
+      decoder.field(
+        progressSummaryValue,
+        "completion_percent",
+        `${path}.progress_summary`,
+      ),
       `${path}.progress_summary.completion_percent`,
       0,
       100,
     ),
   };
-  const completedScheduleCount = schedule.filter((item) => item.status === "completed").length;
-  const inProgressScheduleCount = schedule.filter((item) => item.status === "in_progress").length;
-  const blockedScheduleCount = schedule.filter((item) => item.status === "blocked").length;
+  const completedScheduleCount = schedule.filter(
+    (item) => item.status === "completed",
+  ).length;
+  const inProgressScheduleCount = schedule.filter(
+    (item) => item.status === "in_progress",
+  ).length;
+  const blockedScheduleCount = schedule.filter(
+    (item) => item.status === "blocked",
+  ).length;
   const pendingScheduleCount =
-    schedule.length - completedScheduleCount - inProgressScheduleCount - blockedScheduleCount;
+    schedule.length -
+    completedScheduleCount -
+    inProgressScheduleCount -
+    blockedScheduleCount;
   if (
     progressSummary.totalScheduleCount !== schedule.length ||
     progressSummary.completedScheduleCount !== completedScheduleCount ||
@@ -1190,7 +1481,10 @@ export function decodeLearningPlan(
     progressSummary.pendingScheduleCount !== pendingScheduleCount ||
     progressSummary.blockedScheduleCount !== blockedScheduleCount
   ) {
-    throw new PlanningDecodeError(`${path}.progress_summary`, "schedule_count_projection_mismatch");
+    throw new PlanningDecodeError(
+      `${path}.progress_summary`,
+      "schedule_count_projection_mismatch",
+    );
   }
   validateCompletionPercent(
     progressSummary.completionPercent,
@@ -1209,7 +1503,10 @@ export function decodeLearningPlan(
         `${itemPath}.unit_id`,
       );
       if (!unitMap.has(unitId)) {
-        throw new PlanningDecodeError(`${itemPath}.unit_id`, "unknown_study_unit_reference");
+        throw new PlanningDecodeError(
+          `${itemPath}.unit_id`,
+          "unknown_study_unit_reference",
+        );
       }
       const scheduleIds = decoder.stringArray(
         decoder.field(progress, "schedule_ids", itemPath),
@@ -1221,8 +1518,13 @@ export function decodeLearningPlan(
         `${itemPath}.schedule_ids`,
         "unknown_schedule_reference",
       );
-      if (scheduleIds.some((scheduleId) => scheduleMap.get(scheduleId)?.unitId !== unitId)) {
-        throw new PlanningDecodeError(`${itemPath}.schedule_ids`, "cross_study_unit_schedule_reference");
+      if (
+        scheduleIds.some((scheduleId) => scheduleMap.get(scheduleId)?.unitId !== unitId)
+      ) {
+        throw new PlanningDecodeError(
+          `${itemPath}.schedule_ids`,
+          "cross_study_unit_schedule_reference",
+        );
       }
       const totalScheduleCount = decoder.integer(
         decoder.field(progress, "total_schedule_count", itemPath),
@@ -1250,12 +1552,23 @@ export function decodeLearningPlan(
         0,
         100,
       );
-      const relatedSchedule = scheduleIds.map((scheduleId) => scheduleMap.get(scheduleId)!);
-      const projectedCompleted = relatedSchedule.filter((entry) => entry.status === "completed").length;
-      const projectedInProgress = relatedSchedule.filter((entry) => entry.status === "in_progress").length;
-      const projectedBlocked = relatedSchedule.filter((entry) => entry.status === "blocked").length;
+      const relatedSchedule = scheduleIds.map((scheduleId) =>
+        scheduleMap.get(scheduleId)!,
+      );
+      const projectedCompleted = relatedSchedule.filter(
+        (entry) => entry.status === "completed",
+      ).length;
+      const projectedInProgress = relatedSchedule.filter(
+        (entry) => entry.status === "in_progress",
+      ).length;
+      const projectedBlocked = relatedSchedule.filter(
+        (entry) => entry.status === "blocked",
+      ).length;
       const projectedPending =
-        relatedSchedule.length - projectedCompleted - projectedInProgress - projectedBlocked;
+        relatedSchedule.length -
+        projectedCompleted -
+        projectedInProgress -
+        projectedBlocked;
       if (
         totalScheduleCount !== relatedSchedule.length ||
         completedCount !== projectedCompleted ||
@@ -1276,17 +1589,22 @@ export function decodeLearningPlan(
         STUDY_UNIT_PROGRESS_STATUSES,
         `${itemPath}.status`,
       );
-      const expectedStatus = totalScheduleCount > 0 && completedCount === totalScheduleCount
-        ? "completed"
-        : inProgressCount > 0 || completedCount > 0
-          ? "in_progress"
-          : blockedCount > 0 && pendingCount === 0
-            ? "blocked"
-            : "planned";
+      const expectedStatus =
+        totalScheduleCount > 0 && completedCount === totalScheduleCount
+          ? "completed"
+          : inProgressCount > 0 || completedCount > 0
+            ? "in_progress"
+            : blockedCount > 0 && pendingCount === 0
+              ? "blocked"
+              : "planned";
       decoder.equal(status, expectedStatus, `${itemPath}.status`);
       return {
         unitId,
-        title: decoder.string(decoder.field(progress, "title", itemPath), `${itemPath}.title`, true),
+        title: decoder.string(
+          decoder.field(progress, "title", itemPath),
+          `${itemPath}.title`,
+          true,
+        ),
         objectiveFragment: decoder.string(
           decoder.field(progress, "objective_fragment", itemPath),
           `${itemPath}.objective_fragment`,
@@ -1303,12 +1621,18 @@ export function decodeLearningPlan(
       };
     },
   );
-  decoder.unique(studyUnitProgress.map((entry) => entry.unitId), `${path}.study_unit_progress.unit_id`);
+  decoder.unique(
+    studyUnitProgress.map((entry) => entry.unitId),
+    `${path}.study_unit_progress.unit_id`,
+  );
   const expectedProgressUnits = studyUnits.filter((unit) => unit.includeInPlan);
-  const projectedProgressUnits = expectedProgressUnits.length > 0 ? expectedProgressUnits : studyUnits;
+  const projectedProgressUnits =
+    expectedProgressUnits.length > 0 ? expectedProgressUnits : studyUnits;
   if (
     studyUnitProgress.length !== projectedProgressUnits.length ||
-    studyUnitProgress.some((entry, index) => entry.unitId !== projectedProgressUnits[index]?.id)
+    studyUnitProgress.some(
+      (entry, index) => entry.unitId !== projectedProgressUnits[index]?.id,
+    )
   ) {
     throw new PlanningDecodeError(
       `${path}.study_unit_progress`,
@@ -1333,15 +1657,25 @@ export function decodeLearningPlan(
       );
       return {
         id: decoder.string(decoder.field(event, "id", itemPath), `${itemPath}.id`),
-        actor: decoder.string(decoder.field(event, "actor", itemPath), `${itemPath}.actor`),
-        source: decoder.string(decoder.field(event, "source", itemPath), `${itemPath}.source`),
+        actor: decoder.string(
+          decoder.field(event, "actor", itemPath),
+          `${itemPath}.actor`,
+        ),
+        source: decoder.string(
+          decoder.field(event, "source", itemPath),
+          `${itemPath}.source`,
+        ),
         scheduleIds,
         status: decoder.enumeration(
           decoder.field(event, "status", itemPath),
           SCHEDULE_STATUSES,
           `${itemPath}.status`,
         ),
-        note: decoder.string(decoder.field(event, "note", itemPath), `${itemPath}.note`, true),
+        note: decoder.string(
+          decoder.field(event, "note", itemPath),
+          `${itemPath}.note`,
+          true,
+        ),
         createdAt: decoder.string(
           decoder.field(event, "created_at", itemPath),
           `${itemPath}.created_at`,
@@ -1349,7 +1683,10 @@ export function decodeLearningPlan(
       };
     },
   );
-  decoder.unique(progressEvents.map((event) => event.id), `${path}.progress_events.id`);
+  decoder.unique(
+    progressEvents.map((event) => event.id),
+    `${path}.progress_events.id`,
+  );
 
   const planningQuestions = decoder.array(
     decoder.field(value, "planning_questions", path),
@@ -1367,7 +1704,10 @@ export function decodeLearningPlan(
         true,
       );
       if ((status === "answered") !== Boolean(answeredAt)) {
-        throw new PlanningDecodeError(`${itemPath}.answered_at`, "question_status_time_mismatch");
+        throw new PlanningDecodeError(
+          `${itemPath}.answered_at`,
+          "question_status_time_mismatch",
+        );
       }
       return {
         id: decoder.string(decoder.field(question, "id", itemPath), `${itemPath}.id`),
@@ -1375,13 +1715,21 @@ export function decodeLearningPlan(
           decoder.field(question, "question", itemPath),
           `${itemPath}.question`,
         ),
-        reason: decoder.string(decoder.field(question, "reason", itemPath), `${itemPath}.reason`, true),
+        reason: decoder.string(
+          decoder.field(question, "reason", itemPath),
+          `${itemPath}.reason`,
+          true,
+        ),
         assumptions: decoder.stringArray(
           decoder.field(question, "assumptions", itemPath),
           `${itemPath}.assumptions`,
           true,
         ),
-        answer: decoder.string(decoder.field(question, "answer", itemPath), `${itemPath}.answer`, true),
+        answer: decoder.string(
+          decoder.field(question, "answer", itemPath),
+          `${itemPath}.answer`,
+          true,
+        ),
         status,
         sourceToolName: decoder.enumeration(
           decoder.field(question, "source_tool_name", itemPath),
@@ -1396,7 +1744,10 @@ export function decodeLearningPlan(
       };
     },
   );
-  decoder.unique(planningQuestions.map((question) => question.id), `${path}.planning_questions.id`);
+  decoder.unique(
+    planningQuestions.map((question) => question.id),
+    `${path}.planning_questions.id`,
+  );
 
   const rawSceneProfile = decoder.field(value, "scene_profile", path);
   const sceneProfile = decoder.nullable(
@@ -1404,34 +1755,81 @@ export function decodeLearningPlan(
     `${path}.scene_profile`,
     decodeSceneProfile,
   );
-  const planningIntent = value.planning_intent === undefined
-    ? unknownPlanningIntent()
-    : decodePlanningIntent(value.planning_intent, `${path}.planning_intent`);
-  const outputLanguage = value.output_language === undefined
-    ? "unknown"
-    : decoder.string(value.output_language, `${path}.output_language`);
+  const planningIntent =
+    value.planning_intent === undefined
+      ? unknownPlanningIntent()
+      : decodePlanningIntent(value.planning_intent, `${path}.planning_intent`);
+  const outputLanguage =
+    value.output_language === undefined
+      ? "unknown"
+      : decoder.string(value.output_language, `${path}.output_language`);
   if (
-    planningIntent.outputLanguage.status === "user_explicit"
-    && outputLanguage.toLocaleLowerCase() !== planningIntent.outputLanguage.value.toLocaleLowerCase()
+    planningIntent.outputLanguage.status === "user_explicit" &&
+    outputLanguage.toLocaleLowerCase() !==
+      planningIntent.outputLanguage.value.toLocaleLowerCase()
   ) {
     throw new PlanningDecodeError(
       `${path}.output_language`,
       "explicit_language_projection_mismatch",
     );
   }
-  const resolvedPlanningIntent = value.resolved_planning_intent === undefined
-    || value.resolved_planning_intent === null
-    ? undefined
-    : decodeResolvedPlanningIntent(
-      value.resolved_planning_intent,
-      `${path}.resolved_planning_intent`,
-      planningIntent,
-      schedule,
-      outputLanguage,
-    );
+  if (planningIntent.pdfPageRanges.status === "user_explicit") {
+    const ranges = planningIntent.pdfPageRanges.value;
+    const inside = (start: number, end: number) =>
+      ranges.some((range) => start >= range.pageStart && end <= range.pageEnd);
+    const spans: { start: number; end: number }[] = [];
+    for (const item of schedule)
+      for (const chapter of item.scheduleChapters) {
+        if (!inside(chapter.anchorPageStart, chapter.anchorPageEnd))
+          throw new PlanningDecodeError(
+            `${path}.schedule`,
+            "outside_explicit_physical_scope",
+          );
+        for (const slice of chapter.contentSlices) {
+          if (!inside(slice.pageStart, slice.pageEnd))
+            throw new PlanningDecodeError(
+              `${path}.schedule`,
+              "outside_explicit_physical_scope",
+            );
+          spans.push({ start: slice.pageStart, end: slice.pageEnd });
+        }
+      }
+    const merged: typeof spans = [];
+    for (const span of spans.sort((a, b) => a.start - b.start)) {
+      const last = merged.at(-1);
+      if (last && span.start <= last.end + 1) last.end = Math.max(last.end, span.end);
+      else merged.push({ ...span });
+    }
+    if (
+      ranges.some(
+        (range) =>
+          !merged.some(
+            (span) => span.start <= range.pageStart && span.end >= range.pageEnd,
+          ),
+      )
+    )
+      throw new PlanningDecodeError(
+        `${path}.schedule`,
+        "incomplete_explicit_physical_scope",
+      );
+  }
+  const resolvedPlanningIntent =
+    value.resolved_planning_intent === undefined ||
+    value.resolved_planning_intent === null
+      ? undefined
+      : decodeResolvedPlanningIntent(
+          value.resolved_planning_intent,
+          `${path}.resolved_planning_intent`,
+          planningIntent,
+          schedule,
+          outputLanguage,
+        );
   return {
     id,
-    revision: value.revision === undefined ? 0 : decoder.integer(value.revision, `${path}.revision`, 0),
+    revision:
+      value.revision === undefined
+        ? 0
+        : decoder.integer(value.revision, `${path}.revision`, 0),
     documentId,
     personaId: decoder.string(
       decoder.field(value, "persona_id", path),
@@ -1442,7 +1840,10 @@ export function decodeLearningPlan(
       decoder.field(value, "course_title", path),
       `${path}.course_title`,
     ),
-    objective: decoder.string(decoder.field(value, "objective", path), `${path}.objective`),
+    objective: decoder.string(
+      decoder.field(value, "objective", path),
+      `${path}.objective`,
+    ),
     sceneProfileSummary: decoder.string(
       decoder.field(value, "scene_profile_summary", path),
       `${path}.scene_profile_summary`,
@@ -1452,7 +1853,10 @@ export function decodeLearningPlan(
     planningIntent,
     ...(resolvedPlanningIntent ? { resolvedPlanningIntent } : {}),
     outputLanguage,
-    overview: decoder.string(decoder.field(value, "overview", path), `${path}.overview`),
+    overview: decoder.string(
+      decoder.field(value, "overview", path),
+      `${path}.overview`,
+    ),
     todayTasks: decoder.stringArray(
       decoder.field(value, "today_tasks", path),
       `${path}.today_tasks`,
@@ -1479,7 +1883,10 @@ export function decodeLearningPlanList(raw: unknown): LearningPlan[] {
     `${path}.items`,
     (item, itemPath) => decodeLearningPlan(item, { path: itemPath }),
   );
-  decoder.unique(plans.map((plan) => plan.id), `${path}.items.id`);
+  decoder.unique(
+    plans.map((plan) => plan.id),
+    `${path}.items.id`,
+  );
   return plans;
 }
 
@@ -1503,7 +1910,10 @@ export function decodeDocumentStudyUnitUpdate(
         path: itemPath,
       }),
   );
-  decoder.unique(plans.map((plan) => plan.id), `${path}.plans.id`);
+  decoder.unique(
+    plans.map((plan) => plan.id),
+    `${path}.plans.id`,
+  );
   return { document, plans };
 }
 
@@ -1523,10 +1933,20 @@ function decodeModelRecovery(raw: unknown, path: string): ModelRecovery {
       decoder.field(value, "recovery_id", path),
       `${path}.recovery_id`,
     ),
-    category: decoder.string(decoder.field(value, "category", path), `${path}.category`),
+    category: decoder.string(
+      decoder.field(value, "category", path),
+      `${path}.category`,
+    ),
     reason: decoder.string(decoder.field(value, "reason", path), `${path}.reason`),
-    strategy: decoder.string(decoder.field(value, "strategy", path), `${path}.strategy`),
-    attempts: decoder.integer(decoder.field(value, "attempts", path), `${path}.attempts`, 1),
+    strategy: decoder.string(
+      decoder.field(value, "strategy", path),
+      `${path}.strategy`,
+    ),
+    attempts: decoder.integer(
+      decoder.field(value, "attempts", path),
+      `${path}.attempts`,
+      1,
+    ),
     note: decoder.string(decoder.field(value, "note", path), `${path}.note`, true),
     createdAt: decoder.string(
       decoder.field(value, "created_at", path),
@@ -1535,7 +1955,11 @@ function decodeModelRecovery(raw: unknown, path: string): ModelRecovery {
   };
 }
 
-function decodePlanRound(raw: unknown, path: string, expectedIndex: number): PlanGenerationRoundTrace {
+function decodePlanRound(
+  raw: unknown,
+  path: string,
+  expectedIndex: number,
+): PlanGenerationRoundTrace {
   const value = decoder.record(raw, path);
   const roundIndex = decoder.integer(
     decoder.field(value, "round_index", path),
@@ -1586,20 +2010,32 @@ function decodePlanRound(raw: unknown, path: string, expectedIndex: number): Pla
     },
   );
   for (const [index, call] of toolCalls.entries()) {
-    const currentArguments = call.argumentContractVersion === "planning-tool-arguments-v2";
+    const currentArguments =
+      call.argumentContractVersion === "planning-tool-arguments-v2";
     const currentResult = call.resultContractVersion === "planning-tool-result-v2";
-    if ((currentArguments || currentResult) &&
-        (!currentArguments || !currentResult || call.toolName !== "revise_study_units")) {
-      throw new PlanningDecodeError(`${path}.tool_calls[${index}]`, "tool_contract_binding_mismatch");
+    if (
+      (currentArguments || currentResult) &&
+      (!currentArguments || !currentResult || call.toolName !== "revise_study_units")
+    ) {
+      throw new PlanningDecodeError(
+        `${path}.tool_calls[${index}]`,
+        "tool_contract_binding_mismatch",
+      );
     }
   }
-  decoder.unique(toolCalls.map((toolCall) => toolCall.toolCallId), `${path}.tool_calls.tool_call_id`);
+  decoder.unique(
+    toolCalls.map((toolCall) => toolCall.toolCallId),
+    `${path}.tool_calls.tool_call_id`,
+  );
   const recoveries = decoder.array(
     decoder.field(value, "recoveries", path),
     `${path}.recoveries`,
     decodeModelRecovery,
   );
-  decoder.unique(recoveries.map((recovery) => recovery.recoveryId), `${path}.recoveries.recovery_id`);
+  decoder.unique(
+    recoveries.map((recovery) => recovery.recoveryId),
+    `${path}.recoveries.recovery_id`,
+  );
   return {
     roundIndex,
     finishReason: decoder.string(
@@ -1612,7 +2048,11 @@ function decodePlanRound(raw: unknown, path: string, expectedIndex: number): Pla
       `${path}.assistant_content`,
       true,
     ),
-    thinking: decoder.string(decoder.field(value, "thinking", path), `${path}.thinking`, true),
+    thinking: decoder.string(
+      decoder.field(value, "thinking", path),
+      `${path}.thinking`,
+      true,
+    ),
     elapsedMs: decoder.integer(
       decoder.field(value, "elapsed_ms", path),
       `${path}.elapsed_ms`,
@@ -1659,7 +2099,10 @@ function decodePlanTrace(
     documentId,
     planId,
     model: decoder.string(decoder.field(value, "model", path), `${path}.model`),
-    createdAt: decoder.string(decoder.field(value, "created_at", path), `${path}.created_at`),
+    createdAt: decoder.string(
+      decoder.field(value, "created_at", path),
+      `${path}.created_at`,
+    ),
     rounds,
   };
 }
@@ -1709,17 +2152,18 @@ export function decodeDocumentPlanningTraceResponse(
     throw new PlanningDecodeError(`${path}.trace`, "has_trace_projection_mismatch");
   }
   const expectedRoundCount = trace?.rounds.length ?? 0;
-  const expectedToolCallCount = trace?.rounds.reduce(
-    (total, round) => total + round.toolCalls.length,
-    0,
-  ) ?? 0;
+  const expectedToolCallCount =
+    trace?.rounds.reduce((total, round) => total + round.toolCalls.length, 0) ?? 0;
   const expectedFinishReason = trace?.rounds.at(-1)?.finishReason ?? "";
   if (
     summary.roundCount !== expectedRoundCount ||
     summary.toolCallCount !== expectedToolCallCount ||
     summary.latestFinishReason !== expectedFinishReason
   ) {
-    throw new PlanningDecodeError(`${path}.summary`, "trace_summary_projection_mismatch");
+    throw new PlanningDecodeError(
+      `${path}.summary`,
+      "trace_summary_projection_mismatch",
+    );
   }
   return { documentId, hasTrace, summary, trace };
 }

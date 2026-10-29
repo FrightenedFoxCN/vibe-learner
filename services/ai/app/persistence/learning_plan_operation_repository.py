@@ -35,7 +35,10 @@ from app.models.harness import (
     HarnessWorkflow,
     canonical_harness_digest,
 )
-from app.models.harness_runtime_commit import HarnessTransactionFinalizer, HarnessRuntimePreparedOutput
+from app.models.harness_runtime_commit import (
+    HarnessTransactionFinalizer,
+    HarnessRuntimePreparedOutput,
+)
 from app.models.planning import (
     LEARNING_PLAN_COMMIT_CONTRACT_VERSION,
     LEARNING_PLAN_OPERATION_FINGERPRINT_VERSION,
@@ -47,6 +50,10 @@ from app.models.planning import (
     LearningPlanProjectionState,
     learning_plan_request_fingerprint,
     planning_projection_digest,
+)
+from app.models.pdf_page_scope import (
+    validate_physical_input,
+    validate_physical_schedule,
 )
 from app.persistence.database import Database
 from app.persistence.document_repository import (
@@ -150,6 +157,9 @@ class LearningPlanOperationRepository:
                     base_document = DocumentRecord.model_validate(
                         document_row.payload or {}
                     )
+                    validate_physical_input(
+                        request.planning_intent, base_document.page_count
+                    )
                     if base_document.debug_ready:
                         debug_row = session.get(DocumentDebugRow, document_id)
                         if debug_row is None:
@@ -161,6 +171,8 @@ class LearningPlanOperationRepository:
                             debug_row.payload or {}
                         )
 
+                if document_id is None:
+                    validate_physical_input(request.planning_intent, 0)
                 scope_key = (
                     f"document:{request.document_id}"
                     if request.document_id
@@ -223,7 +235,9 @@ class LearningPlanOperationRepository:
                 return existing, True
             raise LearningPlanAdmissionRace(request.client_request_id) from exc
 
-    def mark_provider_started(self, *, operation_id: str) -> LearningPlanOperationRecord:
+    def mark_provider_started(
+        self, *, operation_id: str
+    ) -> LearningPlanOperationRecord:
         with self.database.session() as session:
             row = session.get(LearningPlanOperationRow, operation_id)
             if row is None:
@@ -278,7 +292,8 @@ class LearningPlanOperationRepository:
             if runtime_prepared is not None:
                 output = runtime_prepared.output
                 if any(
-                    canonical_harness_digest(actual) != canonical_harness_digest(validated)
+                    canonical_harness_digest(actual)
+                    != canonical_harness_digest(validated)
                     for actual, validated in (
                         (plan, output.plan),
                         (document, output.document),
@@ -362,6 +377,9 @@ class LearningPlanOperationRepository:
                     "goal_only_projection",
                 )
 
+            if plan.planning_intent != request.planning_intent:
+                raise ValueError("learning_plan_page_scope_intent_mismatch")
+            validate_physical_schedule(plan.schedule, request.planning_intent)
             self._inject("before_document_projection")
             if document_row is not None and document is not None:
                 current_document = document_from_row(document_row)
@@ -381,7 +399,9 @@ class LearningPlanOperationRepository:
 
             trace_key = request.document_id or plan.id
             if trace is not None:
-                trace_row = session.get(PlanningTraceRow, trace_key) or PlanningTraceRow()
+                trace_row = (
+                    session.get(PlanningTraceRow, trace_key) or PlanningTraceRow()
+                )
                 _apply_trace_row(trace_row, trace_key=trace_key, trace=trace)
                 session.add(trace_row)
                 session.flush()
@@ -402,8 +422,12 @@ class LearningPlanOperationRepository:
             if study_unit_revision is not None:
                 if debug_report is None:
                     raise ValueError("study_unit_revision_debug_required")
-                revision_binding = StudyUnitRevisionRepository(self.database).admit_preview_in_session(
-                    session, preview=study_unit_revision, debug=debug_report,
+                revision_binding = StudyUnitRevisionRepository(
+                    self.database
+                ).admit_preview_in_session(
+                    session,
+                    preview=study_unit_revision,
+                    debug=debug_report,
                 )
             self._inject("after_unit_revision_admission")
             projection = LearningPlanCommittedProjectionV2(
@@ -594,7 +618,8 @@ class LearningPlanOperationRepository:
         )
         if (
             binding is None
-            or binding.domain_operation_kind != HarnessDomainOperationKind.LEARNING_PLAN_GENERATION
+            or binding.domain_operation_kind
+            != HarnessDomainOperationKind.LEARNING_PLAN_GENERATION
             or current is None
             or current.trace_id != runtime_prepared.execution.trace_id
             or current.harness_operation_id != binding.harness_operation_id
@@ -602,11 +627,13 @@ class LearningPlanOperationRepository:
             or current.stage != HarnessStage.PLAN_GENERATION
             or current.trace_slot != 0
             or current.parent_trace_id is not None
-            or current.trace_contract != HarnessContractRef(
+            or current.trace_contract
+            != HarnessContractRef(
                 name="LearningPlanRuntimeOutput",
                 version="learning-plan-runtime-output-v2",
             )
-            or runtime_prepared.execution.harness_operation_id != binding.harness_operation_id
+            or runtime_prepared.execution.harness_operation_id
+            != binding.harness_operation_id
         ):
             raise ValueError("learning_plan_runtime_binding_mismatch")
         attempts = current.attempt_records
@@ -616,7 +643,8 @@ class LearningPlanOperationRepository:
             or attempts[-1].phase != HarnessAttemptPhase.VALIDATE
             or attempts[-1].status != HarnessAttemptStatus.PASSED
             or attempts[-1].output_digest != runtime_prepared.output_digest
-            or canonical_harness_digest(runtime_prepared.output) != runtime_prepared.output_digest
+            or canonical_harness_digest(runtime_prepared.output)
+            != runtime_prepared.output_digest
         ):
             raise ValueError("learning_plan_runtime_output_mismatch")
 
@@ -667,9 +695,7 @@ class LearningPlanOperationRepository:
         operation_id: str,
     ) -> HarnessOperationBindingV1:
         return self.harness_operations.require_domain(
-            domain_operation_kind=(
-                HarnessDomainOperationKind.LEARNING_PLAN_GENERATION
-            ),
+            domain_operation_kind=(HarnessDomainOperationKind.LEARNING_PLAN_GENERATION),
             domain_operation_id=operation_id,
         )
 
@@ -689,7 +715,10 @@ class LearningPlanOperationRepository:
                 return None
             record = _from_row(row)
             _validate_committed_projection_snapshot(record)
-            if validate_current and record.status == LearningPlanOperationStatus.COMMITTED:
+            if (
+                validate_current
+                and record.status == LearningPlanOperationStatus.COMMITTED
+            ):
                 _validate_current_projection(session, record)
             return record
 
@@ -705,7 +734,10 @@ class LearningPlanOperationRepository:
                 raise LearningPlanOperationNotFound(operation_id)
             record = _from_row(row)
             _validate_committed_projection_snapshot(record)
-            if validate_current and record.status == LearningPlanOperationStatus.COMMITTED:
+            if (
+                validate_current
+                and record.status == LearningPlanOperationStatus.COMMITTED
+            ):
                 _validate_current_projection(session, record)
             return record
 
@@ -747,7 +779,9 @@ def _terminalize_legacy_unbound_plan(
     row.completed_at = now
 
 
-def _validate_committed_projection_snapshot(record: LearningPlanOperationRecord) -> None:
+def _validate_committed_projection_snapshot(
+    record: LearningPlanOperationRecord,
+) -> None:
     if record.status != LearningPlanOperationStatus.COMMITTED:
         return
     if record.committed_projection is None:
@@ -765,7 +799,11 @@ def _validate_current_projection(session, record: LearningPlanOperationRecord) -
     if plan_row is None:
         raise LearningPlanReadBackError(record.operation_id, "plan_missing")
     # Creation proof refers to the admitted original projection, not later edits.
-    original = session.get(LearningPlanRevisionRow, (projection.plan_id, 0)) if plan_row.revision > 0 else None
+    original = (
+        session.get(LearningPlanRevisionRow, (projection.plan_id, 0))
+        if plan_row.revision > 0
+        else None
+    )
     creation_payload = original.payload if original is not None else plan_row.payload
     if planning_projection_digest(creation_payload or {}) != projection.plan_digest:
         raise LearningPlanReadBackError(record.operation_id, "plan_digest_mismatch")
@@ -773,21 +811,36 @@ def _validate_current_projection(session, record: LearningPlanOperationRecord) -
         document_row = session.get(DocumentRow, projection.document_id)
         if document_row is None:
             raise LearningPlanReadBackError(record.operation_id, "document_missing")
-        if planning_projection_digest(document_row.payload or {}) != projection.document_digest:
-            raise LearningPlanReadBackError(record.operation_id, "document_digest_mismatch")
+        if (
+            planning_projection_digest(document_row.payload or {})
+            != projection.document_digest
+        ):
+            raise LearningPlanReadBackError(
+                record.operation_id, "document_digest_mismatch"
+            )
     if projection.debug_report is not None:
         debug_row = session.get(DocumentDebugRow, projection.document_id)
         if debug_row is None:
             raise LearningPlanReadBackError(record.operation_id, "debug_missing")
-        if planning_projection_digest(debug_row.payload or {}) != projection.debug_digest:
-            raise LearningPlanReadBackError(record.operation_id, "debug_digest_mismatch")
+        if (
+            planning_projection_digest(debug_row.payload or {})
+            != projection.debug_digest
+        ):
+            raise LearningPlanReadBackError(
+                record.operation_id, "debug_digest_mismatch"
+            )
     if projection.trace is not None:
         trace_key = projection.document_id or projection.plan_id
         trace_row = session.get(PlanningTraceRow, trace_key)
         if trace_row is None:
             raise LearningPlanReadBackError(record.operation_id, "trace_missing")
-        if planning_projection_digest(trace_row.payload or {}) != projection.trace_digest:
-            raise LearningPlanReadBackError(record.operation_id, "trace_digest_mismatch")
+        if (
+            planning_projection_digest(trace_row.payload or {})
+            != projection.trace_digest
+        ):
+            raise LearningPlanReadBackError(
+                record.operation_id, "trace_digest_mismatch"
+            )
 
 
 def _apply_debug_row(row: DocumentDebugRow, report: DocumentDebugRecord) -> None:
@@ -867,7 +920,9 @@ class LearningPlanDocumentNotFound(LearningPlanOperationError):
 
 class LearningPlanStaleDocument(LearningPlanOperationError):
     def __init__(self, document_id: str, *, expected: str, actual: str) -> None:
-        super().__init__(f"learning_plan_stale_document:{document_id}:{expected}:{actual}")
+        super().__init__(
+            f"learning_plan_stale_document:{document_id}:{expected}:{actual}"
+        )
         self.document_id = document_id
         self.expected = expected
         self.actual = actual

@@ -37,11 +37,6 @@
 
 本节已吸收 2026-09-13 M3 Planning production 配对复测中仍未关闭的工程结论；实验明细由本地归档分支保存。
 
-- [ ] `PLAN-PAGE-BOUNDS-001` `[P1]` 将用户显式 PDF 物理页范围变成服务端工具、proposal 与 commit invariant。
-  - 2026-09-13 审计：服务端已有 `PlanningIntentV1.pdf_page_ranges`、工具范围拒绝、proposal/schedule anchor/content slice invariant 和 resolved intent；但前端没有用户输入/持久化显式 PDF 页范围，数据模型只有物理页整数，未独立建模印刷页，且尚无端到端验收证明“100–103”贯穿请求、取证、proposal 与 commit。因此保持未完成。
-  - 用户指定 PDF 100–103 时，取证工具参数、schedule anchor 和 content slices 必须落在该范围；物理页与印刷页分别建模，不能让模型把印刷 70–73 当成物理 70–73 后成功提交。
-  - 本票只负责应用约束；教材语义、公式、旧记号和范围完整性质量由本文件的 `MQ-04` 负责。
-
 - [ ] `OCR-CHECKPOINT-RECOVERY-001` `[P1]` 让长 OCR 在阶段完成后可读、可续跑。
   - 总 wall-time 在全部页面处理完成后耗尽时，不得抹掉已完成页和 Study Unit；保存有界 checkpoint，并验证重启、超时和重复请求的 read-back/续跑语义。
 

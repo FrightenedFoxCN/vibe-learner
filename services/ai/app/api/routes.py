@@ -1,8 +1,17 @@
-from app.models.plan_revision import PlanRevisionRequestV1, PlanRevisionDecisionV1, PlanRevisionResponseV1
+from app.models.pdf_page_scope import DocumentPageNumberingResponseV1
+from app.services.document_page_numbering import read_document_page_numbering
+from app.models.plan_revision import (
+    PlanRevisionRequestV1,
+    PlanRevisionDecisionV1,
+    PlanRevisionResponseV1,
+)
 from app.persistence.plan_revision_repository import PlanRevisionRepository
 from app.services.plan_revision import PlanRevisionService
 from app.services.study_chat_context import _resolve_session_document
-from app.services.study_chat_errors import StudyChatApplicationError, map_chat_generation_error
+from app.services.study_chat_errors import (
+    StudyChatApplicationError,
+    map_chat_generation_error,
+)
 import json
 from datetime import datetime, timezone
 from pathlib import Path
@@ -22,11 +31,87 @@ from app.core.diagnostics import reference_persona, reference_scene, reference_r
 from app.core.bootstrap import Container
 from app.api.dependencies import get_container
 from fastapi import Depends
-from app.models.api import BatchCreatePersonaCardsRequest, CreatePersonaCardRequest, CreateReusableSceneNodeRequest, CreatePersonaRequest, CreateStudySessionRequest, DocumentDebugResponse, DocumentListResponse, DocumentPlanningContextResponse, DocumentPlanningTraceResponse, DocumentResponse, DocumentProcessResponse, DocumentStudyUnitUpdateResponse, StreamReportResponse, DocumentStatusResponse, ExerciseGenerateRequest, ExerciseGenerateResponse, LearningPlanCreateRequest, LearningPlanListResponse, LearningPlanOperationResponse, LearningPlanProgressUpdateRequest, LearningPlanResponse, LearningPlanCreateResponse, LearningPlanUpdateRequest, ModelToolConfigResponse, PlanningQuestionAnswerRequest, RuntimeSettingsResponse, RuntimeSessionSecretsRequest, RuntimeSettingsProbeRequest, RuntimeSettingsProbeResponse, ReusableSceneNodeListResponse, ReusableSceneNodeResponse, SceneLibraryListResponse, SceneLibraryResponse, SceneTreeGenerateRequest, SceneTreeGenerateResponse, SceneSetupResponse, StudyUnitTitleUpdateRequest, UpdateModelToolConfigRequest, UpdateSceneSetupRequest, UpsertSceneLibraryRequest, UpdateRuntimeSettingsRequest, PersonaAssetsResponse, PersonaCardGenerateRequest, PersonaCardGenerateResponse, PersonaCardListResponse, PersonaCardResponse, PersonaSlotAssistRequest, PersonaSlotAssistResponse, ProcessDocumentRequest, PersonaSettingAssistRequest, PersonaSettingAssistResponse, PersonaListResponse, PersonaResponse, StudyChatRequest, StudyChatExchangeResponse, StudyChatOperationReceiptResponse, StudySessionPlanConfirmationDecisionRequest, StudySessionPlanConfirmationDecisionResponse, StudyQuestionAttemptRequest, StudyQuestionAttemptResponse, StorageCleanupRequest, StorageCleanupResponse, StorageSummaryResponse, StudySessionListResponse, StudySessionResponse, UpdatePersonaRequest, UpdateStudySessionRequest, SubmissionGradeRequest, SubmissionGradeResponse, TokenUsageCallRecord, TokenUsageStatsResponse, TokenUsageDailyBucket
+from app.models.api import (
+    BatchCreatePersonaCardsRequest,
+    CreatePersonaCardRequest,
+    CreateReusableSceneNodeRequest,
+    CreatePersonaRequest,
+    CreateStudySessionRequest,
+    DocumentDebugResponse,
+    DocumentListResponse,
+    DocumentPlanningContextResponse,
+    DocumentPlanningTraceResponse,
+    DocumentResponse,
+    DocumentProcessResponse,
+    DocumentStudyUnitUpdateResponse,
+    StreamReportResponse,
+    DocumentStatusResponse,
+    ExerciseGenerateRequest,
+    ExerciseGenerateResponse,
+    LearningPlanCreateRequest,
+    LearningPlanListResponse,
+    LearningPlanOperationResponse,
+    LearningPlanProgressUpdateRequest,
+    LearningPlanResponse,
+    LearningPlanCreateResponse,
+    LearningPlanUpdateRequest,
+    ModelToolConfigResponse,
+    PlanningQuestionAnswerRequest,
+    RuntimeSettingsResponse,
+    RuntimeSessionSecretsRequest,
+    RuntimeSettingsProbeRequest,
+    RuntimeSettingsProbeResponse,
+    ReusableSceneNodeListResponse,
+    ReusableSceneNodeResponse,
+    SceneLibraryListResponse,
+    SceneLibraryResponse,
+    SceneTreeGenerateRequest,
+    SceneTreeGenerateResponse,
+    SceneSetupResponse,
+    StudyUnitTitleUpdateRequest,
+    UpdateModelToolConfigRequest,
+    UpdateSceneSetupRequest,
+    UpsertSceneLibraryRequest,
+    UpdateRuntimeSettingsRequest,
+    PersonaAssetsResponse,
+    PersonaCardGenerateRequest,
+    PersonaCardGenerateResponse,
+    PersonaCardListResponse,
+    PersonaCardResponse,
+    PersonaSlotAssistRequest,
+    PersonaSlotAssistResponse,
+    ProcessDocumentRequest,
+    PersonaSettingAssistRequest,
+    PersonaSettingAssistResponse,
+    PersonaListResponse,
+    PersonaResponse,
+    StudyChatRequest,
+    StudyChatExchangeResponse,
+    StudyChatOperationReceiptResponse,
+    StudySessionPlanConfirmationDecisionRequest,
+    StudySessionPlanConfirmationDecisionResponse,
+    StudyQuestionAttemptRequest,
+    StudyQuestionAttemptResponse,
+    StorageCleanupRequest,
+    StorageCleanupResponse,
+    StorageSummaryResponse,
+    StudySessionListResponse,
+    StudySessionResponse,
+    UpdatePersonaRequest,
+    UpdateStudySessionRequest,
+    SubmissionGradeRequest,
+    SubmissionGradeResponse,
+    TokenUsageCallRecord,
+    TokenUsageStatsResponse,
+    TokenUsageDailyBucket,
+)
 from app.models.domain import PersonaCardRecord, PersonaSlot, PlanGenerationTraceRecord
 from app.models.harness import HarnessStage, canonical_harness_digest
 from app.models.harness_operation import HarnessDomainOperationKind
-from app.models.study_unit_revision import StudyUnitRevisionDecisionV1, StudyUnitRevisionResponseV1
+from app.models.study_unit_revision import (
+    StudyUnitRevisionDecisionV1,
+    StudyUnitRevisionResponseV1,
+)
 from app.models.stream import (
     DOCUMENT_STREAM_PROJECTION_CONTRACT,
     LEARNING_PLAN_STREAM_PROJECTION_CONTRACT,
@@ -35,7 +120,11 @@ from app.models.stream import (
 )
 from app.persistence.study_chat_operation_repository import StudyChatOperationNotFound
 from app.persistence.harness_runtime_repository import HarnessRuntimeRepository
-from app.services.model_recovery import consume_model_recovery_state, record_model_recovery, reset_model_recovery_state
+from app.services.model_recovery import (
+    consume_model_recovery_state,
+    record_model_recovery,
+    reset_model_recovery_state,
+)
 from app.services.model_provider import OpenAIModelProvider
 from app.services.study_chat_attachments import read_study_chat_attachment_inputs
 from app.services.study_chat_attachments import render_pdf_page_png_bytes
@@ -63,7 +152,9 @@ router = APIRouter()
 logger = get_logger("vibe_learner.routes")
 
 
-def _into_response(response_model: type[BaseModel], value: BaseModel | dict) -> BaseModel:
+def _into_response(
+    response_model: type[BaseModel], value: BaseModel | dict
+) -> BaseModel:
     payload = value.model_dump() if isinstance(value, BaseModel) else value
     return response_model.model_validate(payload)
 
@@ -109,7 +200,9 @@ def _require_domain_harness_trace(
     terminal = [
         item.terminal_trace
         for item in traces
-        if item.stage == stage and item.trace_slot == 0 and item.terminal_trace is not None
+        if item.stage == stage
+        and item.trace_slot == 0
+        and item.terminal_trace is not None
     ]
     if len(terminal) != 1:
         raise RuntimeError("harness_domain_terminal_trace_missing")
@@ -332,7 +425,9 @@ def _map_setting_generation_error(exc: RuntimeError) -> HTTPException:
     if detail == "setting_model_invalid_payload":
         return HTTPException(status_code=502, detail="setting_model_invalid_payload")
     if detail == "setting_persona_card_count_mismatch":
-        return HTTPException(status_code=502, detail="setting_persona_card_count_mismatch")
+        return HTTPException(
+            status_code=502, detail="setting_persona_card_count_mismatch"
+        )
     if detail.startswith("setting_scene_proposal_invalid:"):
         return HTTPException(status_code=502, detail="setting_model_invalid_payload")
     return HTTPException(status_code=500, detail="setting_generation_failed")
@@ -341,7 +436,9 @@ def _map_setting_generation_error(exc: RuntimeError) -> HTTPException:
 def _map_persona_card_generation_error(exc: RuntimeError) -> HTTPException:
     detail = str(exc)
     if detail == "setting_keyword_generation_requires_openai":
-        return HTTPException(status_code=400, detail="keyword_generation_requires_openai")
+        return HTTPException(
+            status_code=400, detail="keyword_generation_requires_openai"
+        )
     return _map_setting_generation_error(exc)
 
 
@@ -351,7 +448,9 @@ def healthcheck() -> dict[str, str]:
 
 
 @router.get("/storage/summary", response_model=StorageSummaryResponse)
-def get_storage_summary(*, container: Container = Depends(get_container)) -> StorageSummaryResponse:
+def get_storage_summary(
+    *, container: Container = Depends(get_container)
+) -> StorageSummaryResponse:
     return StorageSummaryResponse(
         buckets=container.storage_lifecycle_service.summarize(),
         orphaned_uploads=container.storage_lifecycle_service.list_orphaned_uploads(),
@@ -359,7 +458,9 @@ def get_storage_summary(*, container: Container = Depends(get_container)) -> Sto
 
 
 @router.post("/storage/cleanup", response_model=StorageCleanupResponse)
-def cleanup_storage(payload: StorageCleanupRequest, *, container: Container = Depends(get_container)) -> StorageCleanupResponse:
+def cleanup_storage(
+    payload: StorageCleanupRequest, *, container: Container = Depends(get_container)
+) -> StorageCleanupResponse:
     try:
         items = container.storage_lifecycle_service.cleanup(
             buckets=payload.buckets,
@@ -372,7 +473,9 @@ def cleanup_storage(payload: StorageCleanupRequest, *, container: Container = De
 
 
 @router.get("/model-tools/config", response_model=ModelToolConfigResponse)
-def get_model_tool_config(*, container: Container = Depends(get_container)) -> ModelToolConfigResponse:
+def get_model_tool_config(
+    *, container: Container = Depends(get_container)
+) -> ModelToolConfigResponse:
     described = container.model_tool_config_service.describe()
     provider = container.model_provider
 
@@ -383,7 +486,9 @@ def get_model_tool_config(*, container: Container = Depends(get_container)) -> M
 
     for stage in described["stages"]:
         current_stage_name = str(stage.get("name") or "")
-        stage_flag, stage_reason = stage_enabled.get(current_stage_name, (False, "当前模型提供器不支持此阶段工具。"))
+        stage_flag, stage_reason = stage_enabled.get(
+            current_stage_name, (False, "当前模型提供器不支持此阶段工具。")
+        )
         stage["stage_enabled"] = stage_flag
         stage["stage_disabled_reason"] = stage_reason
         stage["audit_basis"] = [
@@ -403,13 +508,19 @@ def get_model_tool_config(*, container: Container = Depends(get_container)) -> M
                 available = False
                 unavailable_reason = stage_reason
             elif tool_name == "read_page_range_images":
-                if current_stage_name == "plan_generation" and not provider.supports_page_image_tools():
+                if (
+                    current_stage_name == "plan_generation"
+                    and not provider.supports_page_image_tools()
+                ):
                     available = False
                     unavailable_reason = "当前计划模型未启用多模态能力。"
                     audit_basis.append("plan_multimodal=off")
                 else:
                     audit_basis.append("plan_multimodal=on")
-                if current_stage_name == "study_chat" and not provider.supports_chat_page_image_tools():
+                if (
+                    current_stage_name == "study_chat"
+                    and not provider.supports_chat_page_image_tools()
+                ):
                     available = False
                     unavailable_reason = "当前对话模型未启用多模态能力。"
                     audit_basis.append("chat_multimodal=off")
@@ -426,7 +537,11 @@ def get_model_tool_config(*, container: Container = Depends(get_container)) -> M
 
 
 @router.patch("/model-tools/config", response_model=ModelToolConfigResponse)
-def update_model_tool_config(payload: UpdateModelToolConfigRequest, *, container: Container = Depends(get_container)) -> ModelToolConfigResponse:
+def update_model_tool_config(
+    payload: UpdateModelToolConfigRequest,
+    *,
+    container: Container = Depends(get_container),
+) -> ModelToolConfigResponse:
     try:
         container.model_tool_config_service.update(
             [toggle.model_dump(mode="json") for toggle in payload.toggles]
@@ -437,13 +552,19 @@ def update_model_tool_config(payload: UpdateModelToolConfigRequest, *, container
 
 
 @router.get("/runtime-settings", response_model=RuntimeSettingsResponse)
-def get_runtime_settings(*, container: Container = Depends(get_container)) -> RuntimeSettingsResponse:
+def get_runtime_settings(
+    *, container: Container = Depends(get_container)
+) -> RuntimeSettingsResponse:
     described = container.runtime_settings_service.describe()
     return _into_response(RuntimeSettingsResponse, described)
 
 
 @router.patch("/runtime-settings", response_model=RuntimeSettingsResponse)
-def update_runtime_settings(payload: UpdateRuntimeSettingsRequest, *, container: Container = Depends(get_container)) -> RuntimeSettingsResponse:
+def update_runtime_settings(
+    payload: UpdateRuntimeSettingsRequest,
+    *,
+    container: Container = Depends(get_container),
+) -> RuntimeSettingsResponse:
     try:
         updates = payload.model_dump(mode="json", exclude_none=True)
         container.update_runtime_settings(updates)
@@ -453,27 +574,39 @@ def update_runtime_settings(payload: UpdateRuntimeSettingsRequest, *, container:
 
 
 @router.put("/runtime-settings/session-secrets", response_model=RuntimeSettingsResponse)
-def apply_runtime_session_secrets(payload: RuntimeSessionSecretsRequest, *, container: Container = Depends(get_container)) -> RuntimeSettingsResponse:
+def apply_runtime_session_secrets(
+    payload: RuntimeSessionSecretsRequest,
+    *,
+    container: Container = Depends(get_container),
+) -> RuntimeSettingsResponse:
     container.apply_runtime_session_secrets(
         payload.model_dump(mode="json", exclude_none=True)
     )
     return get_runtime_settings(container=container)
 
 
-@router.delete("/runtime-settings/session-secrets", response_model=RuntimeSettingsResponse)
-def clear_runtime_session_secrets(*, container: Container = Depends(get_container)) -> RuntimeSettingsResponse:
+@router.delete(
+    "/runtime-settings/session-secrets", response_model=RuntimeSettingsResponse
+)
+def clear_runtime_session_secrets(
+    *, container: Container = Depends(get_container)
+) -> RuntimeSettingsResponse:
     container.clear_runtime_session_secrets()
     return get_runtime_settings(container=container)
 
 
 @router.get("/scene-setup", response_model=SceneSetupResponse)
-def get_scene_setup(*, container: Container = Depends(get_container)) -> SceneSetupResponse:
+def get_scene_setup(
+    *, container: Container = Depends(get_container)
+) -> SceneSetupResponse:
     record = container.scene_setup_service.get_state()
     return _into_response(SceneSetupResponse, record)
 
 
 @router.put("/scene-setup", response_model=SceneSetupResponse)
-def update_scene_setup(payload: UpdateSceneSetupRequest, *, container: Container = Depends(get_container)) -> SceneSetupResponse:
+def update_scene_setup(
+    payload: UpdateSceneSetupRequest, *, container: Container = Depends(get_container)
+) -> SceneSetupResponse:
     record = container.scene_setup_service.upsert_state(
         scene_name=payload.scene_name,
         scene_summary=payload.scene_summary,
@@ -486,19 +619,27 @@ def update_scene_setup(payload: UpdateSceneSetupRequest, *, container: Container
 
 
 @router.get("/scene-library", response_model=SceneLibraryListResponse)
-def list_scene_library(*, container: Container = Depends(get_container)) -> SceneLibraryListResponse:
+def list_scene_library(
+    *, container: Container = Depends(get_container)
+) -> SceneLibraryListResponse:
     items = container.scene_library_service.list_scenes()
-    return SceneLibraryListResponse(items=[_into_response(SceneLibraryResponse, item) for item in items])
+    return SceneLibraryListResponse(
+        items=[_into_response(SceneLibraryResponse, item) for item in items]
+    )
 
 
 @router.get("/scene-library/{scene_id}", response_model=SceneLibraryResponse)
-def get_scene_library_item(scene_id: str, *, container: Container = Depends(get_container)) -> SceneLibraryResponse:
+def get_scene_library_item(
+    scene_id: str, *, container: Container = Depends(get_container)
+) -> SceneLibraryResponse:
     record = container.scene_library_service.require_scene(scene_id)
     return _into_response(SceneLibraryResponse, record)
 
 
 @router.post("/scene-library", response_model=SceneLibraryResponse)
-def create_scene_library_item(payload: UpsertSceneLibraryRequest, *, container: Container = Depends(get_container)) -> SceneLibraryResponse:
+def create_scene_library_item(
+    payload: UpsertSceneLibraryRequest, *, container: Container = Depends(get_container)
+) -> SceneLibraryResponse:
     record = container.scene_library_service.upsert_scene(
         scene_id=None,
         scene_name=payload.scene_name,
@@ -513,7 +654,12 @@ def create_scene_library_item(payload: UpsertSceneLibraryRequest, *, container: 
 
 
 @router.put("/scene-library/{scene_id}", response_model=SceneLibraryResponse)
-def update_scene_library_item(scene_id: str, payload: UpsertSceneLibraryRequest, *, container: Container = Depends(get_container)) -> SceneLibraryResponse:
+def update_scene_library_item(
+    scene_id: str,
+    payload: UpsertSceneLibraryRequest,
+    *,
+    container: Container = Depends(get_container),
+) -> SceneLibraryResponse:
     record = container.scene_library_service.upsert_scene(
         scene_id=scene_id,
         scene_name=payload.scene_name,
@@ -528,13 +674,17 @@ def update_scene_library_item(scene_id: str, payload: UpsertSceneLibraryRequest,
 
 
 @router.delete("/scene-library/{scene_id}")
-def delete_scene_library_item(scene_id: str, *, container: Container = Depends(get_container)) -> dict[str, str]:
+def delete_scene_library_item(
+    scene_id: str, *, container: Container = Depends(get_container)
+) -> dict[str, str]:
     container.scene_library_service.delete_scene(scene_id)
     return {"deleted_scene_id": scene_id}
 
 
 @router.get("/reusable-scene-nodes", response_model=ReusableSceneNodeListResponse)
-def list_reusable_scene_nodes(*, container: Container = Depends(get_container)) -> ReusableSceneNodeListResponse:
+def list_reusable_scene_nodes(
+    *, container: Container = Depends(get_container)
+) -> ReusableSceneNodeListResponse:
     items = container.reusable_scene_node_library_service.list_nodes()
     return ReusableSceneNodeListResponse(
         items=[_into_response(ReusableSceneNodeResponse, item) for item in items]
@@ -542,21 +692,30 @@ def list_reusable_scene_nodes(*, container: Container = Depends(get_container)) 
 
 
 @router.post("/reusable-scene-nodes", response_model=ReusableSceneNodeResponse)
-def create_reusable_scene_node(payload: CreateReusableSceneNodeRequest, *, container: Container = Depends(get_container)) -> ReusableSceneNodeResponse:
+def create_reusable_scene_node(
+    payload: CreateReusableSceneNodeRequest,
+    *,
+    container: Container = Depends(get_container),
+) -> ReusableSceneNodeResponse:
     record = container.reusable_scene_node_library_service.create_node(payload)
     return _into_response(ReusableSceneNodeResponse, record)
 
 
 @router.delete("/reusable-scene-nodes/{node_id}")
-def delete_reusable_scene_node(node_id: str, *, container: Container = Depends(get_container)) -> dict[str, str]:
+def delete_reusable_scene_node(
+    node_id: str, *, container: Container = Depends(get_container)
+) -> dict[str, str]:
     container.reusable_scene_node_library_service.delete_node(node_id)
     return {"deleted_reusable_scene_node_id": node_id}
 
 
 @router.post("/scene-setup/generate", response_model=SceneTreeGenerateResponse)
-def generate_scene_tree(payload: SceneTreeGenerateRequest, *, container: Container = Depends(get_container)) -> SceneTreeGenerateResponse:
+def generate_scene_tree(
+    payload: SceneTreeGenerateRequest, *, container: Container = Depends(get_container)
+) -> SceneTreeGenerateResponse:
     reset_model_recovery_state()
     try:
+
         def generate_scene(protected: dict[str, object]) -> SceneGenerationProposalV1:
             mode = str(protected["mode"])
             input_text = str(protected["input_text"])
@@ -590,20 +749,29 @@ def generate_scene_tree(payload: SceneTreeGenerateRequest, *, container: Contain
     except RuntimeError as exc:
         raise _map_setting_generation_error(exc) from exc
 
-    return _into_response_with_model_recoveries(SceneTreeGenerateResponse, SceneTreeGenerateResponse(
-        mode=payload.mode,
-        used_model=generated.used_model,
-        used_web_search=generated.used_web_search,
-        scene_name=projection.scene_name,
-        scene_summary=projection.scene_summary,
-        selected_layer_id=projection.selected_layer_id,
-        scene_layers=projection.scene_layers,
-        harness_trace=harness_trace,
-    ))
+    return _into_response_with_model_recoveries(
+        SceneTreeGenerateResponse,
+        SceneTreeGenerateResponse(
+            mode=payload.mode,
+            used_model=generated.used_model,
+            used_web_search=generated.used_web_search,
+            scene_name=projection.scene_name,
+            scene_summary=projection.scene_summary,
+            selected_layer_id=projection.selected_layer_id,
+            scene_layers=projection.scene_layers,
+            harness_trace=harness_trace,
+        ),
+    )
 
 
-@router.post("/runtime-settings/check-openai-models", response_model=RuntimeSettingsProbeResponse)
-def check_openai_models(payload: RuntimeSettingsProbeRequest, *, container: Container = Depends(get_container)) -> RuntimeSettingsProbeResponse:
+@router.post(
+    "/runtime-settings/check-openai-models", response_model=RuntimeSettingsProbeResponse
+)
+def check_openai_models(
+    payload: RuntimeSettingsProbeRequest,
+    *,
+    container: Container = Depends(get_container),
+) -> RuntimeSettingsProbeResponse:
     api_key = payload.api_key.strip()
     base_url = payload.base_url.strip().rstrip("/")
     if not api_key:
@@ -611,7 +779,10 @@ def check_openai_models(payload: RuntimeSettingsProbeRequest, *, container: Cont
     if not base_url:
         raise HTTPException(status_code=400, detail="missing_base_url")
 
-    timeout_seconds = max(5, container.runtime_settings_service.effective_settings().openai_timeout_seconds)
+    timeout_seconds = max(
+        5,
+        container.runtime_settings_service.effective_settings().openai_timeout_seconds,
+    )
     result = probe_openai_models(
         api_key=api_key,
         base_url=base_url,
@@ -634,7 +805,9 @@ def check_openai_models(payload: RuntimeSettingsProbeRequest, *, container: Cont
 
 
 @router.get("/documents", response_model=DocumentListResponse)
-def list_documents(*, container: Container = Depends(get_container)) -> DocumentListResponse:
+def list_documents(
+    *, container: Container = Depends(get_container)
+) -> DocumentListResponse:
     return DocumentListResponse(
         items=[
             _into_response(DocumentResponse, document)
@@ -644,7 +817,9 @@ def list_documents(*, container: Container = Depends(get_container)) -> Document
 
 
 @router.post("/documents", response_model=DocumentResponse)
-def create_document(file: UploadFile = File(...), *, container: Container = Depends(get_container)) -> DocumentResponse:
+def create_document(
+    file: UploadFile = File(...), *, container: Container = Depends(get_container)
+) -> DocumentResponse:
     logger.info(
         "documents.create filename=%s content_type=%s",
         file.filename,
@@ -657,8 +832,11 @@ def create_document(file: UploadFile = File(...), *, container: Container = Depe
 
 @router.post("/documents/{document_id}/process", response_model=DocumentProcessResponse)
 def process_document(
-    document_id: str, payload: ProcessDocumentRequest | None = None
-, *, container: Container = Depends(get_container)) -> DocumentProcessResponse:
+    document_id: str,
+    payload: ProcessDocumentRequest | None = None,
+    *,
+    container: Container = Depends(get_container),
+) -> DocumentProcessResponse:
     domain_operation_id = ""
 
     def remember_operation(operation_id: str) -> None:
@@ -754,23 +932,39 @@ def update_study_unit_title(
     )
 
 
-@router.get("/learning-plans/{plan_id}/study-unit-revision", response_model=StudyUnitRevisionResponseV1)
-def get_study_unit_revision(plan_id: str, *, container: Container = Depends(get_container)):
+@router.get(
+    "/learning-plans/{plan_id}/study-unit-revision",
+    response_model=StudyUnitRevisionResponseV1,
+)
+def get_study_unit_revision(
+    plan_id: str, *, container: Container = Depends(get_container)
+):
     return container.study_unit_revision_service.repository.get(plan_id)
 
 
-@router.post("/learning-plans/{plan_id}/study-unit-revision/{operation_id}/decision", response_model=StudyUnitRevisionResponseV1)
+@router.post(
+    "/learning-plans/{plan_id}/study-unit-revision/{operation_id}/decision",
+    response_model=StudyUnitRevisionResponseV1,
+)
 def decide_study_unit_revision(
-    plan_id: str, operation_id: str, payload: StudyUnitRevisionDecisionV1,
-    *, container: Container = Depends(get_container),
+    plan_id: str,
+    operation_id: str,
+    payload: StudyUnitRevisionDecisionV1,
+    *,
+    container: Container = Depends(get_container),
 ):
-    return container.study_unit_revision_service.decide(plan_id, operation_id, payload.decision)
+    return container.study_unit_revision_service.decide(
+        plan_id, operation_id, payload.decision
+    )
 
 
 @router.post("/documents/{document_id}/process/stream")
 def process_document_stream(
-    document_id: str, payload: ProcessDocumentRequest | None = None
-, *, container: Container = Depends(get_container)) -> StreamingResponse:
+    document_id: str,
+    payload: ProcessDocumentRequest | None = None,
+    *,
+    container: Container = Depends(get_container),
+) -> StreamingResponse:
     force_ocr = payload.force_ocr if payload else False
     event_queue: queue.Queue[dict[str, object] | None] = queue.Queue()
     interrupt_handle = container.stream_interrupt_registry.create(
@@ -833,7 +1027,9 @@ def process_document_stream(
                 document_commit_projection = document.model_dump(mode="json")
                 document_projection = {
                     **document_commit_projection,
-                    "harness_trace": harness_trace.model_dump(mode="json", exclude_none=False),
+                    "harness_trace": harness_trace.model_dump(
+                        mode="json", exclude_none=False
+                    ),
                 }
                 event = recorder.emit(
                     "stream_completed",
@@ -886,13 +1082,17 @@ def process_document_stream(
 
 
 @router.get("/documents/{document_id}/status", response_model=DocumentStatusResponse)
-def get_document_status(document_id: str, *, container: Container = Depends(get_container)) -> DocumentStatusResponse:
+def get_document_status(
+    document_id: str, *, container: Container = Depends(get_container)
+) -> DocumentStatusResponse:
     document = container.document_service.require_document(document_id)
     return _into_response(DocumentStatusResponse, document)
 
 
 @router.get("/documents/{document_id}/file")
-def get_document_file(document_id: str, *, container: Container = Depends(get_container)) -> FileResponse:
+def get_document_file(
+    document_id: str, *, container: Container = Depends(get_container)
+) -> FileResponse:
     document = container.document_service.require_document(document_id)
     path = Path(document.stored_path)
     if not path.exists() or not path.is_file():
@@ -905,7 +1105,9 @@ def get_document_file(document_id: str, *, container: Container = Depends(get_co
 
 
 @router.get("/documents/{document_id}/pages/{page_number}/image")
-def get_document_page_image(document_id: str, page_number: int, *, container: Container = Depends(get_container)) -> Response:
+def get_document_page_image(
+    document_id: str, page_number: int, *, container: Container = Depends(get_container)
+) -> Response:
     document = container.document_service.require_document(document_id)
     path = Path(document.stored_path)
     if not path.exists() or not path.is_file():
@@ -917,14 +1119,34 @@ def get_document_page_image(document_id: str, page_number: int, *, container: Co
     return Response(content=image_bytes, media_type="image/png")
 
 
+@router.get(
+    "/documents/{document_id}/page-numbering",
+    response_model=DocumentPageNumberingResponseV1,
+)
+def get_document_page_numbering(
+    document_id: str,
+    page_numbers: list[int] = Query(..., min_length=1, max_length=64),
+    *,
+    container: Container = Depends(get_container),
+) -> DocumentPageNumberingResponseV1:
+    document = container.document_service.require_document(document_id)
+    return read_document_page_numbering(document, page_numbers)
+
+
 @router.get("/documents/{document_id}/debug", response_model=DocumentDebugResponse)
-def get_document_debug(document_id: str, *, container: Container = Depends(get_container)) -> DocumentDebugResponse:
+def get_document_debug(
+    document_id: str, *, container: Container = Depends(get_container)
+) -> DocumentDebugResponse:
     report = container.document_service.require_debug_report(document_id)
     return _into_response(DocumentDebugResponse, report)
 
 
-@router.get("/documents/{document_id}/process-events", response_model=StreamReportResponse)
-def get_document_process_events(document_id: str, *, container: Container = Depends(get_container)) -> StreamReportResponse:
+@router.get(
+    "/documents/{document_id}/process-events", response_model=StreamReportResponse
+)
+def get_document_process_events(
+    document_id: str, *, container: Container = Depends(get_container)
+) -> StreamReportResponse:
     report = StreamReportRecorder.load(
         store=container.store,
         category=DOCUMENT_PROCESS_STREAM_CATEGORY,
@@ -938,7 +1160,9 @@ def get_document_process_events(document_id: str, *, container: Container = Depe
     "/documents/{document_id}/planning-context",
     response_model=DocumentPlanningContextResponse,
 )
-def get_document_planning_context(document_id: str, *, container: Container = Depends(get_container)) -> DocumentPlanningContextResponse:
+def get_document_planning_context(
+    document_id: str, *, container: Container = Depends(get_container)
+) -> DocumentPlanningContextResponse:
     snapshot = container.document_service.repository.get_with_debug(document_id)
     if snapshot is None:
         raise HTTPException(404, "document_not_found")
@@ -974,10 +1198,16 @@ def get_document_planning_context(document_id: str, *, container: Container = De
     "/documents/{document_id}/planning-trace",
     response_model=DocumentPlanningTraceResponse,
 )
-def get_document_planning_trace(document_id: str, *, container: Container = Depends(get_container)) -> DocumentPlanningTraceResponse:
-    trace = container.store.load_item("planning_trace", document_id, PlanGenerationTraceRecord)
+def get_document_planning_trace(
+    document_id: str, *, container: Container = Depends(get_container)
+) -> DocumentPlanningTraceResponse:
+    trace = container.store.load_item(
+        "planning_trace", document_id, PlanGenerationTraceRecord
+    )
     if trace is not None:
-        tool_call_count = sum(len(round_record.tool_calls) for round_record in trace.rounds)
+        tool_call_count = sum(
+            len(round_record.tool_calls) for round_record in trace.rounds
+        )
         latest_finish_reason = trace.rounds[-1].finish_reason if trace.rounds else ""
         return DocumentPlanningTraceResponse(
             document_id=document_id,
@@ -1002,7 +1232,9 @@ def get_document_planning_trace(document_id: str, *, container: Container = Depe
 
 
 @router.get("/documents/{document_id}/plan-events", response_model=StreamReportResponse)
-def get_document_plan_events(document_id: str, *, container: Container = Depends(get_container)) -> StreamReportResponse:
+def get_document_plan_events(
+    document_id: str, *, container: Container = Depends(get_container)
+) -> StreamReportResponse:
     report = StreamReportRecorder.load(
         store=container.store,
         category=LEARNING_PLAN_STREAM_CATEGORY,
@@ -1013,7 +1245,9 @@ def get_document_plan_events(document_id: str, *, container: Container = Depends
 
 
 @router.get("/personas", response_model=PersonaListResponse)
-def list_personas(*, container: Container = Depends(get_container)) -> PersonaListResponse:
+def list_personas(
+    *, container: Container = Depends(get_container)
+) -> PersonaListResponse:
     personas = container.persona_engine.list_personas()
     return PersonaListResponse(
         items=[_into_response(PersonaResponse, persona) for persona in personas]
@@ -1021,14 +1255,21 @@ def list_personas(*, container: Container = Depends(get_container)) -> PersonaLi
 
 
 @router.post("/personas", response_model=PersonaResponse)
-def create_persona(payload: CreatePersonaRequest, *, container: Container = Depends(get_container)) -> PersonaResponse:
+def create_persona(
+    payload: CreatePersonaRequest, *, container: Container = Depends(get_container)
+) -> PersonaResponse:
     persona = container.persona_engine.create_persona(payload)
     reference_persona(persona)
     return _into_response(PersonaResponse, persona)
 
 
 @router.patch("/personas/{persona_id}", response_model=PersonaResponse)
-def update_persona(persona_id: str, payload: UpdatePersonaRequest, *, container: Container = Depends(get_container)) -> PersonaResponse:
+def update_persona(
+    persona_id: str,
+    payload: UpdatePersonaRequest,
+    *,
+    container: Container = Depends(get_container),
+) -> PersonaResponse:
     persona = container.persona_engine.update_persona(persona_id, payload)
     reference_persona(persona)
     return _into_response(PersonaResponse, persona)
@@ -1049,7 +1290,9 @@ def delete_persona(
 
 
 @router.get("/personas/{persona_id}/assets", response_model=PersonaAssetsResponse)
-def get_persona_assets(persona_id: str, *, container: Container = Depends(get_container)) -> PersonaAssetsResponse:
+def get_persona_assets(
+    persona_id: str, *, container: Container = Depends(get_container)
+) -> PersonaAssetsResponse:
     persona = container.persona_engine.require_persona(persona_id)
     return PersonaAssetsResponse(
         persona_id=persona.id,
@@ -1063,7 +1306,9 @@ def get_persona_assets(persona_id: str, *, container: Container = Depends(get_co
 
 
 @router.get("/persona-cards", response_model=PersonaCardListResponse)
-def list_persona_cards(*, container: Container = Depends(get_container)) -> PersonaCardListResponse:
+def list_persona_cards(
+    *, container: Container = Depends(get_container)
+) -> PersonaCardListResponse:
     items = container.persona_card_library_service.list_cards()
     return PersonaCardListResponse(
         items=[_into_response(PersonaCardResponse, item) for item in items]
@@ -1071,13 +1316,19 @@ def list_persona_cards(*, container: Container = Depends(get_container)) -> Pers
 
 
 @router.post("/persona-cards", response_model=PersonaCardResponse)
-def create_persona_card(payload: CreatePersonaCardRequest, *, container: Container = Depends(get_container)) -> PersonaCardResponse:
+def create_persona_card(
+    payload: CreatePersonaCardRequest, *, container: Container = Depends(get_container)
+) -> PersonaCardResponse:
     record = container.persona_card_library_service.create_card(payload)
     return _into_response(PersonaCardResponse, record)
 
 
 @router.post("/persona-cards/batch", response_model=PersonaCardListResponse)
-def create_persona_cards_batch(payload: BatchCreatePersonaCardsRequest, *, container: Container = Depends(get_container)) -> PersonaCardListResponse:
+def create_persona_cards_batch(
+    payload: BatchCreatePersonaCardsRequest,
+    *,
+    container: Container = Depends(get_container),
+) -> PersonaCardListResponse:
     items = container.persona_card_library_service.create_many(payload.items)
     return PersonaCardListResponse(
         items=[_into_response(PersonaCardResponse, item) for item in items]
@@ -1085,15 +1336,22 @@ def create_persona_cards_batch(payload: BatchCreatePersonaCardsRequest, *, conta
 
 
 @router.delete("/persona-cards/{card_id}")
-def delete_persona_card(card_id: str, *, container: Container = Depends(get_container)) -> dict[str, str]:
+def delete_persona_card(
+    card_id: str, *, container: Container = Depends(get_container)
+) -> dict[str, str]:
     container.persona_card_library_service.delete_card(card_id)
     return {"deleted_persona_card_id": card_id}
 
 
 @router.post("/persona-cards/generate", response_model=PersonaCardGenerateResponse)
-def generate_persona_cards(payload: PersonaCardGenerateRequest, *, container: Container = Depends(get_container)) -> PersonaCardGenerateResponse:
+def generate_persona_cards(
+    payload: PersonaCardGenerateRequest,
+    *,
+    container: Container = Depends(get_container),
+) -> PersonaCardGenerateResponse:
     reset_model_recovery_state()
     try:
+
         def generate_cards(protected: dict[str, object]) -> PersonaGenerationProposalV1:
             mode = str(protected["mode"])
             input_text = str(protected["input_text"])
@@ -1139,7 +1397,9 @@ def generate_persona_cards(payload: PersonaCardGenerateRequest, *, container: Co
             protected_input=payload.model_dump(mode="json", exclude_none=False),
             generate=generate_cards,
         )
-        source = "generated_keywords" if payload.mode == "keywords" else "generated_text"
+        source = (
+            "generated_keywords" if payload.mode == "keywords" else "generated_text"
+        )
     except RuntimeError as exc:
         raise _map_persona_card_generation_error(exc) from exc
 
@@ -1151,7 +1411,9 @@ def generate_persona_cards(payload: PersonaCardGenerateRequest, *, container: Co
             label=item.label,
             content=item.content,
             tags=list(item.tags),
-            search_keywords=payload.input_text.strip() if payload.mode == "keywords" else "自定义",
+            search_keywords=payload.input_text.strip()
+            if payload.mode == "keywords"
+            else "自定义",
             source=source,
             source_note=item.source_note,
             created_at=datetime.now(timezone.utc).isoformat(),
@@ -1159,23 +1421,33 @@ def generate_persona_cards(payload: PersonaCardGenerateRequest, *, container: Co
         )
         for item in generated.cards
     ]
-    return _into_response_with_model_recoveries(PersonaCardGenerateResponse, PersonaCardGenerateResponse(
-        mode=payload.mode,
-        used_model=generated.used_model,
-        used_web_search=generated.used_web_search,
-        summary=generated.summary,
-        relationship=generated.relationship,
-        learner_address=generated.learner_address,
-        items=[_into_response(PersonaCardResponse, item) for item in cards],
-        harness_trace=harness_trace,
-    ))
+    return _into_response_with_model_recoveries(
+        PersonaCardGenerateResponse,
+        PersonaCardGenerateResponse(
+            mode=payload.mode,
+            used_model=generated.used_model,
+            used_web_search=generated.used_web_search,
+            summary=generated.summary,
+            relationship=generated.relationship,
+            learner_address=generated.learner_address,
+            items=[_into_response(PersonaCardResponse, item) for item in cards],
+            harness_trace=harness_trace,
+        ),
+    )
 
 
 @router.post("/personas/assist-setting", response_model=PersonaSettingAssistResponse)
-def assist_persona_setting(payload: PersonaSettingAssistRequest, *, container: Container = Depends(get_container)) -> PersonaSettingAssistResponse:
+def assist_persona_setting(
+    payload: PersonaSettingAssistRequest,
+    *,
+    container: Container = Depends(get_container),
+) -> PersonaSettingAssistResponse:
     reset_model_recovery_state()
     try:
-        def generate_setting(protected: dict[str, object]) -> PersonaGenerationProposalV1:
+
+        def generate_setting(
+            protected: dict[str, object],
+        ) -> PersonaGenerationProposalV1:
             recovery_strategy = "none"
             protected_slots = [
                 PersonaSlot.model_validate(item) for item in protected["slots"]
@@ -1187,9 +1459,14 @@ def assist_persona_setting(payload: PersonaSettingAssistRequest, *, container: C
                     slots=protected_slots,
                     rewrite_strength=float(protected["rewrite_strength"]),
                 )
-                used_model = str(getattr(container.model_provider, "setting_model", "mock"))
+                used_model = str(
+                    getattr(container.model_provider, "setting_model", "mock")
+                )
             except RuntimeError as exc:
-                logger.warning("persona.assist_setting.model_failed internal_error_code=%s fallback=local", str(exc))
+                logger.warning(
+                    "persona.assist_setting.model_failed internal_error_code=%s fallback=local",
+                    str(exc),
+                )
                 reset_model_recovery_state()
                 record_model_recovery(
                     category="persona_setting_assist",
@@ -1204,7 +1481,9 @@ def assist_persona_setting(payload: PersonaSettingAssistRequest, *, container: C
                 )
                 # A failed model call must not merge away biography slots or
                 # replace locked/user-authored content with canned prose.
-                result["slots"] = [item.model_dump(mode="json") for item in protected_slots]
+                result["slots"] = [
+                    item.model_dump(mode="json") for item in protected_slots
+                ]
                 recovery_strategy = "local_fallback"
                 used_model = "local"
             raw_slots = result.get("slots")
@@ -1235,7 +1514,9 @@ def assist_persona_setting(payload: PersonaSettingAssistRequest, *, container: C
                 request_kind="setting_assist",
                 mode="assist",
                 requested_count=len(payload.slots),
-                input_char_count=len(payload.name) + len(payload.summary) + sum(len(item.content) for item in payload.slots),
+                input_char_count=len(payload.name)
+                + len(payload.summary)
+                + sum(len(item.content) for item in payload.slots),
             ),
             protected_input=payload.model_dump(mode="json", exclude_none=False),
             generate=generate_setting,
@@ -1253,9 +1534,12 @@ def assist_persona_setting(payload: PersonaSettingAssistRequest, *, container: C
 
 
 @router.post("/personas/assist-slot", response_model=PersonaSlotAssistResponse)
-def assist_persona_slot(payload: PersonaSlotAssistRequest, *, container: Container = Depends(get_container)) -> PersonaSlotAssistResponse:
+def assist_persona_slot(
+    payload: PersonaSlotAssistRequest, *, container: Container = Depends(get_container)
+) -> PersonaSlotAssistResponse:
     reset_model_recovery_state()
     try:
+
         def generate_slot(protected: dict[str, object]) -> PersonaGenerationProposalV1:
             recovery_strategy = "none"
             protected_slot = PersonaSlot.model_validate(protected["slot"])
@@ -1266,9 +1550,14 @@ def assist_persona_slot(payload: PersonaSlotAssistRequest, *, container: Contain
                     slot=protected_slot,
                     rewrite_strength=float(protected["rewrite_strength"]),
                 )
-                used_model = str(getattr(container.model_provider, "setting_model", "mock"))
+                used_model = str(
+                    getattr(container.model_provider, "setting_model", "mock")
+                )
             except RuntimeError as exc:
-                logger.warning("persona.assist_slot.model_failed internal_error_code=%s fallback=local", str(exc))
+                logger.warning(
+                    "persona.assist_slot.model_failed internal_error_code=%s fallback=local",
+                    str(exc),
+                )
                 reset_model_recovery_state()
                 record_model_recovery(
                     category="persona_slot_assist",
@@ -1276,12 +1565,14 @@ def assist_persona_slot(payload: PersonaSlotAssistRequest, *, container: Contain
                     strategy="local_fallback",
                     note="模型润色未完成，已使用本地规则；请检查结果后再保存。",
                 )
-                result = {"slot": container.persona_engine.assist_slot(
-                    name=str(protected["name"]),
-                    summary=str(protected["summary"]),
-                    slot=protected_slot,
-                    rewrite_strength=float(protected["rewrite_strength"]),
-                ).model_dump(mode="json")}
+                result = {
+                    "slot": container.persona_engine.assist_slot(
+                        name=str(protected["name"]),
+                        summary=str(protected["summary"]),
+                        slot=protected_slot,
+                        rewrite_strength=float(protected["rewrite_strength"]),
+                    ).model_dump(mode="json")
+                }
                 recovery_strategy = "local_fallback"
                 used_model = "local"
             raw_slot = result.get("slot")
@@ -1307,7 +1598,9 @@ def assist_persona_slot(payload: PersonaSlotAssistRequest, *, container: Contain
                 request_kind="slot_assist",
                 mode="assist",
                 requested_count=1,
-                input_char_count=len(payload.name) + len(payload.summary) + len(payload.slot.content),
+                input_char_count=len(payload.name)
+                + len(payload.summary)
+                + len(payload.slot.content),
             ),
             protected_input=payload.model_dump(mode="json", exclude_none=False),
             generate=generate_slot,
@@ -1325,7 +1618,12 @@ def assist_persona_slot(payload: PersonaSlotAssistRequest, *, container: Contain
 
 
 @router.get("/study-sessions/{session_id}/attachments/{attachment_id}/file")
-def get_study_session_attachment_file(session_id: str, attachment_id: str, *, container: Container = Depends(get_container)) -> FileResponse:
+def get_study_session_attachment_file(
+    session_id: str,
+    attachment_id: str,
+    *,
+    container: Container = Depends(get_container),
+) -> FileResponse:
     attachment = container.study_session_service.require_attachment(
         session_id=session_id,
         attachment_id=attachment_id,
@@ -1341,7 +1639,9 @@ def get_study_session_attachment_file(session_id: str, attachment_id: str, *, co
     )
 
 
-@router.get("/study-sessions/{session_id}/attachments/{attachment_id}/pages/{page_number}/image")
+@router.get(
+    "/study-sessions/{session_id}/attachments/{attachment_id}/pages/{page_number}/image"
+)
 def get_study_session_attachment_page_image(
     session_id: str,
     attachment_id: str,
@@ -1354,7 +1654,12 @@ def get_study_session_attachment_page_image(
         attachment_id=attachment_id,
     )
     path = Path(attachment.stored_path)
-    if attachment.kind != "pdf" or not attachment.stored_path or not path.exists() or not path.is_file():
+    if (
+        attachment.kind != "pdf"
+        or not attachment.stored_path
+        or not path.exists()
+        or not path.is_file()
+    ):
         raise HTTPException(status_code=404, detail="session_attachment_file_not_found")
     image_bytes = render_pdf_page_png_bytes(
         pdf_path=str(path),
@@ -1363,8 +1668,16 @@ def get_study_session_attachment_page_image(
     return Response(content=image_bytes, media_type="image/png")
 
 
-@router.post("/study-sessions/{session_id}/chat", response_model=StudyChatOperationReceiptResponse)
-def study_chat(session_id: str, payload: StudyChatRequest, *, container: Container = Depends(get_container)) -> StudyChatOperationReceiptResponse:
+@router.post(
+    "/study-sessions/{session_id}/chat",
+    response_model=StudyChatOperationReceiptResponse,
+)
+def study_chat(
+    session_id: str,
+    payload: StudyChatRequest,
+    *,
+    container: Container = Depends(get_container),
+) -> StudyChatOperationReceiptResponse:
     return _invoke_study_chat(
         container,
         session_id=session_id,
@@ -1377,7 +1690,10 @@ def study_chat(session_id: str, payload: StudyChatRequest, *, container: Contain
     )
 
 
-@router.post("/study-sessions/{session_id}/chat-with-attachments", response_model=StudyChatOperationReceiptResponse)
+@router.post(
+    "/study-sessions/{session_id}/chat-with-attachments",
+    response_model=StudyChatOperationReceiptResponse,
+)
 def study_chat_with_attachments(
     session_id: str,
     client_request_id: str = Form(...),
@@ -1416,10 +1732,13 @@ def get_study_chat_operation(
 ) -> StudyChatOperationReceiptResponse:
     try:
         receipt = container.study_chat_application().get_receipt(
-            session_id=session_id, client_request_id=client_request_id,
+            session_id=session_id,
+            client_request_id=client_request_id,
         )
     except StudyChatOperationNotFound as exc:
-        raise HTTPException(status_code=404, detail="study_chat_operation_not_found") from exc
+        raise HTTPException(
+            status_code=404, detail="study_chat_operation_not_found"
+        ) from exc
     return _study_chat_operation_response(receipt)
 
 
@@ -1431,13 +1750,24 @@ def _study_chat_operation_response(receipt) -> StudyChatOperationReceiptResponse
         ).model_dump(mode="json")
     response = StudyChatOperationReceiptResponse.model_validate(payload)
     if response.status == "committed" and response.result is not None:
-        reference_resource("study_session", response.result.session.id, revision=response.result.session.revision)
+        reference_resource(
+            "study_session",
+            response.result.session.id,
+            revision=response.result.session.revision,
+        )
     return response
 
 
-@router.post("/study-sessions/{session_id}/follow-ups/cancel", response_model=StudySessionResponse)
-def cancel_study_session_follow_ups(session_id: str, *, container: Container = Depends(get_container)) -> StudySessionResponse:
-    session = container.study_session_service.cancel_pending_follow_ups(session_id=session_id)
+@router.post(
+    "/study-sessions/{session_id}/follow-ups/cancel",
+    response_model=StudySessionResponse,
+)
+def cancel_study_session_follow_ups(
+    session_id: str, *, container: Container = Depends(get_container)
+) -> StudySessionResponse:
+    session = container.study_session_service.cancel_pending_follow_ups(
+        session_id=session_id
+    )
     return _into_response(StudySessionResponse, session)
 
 
@@ -1456,12 +1786,16 @@ def resolve_study_session_plan_confirmation(
     if decision not in {"approve", "reject"}:
         raise HTTPException(status_code=422, detail="invalid_confirmation_decision")
     refreshed_session, updated_plan = container.plan_service.resolve_confirmation(
-        session_id=session_id, confirmation_id=confirmation_id,
-        decision=decision, note=payload.note,
+        session_id=session_id,
+        confirmation_id=confirmation_id,
+        decision=decision,
+        note=payload.note,
     )
     return StudySessionPlanConfirmationDecisionResponse(
         session=_into_response(StudySessionResponse, refreshed_session),
-        plan=_into_response(LearningPlanResponse, updated_plan) if updated_plan is not None else None,
+        plan=_into_response(LearningPlanResponse, updated_plan)
+        if updated_plan is not None
+        else None,
     )
 
 
@@ -1488,7 +1822,9 @@ def list_study_sessions(
 
 
 @router.get("/study-sessions/{session_id}", response_model=StudySessionResponse)
-def get_study_session(session_id: str, *, container: Container = Depends(get_container)) -> StudySessionResponse:
+def get_study_session(
+    session_id: str, *, container: Container = Depends(get_container)
+) -> StudySessionResponse:
     session = container.study_session_service.require_session(session_id)
     return _into_response(StudySessionResponse, session)
 
@@ -1510,21 +1846,31 @@ def record_study_question_attempt(
         client_attempt_id=payload.client_attempt_id,
         submitted_answer=payload.submitted_answer,
     )
-    response = StudyQuestionAttemptResponse.model_validate(result.model_dump(mode="json"))
-    reference_resource("study_session", response.session_id, revision=response.committed_revision)
+    response = StudyQuestionAttemptResponse.model_validate(
+        result.model_dump(mode="json")
+    )
+    reference_resource(
+        "study_session", response.session_id, revision=response.committed_revision
+    )
     return response
 
 
 @router.patch("/study-sessions/{session_id}", response_model=StudySessionResponse)
 def update_study_session(
-    session_id: str, payload: UpdateStudySessionRequest
-, *, container: Container = Depends(get_container)) -> StudySessionResponse:
-    if payload.study_unit_id is None and "scene_profile" not in payload.model_fields_set:
+    session_id: str,
+    payload: UpdateStudySessionRequest,
+    *,
+    container: Container = Depends(get_container),
+) -> StudySessionResponse:
+    if (
+        payload.study_unit_id is None
+        and "scene_profile" not in payload.model_fields_set
+    ):
         raise HTTPException(status_code=400, detail="update_payload_empty")
 
     current_session = _ensure_session_scene_binding(
-        container.study_session_service.require_session(session_id)
-    , container=container)
+        container.study_session_service.require_session(session_id), container=container
+    )
     next_study_unit_id = payload.study_unit_id or current_session.study_unit_id
     has_scene_profile = "scene_profile" in payload.model_fields_set
     next_scene_instance_id = current_session.scene_instance_id
@@ -1546,7 +1892,11 @@ def update_study_session(
             active_plan = container.plan_service.require_plan(current_session.plan_id)
         except HTTPException:
             active_plan = None
-    document = _resolve_session_document(current_session.document_id, active_plan, document_service=container.document_service)
+    document = _resolve_session_document(
+        current_session.document_id,
+        active_plan,
+        document_service=container.document_service,
+    )
     next_study_unit_title = _resolve_study_unit_title(
         document=document,
         plan=active_plan,
@@ -1561,7 +1911,9 @@ def update_study_session(
         persona_name=persona.name,
         persona_relationship=persona.relationship,
         persona_learner_address=persona.learner_address,
-        document_title=_resolve_session_document_title(document=document, plan=active_plan),
+        document_title=_resolve_session_document_title(
+            document=document, plan=active_plan
+        ),
         study_unit_id=next_study_unit_id,
         study_unit_title=next_study_unit_title,
         theme_hint=next_theme_hint,
@@ -1582,7 +1934,9 @@ def update_study_session(
 
 
 @router.post("/study-sessions", response_model=StudySessionResponse)
-def create_study_session(payload: CreateStudySessionRequest, *, container: Container = Depends(get_container)) -> StudySessionResponse:
+def create_study_session(
+    payload: CreateStudySessionRequest, *, container: Container = Depends(get_container)
+) -> StudySessionResponse:
     session_id = f"session-{uuid4().hex[:10]}"
     logger.info(
         "study_sessions.create document_id=%s persona_id=%s study_unit_id=%s scene_id=%s",
@@ -1599,11 +1953,17 @@ def create_study_session(payload: CreateStudySessionRequest, *, container: Conta
         plan = container.plan_service.require_plan(plan_id)
         if plan.persona_id != payload.persona_id:
             raise HTTPException(status_code=400, detail="plan_session_binding_mismatch")
-        if plan.document_id and payload.document_id and plan.document_id != payload.document_id:
+        if (
+            plan.document_id
+            and payload.document_id
+            and plan.document_id != payload.document_id
+        ):
             raise HTTPException(status_code=400, detail="plan_session_binding_mismatch")
         if not resolved_document_id and plan.document_id:
             resolved_document_id = plan.document_id
-    document = _resolve_session_document(resolved_document_id, plan, document_service=container.document_service)
+    document = _resolve_session_document(
+        resolved_document_id, plan, document_service=container.document_service
+    )
     study_unit_title = payload.study_unit_title.strip() or _resolve_study_unit_title(
         document=document,
         plan=plan,
@@ -1665,7 +2025,9 @@ def _resolve_study_unit_title(*, document, plan, study_unit_id: str) -> str:
     return study_unit_id
 
 
-def _resolve_study_unit_theme_hint(*, plan, study_unit_id: str, fallback: str = "") -> str:
+def _resolve_study_unit_theme_hint(
+    *, plan, study_unit_id: str, fallback: str = ""
+) -> str:
     if plan is None:
         return fallback
     for progress in plan.study_unit_progress:
@@ -1716,7 +2078,9 @@ def _ensure_session_scene_binding(session, *, container: Container):
 
 
 @router.post("/learning-plans", response_model=LearningPlanCreateResponse)
-def create_learning_plan(payload: LearningPlanCreateRequest, *, container: Container = Depends(get_container)) -> LearningPlanCreateResponse:
+def create_learning_plan(
+    payload: LearningPlanCreateRequest, *, container: Container = Depends(get_container)
+) -> LearningPlanCreateResponse:
     reset_model_recovery_state()
     stream_document_id = _learning_plan_stream_storage_id(payload)
     domain_operation_id = ""
@@ -1836,7 +2200,9 @@ def create_learning_plan(payload: LearningPlanCreateRequest, *, container: Conta
 
 
 @router.get("/learning-plans", response_model=LearningPlanListResponse)
-def list_learning_plans(*, container: Container = Depends(get_container)) -> LearningPlanListResponse:
+def list_learning_plans(
+    *, container: Container = Depends(get_container)
+) -> LearningPlanListResponse:
     plans = container.plan_service.list_plans()
     return LearningPlanListResponse(
         items=[_into_response(LearningPlanResponse, plan) for plan in plans]
@@ -1967,7 +2333,9 @@ def create_learning_plan_stream(
                 plan_commit_projection = plan.model_dump(mode="json")
                 plan_projection = {
                     **plan_commit_projection,
-                    "harness_trace": harness_trace.model_dump(mode="json", exclude_none=False),
+                    "harness_trace": harness_trace.model_dump(
+                        mode="json", exclude_none=False
+                    ),
                 }
                 event = recorder.emit(
                     "stream_completed",
@@ -2042,7 +2410,9 @@ def create_learning_plan_stream(
 
 
 @router.post("/stream-runs/{stream_id}/cancel")
-def cancel_stream_run(stream_id: str, *, container: Container = Depends(get_container)) -> dict[str, object]:
+def cancel_stream_run(
+    stream_id: str, *, container: Container = Depends(get_container)
+) -> dict[str, object]:
     handle = container.stream_interrupt_registry.cancel(stream_id=stream_id)
     return {
         "stream_id": handle.stream_id,
@@ -2053,34 +2423,63 @@ def cancel_stream_run(stream_id: str, *, container: Container = Depends(get_cont
     }
 
 
-
-
 def _plan_revision_service(container):
-    return PlanRevisionService(PlanRevisionRepository(container.database), container.harness_proposal_runtime, container.model_provider)
+    return PlanRevisionService(
+        PlanRevisionRepository(container.database),
+        container.harness_proposal_runtime,
+        container.model_provider,
+    )
 
 
-@router.post("/learning-plans/{plan_id}/revisions", response_model=PlanRevisionResponseV1)
-def create_plan_revision(plan_id: str, payload: PlanRevisionRequestV1, *, container: Container = Depends(get_container)):
+@router.post(
+    "/learning-plans/{plan_id}/revisions", response_model=PlanRevisionResponseV1
+)
+def create_plan_revision(
+    plan_id: str,
+    payload: PlanRevisionRequestV1,
+    *,
+    container: Container = Depends(get_container),
+):
     return _plan_revision_service(container).create(plan_id, payload)
 
 
 @router.get("/learning-plans/{plan_id}/revision-history")
-def plan_revision_history(plan_id: str, *, container: Container = Depends(get_container)) -> dict[str, list[int]]:
+def plan_revision_history(
+    plan_id: str, *, container: Container = Depends(get_container)
+) -> dict[str, list[int]]:
     return {"revisions": PlanRevisionRepository(container.database).history(plan_id)}
 
 
-@router.get("/learning-plans/{plan_id}/revisions/{request_id}", response_model=PlanRevisionResponseV1)
-def get_plan_revision(plan_id: str, request_id: str, *, container: Container = Depends(get_container)):
+@router.get(
+    "/learning-plans/{plan_id}/revisions/{request_id}",
+    response_model=PlanRevisionResponseV1,
+)
+def get_plan_revision(
+    plan_id: str, request_id: str, *, container: Container = Depends(get_container)
+):
     return PlanRevisionRepository(container.database).get(plan_id, request_id)
 
 
-@router.post("/learning-plans/{plan_id}/revisions/{request_id}/decision", response_model=PlanRevisionResponseV1)
-def decide_plan_revision(plan_id: str, request_id: str, payload: PlanRevisionDecisionV1, *, container: Container = Depends(get_container)):
-    return _plan_revision_service(container).decide(plan_id, request_id, payload.decision)
+@router.post(
+    "/learning-plans/{plan_id}/revisions/{request_id}/decision",
+    response_model=PlanRevisionResponseV1,
+)
+def decide_plan_revision(
+    plan_id: str,
+    request_id: str,
+    payload: PlanRevisionDecisionV1,
+    *,
+    container: Container = Depends(get_container),
+):
+    return _plan_revision_service(container).decide(
+        plan_id, request_id, payload.decision
+    )
 
 
 @router.get("/learning-plans/{plan_id}", response_model=LearningPlanResponse)
-def get_learning_plan(plan_id: str, *, container: Container = Depends(get_container)) -> LearningPlanResponse:
+def get_learning_plan(
+    plan_id: str, *, container: Container = Depends(get_container)
+) -> LearningPlanResponse:
     plan = container.plan_service.require_plan(plan_id)
     return _into_response(LearningPlanResponse, plan)
 
@@ -2119,7 +2518,10 @@ def update_learning_plan_progress(
     return _into_response(LearningPlanResponse, plan)
 
 
-@router.patch("/learning-plans/{plan_id}/planning-questions/{question_id}", response_model=LearningPlanResponse)
+@router.patch(
+    "/learning-plans/{plan_id}/planning-questions/{question_id}",
+    response_model=LearningPlanResponse,
+)
 def answer_learning_plan_question(
     plan_id: str,
     question_id: str,
@@ -2137,13 +2539,20 @@ def answer_learning_plan_question(
 
 
 @router.delete("/learning-plans/{plan_id}")
-def delete_learning_plan(plan_id: str, expected_revision: int | None = None, *, container: Container = Depends(get_container)) -> dict[str, str]:
+def delete_learning_plan(
+    plan_id: str,
+    expected_revision: int | None = None,
+    *,
+    container: Container = Depends(get_container),
+) -> dict[str, str]:
     container.plan_service.delete_plan(plan_id, expected_revision=expected_revision)
     return {"deleted_plan_id": plan_id}
 
 
 @router.post("/exercises/generate", response_model=ExerciseGenerateResponse)
-def generate_exercise(payload: ExerciseGenerateRequest, *, container: Container = Depends(get_container)) -> ExerciseGenerateResponse:
+def generate_exercise(
+    payload: ExerciseGenerateRequest, *, container: Container = Depends(get_container)
+) -> ExerciseGenerateResponse:
     persona = container.persona_engine.require_persona(payload.persona_id)
     response = container.pedagogy_orchestrator.generate_exercise(
         persona=persona,
@@ -2154,7 +2563,9 @@ def generate_exercise(payload: ExerciseGenerateRequest, *, container: Container 
 
 
 @router.post("/submissions/grade", response_model=SubmissionGradeResponse)
-def grade_submission(payload: SubmissionGradeRequest, *, container: Container = Depends(get_container)) -> SubmissionGradeResponse:
+def grade_submission(
+    payload: SubmissionGradeRequest, *, container: Container = Depends(get_container)
+) -> SubmissionGradeResponse:
     persona = container.persona_engine.require_persona(payload.persona_id)
     response = container.pedagogy_orchestrator.grade_submission(
         persona=persona,
@@ -2170,14 +2581,18 @@ def get_model_usage_stats(
     operation_id: str = "",
     date_from: str = "",
     date_to: str = "",
-    *, container: Container = Depends(get_container)
+    *,
+    container: Container = Depends(get_container),
 ) -> TokenUsageStatsResponse:
     records = container.token_usage_service.load_all()
-    records = [record for record in records if
-        (not workflow or record.workflow == workflow) and
-        (not operation_id or record.operation_id == operation_id) and
-        (not date_from or record.created_at[:10] >= date_from) and
-        (not date_to or record.created_at[:10] <= date_to)]
+    records = [
+        record
+        for record in records
+        if (not workflow or record.workflow == workflow)
+        and (not operation_id or record.operation_id == operation_id)
+        and (not date_from or record.created_at[:10] >= date_from)
+        and (not date_to or record.created_at[:10] <= date_to)
+    ]
     buckets_map: dict[tuple[str, str, str], TokenUsageDailyBucket] = {}
     call_records: list[TokenUsageCallRecord] = []
     total_prompt = 0
@@ -2239,7 +2654,9 @@ def _stringify_error(exc: Exception) -> str:
     return str(exc)
 
 
-def _invoke_study_chat(container: Container, **request) -> StudyChatOperationReceiptResponse:
+def _invoke_study_chat(
+    container: Container, **request
+) -> StudyChatOperationReceiptResponse:
     try:
         receipt = container.study_chat_application().admit(**request)
     except StudyChatApplicationError as exc:

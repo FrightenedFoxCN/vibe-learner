@@ -35,6 +35,7 @@ export type StudyDialogPreviewState =
 export interface PlanSetupPageCache {
   generationMode: "document" | "goal_only";
   objective: string;
+  physicalPageRanges?: string;
   file: File | null;
 }
 
@@ -93,15 +94,24 @@ export function loadLearningWorkspacePageCache(): LearningWorkspacePageCache {
       return {};
     }
     return {
-      selection: parsed.selection ? {
-        planId: String(parsed.selection.planId ?? ""),
-        personaId: String(parsed.selection.personaId ?? ""),
-        sceneLibraryId: String(parsed.selection.sceneLibraryId ?? ""),
-      } : undefined,
+      selection: parsed.selection
+        ? {
+            planId: String(parsed.selection.planId ?? ""),
+            personaId: String(parsed.selection.personaId ?? ""),
+            sceneLibraryId: String(parsed.selection.sceneLibraryId ?? ""),
+          }
+        : undefined,
       planSetup: parsed.planSetup
         ? {
-            generationMode: parsed.planSetup.generationMode === "goal_only" ? "goal_only" : "document",
+            generationMode:
+              parsed.planSetup.generationMode === "goal_only"
+                ? "goal_only"
+                : "document",
             objective: String(parsed.planSetup.objective ?? ""),
+            physicalPageRanges:
+              typeof parsed.planSetup.physicalPageRanges === "string"
+                ? parsed.planSetup.physicalPageRanges.slice(0, 2000)
+                : "",
             file: null,
           }
         : undefined,
@@ -110,9 +120,15 @@ export function loadLearningWorkspacePageCache(): LearningWorkspacePageCache {
             pdfPage: Number(parsed.studyDialog.pdfPage ?? 1),
             isPdfPreviewOpen: Boolean(parsed.studyDialog.isPdfPreviewOpen),
             previewState: normalizePreviewState(parsed.studyDialog.previewState),
-            selectedScheduleId: String(parsed.studyDialog.selectedScheduleId ?? parsed.studyDialog.selectedChapter ?? ""),
+            selectedScheduleId: String(
+              parsed.studyDialog.selectedScheduleId ??
+                parsed.studyDialog.selectedChapter ??
+                "",
+            ),
             selectedScheduleChapterId: String(
-              parsed.studyDialog.selectedScheduleChapterId ?? parsed.studyDialog.selectedSubsectionId ?? ""
+              parsed.studyDialog.selectedScheduleChapterId ??
+                parsed.studyDialog.selectedSubsectionId ??
+                "",
             ),
           }
         : undefined,
@@ -122,7 +138,9 @@ export function loadLearningWorkspacePageCache(): LearningWorkspacePageCache {
             attachments: [],
             selectedChoices: normalizeStringRecord(parsed.studyConsole.selectedChoices),
             blankAnswers: normalizeStringRecord(parsed.studyConsole.blankAnswers),
-            expandedExplanation: normalizeBooleanRecord(parsed.studyConsole.expandedExplanation),
+            expandedExplanation: normalizeBooleanRecord(
+              parsed.studyConsole.expandedExplanation,
+            ),
           }
         : undefined,
     };
@@ -132,16 +150,19 @@ export function loadLearningWorkspacePageCache(): LearningWorkspacePageCache {
 }
 
 export function persistLearningWorkspacePageCache(
-  cache: LearningWorkspacePageCache
+  cache: LearningWorkspacePageCache,
 ): void {
   if (typeof window === "undefined" || typeof window.sessionStorage === "undefined") {
     return;
   }
-  const serializable: SerializableLearningWorkspacePageCache = { selection: cache.selection };
+  const serializable: SerializableLearningWorkspacePageCache = {
+    selection: cache.selection,
+  };
   if (cache.planSetup) {
     serializable.planSetup = {
       generationMode: cache.planSetup.generationMode,
       objective: cache.planSetup.objective,
+      physicalPageRanges: cache.planSetup.physicalPageRanges ?? "",
     };
   }
   if (cache.studyDialog) {
@@ -217,7 +238,10 @@ function normalizeStringRecord(value: unknown): Record<string, string> {
     return {};
   }
   return Object.fromEntries(
-    Object.entries(value as Record<string, unknown>).map(([key, entry]) => [key, String(entry ?? "")])
+    Object.entries(value as Record<string, unknown>).map(([key, entry]) => [
+      key,
+      String(entry ?? ""),
+    ]),
   );
 }
 
@@ -226,6 +250,9 @@ function normalizeBooleanRecord(value: unknown): Record<string, boolean> {
     return {};
   }
   return Object.fromEntries(
-    Object.entries(value as Record<string, unknown>).map(([key, entry]) => [key, Boolean(entry)])
+    Object.entries(value as Record<string, unknown>).map(([key, entry]) => [
+      key,
+      Boolean(entry),
+    ]),
   );
 }

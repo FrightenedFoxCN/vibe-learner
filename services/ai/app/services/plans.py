@@ -70,7 +70,11 @@ from app.models.planning_runtime import (
     PlanningToolExecutionEvidenceV1,
     PlanningToolExecutionInputManifest,
 )
-from app.services.harness_runtime import HarnessOperationRuntime, HarnessRuntimePreparedOutput
+from app.services.harness_runtime import (
+    HarnessOperationRuntime,
+    HarnessRuntimePreparedOutput,
+)
+from app.models.pdf_page_scope import PhysicalPageScopeViolation
 from app.models.study_unit_revision import StudyUnitRevisionPreviewV1
 
 
@@ -87,11 +91,12 @@ class LearningPlanService:
         self.repository = LearningPlanRepository(store.database)
         self.arrangement_service = arrangement_service
         self.model_provider = model_provider
-        self.operation_repository = operation_repository or LearningPlanOperationRepository(
-            store.database
+        self.operation_repository = (
+            operation_repository or LearningPlanOperationRepository(store.database)
         )
-        self.harness_service = harness_service or HarnessProposalRuntimeService.from_database(
-            store.database
+        self.harness_service = (
+            harness_service
+            or HarnessProposalRuntimeService.from_database(store.database)
         )
 
     def create_plan(
@@ -132,17 +137,27 @@ class LearningPlanService:
         )
         try:
             operation, duplicate = self.operation_repository.admit(request=request)
+        except PhysicalPageScopeViolation as exc:
+            raise HTTPException(
+                422, "learning_plan_invalid_physical_page_scope"
+            ) from exc
         except LearningPlanDocumentNotFound as exc:
             raise HTTPException(status_code=404, detail="document_not_found") from exc
         except LearningPlanStaleDocument as exc:
-            raise HTTPException(status_code=409, detail="learning_plan_stale_document") from exc
+            raise HTTPException(
+                status_code=409, detail="learning_plan_stale_document"
+            ) from exc
         except (
             LearningPlanAlreadyActive,
             LearningPlanAdmissionRace,
         ) as exc:
-            raise HTTPException(status_code=409, detail="learning_plan_operation_active") from exc
+            raise HTTPException(
+                status_code=409, detail="learning_plan_operation_active"
+            ) from exc
         except LearningPlanRequestConflict as exc:
-            raise HTTPException(status_code=409, detail="learning_plan_request_conflict") from exc
+            raise HTTPException(
+                status_code=409, detail="learning_plan_request_conflict"
+            ) from exc
         except LearningPlanTerminalReplayBlocked as exc:
             raise HTTPException(
                 status_code=409,
@@ -186,16 +201,20 @@ class LearningPlanService:
         try:
             if operation_admitted_callback is not None:
                 operation_admitted_callback(operation.operation_id)
-            if document is not None and planning_projection_digest(
-                document.model_dump(mode="json")
-            ) != operation.base_document_digest:
+            if (
+                document is not None
+                and planning_projection_digest(document.model_dump(mode="json"))
+                != operation.base_document_digest
+            ):
                 raise LearningPlanProjectionIdentityMismatch(
                     operation.operation_id,
                     "input_document_snapshot",
                 )
-            if debug_report is not None and planning_projection_digest(
-                debug_report.model_dump(mode="json")
-            ) != operation.base_debug_digest:
+            if (
+                debug_report is not None
+                and planning_projection_digest(debug_report.model_dump(mode="json"))
+                != operation.base_debug_digest
+            ):
                 raise LearningPlanProjectionIdentityMismatch(
                     operation.operation_id,
                     "input_debug_snapshot",
@@ -301,7 +320,9 @@ class LearningPlanService:
                         tool_name=tool_call.tool_name or "unattributed",
                         tool_call_id=tool_call_id,
                         result_contract_version=result_contract_version,
-                        arguments_digest=canonical_harness_digest(tool_call.arguments_json),
+                        arguments_digest=canonical_harness_digest(
+                            tool_call.arguments_json
+                        ),
                         result_digest=canonical_harness_digest(result_payload),
                         outcome=(
                             "failed"
@@ -408,8 +429,14 @@ class LearningPlanService:
     ]:
         _call_interrupt(interrupt_check)
         progress_document_id = document.id if document is not None else ""
-        base_document_digest = canonical_harness_digest(document) if document is not None else ""
-        if document is not None and debug_report is not None and not document.study_units:
+        base_document_digest = (
+            canonical_harness_digest(document) if document is not None else ""
+        )
+        if (
+            document is not None
+            and debug_report is not None
+            and not document.study_units
+        ):
             study_units = self.arrangement_service.build_study_units(
                 document=document,
                 debug_report=debug_report,
@@ -439,7 +466,9 @@ class LearningPlanService:
             document_title = self._goal_only_document_title(goal)
             document_path = None
             study_unit_count = len(plan.study_units)
-            plannable_count = len([unit for unit in plan.study_units if unit.include_in_plan])
+            plannable_count = len(
+                [unit for unit in plan.study_units if unit.include_in_plan]
+            )
         else:
             plan = self.arrangement_service.build_plan(
                 goal=goal,
@@ -451,7 +480,9 @@ class LearningPlanService:
             document_title = document.title
             document_path = document.stored_path
             study_unit_count = len(document.study_units)
-            plannable_count = len([unit for unit in document.study_units if unit.include_in_plan])
+            plannable_count = len(
+                [unit for unit in document.study_units if unit.include_in_plan]
+            )
         _emit_progress(
             progress_callback,
             "study_units_ready",
@@ -469,7 +500,9 @@ class LearningPlanService:
                 "document_id": progress_document_id,
                 "today_task_count": len(plan.today_tasks),
                 "schedule_count": len(plan.schedule),
-                "schedule_chapter_count": sum(len(item.schedule_chapters) for item in plan.schedule),
+                "schedule_chapter_count": sum(
+                    len(item.schedule_chapters) for item in plan.schedule
+                ),
                 "creation_mode": plan.creation_mode,
             },
         )
@@ -497,7 +530,9 @@ class LearningPlanService:
             goal.planning_intent.pdf_page_ranges.status == "user_explicit"
             or goal.planning_intent.outline_targets.status == "user_explicit"
         ):
-            raise RuntimeError("planning_intent_invalid:document_scope_without_document")
+            raise RuntimeError(
+                "planning_intent_invalid:document_scope_without_document"
+            )
         scoped_study_units = select_study_units_for_intent(
             study_units=plan.study_units,
             intent=goal.planning_intent,
@@ -562,18 +597,27 @@ class LearningPlanService:
                 "document_id": progress_document_id,
                 "schedule_count": len(plan.schedule),
                 "today_task_count": len(plan.today_tasks),
-                "schedule_chapter_count": sum(len(item.schedule_chapters) for item in plan.schedule),
-                "planning_question_count": len(getattr(model_plan, "planning_questions", []) or []),
+                "schedule_chapter_count": sum(
+                    len(item.schedule_chapters) for item in plan.schedule
+                ),
+                "planning_question_count": len(
+                    getattr(model_plan, "planning_questions", []) or []
+                ),
             },
         )
         plan.id = f"plan-{uuid4().hex[:10]}"
         plan.created_at = _now()
-        plan.planning_questions = list(getattr(model_plan, "planning_questions", []) or [])
+        plan.planning_questions = list(
+            getattr(model_plan, "planning_questions", []) or []
+        )
         plan.progress_summary = self._build_progress_summary(plan.schedule)
         if model_plan.debug_trace is not None:
             model_plan.debug_trace.plan_id = plan.id
         plan = self._refresh_plan_derived_fields(plan)
-        if document is not None and canonical_harness_digest(document) != base_document_digest:
+        if (
+            document is not None
+            and canonical_harness_digest(document) != base_document_digest
+        ):
             document.revision += 1
             document.updated_at = _now()
         preview = None
@@ -613,43 +657,80 @@ class LearningPlanService:
     def require_plan(self, plan_id: str) -> LearningPlanRecord:
         return self._refresh_plan_derived_fields(self.repository.require(plan_id))
 
-    def update_plan(self, *, plan_id: str, course_title: str | None = None,
-                    expected_revision: int | None = None) -> LearningPlanRecord:
+    def update_plan(
+        self,
+        *,
+        plan_id: str,
+        course_title: str | None = None,
+        expected_revision: int | None = None,
+    ) -> LearningPlanRecord:
         title = (course_title or "").strip()
         if not title:
             raise HTTPException(422, "course_title_required")
+
         def mutate(plan):
             plan.course_title = title
             return self._refresh_plan_derived_fields(plan)
-        return self.repository.mutate(plan_id, mutate, expected_revision=expected_revision)
 
-    def update_progress(self, *, plan_id: str, schedule_ids: list[str], status: str,
-                        note: str = "", actor: str = "user", source: str = "ui",
-                        expected_revision: int | None = None) -> LearningPlanRecord:
-        ids = list(dict.fromkeys(value.strip() for value in schedule_ids if value.strip()))
+        return self.repository.mutate(
+            plan_id, mutate, expected_revision=expected_revision
+        )
+
+    def update_progress(
+        self,
+        *,
+        plan_id: str,
+        schedule_ids: list[str],
+        status: str,
+        note: str = "",
+        actor: str = "user",
+        source: str = "ui",
+        expected_revision: int | None = None,
+    ) -> LearningPlanRecord:
+        ids = list(
+            dict.fromkeys(value.strip() for value in schedule_ids if value.strip())
+        )
         status = status.strip()
         if not ids:
             raise HTTPException(422, "schedule_ids_required")
         if status not in {"planned", "in_progress", "completed", "blocked", "skipped"}:
             raise HTTPException(422, "invalid_schedule_status")
+
         def mutate(plan):
             if not set(ids) <= {item.id for item in plan.schedule}:
                 raise HTTPException(404, "schedule_items_not_found")
             for item in plan.schedule:
                 if item.id in ids:
                     item.status = status
-            plan.progress_events.append(PlanProgressEventRecord(
-                id=f"progress-event-{uuid4().hex}", actor=actor, source=source,
-                schedule_ids=ids, status=status, note=note.strip(), created_at=_now(),
-            ))
+            plan.progress_events.append(
+                PlanProgressEventRecord(
+                    id=f"progress-event-{uuid4().hex}",
+                    actor=actor,
+                    source=source,
+                    schedule_ids=ids,
+                    status=status,
+                    note=note.strip(),
+                    created_at=_now(),
+                )
+            )
             return self._refresh_plan_derived_fields(plan)
-        return self.repository.mutate(plan_id, mutate, expected_revision=expected_revision)
 
-    def answer_planning_question(self, *, plan_id: str, question_id: str, answer: str,
-                                 expected_revision: int | None = None) -> LearningPlanRecord:
+        return self.repository.mutate(
+            plan_id, mutate, expected_revision=expected_revision
+        )
+
+    def answer_planning_question(
+        self,
+        *,
+        plan_id: str,
+        question_id: str,
+        answer: str,
+        expected_revision: int | None = None,
+    ) -> LearningPlanRecord:
         answer = answer.strip()
         if not answer:
             raise HTTPException(422, "planning_question_answer_required")
+
         def mutate(plan):
             for question in plan.planning_questions:
                 if question.id == question_id:
@@ -658,10 +739,15 @@ class LearningPlanService:
                     question.answered_at = _now()
                     return self._refresh_plan_derived_fields(plan)
             raise HTTPException(404, "planning_question_not_found")
-        # Saving an answer never implicitly executes a provider or replaces a plan.
-        return self.repository.mutate(plan_id, mutate, expected_revision=expected_revision)
 
-    def resolve_confirmation(self, *, session_id: str, confirmation_id: str, decision: str, note: str = ""):
+        # Saving an answer never implicitly executes a provider or replaces a plan.
+        return self.repository.mutate(
+            plan_id, mutate, expected_revision=expected_revision
+        )
+
+    def resolve_confirmation(
+        self, *, session_id: str, confirmation_id: str, decision: str, note: str = ""
+    ):
         def apply(plan, confirmation):
             payload = confirmation.payload
             if confirmation.action_type == "update_plan":
@@ -674,19 +760,35 @@ class LearningPlanService:
                 status = str(payload.get("status") or "")
                 if not ids or not set(ids) <= {item.id for item in plan.schedule}:
                     raise HTTPException(409, "plan_confirmation_schedule_unavailable")
-                if status not in {"planned", "in_progress", "completed", "blocked", "skipped"}:
+                if status not in {
+                    "planned",
+                    "in_progress",
+                    "completed",
+                    "blocked",
+                    "skipped",
+                }:
                     raise HTTPException(422, "invalid_schedule_status")
                 for item in plan.schedule:
                     if item.id in ids:
                         item.status = status
-                plan.progress_events.append(PlanProgressEventRecord(
-                    id=f"progress-event-{uuid4().hex}", actor="user", source="chat_confirmation",
-                    schedule_ids=ids, status=status, note=str(payload.get("note") or note), created_at=_now(),
-                ))
+                plan.progress_events.append(
+                    PlanProgressEventRecord(
+                        id=f"progress-event-{uuid4().hex}",
+                        actor="user",
+                        source="chat_confirmation",
+                        schedule_ids=ids,
+                        status=status,
+                        note=str(payload.get("note") or note),
+                        created_at=_now(),
+                    )
+                )
             else:
                 raise HTTPException(400, "unsupported_confirmation_action")
             return self._refresh_plan_derived_fields(plan)
-        return self.repository.resolve_confirmation(session_id, confirmation_id, decision, note, _now(), apply)
+
+        return self.repository.resolve_confirmation(
+            session_id, confirmation_id, decision, note, _now(), apply
+        )
 
     def describe_progress(self, plan_id: str) -> dict[str, object]:
         plan = self.require_plan(plan_id)
@@ -704,8 +806,7 @@ class LearningPlanService:
             "creation_mode": plan.creation_mode,
             "progress_summary": plan.progress_summary.model_dump(mode="json"),
             "study_unit_progress": [
-                item.model_dump(mode="json")
-                for item in plan.study_unit_progress
+                item.model_dump(mode="json") for item in plan.study_unit_progress
             ],
             "schedule": [
                 {
@@ -723,8 +824,7 @@ class LearningPlanService:
                 for item in plan.schedule
             ],
             "pending_planning_questions": [
-                question.model_dump(mode="json")
-                for question in pending_questions
+                question.model_dump(mode="json") for question in pending_questions
             ],
             "answered_planning_questions": [
                 question.model_dump(mode="json")
@@ -732,8 +832,7 @@ class LearningPlanService:
                 if question.status == "answered"
             ],
             "recent_progress_events": [
-                event.model_dump(mode="json")
-                for event in plan.progress_events[-6:]
+                event.model_dump(mode="json") for event in plan.progress_events[-6:]
             ],
         }
 
@@ -753,22 +852,32 @@ class LearningPlanService:
         return sorted(matches, key=lambda plan: plan.created_at, reverse=True)[0]
 
     def delete_plan(self, plan_id: str, expected_revision: int | None = None) -> None:
-        self.repository.mutate(plan_id, lambda plan: plan, expected_revision=expected_revision, deleted=True)
+        self.repository.mutate(
+            plan_id,
+            lambda plan: plan,
+            expected_revision=expected_revision,
+            deleted=True,
+        )
 
-    def update_study_unit_title(self, *, document_id: str, study_unit_id: str,
-                               title: str) -> list[LearningPlanRecord]:
+    def update_study_unit_title(
+        self, *, document_id: str, study_unit_id: str, title: str
+    ) -> list[LearningPlanRecord]:
         title = title.strip()
         if not title:
             raise HTTPException(422, "study_unit_title_required")
         updated = []
         for plan in self.list_plans():
-            if plan.document_id != document_id or not any(unit.id == study_unit_id for unit in plan.study_units):
+            if plan.document_id != document_id or not any(
+                unit.id == study_unit_id for unit in plan.study_units
+            ):
                 continue
+
             def mutate(current):
                 for unit in current.study_units:
                     if unit.id == study_unit_id:
                         unit.title = title
                 return self._refresh_plan_derived_fields(current)
+
             updated.append(self.repository.mutate(plan.id, mutate))
         return updated
 
@@ -776,7 +885,10 @@ class LearningPlanService:
         return self._load_plans()
 
     def _load_plans(self) -> list[LearningPlanRecord]:
-        return [self._refresh_plan_derived_fields(plan) for plan in self.store.load_list("plans", LearningPlanRecord)]
+        return [
+            self._refresh_plan_derived_fields(plan)
+            for plan in self.store.load_list("plans", LearningPlanRecord)
+        ]
 
     def _goal_only_document_title(self, goal: LearningGoalInput) -> str:
         objective = " ".join((goal.objective or "").split()).strip(" 。.!！?？;；：:")
@@ -858,7 +970,9 @@ class LearningPlanService:
                 raise RuntimeError(
                     f"plan_proposal_invariant_failed:schedule_chapters.{index - 1}:not_object"
                 )
-            raw_payload = {key: value for key, value in raw_payload.items() if key != "id"}
+            raw_payload = {
+                key: value for key, value in raw_payload.items() if key != "id"
+            }
             chapter = PlanScheduleChapterProposalV1.model_validate(raw_payload)
             validated_chapter = self._validate_schedule_chapter(
                 chapter=chapter,
@@ -871,7 +985,9 @@ class LearningPlanService:
             normalized.append(validated_chapter)
         if normalized:
             return normalized
-        normalized_sources = [str(item).strip() for item in unit.source_section_ids if str(item).strip()]
+        normalized_sources = [
+            str(item).strip() for item in unit.source_section_ids if str(item).strip()
+        ]
         return [
             ScheduleChapterRecord(
                 id=build_schedule_chapter_id(
@@ -902,8 +1018,9 @@ class LearningPlanService:
         index: int,
         previous_anchor_start: int,
     ) -> ScheduleChapterRecord:
-        violation = find_chapter_violation(chapter=chapter, unit=unit,
-                                           previous_anchor_start=previous_anchor_start)
+        violation = find_chapter_violation(
+            chapter=chapter, unit=unit, previous_anchor_start=previous_anchor_start
+        )
         if violation is not None:
             raise RuntimeError(
                 f"plan_proposal_invariant_failed:schedule_chapters.{index - 1}.{violation.path}:{violation.reason}"
@@ -978,7 +1095,6 @@ def _learning_plan_failure_status(
 def _learning_plan_error_code(exc: Exception) -> str:
     raw = str(exc).strip() or type(exc).__name__
     normalized = "".join(
-        character if character.isalnum() else "_"
-        for character in raw.lower()
+        character if character.isalnum() else "_" for character in raw.lower()
     ).strip("_")
     return f"learning_plan_{normalized or 'failed'}"[:128]

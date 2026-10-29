@@ -9,6 +9,8 @@
 | `npm run test:web:debug` | 完整 React 组件的 Debug 发布、更新、卸载清理；无学习 controller/API |
 | `npm run test:web:workspace` | 快照查询、草稿生命周期与生成 Hook；注入依赖，无网络 |
 | `npm --workspace @vibe-learner/web run test:workspace:data` | 只运行首次加载、刷新竞争、失效与重试模块 |
+| `npm --workspace @vibe-learner/web run test:workspace:page-scope` | 物理页输入、非法范围、独立印刷标签 DTO、实际 HTTP 请求序列化与 Setup 提交行为 |
+| `npm --workspace @vibe-learner/web run test:workspace:page-scope:browser` | 开发服务上的页范围草稿导航/刷新恢复及物理 100–103 与印刷 70–73 分开显示 |
 | `npm --workspace @vibe-learner/web run test:workspace:generation` | 完整生成 Hook 的取消、过期请求、卸载、视图切换、Scene 快照和文档成功流程 |
 | `npm --workspace @vibe-learner/web run test:settings:decode` | Settings、工具配置、模型探测、用量统计的严格解码与真实 API 诊断归属；错误读回不重放写请求 |
 | `cd services/ai && uv run python -m unittest tests.test_settings_response_contracts` | 临时后端当前 HTTP DTO 交给 Node 中的生产 decoder 验证；Python/TS 共享版本与枚举 fixture |

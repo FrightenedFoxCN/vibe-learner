@@ -2,19 +2,28 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { DocumentRecord, LearningPlan, SceneProfile } from "@vibe-learner/shared";
-import { createDiagnosticId, diagnosticContext, type DiagnosticContext } from "../lib/diagnostics";
+import {
+  createDiagnosticId,
+  diagnosticContext,
+  type DiagnosticContext,
+} from "../lib/diagnostics";
 import { uploadDocument, processDocumentStream } from "../lib/data/documents";
 import { cancelStreamRun, createLearningPlanStream } from "../lib/data/learning-plans";
 import { createStudyChatRequestId } from "../lib/client-request-id";
 import { compactPreviewValue } from "../lib/preview";
-import { logWorkspaceError, logWorkspaceInfo } from "../lib/learning-workspace-telemetry";
+import {
+  logWorkspaceError,
+  logWorkspaceInfo,
+} from "../lib/learning-workspace-telemetry";
 import { PLAN_GENERATED_NOTICE } from "../lib/learning-workspace-copy";
+import { parsePhysicalPdfRanges, physicalPageIntent } from "../lib/planning-page-scope";
 import { ACTIVE_PLAN_GENERATION_KEY } from "../lib/app-navigation";
 
 export interface GeneratePlanInput {
   mode: "document" | "goal_only";
   file?: File | null;
   objective: string;
+  physicalPageRanges?: string;
 }
 
 type StreamEventItem = { stage: string; payload: Record<string, unknown> };
@@ -24,7 +33,12 @@ export interface PlanGenerationPort {
   createLearningPlanStream: typeof createLearningPlanStream;
   cancelStreamRun: typeof cancelStreamRun;
 }
-const defaultPort: PlanGenerationPort = { uploadDocument, processDocumentStream, createLearningPlanStream, cancelStreamRun };
+const defaultPort: PlanGenerationPort = {
+  uploadDocument,
+  processDocumentStream,
+  createLearningPlanStream,
+  cancelStreamRun,
+};
 
 interface PlanGenerationOptions {
   personaId: string;
@@ -37,7 +51,10 @@ interface PlanGenerationOptions {
   onPlan: (plan: LearningPlan) => void;
 }
 
-export function usePlanGeneration(options: PlanGenerationOptions, port: PlanGenerationPort = defaultPort) {
+export function usePlanGeneration(
+  options: PlanGenerationOptions,
+  port: PlanGenerationPort = defaultPort,
+) {
   const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
   const [isInterruptingPlan, setIsInterruptingPlan] = useState(false);
   const [processStreamEvents, setProcessStreamEvents] = useState<StreamEventItem[]>([]);
@@ -52,14 +69,23 @@ export function usePlanGeneration(options: PlanGenerationOptions, port: PlanGene
   const planStreamIdRef = useRef("");
   const processingCompletedRef = useRef(false);
   const mountedRef = useRef(true);
-  const ownsOperation = (controller: AbortController) => mountedRef.current && generationAbortControllerRef.current === controller;
+  const ownsOperation = (controller: AbortController) =>
+    mountedRef.current && generationAbortControllerRef.current === controller;
 
   const stopActiveOperation = async () => {
-    const streams = new Set([processStreamIdRef.current, planStreamIdRef.current].map(id => id.trim()).filter(Boolean));
+    const streams = new Set(
+      [processStreamIdRef.current, planStreamIdRef.current]
+        .map((id) => id.trim())
+        .filter(Boolean),
+    );
     const diagnostic = generationDiagnosticRef.current;
-    const cancellation = diagnostic ? { ...diagnostic, action_id: createDiagnosticId() } : undefined;
+    const cancellation = diagnostic
+      ? { ...diagnostic, action_id: createDiagnosticId() }
+      : undefined;
     generationAbortControllerRef.current?.abort();
-    await Promise.allSettled([...streams].map(id => port.cancelStreamRun(id, cancellation)));
+    await Promise.allSettled(
+      [...streams].map((id) => port.cancelStreamRun(id, cancellation)),
+    );
   };
 
   useEffect(() => {
@@ -104,7 +130,14 @@ export function usePlanGeneration(options: PlanGenerationOptions, port: PlanGene
     planStreamIdRef.current = "";
     setIsInterruptingPlan(false);
     setIsGeneratingPlan(true);
-    try { localStorage.setItem(ACTIVE_PLAN_GENERATION_KEY, JSON.stringify({ startedAt: new Date().toISOString(), mode: input.mode })); } catch { /* storage is optional */ }
+    try {
+      localStorage.setItem(
+        ACTIVE_PLAN_GENERATION_KEY,
+        JSON.stringify({ startedAt: new Date().toISOString(), mode: input.mode }),
+      );
+    } catch {
+      /* storage is optional */
+    }
     options.onStarted();
     setProcessStreamEvents([]);
     setPlanStreamEvents([]);
@@ -112,6 +145,10 @@ export function usePlanGeneration(options: PlanGenerationOptions, port: PlanGene
     setPlanStreamStatus("idle");
     processingCompletedRef.current = input.mode !== "document";
     try {
+      const ranges =
+        input.mode === "document"
+          ? parsePhysicalPdfRanges(input.physicalPageRanges ?? "")
+          : [];
       const selectedScene = options.resolveSceneProfile();
       const sceneProfile = selectedScene ? structuredClone(selectedScene) : undefined;
       let nextDocument: DocumentRecord | null = null;
@@ -123,11 +160,12 @@ export function usePlanGeneration(options: PlanGenerationOptions, port: PlanGene
         logWorkspaceInfo("workflow:upload:start", {
           filename: input.file.name,
           sizeBytes: input.file.size,
-          personaId: options.personaId
+          personaId: options.personaId,
         });
 
         const uploadedDocument = await port.uploadDocument(input.file, {
-          signal: abortController.signal, diagnostic,
+          signal: abortController.signal,
+          diagnostic,
         });
         abortController.signal.throwIfAborted();
         setProcessStreamDocumentId(uploadedDocument.id);
@@ -135,16 +173,18 @@ export function usePlanGeneration(options: PlanGenerationOptions, port: PlanGene
         options.onNotice("教材已上传，正在解析。");
         logWorkspaceInfo("workflow:upload:document_uploaded", {
           documentId: uploadedDocument.id,
-          status: uploadedDocument.status
+          status: uploadedDocument.status,
         });
 
         nextDocument = await port.processDocumentStream(
           uploadedDocument.id,
           {
-            signal: abortController.signal, diagnostic,
+            signal: abortController.signal,
+            diagnostic,
           },
           (event) => {
-            if (!ownsOperation(abortController) || abortController.signal.aborted) return;
+            if (!ownsOperation(abortController) || abortController.signal.aborted)
+              return;
             const streamId = event.operationId?.trim() ?? "";
             if (streamId) {
               processStreamIdRef.current = streamId;
@@ -153,24 +193,24 @@ export function usePlanGeneration(options: PlanGenerationOptions, port: PlanGene
               ...current.slice(-79),
               {
                 stage: event.stage,
-                payload: compactPreviewValue(event.payload) as Record<string, unknown>
-              }
+                payload: compactPreviewValue(event.payload) as Record<string, unknown>,
+              },
             ]);
             setProcessStreamStatus(resolveStreamStatus(event.stage));
             options.onNotice("正在解析教材…");
             logWorkspaceInfo("workflow:upload:process_event", {
               documentId: uploadedDocument.id,
               stage: event.stage,
-              ...event.payload
+              ...event.payload,
             });
-          }
+          },
         );
         abortController.signal.throwIfAborted();
         logWorkspaceInfo("workflow:upload:document_ready", {
           documentId: nextDocument.id,
           pageCount: nextDocument.pageCount,
           chunkCount: nextDocument.chunkCount,
-          ocrStatus: nextDocument.ocrStatus
+          ocrStatus: nextDocument.ocrStatus,
         });
         options.onDocument(nextDocument);
         processingCompletedRef.current = true;
@@ -181,10 +221,17 @@ export function usePlanGeneration(options: PlanGenerationOptions, port: PlanGene
         options.onNotice("正在生成计划。");
         logWorkspaceInfo("workflow:goal_only:start", {
           personaId: options.personaId,
-          objectiveLength: input.objective.length
+          objectiveLength: input.objective.length,
         });
       }
 
+      if (
+        nextDocument &&
+        ranges.some((range) => range.pageEnd > nextDocument.pageCount)
+      )
+        throw new Error(
+          `限定范围超出 PDF 的 ${nextDocument.pageCount} 个物理页；未发起计划生成。`,
+        );
       setPlanStreamStatus("running");
       const planClientRequestId = createStudyChatRequestId("learning-plan");
       const nextPlan = await port.createLearningPlanStream(
@@ -194,6 +241,7 @@ export function usePlanGeneration(options: PlanGenerationOptions, port: PlanGene
           clientRequestId: planClientRequestId,
           expectedDocumentUpdatedAt: nextDocument?.updatedAt ?? "",
           objective: input.objective,
+          planningIntent: physicalPageIntent(ranges),
           sceneProfileSummary: sceneProfile?.summary ?? "",
           sceneProfile,
         },
@@ -207,33 +255,38 @@ export function usePlanGeneration(options: PlanGenerationOptions, port: PlanGene
             ...current.slice(-119),
             {
               stage: event.stage,
-              payload: compactPreviewValue(event.payload) as Record<string, unknown>
-            }
+              payload: compactPreviewValue(event.payload) as Record<string, unknown>,
+            },
           ]);
           setPlanStreamStatus(resolveStreamStatus(event.stage));
           options.onNotice("正在生成计划…");
           logWorkspaceInfo("workflow:plan_event", {
             documentId: nextDocument?.id ?? "",
             stage: event.stage,
-            ...event.payload
+            ...event.payload,
           });
         },
         {
-          signal: abortController.signal, diagnostic,
-        }
+          signal: abortController.signal,
+          diagnostic,
+        },
       );
       abortController.signal.throwIfAborted();
       logWorkspaceInfo("workflow:upload:plan_ready", {
         planId: nextPlan.id,
-        taskCount: nextPlan.todayTasks.length
+        taskCount: nextPlan.todayTasks.length,
       });
       options.onPlan(nextPlan);
       options.onNotice(PLAN_GENERATED_NOTICE);
     } catch (error) {
       if (!ownsOperation(abortController)) return;
       if (isAbortLikeError(error)) {
-        setProcessStreamStatus((current) => (current === "running" ? "cancelled" : current));
-        setPlanStreamStatus((current) => (current === "running" ? "cancelled" : current));
+        setProcessStreamStatus((current) =>
+          current === "running" ? "cancelled" : current,
+        );
+        setPlanStreamStatus((current) =>
+          current === "running" ? "cancelled" : current,
+        );
         options.onNotice("已中断当前任务。");
         logWorkspaceInfo("workflow:upload:interrupted", {
           mode: input.mode,
@@ -242,10 +295,15 @@ export function usePlanGeneration(options: PlanGenerationOptions, port: PlanGene
       }
       setProcessStreamStatus((current) => (current === "running" ? "error" : current));
       setPlanStreamStatus((current) => (current === "running" ? "error" : current));
-      const failurePrefix = input.mode === "document"
-        ? (processingCompletedRef.current ? "计划生成失败（教材解析已完成）" : "教材解析 / OCR 失败")
-        : "目标计划生成失败";
-      options.onNotice(`${failurePrefix}：${String(error)}。可根据上方进度查看失败阶段并重试。`);
+      const failurePrefix =
+        input.mode === "document"
+          ? processingCompletedRef.current
+            ? "计划生成失败（教材解析已完成）"
+            : "教材解析 / OCR 失败"
+          : "目标计划生成失败";
+      options.onNotice(
+        `${failurePrefix}：${String(error)}。可根据上方进度查看失败阶段并重试。`,
+      );
       logWorkspaceError("workflow:upload:error", error);
     } finally {
       if (ownsOperation(abortController)) {
@@ -256,14 +314,27 @@ export function usePlanGeneration(options: PlanGenerationOptions, port: PlanGene
         setIsInterruptingPlan(false);
         options.onFinished();
         setIsGeneratingPlan(false);
-        try { localStorage.removeItem(ACTIVE_PLAN_GENERATION_KEY); } catch { /* storage is optional */ }
+        try {
+          localStorage.removeItem(ACTIVE_PLAN_GENERATION_KEY);
+        } catch {
+          /* storage is optional */
+        }
       }
     }
   };
 
-  return { generatePlanWorkflow, cancelPlanGeneration,
-    isGeneratingPlan, isInterruptingPlan, processStreamEvents, planStreamEvents,
-    processStreamStatus, planStreamStatus, processStreamDocumentId, planStreamDocumentId };
+  return {
+    generatePlanWorkflow,
+    cancelPlanGeneration,
+    isGeneratingPlan,
+    isInterruptingPlan,
+    processStreamEvents,
+    planStreamEvents,
+    processStreamStatus,
+    planStreamStatus,
+    processStreamDocumentId,
+    planStreamDocumentId,
+  };
 }
 
 function resolveStreamStatus(stage: string) {

@@ -23,3 +23,5 @@
 
 调用和 token 预算见 [配置与预算](configuration.md)，Plan CAS 细节见 [Plan revision](../plan-revision.md)。
 
+
+显式 PDF 页范围从 Document Setup 输入并随草稿保存，进入既有 `PlanningIntentV1` 和 operation fingerprint。受理前验证教材物理页数；提交事务和 v2 创建读回重复验证锚点/切片范围及完整覆盖。PDF 元数据印刷标签通过独立的 `document-page-numbering-v1` 读取，只用于当前教材对照，不参与 model/tool 页参数和 commit scope。见 [物理页范围](../planning-page-scope.md)。

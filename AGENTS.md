@@ -19,6 +19,7 @@ This repository was last materially updated on 2026-09-10. The codebase is a mon
 - Backend container bootstrap: `services/ai/app/core/bootstrap.py`
 - Document parsing pipeline: `services/ai/app/services/document_parser.py`
 - Document revision/CAS persistence: `services/ai/app/persistence/document_repository.py`; runtime writes must not use `LocalJsonStore.save_list("documents", ...)`.
+- Planning physical page scope: `services/ai/app/models/pdf_page_scope.py`, `apps/web/lib/planning-page-scope.ts`, and `docs/planning-page-scope.md`. Physical PDF positions constrain tools/proposals/commits; PDF metadata printed labels are a separate read-only reference.
 - Study-unit cleanup and plan heuristics: `services/ai/app/services/study_arrangement.py`
 - Study Unit revision confirmation: `services/ai/app/models/study_unit_revision.py`, `services/ai/app/persistence/study_unit_revision_repository.py`, `apps/web/components/study-unit-revision-panel.tsx`, and `docs/study-unit-revision.md`. Planning suggestions never replace the current tool context or shared Document until explicit confirmation.
 - Plan revision/CAS: `services/ai/app/persistence/learning_plan_repository.py`, `services/ai/app/services/plan_revision.py`, and `docs/plan-revision.md`.

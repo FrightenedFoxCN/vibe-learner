@@ -110,6 +110,7 @@ This reference covers **79 business HTTP operations across 60 unique paths**: 68
 | `GET` | `/documents/{document_id}/pages/{page_number}/image` | Render/serve one PDF page image. |
 | `GET` | `/documents/{document_id}/debug` | Read the persisted parse artifact used by the global Debug Overlay. |
 | `GET` | `/documents/{document_id}/process-events` | Read persisted processing stream events. |
+| `GET` | `/documents/{document_id}/page-numbering?page_numbers=100&page_numbers=103` | Read up to 64 physical page coordinates and optional PDF metadata printed labels. |
 | `GET` | `/documents/{document_id}/planning-context` | Read cleaned Study Units, detail map, and planner tools. |
 | `GET` | `/documents/{document_id}/planning-trace` | Read the persisted model/tool planning trace. |
 | `GET` | `/documents/{document_id}/plan-events` | Read persisted plan stream events. |
@@ -605,6 +606,22 @@ Response fields:
 - document-level stats: `page_count`, `total_characters`, `dominant_language_hint`
 - raw parse artifacts: `pages[]`, `sections[]`, `chunks[]`, `warnings[]`
 - cleaned plan-facing `study_units[]`
+
+### `GET /documents/{document_id}/page-numbering`
+
+Requires 1–64 distinct `page_numbers` query values in the current Document's
+physical range. `document-page-numbering-v1` returns `coordinate_system` fixed to
+`pdf_physical_1_based`, Document identity/revision, `physical_page_count`, and
+ordered `pages`: each has `physical_pdf_page` and nullable `printed_page` with
+`label` and `source="pdf_metadata"`. Missing PDF label metadata returns null;
+no OCR/text inference or offset conversion is performed. Invalid ranges return
+422; unavailable/mismatched PDF data returns 409. The endpoint is read-only.
+
+Planning input `planning_intent.pdf_page_ranges` always refers to physical pages,
+never printed labels. It is part of the saved operation fingerprint and Plan
+read-back. The admission boundary rejects out-of-document scopes before model
+execution; the final commit rechecks anchors/slices and complete physical coverage.
+See [Planning page scope](planning-page-scope.md).
 
 ### `GET /documents/{document_id}/planning-context`
 

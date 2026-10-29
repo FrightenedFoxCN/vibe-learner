@@ -6,6 +6,7 @@ import type { CSSProperties } from "react";
 import { DocumentSetup } from "./document-setup";
 import { PlanHistory } from "./plan-history";
 import { PlanOverview } from "./plan-overview";
+import { PlanPageScope } from "./plan-page-scope";
 import { PlanRevisionPanel } from "./plan-revision-panel";
 import { StudyUnitRevisionPanel } from "./study-unit-revision-panel";
 import { ProviderTruth } from "./provider-truth";
@@ -95,7 +96,8 @@ export function LearningWorkspace() {
     await triggerSessionPrelude({
       studyUnitId: input.studyUnitId,
       sectionTitle: input.chapter,
-      themeHint: activePlan.schedule.find((item) => item.id === input.scheduleId)?.focus ?? "",
+      themeHint:
+        activePlan.schedule.find((item) => item.id === input.scheduleId)?.focus ?? "",
     });
     appNavigator.push("/study", {
       plan: activePlan.id,
@@ -132,8 +134,12 @@ export function LearningWorkspace() {
             sceneLibraryItems={sceneLibraryItems}
             selectedSceneLibraryId={selectedSceneLibraryId}
             onSelectSceneLibraryId={setSelectedSceneLibraryId}
-            onGenerate={(input) => { void generatePlanWorkflow(input); }}
-            onInterruptGeneration={() => { void cancelPlanGeneration(); }}
+            onGenerate={(input) => {
+              void generatePlanWorkflow(input);
+            }}
+            onInterruptGeneration={() => {
+              void cancelPlanGeneration();
+            }}
             planStreamEvents={planStreamEvents}
             planStreamStatus={planStreamStatus}
             processStreamEvents={processStreamEvents}
@@ -142,7 +148,9 @@ export function LearningWorkspace() {
             isInterruptingGeneration={isInterruptingPlan}
             generationBlockedReason={planGenerationBlockedReason}
             cachedState={planSetupCache}
-            onCachedStateChange={(nextState: PlanSetupPageCache) => setPageCache("planSetup", nextState)}
+            onCachedStateChange={(nextState: PlanSetupPageCache) =>
+              setPageCache("planSetup", nextState)
+            }
           />
         </div>
 
@@ -157,7 +165,9 @@ export function LearningWorkspace() {
               "未关联人格"
             }
             planPositionLabel={activePlan ? `共 ${planHistory.length} 条` : ""}
-            sceneProfile={activePlan?.sceneProfile ?? studySession?.sceneProfile ?? null}
+            sceneProfile={
+              activePlan?.sceneProfile ?? studySession?.sceneProfile ?? null
+            }
             isBusy={isBusy}
             onRenamePlan={renamePlanTitle}
             onUpdatePlanProgress={updatePlanProgress}
@@ -165,16 +175,36 @@ export function LearningWorkspace() {
             onStartStudyFromPlan={handleStartStudyFromPlan}
           />
 
-          {activePlan && <PlanRevisionPanel key={activePlan.id} plan={activePlan} onRefresh={refreshPlanSnapshot} />}
-          {activePlan && <StudyUnitRevisionPanel key={`units:${activePlan.id}`} plan={activePlan} document={activeDocument} onRefresh={refreshPlanSnapshot} />}
+          {activePlan && (
+            <PlanPageScope key={`pages:${activePlan.id}`} plan={activePlan} />
+          )}
+          {activePlan && (
+            <PlanRevisionPanel
+              key={activePlan.id}
+              plan={activePlan}
+              onRefresh={refreshPlanSnapshot}
+            />
+          )}
+          {activePlan && (
+            <StudyUnitRevisionPanel
+              key={`units:${activePlan.id}`}
+              plan={activePlan}
+              document={activeDocument}
+              onRefresh={refreshPlanSnapshot}
+            />
+          )}
           <PlanHistory
             items={planHistoryItems}
             selectedPlanId={selectedPlanId}
             isRefreshing={isSnapshotRefreshing}
             isBusy={isBusy}
             onSelect={(planId) => selectPlan(planId, PLAN_SWITCH_NOTICE)}
-            onRefresh={() => { void refreshPlanSnapshot(); }}
-            onDelete={(planId) => { void removePlan(planId); }}
+            onRefresh={() => {
+              void refreshPlanSnapshot();
+            }}
+            onDelete={(planId) => {
+              void removePlan(planId);
+            }}
           />
         </div>
       </div>
@@ -190,7 +220,7 @@ const styles: Record<string, CSSProperties> = {
     padding: "0 28px 48px",
     display: "grid",
     gap: 0,
-    alignContent: "start"
+    alignContent: "start",
   },
   heading: {
     display: "grid",
@@ -202,20 +232,20 @@ const styles: Record<string, CSSProperties> = {
     marginBottom: 18,
     paddingBottom: 16,
     borderBottom: "1px solid color-mix(in srgb, var(--border) 76%, white)",
-    background: "color-mix(in srgb, white 92%, var(--bg))"
+    background: "color-mix(in srgb, white 92%, var(--bg))",
   },
   headingRow: {
     display: "flex",
     alignItems: "center",
     gap: 12,
-    flexWrap: "wrap"
+    flexWrap: "wrap",
   },
   pageTitle: {
     margin: 0,
     fontSize: 20,
     fontWeight: 700,
     color: "var(--ink)",
-    lineHeight: 1.2
+    lineHeight: 1.2,
   },
   notice: {
     width: "fit-content",
@@ -228,13 +258,13 @@ const styles: Record<string, CSSProperties> = {
     fontSize: 12,
     lineHeight: 1,
     display: "inline-flex",
-    alignItems: "center"
+    alignItems: "center",
   },
   planSetupShell: {
     minWidth: 0,
   },
   planColumn: {
     display: "grid",
-    gap: 14
-  }
+    gap: 14,
+  },
 };

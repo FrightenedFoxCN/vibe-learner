@@ -15,7 +15,14 @@ from app.models.domain import (
     PlanGenerationTraceRecord,
     SceneProfileRecord,
 )
-from app.models.study_unit_revision import StudyUnitRevisionPreviewV1, StudyUnitSuggestionV1
+from app.models.pdf_page_scope import (
+    validate_physical_schedule,
+    PhysicalPageScopeViolation,
+)
+from app.models.study_unit_revision import (
+    StudyUnitRevisionPreviewV1,
+    StudyUnitSuggestionV1,
+)
 from app.models.harness_operation import HarnessOperationBindingV1
 
 
@@ -24,7 +31,9 @@ PLANNING_TOOL_RESULT_CONTRACT_VERSION = "planning-tool-result-v1"
 LEARNING_PLAN_PROPOSAL_SCHEMA_NAME = "learning-plan-proposal"
 LEARNING_PLAN_PROPOSAL_SCHEMA_VERSION = "learning-plan-proposal-v3"
 LEARNING_PLAN_OPERATION_REQUEST_SCHEMA_VERSION = "learning-plan-operation-request-v1"
-LEARNING_PLAN_OPERATION_FINGERPRINT_LEGACY_VERSION = "learning-plan-operation-fingerprint-v1"
+LEARNING_PLAN_OPERATION_FINGERPRINT_LEGACY_VERSION = (
+    "learning-plan-operation-fingerprint-v1"
+)
 LEARNING_PLAN_OPERATION_FINGERPRINT_VERSION = "learning-plan-operation-fingerprint-v2"
 LEARNING_PLAN_COMMITTED_PROJECTION_VERSION = "learning-plan-committed-projection-v1"
 LEARNING_PLAN_COMMIT_CONTRACT_VERSION = "learning-plan-commit-v2"
@@ -115,7 +124,9 @@ PlanningToolArguments: TypeAlias = (
 
 class PlanningToolResultBaseV1(_StrictPlanningModel):
     schema_name: Literal["planning-tool-result"] = "planning-tool-result"
-    schema_version: Literal["planning-tool-result-v1"] = PLANNING_TOOL_RESULT_CONTRACT_VERSION
+    schema_version: Literal["planning-tool-result-v1"] = (
+        PLANNING_TOOL_RESULT_CONTRACT_VERSION
+    )
     ok: Literal[True] = True
 
 
@@ -128,7 +139,9 @@ class PlanningPageRangeRecoveryV1(_StrictPlanningModel):
 
 class PlanningToolErrorResultV1(_StrictPlanningModel):
     schema_name: Literal["planning-tool-result"] = "planning-tool-result"
-    schema_version: Literal["planning-tool-result-v1"] = PLANNING_TOOL_RESULT_CONTRACT_VERSION
+    schema_version: Literal["planning-tool-result-v1"] = (
+        PLANNING_TOOL_RESULT_CONTRACT_VERSION
+    )
     ok: Literal[False] = False
     tool_name: str = Field(max_length=80)
     error: str = Field(min_length=1, max_length=128)
@@ -251,7 +264,9 @@ PlanningToolSuccessResult: TypeAlias = (
     | ReadPageRangeContentResultV1
     | ReadPageRangeImagesResultV1
 )
-PlanningToolWireResult: TypeAlias = PlanningToolSuccessResult | PlanningToolErrorResultV1
+PlanningToolWireResult: TypeAlias = (
+    PlanningToolSuccessResult | PlanningToolErrorResultV1
+)
 
 
 class PlanContentSliceProposalV1(_StrictPlanningModel):
@@ -273,7 +288,9 @@ class PlanScheduleChapterProposalV1(_StrictPlanningModel):
     anchor_page_start: int = Field(ge=1)
     anchor_page_end: int = Field(ge=1)
     source_section_ids: list[str] = Field(default_factory=list, max_length=32)
-    content_slices: list[PlanContentSliceProposalV1] = Field(min_length=1, max_length=24)
+    content_slices: list[PlanContentSliceProposalV1] = Field(
+        min_length=1, max_length=24
+    )
 
     @model_validator(mode="after")
     def validate_range_and_refs(self) -> "PlanScheduleChapterProposalV1":
@@ -290,7 +307,9 @@ class PlanScheduleItemProposalV2(_StrictPlanningModel):
     focus: Annotated[str, Field(min_length=1, max_length=2000)]
     activity_type: Literal["learn", "review"]
     duration_minutes: int = Field(ge=1, le=480)
-    schedule_chapters: list[PlanScheduleChapterProposalV1] = Field(min_length=1, max_length=24)
+    schedule_chapters: list[PlanScheduleChapterProposalV1] = Field(
+        min_length=1, max_length=24
+    )
 
 
 class LearningPlanProposalV2(_StrictPlanningModel):
@@ -333,6 +352,7 @@ class LearningPlanProposalV3(_StrictPlanningModel):
     )
     today_tasks: list[ShortText] = Field(min_length=1, max_length=12)
     schedule: list[PlanScheduleItemProposalV3] = Field(min_length=1, max_length=24)
+
 
 PLANNING_TOOL_ARGUMENT_MODELS: dict[str, type[_StrictPlanningModel]] = {
     "get_study_unit_detail": GetStudyUnitDetailArgumentsV1,
@@ -430,9 +450,12 @@ class LearningPlanCommittedProjectionV1(_StrictPlanningModel):
             if self.debug_report is not None:
                 if self.debug_report.document_id != self.document_id:
                     raise ValueError("committed_debug_identity_mismatch")
-                if planning_projection_digest(
-                    self.debug_report.model_dump(mode="json")
-                ) != self.debug_digest:
+                if (
+                    planning_projection_digest(
+                        self.debug_report.model_dump(mode="json")
+                    )
+                    != self.debug_digest
+                ):
                     raise ValueError("committed_debug_digest_mismatch")
             elif self.debug_digest:
                 raise ValueError("committed_debug_digest_without_projection")
@@ -452,21 +475,30 @@ class LearningPlanCommittedProjectionV1(_StrictPlanningModel):
 
 
 class LearningPlanCommittedProjectionV2(LearningPlanCommittedProjectionV1):
-    schema_version: Literal["learning-plan-committed-projection-v2"] = "learning-plan-committed-projection-v2"
+    schema_version: Literal["learning-plan-committed-projection-v2"] = (
+        "learning-plan-committed-projection-v2"
+    )
     study_unit_revision: StudyUnitRevisionPreviewV1 | None = None
     study_unit_revision_binding: HarnessOperationBindingV1 | None = None
 
     @model_validator(mode="after")
     def validate_unit_revision(self):
+        try:
+            validate_physical_schedule(self.plan.schedule, self.plan.planning_intent)
+        except PhysicalPageScopeViolation as exc:
+            raise ValueError(str(exc)) from exc
         preview, binding = self.study_unit_revision, self.study_unit_revision_binding
         if (preview is None) != (binding is None):
             raise ValueError("learning_plan_unit_revision_binding_required")
         if preview is not None:
-            if (preview.plan_id != self.plan_id or preview.parent_operation_id != self.operation_id
-                    or preview.base_document != self.document
-                    or preview.base_debug_digest != self.debug_digest
-                    or binding.domain_operation_id != preview.operation_id
-                    or binding.domain_operation_kind.value != "study_unit_revision"):
+            if (
+                preview.plan_id != self.plan_id
+                or preview.parent_operation_id != self.operation_id
+                or preview.base_document != self.document
+                or preview.base_debug_digest != self.debug_digest
+                or binding.domain_operation_id != preview.operation_id
+                or binding.domain_operation_kind.value != "study_unit_revision"
+            ):
                 raise ValueError("learning_plan_unit_revision_scope_mismatch")
         return self
 
@@ -489,10 +521,13 @@ class LearningPlanOperationRecord(_StrictPlanningModel):
     plan_id: str = ""
     commit_contract_version: str = ""
     committed_projection_digest: str = ""
-    committed_projection: Annotated[
-        LearningPlanCommittedProjectionV1 | LearningPlanCommittedProjectionV2,
-        Field(discriminator="schema_version"),
-    ] | None = None
+    committed_projection: (
+        Annotated[
+            LearningPlanCommittedProjectionV1 | LearningPlanCommittedProjectionV2,
+            Field(discriminator="schema_version"),
+        ]
+        | None
+    ) = None
     error_code: str = ""
     created_at: str
     updated_at: str
@@ -500,7 +535,10 @@ class LearningPlanOperationRecord(_StrictPlanningModel):
 
     @model_validator(mode="after")
     def validate_operation(self) -> "LearningPlanOperationRecord":
-        if self.request_schema_version != LEARNING_PLAN_OPERATION_REQUEST_SCHEMA_VERSION:
+        if (
+            self.request_schema_version
+            != LEARNING_PLAN_OPERATION_REQUEST_SCHEMA_VERSION
+        ):
             raise ValueError("unsupported_learning_plan_request_schema")
         if self.fingerprint_contract_version not in {
             LEARNING_PLAN_OPERATION_FINGERPRINT_LEGACY_VERSION,
@@ -513,10 +551,13 @@ class LearningPlanOperationRecord(_StrictPlanningModel):
             raise ValueError("learning_plan_document_identity_mismatch")
         if self.request_payload.persona_id != self.persona_id:
             raise ValueError("learning_plan_persona_identity_mismatch")
-        if learning_plan_request_fingerprint(
-            self.request_payload,
-            contract_version=self.fingerprint_contract_version,
-        ) != self.request_fingerprint:
+        if (
+            learning_plan_request_fingerprint(
+                self.request_payload,
+                contract_version=self.fingerprint_contract_version,
+            )
+            != self.request_fingerprint
+        ):
             raise ValueError("learning_plan_request_fingerprint_mismatch")
         if self.document_id:
             if not self.base_document_updated_at or not self.base_document_digest:
@@ -530,7 +571,11 @@ class LearningPlanOperationRecord(_StrictPlanningModel):
         if self.status == LearningPlanOperationStatus.RUNNING:
             if self.projection_state != LearningPlanProjectionState.PENDING:
                 raise ValueError("running_plan_projection_must_be_pending")
-            if self.completed_at or self.error_code or self.committed_projection is not None:
+            if (
+                self.completed_at
+                or self.error_code
+                or self.committed_projection is not None
+            ):
                 raise ValueError("running_plan_operation_has_terminal_evidence")
         elif self.status == LearningPlanOperationStatus.COMMITTED:
             if self.projection_state != LearningPlanProjectionState.COMMITTED:
@@ -538,18 +583,32 @@ class LearningPlanOperationRecord(_StrictPlanningModel):
             if (
                 not self.completed_at
                 or not self.plan_id
-                or self.commit_contract_version not in {"learning-plan-commit-v1", LEARNING_PLAN_COMMIT_CONTRACT_VERSION}
+                or self.commit_contract_version
+                not in {
+                    "learning-plan-commit-v1",
+                    LEARNING_PLAN_COMMIT_CONTRACT_VERSION,
+                }
                 or not self.committed_projection_digest
                 or self.committed_projection is None
                 or self.error_code
             ):
                 raise ValueError("committed_plan_operation_evidence_incomplete")
+            if (
+                isinstance(self.committed_projection, LearningPlanCommittedProjectionV2)
+                and self.committed_projection.plan.planning_intent
+                != self.request_payload.planning_intent
+            ):
+                raise ValueError("committed_plan_page_scope_intent_mismatch")
             projection_digest = planning_projection_digest(
                 self.committed_projection.model_dump(mode="json")
             )
-            expected_contract = ("learning-plan-commit-v2"
-                                 if isinstance(self.committed_projection, LearningPlanCommittedProjectionV2)
-                                 else "learning-plan-commit-v1")
+            expected_contract = (
+                "learning-plan-commit-v2"
+                if isinstance(
+                    self.committed_projection, LearningPlanCommittedProjectionV2
+                )
+                else "learning-plan-commit-v1"
+            )
             if self.commit_contract_version != expected_contract:
                 raise ValueError("committed_plan_contract_projection_mismatch")
             if projection_digest != self.committed_projection_digest:

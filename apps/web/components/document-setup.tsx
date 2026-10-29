@@ -2,20 +2,20 @@
 
 import type { CSSProperties } from "react";
 import { useEffect, useRef, useState } from "react";
-import type {
-  PersonaProfile,
-} from "@vibe-learner/shared";
+import type { PersonaProfile } from "@vibe-learner/shared";
 import type { PlanSetupPageCache } from "../lib/learning-workspace-page-cache";
 import type { SceneLibraryItemPayload } from "../lib/data/scenes";
 import { MaterialIcon } from "./material-icon";
 import { PersonaSelector } from "./persona-selector";
+import { parsePhysicalPdfRanges } from "../lib/planning-page-scope";
+import type { GeneratePlanInput } from "../hooks/use-plan-generation";
 import { AppLink } from "../lib/app-navigation";
 
 interface DocumentSetupProps {
   personas: PersonaProfile[];
   selectedPersonaId: string;
   onSelectPersonaId: (personaId: string) => void;
-  onGenerate: (input: { mode: "document" | "goal_only"; file?: File | null; objective: string }) => void;
+  onGenerate: (input: GeneratePlanInput) => void;
   onInterruptGeneration: () => void;
   isBusy: boolean;
   sceneLibraryItems: SceneLibraryItemPayload[];
@@ -59,11 +59,24 @@ export function DocumentSetup({
 }: DocumentSetupProps) {
   const [file, setFile] = useState<File | null>(() => cachedState?.file ?? null);
   const [generationMode, setGenerationMode] = useState<"document" | "goal_only">(
-    () => cachedState?.generationMode ?? "document"
+    () => cachedState?.generationMode ?? "document",
   );
   const [objective, setObjective] = useState(
-    () => cachedState?.objective ?? "请基于教材结构生成首轮学习计划，先排出清晰、可执行的学习排期。"
+    () =>
+      cachedState?.objective ??
+      "请基于教材结构生成首轮学习计划，先排出清晰、可执行的学习排期。",
   );
+  const [physicalPageRanges, setPhysicalPageRanges] = useState(
+    () => cachedState?.physicalPageRanges ?? "",
+  );
+  let pageScopeError = "";
+  if (generationMode === "document") {
+    try {
+      parsePhysicalPdfRanges(physicalPageRanges);
+    } catch (error) {
+      pageScopeError = error instanceof Error ? error.message : "PDF 页范围无效";
+    }
+  }
   const [showRoundDetails, setShowRoundDetails] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -71,30 +84,47 @@ export function DocumentSetup({
     onCachedStateChange?.({
       generationMode,
       objective,
+      physicalPageRanges,
       file,
     });
-  }, [file, generationMode, objective, onCachedStateChange]);
+  }, [file, generationMode, objective, physicalPageRanges, onCachedStateChange]);
 
   const planRoundSummary = summarizePlanRounds(planStreamEvents);
   const processProgress = summarizeProcessProgress(processStreamEvents);
   const shouldShowPlanRounds =
-    planStreamStatus !== "idle" || planStreamEvents.length > 0 || planRoundSummary.rounds.length > 0;
-  const isGenerateDisabled = isBusy || (generationMode === "document" && !file) || Boolean(generationBlockedReason);
-  const generateButtonLabel = isBusy ? "处理中…" : generationMode === "document" ? "生成计划" : "按目标生成";
-  const shouldShowProcessProgress = generationMode === "document" &&
+    planStreamStatus !== "idle" ||
+    planStreamEvents.length > 0 ||
+    planRoundSummary.rounds.length > 0;
+  const isGenerateDisabled =
+    Boolean(pageScopeError) ||
+    isBusy ||
+    (generationMode === "document" && !file) ||
+    Boolean(generationBlockedReason);
+  const generateButtonLabel = isBusy
+    ? "处理中…"
+    : generationMode === "document"
+      ? "生成计划"
+      : "按目标生成";
+  const shouldShowProcessProgress =
+    generationMode === "document" &&
     (processStreamStatus !== "idle" || processStreamEvents.length > 0);
 
   const handleGenerate = () => {
-    if (generationMode === "document" && !file) {
+    if (pageScopeError || (generationMode === "document" && !file)) {
       return;
     }
     console.info("[vibe-learner] ui:upload_click", {
       mode: generationMode,
       filename: file?.name ?? "",
       sizeBytes: file?.size ?? 0,
-      selectedPersonaId
+      selectedPersonaId,
     });
-    onGenerate({ mode: generationMode, file, objective });
+    onGenerate({
+      mode: generationMode,
+      file,
+      objective,
+      physicalPageRanges: generationMode === "document" ? physicalPageRanges : "",
+    });
   };
 
   return (
@@ -106,7 +136,7 @@ export function DocumentSetup({
             type="button"
             style={{
               ...styles.primaryButton,
-              ...(isGenerateDisabled ? styles.buttonDisabled : {})
+              ...(isGenerateDisabled ? styles.buttonDisabled : {}),
             }}
             disabled={isGenerateDisabled}
             onClick={handleGenerate}
@@ -120,7 +150,9 @@ export function DocumentSetup({
       <section style={styles.card}>
         <div style={styles.formSection}>
           <div style={styles.field}>
-            <label htmlFor="plan-persona" style={styles.fieldLabel}>教师人格</label>
+            <label htmlFor="plan-persona" style={styles.fieldLabel}>
+              教师人格
+            </label>
             <PersonaSelector
               personas={personas}
               selectedPersonaId={selectedPersonaId}
@@ -131,7 +163,9 @@ export function DocumentSetup({
           </div>
 
           <div style={styles.field}>
-            <label htmlFor="plan-scene" style={styles.fieldLabel}>计划场景</label>
+            <label htmlFor="plan-scene" style={styles.fieldLabel}>
+              计划场景
+            </label>
             <select
               id="plan-scene"
               value={selectedSceneLibraryId}
@@ -151,11 +185,17 @@ export function DocumentSetup({
         <div style={{ ...styles.formSection, ...styles.formSectionSeparated }}>
           <div style={styles.form}>
             <div style={styles.field}>
-              <label htmlFor="plan-generation-mode" style={styles.fieldLabel}>创建方式</label>
+              <label htmlFor="plan-generation-mode" style={styles.fieldLabel}>
+                创建方式
+              </label>
               <select
                 id="plan-generation-mode"
                 value={generationMode}
-                onChange={(event) => setGenerationMode(event.target.value === "goal_only" ? "goal_only" : "document")}
+                onChange={(event) =>
+                  setGenerationMode(
+                    event.target.value === "goal_only" ? "goal_only" : "document",
+                  )
+                }
                 style={styles.select}
               >
                 <option value="document">教材 + 目标</option>
@@ -163,7 +203,9 @@ export function DocumentSetup({
               </select>
             </div>
             <div style={styles.field}>
-              <label htmlFor="plan-document-file" style={styles.fieldLabel}>教材文件（PDF）</label>
+              <label htmlFor="plan-document-file" style={styles.fieldLabel}>
+                教材文件（PDF）
+              </label>
               <input
                 ref={fileInputRef}
                 id="plan-document-file"
@@ -176,22 +218,48 @@ export function DocumentSetup({
               <div className="plan-file-selection" aria-live="polite">
                 <button
                   type="button"
-                  style={{ ...styles.fileButton, ...(generationMode === "goal_only" ? styles.buttonDisabled : {}) }}
+                  style={{
+                    ...styles.fileButton,
+                    ...(generationMode === "goal_only" ? styles.buttonDisabled : {}),
+                  }}
                   disabled={generationMode === "goal_only"}
                   onClick={() => fileInputRef.current?.click()}
                 >
                   {file ? "更换教材" : "选择教材"}
                 </button>
-                <span
-                  className="plan-file-name"
-                  title={file?.name}
-                >
-                  {file?.name ?? (generationMode === "goal_only" ? "仅学习目标，无需教材" : "尚未选择文件")}
+                <span className="plan-file-name" title={file?.name}>
+                  {file?.name ??
+                    (generationMode === "goal_only"
+                      ? "仅学习目标，无需教材"
+                      : "尚未选择文件")}
                 </span>
               </div>
             </div>
+            {generationMode === "document" && (
+              <div style={styles.field}>
+                <label htmlFor="plan-physical-pages" style={styles.fieldLabel}>
+                  PDF 物理页范围（可选）
+                </label>
+                <input
+                  id="plan-physical-pages"
+                  value={physicalPageRanges}
+                  maxLength={2000}
+                  onChange={(event) => setPhysicalPageRanges(event.target.value)}
+                  placeholder="例如 100–103, 110"
+                  aria-describedby="plan-physical-page-help"
+                  aria-invalid={Boolean(pageScopeError)}
+                />
+                <small id="plan-physical-page-help">
+                  按 PDF 阅读器从 1
+                  开始的页序填写；留空表示不限定。书上印刷的页码或罗马数字不能替代物理页。输入后，计划与取证工具只能使用指定页。
+                </small>
+                {pageScopeError && <p role="alert">{pageScopeError}</p>}
+              </div>
+            )}
             <div style={styles.field}>
-              <label htmlFor="plan-objective" style={styles.fieldLabel}>学习目标</label>
+              <label htmlFor="plan-objective" style={styles.fieldLabel}>
+                学习目标
+              </label>
               <textarea
                 id="plan-objective"
                 value={objective}
@@ -217,7 +285,7 @@ export function DocumentSetup({
             type="button"
             style={{
               ...styles.secondaryButton,
-              ...(isInterruptingGeneration ? styles.buttonDisabled : {})
+              ...(isInterruptingGeneration ? styles.buttonDisabled : {}),
             }}
             disabled={isInterruptingGeneration}
             onClick={onInterruptGeneration}
@@ -230,17 +298,39 @@ export function DocumentSetup({
         {shouldShowProcessProgress ? (
           <div style={styles.progressSection} aria-live="polite">
             <div style={styles.progressHeader}>
-              <div style={styles.progressHeaderMeta}><span style={styles.progressTitle}>教材解析 / OCR</span></div>
-              <span style={statusBadgeStyle(processStreamStatus)}>{formatProcessStreamStatus(processStreamStatus)}</span>
+              <div style={styles.progressHeaderMeta}>
+                <span style={styles.progressTitle}>教材解析 / OCR</span>
+              </div>
+              <span style={statusBadgeStyle(processStreamStatus)}>
+                {formatProcessStreamStatus(processStreamStatus)}
+              </span>
             </div>
             <div style={styles.progressStats}>
-              <span style={styles.progressStat}>页面 {processProgress.completedPages}{processProgress.totalPages ? ` / ${processProgress.totalPages}` : ""}</span>
+              <span style={styles.progressStat}>
+                页面 {processProgress.completedPages}
+                {processProgress.totalPages ? ` / ${processProgress.totalPages}` : ""}
+              </span>
               <span style={styles.progressStat}>阶段 {processProgress.phase}</span>
-              {processProgress.rate ? <span style={styles.progressStat}>速率 {processProgress.rate} 页/分钟</span> : null}
-              {processProgress.eta ? <span style={styles.progressStat}>预计还需 {processProgress.eta}</span> : null}
+              {processProgress.rate ? (
+                <span style={styles.progressStat}>
+                  速率 {processProgress.rate} 页/分钟
+                </span>
+              ) : null}
+              {processProgress.eta ? (
+                <span style={styles.progressStat}>预计还需 {processProgress.eta}</span>
+              ) : null}
             </div>
-            {processProgress.warning ? <div style={styles.warningText}>{processProgress.warning}</div> : null}
-            {processProgress.error ? <div style={styles.roundError}>{formatProcessError(processProgress.error, processProgress.checkpointSaved)}</div> : null}
+            {processProgress.warning ? (
+              <div style={styles.warningText}>{processProgress.warning}</div>
+            ) : null}
+            {processProgress.error ? (
+              <div style={styles.roundError}>
+                {formatProcessError(
+                  processProgress.error,
+                  processProgress.checkpointSaved,
+                )}
+              </div>
+            ) : null}
           </div>
         ) : null}
 
@@ -256,12 +346,26 @@ export function DocumentSetup({
             </div>
 
             <div style={styles.progressStats}>
-              <span style={styles.progressStat}>轮次 {planRoundSummary.rounds.length}</span>
-              <span style={styles.progressStat}>调用 {planRoundSummary.totalToolCalls}</span>
-              <span style={styles.progressStat}>问题 {planRoundSummary.planningQuestions.length}</span>
-              <span style={styles.progressStat}>Token {planRoundSummary.totalTokens || "—"}</span>
-              <span style={styles.progressStat}>耗时 {formatElapsed(planRoundSummary.totalElapsedMs)}</span>
-              {planRoundSummary.repairCount ? <span style={styles.progressStat}>修复 {planRoundSummary.repairCount} 次</span> : null}
+              <span style={styles.progressStat}>
+                轮次 {planRoundSummary.rounds.length}
+              </span>
+              <span style={styles.progressStat}>
+                调用 {planRoundSummary.totalToolCalls}
+              </span>
+              <span style={styles.progressStat}>
+                问题 {planRoundSummary.planningQuestions.length}
+              </span>
+              <span style={styles.progressStat}>
+                Token {planRoundSummary.totalTokens || "—"}
+              </span>
+              <span style={styles.progressStat}>
+                耗时 {formatElapsed(planRoundSummary.totalElapsedMs)}
+              </span>
+              {planRoundSummary.repairCount ? (
+                <span style={styles.progressStat}>
+                  修复 {planRoundSummary.repairCount} 次
+                </span>
+              ) : null}
             </div>
 
             {planRoundSummary.latestMessage ? (
@@ -274,7 +378,11 @@ export function DocumentSetup({
                   <div key={item.id} style={styles.questionNoticeItem}>
                     <strong style={styles.questionNoticeLabel}>待回答</strong>
                     <span>{item.question}</span>
-                    {item.reason ? <span style={styles.questionNoticeReason}>备注：{item.reason}</span> : null}
+                    {item.reason ? (
+                      <span style={styles.questionNoticeReason}>
+                        备注：{item.reason}
+                      </span>
+                    ) : null}
                   </div>
                 ))}
               </div>
@@ -287,7 +395,9 @@ export function DocumentSetup({
                   style={styles.foldButton}
                   onClick={() => setShowRoundDetails((current) => !current)}
                 >
-                  {showRoundDetails ? "收起调用细节" : `查看调用细节 · ${planRoundSummary.rounds.length} 轮`}
+                  {showRoundDetails
+                    ? "收起调用细节"
+                    : `查看调用细节 · ${planRoundSummary.rounds.length} 轮`}
                 </button>
 
                 {showRoundDetails ? (
@@ -295,7 +405,9 @@ export function DocumentSetup({
                     {planRoundSummary.rounds.map((round) => (
                       <div key={round.roundIndex} style={styles.roundCard}>
                         <div style={styles.roundHeader}>
-                          <strong style={styles.roundTitle}>第 {round.roundIndex + 1} 轮</strong>
+                          <strong style={styles.roundTitle}>
+                            第 {round.roundIndex + 1} 轮
+                          </strong>
                           <span style={roundStatusBadgeStyle(round.status)}>
                             {formatRoundStatus(round.status)}
                           </span>
@@ -303,13 +415,20 @@ export function DocumentSetup({
                         <span style={styles.roundMeta}>
                           工具 {round.toolCalls.length}
                           {round.finishReason ? ` · finish=${round.finishReason}` : ""}
-                          {typeof round.elapsedMs === "number" ? ` · ${round.elapsedMs} ms` : ""}
+                          {typeof round.elapsedMs === "number"
+                            ? ` · ${round.elapsedMs} ms`
+                            : ""}
                         </span>
-                        {round.error ? <span style={styles.roundError}>出错：{round.error}</span> : null}
+                        {round.error ? (
+                          <span style={styles.roundError}>出错：{round.error}</span>
+                        ) : null}
                         {round.toolCalls.length ? (
                           <div style={styles.roundToolList}>
                             {round.toolCalls.map((toolName, index) => (
-                              <span key={`${round.roundIndex}:${toolName}:${index}`} style={styles.roundToolTag}>
+                              <span
+                                key={`${round.roundIndex}:${toolName}:${index}`}
+                                style={styles.roundToolTag}
+                              >
                                 {toolName}
                               </span>
                             ))}
@@ -343,26 +462,26 @@ const styles: Record<string, CSSProperties> = {
     flexWrap: "wrap",
     minHeight: 24,
     paddingBottom: 10,
-    borderBottom: "1px solid color-mix(in srgb, var(--border) 76%, white)"
+    borderBottom: "1px solid color-mix(in srgb, var(--border) 76%, white)",
   },
   sectionTitle: {
     fontSize: 10,
     fontWeight: 700,
     letterSpacing: "0.12em",
     textTransform: "uppercase",
-    color: "var(--muted)"
+    color: "var(--muted)",
   },
   sectionActions: {
     display: "flex",
     flexWrap: "wrap",
-    gap: 8
+    gap: 8,
   },
   card: {
     display: "grid",
     gap: 14,
     padding: 0,
     border: "none",
-    background: "transparent"
+    background: "transparent",
   },
   formSection: {
     display: "grid",
@@ -374,18 +493,18 @@ const styles: Record<string, CSSProperties> = {
   },
   form: {
     display: "grid",
-    gap: 12
+    gap: 12,
   },
   field: {
     display: "grid",
-    gap: 7
+    gap: 7,
   },
   fieldLabel: {
     fontSize: 11,
     fontWeight: 600,
     letterSpacing: "0.04em",
     textTransform: "uppercase",
-    color: "var(--muted)"
+    color: "var(--muted)",
   },
   textarea: {
     width: "100%",
@@ -396,7 +515,7 @@ const styles: Record<string, CSSProperties> = {
     resize: "vertical",
     fontSize: 14,
     lineHeight: 1.65,
-    color: "var(--ink)"
+    color: "var(--ink)",
   },
   fileButton: {
     minHeight: 38,
@@ -416,7 +535,7 @@ const styles: Record<string, CSSProperties> = {
     padding: "0 10px",
     background: "color-mix(in srgb, white 72%, var(--surface))",
     color: "var(--ink)",
-    fontSize: 14
+    fontSize: 14,
   },
   primaryButton: {
     border: "none",
@@ -430,7 +549,7 @@ const styles: Record<string, CSSProperties> = {
     justifySelf: "start",
     display: "inline-flex",
     alignItems: "center",
-    gap: 8
+    gap: 8,
   },
   secondaryButton: {
     border: "none",
@@ -444,11 +563,11 @@ const styles: Record<string, CSSProperties> = {
     justifySelf: "start",
     display: "inline-flex",
     alignItems: "center",
-    gap: 8
+    gap: 8,
   },
   buttonDisabled: {
     opacity: 0.45,
-    cursor: "not-allowed"
+    cursor: "not-allowed",
   },
   warningCard: {
     display: "grid",
@@ -479,42 +598,42 @@ const styles: Record<string, CSSProperties> = {
     display: "grid",
     gap: 10,
     paddingTop: 16,
-    borderTop: "1px solid color-mix(in srgb, var(--border) 68%, white)"
+    borderTop: "1px solid color-mix(in srgb, var(--border) 68%, white)",
   },
   progressHeader: {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "flex-start",
     gap: 10,
-    flexWrap: "wrap"
+    flexWrap: "wrap",
   },
   progressHeaderMeta: {
     display: "grid",
-    gap: 2
+    gap: 2,
   },
   progressTitle: {
     fontSize: 10,
     fontWeight: 700,
     color: "var(--ink)",
     textTransform: "uppercase",
-    letterSpacing: "0.12em"
+    letterSpacing: "0.12em",
   },
   progressMeta: {
     fontSize: 11,
     color: "var(--muted)",
-    lineHeight: 1.5
+    lineHeight: 1.5,
   },
   progressStats: {
     display: "flex",
     flexWrap: "wrap",
-    gap: 6
+    gap: 6,
   },
   progressStat: {
     padding: "5px 8px",
     border: "none",
     background: "color-mix(in srgb, white 68%, var(--surface))",
     fontSize: 11,
-    color: "var(--muted)"
+    color: "var(--muted)",
   },
   progressNotice: {
     padding: "8px 10px",
@@ -522,11 +641,11 @@ const styles: Record<string, CSSProperties> = {
     background: "color-mix(in srgb, white 68%, var(--surface))",
     color: "var(--ink)",
     fontSize: 13,
-    lineHeight: 1.6
+    lineHeight: 1.6,
   },
   questionNotice: {
     display: "grid",
-    gap: 8
+    gap: 8,
   },
   questionNoticeItem: {
     display: "grid",
@@ -536,66 +655,66 @@ const styles: Record<string, CSSProperties> = {
     background: "color-mix(in srgb, white 68%, var(--surface))",
     fontSize: 13,
     color: "var(--ink)",
-    lineHeight: 1.6
+    lineHeight: 1.6,
   },
   questionNoticeLabel: {
     fontSize: 10,
     color: "var(--muted)",
     textTransform: "uppercase",
-    letterSpacing: "0.12em"
+    letterSpacing: "0.12em",
   },
   questionNoticeReason: {
-    color: "var(--muted)"
+    color: "var(--muted)",
   },
   roundList: {
     display: "grid",
-    gap: 8
+    gap: 8,
   },
   roundCard: {
     display: "grid",
     gap: 6,
     padding: "10px 12px",
     border: "none",
-    background: "color-mix(in srgb, white 68%, var(--surface))"
+    background: "color-mix(in srgb, white 68%, var(--surface))",
   },
   roundHeader: {
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
     gap: 8,
-    flexWrap: "wrap"
+    flexWrap: "wrap",
   },
   roundTitle: {
     fontSize: 13,
-    color: "var(--ink)"
+    color: "var(--ink)",
   },
   roundMeta: {
     fontSize: 12,
-    color: "var(--muted)"
+    color: "var(--muted)",
   },
   roundError: {
     fontSize: 12,
-    color: "var(--danger, #b42318)"
+    color: "var(--danger, #b42318)",
   },
   roundRecovery: {
     fontSize: 12,
-    color: "var(--muted)"
+    color: "var(--muted)",
   },
   roundToolList: {
     display: "flex",
     flexWrap: "wrap",
-    gap: 6
+    gap: 6,
   },
   roundToolTag: {
     padding: "4px 8px",
     border: "1px solid var(--border)",
     background: "white",
     color: "var(--muted)",
-    fontSize: 12
+    fontSize: 12,
   },
   foldSection: {
     display: "grid",
-    gap: 10
+    gap: 10,
   },
   foldButton: {
     minHeight: 30,
@@ -606,8 +725,8 @@ const styles: Record<string, CSSProperties> = {
     color: "var(--accent)",
     fontSize: 12,
     fontWeight: 600,
-    cursor: "pointer"
-  }
+    cursor: "pointer",
+  },
 };
 
 type PlanRoundStatus = "running" | "completed" | "failed";
@@ -642,14 +761,12 @@ function summarizePlanRounds(events: StreamEventItem[]) {
       if (roundIndex === null) {
         return null;
       }
-      const current =
-        rounds.get(roundIndex) ??
-        {
-          roundIndex,
-          status: "running" as const,
-          toolCalls: [],
-          finishReason: "",
-        };
+      const current = rounds.get(roundIndex) ?? {
+        roundIndex,
+        status: "running" as const,
+        toolCalls: [],
+        finishReason: "",
+      };
       rounds.set(roundIndex, current);
       return current;
     };
@@ -681,7 +798,7 @@ function summarizePlanRounds(events: StreamEventItem[]) {
         planningQuestions.set(questionId, {
           id: questionId,
           question,
-          reason: String(event.payload.reason ?? "").trim()
+          reason: String(event.payload.reason ?? "").trim(),
         });
         latestMessage = "有待回答问题。";
       }
@@ -695,7 +812,10 @@ function summarizePlanRounds(events: StreamEventItem[]) {
         round.finishReason = String(event.payload.finish_reason ?? "").trim();
         round.elapsedMs = toNumber(event.payload.elapsed_ms) ?? undefined;
         totalElapsedMs += round.elapsedMs ?? 0;
-        totalTokens += toNumber(event.payload.total_tokens) ?? toNumber(event.payload.completion_tokens) ?? 0;
+        totalTokens +=
+          toNumber(event.payload.total_tokens) ??
+          toNumber(event.payload.completion_tokens) ??
+          0;
         latestMessage = `第 ${round.roundIndex + 1} 轮完成。`;
       }
       continue;
@@ -708,7 +828,10 @@ function summarizePlanRounds(events: StreamEventItem[]) {
         round.finishReason = String(event.payload.finish_reason ?? "").trim();
         round.elapsedMs = toNumber(event.payload.elapsed_ms) ?? undefined;
         round.error = String(event.payload.error ?? "").trim();
-        totalTokens += toNumber(event.payload.total_tokens) ?? toNumber(event.payload.completion_tokens) ?? 0;
+        totalTokens +=
+          toNumber(event.payload.total_tokens) ??
+          toNumber(event.payload.completion_tokens) ??
+          0;
         latestMessage = `第 ${round.roundIndex + 1} 轮失败。`;
       }
       continue;
@@ -758,20 +881,47 @@ function summarizeProcessProgress(events: StreamEventItem[]) {
   let checkpointSaved: boolean | null = null;
   for (const event of events) {
     totalPages = Math.max(totalPages, toNumber(event.payload.page_count) ?? 0);
-    completedPages = Math.max(completedPages, toNumber(event.payload.processed_pages) ?? toNumber(event.payload.page_number) ?? 0);
+    completedPages = Math.max(
+      completedPages,
+      toNumber(event.payload.processed_pages) ??
+        toNumber(event.payload.page_number) ??
+        0,
+    );
     if (event.stage === "parser_started") phase = "读取目录与页面";
-    if (event.stage === "page_parsed") phase = event.payload.used_ocr ? "OCR 回退识别" : "提取页面文本";
+    if (event.stage === "page_parsed")
+      phase = event.payload.used_ocr ? "OCR 回退识别" : "提取页面文本";
     if (event.stage === "margin_patterns_detected") phase = "清理页眉页脚";
     if (event.stage === "study_units_built") phase = "整理学习单元";
-    if (event.stage === "ocr_failed" || event.payload.extraction_source === "ocr_failed") warning = "部分页面 OCR 失败，结果可能缺少文字。";
-    if (event.stage === "stream_error") error = String(event.payload.error ?? "未知错误");
-    if (typeof event.payload.checkpoint_saved === "boolean") checkpointSaved = event.payload.checkpoint_saved;
+    if (
+      event.stage === "ocr_failed" ||
+      event.payload.extraction_source === "ocr_failed"
+    )
+      warning = "部分页面 OCR 失败，结果可能缺少文字。";
+    if (event.stage === "stream_error")
+      error = String(event.payload.error ?? "未知错误");
+    if (typeof event.payload.checkpoint_saved === "boolean")
+      checkpointSaved = event.payload.checkpoint_saved;
   }
   const last = events.at(-1);
   const elapsedMs = toNumber(last?.payload.elapsed_ms) ?? 0;
-  const rate = completedPages && elapsedMs > 0 ? Math.round(completedPages / (elapsedMs / 60000)) : 0;
-  const remaining = totalPages > completedPages && rate ? Math.ceil((totalPages - completedPages) / rate) : 0;
-  return { totalPages, completedPages, phase, warning, error, checkpointSaved, rate: rate || 0, eta: remaining ? `${remaining} 分钟` : "" };
+  const rate =
+    completedPages && elapsedMs > 0
+      ? Math.round(completedPages / (elapsedMs / 60000))
+      : 0;
+  const remaining =
+    totalPages > completedPages && rate
+      ? Math.ceil((totalPages - completedPages) / rate)
+      : 0;
+  return {
+    totalPages,
+    completedPages,
+    phase,
+    warning,
+    error,
+    checkpointSaved,
+    rate: rate || 0,
+    eta: remaining ? `${remaining} 分钟` : "",
+  };
 }
 
 function formatElapsed(value: number) {
@@ -788,10 +938,18 @@ function formatProcessStreamStatus(status: string) {
 }
 
 function formatProcessError(error: string, checkpointSaved: boolean | null) {
-  const checkpoint = checkpointSaved === true ? "已保存 checkpoint" : checkpointSaved === false ? "未保存 checkpoint" : "checkpoint 状态未返回";
-  if (error.includes("ocr_unavailable")) return `OCR 引擎暂不可用（${checkpoint}）；请检查运行设置或拆分 PDF 后重试。`;
-  if (error.includes("ocr_partial") || error.includes("ocr_failed")) return `部分页面 OCR 失败（${checkpoint}）；可拆分 PDF、调整 OCR 设置后重试。`;
-  if (error.includes("timeout")) return `教材解析超时（${checkpoint}）；可拆分 PDF 或调整运行上限后重试。`;
+  const checkpoint =
+    checkpointSaved === true
+      ? "已保存 checkpoint"
+      : checkpointSaved === false
+        ? "未保存 checkpoint"
+        : "checkpoint 状态未返回";
+  if (error.includes("ocr_unavailable"))
+    return `OCR 引擎暂不可用（${checkpoint}）；请检查运行设置或拆分 PDF 后重试。`;
+  if (error.includes("ocr_partial") || error.includes("ocr_failed"))
+    return `部分页面 OCR 失败（${checkpoint}）；可拆分 PDF、调整 OCR 设置后重试。`;
+  if (error.includes("timeout"))
+    return `教材解析超时（${checkpoint}）；可拆分 PDF 或调整运行上限后重试。`;
   return `教材解析失败（${checkpoint}）；请检查 OCR 引擎、拆分 PDF 后重试。`;
 }
 
