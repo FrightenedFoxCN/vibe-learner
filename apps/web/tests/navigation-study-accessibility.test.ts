@@ -14,8 +14,8 @@ const providerTruthSource = readFileSync(
   new URL("../components/provider-truth.tsx", import.meta.url),
   "utf8",
 );
-const tavernWorkspaceSource = readFileSync(
-  new URL("../components/tavern-workspace.tsx", import.meta.url),
+const tavernWorkspacePanelsSource = readFileSync(
+  new URL("../components/tavern-workspace-panels.tsx", import.meta.url),
   "utf8",
 );
 const settingsSectionsSource = readFileSync(
@@ -26,7 +26,6 @@ const settingsStylesSource = readFileSync(
   new URL("../components/settings/settings-styles.ts", import.meta.url),
   "utf8",
 );
-
 
 // Primary navigation semantics, targets and keyboard flow are measured by the independent browser suite.
 
@@ -51,12 +50,21 @@ test("Tavern mobile controls keep 44px touch targets and provider state is annou
 });
 
 test("Tavern sequence updates are announced without appearing in the transcript", () => {
-  assert.match(tavernWorkspaceSource, /<p className="sr-only" aria-live="polite">[\s\S]*?最新消息序号/);
+  assert.match(
+    tavernWorkspacePanelsSource,
+    /<p className="sr-only" aria-live="polite">[\s\S]*?最新消息序号/,
+  );
   assert.match(globalStyles, /\.sr-only \{[\s\S]*?clip: rect\(0, 0, 0, 0\);/);
 });
 
 test("model scope connection fields stay compact", () => {
-  assert.match(settingsSectionsSource, /<label style=\{styles\.compactConnectionField\}>[\s\S]*?<span style=\{styles\.label\}>访问密钥/);
-  assert.match(settingsSectionsSource, /<label style=\{styles\.compactConnectionField\}>[\s\S]*?<span style=\{styles\.label\}>服务地址/);
+  assert.match(
+    settingsSectionsSource,
+    /<label style=\{styles\.compactConnectionField\}>[\s\S]*?<span style=\{styles\.label\}>访问密钥/,
+  );
+  assert.match(
+    settingsSectionsSource,
+    /<label style=\{styles\.compactConnectionField\}>[\s\S]*?<span style=\{styles\.label\}>服务地址/,
+  );
   assert.match(settingsStylesSource, /compactConnectionField:[\s\S]*?maxWidth: 280/);
 });
