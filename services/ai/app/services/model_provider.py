@@ -448,7 +448,7 @@ class MockModelProvider(LocalExerciseProvider, ModelProvider):
                     unit_id=unit.id,
                     title=unit_titles[unit.id]
                     if not goal.document_id
-                    else f"{copy['study']} — {unit.title}",
+                    else f"{unit.title} 精读",
                     focus=f"{copy['focus']}: «{unit_titles[unit.id]}».",
                     activity_type="learn",
                     schedule_chapters=chapters,
@@ -463,7 +463,10 @@ class MockModelProvider(LocalExerciseProvider, ModelProvider):
         # course_title is the generated textbook-grounded title; objective remains learner-authored goal text.
         return PlanModelReply(
             course_title=f"{copy['plan']} — {_build_course_title(document_title=document_title, plannable_units=plannable_units) if goal.document_id else document_title}",
-            overview=f"{persona.name}: {copy['plan']} — «{document_title}». {copy['focus']}.",
+            overview=(
+                f"{persona.name}: {copy['plan']} — «{document_title}». {copy['focus']}."
+                f"{f' 目标优先：{objective_hint}。' if objective_hint else ''}"
+            ),
             output_language=language,
             today_tasks=today_tasks,
             schedule=schedule,
@@ -1074,7 +1077,11 @@ class OpenAIModelProvider(ModelProvider):
             cancellation.adapter,
             cancellation.local_transport,
         )
-        if cancellation.local_transport:
+        request_is_default = (
+            getattr(request, "__func__", None)
+            is OpenAIModelProvider._request_openai_chat_completion
+        )
+        if cancellation.local_transport and request_is_default:
             from functools import partial
 
             request = partial(
