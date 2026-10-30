@@ -49,6 +49,15 @@ the guarded editor callback applied the draft, not a persisted resource commit;
 domain rejection fails the outer action, while a superseded valid result cancels
 it. Import content, filenames and raw errors are excluded from those events.
 
+Document upload, processing and Planning initiated by one submission share an
+action and flow. Explicit Study Session creation uses a separate action and flow.
+An answer submission and its Session read-back share their action; after a
+validated commit, an explicitly confirmed explanation can inherit the answer's
+flow in the same mounted workspace, with a new action. This content-free mapping
+is scoped to Session/Turn and retains at most 128 entries. Diagnostic identity
+failure never prevents grading or continuation. Once a callback request exists,
+its reload recovery retains the original operation/flow and only queries it.
+
 Run the audit tests:
 
 ```bash

@@ -47,6 +47,7 @@
 | `npm --workspace @vibe-learner/web run test:workspace:continuation` | 自动预处理/续问、注入时钟的 follow-up、暂停/取消、恢复优先与在途答题回调消费 |
 | `npm --workspace @vibe-learner/web run test:workspace:libraries` | 学习域 Persona/Scene 库刷新归属、失败保留、实时选择与事件订阅清理 |
 | `npm run test:web:reliability` | 领域 decoder/recovery 单元测试与组件测试 |
+| `npm run build:web && npm --workspace @vibe-learner/web run test:diagnostics:browser` | 最新生产构建与独立临时 mock 后端：真实 Document/Planning/Session、答题 CAS、附件、丢失响应恢复及诊断事件脱敏；Study 用例各自创建教材/计划/会话，可单独筛选运行 |
 | `npm run check:web` | Web 类型约束 |
 | `npm run style:check` | ESLint/Ruff 既有问题基线及新增/修改代码格式；规则和 CI 见[代码风格门](code-style.md) |
 | `npm run build:web` | 生产 Web 构建 |

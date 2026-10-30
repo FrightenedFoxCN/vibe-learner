@@ -402,18 +402,22 @@ export function useLearningWorkspaceController({
     onNotice: (notice) => dispatch({ type: "notice_set", notice }),
   });
 
-  const { handleSubmitQuestionAttempt, handleResolvePlanConfirmation, isApplying } =
-    useStudyCommitActions({
-      view: studyViewFenceRef.current,
-      automaticStudyRequest,
-      forgetAutomaticStudyRequest,
-      onSession: (studySession) => {
-        activateStudySessionView(studySession);
-        dispatch({ type: "study_session_set", studySession, clearResponse: false });
-      },
-      onPlan: (plan) => dispatch({ type: "plan_updated", plan }),
-      onNotice: (notice) => dispatch({ type: "notice_set", notice }),
-    });
+  const {
+    handleSubmitQuestionAttempt,
+    handleResolvePlanConfirmation,
+    getQuestionAttemptDiagnosticFlowId,
+    isApplying,
+  } = useStudyCommitActions({
+    view: studyViewFenceRef.current,
+    automaticStudyRequest,
+    forgetAutomaticStudyRequest,
+    onSession: (studySession) => {
+      activateStudySessionView(studySession);
+      dispatch({ type: "study_session_set", studySession, clearResponse: false });
+    },
+    onPlan: (plan) => dispatch({ type: "plan_updated", plan }),
+    onNotice: (notice) => dispatch({ type: "notice_set", notice }),
+  });
 
   const continuation = useStudyContinuation({
     session: state.studySession,
@@ -436,7 +440,10 @@ export function useLearningWorkspaceController({
   const continueAfterInteractiveQuestion = (turnId: string) => {
     const session = studyViewFenceRef.current.session;
     if (!session) return Promise.resolve(false);
-    return continuation.triggerInteractiveQuestionCallback(session, { turnId });
+    return continuation.triggerInteractiveQuestionCallback(session, {
+      turnId,
+      diagnosticFlowId: getQuestionAttemptDiagnosticFlowId(session.id, turnId),
+    });
   };
 
   useEffect(() => {

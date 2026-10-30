@@ -2,7 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { LearningPlan, StudySessionRecord } from "@vibe-learner/shared";
-import { submitStudyQuestionAttempt, resolveStudyPlanConfirmation } from "../lib/data/study-sessions";
+import {
+  submitStudyQuestionAttempt,
+  resolveStudyPlanConfirmation,
+} from "../lib/data/study-sessions";
 import { StudyAsyncViewFence } from "../lib/async-result-fence";
 import { decideStudyQuestionAttemptApply } from "../lib/study-question-attempt";
 import { resolveStudySessionErrorNotice } from "../lib/study-session-decode";
@@ -11,7 +14,10 @@ import { logWorkspaceError } from "../lib/learning-workspace-telemetry";
 
 interface StudyCommitOptions {
   view: StudyAsyncViewFence<StudySessionRecord>;
-  automaticStudyRequest: (key: string, scope: string) => { clientRequestId: string; queryExisting: boolean };
+  automaticStudyRequest: (
+    key: string,
+    scope: string,
+  ) => { clientRequestId: string; queryExisting: boolean };
   forgetAutomaticStudyRequest: (key: string) => void;
   onSession: (session: StudySessionRecord) => void;
   onPlan: (plan: LearningPlan) => void;
@@ -21,18 +27,32 @@ export interface StudyCommitPort {
   submitStudyQuestionAttempt: typeof submitStudyQuestionAttempt;
   resolveStudyPlanConfirmation: typeof resolveStudyPlanConfirmation;
 }
-const defaultPort: StudyCommitPort = { submitStudyQuestionAttempt, resolveStudyPlanConfirmation };
-export function useStudyCommitActions(options: StudyCommitOptions, port: StudyCommitPort = defaultPort) {
+const defaultPort: StudyCommitPort = {
+  submitStudyQuestionAttempt,
+  resolveStudyPlanConfirmation,
+};
+export function useStudyCommitActions(
+  options: StudyCommitOptions,
+  port: StudyCommitPort = defaultPort,
+) {
   const latest = useRef(options);
   latest.current = options;
   const { view } = options;
   const mounted = useRef(false);
   const pending = useRef(new Set<string>());
+  const attemptFlowIds = useRef(new Map<string, string>());
   const [pendingCount, setPendingCount] = useState(0);
-  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
   const begin = (key: string) => {
     if (pending.current.has(key)) return false;
-    pending.current.add(key); setPendingCount(pending.current.size); return true;
+    pending.current.add(key);
+    setPendingCount(pending.current.size);
+    return true;
   };
   const finish = (key: string) => {
     pending.current.delete(key);
@@ -51,17 +71,26 @@ export function useStudyCommitActions(options: StudyCommitOptions, port: StudyCo
     const attemptKey = `attempt:${currentSession.id}:${input.turnId}`;
     if (!begin(attemptKey)) return false;
     try {
-      const attemptIdentity = latest.current.automaticStudyRequest(attemptKey, "attempt");
+      const attemptIdentity = latest.current.automaticStudyRequest(
+        attemptKey,
+        "attempt",
+      );
       const context = diagnosticContext(createDiagnosticId());
-      const committed = await port.submitStudyQuestionAttempt({
-        sessionId: currentSession.id,
-        turnId: input.turnId,
-        expectedSessionRevision: currentSession.revision,
-        clientAttemptId: attemptIdentity.clientRequestId,
-        submittedAnswer: input.submittedAnswer,
-      }, context);
+      const committed = await port.submitStudyQuestionAttempt(
+        {
+          sessionId: currentSession.id,
+          turnId: input.turnId,
+          expectedSessionRevision: currentSession.revision,
+          clientAttemptId: attemptIdentity.clientRequestId,
+          submittedAnswer: input.submittedAnswer,
+        },
+        context,
+      );
       const nextSession = committed.session;
-      const latestSession = mounted.current && view.viewRevision === targetViewRevision ? view.session : null;
+      const latestSession =
+        mounted.current && view.viewRevision === targetViewRevision
+          ? view.session
+          : null;
       const applyDecision = decideStudyQuestionAttemptApply({
         before: currentSession,
         after: nextSession,
@@ -76,28 +105,42 @@ export function useStudyCommitActions(options: StudyCommitOptions, port: StudyCo
       if (applyDecision === "apply_returned") {
         if (mounted.current) latest.current.onSession(nextSession);
       }
-      const authoritativeSession = applyDecision === "apply_returned"
-        ? nextSession
-        : applyDecision === "keep_current"
-          ? latestSession
-          : null;
+      const authoritativeSession =
+        applyDecision === "apply_returned"
+          ? nextSession
+          : applyDecision === "keep_current"
+            ? latestSession
+            : null;
       if (mounted.current && authoritativeSession) {
+        // Content-free, bounded correlation for a later explicit explanation.
+        // Recovery/admission identity remains owned by the Study operation store.
+        if (context.flow_id) {
+          const key = `${currentSession.id}:${input.turnId}`;
+          attemptFlowIds.current.delete(key);
+          attemptFlowIds.current.set(key, context.flow_id);
+          if (attemptFlowIds.current.size > 128) {
+            const oldest = attemptFlowIds.current.keys().next().value;
+            if (oldest !== undefined) attemptFlowIds.current.delete(oldest);
+          }
+        }
         latest.current.onNotice("答案已记录。需要进一步讲解时，可选择“生成答题讲解”。");
       }
-      latest.current.forgetAutomaticStudyRequest(
-        attemptKey,
-      );
+      latest.current.forgetAutomaticStudyRequest(attemptKey);
       return true;
     } catch (error) {
       if (!mounted.current) return false;
-      latest.current.onNotice(resolveStudySessionErrorNotice(
+      latest.current.onNotice(
+        resolveStudySessionErrorNotice(
           error,
           `记录答案失败：${String(error)}`,
           "update",
-        ));
+        ),
+      );
       logWorkspaceError("workflow:study_attempt:error", error);
       return false;
-    } finally { finish(attemptKey); }
+    } finally {
+      finish(attemptKey);
+    }
   };
 
   const handleResolvePlanConfirmation = async (input: {
@@ -120,7 +163,8 @@ export function useStudyCommitActions(options: StudyCommitOptions, port: StudyCo
         note: input.note,
       });
       if (
-        !mounted.current || view.session?.id !== targetSession.id ||
+        !mounted.current ||
+        view.session?.id !== targetSession.id ||
         view.viewRevision !== targetViewRevision
       ) {
         return false;
@@ -130,20 +174,25 @@ export function useStudyCommitActions(options: StudyCommitOptions, port: StudyCo
       if (next.plan) {
         latest.current.onPlan(next.plan);
       }
-      latest.current.onNotice(input.decision === "approve" ? "计划已更新。" : "已保留原计划。");
+      latest.current.onNotice(
+        input.decision === "approve" ? "计划已更新。" : "已保留原计划。",
+      );
       return true;
     } catch (error) {
       if (
-        !mounted.current || view.session?.id !== targetSession.id ||
+        !mounted.current ||
+        view.session?.id !== targetSession.id ||
         view.viewRevision !== targetViewRevision
       ) {
         return false;
       }
-      latest.current.onNotice(resolveStudySessionErrorNotice(
+      latest.current.onNotice(
+        resolveStudySessionErrorNotice(
           error,
           `处理计划变更失败：${String(error)}`,
           "update",
-        ));
+        ),
+      );
       logWorkspaceError("workflow:study_plan_confirmation:error", error);
       return false;
     } finally {
@@ -151,5 +200,13 @@ export function useStudyCommitActions(options: StudyCommitOptions, port: StudyCo
     }
   };
 
-  return { handleSubmitQuestionAttempt, handleResolvePlanConfirmation, isApplying: pendingCount > 0 };
+  const getQuestionAttemptDiagnosticFlowId = (sessionId: string, turnId: string) =>
+    attemptFlowIds.current.get(`${sessionId}:${turnId}`) ?? null;
+
+  return {
+    handleSubmitQuestionAttempt,
+    handleResolvePlanConfirmation,
+    getQuestionAttemptDiagnosticFlowId,
+    isApplying: pendingCount > 0,
+  };
 }
