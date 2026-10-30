@@ -72,7 +72,7 @@ def create_app(
                 diagnostics.emit("lifecycle_stopped")
                 diagnostics.close()
 
-    app = FastAPI(title="Vibe Learner AI Service", version="0.3.6", lifespan=lifespan)
+    app = FastAPI(title="Vibe Learner AI Service", version="0.3.7", lifespan=lifespan)
     app.add_middleware(DocumentUploadLimitMiddleware)
     app.add_middleware(
         CORSMiddleware,
