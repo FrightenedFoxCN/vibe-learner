@@ -166,9 +166,26 @@ cargo test --locked --manifest-path apps/desktop/src-tauri/Cargo.toml --test jso
 Cargo uses the normal desktop build prerequisites. Local validation can compile
 the same source through an isolated test-only Tauri configuration when bundled
 sidecar/OCR/frontend assets are absent. These tests do not open a Tauri save
-dialog or launch the application. Dialog cancellation/overwrite confirmation,
-real full-disk behavior, isolated DMG acceptance and Windows/Linux filesystem
-coverage remain independent of this local implementation evidence.
+dialog or launch the application.
+
+Real ENOSPC acceptance uses a bounded, separately mounted disk image, never the
+host data filesystem. Before filling it, verify the mount identity, a different
+device from its parent and the expected fixed capacity. The local fixtures use
+96 MiB HFS+ and 128 MiB APFS images: synchronize an existing JSON file, write a disposable filler until
+the OS returns ENOSPC, then release 8 MiB and attempt a valid 32 MiB JSON export
+through the unchanged production `replace` function. Both overwrite and new-file
+attempts must return ENOSPC, preserve the old SHA-256, leave the new destination
+absent and remove their staging files. After removing only the filler, both
+exports must succeed with exact file hashes. Keep reports outside the full
+volume, retain the helper source hash and unmount the image after verification.
+
+A same-source `replace_with` observation may record the actual bytes written and
+write/sync errno without injecting an error. Both filesystems on the tested macOS reject
+the large write with zero staged bytes; a genuine partial write is not required
+for the ENOSPC result and was not observed there. Injected partial-write/sync
+regressions remain separate evidence. Dialog cancellation/overwrite confirmation,
+IPC, packaged-application full-disk behavior and Windows/Linux filesystem
+coverage remain independent of this helper-level acceptance.
 
 
 ## Link and index retention

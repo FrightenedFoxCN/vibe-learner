@@ -20,11 +20,16 @@
 | `npm run test:ai:limits` | Persona/Scene/Planning/Study/Tavern 输入边界；无数据库 |
 | `npm run test:ai:provider` | 独立能力、SDK 适配、配置快照、传输与本地 fallback；各能力亦有独立脚本 |
 | `npm run test:acceptance:process-crash` | 24 个真实子进程退出场景；重启后的持久状态和恢复证据 |
+| `cd services/ai && PYTHONPATH=. uv run python tests/acceptance/backup_restore_probe.py --output /tmp/vibe-backup-restore/report.json` | 三个真实 HTTP/mock 后端进程：停服后复制完整 SQLite 与文件目录、移走原目录、数据库单独恢复的缺文件负向检查、同路径完整恢复与继续追加；不访问用户数据 |
 | `npm run test:acceptance:postgres -- --database-url <loopback-test-url> --root <temporary-root> --phase <phase>` | 隔离 schema 内旧版本带数据升级、24 个进程中断窗口、CAS、事务回滚、应用 HTTP / 数据库重启；[分阶段复现](postgres-recovery-acceptance.md) |
 | `npm run test:acceptance:historical-replay -- --output <report>` | 从未修改的旧版本应用生成真实历史 protected artifacts，升级当前 SQLite schema，验证四领域旧合同、grant 过期/重新授权和当前 adapter 重放；[重放协议](historical-artifact-replay.md) |
 | `npm run test:acceptance:recovery-limits` | 进程中断、容量、领域恢复、真实 HTTP 重启读回和 Web 严格解码聚合门 |
-| `npm run check:release` | shared/Web、13 个 eval suite、全部后端测试和生产 Web 构建 |
+| `npm run check:release` | shared/Web、15 个 eval suite、全部后端测试和生产 Web 构建 |
 
 公共测试依赖放在 `services/ai/tests/support/`。Document/Planning operation 样例、Scene proposal、可注入 Tavern provider、Alembic 配置和 Harness runtime fixture 不从其他 TestCase 模块导入。`HarnessRuntimeFixture` 是显式构建/关闭的普通对象，调用者以 `addCleanup` 注册清理；性能测试不再调用另一 TestCase 的 `setUp`。单个测试独有的故障注入和断言仍留在所属模块。
 
 进程中断 worker 仍从自身测试模块启动独立 Python 进程，这是执行入口，并非共享 fixture 依赖。公开 helper 的迁移不改变故障发生位置、提交事务或重启 read-back 判定。
+
+备份恢复探针使用彼此独立的数据库目录和文件目录。应用完成关闭后才复制，恢复前逐文件比较字节数与 SHA-256，并检查业务 SQLite integrity/foreign keys 和全部业务表。恢复后通过 15 个 JSON 接口及教材、附件下载比较原有投影；已提交请求重放不再次调用 mock provider，新请求须正常追加一条 Turn。只恢复数据库的负向检查要求两类文件均返回 404，避免把列表可见误判为完整恢复。所有业务数据在临时目录中自动清理，报告和进程日志留在指定输出目录。
+
+此入口只证明 SQLite/文件在原路径的停服恢复。记录中的本机绝对路径不会因 `storage_root` 改变而自动迁移；PostgreSQL、在线备份、跨设备/跨路径迁移、原生安装、Vault 和浏览器草稿恢复均不在其证明范围。

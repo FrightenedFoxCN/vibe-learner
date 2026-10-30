@@ -53,6 +53,7 @@
 | `npm run build:web` | 生产 Web 构建 |
 | `npm run test:acceptance:web-routes` | 构建后启动独立本机服务，以 Chromium 验证路由请求和用户导航 |
 | `cd apps/web && npx playwright test --config playwright.remaining-ux.config.ts` | 生产 Web 上桌面/窄屏两组压力：Sensory 慢网排队保存、反转/回滚、筛选批量范围，Persona/Scene 候选 diff、显式应用、批量/删除取消与作用域、保存错误焦点/滚动/可见位置；使用合成 API，不认证真实触控设备 |
+| `cd apps/web && npx playwright test --config playwright.remaining-recovery.config.ts` | 复用已构建的生产 Web，自动启动/停止服务；桌面/窄屏 Chromium 的 Tavern 双空状态、整页 Tab/Shift+Tab、键盘建房、归档/Persona 删除组合与草稿恢复，以及 Settings 防抖/在途离页、失败队列和已保存但响应丢失后的读回；使用合成 API，不认证真实 IME、触控或桌面平台 |
 | `cd apps/web && npx playwright test --config playwright.manual-acceptance.config.ts` | 全新临时 mock 后端，Settings、goal-only/教材路线、Persona/Scene/Tavern 保存读回和 Study 丢响应恢复；后端先单独运行 `services/ai/tests/acceptance/manual_acceptance_server.py` |
 
 默认路由夹具首次运行前先执行 `npm exec --workspace @vibe-learner/web -- playwright install chromium`。默认路由测试启动 `127.0.0.1:3417` 的生产 Web，所有 API 请求均由浏览器截获并返回契约合法的合成响应，不访问运行数据库。结束后测试服务自动退出。
