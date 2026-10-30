@@ -128,6 +128,24 @@ jobs:
         timeout-minutes: 15
         run: npm run build:web
 
+      - name: Check Web bundle budget
+        timeout-minutes: 10
+        run: |
+          npm --workspace @vibe-learner/web run start -- --hostname 127.0.0.1 --port 3417 > /tmp/vibe-web-bundle.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" || true' EXIT
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:3417/ > /dev/null; then
+              break
+            fi
+            if [ "$attempt" = 30 ]; then
+              cat /tmp/vibe-web-bundle.log
+              exit 1
+            fi
+            sleep 1
+          done
+          npm run bench:web-bundle -- --base-url http://127.0.0.1:3417 --baseline docs/performance/web-bundle-v1.json
+
   build-release:
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.os }}

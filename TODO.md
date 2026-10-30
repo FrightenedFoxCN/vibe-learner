@@ -17,7 +17,8 @@
 
 ## 性能、可靠性与部署
 
-- [ ] `PERF-WEB-BUNDLE-001` `[P2]` 建立 `/`、Settings、Model Usage、Tavern 的 production gzip 基线和 5% 回退门。
+- [x] `PERF-WEB-BUNDLE-001` `[P2]` 建立 `/`、Settings、Model Usage、Tavern 的 production gzip 基线和 5% 回退门。
+  - 已加入 `npm run bench:web-bundle` 及 Release Gate 检查；基线与复跑协议见 `docs/performance/web-bundle-v1.md`。
 - [ ] `REL-DESKTOP-001` `[P2]` 完成真实桌面/浏览器恢复验收。
   - 覆盖慢网、断网、刷新/离页、Settings 未保存变更、编辑器异步返回、删除/归档组合、桌面安装/退出。
   - 覆盖 Tavern 无 Persona/无 Room、设备级 IME 和完整焦点顺序。

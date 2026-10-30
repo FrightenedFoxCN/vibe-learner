@@ -18,6 +18,7 @@
 | [性能预算](performance-budgets-v1.md) | Room 分页、Harness 字节/调用/时延门 |
 | [后端启动测量](performance/backend-startup-v1.md) | 空库 mock 启动、延迟与网络隔离门 |
 | [Room 分页 HTTP](performance/tavern-room-http-v1.md) / [React 渲染](performance/tavern-room-react-v1.md) | 分页夹具、计时边界与复跑命令 |
+| [Web bundle](performance/web-bundle-v1.md) | 四个生产路由的 gzip 首屏传输量与 5% 回退门 |
 | [诊断存储测量](performance/diagnostic-local-baseline-v1.md) | 后端查询、配额、旧库恢复与安装压力 |
 | [诊断工作流开销](performance/diagnostic-workflows-v1.md) | 六类请求链的配对测量与持久化读回 |
 | [诊断渲染与原生 spool](performance/diagnostic-render-and-spool-v1.md) | Collector、React/WebView 与磁盘写入预算 |
