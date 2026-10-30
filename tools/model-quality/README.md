@@ -97,7 +97,7 @@ uv run --project ../../services/ai python -m model_quality --manifest /tmp/mq-do
 
 准备真实预检时给 `vibe_learner.prepare` 加 `--transport minimax`，需要 `K3_API_KEY`。生成器只准备两个 Study、两个 Tavern 合成样本，两个 campaign 共用一份预算；每样本最多 6 次 wire。它们用于接入验收，不计作四个独立内容质量案例。Study 保存合成 PDF 并走 Document process → Session → Chat admission → memory effect → receipt → 容器重启读回；Tavern 走 Persona → Room → direct turn → actor commit graph → replay → 容器重启读回。专门记忆、Turn 提交与模型“已保存”的口头声明分别核对。
 
-适配器在进程内替换 SDK 的网络入口，将完整生产 prompt/schema/tool messages 交给计量 native transport；Embedding 和 Responses 旁路直接拒绝。生产生命周期与校验仍由应用执行，但这不是原 SDK transport 的等价认证。当前领域覆盖 Study 记忆和 Tavern direct；Planning、Scene、图像与 facilitated 队列需继续增加专门适配器。
+适配器在进程内替换 SDK 的网络入口，将完整生产 prompt/schema/tool messages 交给计量 native transport；Embedding 和 Responses 旁路直接拒绝。生产生命周期与校验仍由应用执行，但这不是原 SDK transport 的等价认证。Study 记忆和 Tavern direct 由该入口覆盖；其他实验适配器见下文。
 
 `storage/domain-evidence.json` 保存合成输入产生的公开 receipt、真实 operation/effect 身份、受限 trace 摘要与 read-back 指标，不保存模型推理。外层 sample 因进程崩溃成为 uncertain 后，不自动再执行领域 adapter；需要另行 query-only 审核其已记录的领域身份。
 
@@ -130,9 +130,7 @@ LITELLM_LOCAL_MODEL_COST_MAP=True uv run --project ../../services/ai python -m m
 
 `c*-w*-result.json` 按窗口保存脱敏 wire 与样本状态；`report.json` 记录实际峰值在途、完成吞吐、P50/P95、状态码、unknown usage、最高稳定档和停止原因。重复合成负载可能命中缓存，不代表不同内容长度、图片、长 Planning 或多轮 Study 的吞吐；schema 通过率也不是内容质量评分。
 
-## 2026-09-12 并行记忆实验与交付
-
-完整实验记录与生产交接由本地 `codex/m3-quality-evidence-archive` 分支保存，其中记录了 96 个真实领域样本、186 次 HTTP 200 请求，以及另行保留的 32 个 DNS 受阻样本。新增命令全部属于实验工具；没有改变生产默认模型、工具解码或写入策略。
+## 记忆实验矩阵与证据导出
 
 准备三种冻结矩阵，仍使用上文的服务依赖环境与 `PYTHONPATH`：
 
@@ -165,9 +163,9 @@ python -m model_quality.export --campaign-dir /absolute/path/completed-run --led
 
 两个命令都可重复指定 `--campaign-dir`。export 持有所选 campaign 文件锁、拒绝非终态和在途账本，保留原 manifest/report、合成公开 receipt、预算/恢复审计和工具源码，并提供逐文件 SHA-256；检测当前密钥字节后才写入新文件。不会导出数据库、诊断日志或推理。源码是导出时版本，各次执行版本以 manifest 中冻结的摘要为准。该工具只用于可信的合成实验目录，不能作为任意用户数据的通用脱敏器。
 
-## 三条优先 lane、摘要评分与源码快照
+## 检索矩阵、摘要评分与源码快照
 
-本轮并行实验总记录由本地 `codex/m3-quality-evidence-archive` 分支保存。引用 24 来源、事件 30 场景、逐字 24 来源共 156 样本在同一调度器中随机交错，仍只有 4 个 worker；这是有界混合调度，不是加权 lane 公平队列。摘要另有 8 场景×2 条件，按事实对象而非字符比较。
+引用、时间关系和逐字矩阵可混合调度；它们共享 worker 上限，不使用加权 lane 公平队列。摘要按事实对象比较。
 
 在本目录、已配置服务环境的 `PYTHONPATH` 下：
 
@@ -196,15 +194,13 @@ uv run --project ../../services/ai python examples/audit_citation_selection.py -
 
 `mixed-audit` 保留原指标；旧批中未提交却空引用的记录须以 `citation-replay` 的 unavailable 分类解读。离线重放是 selector 算法证据，不是新 domain commit。JSON 事实 exact 也不等于自然语言语义正确率；总记录保留独立于格式的辅助复核及其非独立限制。
 
-最终本地验证：36 项通用测试、15 项领域测试。数据入口检查合成 PDF 文本抽取；seed 失败回归证明保留首个失败 receipt、不会继续派发 query。没有触发应用发布门或修改生产默认值。
+## Planning、多媒体与角色协作适配器
 
-## Planning、多媒体与角色协作实验（2026-09-12）
-
-新增隔离适配器 `vibe_learner.planning`、`vibe_learner.multimedia` 和提案实验 `vibe_learner.role_exploration`。前两者保留领域 admission、commit、receipt 和重启读回；后者仅比较单次生成、三次自我修订及生成→独立请求审核→修订，使用同一 M3 模型，不是独立质量认证或生产多智能体采用。
+隔离适配器 `vibe_learner.planning`、`vibe_learner.multimedia` 和提案实验 `vibe_learner.role_exploration`。前两者保留领域 admission、commit、receipt 和重启读回；后者仅比较单次生成、三次自我修订及生成→独立请求审核→修订，使用同一 M3 模型，不是独立质量认证或生产多智能体采用。
 
 `Campaign.max_inline_images` 默认 0，可显式设为最多 4。`request` 接受 user content 内的 `image_url`，只允许 PNG data URL（每图解码后最多 32 KiB、IHDR 宽高各最多 1024）。不接受远程图片 URL、其他 MIME 或非 user 图片。当前只检查 PNG 头和尺寸，实际内容由合成 fixture 的渲染与视觉核对确认。整个请求含 base64 的字节数仍须在 input reservation 内；图片摘要、字节数和尺寸进入 wire 遥测。视觉 token 与供应商计费上界仍未核实，未知 usage 保留全部预留。先前“只接受文本”的说明适用于默认关闭图片的配置。
 
-两条领域线和角色线使用不同 campaign ID、同一历史 ledger、同一 budget 和固定 concurrency=4；共享在途硬闸不会因多个调度器而增加。新增准备器为 `vibe_learner.prepare_planning`、`vibe_learner.prepare_multimedia`、`examples/prepare_role_exploration.py`，均需显式传入当前累计预算。运行前完成源码冻结，运行后先捕获执行源码再做任何代码调整。旧 campaign 不因本次改进而重跑。
+各领域使用独立 campaign ID，并共享 ledger、budget 和在途上限。准备器为 `vibe_learner.prepare_planning`、`vibe_learner.prepare_multimedia`、`examples/prepare_role_exploration.py`，均需显式传入当前累计预算。运行前完成源码冻结，运行后先捕获执行源码再做任何代码调整。历史 campaign 不自动重跑。
 
 实验的结构、事实、有限禁词与坐标检查各自有范围，不能将 `completed` 合并成通用教学质量分。配对重复和同方程不同操作不算新来源；角色线的三次调用对照也不意味着相同 token 或时延。生产模型配置、图像生成及音视频支持不由实验适配器改变。
 
@@ -219,4 +215,4 @@ PNG 默认单张最多 32768 字节、边长 1024；书页实验可显式提高 
 
 来源区分 `synthetic-authored`、适配器核验许可和摘要的 `public-licensed`、私有的 `user-provided`。公开可下载不等于有再分发许可；书页原图/识别文本与证据留在本地 runs。通用 public evidence export 拒绝含私有或未审查来源的 campaign，不能将其混入公开许可素材包。
 
-定位结果与限制由本地 `codex/m3-quality-evidence-archive` 分支保存。外部视觉模型可复现下载/锁定环境说明见 `integrations/vibe_learner/prepare_visual_grounding_runtime.py --help`，权重无需放入生产依赖。
+外部视觉模型的下载与锁定环境说明见 `integrations/vibe_learner/prepare_visual_grounding_runtime.py --help`，权重无需放入生产依赖。

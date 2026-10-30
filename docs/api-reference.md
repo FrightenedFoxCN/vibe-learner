@@ -1684,4 +1684,4 @@ still require canonical index/read-back; diagnostics are not a business ledger.
 
 ### Study 原文记忆指令
 
-`POST /study-sessions/{id}/chat` 的 learner `message` 可使用 `/remember-verbatim KEY\n正文\n/end-remember`。必须整条匹配；KEY 为 1–120 个 ASCII 字母、数字、下划线或短横线。正文 1–4000 字符且首尾无空白，不合格指令返回 422。只有模型提出匹配键的有效写入且效果原子提交后才成功；普通消息不自动绑定原文。当前生产边界见[模型运行时质量](model-runtime-quality.md)，实验验收由本地证据归档分支保存。
+`POST /study-sessions/{id}/chat` 的 learner `message` 可使用 `/remember-verbatim KEY\n正文\n/end-remember`。必须整条匹配；KEY 为 1–120 个 ASCII 字母、数字、下划线或短横线。正文 1–4000 字符且首尾无空白，不合格指令返回 422。只有模型提出匹配键的有效写入且效果原子提交后才成功；普通消息不自动绑定原文。当前生产边界见[模型运行时质量](model-runtime-quality.md)。

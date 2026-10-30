@@ -1,10 +1,10 @@
 # PostgreSQL 迁移与恢复验收
 
-2026-10-30 在隔离 PostgreSQL 17.11（Alpine / aarch64）上补齐 `REL-POSTGRES-001` 的剩余范围。原始结果见 [postgres-recovery-2026-10-30.json](acceptance/postgres-recovery-2026-10-30.json)，执行入口为 `services/ai/tests/acceptance/postgres_recovery_probe.py`。本次由主智能体执行，使用合成数据和 mock provider；进程外 HTTP 读回及数据库约束检查与故障 worker 分离。不是独立人工审查、真实模型质量或跨平台认证。
+`services/ai/tests/acceptance/postgres_recovery_probe.py` 在隔离 PostgreSQL 17 上验证带数据迁移、进程中断、CAS 和重启读回。使用合成数据及 mock provider，故障 worker 与进程外 HTTP / 数据库检查分离。[参考报告](acceptance/postgres-recovery-2026-10-30.json) 记录本地 PostgreSQL 17.11 / aarch64 样本。
 
-## 覆盖与结果
+## 覆盖边界
 
-| 范围 | 实测证据 |
+| 范围 | 验证要求 |
 | --- | --- |
 | 带数据旧版迁移 | 历史 `e3a03a9` 的 Alembic `20260914_0022` 升级到 `20261029_0026`；Document、Planning、Study、Tavern 可读；三类原 receipt digest 保持不变 |
 | Document 中断 | admission 后、成功 commit 后，以及 Document/debug/terminal 提交中的 4 个语句窗口；真实进程以 73 突然退出，未提交状态回滚，已提交结果保留 |
@@ -14,13 +14,13 @@
 | 并发与回滚 | Document / Plan 同 revision 并发各一个成功、一个冲突；Document/debug 标题一致；Study 两个并发写入均保留，revision 2；注入异常后完整 Session 等于回滚前 |
 | 不可变边界 | runtime 的 `context_payload` 与 effect 的 `target_refs` 在 terminal 及非 terminal 状态均拒绝篡改；非 terminal 状态允许等值 JSON 更新 |
 | 应用进程重启 | 两个全新 uvicorn 进程通过公开 GET 读回历史 Document status/debug、Planning/Study receipt 和 Tavern Run；另外四个进程读回 Study commit 中断结果；模型方法被禁止，实际调用数为零 |
-| 数据库重启 | `pg_postmaster_start_time()` 从 `2026-10-29T18:09:04.217539+00:00` 变为 `2026-10-29T18:29:13.130755+00:00`；全新 HTTP 进程重新读回上述领域/中断结果及 revision 2 的 CAS Session |
+| 数据库重启 | `pg_postmaster_start_time()` 必须改变；全新 HTTP 进程重新读回上述领域/中断结果及 revision 2 的 CAS Session |
 
 共 24 个真实进程退出窗口：Document 6、Planning 9、Study 7、Tavern 2。测试复用 Wave45 的领域恢复断言，PostgreSQL scope 通过真实 Alembic 建库，不用 `create_all` 或 SQLite 替代。测试只推进持久化过期时间来触发恢复，不等待完整 lease 时长。
 
 历史数据来自**未修改的旧应用代码在 SQLite 上生成的合成记录**，再按外键顺序精确恢复进旧 Alembic PostgreSQL schema，保留 SQL NULL / JSON null 区别后升级。原因是旧 PostgreSQL 触发器本身存在 JSON 比较缺陷，无法直接生成这些记录。因此本项证明旧应用实际记录形状在 PostgreSQL 上的带数据升级，不声称采集过真实用户旧 PostgreSQL 库。
 
-## 验收修复
+## 迁移与兼容约束
 
 `20261029_0026_postgres_json_guards.py` 修复两个 PostgreSQL trigger function：旧 Alembic 列为 `JSON`，直接 `IS DISTINCT FROM` 会报 `operator does not exist: json = json`。比较时显式转换成 `jsonb`，保持原不可变字段集合、错误码、payload 和 digest。SQLite 无操作；降级保留等价比较修复，不恢复不可用的运算符。
 
@@ -57,6 +57,6 @@ npm run test:acceptance:postgres -- --database-url "$PG_ACCEPTANCE_URL" --root "
 docker rm -f vibe-pg-recovery
 ```
 
-脚本限制 loopback PostgreSQL URL，并校验 schema 名称。schema marker 丢失时不会回退到 SQLite。实际验收的 26 个 schema（含调试失败时留下的隔离 scope）和专用容器已清理；没有用户数据库挂载或真实 provider 调用。
+脚本限制 loopback PostgreSQL URL，并校验 schema 名称。schema marker 丢失时不会回退到 SQLite。
 
-SQLite 迁移/runtime/context 专项原有 41 项回归、历史 context 的 3 项 Python / 1 项浏览器测试、8 项既有对抗解码检查、一个 SQLite 进程恢复测试、Web 类型和 changed-file style 门已通过。未运行完整后端测试或生产构建。[2026-09-11 独立报告](plans/postgres-replay-independent-acceptance-2026-09-11.md) 保留当时结果；历史受保护制品的四领域 adapter 重放见[单独验收报告](historical-artifact-replay-2026-10-30.md)。
+历史受保护制品的四领域 adapter 重放见[重放协议](historical-artifact-replay.md)。

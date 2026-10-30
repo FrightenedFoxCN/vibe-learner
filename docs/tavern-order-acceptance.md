@@ -24,13 +24,11 @@ and the active-retry screenshot to `/tmp/vibe-tavern-order-active-retry.png`.
 All fixture messages and personas are synthetic; the SQLite directory is removed
 when the server exits.
 
-## Observed matrix
+## Expected matrix
 
-The 2026-10-29 run used macOS 27.0.1 arm64, Node 26.12.1, Python 3.13.5, Chromium,
-the Next development frontend and the local mock provider. Personas are created
-as Alpha, Bravo, Charlie, then the Room roster is deliberately ordered Bravo,
-Charlie, Alpha. The browser selects targets in reverse roster order, Alpha,
-Charlie, Bravo. This separates persona creation, display and click order.
+Create Personas as Alpha, Bravo, Charlie, then order the Room roster Bravo,
+Charlie, Alpha. Select targets in reverse roster order: Alpha, Charlie, Bravo.
+This separates persona creation, display and click order.
 
 | Path | Browser and server evidence |
 | --- | --- |
@@ -48,20 +46,15 @@ link Charlie to the saved Bravo Message and Alpha to the committed Charlie
 Message. Raw evidence records the actual IDs and server projections for these
 assertions.
 
-## Finding and fix
+## Interaction Composer contract
 
-Before the fix, the actual child correctly ran Charlie → Alpha while Interaction
-Composer still displayed the newly selected Bravo. The black-box browser check
-failed on that mismatch. The frontend now derives active reply recipients from
+The frontend derives active reply recipients from
 the pending server Run schedule, falling back to the foreground operation's
 targets until admission is visible. The Composer orders those recipients by the
 room roster. In-flight targets do not overwrite the next-round selection; an
 idle selected participant outside the current schedule is labeled accordingly.
 Once the operation settles, the preview returns to the selected next-round set.
 
-The server target-set contract, operation identity, child scope and participant
-snapshots are unchanged. Existing controller/panel regressions plus the two
-focused panel cases pass; type/style gates pass. The two real-backend browser
-paths passed after the fix. This is a scoped browser/runtime acceptance, not a
-live-provider quality, native-device, IME, transport-cancellation or cross-platform
-certification; those retain their separate backlog scope.
+This check covers browser/runtime ordering and recovery with a mock provider.
+Live-provider performance, native-device IME, transport cancellation and other
+platforms have separate test boundaries.

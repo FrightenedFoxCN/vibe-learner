@@ -20,7 +20,7 @@ these bounds again against the admitted intent before writing any Plan/Document
 projection; the v2 committed-projection and operation read-back checks retain that
 binding. The browser decoder also rejects an out-of-scope or incomplete persisted
 schedule. These application checks do not certify the educational or source
-meaning of the requested pages; model quality remains under MQ-04.
+meaning of the requested pages; model-quality conclusions are outside this page-scope contract.
 
 ## Printed labels are separate
 

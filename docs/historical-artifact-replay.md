@@ -1,6 +1,6 @@
 # 历史受保护制品重放验收
 
-2026-10-30 使用未修改的旧应用 Git `e3a03a9` 生成 SQLite 持久化数据，再用当前 Alembic schema 和 runtime 做重放。原始结果见 [historical-artifact-replay-2026-10-30.json](acceptance/historical-artifact-replay-2026-10-30.json)，入口为 `services/ai/tests/acceptance/historical_artifact_replay.py`。旧应用使用本地 mock provider；本验收不调用真实 provider，也不把合成数据称为用户历史数据。
+`services/ai/tests/acceptance/historical_artifact_replay.py` 使用未修改的旧应用 Git `e3a03a9` 生成 SQLite 持久化数据，再用当前 Alembic schema 和 runtime 做重放。旧应用使用本地 mock provider；数据由旧代码实际写出，属于合成测试记录。
 
 四个领域各选一个旧应用实际写出的主 protected artifact：Document (`DocumentProcessProtectedInput@...v1`)、Planning (`LearningPlanProtectedInput@...v1`)、Persona (`PersonaGenerationProtectedInput@...v1`) 和 Scene (`SceneGenerationProtectedInput@...v1`)。旧 artifact 的 payload bytes、SHA-256 digest、contract、operation binding 和 grant 从旧 SQLite 直接读出；脚本不会用当前代码重新伪造这些源 artifact。旧版本同时写入了 Document 各阶段、Study 和 Tavern artifact，迁移 seed 会将它们一并保留。
 
@@ -15,4 +15,4 @@ npm run test:acceptance:historical-replay -- \
 
 命令会临时归档旧应用、运行旧 seed、将其 Alembic schema 升级到当前 head，完成四领域重放后删除临时目录。输出中的 `source_revision`、artifact digest、旧 operation ID、续期结果和 adapter trace ID 可用于逐项核对；payload 原文不写入报告。
 
-本轮结果：四个旧合同均成功重新授权并重放，Document、Planning、Persona、Scene 的 `replay_status` 均为 `passed`。这关闭了 `REL-REPLAY-001` 中的真实历史 artifact、历史合同兼容和 grant 过期后重新授权范围；独立 resolver 的删除、摘要损坏、跨 principal、未知 envelope 和批量 fail-closed 矩阵仍由既有 artifact resolver 测试覆盖。
+成功条件是四个旧合同均能续期和重放，Document、Planning、Persona、Scene 的 `replay_status` 均为 `passed`。[参考报告](acceptance/historical-artifact-replay-2026-10-30.json) 保留 source revision、digest 和 trace 身份。删除、摘要损坏、跨 principal、未知 envelope 和批量 fail-closed 矩阵由 artifact resolver 测试覆盖。

@@ -1,73 +1,89 @@
-# Debug rendering and native spool measurements
+# Diagnostic collector, rendering and native spool v1
 
-Local macOS ARM64 measurements on 2026-09-10 complement the collector and backend
-reports. Raw samples include failures; these measurements do not certify other
-platforms, complete application workflows or independent quality review.
+These provider-free probes isolate collection, rendering and durable spool I/O.
+Each uses production code with synthetic bounded fixtures and records source
+hashes, environment and raw observations. Their scopes and timing populations
+must remain separate from full application or cross-platform acceptance.
 
-## Production React timeline
+## Chromium collector
 
-The opt-in probe bundles the actual `DiagnosticTimeline`, query decoder and React
-production runtime. It mounts the timeline in a 560×720 scroll container, receives
-100 synthetic transport events per page, appends up to 500 rows, expands a row,
-and unmounts. The server keeps advertising more pages so the probe verifies the
-UI's own 500-row cap. Three warmups precede 30 samples for each operation.
-Every sample includes layout and two animation frame boundaries after the expected
-DOM state; these provide a paint opportunity, not a GPU-completion measurement.
-
-| Operation | P50 (ms) | P95 (ms) | Predeclared P95 budget (ms) |
-| --- | ---: | ---: | ---: |
-| Mount and display first 100 rows | 50.0 | 51.0 | 150 |
-| Append final page to reach 500 rows | 50.0 | 50.6 | 150 |
-| Expand one row at capacity | 32.6 | 33.2 | 100 |
-| Unmount 500 rows | 33.3 | 34.1 | 100 |
-
-All four local gates passed. Budgets leave headroom within a 200 ms interactive
-response target. Timings include frame waiting and strict decoding, not just React
-CPU time; they exclude backend/network, Next shell, native WebView and GPU finish.
-The fixture represents normal transport rows, not maximum nested Harness records.
-Initial harness runs failed because a standalone browser bundle lacked the Next
-public environment substitution; the final probe explicitly supplies its isolated
-base URL and fails on browser runtime errors. No production code was changed.
-
-```sh
-node apps/web/tests/diagnostic-render-benchmark.mjs /tmp/diagnostic-react-render.json
+```bash
+node apps/web/tests/diagnostic-collector-benchmark.mjs /tmp/diagnostic-collector.json
 ```
 
-[Raw browser report](diagnostic-react-render-v1.json) includes all samples, browser
-version, bundled inputs and bundle digest. Log: `/tmp/diagnostic-react-render.log`.
+The probe bundles `apps/web/lib/diagnostics.ts` unchanged. After 1,000 warmups,
+60 samples each create 100 request pairs / 200 events in saturated 1,000-entry
+history and pending rings. It also measures snapshot copies and 30 mock-fetch
+flushes of 1,000 events. Retention, overflow drops and uploaded counts are asserted.
+The synchronous 200-event burst gate is P95 ≤16.7 ms; the
+[reference P95](diagnostic-chromium-collector-v1.json) is 1.400 ms. Mock flushes
+include JSON work and exclude network. This is not a complete UI frame budget.
 
-## Native synchronous spool
+## React timeline
 
-The actual Rust `DesktopDiagnostics.emit` executes file-lock admission, directory
-scan, record write/sync and rename/sync. Sparse-ring measurements have 4–33 files;
-the saturated ring contains 256 events and persists one eviction per emission.
-A separately opened lock descriptor holds the same lock throughout the contention
-case. All 33 contended emissions are counted as failures, and a subsequent emission
-succeeds after release. Three warmups precede 30 measurements per case.
+```bash
+node apps/web/tests/diagnostic-render-benchmark.mjs /tmp/diagnostic-render-small.json
+node apps/web/tests/diagnostic-render-benchmark.mjs /tmp/diagnostic-render-rich.json --rich
+```
 
-| Operation | P50 (ms) | P95 (ms) | Predeclared P95 budget (ms) | Result |
-| --- | ---: | ---: | ---: | --- |
-| Sparse-ring emit | 8.20 | 10.01 | 25 | Pass |
-| Saturated-ring emit | 23.98 | 25.21 | 25 | **Fail** |
-| Contended emit | 50.61 | 50.99 | 100 | Pass |
+The production `DiagnosticTimeline` and strict decoder run in a 560×720 scroll
+container. Each population has three warmups and 30 samples: mount 100 rows,
+append to the 500-row cap, expand one event, unmount. Timing includes layout and
+two animation boundaries, providing a paint opportunity rather than GPU completion.
+The rich fixture fills all five nested event sections and one 4,096-character
+fallback label; its largest 100-event response is 725,309 bytes. This is decoder
+stress data, not a registered tool or all possible schema combinations.
 
-The successful-emit budget limits three startup events to a nominal 75 ms
-contribution. The contention budget allows scheduling headroom above the existing
-50 ms lock deadline. Neither is a hard filesystem latency bound. Saturated emission
-exceeded its gate; the overall report remains failed. Its path includes durable
-deletion and counter checkpoints as well as the new event. No sync was removed,
-budget increased or passing rerun substituted. Further investigation is required
-before closing native overhead acceptance. The probe excludes sidecar consumption
-and native WebView interaction, and uses the normal development profile.
+| Phase | P95 budget ms | Chromium small P95 ms | Chromium rich P95 ms | Native small P95 ms | Native rich P95 ms |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Mount | 150 | 51.0 | 50.5 | 52 | 51 |
+| Last append | 150 | 50.6 | 50.7 | 52 | 51 |
+| Expand | 100 | 33.2 | 30.9 | 35 | 33 |
+| Unmount | 100 | 34.1 | 34.0 | 34 | 35 |
 
-```sh
+Raw reports: [Chromium small](diagnostic-react-render-v1.json),
+[Chromium rich](diagnostic-render-rich-v1.json),
+[native small](diagnostic-native-render-small-v1.json),
+[native rich](diagnostic-native-render-rich-v1.json).
+
+The native runner hosts the same probe in an actual visible Tauri WebView on
+loopback HTTP. The local macOS reference viewport is 1280×868. It excludes the
+production app shell, sidecar and Vault, and checks visibility and browser errors.
+Both runners share `installSyntheticFetch` and `measureTimeline` assertions.
+
+```bash
+cargo build --manifest-path apps/desktop/src-tauri/Cargo.toml --example diagnostic_render
+node apps/web/tests/diagnostic-native-render-benchmark.mjs /tmp/diagnostic-native-render-small.json
+node apps/web/tests/diagnostic-native-render-benchmark.mjs /tmp/diagnostic-native-render-rich.json --rich
+```
+
+## Native spool
+
+```bash
 DIAGNOSTIC_SPOOL_BENCH_OUTPUT=/tmp/diagnostic-native-spool.json cargo test --manifest-path apps/desktop/src-tauri/Cargo.toml --lib spool_performance_probe -- --ignored
+DIAGNOSTIC_SPOOL_BENCH_OUTPUT=/tmp/diagnostic-native-spool-release.json cargo test --release --manifest-path apps/desktop/src-tauri/Cargo.toml --lib spool_performance_probe -- --ignored
 ```
 
-The command exits nonzero when a budget is exceeded, after saving its report and
-cleaning temporary files. [Raw native report](diagnostic-native-spool-v1.json)
-retains the failed sample set, source digest and compiler version. Log:
-`/tmp/diagnostic-native-spool.log`. The benchmark is opt-in, separate from ordinary
-regression tests and user storage.
-All 11 ordinary native library tests passed in 4.65 seconds after adding the probe;
-the three opt-in timing probes remain skipped by that ordinary test command.
+The real `DesktopDiagnostics.emit` includes lock admission, counter recovery,
+scan/sort, durable eviction, counter checkpoint and event publication. Three
+warmups precede 30 samples in sparse, saturated (256-event) and contended cases.
+Successful emit P95 must be ≤25 ms; contended refusal P95 must be ≤100 ms, allowing
+headroom above the 50 ms lock deadline. Reports assert retention, eviction counts,
+contention refusals and recovery after releasing the lock; gate failure exits
+nonzero after writing the report. These are local regression gates, not hard
+filesystem latency bounds or cold migration certification.
+
+| Implementation / build | Sparse P95 ms | Saturated P95 ms | Contended P95 ms | Gate |
+| --- | ---: | ---: | ---: | --- |
+| Rename counter / development | 10.01 | 25.21 | 50.99 | Fail |
+| Rename counter / optimized | 9.06 | 25.06 | 51.80 | Fail |
+| Alternating counter / development | 9.00 | 20.03 | 51.76 | Pass |
+| Alternating counter / optimized | 9.97 | 20.07 | 51.83 | Pass |
+
+The current [alternating-slot counter](../diagnostic-native-counter.md) preserves
+locking, retention and publication barriers. Raw reports retain both original
+[development](diagnostic-native-spool-v1.json) /
+[optimized](diagnostic-native-spool-release-v1.json) failures and integrated
+[development](diagnostic-native-journal-dev-v1.json) /
+[optimized](diagnostic-native-journal-release-v1.json) results. Do not sum stage
+percentiles into a total percentile or relax durability to meet the timing gate.

@@ -153,7 +153,7 @@ Harness Engineering is a repository-wide lifecycle, not a Tavern synonym:
 7. atomically commit validated effects or persist terminal failure evidence;
 8. emit trace/eval evidence.
 
-Document/OCR/Study Unit, Planning, Persona/Scene, Study and Tavern use production v3 lifecycle boundaries. Frontend strict decoders and all 14 stage eval registrations are implemented. The shared flow is shown in the [Harness engineering guide](harness/README.md); remaining acceptance and product work lives only in [TODO](../TODO.md).
+Document/OCR/Study Unit, Planning, Persona/Scene, Study and Tavern use production v3 lifecycle boundaries. Frontend strict decoders and deterministic stage evals cover those boundaries. The shared flow is shown in the [Harness engineering guide](harness/README.md); remaining acceptance and product work lives only in [TODO](../TODO.md).
 
 Learning-plan text uses a stable cross-layer contract:
 
@@ -199,10 +199,9 @@ database transaction. A failed or interrupted operation records explicit
 `not_committed` truth, and startup recovery terminalizes abandoned `running`
 operations so a process exit cannot strand the Document indefinitely. JSON
 files are best-effort compatibility mirrors after the authoritative database
-commit. This atomic boundary has passed independent fault revalidation. Document
-extraction, OCR and cleanup use the production v3 trace, protected replay and
-eval boundary; remaining OCR recovery and quality acceptance is tracked only in
-the root TODO.
+commit. Document extraction, OCR and cleanup use the production v3 trace,
+protected replay and eval boundary. OCR stress and recovery acceptance is tracked
+in the root TODO.
 
 ### 2. Plan generation
 
@@ -237,10 +236,8 @@ one database transaction. Duplicate requests read the original committed
 snapshot; payload drift, active siblings, stale Document state, and missing
 Debug prerequisites fail closed. Startup recovery terminalizes abandoned work,
 and compatibility JSON files are mirrored only after the authoritative commit.
-This ownership and atomic-commit boundary has passed independent schema/fault
-revalidation. Planning now uses the production v3 operation, protected replay,
-trace and eval boundary; remaining product and quality work is tracked only in
-the root TODO.
+Planning uses the production v3 operation, protected replay, trace and eval
+boundary. Remaining product work is tracked in the root TODO.
 
 ### 3. Scene generation and saves
 
@@ -260,9 +257,8 @@ references, and never accepts a caller-authored Scene Profile. The service
 rebuilds that profile from the validated tree and commits through row CAS;
 stale editors receive `409 scene_revision_conflict`. Legacy records decode with
 revision `0`, and migration `20260824_0011` adds authoritative revision columns.
-This ownership/CAS slice has passed independent model-wire, public-save, and
-concurrency revalidation. Scene generation now uses the production protected
-context/replay, v3 trace and eval boundary.
+Scene generation uses the production protected context/replay, v3 trace and
+eval boundary.
 
 ### 4. Study interaction
 
@@ -305,7 +301,11 @@ The browser `Tavern Workspace` implements:
 - `Interaction Composer`;
 - `Reliability Details`.
 
-Tavern functional/state checks cover create/direct/facilitated/recovery paths, authoritative roster/retry derivation, structured recovery/error transport, composition-event fencing, keyboard focus return, and a 390px no-overflow inspection. Recovery lineage, provider-call fencing, mutation errors, badges, and real per-step states have passed a non-implementer live browser/wire matrix. `REL-DESKTOP-001` remains open for the no-Persona/no-Room viewport, device-level IME, full focus order, and a fresh 390×844 device-level visual/touch measurement; completed 44px static contracts do not substitute for that device measurement.
+Tavern controller and browser checks cover creation, direct/facilitated runs,
+recovery lineage, authoritative roster/retry derivation, mutation errors,
+composition-event fencing and focus return. Commands and test boundaries are
+listed in [Frontend test boundaries](frontend-test-boundaries.md). Device
+acceptance remains in the root TODO.
 
 ## Character layer
 
@@ -358,12 +358,7 @@ Runtime settings in the configured database are authoritative. A legacy JSON mir
 - `npm run check` runs shared/Web reliability and type gates; `npm run check:release` adds the full backend suite and production Web build. `npm run lint:web` runs ESLint and `npm run lint:ai` runs Ruff against the explicit baseline; changed-file formatting and CI rules are documented in [Code style gates](code-style.md).
 
 
-## Planned changes
-
-Version 0.3.1 includes the seven completed tasks in [Architecture refactor](releases/0.3.3.md), including modular test boundaries and local PostgreSQL transaction acceptance. Version 0.3.2 includes the completed [Unified diagnostics](releases/0.3.3.md) implementation; the completion archive records its acceptance scope and remaining limitations.
-
-
-### Debug snapshot ownership
+## Debug snapshot ownership
 
 The global Debug Overlay consumes in-memory page adapters through
 `components/owned-debug-snapshot.tsx`. Learning and general page providers share

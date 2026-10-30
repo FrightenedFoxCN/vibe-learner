@@ -1,6 +1,6 @@
 # Native eviction counter checkpoint v1
 
-Native spool eviction counts now use two fixed-name, checksummed slots:
+Native spool eviction counts use two fixed-name, checksummed slots:
 `drops.count` and `drops.alternate`. `DesktopDiagnostics.write` holds the existing
 process/thread spool lock across load, eviction, checkpoint and event publication.
 Python consumes the unchanged `desktop-diagnostic-v1` event records; it only counts
@@ -49,5 +49,5 @@ the prior count, continues and verifies that the old reader rejects the result.
 Existing full-ring expiry/size, two-writer, Python lock and sidecar tests remain.
 These cases do not claim immunity to arbitrary device corruption or power loss.
 
-[Performance and integration evidence](performance/diagnostic-native-journal-v1.md)
+[Performance measurement](performance/diagnostic-render-and-spool-v1.md)
 retains old failures and new measured results under the unchanged budget.

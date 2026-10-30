@@ -1,8 +1,8 @@
 # AGENTS
 
-## Repo Scan Snapshot
+## Repository Layout
 
-This repository was last materially updated on 2026-09-10. The codebase is a monorepo with four active product/runtime surfaces and one docs area:
+The codebase is a monorepo with four product/runtime surfaces and one docs area:
 
 - `apps/web`: Next.js 16 app-router frontend for upload, global debug, planning, study, persona/scene editing, and Tavern interaction.
 - `services/ai`: FastAPI backend for document ingestion, OCR parsing, Study Unit cleanup, planning, persona/scene APIs, Study Chat, Tavern orchestration, and Harness evidence.
@@ -42,7 +42,7 @@ This repository was last materially updated on 2026-09-10. The codebase is a mon
 - Planning/Study output language: `services/ai/app/models/output_language.py`, `services/ai/app/services/output_language.py`, and `docs/output-language.md`. Explicit preferences bind operation identity and save with successful Session commits; source quotations stay verbatim and legacy absent fields preserve fingerprint bytes.
 - Versioned performance gates: `docs/performance-budgets-v1.md`
 - Populated frontend request-count gates: `docs/performance/web-resource-reads-v1.md`; focus may join owned in-flight reads, while explicit refresh and post-mutation recovery need fresh projection tickets. Do not share a URL-only cache across operation/owner boundaries.
-- Harness Wave 5 performance gates: `docs/performance-budgets-v1.md`; run `npm run bench:harness -- --samples 30 --output /tmp/harness-local.json` for provider-free local measurements. Remaining independent review and representative live-provider gates are tracked in `TODO.md`; deterministic stage and SQLite crash/size gates are implemented.
+- Harness performance gates: `docs/performance-budgets-v1.md`; run `npm run bench:harness -- --samples 30 --output /tmp/harness-local.json` for provider-free local measurements.
 - Tavern contracts and persistence: `services/ai/app/models/tavern.py`, `services/ai/app/persistence/tavern_repository.py`, and `packages/shared/src/tavern.ts`
 - Study Session CAS persistence: `services/ai/app/persistence/study_session_repository.py`; new Study Session writes must not return to `LocalJsonStore.save_list("sessions", ...)`.
 - Study Chat operation contracts: `services/ai/app/models/study_chat_operation.py`, `services/ai/app/persistence/study_chat_operation_repository.py`, and `apps/web/lib/study-chat-operation-decode.ts`.
@@ -182,11 +182,11 @@ TAVERN_TEST_API_URL=http://127.0.0.1:8000 npm run test:web:tavern
 - Durable effects use one admitted Harness operation plus a global slot for stable journal identity. Keep adapter/contract/target bindings immutable, use database-clock claim fencing, and require exact read-back or compensation evidence before emitting a terminal outcome; unsupported provider read-back remains `uncertain`.
 - The versioned Tool Manifest is the single catalog for all six Planning and thirty-one Study tools. Provider schemas, runtime input/result adapters, redacted trace projections, call ceilings, and provider ID correlation must remain consistent with its shared golden fixture.
 - Eval samples bind one admitted Harness operation and complete tested-system configuration. Python owns canonical eval identities/digests; infrastructure, case-data, grader, and metric failures must remain distinct from candidate failures and cannot count as candidate success.
-- Wave 2 runtime, recovery migration, and deterministic eval baseline gates are complete. `HarnessOperationRuntime` owns durable fenced v3 lifecycle state; the checked-in Tavern identity and Planning tool pilot baselines run in PR checks. Legacy recovery migration is projection-only and fail-closed: it requires a real admitted binding plus existing v3 trace attempt, and post-cutoff legacy rows remain read-only.
-- Wave 3 production adoption is complete for Tavern actor generation and Study Chat. Both resolve authorized protected snapshots before provider execution, emit v3 attempts/checks and terminal traces, and run deterministic held-out eval suites. Historical v1/v2 evidence remains read-only compatibility data.
+- `HarnessOperationRuntime` owns durable fenced v3 lifecycle state; Tavern identity and Planning tool pilot baselines run in PR checks. Legacy recovery migration is projection-only and fail-closed: it requires a real admitted binding plus existing v3 trace attempt, and post-cutoff legacy rows remain read-only.
+- Tavern actor generation and Study Chat resolve authorized protected snapshots before provider execution, emit v3 attempts/checks and terminal traces, and run deterministic held-out eval suites. Historical v1/v2 evidence remains read-only compatibility data.
 - V3 commit claims must match a registered full operation key and versioned committed projection. Generic resource evidence is insufficient; the Tavern actor Message policy is `primary_output_only`, not proof of all Room/Run/Step effects in its transaction.
 - Tavern persona Messages persist server-only operation/effect receipt metadata atomically. Keep it out of API/OpenAPI, and use `get_actor_commit_read_back` so Message/Run/Step/Participant/reply-anchor evidence comes from one database snapshot.
-- Treat Harness as a repository-wide lifecycle, not a Tavern feature. Document/OCR/Study Unit, Planning, Persona/Scene, Study and Tavern have production v3 boundaries; frontend decoders and all 15 stage eval registrations are implemented. Remaining quality, independent replay, native UI and platform acceptance is listed only in `TODO.md`.
+- Treat Harness as a repository-wide lifecycle. Document/OCR/Study Unit, Planning, Persona/Scene, Study and Tavern have production v3 boundaries and frontend decoders. Remaining work is listed only in `TODO.md`; deterministic regression gates do not make model-quality claims.
 - Fix the unsafe write/schema boundary before claiming workflow adoption: Study follows concurrent-safe append → operation admission/receipt → typed effect schema → effect commit/staging → v3 trace/eval; Document and Planning have durable admission, atomic committed projections and v3 lifecycle evidence; Scene keeps model proposal, user-authored save, committed projection and API DTO separate.
 - Study Session revision and turn sequence are application-owned committed state. Keep them out of Study Chat/model proposal schemas; Session CAS is concurrency infrastructure, not durable request admission or successful Harness commit evidence.
 - Interactive Question grading material must remain server-only before submission. Keep model proposal, grading spec, public prompt, committed result, and Turn-bound attempt input separate; the browser must render only persisted Session read-back.
@@ -195,7 +195,6 @@ TAVERN_TEST_API_URL=http://127.0.0.1:8000 npm run test:web:tavern
 - An application component contract versions reviewed algorithm behavior; it is not a dependency/model version. An unaudited component uses a null registration and blocks context construction—never invent `pending-*`, `latest`, `unknown`, or a package version as adoption evidence.
 - Only digest explicitly reviewed `HarnessSafeManifest` DTOs. User/document/prompt/transcript content belongs behind an authorized artifact resolver; SHA-256 is integrity evidence, not confidentiality or replay availability. Python is the canonical digest authority until a cross-language canonical-bytes contract is added.
 - Keep model/heuristic proposals separate from committed records and API responses. Use domain-owned proposal models and the ownership rules here; generated IDs, identity, ordering, revisions, timestamps and committed state effects must not enter model-owned proposal schemas.
-- Keep application-owned IDs, speaker identity, revision, sequence, and committed state effects out of model-owned schemas.
 - Preserve the split between:
   - learning UI
   - character shell
@@ -294,7 +293,7 @@ Use the following standard names when discussing frontend pages and page blocks.
 - Tool-enabled planning increases latency and timeout pressure on upstream model providers.
 - The frontend now depends on historical debug and plan artifacts; changes to local storage shape should be made carefully.
 - Study Session aggregate writes use revision CAS and contiguous turn sequencing; compatibility reads share repository projection validation, and committed Turn content is immutable except the dedicated interactive-answer fields. Study Chat has production v3 evidence for its Session/Turn primary output and typed DB/Scene/file-effect slices; provider exactly-once remains unsupported. Tavern keeps its separate normalized Room/Run/Step/Message repository.
-- Production workflows use the v3 Harness runtime. Registered implementation and deterministic test success do not certify independent model quality or every platform; follow the scoped remaining tasks in `TODO.md`.
+- Production workflows use the v3 Harness runtime. Registered implementation and deterministic test success do not certify every platform or model quality; follow the scoped remaining tasks in `TODO.md`.
 - Harness resource references need evidence policies; never pass a constant `revision=0` for a resource that has no authoritative revision.
 - Use `HARNESS_RESOURCE_EVIDENCE_POLICIES` before constructing v3 context or commit evidence. A Tavern Room revision covers metadata and run-admission CAS, not transcript drift; a Tavern Message is currently unsupported as a context subject until a room-scoped protected transcript snapshot can be resolved. One committed Tavern Message uses one room-scoped sequence point, never a range. Unsupported resources may appear as honest `not_committed` attempts but cannot claim committed or rolled-back proof.
 - Resource evidence policy validates generic proof shape, not operation truth. Production v3 commit evidence must match a registered workflow/stage/output/payload key, an allowed resource set, and a versioned committed-projection DTO that proves all application-owned scope fields. The current Tavern actor policy proves one committed Message as `primary_output_only`, not every Room/Run/Step side effect.

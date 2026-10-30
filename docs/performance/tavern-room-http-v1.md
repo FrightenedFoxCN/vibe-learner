@@ -1,6 +1,6 @@
-# Tavern Room 分页 HTTP 独立验收（2026-09-11）
+# Tavern Room pagination HTTP measurement v1
 
-**Server 部分通过：最终共享夹具的 300 个真实 HTTP 样本满足 v1 SQL、payload 和 P95 时间门。** 没有修改产品分页代码或性能预算。本报告不代替 React Profiler / DOM 验收。
+本协议验证 `tavern-room-list-v1` 的 SQL、payload 和 HTTP P95 门。React 渲染另见 [React Profiler 协议](tavern-room-react-v1.md)。
 
 ## 协议与夹具
 
@@ -11,15 +11,13 @@
 - 3,640 Participants，分布覆盖 1–6；所有标题为 64 Unicode scalar，Persona ID 为 24 ASCII 字符，显示名为 48 Unicode scalar。
 - 最大页首 50 Rooms 全部为 6 Participants。
 - 3,496 条 Message，查询通过真实聚合统计；计数 SQL 检查未选择 Message content/payload。
-- 为共享给真实前端，最终夹具将既有测试的空 `persona_snapshot={}` 补成合法、固定的 PersonaProfile。未改变 Room/Participant 数量、字符串宽度、排序或 Message 数量；detail、runs、run-recovery 读取实际 HTTP 200。
+- 用于真实前端的夹具包含合法、固定的 PersonaProfile snapshot，并要求 detail、runs、run-recovery 返回 HTTP 200。
 
 两种 page size 均真实遍历完整 1,000 Rooms，并与按协议独立排序的 fixture ID 列表逐项比较：无重复、无遗漏，所有宽度与参与者形状通过。
 
 ## 环境与计时
 
-Apple M4、10 核、16 GiB；macOS 26.6.2 arm64；Python 3.12.13；uv 0.12.10；Node 26.8.1。与 v1 参考硬件一致，OS/Node/uv 补丁版本不同，未调整门槛。现有 production Next 构建 ID 为 `ZfnwP5lK6iKQz54x_yQKS`；本子任务直接测 FastAPI HTTP，不把后端测量作为 production frontend 或 React 渲染证据。
-
-记录的 HEAD：`26f59d49ecadb5033aae248afea0a0295bf46abe`；Tavern repository/API 生产文件无本任务修改。provider 为 mock，storage 与数据库均在专用 `/tmp/vibe-tavern-room-http-full-20260911`，未访问用户 data。
+参考环境为 Apple M4、10 核、16 GiB、macOS arm64、Python 3.12.13。精确依赖版本和源码摘要见[原始样本](../plans/acceptance/tavern-room-http-raw-2026-09-11.json)。使用 mock provider、隔离临时 SQLite 和 storage。
 
 测量通过真实 Uvicorn/FastAPI 完整应用；对 `/tavern/rooms` 设 request ContextVar，在同一请求传播到同步线程池的上下文内计数 SQLAlchemy 主数据库 statements。后台 diagnostics 不计入该领域查询数。没有启用 coverage/debug profiler。
 
@@ -42,13 +40,9 @@ HTTP elapsed 从发出请求前到完整读取未压缩 JSON body，使用 `perf
 
 所有组的 P95 均满足 30-item ≤100ms / 50-item ≤120ms；SQL≤4，payload 分别≤192/320KiB。31–35ms 慢样本保留在最大值与原始文件中。
 
-脚本判定核对：HTTP 非200、压缩响应、完整遍历ID/形状不符会失败；正式样本每组数量50、实际条数与该页相等且不超过请求limit；SQL/bytes使用每组最大值，耗时使用P95，Message body选择禁止。收尾强化了每样本条数谓词，并用已有 raw 的全部600个已记录 item_count（baseline+final）离线重算通过，未改动任何计时样本。
+HTTP 非 200、压缩响应、遍历 ID/形状不符均失败。每组须有 50 个样本，每个响应条数与该页相等且不超过 limit；SQL/bytes 取组内最大值，耗时取 P95，并禁止选择 Message body。
 
-## Before / after 的含义
-
-既有产品分页实现未修改：本任务补齐验收证据，不声称获得性能优化。首次使用已有空 Persona snapshot 测得 300 样本通过，随后为了真实前端详情读取而补合法 snapshot，并完整重测 300 样本。首次记录仍保留为 [minimal-snapshot baseline](../plans/acceptance/tavern-room-http-minimal-snapshot-baseline-2026-09-11.json)，最终 gate 以 [完整共享夹具 raw samples](../plans/acceptance/tavern-room-http-raw-2026-09-11.json) 为准。两轮50-item首组P95分别为3.913ms和5.207ms；未控制其他运行噪声，不能将差值归因于snapshot变化。两组都通过，未选择性丢弃较慢最终结果。
-
-## 重放与前端交接
+## 复现
 
 从 `services/ai` 启动专属服务，`--root` 必须是新的、空的专用路径：
 
@@ -68,8 +62,6 @@ UV_CACHE_DIR=/tmp/vibe-independent-uv uv run --offline python \
   --output /tmp/tavern-room-http-raw.json
 ```
 
-服务只监听 loopback。源码：[tavern_room_http_probe.py](../../services/ai/tests/acceptance/tavern_room_http_probe.py)。本轮最终服务通过 `http://127.0.0.1:8897` 交给前端独立验收子智能体；0/450/940 的 cursor 和 initial/append 预期 ID 在 `/tmp/tavern-frontend-profile-windows.json`。进程由本子智能体保管，等前端完成后停止；不与生产服务混用。
+服务只监听 loopback。源码：[tavern_room_http_probe.py](../../services/ai/tests/acceptance/tavern_room_http_probe.py)。前端验收使用 `http://127.0.0.1:8897` 和 0/450/940 的 cursor 窗口；fixture 服务与生产服务隔离。
 
-前端交接时发现 profiling 页面使用 `http://127.0.0.1:3417`，而 fixture 默认 CORS 只允许 3000。脚本增加测试专用 `--frontend-origin` 参数，并在同端口用相同协议的全新夹具 `/tmp/vibe-tavern-room-http-profile-20260911` 重启。需要重放前端时追加 `--frontend-origin http://127.0.0.1:3417`。这只调整测试服务允许的来源，不改变产品或本报告的 server 测量路径；前端子任务将此前 CORS 不完整的运行标为配置失败，独立全量重跑。
-
-前端子智能体完成有效的 90 个 append 样本、15 次预热与独立 DOM cap 验证后，已停止最终 fixture 服务，并清理本轮三个专属 `/tmp/vibe-tavern-room-http-*20260911` 目录。前端已归档 cursor 窗口文件；临时窗口副本也已清理。没有遗留本任务启动的 HTTP 服务或临时数据库。
+前端 profiling 服务使用 `http://127.0.0.1:3417` 时，给 fixture 服务追加 `--frontend-origin http://127.0.0.1:3417`。这是测试服务的 CORS 配置；结束后停止专属服务并清理临时数据库。

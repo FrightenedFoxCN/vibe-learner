@@ -1,10 +1,8 @@
 # Diagnostic storage policy and verified limits
 
-The initial Unified Debug plan listed retention of seven days or 200 MiB as a
-**candidate default to validate during implementation**. Current enforcement is
-per owned store, with explicit recovery exceptions. The candidate is not a proven
-installation-wide hard cap. This document reconciles existing implementation and
-evidence; it changes no runtime quota and grants no broader data retention scope.
+Enforcement is per owned store, with explicit recovery exceptions. The 200 MiB
+installation reference is not an enforced aggregate hard cap. Payload retention,
+physical admission and transient recovery have separate limits.
 
 | Owner | Normal enforced policy | Evidence/source |
 | --- | --- | --- |
@@ -39,20 +37,11 @@ Pinned readers, insufficient workspace and contention can postpone reclamation.
 Failure and loss counters remain visible; a logging refusal never changes a
 business commit into rollback or success.
 
-The [combined Rust/Python pressure probe](performance/diagnostic-installation-v1.md)
-actually triggered both DB quotas, recovered after pinned-reader release and
-verified SQLite integrity. Its largest sampled directory length was about
-103.22 MiB; incomplete observations are retained. Neither that sample maximum nor
-196 MiB arithmetic certifies a 200 MiB hard installation cap. The
-[legacy recovery report](performance/diagnostic-legacy-recovery-v1.md) and process
-exit tests cover bounded recovery and interruption within their documented scope.
-
-Permitted acceptance wording: bounded owner-specific collection, quota admission,
-retention, recovery and honest directory observation are implemented and tested.
-Do not describe the installation as capped at 200 MiB, guarantee lossless logging,
-or equate payload retention with physical disk use. The candidate hard-cap claim
-is unsupported and remains explicitly uncertified; no performance result changes
-that conclusion.
+The [storage probes](performance/diagnostic-local-baseline-v1.md) cover combined
+Rust/Python quota pressure, pinned-reader release, integrity and legacy recovery.
+Observed file lengths and sampled maxima do not certify atomic installation peaks
+or filesystem allocation. `disk_size_limit_certified` remains false until the
+installation-wide acceptance in root TODO is complete.
 
 Native counter metadata now uses two bounded checksummed slots; see the
 [versioned protocol](diagnostic-native-counter.md) for migration and downgrade

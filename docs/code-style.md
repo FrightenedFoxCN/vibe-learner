@@ -25,7 +25,7 @@ The source set comes from Git's tracked and nonignored untracked files, so paths
 
 ## Existing-code baseline
 
-`scripts/style/baseline.json` records 234 initial lint findings and 769 unformatted files as of the adoption commit's parent. No mass source rewrite is part of adoption. Each lint exemption binds its path, rule, message, source-line digest and multiplicity. Moving an unchanged source line does not create debt, but a different variable, source line, path or extra occurrence cannot borrow its exemption. Format exemptions bind the exact normalized source digest.
+`scripts/style/baseline.json` records existing lint findings and formatting exemptions. Each lint exemption binds its path, rule, message, source-line digest and multiplicity. Moving an unchanged source line does not create debt, but a different variable, source line, path or extra occurrence cannot borrow its exemption. Format exemptions bind the exact normalized source digest.
 
 Changed files must be formatted even when their old bytes have a formatting exemption. Unchanged legacy formatting is skipped by the full scan only when its digest matches. Existing lint findings remain visible in the report; they are not represented as a clean-code certification. This lets maintenance remove debt while preventing new findings in unrelated code from being silently added.
 
@@ -34,5 +34,3 @@ Changed files must be formatted even when their old bytes have a formatting exem
 ## CI
 
 `.github/workflows/style.yml` runs on PRs, pushes to `main` and manual dispatch. It installs locked development tools, runs the five gate smoke tests, and checks the baseline plus changed-file formatting using the authoritative base commit. For a manual/initial run it checks all nonexempt formatting. Release workflows also run `style:all`; `npm run check` includes `style:check` before the existing reliability gates.
-
-Local verification for this change runs only the style gate's own checks and the affected TypeScript boundary. Full backend tests and production builds remain separate commands.

@@ -75,7 +75,7 @@ The reviewed production prompts are Planning v8, Study Chat v3 and Plan Revision
 v2. The Study pilot baseline for prompt v3 uses the existing deterministic
 fixtures; prompt-v1/v2 baseline directories remain immutable. These are routing,
 decoder and persistence checks, not independent linguistic/model-quality proof.
-Live-provider quality review remains in the corresponding TODO entries.
+Live-provider quality conclusions are outside this document; it only defines output-language behavior.
 
 ## Focused checks
 

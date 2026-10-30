@@ -2,9 +2,7 @@
 
 `services/ai/app/services/diagnostic_audit.py` aggregates already validated,
 bounded diagnostic inputs. `models/diagnostic_audit.py` owns the closed
-`diagnostic-audit-v1` report. The aggregation core and stored snapshot export are implemented;
-local performance and implementation acceptance are recorded in
-[the release evidence index](releases/0.3.3.md). Independent model quality remains deferred in TODO.
+`diagnostic-audit-v1` report and stored snapshot export.
 
 The report retains metric observations and their event/operation/trace/span
 references, then groups by observation kind, workflow/stage/phase, provider,
@@ -110,9 +108,8 @@ downloads. JSON export stays compact to preserve the backend byte budget.
 The view displays up to 100 metric groups with separate outcomes, duration and
 usage sample counts, P50/P95, available configuration and gaps; all groups and raw
 observations remain in the package. Coverage text distinguishes independent
-index timing, event/trace scope and incomplete collection. Chromium acceptance
-covers a real mock-provider Persona chain, downloaded JSON and 390px rendering;
-this does not certify native save dialogs or all platforms.
+index timing, event/trace scope and incomplete collection. Native save dialogs
+and final file persistence have separate acceptance boundaries.
 
 
 ## Link and index retention
@@ -167,7 +164,7 @@ Internal maintenance counters are process-local observations, separate from
 writer drop/write-failure counters. Physical total size is not certified by
 these settings: a pinned reader can retain WAL, live records consume pages,
 and multiple databases/spool files require aggregate budget enforcement. That
-aggregate admission/quota and performance measurement remain in the active plan.
+installation-wide budget remains tracked in root TODO.
 Regression tests use real SQLite files and verify freelist/file/WAL reduction,
 pinned-reader recovery, interrupted legacy migration, active-transaction
 preservation and a successful application/Harness result during maintenance
@@ -219,7 +216,7 @@ remain false. Tests cover pinned WAL pressure/refusal/recovery, no spill on stag
 oversize, process-crash lock release, guarded vacuum, oversized legacy refusal,
 non-WAL rejection and successful real Persona/Harness results during pressure.
 
-Post-admission measurements and raw samples: [quota measurement](performance/diagnostic-quota-admission-v1.md).
+Quota, recovery and installation-pressure methods: [storage measurements](performance/diagnostic-local-baseline-v1.md). Workflow overhead: [request-chain measurements](performance/diagnostic-workflows-v1.md). Collection/render/native I/O: [render and spool measurements](performance/diagnostic-render-and-spool-v1.md).
 
 
 ## Storage state in Debug
@@ -258,15 +255,13 @@ scans stop at 1,024 entries instead of growing memory without bound. Unknown
 files/types and pre-existing corrupt counters are not silently treated as a
 certified installation budget.
 
-`drops.count` is a durable lower bound on native evictions. On Unix, directory
-deletions are synced before writing/syncing `drops.pending`, atomically renaming
-it to `drops.count` and syncing the directory. A complete interrupted checkpoint
-can advance the count; an incomplete/stale temporary checkpoint preserves the
-last valid durable count and increments the process failure observation.
-Crash gaps between deletion and count persistence can undercount, and saturation
-or failed storage cannot establish exact global losses. The original count file
-is never reset to zero on invalid contents. Process write-failure counts still
-reset with the native instance.
+`drops.count` and `drops.alternate` hold two bounded, checksummed eviction
+checkpoints. The native writer retains a valid baseline while updating the other
+slot; migration also recovers legacy `drops.pending`. See the
+[counter protocol](diagnostic-native-counter.md) for exact format, crash recovery
+and downgrade behavior. Counts are durable lower bounds: a crash between deletion
+and checkpoint can undercount; invalid contents never authorize resetting to zero.
+Process write-failure counts reset with the native instance.
 
 The consumer now recovers complete `.pending` event files after a producer
 crash. Invalid/partial files are rejected; acknowledgement still requires
@@ -281,5 +276,4 @@ read with the lower-bound/process-scope limits above.
 Verification: full Rust library tests include actual sidecar subprocess exit and
 two concurrent native writer processes; backend tests cover pending recovery,
 shared lock deferral, replacement preservation, expiry, symlink rejection,
-offline retry and duplicate identity. Installation-wide size/legacy recovery and
-real native Vault success remain separate pending acceptance.
+offline retry and duplicate identity. Installation-wide size and native-platform acceptance remain in root TODO.

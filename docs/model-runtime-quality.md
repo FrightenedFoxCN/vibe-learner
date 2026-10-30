@@ -1,6 +1,6 @@
 # 模型运行时质量与边界
 
-本文记录 `0.3.5` 已采用的运行时行为，适用于 Planning、Study、Persona、Document、Tavern 及其共享 Provider/Harness。MiniMax-M3 是发现问题的实测模型；这些修复不构成其他模型、平台或全部内容质量的认证。生命周期和身份归属仍以 [Harness 工程手册](harness/README.md) 为准。
+本文说明 Planning、Study、Persona、Document、Tavern 及其共享 Provider/Harness 的运行时行为与限制。生命周期和身份归属仍以 [Harness 工程手册](harness/README.md) 为准。
 
 ## Planning
 
@@ -10,7 +10,7 @@
 - 详情摘录先限定到修订后 Study Unit 的页范围，再优先匹配来源 Section；没有本地页证据时返回空，不以父 Section 的开头冒充当前单元内容。跨页 chunk 保留真实范围。
 - Planning 与 Study 共用的页文本工具严格计算字符预算，包含首个超长 chunk 和段落分隔符。图片工具在分配页码列表前验证并限制页范围。
 - 一轮所有工具回执完成后再附加图片。严格提案修复保留已获取的工具证据和图片；页码范围错误提供类型化恢复指引。修复与提交共用章节不变量，不能因恢复而放宽来源范围。
-- 修复提示区分应用创建/更新时间戳与学习活动时长。实验中的初始时长提示组合未采用，不能从这一修复推导其已上线。
+- 修复提示区分应用创建/更新时间戳与学习活动时长。
 - 单元数量少不再单独意味着范围过粗。初始提示和运行循环保留“至多两个单元且跨度至少 80 页”的既有判断，稀疏子标题等信号独立保留；估分器删除仅由数量触发的跨度扣分，保留实际宽跨度惩罚。
 - `estimate_plan_completion` 的产品名称为“学习单元结构估分”。它检查源页跨度、子标题数量与覆盖元数据，不读取计划活动；分数不能认证目标完成度、事实、人格方法或时长算术。初始提示、结果建议、trace 摘要、provider 描述和设置标签均应表达这个边界。
 
@@ -25,14 +25,14 @@
 - 检索记忆保留领域来源、说话者与原始记录时间。学生原文摘录最多 800 字符、助手最多 160 字符，避免助手复述挤掉学习者更新。
 - 原文选择器按查询选择句子邻域、多处窗口及偏移，在总计 800 字符预算内保留证据。这是原文检索，不是模型摘要压缩；远处限定、长句和否定关系仍可能丢失。
 - 词法记忆检索回退使用稳定散列和 Unicode/重音规范化，支持中文 bigram，避免 Python hash seed 改变排序。这不等于语义检索或时间关系正确。
-- 自动教材引用不再为无文档、无 chunk 或零词法匹配编造第 1 页/单元范围。仍保留匹配 chunk 排序与去重；词法命中不能证明蕴含，中文召回和跨语言误引仍由根 [TODO](../TODO.md) 的 `MQ-01` 跟踪。
+- 自动教材引用不再为无文档、无 chunk 或零词法匹配编造第 1 页/单元范围。仍保留匹配 chunk 排序与去重；词法命中不能证明蕴含。本文件的确定性门不承担模型语义质量认证。
 
 ### PDF 图形候选（默认关闭）
 
 - Study Chat 新增纯读工具 `read_projected_pdf_layout_candidates`。它只为当前投射 PDF 的一页返回 `Picture` 和独立 `Formula` 候选；正文、行内公式锚点与单字母继续走 OCR 文本定位。模型选定候选或在 `Picture` 母框内估计局部框后，仍调用既有 `annotate_projected_pdf_region`，没有新增写效果或前端 DTO。
 - 可选实现通过外部 Python 子进程调用 DocLayout-YOLO，对 `Picture` 母框递归一次并做 NMS。内部结果最多 32 个候选；原页、编号候选页和母框 crop 联系表仅作为 provider 图像证据，最多三张，不进入公开结果或 trace。
 - 路径启动时固定，运行时设置不会热切换它。默认 `VIBE_LEARNER_DOCUMENT_LAYOUT_ENGINE=disabled`；启用需设置 `doclayout-yolo`、独立 Python、权重路径及已审核 SHA-256。worker 异常、输出越界、未知标签或权重摘要不匹配均返回类型化不可用结果。
-- Harness 登记为 `study-chat-toolset-v2` 与 `study-visual-grounding-v1`。这表示代码和契约边界已经采用，并不把 8 页开发集的 6/8 结果升级为独立质量认证；页面隔离留出和真实生产 provider acceptance 由根 [TODO](../TODO.md) 的 `MQ-07` 跟踪。
+- Harness 登记为 `study-chat-toolset-v2` 与 `study-visual-grounding-v1`；契约回归覆盖输入和候选结构，定位精度需用独立书页与真实 provider 另行验证。
 
 配置示例：
 
@@ -59,52 +59,8 @@ VIBE_LEARNER_DOCUMENT_LAYOUT_TIMEOUT_SECONDS=90
 
 长历史 preflight 减少重复序列化，在原预算内寻找可保留的历史后缀，保留全量快路径、空历史错误优先级和最终上下文。预算、Prompt 和事实保留策略未改变。
 
-30 组/长度、共 90 组旧新配对的 messages、retained messages 与 report 完全相等。256 条消息的本地 P50/P95 从 631.49/655.47 ms 降为 41.86/43.43 ms。它是本地预算处理收益，不能推导缓存、模型延迟或早期事实召回改善。原始稳定测量基线由本地 `codex/m3-quality-evidence-archive` 分支保存。
+本地 preflight 性能应与 provider 延迟、缓存和事实召回分别测量。
 
-## 采用记录
+## 验证入口
 
-提交可用 `git show <commit>` 查看；过程日志不是当前行为真源。
-
-2026-09-13，用户在开发实验完成后明确授权将 `source-minimal-v3` 设为 Learning Plan 与 Study Chat 的生产默认。该授权发生在实验结论之后，不能倒写为实验当时已经采用；本段以其所在提交作为采用记录，不预填自指提交哈希。采用仅改变这两个学习者文本路径的提示策略，不扩展到 Tavern、Persona/Scene 生成、Harness schema 或多模态默认值。
-
-| 提交 | 已采用范围 |
-| --- | --- |
-| `276783c` | Planning 同轮 3 次详情、总计 4 次及共享预算契约 |
-| `daa04c8` | 修订单元范围内的详情证据 |
-| `991b396` | 页文本字符与分隔符预算 |
-| `1b0501d` | 分配前限制图片页范围 |
-| `49af44c` | 工具回执批次完成后附图 |
-| `8fd3222` | 严格修复保留工具证据 |
-| `ba2afc6` | 类型化页范围恢复指引 |
-| `4e72e53` | 修复/提交共用章节不变量 |
-| `1879b51` | 修复提示的时间戳/活动时长区分 |
-| `968af23` | 估分去掉少单元的虚假跨度扣分 |
-| `4c9ee6d` | 初始提示和运行循环的短源分类 |
-| `1318b06` | 估分结果和初始提示的能力边界 |
-| `98cb5dc` | 估分目录、标签与共享契约对齐 |
-| `836f2c8` | 预算拒绝的诊断摘要 |
-| `a842706` | 互动题 Markdown 空白 |
-| `f7fccff` | 显式取消题目优先于工具草稿 |
-| `3f97261` | Study 实际接收 PDF 图片 |
-| `f0ffb47` | 场景操作目标身份投影 |
-| `f0e2b56` | 记忆领域来源 |
-| `4541e53` | 说话者与独立摘录预算 |
-| `6ee07eb` | 来源记录时间 |
-| `c12dbe6` | 稳定多语言词法检索 |
-| `53651fa` | 有总预算的查询相关原文窗口 |
-| `7102e74` | 移除无匹配依据的兜底引用 |
-| `bfab1ca` | 完整工具信封 index 兼容 |
-| `9dd6447` | Chat 重试归传输层管理 |
-| `7c1690d` | Provider 尝试前期限检查 |
-| `39573b8` | 安全的工具错误和修复路径 |
-| `c8f5b43` | Persona 嵌套 schema 有界修复 |
-| `0b721a5` | OCR 语言证据归属 |
-| `acbc90a` | Tavern 本地长历史裁剪成本 |
-
-## 验证范围
-
-`0.3.5` 工作树的本地发布门通过：867 项完整后端测试、共享契约、Web reliability、Harness pilots、十个 stage regressions、plan revision eval 与生产 Web 构建均成功。DocLayout-YOLO 路径另有 68 项后端定向测试通过；真实书页 8 任务的 M3 母框内局部框结果为 6/8，详细实验记录由本地 `codex/m3-quality-evidence-archive` 分支保存，剩余质量门见根 TODO 的 `MQ-07` / `MQ-09`。
-
-`source-minimal-v3` 的采用证据来自开发合成样本和内部人工逐条语义审查，而不是关键词判定。新增的 Study Chat prompt-v2 provider-free deterministic baseline 只验证 tested-system 身份、结构与既有固定案例门禁，并不执行真实模型，也不是文本语义或学习效果认证。该策略尚未经过独立专家复核、真实学习成效研究或生产流量认证，因此不能据此宣称学习效果提升，也不能把该证据外推为 Tavern、Persona/Scene、Harness schema、多模态或其他模型路径的质量结论。
-
-需要代码回归时使用仓库规定的 `npm run test:ai`、`npm run test:contracts`；发布门使用 `npm run check:release`。本轮没有新的独立专家、浏览器或跨平台安装认证。
+代码回归使用 `npm run test:ai`、`npm run test:contracts`；发布门使用 `npm run check:release`。确定性回归验证结构与固定案例，模型语义质量、学习效果和跨平台行为需要各自的验收证据。
