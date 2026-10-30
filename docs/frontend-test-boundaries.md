@@ -52,9 +52,13 @@
 | `npm run style:check` | ESLint/Ruff 既有问题基线及新增/修改代码格式；规则和 CI 见[代码风格门](code-style.md) |
 | `npm run build:web` | 生产 Web 构建 |
 | `npm run test:acceptance:web-routes` | 构建后启动独立本机服务，以 Chromium 验证路由请求和用户导航 |
+| `cd apps/web && npx playwright test --config playwright.remaining-ux.config.ts` | 生产 Web 上桌面/窄屏两组压力：Sensory 慢网排队保存、反转/回滚、筛选批量范围，Persona/Scene 候选 diff、显式应用、批量/删除取消与作用域、保存错误焦点/滚动/可见位置；使用合成 API，不认证真实触控设备 |
+| `cd apps/web && npx playwright test --config playwright.manual-acceptance.config.ts` | 全新临时 mock 后端，Settings、goal-only/教材路线、Persona/Scene/Tavern 保存读回和 Study 丢响应恢复；后端先单独运行 `services/ai/tests/acceptance/manual_acceptance_server.py` |
 
-首次运行浏览器验收先执行 `npm exec --workspace @vibe-learner/web -- playwright install chromium`。测试启动 `127.0.0.1:3417` 的生产 Web，所有 API 请求均由浏览器截获并返回契约合法的合成响应，不访问运行数据库。结束后测试服务自动退出。
+默认路由夹具首次运行前先执行 `npm exec --workspace @vibe-learner/web -- playwright install chromium`。默认路由测试启动 `127.0.0.1:3417` 的生产 Web，所有 API 请求均由浏览器截获并返回契约合法的合成响应，不访问运行数据库。结束后测试服务自动退出。
 
 路由请求基线在 `apps/web/tests/browser/route-request-contract.ts`：默认教师、无 Document/Plan/Session/Room、关闭 Debug 展开。每个路由初次请求必须与其清单一致，一次 focus 后每种资源最多请求两次；只能 GET。显式 Debug 展开、已存在资源读回、用户提交和离页取消不属于这份初始清单，需单独验证。
 
 浏览器运行报告写入 `/tmp/vibe-learner-route-report.json`，包含 API 请求记录；失败 trace 位于 `/tmp/vibe-learner-browser-results`。历史 Plan/Session 与在途请求由 `learning-recovery.spec.ts` 单独覆盖。真实设备、IME、屏幕阅读和桌面安装验收见根 TODO。
+
+UX 和手册配置复用已启动的生产 Web `http://127.0.0.1:13417`，先运行 `npm run build:web`，再运行 `npm --workspace @vibe-learner/web run start -- --hostname 127.0.0.1 --port 13417`；UX 可用 `REMAINING_UX_BASE_URL` 改地址。手册临时后端使用 `18996`，mock-only guard 拒绝真实模型和密钥，结束后删除临时业务数据。每次完整手册走查需重启后端获得空数据；用例按编号组成同一首次使用路线。

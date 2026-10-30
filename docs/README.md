@@ -28,6 +28,7 @@
 | [章节与日程](study-chapter-and-schedule.md) | 领域术语和 Session 范围 |
 | [计划修订](plan-revision.md) | Plan CAS、修订预览、接受/拒绝、历史回滚与恢复 |
 | [OCR 保存进度](document-checkpoints.md) | 逐页/阶段 checkpoint、显式续跑、重启与查询读回 |
+| [OCR 压力与恢复](ocr-stress.md) | 真实 CPU 模型、多字符集、64 页扫描续跑、内存/时延及语言限制 |
 | [文档输入上限](document-input-limits.md) | 上传字节/物理页、不可分割文本块和可恢复拒绝 |
 | [输出语言偏好](output-language.md) | Planning/Study 的显式语言、自动模式、操作绑定和持久化 |
 | [Study 请求恢复](study-recovery.md) | 等待上限、有界查询、断网及终态刷新，不重放未知结果 |

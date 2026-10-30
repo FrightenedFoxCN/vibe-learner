@@ -32,11 +32,15 @@ function formatDate(value: string) {
     month: "2-digit",
     day: "2-digit",
     hour: "2-digit",
-    minute: "2-digit"
+    minute: "2-digit",
   });
 }
 
-export function SceneWorkspaceView({ controller }: { controller: SceneWorkspaceController }) {
+export function SceneWorkspaceView({
+  controller,
+}: {
+  controller: SceneWorkspaceController;
+}) {
   const [savedQuery, setSavedQuery] = useState("");
   const [nodeType, setNodeType] = useState("");
   const {
@@ -117,18 +121,39 @@ export function SceneWorkspaceView({ controller }: { controller: SceneWorkspaceC
     toggleObjectEditor,
     handleSelectLayer,
   } = controller;
-  const visibleScenes = savedScenes.filter(item => [item.sceneName, item.sceneSummary].join(" ").toLocaleLowerCase().includes(savedQuery.trim().toLocaleLowerCase()));
-  const visibleNodes = filteredReusableNodes.filter(item => !nodeType || item.nodeType === nodeType);
+  const visibleScenes = savedScenes.filter((item) =>
+    [item.sceneName, item.sceneSummary]
+      .join(" ")
+      .toLocaleLowerCase()
+      .includes(savedQuery.trim().toLocaleLowerCase()),
+  );
+  const visibleNodes = filteredReusableNodes.filter(
+    (item) => !nodeType || item.nodeType === nodeType,
+  );
   const feedbackRef = useRef<HTMLDivElement>(null);
   const actionTriggerRef = useRef<Element | null>(null);
-  const actionPending = Boolean(sceneIoPending || sceneGeneratePending || rewritePendingKey || reusableActionPendingId);
-  const userError = [sceneIoError, sceneGenerateError, rewriteError, reusableError].filter(Boolean).join("；");
+  const actionPending = Boolean(
+    sceneIoPending ||
+    sceneGeneratePending ||
+    rewritePendingKey ||
+    reusableActionPendingId,
+  );
+  const userError = [sceneIoError, sceneGenerateError, rewriteError, reusableError]
+    .filter(Boolean)
+    .join("；");
   const previousUserError = useRef(userError);
   useEffect(() => {
     // Synchronous validation may be batched without rendering a pending state.
     // Background library failures are deliberately excluded from this focus path.
-    if (userError && userError !== previousUserError.current && document.activeElement === actionTriggerRef.current && document.activeElement !== document.body) {
-      feedbackRef.current?.querySelector<HTMLElement>('[role="alert"]')?.focus({ preventScroll: true });
+    if (
+      userError &&
+      userError !== previousUserError.current &&
+      document.activeElement === actionTriggerRef.current &&
+      document.activeElement !== document.body
+    ) {
+      feedbackRef.current
+        ?.querySelector<HTMLElement>('[role="alert"]')
+        ?.focus({ preventScroll: true });
     }
     previousUserError.current = userError;
   }, [userError]);
@@ -142,134 +167,218 @@ export function SceneWorkspaceView({ controller }: { controller: SceneWorkspaceC
         <ModelFallbackNotice recoveries={rewriteModelRecoveries} />
 
         <div style={styles.editorSection}>
-          <button type="button" style={styles.editorSectionHeader} aria-expanded={!currentCollapsedNodeEditorSections.includes("basic")} onClick={() => toggleNodeEditorSection("basic")}>
+          <button
+            type="button"
+            style={styles.editorSectionHeader}
+            aria-expanded={!currentCollapsedNodeEditorSections.includes("basic")}
+            onClick={() => toggleNodeEditorSection("basic")}
+          >
             <span style={styles.panelTitle}>基础设定</span>
-            <span style={styles.sidebarToggleIcon}><MaterialIcon name={currentCollapsedNodeEditorSections.includes("basic") ? "chevron_right" : "expand_more"} size={16} /></span>
+            <span style={styles.sidebarToggleIcon}>
+              <MaterialIcon
+                name={
+                  currentCollapsedNodeEditorSections.includes("basic")
+                    ? "chevron_right"
+                    : "expand_more"
+                }
+                size={16}
+              />
+            </span>
           </button>
           {!currentCollapsedNodeEditorSections.includes("basic") ? (
             <div style={styles.editorSectionBody}>
-        <div style={styles.formGrid}>
-          <label style={styles.fieldGroup}>
-            <span style={styles.fieldLabel}>层级名称</span>
-            <input
-              style={styles.input}
-              value={selectedLayer.title}
-              onChange={(event) => updateLayer(selectedLayer.id, (layer) => ({ ...layer, title: event.target.value }))}
-            />
-          </label>
+              <div style={styles.formGrid}>
+                <label style={styles.fieldGroup}>
+                  <span style={styles.fieldLabel}>层级名称</span>
+                  <input
+                    style={styles.input}
+                    value={selectedLayer.title}
+                    onChange={(event) =>
+                      updateLayer(selectedLayer.id, (layer) => ({
+                        ...layer,
+                        title: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
 
-          <label style={styles.fieldGroup}>
-            <span style={styles.fieldLabel}>层级作用</span>
-            <input
-              style={styles.input}
-              value={selectedLayer.scopeLabel}
-              onChange={(event) => updateLayer(selectedLayer.id, (layer) => ({ ...layer, scopeLabel: event.target.value }))}
-            />
-          </label>
+                <label style={styles.fieldGroup}>
+                  <span style={styles.fieldLabel}>层级作用</span>
+                  <input
+                    style={styles.input}
+                    value={selectedLayer.scopeLabel}
+                    onChange={(event) =>
+                      updateLayer(selectedLayer.id, (layer) => ({
+                        ...layer,
+                        scopeLabel: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
 
-          <label style={styles.fieldGroup}>
-            <span style={styles.fieldLabel}>层级标签</span>
-            <input
-              style={styles.input}
-              value={selectedLayer.tags}
-              onChange={(event) => updateLayer(selectedLayer.id, (layer) => ({ ...layer, tags: event.target.value }))}
-              placeholder="用逗号分隔"
-            />
-          </label>
+                <label style={styles.fieldGroup}>
+                  <span style={styles.fieldLabel}>层级标签</span>
+                  <input
+                    style={styles.input}
+                    value={selectedLayer.tags}
+                    onChange={(event) =>
+                      updateLayer(selectedLayer.id, (layer) => ({
+                        ...layer,
+                        tags: event.target.value,
+                      }))
+                    }
+                    placeholder="用逗号分隔"
+                  />
+                </label>
 
-          <label htmlFor={`scene-layer-${selectedLayer.id}-summary`} style={styles.fieldGroup}>
-            <span style={styles.fieldLabelRow}>
-              <span style={styles.fieldLabel}>层级总述</span>
-              <RewriteStateButton
-                actionKey={`${selectedLayer.id}:summary`}
-                label="层级总述"
-                pendingKey={rewritePendingKey}
-                lastRewrite={lastRewrite}
-                rewriteStrength={rewriteStrength}
-                onRewriteStrengthChange={(value) => updateSceneGenerationInput(() => setRewriteStrength(value))}
-                onRewrite={() => void rewriteLayerField(selectedLayer.id, "summary", "层级总述")}
-                onUndo={undoLastRewrite}
-              />
-            </span>
-            <textarea
-              style={styles.textarea}
-              id={`scene-layer-${selectedLayer.id}-summary`}
-              aria-label="层级总述"
-              value={selectedLayer.summary}
-              onChange={(event) => updateLayer(selectedLayer.id, (layer) => ({ ...layer, summary: event.target.value }))}
-            />
-          </label>
+                <label
+                  htmlFor={`scene-layer-${selectedLayer.id}-summary`}
+                  style={styles.fieldGroup}
+                >
+                  <span style={styles.fieldLabelRow}>
+                    <span style={styles.fieldLabel}>层级总述</span>
+                    <RewriteStateButton
+                      actionKey={`${selectedLayer.id}:summary`}
+                      label="层级总述"
+                      pendingKey={rewritePendingKey}
+                      lastRewrite={lastRewrite}
+                      rewriteStrength={rewriteStrength}
+                      onRewriteStrengthChange={(value) =>
+                        updateSceneGenerationInput(() => setRewriteStrength(value))
+                      }
+                      onRewrite={() =>
+                        void rewriteLayerField(selectedLayer.id, "summary", "层级总述")
+                      }
+                      onUndo={undoLastRewrite}
+                    />
+                  </span>
+                  <textarea
+                    style={styles.textarea}
+                    id={`scene-layer-${selectedLayer.id}-summary`}
+                    aria-label="层级总述"
+                    value={selectedLayer.summary}
+                    onChange={(event) =>
+                      updateLayer(selectedLayer.id, (layer) => ({
+                        ...layer,
+                        summary: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
 
-          <label htmlFor={`scene-layer-${selectedLayer.id}-atmosphere`} style={styles.fieldGroup}>
-            <span style={styles.fieldLabelRow}>
-              <span style={styles.fieldLabel}>氛围与感知</span>
-              <RewriteStateButton
-                actionKey={`${selectedLayer.id}:atmosphere`}
-                label="氛围与感知"
-                pendingKey={rewritePendingKey}
-                lastRewrite={lastRewrite}
-                rewriteStrength={rewriteStrength}
-                onRewriteStrengthChange={(value) => updateSceneGenerationInput(() => setRewriteStrength(value))}
-                onRewrite={() => void rewriteLayerField(selectedLayer.id, "atmosphere", "氛围与感知")}
-                onUndo={undoLastRewrite}
-              />
-            </span>
-            <textarea
-              style={styles.textarea}
-              id={`scene-layer-${selectedLayer.id}-atmosphere`}
-              aria-label="氛围与感知"
-              value={selectedLayer.atmosphere}
-              onChange={(event) => updateLayer(selectedLayer.id, (layer) => ({ ...layer, atmosphere: event.target.value }))}
-            />
-          </label>
+                <label
+                  htmlFor={`scene-layer-${selectedLayer.id}-atmosphere`}
+                  style={styles.fieldGroup}
+                >
+                  <span style={styles.fieldLabelRow}>
+                    <span style={styles.fieldLabel}>氛围与感知</span>
+                    <RewriteStateButton
+                      actionKey={`${selectedLayer.id}:atmosphere`}
+                      label="氛围与感知"
+                      pendingKey={rewritePendingKey}
+                      lastRewrite={lastRewrite}
+                      rewriteStrength={rewriteStrength}
+                      onRewriteStrengthChange={(value) =>
+                        updateSceneGenerationInput(() => setRewriteStrength(value))
+                      }
+                      onRewrite={() =>
+                        void rewriteLayerField(
+                          selectedLayer.id,
+                          "atmosphere",
+                          "氛围与感知",
+                        )
+                      }
+                      onUndo={undoLastRewrite}
+                    />
+                  </span>
+                  <textarea
+                    style={styles.textarea}
+                    id={`scene-layer-${selectedLayer.id}-atmosphere`}
+                    aria-label="氛围与感知"
+                    value={selectedLayer.atmosphere}
+                    onChange={(event) =>
+                      updateLayer(selectedLayer.id, (layer) => ({
+                        ...layer,
+                        atmosphere: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
 
-          <label htmlFor={`scene-layer-${selectedLayer.id}-entrance`} style={styles.fieldGroup}>
-            <span style={styles.fieldLabelRow}>
-              <span style={styles.fieldLabel}>进入方式 / 过渡</span>
-              <RewriteStateButton
-                actionKey={`${selectedLayer.id}:entrance`}
-                label="进入方式 / 过渡"
-                pendingKey={rewritePendingKey}
-                lastRewrite={lastRewrite}
-                rewriteStrength={rewriteStrength}
-                onRewriteStrengthChange={(value) => updateSceneGenerationInput(() => setRewriteStrength(value))}
-                onRewrite={() => void rewriteLayerField(selectedLayer.id, "entrance", "进入方式 / 过渡")}
-                onUndo={undoLastRewrite}
-              />
-            </span>
-            <textarea
-              style={styles.textarea}
-              id={`scene-layer-${selectedLayer.id}-entrance`}
-              aria-label="进入方式 / 过渡"
-              value={selectedLayer.entrance}
-              onChange={(event) => updateLayer(selectedLayer.id, (layer) => ({ ...layer, entrance: event.target.value }))}
-            />
-          </label>
+                <label
+                  htmlFor={`scene-layer-${selectedLayer.id}-entrance`}
+                  style={styles.fieldGroup}
+                >
+                  <span style={styles.fieldLabelRow}>
+                    <span style={styles.fieldLabel}>进入方式 / 过渡</span>
+                    <RewriteStateButton
+                      actionKey={`${selectedLayer.id}:entrance`}
+                      label="进入方式 / 过渡"
+                      pendingKey={rewritePendingKey}
+                      lastRewrite={lastRewrite}
+                      rewriteStrength={rewriteStrength}
+                      onRewriteStrengthChange={(value) =>
+                        updateSceneGenerationInput(() => setRewriteStrength(value))
+                      }
+                      onRewrite={() =>
+                        void rewriteLayerField(
+                          selectedLayer.id,
+                          "entrance",
+                          "进入方式 / 过渡",
+                        )
+                      }
+                      onUndo={undoLastRewrite}
+                    />
+                  </span>
+                  <textarea
+                    style={styles.textarea}
+                    id={`scene-layer-${selectedLayer.id}-entrance`}
+                    aria-label="进入方式 / 过渡"
+                    value={selectedLayer.entrance}
+                    onChange={(event) =>
+                      updateLayer(selectedLayer.id, (layer) => ({
+                        ...layer,
+                        entrance: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
 
-          <label htmlFor={`scene-layer-${selectedLayer.id}-rules`} style={styles.fieldGroup}>
-            <span style={styles.fieldLabelRow}>
-              <span style={styles.fieldLabel}>层级规则</span>
-              <RewriteStateButton
-                actionKey={`${selectedLayer.id}:rules`}
-                label="层级规则"
-                pendingKey={rewritePendingKey}
-                lastRewrite={lastRewrite}
-                rewriteStrength={rewriteStrength}
-                onRewriteStrengthChange={(value) => updateSceneGenerationInput(() => setRewriteStrength(value))}
-                onRewrite={() => void rewriteLayerField(selectedLayer.id, "rules", "层级规则")}
-                onUndo={undoLastRewrite}
-              />
-            </span>
-            <textarea
-              style={styles.textarea}
-              id={`scene-layer-${selectedLayer.id}-rules`}
-              aria-label="层级规则"
-              value={selectedLayer.rules}
-              onChange={(event) => updateLayer(selectedLayer.id, (layer) => ({ ...layer, rules: event.target.value }))}
-            />
-          </label>
-
-        </div>
+                <label
+                  htmlFor={`scene-layer-${selectedLayer.id}-rules`}
+                  style={styles.fieldGroup}
+                >
+                  <span style={styles.fieldLabelRow}>
+                    <span style={styles.fieldLabel}>层级规则</span>
+                    <RewriteStateButton
+                      actionKey={`${selectedLayer.id}:rules`}
+                      label="层级规则"
+                      pendingKey={rewritePendingKey}
+                      lastRewrite={lastRewrite}
+                      rewriteStrength={rewriteStrength}
+                      onRewriteStrengthChange={(value) =>
+                        updateSceneGenerationInput(() => setRewriteStrength(value))
+                      }
+                      onRewrite={() =>
+                        void rewriteLayerField(selectedLayer.id, "rules", "层级规则")
+                      }
+                      onUndo={undoLastRewrite}
+                    />
+                  </span>
+                  <textarea
+                    style={styles.textarea}
+                    id={`scene-layer-${selectedLayer.id}-rules`}
+                    aria-label="层级规则"
+                    value={selectedLayer.rules}
+                    onChange={(event) =>
+                      updateLayer(selectedLayer.id, (layer) => ({
+                        ...layer,
+                        rules: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
+              </div>
             </div>
           ) : null}
         </div>
@@ -290,11 +399,16 @@ export function SceneWorkspaceView({ controller }: { controller: SceneWorkspaceC
                 <input
                   style={styles.input}
                   value={object.name}
-                  onChange={(event) => updateObject(layerId, object.id, "name", event.target.value)}
+                  onChange={(event) =>
+                    updateObject(layerId, object.id, "name", event.target.value)
+                  }
                 />
               </label>
 
-              <label htmlFor={`scene-object-${layerId}-${object.id}-description`} style={styles.fieldGroup}>
+              <label
+                htmlFor={`scene-object-${layerId}-${object.id}-description`}
+                style={styles.fieldGroup}
+              >
                 <span style={styles.fieldLabelRow}>
                   <span style={styles.fieldLabel}>外观 / 说明</span>
                   <RewriteStateButton
@@ -303,8 +417,17 @@ export function SceneWorkspaceView({ controller }: { controller: SceneWorkspaceC
                     pendingKey={rewritePendingKey}
                     lastRewrite={lastRewrite}
                     rewriteStrength={rewriteStrength}
-                    onRewriteStrengthChange={(value) => updateSceneGenerationInput(() => setRewriteStrength(value))}
-                    onRewrite={() => void rewriteObjectField(layerId, object.id, "description", "物体外观与说明")}
+                    onRewriteStrengthChange={(value) =>
+                      updateSceneGenerationInput(() => setRewriteStrength(value))
+                    }
+                    onRewrite={() =>
+                      void rewriteObjectField(
+                        layerId,
+                        object.id,
+                        "description",
+                        "物体外观与说明",
+                      )
+                    }
                     onUndo={undoLastRewrite}
                   />
                 </span>
@@ -313,11 +436,16 @@ export function SceneWorkspaceView({ controller }: { controller: SceneWorkspaceC
                   id={`scene-object-${layerId}-${object.id}-description`}
                   aria-label="外观 / 说明"
                   value={object.description}
-                  onChange={(event) => updateObject(layerId, object.id, "description", event.target.value)}
+                  onChange={(event) =>
+                    updateObject(layerId, object.id, "description", event.target.value)
+                  }
                 />
               </label>
 
-              <label htmlFor={`scene-object-${layerId}-${object.id}-interaction`} style={styles.fieldGroup}>
+              <label
+                htmlFor={`scene-object-${layerId}-${object.id}-interaction`}
+                style={styles.fieldGroup}
+              >
                 <span style={styles.fieldLabelRow}>
                   <span style={styles.fieldLabel}>交互方式</span>
                   <RewriteStateButton
@@ -326,8 +454,17 @@ export function SceneWorkspaceView({ controller }: { controller: SceneWorkspaceC
                     pendingKey={rewritePendingKey}
                     lastRewrite={lastRewrite}
                     rewriteStrength={rewriteStrength}
-                    onRewriteStrengthChange={(value) => updateSceneGenerationInput(() => setRewriteStrength(value))}
-                    onRewrite={() => void rewriteObjectField(layerId, object.id, "interaction", "物体交互方式")}
+                    onRewriteStrengthChange={(value) =>
+                      updateSceneGenerationInput(() => setRewriteStrength(value))
+                    }
+                    onRewrite={() =>
+                      void rewriteObjectField(
+                        layerId,
+                        object.id,
+                        "interaction",
+                        "物体交互方式",
+                      )
+                    }
                     onUndo={undoLastRewrite}
                   />
                 </span>
@@ -336,7 +473,9 @@ export function SceneWorkspaceView({ controller }: { controller: SceneWorkspaceC
                   id={`scene-object-${layerId}-${object.id}-interaction`}
                   aria-label="交互方式"
                   value={object.interaction}
-                  onChange={(event) => updateObject(layerId, object.id, "interaction", event.target.value)}
+                  onChange={(event) =>
+                    updateObject(layerId, object.id, "interaction", event.target.value)
+                  }
                 />
               </label>
 
@@ -345,11 +484,12 @@ export function SceneWorkspaceView({ controller }: { controller: SceneWorkspaceC
                 <input
                   style={styles.input}
                   value={object.tags}
-                  onChange={(event) => updateObject(layerId, object.id, "tags", event.target.value)}
+                  onChange={(event) =>
+                    updateObject(layerId, object.id, "tags", event.target.value)
+                  }
                   placeholder="用逗号分隔"
                 />
               </label>
-
             </div>
           </div>
         </div>
@@ -358,17 +498,41 @@ export function SceneWorkspaceView({ controller }: { controller: SceneWorkspaceC
   }
 
   return (
-    <main className="with-app-nav" style={styles.page} onClickCapture={(event) => {
-      if (!actionPending && (event.target as HTMLElement).closest("button")) actionTriggerRef.current = document.activeElement;
-    }}>
+    <main
+      className="with-app-nav"
+      style={styles.page}
+      onClickCapture={(event) => {
+        if (!actionPending && (event.target as HTMLElement).closest("button"))
+          actionTriggerRef.current = document.activeElement;
+      }}
+    >
       <TopNav currentPath="/scene-setup" />
 
       <div style={styles.heading}>
         <div style={styles.headingRow}>
-          <h1 ref={pageHeadingRef} tabIndex={-1} style={styles.pageTitle}>场景搭建</h1>
+          <h1 ref={pageHeadingRef} tabIndex={-1} style={styles.pageTitle}>
+            场景搭建
+          </h1>
           <ProviderTruth scope="scene" />
-          <div ref={feedbackRef} style={styles.notice}><AsyncFeedback actionRef={actionTriggerRef} pending={actionPending} error={userError} message={pageNotice} /></div>
-          {libraryError ? <p role="alert" style={styles.errorText}>部分场景库数据未能读取，请刷新页面重试。</p> : null}
+          <div
+            ref={feedbackRef}
+            role="region"
+            aria-label="场景操作反馈"
+            tabIndex={0}
+            style={styles.notice}
+          >
+            <AsyncFeedback
+              actionRef={actionTriggerRef}
+              pending={actionPending}
+              error={userError}
+              message={pageNotice}
+            />
+            {libraryError ? (
+              <p role="alert" style={styles.errorText}>
+                部分场景库数据未能读取，请刷新页面重试。
+              </p>
+            ) : null}
+          </div>
         </div>
       </div>
 
@@ -391,7 +555,14 @@ export function SceneWorkspaceView({ controller }: { controller: SceneWorkspaceC
             <span style={styles.panelTitle}>场景树与节点编辑器</span>
             <div style={styles.panelHeaderActions}>
               <button
-                style={selectedSavedSceneId ? { ...styles.sidebarIconButton, ...styles.sidebarIconButtonPrimary } : styles.sidebarIconButton}
+                style={
+                  selectedSavedSceneId
+                    ? {
+                        ...styles.sidebarIconButton,
+                        ...styles.sidebarIconButtonPrimary,
+                      }
+                    : styles.sidebarIconButton
+                }
                 type="button"
                 onClick={() => void saveLibraryScene("upsert")}
                 title={selectedSavedSceneId ? "更新已保存场景" : "保存到场景库"}
@@ -428,41 +599,52 @@ export function SceneWorkspaceView({ controller }: { controller: SceneWorkspaceC
               </button>
             </div>
           </div>
-          <div style={{ ...styles.panelBody, ...(isCompactLayout ? styles.panelBodyCompact : null) }}>
-          <input
-            ref={importInputRef}
-            type="file"
-            accept="application/json,.json"
-            aria-label="导入场景 JSON 文件"
-            style={styles.hiddenInput}
-            onChange={(event) => void importSceneFromFile(event)}
-          />
-          <div style={styles.treeStack}>
-            {sceneLayers.map((layer, index) => (
-              <SceneLayerCard
-                key={layer.id}
-                layer={layer}
-                index={index}
-                collapsedLayerIds={collapsedLayerIds}
-                onToggleChildren={toggleLayerChildren}
-                selectedLayerId={selectedLayerId}
-                selectedObjectId={selectedObjectId}
-                onSelect={handleSelectLayer}
-                onToggleEditor={toggleLayerEditor}
-                onAddChild={addChildLayer}
-                onAddObject={addObject}
-                onSaveToReusable={(layerId) => { void saveLayerToReusableLibrary(layerId); }}
-                onSelectObject={toggleObjectEditor}
-                onSaveObjectToReusable={(object) => { void saveObjectToReusableLibrary(object); }}
-                onRemoveObject={removeObject}
-                reusableActionPendingId={reusableActionPendingId}
-                onRequestDelete={requestDeleteLayer}
-                canDeleteLayerForId={(layerId) => canDeleteLayerSafely(sceneLayers, layerId)}
-                editorContent={renderSelectedLayerEditor()}
-                renderObjectEditor={renderObjectEditor}
-              />
-            ))}
-          </div>
+          <div
+            style={{
+              ...styles.panelBody,
+              ...(isCompactLayout ? styles.panelBodyCompact : null),
+            }}
+          >
+            <input
+              ref={importInputRef}
+              type="file"
+              accept="application/json,.json"
+              aria-label="导入场景 JSON 文件"
+              style={styles.hiddenInput}
+              onChange={(event) => void importSceneFromFile(event)}
+            />
+            <div style={styles.treeStack}>
+              {sceneLayers.map((layer, index) => (
+                <SceneLayerCard
+                  key={layer.id}
+                  layer={layer}
+                  index={index}
+                  collapsedLayerIds={collapsedLayerIds}
+                  onToggleChildren={toggleLayerChildren}
+                  selectedLayerId={selectedLayerId}
+                  selectedObjectId={selectedObjectId}
+                  onSelect={handleSelectLayer}
+                  onToggleEditor={toggleLayerEditor}
+                  onAddChild={addChildLayer}
+                  onAddObject={addObject}
+                  onSaveToReusable={(layerId) => {
+                    void saveLayerToReusableLibrary(layerId);
+                  }}
+                  onSelectObject={toggleObjectEditor}
+                  onSaveObjectToReusable={(object) => {
+                    void saveObjectToReusableLibrary(object);
+                  }}
+                  onRemoveObject={removeObject}
+                  reusableActionPendingId={reusableActionPendingId}
+                  onRequestDelete={requestDeleteLayer}
+                  canDeleteLayerForId={(layerId) =>
+                    canDeleteLayerSafely(sceneLayers, layerId)
+                  }
+                  editorContent={renderSelectedLayerEditor()}
+                  renderObjectEditor={renderObjectEditor}
+                />
+              ))}
+            </div>
           </div>
         </div>
 
@@ -482,13 +664,17 @@ export function SceneWorkspaceView({ controller }: { controller: SceneWorkspaceC
                 {sceneNodeCount} 节点 · {sceneObjectCount} 物体
               </span>
             </div>
-            <div style={{ ...styles.sidebarSectionBody, ...styles.sceneMetaSectionBody }}>
+            <div
+              style={{ ...styles.sidebarSectionBody, ...styles.sceneMetaSectionBody }}
+            >
               <label style={styles.sceneNameLabel}>
                 <span style={styles.fieldLabel}>场景名称</span>
                 <input
                   style={styles.sceneNameInput}
                   value={sceneName}
-                  onChange={(event) => updateSceneGenerationInput(() => setSceneName(event.target.value))}
+                  onChange={(event) =>
+                    updateSceneGenerationInput(() => setSceneName(event.target.value))
+                  }
                   placeholder="例如：高一物理-力学基础"
                 />
               </label>
@@ -497,7 +683,11 @@ export function SceneWorkspaceView({ controller }: { controller: SceneWorkspaceC
                 <textarea
                   style={styles.sceneSummaryInput}
                   value={sceneSummary}
-                  onChange={(event) => updateSceneGenerationInput(() => setSceneSummary(event.target.value))}
+                  onChange={(event) =>
+                    updateSceneGenerationInput(() =>
+                      setSceneSummary(event.target.value),
+                    )
+                  }
                   placeholder="用自己的话描述这个场景。"
                 />
               </label>
@@ -505,9 +695,23 @@ export function SceneWorkspaceView({ controller }: { controller: SceneWorkspaceC
           </div>
 
           <div style={styles.sidebarSection}>
-            <button type="button" style={styles.sidebarSectionHeader} aria-expanded={!collapsedSidebarSections.includes("generate")} onClick={() => toggleSidebarSection("generate")}>
+            <button
+              type="button"
+              style={styles.sidebarSectionHeader}
+              aria-expanded={!collapsedSidebarSections.includes("generate")}
+              onClick={() => toggleSidebarSection("generate")}
+            >
               <span style={styles.panelTitle}>场景树生成器</span>
-              <span style={styles.sidebarToggleIcon}><MaterialIcon name={collapsedSidebarSections.includes("generate") ? "chevron_right" : "expand_more"} size={16} /></span>
+              <span style={styles.sidebarToggleIcon}>
+                <MaterialIcon
+                  name={
+                    collapsedSidebarSections.includes("generate")
+                      ? "chevron_right"
+                      : "expand_more"
+                  }
+                  size={16}
+                />
+              </span>
             </button>
             {!collapsedSidebarSections.includes("generate") ? (
               <div style={styles.sidebarSectionBody}>
@@ -519,7 +723,11 @@ export function SceneWorkspaceView({ controller }: { controller: SceneWorkspaceC
                     min={1}
                     step={1}
                     value={sceneGenerateLayerCount}
-                    onChange={(event) => updateSceneGenerationInput(() => setSceneGenerateLayerCount(event.target.value))}
+                    onChange={(event) =>
+                      updateSceneGenerationInput(() =>
+                        setSceneGenerateLayerCount(event.target.value),
+                      )
+                    }
                     placeholder="留空表示不限"
                   />
                 </label>
@@ -528,16 +736,32 @@ export function SceneWorkspaceView({ controller }: { controller: SceneWorkspaceC
                     <button
                       type="button"
                       aria-pressed={sceneGenerateMode === "keywords"}
-                      style={sceneGenerateMode === "keywords" ? styles.modeSwitchButtonActive : styles.modeSwitchButton}
-                      onClick={() => updateSceneGenerationInput(() => setSceneGenerateMode("keywords"))}
+                      style={
+                        sceneGenerateMode === "keywords"
+                          ? styles.modeSwitchButtonActive
+                          : styles.modeSwitchButton
+                      }
+                      onClick={() =>
+                        updateSceneGenerationInput(() =>
+                          setSceneGenerateMode("keywords"),
+                        )
+                      }
                     >
                       关键词搜索
                     </button>
                     <button
                       type="button"
                       aria-pressed={sceneGenerateMode === "long_text"}
-                      style={sceneGenerateMode === "long_text" ? styles.modeSwitchButtonActive : styles.modeSwitchButton}
-                      onClick={() => updateSceneGenerationInput(() => setSceneGenerateMode("long_text"))}
+                      style={
+                        sceneGenerateMode === "long_text"
+                          ? styles.modeSwitchButtonActive
+                          : styles.modeSwitchButton
+                      }
+                      onClick={() =>
+                        updateSceneGenerationInput(() =>
+                          setSceneGenerateMode("long_text"),
+                        )
+                      }
                     >
                       长文本提取
                     </button>
@@ -549,20 +773,32 @@ export function SceneWorkspaceView({ controller }: { controller: SceneWorkspaceC
                     onClick={() => void handleGenerateScene(sceneGenerateMode)}
                     title={
                       sceneGenerateMode === "keywords"
-                        ? (sceneGeneratePending === "keywords" ? "生成中" : "根据关键词生成场景树")
-                        : (sceneGeneratePending === "long_text" ? "提取中" : "根据长文本提取场景树")
+                        ? sceneGeneratePending === "keywords"
+                          ? "生成中"
+                          : "根据关键词生成场景树"
+                        : sceneGeneratePending === "long_text"
+                          ? "提取中"
+                          : "根据长文本提取场景树"
                     }
                     aria-label={
                       sceneGenerateMode === "keywords"
-                        ? (sceneGeneratePending === "keywords" ? "生成中" : "根据关键词生成场景树")
-                        : (sceneGeneratePending === "long_text" ? "提取中" : "根据长文本提取场景树")
+                        ? sceneGeneratePending === "keywords"
+                          ? "生成中"
+                          : "根据关键词生成场景树"
+                        : sceneGeneratePending === "long_text"
+                          ? "提取中"
+                          : "根据长文本提取场景树"
                     }
                   >
                     <MaterialIcon
                       name={
                         sceneGenerateMode === "keywords"
-                          ? (sceneGeneratePending === "keywords" ? "hourglass_top" : "auto_awesome")
-                          : (sceneGeneratePending === "long_text" ? "hourglass_top" : "description")
+                          ? sceneGeneratePending === "keywords"
+                            ? "hourglass_top"
+                            : "auto_awesome"
+                          : sceneGeneratePending === "long_text"
+                            ? "hourglass_top"
+                            : "description"
                       }
                       size={14}
                     />
@@ -574,7 +810,11 @@ export function SceneWorkspaceView({ controller }: { controller: SceneWorkspaceC
                       style={styles.input}
                       aria-label="场景生成关键词"
                       value={sceneKeywordInput}
-                      onChange={(event) => updateSceneGenerationInput(() => setSceneKeywordInput(event.target.value))}
+                      onChange={(event) =>
+                        updateSceneGenerationInput(() =>
+                          setSceneKeywordInput(event.target.value),
+                        )
+                      }
                       placeholder="输入关键词，例如：赛博校园, 物理实验, 夜间自习, 钟楼广播"
                     />
                   </label>
@@ -585,22 +825,42 @@ export function SceneWorkspaceView({ controller }: { controller: SceneWorkspaceC
                       accept=".txt,.md,text/plain,text/markdown"
                       aria-label="场景生成长文本文件"
                       style={styles.fileInput}
-                      onChange={(event) => updateSceneGenerationInput(() => setSceneLongTextFile(event.target.files?.[0] ?? null))}
+                      onChange={(event) =>
+                        updateSceneGenerationInput(() =>
+                          setSceneLongTextFile(event.target.files?.[0] ?? null),
+                        )
+                      }
                     />
-                    {sceneLongTextFile ? <span style={styles.helperText}>{sceneLongTextFile.name}</span> : null}
+                    {sceneLongTextFile ? (
+                      <span style={styles.helperText}>{sceneLongTextFile.name}</span>
+                    ) : null}
                   </label>
                 )}
 
                 {generatedSceneCandidate ? (
                   <div style={styles.generatedSceneCard}>
-                    <strong style={styles.generatedSceneTitle}>{generatedSceneCandidate.sceneName}</strong>
-                    <p style={styles.generatedSceneSummary}>{generatedSceneCandidate.sceneSummary}</p>
-                    <p style={styles.generatedSceneMeta}>
-                      {generatedSceneCandidate.mode === "keywords" ? "关键词生成" : "长文本提取"} ·
-                      {generatedSceneCandidate.usedModel || "unknown"} ·
-                      {countSceneNodes(generatedSceneCandidate.sceneLayers.map((layer) => normalizeSceneTreeNodeForProfile(layer)))} 节点
+                    <strong style={styles.generatedSceneTitle}>
+                      {generatedSceneCandidate.sceneName}
+                    </strong>
+                    <p style={styles.generatedSceneSummary}>
+                      {generatedSceneCandidate.sceneSummary}
                     </p>
-                    <SceneProposalPreview current={sceneLayers} proposed={generatedSceneCandidate.sceneLayers} />
+                    <p style={styles.generatedSceneMeta}>
+                      {generatedSceneCandidate.mode === "keywords"
+                        ? "关键词生成"
+                        : "长文本提取"}{" "}
+                      ·{generatedSceneCandidate.usedModel || "unknown"} ·
+                      {countSceneNodes(
+                        generatedSceneCandidate.sceneLayers.map((layer) =>
+                          normalizeSceneTreeNodeForProfile(layer),
+                        ),
+                      )}{" "}
+                      节点
+                    </p>
+                    <SceneProposalPreview
+                      current={sceneLayers}
+                      proposed={generatedSceneCandidate.sceneLayers}
+                    />
                     <div style={styles.sidebarActionRow}>
                       <button
                         style={styles.sidebarIconButton}
@@ -619,9 +879,23 @@ export function SceneWorkspaceView({ controller }: { controller: SceneWorkspaceC
           </div>
 
           <div style={styles.sidebarSection}>
-            <button type="button" style={styles.sidebarSectionHeader} aria-expanded={!collapsedSidebarSections.includes("reuse")} onClick={() => toggleSidebarSection("reuse")}>
+            <button
+              type="button"
+              style={styles.sidebarSectionHeader}
+              aria-expanded={!collapsedSidebarSections.includes("reuse")}
+              onClick={() => toggleSidebarSection("reuse")}
+            >
               <span style={styles.panelTitle}>可复用节点库</span>
-              <span style={styles.sidebarToggleIcon}><MaterialIcon name={collapsedSidebarSections.includes("reuse") ? "chevron_right" : "expand_more"} size={16} /></span>
+              <span style={styles.sidebarToggleIcon}>
+                <MaterialIcon
+                  name={
+                    collapsedSidebarSections.includes("reuse")
+                      ? "chevron_right"
+                      : "expand_more"
+                  }
+                  size={16}
+                />
+              </span>
             </button>
             {!collapsedSidebarSections.includes("reuse") ? (
               <div style={styles.sidebarSectionBody}>
@@ -635,44 +909,83 @@ export function SceneWorkspaceView({ controller }: { controller: SceneWorkspaceC
                   />
                 </label>
 
-                <select className="library-filter" aria-label="筛选节点类型" value={nodeType} onChange={event => setNodeType(event.target.value)}><option value="">全部节点</option><option value="layer">层级</option><option value="object">物体</option></select>
-                <p role="status" style={styles.sidebarHint}>{visibleNodes.length} 个节点</p>
+                <select
+                  className="library-filter"
+                  aria-label="筛选节点类型"
+                  value={nodeType}
+                  onChange={(event) => setNodeType(event.target.value)}
+                >
+                  <option value="">全部节点</option>
+                  <option value="layer">层级</option>
+                  <option value="object">物体</option>
+                </select>
+                <p role="status" style={styles.sidebarHint}>
+                  {visibleNodes.length} 个节点
+                </p>
                 <div style={styles.reusableNodeList}>
-                  {visibleNodes.length ? visibleNodes.map((item) => (
-                    <article key={item.nodeId} style={styles.reusableNodeCard}>
-                      <div style={styles.savedSceneTitleRow}>
-                        <strong style={styles.savedSceneTitle}>{item.title}</strong>
-                        <span style={styles.savedSceneMeta}>{item.nodeType === "layer" ? "层级" : "物体"}</span>
-                      </div>
-                      {item.summary ? <p style={styles.savedSceneSummary}>{item.summary}</p> : null}
-                      <p style={styles.savedSceneMeta}>{item.reuseHint || "未填写复用说明"}</p>
-                      <p style={styles.savedSceneMeta}>
-                        {(item.tags.length ? item.tags.join(" · ") : "无标签")}
-                        {item.sourceSceneName ? ` · 来自 ${item.sourceSceneName}` : ""}
-                      </p>
-                      <div style={styles.sidebarCardActions}>
-                        <button
-                          style={styles.sidebarIconButton}
-                          type="button"
-                          onClick={() => insertReusableNode(item)}
-                          title="插入到当前层级"
-                          aria-label="插入到当前层级"
-                        >
-                          <MaterialIcon name="input" size={14} />
-                        </button>
-                        <details className="secondary-actions"><summary>删除操作</summary><button
-                          style={styles.sidebarIconButton}
-                          type="button"
-                          disabled={reusableActionPendingId === item.nodeId}
-                          onClick={() => void deleteReusableNode(item.nodeId)}
-                          title={reusableActionPendingId === item.nodeId ? "删除中" : "删除复用节点"}
-                          aria-label={reusableActionPendingId === item.nodeId ? "删除中" : "删除复用节点"}
-                        >
-                          <MaterialIcon name={reusableActionPendingId === item.nodeId ? "hourglass_top" : "delete"} size={14} />
-                        </button></details>
-                      </div>
-                    </article>
-                  )) : (
+                  {visibleNodes.length ? (
+                    visibleNodes.map((item) => (
+                      <article key={item.nodeId} style={styles.reusableNodeCard}>
+                        <div style={styles.savedSceneTitleRow}>
+                          <strong style={styles.savedSceneTitle}>{item.title}</strong>
+                          <span style={styles.savedSceneMeta}>
+                            {item.nodeType === "layer" ? "层级" : "物体"}
+                          </span>
+                        </div>
+                        {item.summary ? (
+                          <p style={styles.savedSceneSummary}>{item.summary}</p>
+                        ) : null}
+                        <p style={styles.savedSceneMeta}>
+                          {item.reuseHint || "未填写复用说明"}
+                        </p>
+                        <p style={styles.savedSceneMeta}>
+                          {item.tags.length ? item.tags.join(" · ") : "无标签"}
+                          {item.sourceSceneName
+                            ? ` · 来自 ${item.sourceSceneName}`
+                            : ""}
+                        </p>
+                        <div style={styles.sidebarCardActions}>
+                          <button
+                            style={styles.sidebarIconButton}
+                            type="button"
+                            onClick={() => insertReusableNode(item)}
+                            title="插入到当前层级"
+                            aria-label="插入到当前层级"
+                          >
+                            <MaterialIcon name="input" size={14} />
+                          </button>
+                          <details className="secondary-actions">
+                            <summary>删除操作</summary>
+                            <button
+                              style={styles.sidebarIconButton}
+                              type="button"
+                              disabled={reusableActionPendingId === item.nodeId}
+                              onClick={() => void deleteReusableNode(item.nodeId)}
+                              title={
+                                reusableActionPendingId === item.nodeId
+                                  ? "删除中"
+                                  : "删除复用节点"
+                              }
+                              aria-label={
+                                reusableActionPendingId === item.nodeId
+                                  ? "删除中"
+                                  : "删除复用节点"
+                              }
+                            >
+                              <MaterialIcon
+                                name={
+                                  reusableActionPendingId === item.nodeId
+                                    ? "hourglass_top"
+                                    : "delete"
+                                }
+                                size={14}
+                              />
+                            </button>
+                          </details>
+                        </div>
+                      </article>
+                    ))
+                  ) : (
                     <p style={styles.sidebarHint}>没有匹配的节点，请调整搜索或筛选。</p>
                   )}
                 </div>
@@ -681,32 +994,72 @@ export function SceneWorkspaceView({ controller }: { controller: SceneWorkspaceC
           </div>
 
           <div style={styles.sidebarSection}>
-            <button type="button" style={styles.sidebarSectionHeader} aria-expanded={!collapsedSidebarSections.includes("saved")} onClick={() => toggleSidebarSection("saved")}>
+            <button
+              type="button"
+              style={styles.sidebarSectionHeader}
+              aria-expanded={!collapsedSidebarSections.includes("saved")}
+              onClick={() => toggleSidebarSection("saved")}
+            >
               <span style={styles.panelTitle}>已保存场景</span>
-              <span style={styles.sidebarToggleIcon}><MaterialIcon name={collapsedSidebarSections.includes("saved") ? "chevron_right" : "expand_more"} size={16} /></span>
+              <span style={styles.sidebarToggleIcon}>
+                <MaterialIcon
+                  name={
+                    collapsedSidebarSections.includes("saved")
+                      ? "chevron_right"
+                      : "expand_more"
+                  }
+                  size={16}
+                />
+              </span>
             </button>
             {!collapsedSidebarSections.includes("saved") ? (
               <div style={styles.sidebarSectionBody}>
-                <input type="search" style={styles.input} aria-label="搜索已保存场景" value={savedQuery} onChange={event => setSavedQuery(event.target.value)} placeholder="搜索场景名称或摘要" />
-                <p role="status" style={styles.sidebarHint}>{visibleScenes.length} 个场景</p>
-                {!visibleScenes.length ? <p style={styles.sidebarHint}>没有匹配的场景。</p> : null}
+                <input
+                  type="search"
+                  style={styles.input}
+                  aria-label="搜索已保存场景"
+                  value={savedQuery}
+                  onChange={(event) => setSavedQuery(event.target.value)}
+                  placeholder="搜索场景名称或摘要"
+                />
+                <p role="status" style={styles.sidebarHint}>
+                  {visibleScenes.length} 个场景
+                </p>
+                {!visibleScenes.length ? (
+                  <p style={styles.sidebarHint}>没有匹配的场景。</p>
+                ) : null}
                 {visibleScenes.length ? (
                   <div style={styles.savedSceneList}>
                     {visibleScenes.map((item) => {
                       const isSelected = selectedSavedSceneId === item.sceneId;
                       return (
-                        <div key={item.sceneId} style={{ ...styles.savedSceneItem, ...(isSelected ? styles.savedSceneItemSelected : {}) }}>
+                        <div
+                          key={item.sceneId}
+                          style={{
+                            ...styles.savedSceneItem,
+                            ...(isSelected ? styles.savedSceneItemSelected : {}),
+                          }}
+                        >
                           <button
                             type="button"
                             style={styles.savedSceneBody}
                             onClick={() => setSelectedSavedSceneId(item.sceneId)}
                           >
                             <div style={styles.savedSceneTitleRow}>
-                              <strong style={styles.savedSceneTitle}>{item.sceneName}</strong>
-                              <span style={styles.savedSceneMeta}>{formatDate(item.updatedAt)}</span>
+                              <strong style={styles.savedSceneTitle}>
+                                {item.sceneName}
+                              </strong>
+                              <span style={styles.savedSceneMeta}>
+                                {formatDate(item.updatedAt)}
+                              </span>
                             </div>
-                            <p style={styles.savedSceneSummary}>{item.sceneSummary || "未填写 summary"}</p>
-                            <p style={styles.savedSceneMeta}>{item.sceneProfile?.title ?? "未生成快照"} · {countSceneNodes(item.sceneProfile?.sceneTree ?? [])} 节点</p>
+                            <p style={styles.savedSceneSummary}>
+                              {item.sceneSummary || "未填写 summary"}
+                            </p>
+                            <p style={styles.savedSceneMeta}>
+                              {item.sceneProfile?.title ?? "未生成快照"} ·{" "}
+                              {countSceneNodes(item.sceneProfile?.sceneTree ?? [])} 节点
+                            </p>
                           </button>
                           <div style={styles.sidebarCardActions}>
                             <button
@@ -719,7 +1072,14 @@ export function SceneWorkspaceView({ controller }: { controller: SceneWorkspaceC
                               <MaterialIcon name="file_open" size={14} />
                             </button>
                             <button
-                              style={isSelected ? { ...styles.sidebarIconButton, ...styles.sidebarIconButtonPrimary } : styles.sidebarIconButton}
+                              style={
+                                isSelected
+                                  ? {
+                                      ...styles.sidebarIconButton,
+                                      ...styles.sidebarIconButtonPrimary,
+                                    }
+                                  : styles.sidebarIconButton
+                              }
                               type="button"
                               onClick={() => setSelectedSavedSceneId(item.sceneId)}
                               title={isSelected ? "当前更新目标" : "作为更新目标"}
@@ -727,15 +1087,18 @@ export function SceneWorkspaceView({ controller }: { controller: SceneWorkspaceC
                             >
                               <MaterialIcon name="check_circle" size={14} />
                             </button>
-                            <details className="secondary-actions"><summary>删除操作</summary><button
-                              style={styles.sidebarIconButton}
-                              type="button"
-                              onClick={() => void deleteSavedScene(item.sceneId)}
-                              title="删除已保存场景"
-                              aria-label="删除已保存场景"
-                            >
-                              <MaterialIcon name="delete" size={14} />
-                            </button></details>
+                            <details className="secondary-actions">
+                              <summary>删除操作</summary>
+                              <button
+                                style={styles.sidebarIconButton}
+                                type="button"
+                                onClick={() => void deleteSavedScene(item.sceneId)}
+                                title="删除已保存场景"
+                                aria-label="删除已保存场景"
+                              >
+                                <MaterialIcon name="delete" size={14} />
+                              </button>
+                            </details>
                           </div>
                         </div>
                       );
@@ -750,13 +1113,14 @@ export function SceneWorkspaceView({ controller }: { controller: SceneWorkspaceC
 
       {pendingDeleteLayerId ? (
         <SceneDeleteDialog
-          layerName={findLayerById(sceneLayers, pendingDeleteLayerId)?.title ?? "当前层级"}
+          layerName={
+            findLayerById(sceneLayers, pendingDeleteLayerId)?.title ?? "当前层级"
+          }
           onCancel={cancelDeleteLayer}
           onConfirm={confirmDeleteLayer}
           fallbackFocus={pageHeadingRef}
         />
       ) : null}
-
     </main>
   );
 }

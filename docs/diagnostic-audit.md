@@ -120,6 +120,56 @@ observations remain in the package. Coverage text distinguishes independent
 index timing, event/trace scope and incomplete collection. Native save dialogs
 and final file persistence have separate acceptance boundaries.
 
+### Native JSON save boundary
+
+`desktop_export_json` accepts only JSON content and a suggested filename. The
+native save dialog alone selects the destination; the renderer cannot pass a
+writable path. `src/json_export.rs` validates UTF-8 byte length (at most 32 MiB,
+matching the backend/browser diagnostic-export-v1 budget) and JSON before opening
+the dialog. Cancellation returns `false` without staging a file. Success returns
+`true` after replacement; failures expose only the existing fixed codes
+`export_json_too_large`, `export_json_invalid`, `export_path_invalid`,
+`export_write_failed` or `export_dialog_failed`, without paths/content/OS errors.
+
+`src/json_export_file.rs` creates an exclusive temporary file in the selected
+destination's directory, writes all original bytes, calls `sync_all`, closes the
+handle, then uses the OS rename/replace primitive. It never truncates or
+pre-deletes the destination and has no copy/unlink fallback. Ordinary failures
+before replacement preserve the previous file and attempt to remove only this
+operation's temporary file. Cleanup is best effort: permission changes, process
+crashes or power loss can leave a temporary file. No directory-wide cleanup or
+automatic retry is performed. Existing symlinks and nonregular targets are
+rejected; hostile concurrent directory/path changes are outside this boundary.
+
+Unix staging files use mode 0600. Replacement creates a new inode and does not
+preserve the old file's permissions, ACLs, extended attributes or hard-link
+identity; Windows permissions follow its file/directory rules. Same-directory
+rename provides atomic visibility on supported local filesystems. Windows open
+handles/sharing restrictions, removable/network filesystems and platform-specific
+replacement behavior still require native acceptance. After replacement, Unix
+directory sync is best effort; a directory-sync failure does not report that
+the old file was preserved or attempt an unsafe rollback. `true` establishes
+successful write/file-sync/replacement calls, not certified power-loss durability.
+
+The dedicated Cargo integration target `json_export` covers the 32 MiB boundary,
+UTF-8 byte counting, invalid JSON, dialog-adapter cancellation, fixture/file
+read-back, overwrite, permission/rename errors and injected partial-write/sync
+failures. Unix permission-denial/cleanup tests require an
+unprivileged user. The std-only filesystem suite can also run separately:
+
+```bash
+rustc --edition 2021 --test apps/desktop/src-tauri/tests/support/json_export_file.rs -o /tmp/diagnostic-export-file-tests
+/tmp/diagnostic-export-file-tests
+cargo test --locked --manifest-path apps/desktop/src-tauri/Cargo.toml --test json_export
+```
+
+Cargo uses the normal desktop build prerequisites. Local validation can compile
+the same source through an isolated test-only Tauri configuration when bundled
+sidecar/OCR/frontend assets are absent. These tests do not open a Tauri save
+dialog or launch the application. Dialog cancellation/overwrite confirmation,
+real full-disk behavior, isolated DMG acceptance and Windows/Linux filesystem
+coverage remain independent of this local implementation evidence.
+
 
 ## Link and index retention
 

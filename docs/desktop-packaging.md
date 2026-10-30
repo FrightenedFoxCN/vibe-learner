@@ -49,6 +49,15 @@ The build stages those files into `apps/desktop/.bundle-resources/ocr/onnxtr/` a
 
 If no model directory is provided, preview packaging still succeeds. In that case the desktop app will not set `VIBE_LEARNER_ONNXTR_MODEL_DIR`, so OCR falls back to runtime defaults instead of fully offline bundled assets.
 
+The preview distribution policy permits this runtime fallback. A preview with
+`ocr/onnxtr/manifest.json` reporting `included: false` does not certify offline
+scanned-PDF recognition: first use may need to download the default models, and
+unavailable model/network initialization must remain a visible processing failure.
+Text-layer PDF parsing is independent of those models. Signing/notarization and
+offline OCR are separate release properties; a successful installer build proves
+neither. Distributions that require offline OCR must provide the model directory
+and enable the strict option below.
+
 To make missing OCR assets a hard build failure:
 
 ```bash

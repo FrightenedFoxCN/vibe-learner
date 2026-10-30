@@ -46,14 +46,16 @@ export default function ManualPage() {
           <ol>
             <li>
               打开 <AppLink path="/settings">统一设置</AppLink>
-              。先试用可选“本地模拟”（mock），无需模型密钥；回复是模拟内容。
+              ，在“模型接口协议”选择“本地模拟”（mock），无需模型密钥；设置会自动保存，确认“已保存”后继续。回复是模拟内容。
             </li>
             <li>
               打开 <AppLink path="/plan">计划生成</AppLink>
               ，选择“仅学习目标”，输入具体目标，例如“用一周掌握 Python 循环，每天 30
               分钟”，点击“按目标生成”。
             </li>
-            <li>查看计划，创建并打开章节对话，选择学习单元后开始提问。</li>
+            <li>
+              查看计划，在学习排期中点击“开始”，会创建或打开该学习单元的章节对话并准备首轮引导，再输入问题发送。
+            </li>
           </ol>
           <p className={styles.note}>
             使用真实模型：在统一设置选择“LiteLLM SDK”，填写服务商提供的模型名、API Key
@@ -67,7 +69,8 @@ export default function ManualPage() {
           <ul>
             <li>
               <strong>有教材：</strong>在计划生成选择“教材 + 目标”，上传
-              PDF，填写目标后生成。扫描件需要 OCR，处理时间通常更长。
+              PDF，填写目标后生成。每份 PDF 最多 64 MiB、512
+              个物理页，超限请先拆分或压缩。扫描件需要 OCR，处理时间通常更长。
             </li>
             <li>
               <strong>没有教材：</strong>
@@ -104,7 +107,7 @@ export default function ManualPage() {
           <ul>
             <li>
               <AppLink path="/persona-spectrum">人格色谱</AppLink>
-              ：编辑教师的风格、背景与行为，保存后在计划或酒馆中选择。模型辅助生成的内容请先检查。
+              ：内置人格只读，先点击“新建人格草稿”或“复制为新人格”，编辑名称、风格、背景与行为，再点击“创建人格”；已有自建人格用“更新人格”保存。保存后在计划或酒馆中选择。模型辅助生成的内容请先检查。
             </li>
             <li>
               <AppLink path="/scene-setup">场景搭建</AppLink>
@@ -171,12 +174,12 @@ export default function ManualPage() {
         <section id="data" className={styles.section} aria-labelledby="data-title">
           <h2 id="data-title">06 · 数据与隐私</h2>
           <p>
-            学习记录默认保存在本机。使用真实模型时，相关教材片段、对话和角色设定会发送给所配置的服务商。
+            学习记录保存在后端服务所在的机器；桌面版默认在本机，网页版连接远程后端时数据在远程机器。使用真实模型时，相关教材片段、对话和角色设定会发送给所配置的服务商。
           </p>
           <ul>
             <li>
               <strong>源码运行：</strong>默认数据目录为 <code>services/ai/data/</code>
-              ；自定义部署以实际配置为准。
+              ；自定义部署以实际配置为准。使用独立的数据库或数据目录时，备份需同时覆盖数据库和文件目录。
             </li>
             <li>
               <strong>桌面版：</strong>业务数据位于系统应用数据目录下的{" "}
@@ -201,8 +204,12 @@ export default function ManualPage() {
         >
           <h2 id="install-title">07 · 桌面安装</h2>
           <p>
-            从项目发布页下载适合系统和芯片架构的安装包，并将文件 SHA-256
-            与同次发布提供的校验值逐字比较；不一致时重新下载。
+            从{" "}
+            <a href="https://github.com/FrightenedFoxCN/vibe-learner/releases">
+              项目发布页
+            </a>{" "}
+            下载适合系统和芯片架构的安装包，以及同次发布的 <code>SHA256SUMS.txt</code>
+            。计算安装包的 SHA-256，与校验文件中同名文件的值逐字比较；不一致时重新下载。
           </p>
           <ul>
             <li>
