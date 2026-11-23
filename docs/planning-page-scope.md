@@ -37,25 +37,3 @@ revision used for that comparison; the original Plan's physical constraint stays
 historical and immutable. Missing/unavailable labels leave the scope usable and
 are displayed as unknown/unavailable. The read-only label DTO does not mutate
 Document/Debug or rewrite historical creation digests.
-
-## Focused validation
-
-- `cd services/ai && uv run python -m unittest tests.test_planning_physical_pages`:
-  generates and actually parses a 104-page searchable PDF whose physical 100–103
-  have printed metadata labels 70–73. HTTP creation, text/image tool rejection and
-  valid extraction, strict proposal validation, duplicate-key read-back,
-  out-of-document rejection, invalid proposal zero-commit, commit-bypass rejection
-  and fresh-application restart are verified. The resulting real Plan/label JSON
-  is also decoded by the production browser modules in Node. No live provider runs.
-- `npm --workspace @vibe-learner/web run test:workspace:page-scope`: input/parser,
-  DTO, Setup and HTTP serialization behavior. The generation and page-cache suites
-  additionally cover forwarding, post-parse rejection and stored draft recovery.
-- `npm --workspace @vibe-learner/web run test:workspace:page-scope:browser`: two
-  development Chromium cases with intercepted API fixtures for navigation/reload
-  and separate physical/printed display.
-
-The existing page/intent/proposal contracts are unchanged. Acceptance hardens the
-current physical coordinate meaning rather than introducing model-owned printed
-page arithmetic. The new metadata DTO has its own explicit version and strict
-decoder. Touched legacy source is formatted under the repository's incremental
-style gate; unrelated source files are not reformatted.

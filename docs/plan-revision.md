@@ -27,11 +27,3 @@ GET recovery never reissues a provider request. An ambiguous transport result is
 The browser persists the client request ID before POST. Reload and page return query that ID. A lost acceptance response disables both decision buttons until GET resolves it. Definite pre-admission errors allow a new request; a missing GET record offers explicit clearing of the local recovery reference. Clearing does not cancel a request still reaching the server; the learner must actively generate a new preview, and neither preview changes the Plan without acceptance.
 
 The diff shows the base/current revisions, content and order. Conflicts require a fresh Plan and preview. An accepted result refreshes the authoritative Plan. Raw failure codes remain out of learner-facing notices.
-
-## Validation
-
-- 已移除的评估套件 `eval:harness:plan-revision`（曾覆盖 seven developer-authored cases through the shared HarnessEvalRunner, with real revision-operation admission, deterministic grading and full system/source identity）。它衡量的是严格提案与补丁行为，不是模型质量或完整事务回滚。
-- `tests.test_plan_revision` and `tests.test_plan_revision_evals`: lifecycle, provider ambiguity and gate regression checks.
-- Concurrency, migration, rollback, receipt binding and browser behavior are covered by the current backend/frontend test-boundary commands. OS-level crash/desktop and representative live-provider gates remain separate from this deterministic acceptance; model-quality conclusions are outside this document.
-
-Legacy revision admission computes the same pure progress projection as normal Plan reads without rewriting the original row or creation receipt. Accept/reorder/focus changes recompute schedule-derived Study Unit progress before committing; the frontend verifies the same derived projection.

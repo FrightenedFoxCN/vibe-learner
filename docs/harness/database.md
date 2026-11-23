@@ -13,7 +13,7 @@
 
 SQLite 由 `services/ai/app/persistence/database.py` 安装不可变与外键触发器；PostgreSQL 对应规则由 Alembic migration 维护。SQLAlchemy 映射统一在 `services/ai/app/persistence/models.py`。
 
-PostgreSQL `20261029_0026` 使用显式 `jsonb` 比较修复旧 `JSON` 列的 runtime/effect 不可变触发器，不重写 payload 或 digest。该迁移的带数据升级与重启验证曾记录在已移除的 postgres recovery acceptance 文档中。历史 v3 context 只通过登记的精确 profile 读兼容；新执行和非终态 claim 仍要求当前 manifest。
+PostgreSQL `20261029_0026` 使用显式 `jsonb` 比较修复旧 `JSON` 列的 runtime/effect 不可变触发器，不重写 payload 或 digest。历史 v3 context 只通过登记的精确 profile 读兼容；新执行和非终态 claim 仍要求当前 manifest。
 
 ## 工作流到领域表
 

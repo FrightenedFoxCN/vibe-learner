@@ -75,19 +75,3 @@ The reviewed production prompts are Planning v8, Study Chat v3 and Plan Revision
 v2. The Study pilot baseline for prompt v3 uses the existing deterministic
 fixtures; prompt-v1/v2 baseline directories remain immutable. This document defines
 output-language behavior only.
-
-## Focused checks
-
-- 已移除的测试 `test:ai:output-language`（曾覆盖 historical fingerprint parity, changed-input
-  rejection, French plan/session inheritance, mock language output, commit/failure
-  behavior and HTTP read-back after restart.
-- `npm --workspace @vibe-learner/web run test:workspace:output-language`:
-  selection, custom-tag validation, draft restoration, Session switching and
-  JSON/multipart transport.
-- `npm --workspace @vibe-learner/web run test:workspace:output-language:browser`:
-  real temporary SQLite/mock backend with the dev frontend; French generation,
-  reload/navigation, inherited Study replies, English override, hydration errors
-  and language-control hit testing. It starts no live provider or production build.
-
-The existing plan-generation, Study-message recovery, operation/effect and
-contract gates cover the changed boundaries. Full release checks remain separate.

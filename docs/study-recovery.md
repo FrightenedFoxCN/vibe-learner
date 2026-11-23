@@ -61,27 +61,3 @@ action available. Generic network/HTTP/decode errors never count as this proof.
 The recovery heading distinguishes a waiting reply, a confirmed unsaved reply and
 an unconfirmed result; controls remain keyboard accessible with polite status
 announcements.
-
-## Focused verification
-
-`npm --workspace @vibe-learner/web run test:workspace:recovery` covers identity-only
-storage, stale response fencing, bounded background queries, offline restoration,
-non-overlap, terminal reload and local transport/body deadlines. It uses virtual
-timers instead of waiting minutes. Existing Study message tests cover safe fresh
-key resend and preservation of the original draft/language.
-
-`npm --workspace @vibe-learner/web run test:workspace:recovery:live` starts a real
-temporary SQLite/FastAPI mock backend and the development frontend. Test-only
-loopback controls hold one provider callback, reject a complete reply, or inject
-an ambiguous outcome. The browser clock advances independently of the backend
-clock. The adversarial paths check:
-
-- browser POST timeout while the actual operation is still `running`;
-- six-query pause, later real commit, manual read-back and terminal reload;
-- offline/reconnect and uncertain reload with one original learner POST/provider
-  callback, plus actual same-key changed-payload HTTP 409;
-- confirmed `not_committed` reload with no automatic resend.
-
-Fault routes exist only in the disposable acceptance server under `tests/`.
-They are absent from the production router. These cases do not call a real model
-or run a production Web build.

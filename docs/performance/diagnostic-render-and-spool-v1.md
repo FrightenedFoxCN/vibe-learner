@@ -7,10 +7,6 @@ must remain separate from full application or cross-platform acceptance.
 
 ## Chromium collector
 
-```bash
-# 已移除：node apps/web/tests/diagnostic-collector-benchmark.mjs /tmp/diagnostic-collector.json
-```
-
 The probe bundles `apps/web/lib/diagnostics.ts` unchanged. After 1,000 warmups,
 60 samples each create 100 request pairs / 200 events in saturated 1,000-entry
 history and pending rings. It also measures snapshot copies and 30 mock-fetch
@@ -20,11 +16,6 @@ The synchronous 200-event burst gate is P95 ≤16.7 ms; the
 include JSON work and exclude network. This is not a complete UI frame budget.
 
 ## React timeline
-
-```bash
-# 已移除：node apps/web/tests/diagnostic-render-benchmark.mjs /tmp/diagnostic-render-small.json
-# 已移除：node apps/web/tests/diagnostic-render-benchmark.mjs /tmp/diagnostic-render-rich.json --rich
-```
 
 The production `DiagnosticTimeline` and strict decoder run in a 560×720 scroll
 container. Each population has three warmups and 30 samples: mount 100 rows,
@@ -53,8 +44,6 @@ Both runners share `installSyntheticFetch` and `measureTimeline` assertions.
 
 ```bash
 cargo build --manifest-path apps/desktop/src-tauri/Cargo.toml --example diagnostic_render
-# 已移除：node apps/web/tests/diagnostic-native-render-benchmark.mjs /tmp/diagnostic-native-render-small.json
-# 已移除：node apps/web/tests/diagnostic-native-render-benchmark.mjs /tmp/diagnostic-native-render-rich.json --rich
 ```
 
 ## Native spool

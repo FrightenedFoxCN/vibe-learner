@@ -71,17 +71,3 @@ Choose a smaller/re-exported PDF and retry the upload. The browser explains
 oversized selection and re-enables generation after a valid replacement. Server
 page/body rejections keep CORS and request diagnostics so the same recovery text
 is visible to browser clients.
-
-## Focused verification
-
-- 已移除的测试 `test:ai:document:input-limits`（曾覆盖 byte/page equality and overflow、
-  bounded reads, no admission/storage effects on preflight rejection, retained
-  text, hard-limit failure/checkpoints, actual HTTP/NDJSON recovery, and
-  absent/misleading request length.
-- `npm --workspace @vibe-learner/web run test:workspace:input-limits`: shared
-  golden, browser size guard, transport refusal, replacement-file recovery and
-  readable HTTP error.
-- `cd services/ai && LITELLM_LOCAL_MODEL_COST_MAP=True UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m app.services.harness_stage_evals --suite chunk_building_regression`:
-  six deterministic cases, including lossless oversized text and hard rejection.
-
-These checks use local synthetic inputs and no live provider or neural OCR.

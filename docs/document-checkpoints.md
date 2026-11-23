@@ -79,27 +79,3 @@ explicitly exported/removed before downgrade.
 - A committed result enables “使用该教材生成计划”. This separately requested plan
   uses the saved Document watermark and current goal/page-range draft; it skips
   upload and OCR. Late panel results are fenced after Document changes/unmount.
-
-## Focused evidence
-
-- 已移除的测试 `test:ai:document:checkpoints`（曾覆盖 ten cases covering page failure, parent
-  budget expiry after complete Units, restart/fencing, changed input/config,
-  corruption, capacity, concurrent duplicate admission, degraded-page retry,
-  stale revision and actual HTTP restart/read-back. Real HTTP checkpoint JSON is
-  decoded by the production TypeScript decoder in Node.
-- 已移除的验收 `test:acceptance:document-checkpoints`（曾覆盖 three fresh Python processes;
-  the first exits via `os._exit` during OCR, the second opens the database and
-  recognizes only the two remaining pages, the third repeats the resume and
-  proves zero parser calls with the same committed result.
-- `npm --workspace @vibe-learner/web run test:workspace:checkpoints`: strict decode,
-  response loss/query-only child recovery, session-storage restoration and late
-  result fencing. The generation suite covers planning from a resumed Document
-  without a new upload/parse.
-- `npm --workspace @vibe-learner/web run test:workspace:checkpoints:browser`: a
-  focused Chromium development-server case for saved snippets, reload, lost
-  response, GET recovery and the committed continuation action.
-- The nine-case `document_process_regression` suite runs through the existing
-  HarnessEvalRunner. It includes new complete, foreign-scope and incomplete checkpoint output cases.
-  Related migration, Document CAS and process-operation
-  regressions remain separate targeted gates. OCR recognition is deterministic in
-  recovery fixtures; real multilingual OCR/platform stress remains OCR-STRESS-001.
