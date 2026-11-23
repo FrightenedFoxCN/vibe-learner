@@ -307,6 +307,10 @@ def create_learning_plan_stream(
         )
         event_queue.put(event.model_dump(mode="json"))
 
+    def before_commit() -> None:
+        if interrupt_handle.claim_terminal():
+            raise StreamInterruptedError("stream_interrupted")
+
     def run() -> None:
         reset_model_recovery_state()
         try:
@@ -326,40 +330,40 @@ def create_learning_plan_stream(
                 debug_report=debug_report,
                 progress_callback=report,
                 interrupt_check=interrupt_handle.raise_if_cancelled,
+                before_commit=before_commit,
                 operation_admitted_callback=remember_operation,
             )
-            if interrupt_handle.claim_terminal():
-                emit_cancelled()
-            else:
-                harness_trace = _require_domain_harness_trace(
-                    domain_operation_kind=HarnessDomainOperationKind.LEARNING_PLAN_GENERATION,
-                    domain_operation_id=domain_operation_id,
-                    stage=HarnessStage.PLAN_GENERATION,
+            # A returned plan is already committed (including a replay).
+            interrupt_handle.mark_completed()
+            harness_trace = _require_domain_harness_trace(
+                domain_operation_kind=HarnessDomainOperationKind.LEARNING_PLAN_GENERATION,
+                domain_operation_id=domain_operation_id,
+                stage=HarnessStage.PLAN_GENERATION,
+                container=container,
+            )
+            reference_resource("learning_plan", plan.id)
+            plan_commit_projection = plan.model_dump(mode="json")
+            plan_projection = {
+                **plan_commit_projection,
+                "harness_trace": harness_trace.model_dump(
+                    mode="json", exclude_none=False
+                ),
+            }
+            event = recorder.emit(
+                "stream_completed",
+                {
+                    "document_id": payload.document_id,
+                    "plan_id": plan.id,
+                    "creation_mode": plan.creation_mode,
+                },
+                terminal_evidence=_learning_plan_stream_committed_evidence(
+                    operation_id=domain_operation_id,
+                    plan_payload=plan_projection,
                     container=container,
-                )
-                reference_resource("learning_plan", plan.id)
-                plan_commit_projection = plan.model_dump(mode="json")
-                plan_projection = {
-                    **plan_commit_projection,
-                    "harness_trace": harness_trace.model_dump(
-                        mode="json", exclude_none=False
-                    ),
-                }
-                event = recorder.emit(
-                    "stream_completed",
-                    {
-                        "document_id": payload.document_id,
-                        "plan_id": plan.id,
-                        "creation_mode": plan.creation_mode,
-                    },
-                    terminal_evidence=_learning_plan_stream_committed_evidence(
-                        operation_id=domain_operation_id,
-                        plan_payload=plan_projection,
-                        container=container,
-                    ),
-                    committed_projection=plan_projection,
-                )
-                event_queue.put(event.model_dump(mode="json"))
+                ),
+                committed_projection=plan_projection,
+            )
+            event_queue.put(event.model_dump(mode="json"))
         except StreamInterruptedError:
             interrupt_handle.claim_terminal()
             emit_cancelled()

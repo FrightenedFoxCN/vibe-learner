@@ -107,6 +107,7 @@ class LearningPlanService:
         debug_report: DocumentDebugRecord | None = None,
         progress_callback: Callable[[str, dict[str, object]], None] | None = None,
         interrupt_check: Callable[[], None] | None = None,
+        before_commit: Callable[[], None] | None = None,
         operation_admitted_callback: Callable[[str], None] | None = None,
     ) -> LearningPlanRecord:
         if document is not None and document.debug_ready and debug_report is None:
@@ -347,6 +348,8 @@ class LearningPlanService:
                             "result_json": tool_call.result_json,
                         },
                     )
+            # Fence cooperative cancellation before initiating the atomic commit.
+            _call_interrupt(before_commit or interrupt_check)
             self.operation_repository.commit_success(
                 operation_id=operation.operation_id,
                 plan=plan,
