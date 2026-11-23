@@ -28,7 +28,6 @@
 | [章节与日程](study-chapter-and-schedule.md) | 领域术语和 Session 范围 |
 | [计划修订](plan-revision.md) | Plan CAS、修订预览、接受/拒绝、历史回滚与恢复 |
 | [OCR 保存进度](document-checkpoints.md) | 逐页/阶段 checkpoint、显式续跑、重启与查询读回 |
-| [OCR 压力与恢复](ocr-stress.md) | 真实 CPU 模型、多字符集、64 页扫描续跑、内存/时延及语言限制 |
 | [文档输入上限](document-input-limits.md) | 上传字节/物理页、不可分割文本块和可恢复拒绝 |
 | [输出语言偏好](output-language.md) | Planning/Study 的显式语言、自动模式、操作绑定和持久化 |
 | [Study 请求恢复](study-recovery.md) | 等待上限、有界查询、断网及终态刷新，不重放未知结果 |
@@ -41,10 +40,6 @@
 | [前端设计基线](frontend-design-baseline.md) | 间距、颜色、组件与可访问性约束 |
 | [生成可观测性](plan-observability-ocr-generation-output.md) | Planning/OCR/设定生成的预算和错误投影 |
 | [代码风格门](code-style.md) | ESLint、Ruff、格式化、既有基线与 CI |
-| [前端测试边界](frontend-test-boundaries.md) | 独立数据/Hook/组件模块与生产浏览器验收 |
-| [后端测试边界](backend-test-boundaries.md) | 领域契约、生命周期、事务与进程中断门 |
-| [PostgreSQL 迁移与恢复](postgres-recovery-acceptance.md) | 旧版本带数据迁移、进程中断、CAS、回滚与重启协议 |
-| [历史受保护制品重放](historical-artifact-replay.md) | 旧应用实际 artifact、历史合同、授权续期和 Document / Planning / Persona / Scene adapter 重放 |
 | [场景编辑器](scene-setup.md) | 层级场景和保存结构 |
 
 修改前先阅读对应领域文档及 [AGENTS](../AGENTS.md)。

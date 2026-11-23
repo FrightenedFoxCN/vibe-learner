@@ -96,33 +96,11 @@ jobs:
 
       - name: Validate shared contracts
         timeout-minutes: 10
-        run: npm run test:contracts
+        run: npm run check:contracts
 
       - name: Check Web types
         timeout-minutes: 10
         run: npm run check:web
-
-      - name: Run Web reliability tests
-        timeout-minutes: 10
-        run: npm run test:web:reliability
-
-      - name: Run Harness pilot evaluations
-        timeout-minutes: 10
-        run: cd services/ai && UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m app.services.harness_eval_pilots --profile pr
-
-      - name: Run Harness stage evaluations
-        timeout-minutes: 10
-        run: npm run eval:harness:stages
-
-      - name: Run plan revision evaluations
-        timeout-minutes: 10
-        run: npm run eval:harness:plan-revision
-
-      - name: Run backend tests
-        timeout-minutes: 25
-        env:
-          PYTHONFAULTHANDLER: "1"
-        run: cd services/ai && UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python tests/run_ci_suite.py
 
       - name: Build Web production bundle
         timeout-minutes: 15

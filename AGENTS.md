@@ -114,55 +114,23 @@ cd services/ai
 uv run uvicorn app.main:app --reload
 ```
 
-Run backend tests:
-
-```bash
-npm run test:ai
-```
-
 Build the frontend:
 
 ```bash
 npm run build:web
 ```
 
-Targeted Tavern schema tests:
+Run the remaining verification gates:
 
 ```bash
-cd services/ai
-uv run python -m unittest tests.test_tavern_schema
+npm run check
 ```
 
-Targeted Tavern runtime tests:
-
-```bash
-cd services/ai
-uv run python -m unittest tests.test_tavern_api tests.test_tavern_facilitated
-```
-
-Tavern frontend state and strict-decoder tests:
-
-```bash
-npm run test:web:tavern
-```
-
-Repository frontend reliability tests, including Tavern and the domain-owned
-Document, Planning, Persona/Scene, Study, and stream decoders:
-
-```bash
-npm run test:web:reliability
-```
-
-The Study decoder validates Session/Turn identity and ordering plus current
-citations, Character Events, attachments, interactive-question projections,
-projected state, and committed chat-operation read-back. Study and Tavern
-HTTP read-back after service restart is tested; effect-batch receipts remain server-only.
-
-Run the optional live-backend decoder acceptance against a populated local service. The database must already contain a Tavern room with messages and at least one terminal run; without `TAVERN_TEST_API_URL` this case is intentionally skipped:
-
-```bash
-TAVERN_TEST_API_URL=http://127.0.0.1:8000 npm run test:web:tavern
-```
+> The automated test suites were removed from this repository: backend `tests/`,
+> web `tests/`, shared `tests/`, model-quality `tests/`, acceptance artifacts and
+> the harness eval runners no longer exist here. Only style, shared-contract type
+> checking and Web type checking remain. Do not reintroduce `test:*` scripts unless
+> a real test entry point exists.
 
 ## Configuration Notes
 

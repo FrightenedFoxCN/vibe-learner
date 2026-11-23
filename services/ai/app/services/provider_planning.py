@@ -26,7 +26,6 @@ from app.services.model_recovery import record_model_recovery
 from app.services.model_tool_config import PLAN_STAGE, TOOL_CATALOG
 from app.services.openai_plan_runner import OpenAIPlanRunner
 from app.services.plan_prompt import (
-    PLAN_JSON_SCHEMA,
     build_learning_plan_context,
     build_learning_plan_messages,
 )
@@ -151,7 +150,6 @@ class RemotePlanningProvider(PlanningModelCapability):
             planning_intent=goal.planning_intent,
         )
         active_tool_runtime = tool_runtime
-        active_model = self.plan_model
         run_result = self._run_plan_model(
             model=self.plan_model,
             document_id=goal.document_id,
@@ -204,7 +202,6 @@ class RemotePlanningProvider(PlanningModelCapability):
             )
             if run_result is not None:
                 active_tool_runtime = fallback_runtime
-                active_model = self.fallback_plan_model
                 _emit_progress(
                     progress_callback,
                     "model_fallback_succeeded",
@@ -232,123 +229,24 @@ class RemotePlanningProvider(PlanningModelCapability):
                 _validate_learning_plan_proposal_refs(
                     proposal, repair_units, goal.planning_intent
                 )
-            except PlanningProposalDecodeError:
-                recovery = record_model_recovery(
-                    category="schema_retry",
-                    reason="plan_proposal_schema_invalid",
-                    strategy="strict_contract_repair",
-                    attempts=2,
-                    note=first_error.path,
-                )
-                _emit_progress(
-                    progress_callback,
-                    "model_recovery_attempt",
-                    {
-                        "attempt": 1,
-                        "reason": "plan_proposal_schema_invalid",
-                        "strategy": "strict_contract_repair",
-                        "path": first_error.path,
-                    },
-                )
-                allowed_units = [
-                    {
-                        "unit_index": index,
-                        "detail_tool_target_id": unit.id,
-                        "title": unit.title,
-                        "page_start": unit.page_start,
-                        "page_end": unit.page_end,
-                        "source_section_ids": list(unit.source_section_ids),
+            except PlanningProposalDecodeError as repair_error:
+                raise RuntimeError(
+                    f"plan_proposal_schema_invalid:{repair_error.path or '$'}:{repair_error.reason}"
+                ) from repair_error
+            recovery = record_model_recovery(
+                category="schema_retry",
+                reason="plan_model_invalid_json",
+                strategy="local_json_repair",
+                attempts=1,
+                note=first_error.path,
+            )
+            if final_trace.rounds:
+                last_round = final_trace.rounds[-1]
+                final_trace.rounds[-1] = last_round.model_copy(
+                    update={
+                        "recoveries": [*last_round.recoveries, recovery],
                     }
-                    for index, unit in enumerate(repair_units)
-                ]
-                repair_messages = [
-                    {
-                        "role": "system",
-                        "content": (
-                            "你是 JSON 语法与严格契约修复器，不重新制定学习计划。"
-                            "保留候选计划的语义和顺序，只修复 JSON 转义、缺失/多余字段、类型、引用和页范围。"
-                            "若错误指向超载，learn 每页按至少 3 分钟、review 每页按至少 1 分钟核算。"
-                            "可以缩小 content_slices；也可以把 coverage_mode 改为 selective 或 overview，"
-                            "并用不少于 40 个字符的 workload_rationale 说明跳读/导览理由、具体省略内容和后续补回方式。"
-                            "未出现在候选已有证据中的页只能按页码称为尚未核验的剩余页，"
-                            "不得在修复理由中新增对这些页的概念、论证或例题摘要。"
-                            "不得增加候选中没有的教材事实，不得输出 markdown 或解释。"
-                            "英文双引号若出现在字符串内容中必须转义，或替换为中文引号/单引号。"
-                            f"输出必须符合：{PLAN_JSON_SCHEMA}"
-                        ),
-                    },
-                    {
-                        "role": "user",
-                        "content": json.dumps(
-                            {
-                                "first_error_path": first_error.path or "$",
-                                "first_error_reason": first_error.reason,
-                                "allowed_units": allowed_units,
-                                "planning_intent": goal.planning_intent.model_dump(
-                                    mode="json"
-                                ),
-                                "candidate_output": run_result.content,
-                            },
-                            ensure_ascii=False,
-                        ),
-                    },
-                ]
-                repaired_result = self._run_plan_model(
-                    model=active_model,
-                    document_id=goal.document_id,
-                    messages=repair_messages,
-                    tool_runtime=self._build_plan_tool_runtime(
-                        study_units=repair_units,
-                        detail_map=build_learning_plan_context(
-                            study_units=repair_units,
-                            debug_report=debug_report,
-                            planning_intent=goal.planning_intent,
-                        )["detail_map"],
-                        debug_report=debug_report,
-                        document_path=document_path,
-                        tools_enabled=False,
-                        planning_questions=active_tool_runtime.current_planning_questions(),
-                        progress_callback=progress_callback,
-                        planning_intent=goal.planning_intent,
-                    ),
-                    progress_callback=progress_callback,
-                    interrupt_check=interrupt_check,
-                    allow_fallback=False,
                 )
-                if repaired_result is None:
-                    raise RuntimeError(
-                        "plan_proposal_repair_empty_response"
-                    ) from first_error
-                try:
-                    proposal = _decode_learning_plan_proposal(repaired_result.content)
-                    _validate_learning_plan_proposal_refs(
-                        proposal, repair_units, goal.planning_intent
-                    )
-                except PlanningProposalDecodeError as repair_error:
-                    raise RuntimeError(
-                        f"plan_proposal_schema_invalid:{repair_error.path or '$'}:{repair_error.reason}"
-                    ) from repair_error
-                if repaired_result.trace.rounds:
-                    repaired_result.trace.rounds[0].recoveries.insert(0, recovery)
-                final_trace = _merge_plan_generation_traces(
-                    first=run_result.trace,
-                    second=repaired_result.trace,
-                )
-            else:
-                recovery = record_model_recovery(
-                    category="schema_retry",
-                    reason="plan_model_invalid_json",
-                    strategy="local_json_repair",
-                    attempts=1,
-                    note=first_error.path,
-                )
-                if final_trace.rounds:
-                    last_round = final_trace.rounds[-1]
-                    final_trace.rounds[-1] = last_round.model_copy(
-                        update={
-                            "recoveries": [*last_round.recoveries, recovery],
-                        }
-                    )
         active_study_units = active_tool_runtime.current_study_units() or study_units
         schedule_items = [
             PlanScheduleItem(

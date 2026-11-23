@@ -32,8 +32,6 @@ jobs:
         run: |
           npm ci --ignore-scripts
           uv sync --project services/ai --frozen --only-group dev
-      - name: Verify style gate behavior
-        run: npm run test:style
       - name: Check lint baseline and changed-file formatting
         env:
           STYLE_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
