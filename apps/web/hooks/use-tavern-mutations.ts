@@ -3,7 +3,9 @@
 import type { TavernRun } from "@vibe-learner/shared";
 import { useCallback } from "react";
 
+import { decodeTavernHttpError } from "../lib/data/tavern";
 import { createDiagnosticId, diagnosticContext } from "../lib/diagnostics";
+import { ApiHttpError } from "../lib/http-error";
 import { RUN_STATUS_LABELS, TAVERN_COPY } from "../lib/tavern-copy";
 import {
   isTavernRoomStateAtLeast,
@@ -11,6 +13,7 @@ import {
 } from "../lib/tavern-workspace-state";
 
 import { recordError } from "../lib/tavern-client-errors";
+import { forgetRejectedTavernTurn } from "../lib/tavern-rejected-turn";
 import type {
   MutationAction,
   MutationOperation,
@@ -431,8 +434,19 @@ export function useTavernMutations(
         const recoveredRun = recovered?.runs.find(
           (run) => run.idempotencyKey === requestKey,
         );
-        if (recoveredRun && input.kind === "user_message") {
-          writeTavernRoomDraft(roomId, { message: "", guidance: "" });
+        if (input.kind === "user_message") {
+          if (recoveredRun) {
+            writeTavernRoomDraft(roomId, { message: "", guidance: "" });
+          } else {
+            const draft = readTavernRoomDraft(roomId);
+            const nextDraft = forgetRejectedTavernTurn(
+              draft,
+              requestKey,
+              error instanceof ApiHttpError ? error.status : undefined,
+              decodeTavernHttpError(error),
+            );
+            if (nextDraft !== draft) writeTavernRoomDraft(roomId, nextDraft);
+          }
         }
         if (recoveredRun?.status === "canceled") {
           setVisibleError("");
