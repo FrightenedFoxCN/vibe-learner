@@ -4,11 +4,15 @@ import styles from "./plan-revision.module.css";
 
 import { useEffect, useRef, useState } from "react";
 import type { DocumentCheckpoint, DocumentRecord } from "@vibe-learner/shared";
-import { getDocumentCheckpoint, processDocument } from "../../lib/data/documents";
+import {
+  getDocumentCheckpoint,
+  getDocumentStatus,
+  processDocument,
+} from "../../lib/data/documents";
 import { isApiHttpError } from "../../lib/http-error";
 
 const storageKey = "vibe-learner:document-checkpoint:v1";
-const defaultPort = { getDocumentCheckpoint, processDocument };
+const defaultPort = { getDocumentCheckpoint, getDocumentStatus, processDocument };
 
 export function DocumentCheckpointPanel({
   documentId,
@@ -137,6 +141,33 @@ export function DocumentCheckpointPanel({
       }
     }
   }
+  async function continueWithCurrentDocument() {
+    if (!result || blocked || flight.current) return;
+    const epoch = lifetime.current;
+    flight.current = true;
+    setBusy(true);
+    setNotice("");
+    let current: DocumentRecord;
+    try {
+      // A committed checkpoint is a historical receipt, not the current document.
+      current = await port.getDocumentStatus(result.id);
+    } catch {
+      if (epoch === lifetime.current)
+        setNotice("暂时无法读取当前教材版本，未发起计划生成。请稍后重试。");
+      return;
+    } finally {
+      if (epoch === lifetime.current) {
+        flight.current = false;
+        setBusy(false);
+      }
+    }
+    if (epoch !== lifetime.current) return;
+    if (current.status !== "processed") {
+      setNotice("当前教材尚未处理完成，未发起计划生成。请查询处理进度后重试。");
+      return;
+    }
+    onContinue(current);
+  }
   if (!record && !notice) return null;
   return (
     <section
@@ -158,7 +189,7 @@ export function DocumentCheckpointPanel({
           <p>
             {record.projectionState === "checkpoint_only"
               ? "这是中间成果，尚未提交为可学习教材。续跑会保留已完成页，再进行校验与保存。"
-              : "该次教材处理已提交。"}
+              : "该次教材处理已提交。下方保存内容为当时版本；生成计划时会读取当前教材。"}
           </p>
           {record.storageLimited && (
             <p>保存进度已达到容量上限；仅复用成功保存的部分，其余内容需要重新处理。</p>
@@ -197,7 +228,7 @@ export function DocumentCheckpointPanel({
             <button
               type="button"
               disabled={busy || blocked}
-              onClick={() => onContinue(result)}
+              onClick={() => void continueWithCurrentDocument()}
             >
               使用该教材生成计划
             </button>

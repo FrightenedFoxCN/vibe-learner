@@ -338,6 +338,47 @@ class CheckpointTests(unittest.TestCase):
                     resume_from_operation_id=source.operation_id,
                 )
 
+    def test_committed_checkpoint_stays_historical_after_title_edit(self):
+        from fastapi.testclient import TestClient
+        from app.app_factory import create_app
+        from app.core.settings import Settings
+
+        settings = Settings(
+            database_url=self.store.database.url,
+            storage_root=str(self.root),
+            plan_provider="mock",
+            auto_migrate_local_data=False,
+            ocr_engine="disabled",
+        )
+        with TestClient(create_app(settings=settings)) as client:
+            parser = client.app.state.container.document_parser
+            path = f"/documents/{self.document.id}"
+            with patch.object(parser, "_run_ocr", side_effect=self.ocr):
+                processed = client.post(path + "/process", json={"force_ocr": True})
+            self.assertEqual(processed.status_code, 200, processed.text)
+            saved = processed.json()
+            unit = saved["study_units"][0]
+            renamed = client.patch(
+                f"{path}/study-units/{unit['id']}",
+                json={
+                    "title": "Updated fixture title",
+                    "expected_revision": saved["revision"],
+                },
+            )
+            self.assertEqual(renamed.status_code, 200, renamed.text)
+            historical = client.get(path + "/checkpoint")
+            current = client.get(path + "/status")
+            self.assertEqual(historical.status_code, 200, historical.text)
+            self.assertEqual(current.status_code, 200, current.text)
+            receipt = historical.json()["result"]
+            latest = current.json()
+            self.assertEqual(receipt["revision"], saved["revision"])
+            self.assertEqual(receipt["study_units"][0]["title"], unit["title"])
+            self.assertEqual(latest["status"], "processed")
+            self.assertEqual(latest["revision"], receipt["revision"] + 1)
+            self.assertNotEqual(latest["updated_at"], receipt["updated_at"])
+            self.assertEqual(latest["study_units"][0]["title"], "Updated fixture title")
+
     def test_http_restart_and_browser_decoder_read_back(self):
         import json
         import subprocess

@@ -6,6 +6,7 @@ export {
   getDocumentPlanningContext,
   getDocumentPlanningTrace,
   getDocumentProcessEvents,
+  getDocumentStatus,
   listDocuments,
   processDocument,
   processDocumentStream,

@@ -51,6 +51,17 @@ export async function listDocuments(): Promise<DocumentRecord[]> {
   );
 }
 
+export async function getDocumentStatus(documentId: string): Promise<DocumentRecord> {
+  const response = await request(
+    `${AI_BASE_URL()}/documents/${encodeURIComponent(documentId)}/status`,
+    { cache: "no-store" },
+  );
+  const payload = await readJson<unknown>(response);
+  return diagnosticDecode(response, () =>
+    decodeDocumentRecord(payload, documentId, "document.status"),
+  );
+}
+
 export async function getDocumentDebug(
   documentId: string,
 ): Promise<DocumentDebugRecord> {
