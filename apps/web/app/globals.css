@@ -6,8 +6,6 @@
  */
 @layer theme, vendor, base, components, utilities;
 @import "tailwindcss/theme.css" layer(theme);
-@import "katex/dist/katex.min.css" layer(vendor);
-@import "react-pdf/dist/Page/TextLayer.css" layer(vendor);
 @import "tailwindcss/utilities.css" layer(utilities);
 
 :root {

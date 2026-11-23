@@ -1,30 +1,26 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { usePathname } from "next/navigation";
 import type { CSSProperties } from "react";
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 
-import { useDocumentDebugData } from "../hooks/use-document-debug-data";
-import { DocumentDebugPanels } from "./document-debug-panels";
-import { PageDebugPanel } from "./page-debug-panel";
-import { useCurrentPageDebugSnapshot } from "./page-debug-context";
-import { useLearningDebugSnapshot } from "./debug-provider";
 import { useRuntimeSettings } from "./runtime-settings-provider";
-import { StudyDebugPanels } from "./study-debug-panels";
 import {
   BROWSER_VIEW_TOGGLE_DEBUG_OVERLAY_EVENT,
   DEBUG_OVERLAY_OPEN_STORAGE_KEY,
   readStoredBoolean,
-  writeStoredBoolean
+  writeStoredBoolean,
 } from "../lib/view-preferences";
 
-import { DiagnosticTimeline } from "./diagnostic-timeline";
+const DebugOverlayBody = dynamic(
+  () => import("./debug-overlay-body").then((module) => module.DebugOverlayBody),
+  { ssr: false, loading: () => <p role="status">正在加载调试面板…</p> },
+);
 
 export function DebugOverlay() {
   const pathname = usePathname();
   const { showDebugInfo, settings } = useRuntimeSettings();
-  const workspace = useLearningDebugSnapshot();
-  const pageSnapshot = useCurrentPageDebugSnapshot();
   const [open, setOpen] = useState(false);
   const [view, setView] = useState<"page" | "global">("page");
   const [pageEvents, setPageEvents] = useState(false);
@@ -34,12 +30,10 @@ export function DebugOverlay() {
   const restoreFocusRef = useRef<HTMLElement | null>(null);
   const titleId = useId();
 
-  const activeDocumentId = workspace?.activeDocument?.id ?? "";
-  const debugData = useDocumentDebugData(
-    activeDocumentId,
-    showDebugInfo && open && view === "page" && pathname === "/plan" && Boolean(activeDocumentId),
-    Boolean(workspace?.activeDocument?.debugReady)
-  );
+  const [bodyReady, setBodyReady] = useState(false);
+  const [refreshRevision, setRefreshRevision] = useState(0);
+  const visible = showDebugInfo && open;
+  const togglePageEvents = () => setPageEvents((value) => !value);
 
   const closeOverlay = useCallback(() => {
     setOpen(false);
@@ -47,7 +41,8 @@ export function DebugOverlay() {
 
   const openOverlay = useCallback((trigger: HTMLElement | null = null) => {
     const activeElement = document.activeElement;
-    restoreFocusRef.current = trigger ?? (activeElement instanceof HTMLElement ? activeElement : null);
+    restoreFocusRef.current =
+      trigger ?? (activeElement instanceof HTMLElement ? activeElement : null);
     setOpen(true);
   }, []);
 
@@ -89,7 +84,7 @@ export function DebugOverlay() {
   }, [closeOverlay, open, openOverlay, showDebugInfo]);
 
   useEffect(() => {
-    if (!open) {
+    if (!visible) {
       return;
     }
 
@@ -98,7 +93,7 @@ export function DebugOverlay() {
       element,
       ariaHidden: element.getAttribute("aria-hidden"),
       inertAttribute: element.getAttribute("inert"),
-      inertProperty: element.inert
+      inertProperty: element.inert,
     }));
     const previousBodyOverflow = document.body.style.overflow;
 
@@ -132,7 +127,9 @@ export function DebugOverlay() {
 
       if (!dialog.contains(activeElement)) {
         event.preventDefault();
-        (event.shiftKey ? lastFocusable : firstFocusable).focus({ preventScroll: true });
+        (event.shiftKey ? lastFocusable : firstFocusable).focus({
+          preventScroll: true,
+        });
         return;
       }
       if (event.shiftKey && activeElement === firstFocusable) {
@@ -160,17 +157,16 @@ export function DebugOverlay() {
         restoreTarget.focus({ preventScroll: true });
       }
     };
-  }, [closeOverlay, open]);
+  }, [closeOverlay, visible]);
 
-  const title = useMemo(() => view === "global" ? "全局诊断浮窗" : getDebugTitle(pathname), [pathname, view]);
-
-  if (!showDebugInfo) {
-    return null;
-  }
+  const title = useMemo(
+    () => (view === "global" ? "全局诊断浮窗" : getDebugTitle(pathname)),
+    [pathname, view],
+  );
 
   return (
     <>
-      {open ? (
+      {visible ? (
         <button
           type="button"
           style={styles.scrim}
@@ -180,7 +176,7 @@ export function DebugOverlay() {
         />
       ) : null}
 
-      <div style={styles.root}>
+      <div style={styles.root} hidden={!showDebugInfo}>
         <button
           type="button"
           style={open ? { ...styles.fab, ...styles.hiddenFab } : styles.fab}
@@ -192,10 +188,11 @@ export function DebugOverlay() {
           <span style={styles.fabMeta}>{getFabMeta(pathname)}</span>
         </button>
 
-        {open ? (
+        {visible || bodyReady ? (
           <section
             ref={dialogRef}
-            style={styles.overlay}
+            hidden={!visible}
+            style={visible ? styles.overlay : { display: "none" }}
             role="dialog"
             aria-modal="true"
             aria-labelledby={titleId}
@@ -203,11 +200,18 @@ export function DebugOverlay() {
           >
             <header style={styles.overlayHeader}>
               <div style={styles.headerCopy}>
-                <span id={titleId} style={styles.title}>{title}</span>
+                <span id={titleId} style={styles.title}>
+                  {title}
+                </span>
               </div>
               <div style={styles.headerActions}>
                 {pathname === "/plan" ? (
-                  <button type="button" style={styles.secondaryButton} onClick={() => debugData.refresh()}>
+                  <button
+                    type="button"
+                    style={styles.secondaryButton}
+                    disabled={!bodyReady}
+                    onClick={() => setRefreshRevision((value) => value + 1)}
+                  >
                     刷新
                   </button>
                 ) : null}
@@ -222,56 +226,37 @@ export function DebugOverlay() {
               </div>
             </header>
 
-            <nav aria-label="Debug 视图" style={{ display: "flex", gap: 8, padding: 12 }}>
-              <button style={view === "page" ? styles.primaryButton : styles.secondaryButton} aria-pressed={view === "page"} onClick={() => setView("page")}>当前页面</button>
-              <button style={view === "global" ? styles.primaryButton : styles.secondaryButton} aria-pressed={view === "global"} onClick={() => setView("global")}>全局诊断</button>
+            <nav
+              aria-label="Debug 视图"
+              style={{ display: "flex", gap: 8, padding: 12 }}
+            >
+              <button
+                style={view === "page" ? styles.primaryButton : styles.secondaryButton}
+                aria-pressed={view === "page"}
+                onClick={() => setView("page")}
+              >
+                当前页面
+              </button>
+              <button
+                style={
+                  view === "global" ? styles.primaryButton : styles.secondaryButton
+                }
+                aria-pressed={view === "global"}
+                onClick={() => setView("global")}
+              >
+                全局诊断
+              </button>
             </nav>
             <div style={styles.overlayBody}>
-              {view === "global" ? <DiagnosticTimeline /> : <>
-              <button style={styles.secondaryButton} aria-expanded={pageEvents} onClick={() => setPageEvents(value => !value)}>当前页面请求与动作</button>
-              {pageEvents && <DiagnosticTimeline currentPageOnly />}
-              {pathname === "/plan" && workspace ? (
-                <DocumentDebugPanels
-                  document={workspace.activeDocument}
-                  debugRecord={debugData.debugRecord}
-                  debugRecordError={debugData.debugRecordError}
-                  planningContext={debugData.planningContext}
-                  planningContextError={debugData.planningContextError}
-                  planningTrace={debugData.planningTrace}
-                  planningTraceError={debugData.planningTraceError}
-                  modelToolConfig={debugData.modelToolConfig}
-                  modelToolConfigError={debugData.modelToolConfigError}
-                  processReport={debugData.processReport}
-                  processReportError={debugData.processReportError}
-                  planReport={debugData.planReport}
-                  planReportError={debugData.planReportError}
-                  processLiveDocumentId={workspace.processStreamDocumentId}
-                  processLiveEvents={workspace.processStreamEvents}
-                  processLiveStatus={workspace.processStreamStatus}
-                  planLiveDocumentId={workspace.planStreamDocumentId}
-                  planLiveEvents={workspace.planStreamEvents}
-                  planLiveStatus={workspace.planStreamStatus}
-                  loading={debugData.loading}
-                  error={debugData.error}
-                />
-              ) : pathname === "/study" && workspace ? (
-                <StudyDebugPanels
-                  document={workspace.activeDocument}
-                  persona={workspace.selectedPersona ?? null}
-                  session={workspace.studySession}
-                  response={workspace.response}
-                />
-              ) : pageSnapshot ? (
-                <PageDebugPanel
-                  title={pageSnapshot.title}
-                  error={pageSnapshot.error}
-                  summary={pageSnapshot.summary}
-                  details={pageSnapshot.details}
-                />
-              ) : (
-                <div style={styles.emptyState}>暂无调试面板。</div>
-              )}
-              </>}
+              <DebugOverlayBody
+                open={visible}
+                pathname={pathname}
+                view={view}
+                pageEvents={pageEvents}
+                onTogglePageEvents={togglePageEvents}
+                refreshRevision={refreshRevision}
+                onReady={setBodyReady}
+              />
             </div>
           </section>
         ) : null}
@@ -285,7 +270,7 @@ const styles: Record<string, CSSProperties> = {
     position: "fixed",
     right: 20,
     bottom: 20,
-    zIndex: 90
+    zIndex: 90,
   },
   scrim: {
     position: "fixed",
@@ -293,7 +278,7 @@ const styles: Record<string, CSSProperties> = {
     border: "none",
     background: "rgba(13, 32, 40, 0.18)",
     zIndex: 85,
-    cursor: "pointer"
+    cursor: "pointer",
   },
   fab: {
     display: "grid",
@@ -306,20 +291,20 @@ const styles: Record<string, CSSProperties> = {
     background: "color-mix(in srgb, white 86%, var(--accent-soft))",
     boxShadow: "0 10px 28px rgba(13, 32, 40, 0.12)",
     color: "var(--ink)",
-    cursor: "pointer"
+    cursor: "pointer",
   },
   hiddenFab: {
-    display: "none"
+    display: "none",
   },
   fabLabel: {
     fontSize: 13,
-    fontWeight: 700
+    fontWeight: 700,
   },
   fabMeta: {
     fontSize: 11,
     color: "var(--muted)",
     textTransform: "uppercase",
-    letterSpacing: "0.08em"
+    letterSpacing: "0.08em",
   },
   overlay: {
     width: "min(92vw, 680px)",
@@ -331,7 +316,7 @@ const styles: Record<string, CSSProperties> = {
     background: "color-mix(in srgb, white 94%, var(--panel))",
     boxShadow: "0 18px 48px rgba(13, 32, 40, 0.18)",
     overflow: "hidden",
-    backdropFilter: "blur(10px)"
+    backdropFilter: "blur(10px)",
   },
   overlayHeader: {
     display: "flex",
@@ -341,22 +326,22 @@ const styles: Record<string, CSSProperties> = {
     padding: "16px 18px",
     borderBottom: "1px solid var(--border)",
     background: "color-mix(in srgb, white 72%, var(--accent-soft))",
-    flexWrap: "wrap"
+    flexWrap: "wrap",
   },
   headerCopy: {
     display: "grid",
     gap: 4,
-    minWidth: 0
+    minWidth: 0,
   },
   title: {
     fontSize: 16,
     fontWeight: 800,
-    color: "var(--ink)"
+    color: "var(--ink)",
   },
   headerActions: {
     display: "flex",
     gap: 8,
-    alignItems: "center"
+    alignItems: "center",
   },
   primaryButton: {
     minWidth: 44,
@@ -368,7 +353,7 @@ const styles: Record<string, CSSProperties> = {
     color: "white",
     fontSize: 13,
     fontWeight: 600,
-    cursor: "pointer"
+    cursor: "pointer",
   },
   secondaryButton: {
     minWidth: 44,
@@ -380,34 +365,26 @@ const styles: Record<string, CSSProperties> = {
     color: "var(--ink)",
     fontSize: 13,
     fontWeight: 600,
-    cursor: "pointer"
+    cursor: "pointer",
   },
   overlayBody: {
     overflowY: "auto",
-    padding: 16
+    padding: 16,
   },
-  emptyState: {
-    border: "1px dashed var(--border)",
-    borderRadius: 16,
-    padding: "18px 16px",
-    fontSize: 13,
-    color: "var(--muted)",
-    background: "var(--bg)"
-  }
 };
 
 const FOCUSABLE_SELECTOR = [
   "a[href]",
   "area[href]",
   "button:not([disabled])",
-  "input:not([disabled]):not([type=\"hidden\"])",
+  'input:not([disabled]):not([type="hidden"])',
   "select:not([disabled])",
   "textarea:not([disabled])",
-  "[contenteditable=\"true\"]",
-  "[tabindex]:not([tabindex=\"-1\"])",
+  '[contenteditable="true"]',
+  '[tabindex]:not([tabindex="-1"])',
   "audio[controls]",
   "video[controls]",
-  "summary"
+  "summary",
 ].join(",");
 
 function getFocusableElements(container: HTMLElement) {
@@ -415,8 +392,8 @@ function getFocusableElements(container: HTMLElement) {
     (element) =>
       element.tabIndex >= 0 &&
       element.getAttribute("aria-hidden") !== "true" &&
-      !element.closest("[hidden], [inert], [aria-hidden=\"true\"]") &&
-      element.getClientRects().length > 0
+      !element.closest('[hidden], [inert], [aria-hidden="true"]') &&
+      element.getClientRects().length > 0,
   );
 }
 

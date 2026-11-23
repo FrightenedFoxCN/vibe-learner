@@ -1,0 +1,3 @@
+/* Match the root layer order when this chunk loads independently. */
+@layer theme, vendor, base, components, utilities;
+@import "react-pdf/dist/Page/TextLayer.css" layer(vendor);

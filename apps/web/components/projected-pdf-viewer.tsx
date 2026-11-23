@@ -1,13 +1,21 @@
 "use client";
 
-import type { CSSProperties, PointerEvent as ReactPointerEvent, WheelEvent as ReactWheelEvent } from "react";
+import type {
+  CSSProperties,
+  PointerEvent as ReactPointerEvent,
+  WheelEvent as ReactWheelEvent,
+} from "react";
 import { useEffect, useId, useRef, useState } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 import type { PdfRect, ProjectedPdfOverlay } from "@vibe-learner/shared";
 
 import { MaterialIcon } from "./material-icon";
+import "./projected-pdf-viewer-vendor.css";
 
-pdfjs.GlobalWorkerOptions.workerSrc = new URL("pdfjs-dist/build/pdf.worker.min.mjs", import.meta.url).toString();
+pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+  "pdfjs-dist/build/pdf.worker.min.mjs",
+  import.meta.url,
+).toString();
 
 interface ProjectedPdfViewerProps {
   fileUrl: string;
@@ -43,7 +51,11 @@ export function ProjectedPdfViewer({
   const viewerId = useId();
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const pageShellRef = useRef<HTMLDivElement | null>(null);
-  const dragStateRef = useRef<{ pointerId: number; startX: number; startY: number } | null>(null);
+  const dragStateRef = useRef<{
+    pointerId: number;
+    startX: number;
+    startY: number;
+  } | null>(null);
   const draftRegionRef = useRef<PdfRect | null>(null);
   const wheelDeltaRef = useRef(0);
   const wheelNavAtRef = useRef(0);
@@ -81,7 +93,10 @@ export function ProjectedPdfViewer({
     const timer = window.setTimeout(() => {
       setLoadState({
         phase: "error",
-        message: loadState.phase === "document_loading" ? "PDF 加载超时。" : "PDF 页面渲染超时。",
+        message:
+          loadState.phase === "document_loading"
+            ? "PDF 加载超时。"
+            : "PDF 页面渲染超时。",
       });
     }, PREVIEW_TIMEOUT_MS);
     return () => window.clearTimeout(timer);
@@ -106,13 +121,21 @@ export function ProjectedPdfViewer({
     }
     const selection = window.getSelection();
     const pageNode = pageShellRef.current;
-    if (!selection || !pageNode || selection.isCollapsed || selection.rangeCount === 0) {
+    if (
+      !selection ||
+      !pageNode ||
+      selection.isCollapsed ||
+      selection.rangeCount === 0
+    ) {
       setTextSelection(null);
       return;
     }
     const anchorNode = selection.anchorNode;
     const focusNode = selection.focusNode;
-    if ((anchorNode && !pageNode.contains(anchorNode)) || (focusNode && !pageNode.contains(focusNode))) {
+    if (
+      (anchorNode && !pageNode.contains(anchorNode)) ||
+      (focusNode && !pageNode.contains(focusNode))
+    ) {
       return;
     }
     const text = selection.toString().replace(/\s+/g, " ").trim();
@@ -151,7 +174,8 @@ export function ProjectedPdfViewer({
 
   const handlePointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
     const dragState = dragStateRef.current;
-    if (!dragState || dragState.pointerId !== event.pointerId || !pageShellRef.current) return;
+    if (!dragState || dragState.pointerId !== event.pointerId || !pageShellRef.current)
+      return;
     event.preventDefault();
     const pageRect = pageShellRef.current.getBoundingClientRect();
     const nextRegion = buildRect(
@@ -183,7 +207,7 @@ export function ProjectedPdfViewer({
   const insertTextReference = () => {
     if (!textSelection || !onInsertReference) return;
     onInsertReference(
-      `请结合当前投射材料《${title}》第 ${pageNumber} 页这段内容回答：\n> ${textSelection.text}`
+      `请结合当前投射材料《${title}》第 ${pageNumber} 页这段内容回答：\n> ${textSelection.text}`,
     );
     clearInteractionState();
   };
@@ -192,7 +216,7 @@ export function ProjectedPdfViewer({
     if (!selectedRegion || !onInsertReference) return;
     onInsertReference(
       `请结合当前投射材料《${title}》第 ${pageNumber} 页这个选区回答：` +
-      ` [x=${selectedRegion.x.toFixed(3)}, y=${selectedRegion.y.toFixed(3)}, w=${selectedRegion.width.toFixed(3)}, h=${selectedRegion.height.toFixed(3)}]`
+        ` [x=${selectedRegion.x.toFixed(3)}, y=${selectedRegion.y.toFixed(3)}, w=${selectedRegion.width.toFixed(3)}, h=${selectedRegion.height.toFixed(3)}]`,
     );
     clearInteractionState();
   };
@@ -276,7 +300,7 @@ export function ProjectedPdfViewer({
               <MaterialIcon name="input" size={15} />
             </button>
           ) : null}
-          {(textSelection || selectedRegion || draftRegion) ? (
+          {textSelection || selectedRegion || draftRegion ? (
             <button
               type="button"
               style={styles.iconButton}
@@ -296,10 +320,15 @@ export function ProjectedPdfViewer({
             file={fileUrl}
             loading={null}
             error={null}
-            onLoadError={() => setLoadState({ phase: "error", message: "PDF 加载失败。" })}
+            onLoadError={() =>
+              setLoadState({ phase: "error", message: "PDF 加载失败。" })
+            }
             onLoadSuccess={(payload) => {
               onPageCountChange?.(payload.numPages);
-              setLoadState({ phase: "page_loading", message: `正在渲染第 ${pageNumber} 页…` });
+              setLoadState({
+                phase: "page_loading",
+                message: `正在渲染第 ${pageNumber} 页…`,
+              });
             }}
           >
             <div
@@ -312,7 +341,11 @@ export function ProjectedPdfViewer({
               onMouseUp={handleMouseUp}
             >
               <Page
-                className={isRegionMode ? "pdf-preview-page pdf-preview-page--region" : "pdf-preview-page"}
+                className={
+                  isRegionMode
+                    ? "pdf-preview-page pdf-preview-page--region"
+                    : "pdf-preview-page"
+                }
                 pageNumber={pageNumber}
                 height={pageHeight || undefined}
                 renderTextLayer
@@ -320,7 +353,9 @@ export function ProjectedPdfViewer({
                 loading={null}
                 error={null}
                 onRenderSuccess={() => setLoadState({ phase: "ready", message: "" })}
-                onRenderError={() => setLoadState({ phase: "error", message: "当前页渲染失败。" })}
+                onRenderError={() =>
+                  setLoadState({ phase: "error", message: "当前页渲染失败。" })
+                }
               />
 
               <div style={styles.overlayStage}>
@@ -350,7 +385,7 @@ export function ProjectedPdfViewer({
                         </span>
                       ) : null}
                     </div>
-                  ))
+                  )),
                 )}
 
                 {textSelection?.rects.map((rect, index) => (
@@ -437,7 +472,12 @@ function normalizeRect(rect: DOMRect | ClientRect, bounds: DOMRect): PdfRect {
   };
 }
 
-function buildRect(startX: number, startY: number, endX: number, endY: number): PdfRect {
+function buildRect(
+  startX: number,
+  startY: number,
+  endX: number,
+  endY: number,
+): PdfRect {
   return {
     x: Math.min(startX, endX),
     y: Math.min(startY, endY),

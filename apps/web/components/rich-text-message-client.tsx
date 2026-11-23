@@ -9,6 +9,7 @@ import remarkMath from "remark-math";
 
 import { normalizeRichTextContent } from "../lib/rich-text-normalize";
 import { MermaidDiagram } from "./mermaid-diagram";
+import "./rich-text-message-vendor.css";
 
 interface RichTextMessageClientProps {
   content: string;
@@ -16,7 +17,11 @@ interface RichTextMessageClientProps {
   inline?: boolean;
 }
 
-export default function RichTextMessageClient({ content, style, inline = false }: RichTextMessageClientProps) {
+export default function RichTextMessageClient({
+  content,
+  style,
+  inline = false,
+}: RichTextMessageClientProps) {
   const normalizedContent = normalizeRichTextContent(content);
   const WrapperTag = inline ? "span" : "div";
 
@@ -26,9 +31,12 @@ export default function RichTextMessageClient({ content, style, inline = false }
         remarkPlugins={[remarkGfm, remarkMath]}
         rehypePlugins={[rehypeKatex]}
         components={{
-          p: ({ children }) => (
-            inline ? <span style={styles.inlineParagraph}>{children}</span> : <p style={styles.paragraph}>{children}</p>
-          ),
+          p: ({ children }) =>
+            inline ? (
+              <span style={styles.inlineParagraph}>{children}</span>
+            ) : (
+              <p style={styles.paragraph}>{children}</p>
+            ),
           ul: ({ children }) => <ul style={styles.list}>{children}</ul>,
           ol: ({ children }) => <ol style={styles.orderedList}>{children}</ol>,
           li: ({ children }) => (
@@ -36,7 +44,9 @@ export default function RichTextMessageClient({ content, style, inline = false }
               <div style={styles.listItemContent}>{children}</div>
             </li>
           ),
-          blockquote: ({ children }) => <blockquote style={styles.blockquote}>{children}</blockquote>,
+          blockquote: ({ children }) => (
+            <blockquote style={styles.blockquote}>{children}</blockquote>
+          ),
           h1: ({ children }) => <h1 style={styles.h1}>{children}</h1>,
           h2: ({ children }) => <h2 style={styles.h2}>{children}</h2>,
           h3: ({ children }) => <h3 style={styles.h3}>{children}</h3>,

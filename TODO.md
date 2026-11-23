@@ -22,8 +22,8 @@
   - 拆分 `apps/web/lib/api/_shared.ts` 中对 `./tavern`、`./study` 及各域解码器的反向循环依赖，仅保留与域无关的传输/错误/序列化原语。
   - 将全部 10 个 `apps/web/lib/data/*.ts` 改为直接导入对应 `apps/web/lib/api/*.ts`，不再经过汇总桶 `apps/web/lib/api.ts`。
   - 将仍引用旧 barrel 的 4 处文件迁移至 `lib/data/*`：`plan-revision-panel.tsx`、`tavern-workspace-panels.tsx`、`use-tavern-workspace-state.ts`、`use-tavern-run-recovery.ts`。
-- [ ] **P1-FE-02 根布局与重依赖按需懒加载**
-  - 现状证据：仅含导航卡片的 `/` 基线即 313 KB gzip（`docs/performance/web-bundle-v1.json`），根布局重依赖进入全部路由。
+- [x] **P1-FE-02 根布局与重依赖按需懒加载**
+  - 首屏改造前后的六路由采样、环境与门槛见 [性能预算](docs/performance-budgets.md)。
   - 将 `apps/web/components/debug-overlay.tsx` 的面板体、文档调试与诊断时间线/审计/存储视图改为打开时 `next/dynamic` 懒加载，避免将约 6,000 行诊断 JSON Schema（export / query / storage）同步打入全站首屏。
   - 将 KaTeX 与 react-pdf TextLayer 样式从全局下沉至富文本组件与 `projected-pdf-viewer.tsx`；下沉后仍须位于 `vendor` 层（以含 `@import … layer(vendor)` 的样式入口引入），不得退回未分层的 JS `import`。
   - 将 `rich-text-message.tsx` 改为 `next/dynamic` 按需加载 `rich-text-message-client.tsx`，加载期以纯文本兜底渲染，避免流式消息闪烁与布局跳动。

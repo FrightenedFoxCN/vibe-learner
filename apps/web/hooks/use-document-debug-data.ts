@@ -5,7 +5,7 @@ import type {
   DocumentPlanningContext,
   DocumentPlanningTraceResponse,
   ModelToolConfig,
-  StreamReport
+  StreamReport,
 } from "@vibe-learner/shared";
 import { useEffect, useRef, useState } from "react";
 
@@ -54,10 +54,15 @@ const EMPTY_STATE: DocumentDebugDataState = {
   planningTraceError: "",
   modelToolConfigError: "",
   processReportError: "",
-  planReportError: ""
+  planReportError: "",
 };
 
-export function useDocumentDebugData(documentId: string, enabled: boolean, debugReady: boolean) {
+export function useDocumentDebugData(
+  documentId: string,
+  enabled: boolean,
+  debugReady: boolean,
+  refreshRevision: number,
+) {
   const cacheRef = useRef<Map<string, DocumentDebugSnapshot>>(new Map());
   const [state, setState] = useState<DocumentDebugDataState>(EMPTY_STATE);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -66,7 +71,7 @@ export function useDocumentDebugData(documentId: string, enabled: boolean, debug
     if (!enabled || !documentId) {
       setState((current) => ({
         ...EMPTY_STATE,
-        modelToolConfig: current.modelToolConfig
+        modelToolConfig: current.modelToolConfig,
       }));
       return;
     }
@@ -76,7 +81,7 @@ export function useDocumentDebugData(documentId: string, enabled: boolean, debug
     if (cached) {
       setState({
         ...cached,
-        loading: refreshKey > 0,
+        loading: refreshKey > 0 || refreshRevision > 0,
         error: "",
         lastUpdatedAt: deriveLastUpdatedAt(cached),
         debugRecordError: "",
@@ -84,14 +89,14 @@ export function useDocumentDebugData(documentId: string, enabled: boolean, debug
         planningTraceError: "",
         modelToolConfigError: "",
         processReportError: "",
-        planReportError: ""
+        planReportError: "",
       });
     } else {
       setState((current) => ({
         ...EMPTY_STATE,
         modelToolConfig: current.modelToolConfig,
         loading: true,
-        lastUpdatedAt: current.lastUpdatedAt
+        lastUpdatedAt: current.lastUpdatedAt,
       }));
     }
 
@@ -99,28 +104,31 @@ export function useDocumentDebugData(documentId: string, enabled: boolean, debug
       const fetches = [
         {
           key: "debugRecord" as const,
-          load: () => (debugReady ? getDocumentDebug(documentId) : Promise.resolve(null))
+          load: () =>
+            debugReady ? getDocumentDebug(documentId) : Promise.resolve(null),
         },
         {
           key: "planningContext" as const,
-          load: () => (debugReady ? getDocumentPlanningContext(documentId) : Promise.resolve(null))
+          load: () =>
+            debugReady ? getDocumentPlanningContext(documentId) : Promise.resolve(null),
         },
         {
           key: "planningTrace" as const,
-          load: () => (debugReady ? getDocumentPlanningTrace(documentId) : Promise.resolve(null))
+          load: () =>
+            debugReady ? getDocumentPlanningTrace(documentId) : Promise.resolve(null),
         },
         {
           key: "modelToolConfig" as const,
-          load: () => getModelToolConfig()
+          load: () => getModelToolConfig(),
         },
         {
           key: "processReport" as const,
-          load: () => getDocumentProcessEvents(documentId)
+          load: () => getDocumentProcessEvents(documentId),
         },
         {
           key: "planReport" as const,
-          load: () => getDocumentPlanEvents(documentId)
-        }
+          load: () => getDocumentPlanEvents(documentId),
+        },
       ];
 
       const results = await Promise.allSettled(fetches.map((item) => item.load()));
@@ -134,7 +142,7 @@ export function useDocumentDebugData(documentId: string, enabled: boolean, debug
         planningTrace: null,
         modelToolConfig: null,
         processReport: null,
-        planReport: null
+        planReport: null,
       };
       const nextErrors = {
         debugRecordError: "",
@@ -142,7 +150,7 @@ export function useDocumentDebugData(documentId: string, enabled: boolean, debug
         planningTraceError: "",
         modelToolConfigError: "",
         processReportError: "",
-        planReportError: ""
+        planReportError: "",
       };
 
       results.forEach((result, index) => {
@@ -151,9 +159,11 @@ export function useDocumentDebugData(documentId: string, enabled: boolean, debug
           if (key === "debugRecord") {
             nextSnapshot.debugRecord = result.value as DocumentDebugRecord | null;
           } else if (key === "planningContext") {
-            nextSnapshot.planningContext = result.value as DocumentPlanningContext | null;
+            nextSnapshot.planningContext =
+              result.value as DocumentPlanningContext | null;
           } else if (key === "planningTrace") {
-            nextSnapshot.planningTrace = result.value as DocumentPlanningTraceResponse | null;
+            nextSnapshot.planningTrace =
+              result.value as DocumentPlanningTraceResponse | null;
           } else if (key === "modelToolConfig") {
             nextSnapshot.modelToolConfig = result.value as ModelToolConfig | null;
           } else if (key === "processReport") {
@@ -163,7 +173,10 @@ export function useDocumentDebugData(documentId: string, enabled: boolean, debug
           }
           return;
         }
-        const errorMessage = result.reason instanceof Error ? result.reason.message : String(result.reason);
+        const errorMessage =
+          result.reason instanceof Error
+            ? result.reason.message
+            : String(result.reason);
         if (key === "debugRecord") {
           nextErrors.debugRecordError = errorMessage;
         } else if (key === "planningContext") {
@@ -180,14 +193,15 @@ export function useDocumentDebugData(documentId: string, enabled: boolean, debug
       });
 
       const errorMessages = Object.values(nextErrors).filter(Boolean);
-      const nextError = errorMessages.length === fetches.length ? errorMessages.join("；") : "";
+      const nextError =
+        errorMessages.length === fetches.length ? errorMessages.join("；") : "";
 
       const nextState: DocumentDebugDataState = {
         ...nextSnapshot,
         loading: false,
         error: nextError,
         lastUpdatedAt: deriveLastUpdatedAt(nextSnapshot),
-        ...nextErrors
+        ...nextErrors,
       };
       cacheRef.current.set(documentId, {
         debugRecord: nextState.debugRecord,
@@ -195,7 +209,7 @@ export function useDocumentDebugData(documentId: string, enabled: boolean, debug
         planningTrace: nextState.planningTrace,
         modelToolConfig: nextState.modelToolConfig,
         processReport: nextState.processReport,
-        planReport: nextState.planReport
+        planReport: nextState.planReport,
       });
       setState(nextState);
     };
@@ -205,17 +219,15 @@ export function useDocumentDebugData(documentId: string, enabled: boolean, debug
     return () => {
       cancelled = true;
     };
-  }, [documentId, enabled, debugReady, refreshKey]);
+  }, [documentId, enabled, debugReady, refreshKey, refreshRevision]);
 
   const autoRefreshActive = Boolean(
-    enabled
-    && documentId
-    && !state.loading
-    && (
-      !debugReady
-      || state.processReport?.status === "running"
-      || state.planReport?.status === "running"
-    )
+    enabled &&
+    documentId &&
+    !state.loading &&
+    (!debugReady ||
+      state.processReport?.status === "running" ||
+      state.planReport?.status === "running"),
   );
 
   useEffect(() => {
@@ -229,12 +241,17 @@ export function useDocumentDebugData(documentId: string, enabled: boolean, debug
     return () => {
       window.clearTimeout(timeoutId);
     };
-  }, [autoRefreshActive, debugReady, documentId, state.planReport?.status, state.processReport?.status]);
+  }, [
+    autoRefreshActive,
+    debugReady,
+    documentId,
+    state.planReport?.status,
+    state.processReport?.status,
+  ]);
 
   return {
     ...state,
     autoRefreshActive,
-    refresh: () => setRefreshKey((current) => current + 1)
   };
 }
 

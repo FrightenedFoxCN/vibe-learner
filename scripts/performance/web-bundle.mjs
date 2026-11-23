@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 import zlib from "node:zlib";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
-const ROUTES = ["/", "/settings", "/model-usage", "/tavern"];
+const ROUTES = ["/", "/settings", "/model-usage", "/tavern", "/study", "/plan"];
 const REGRESSION_LIMIT = 0.05;
 
 const options = parseArgs(process.argv.slice(2));
@@ -33,7 +33,7 @@ if (options.baseline) {
 
 function parseArgs(args) {
   const parsed = {
-    baseUrl: process.env.WEB_BUNDLE_BASE_URL ?? "http://127.0.0.1:13417",
+    baseUrl: process.env.WEB_BUNDLE_BASE_URL ?? "http://127.0.0.1:3417",
     baseline: "",
     output: "",
   };
