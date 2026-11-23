@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useId, useState } from "react";
-import type { CSSProperties } from "react";
 
 interface MermaidDiagramProps {
   chart: string;
@@ -45,63 +44,30 @@ export function MermaidDiagram({ chart }: MermaidDiagramProps) {
 
   if (error) {
     return (
-      <div style={styles.errorWrap}>
-        <strong style={styles.errorTitle}>Mermaid 图表渲染失败</strong>
-        <pre style={styles.errorCode}>{chart}</pre>
-        <p style={styles.errorText}>{error}</p>
+      <div className="mb-2.5 grid gap-2 border border-negative/25 bg-negative/5 px-3.5 py-3">
+        <strong className="text-xs text-negative">Mermaid 图表渲染失败</strong>
+        <pre className="m-0 overflow-x-auto border border-negative/20 bg-bg px-3 py-2.5 text-xs leading-[1.6]">
+          {chart}
+        </pre>
+        <p className="m-0 wrap-anywhere text-xs leading-normal text-negative">
+          {error}
+        </p>
       </div>
     );
   }
 
   if (!svg) {
-    return <div style={styles.loading}>Mermaid 图表渲染中…</div>;
+    return (
+      <div className="mb-2.5 border border-border bg-panel px-3.5 py-3 text-xs text-muted">
+        Mermaid 图表渲染中…
+      </div>
+    );
   }
 
-  return <div style={styles.diagram} dangerouslySetInnerHTML={{ __html: svg }} />;
+  return (
+    <div
+      className="mb-2.5 overflow-x-auto border border-border bg-panel px-3.5 py-3"
+      dangerouslySetInnerHTML={{ __html: svg }}
+    />
+  );
 }
-
-const styles: Record<string, CSSProperties> = {
-  diagram: {
-    margin: "0 0 10px",
-    padding: "12px 14px",
-    border: "1px solid var(--border)",
-    background: "#f8fbfc",
-    overflowX: "auto",
-  },
-  loading: {
-    margin: "0 0 10px",
-    padding: "12px 14px",
-    border: "1px solid var(--border)",
-    background: "#f8fbfc",
-    color: "var(--muted)",
-    fontSize: 12,
-  },
-  errorWrap: {
-    display: "grid",
-    gap: 8,
-    margin: "0 0 10px",
-    padding: "12px 14px",
-    border: "1px solid #f0c2c2",
-    background: "#fff7f7",
-  },
-  errorTitle: {
-    fontSize: 12,
-    color: "#9f1d1d",
-  },
-  errorCode: {
-    margin: 0,
-    padding: "10px 12px",
-    border: "1px solid #f0d1d1",
-    background: "white",
-    overflowX: "auto",
-    fontSize: 12,
-    lineHeight: 1.6,
-  },
-  errorText: {
-    margin: 0,
-    fontSize: 12,
-    lineHeight: 1.5,
-    color: "#7f1d1d",
-    wordBreak: "break-word",
-  },
-};

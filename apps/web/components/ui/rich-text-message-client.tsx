@@ -1,7 +1,7 @@
 "use client";
 
 import { isValidElement } from "react";
-import type { CSSProperties, ReactNode } from "react";
+import type { ReactNode } from "react";
 import ReactMarkdown from "react-markdown";
 import rehypeKatex from "rehype-katex";
 import remarkGfm from "remark-gfm";
@@ -10,80 +10,69 @@ import remarkMath from "remark-math";
 import { normalizeRichTextContent } from "../../lib/rich-text-normalize";
 import { MermaidDiagram } from "./mermaid-diagram";
 import "./rich-text-message-vendor.css";
+import styles from "./rich-text-message.module.css";
 
 interface RichTextMessageClientProps {
   content: string;
-  style?: CSSProperties;
   inline?: boolean;
 }
 
 export default function RichTextMessageClient({
   content,
-  style,
   inline = false,
 }: RichTextMessageClientProps) {
   const normalizedContent = normalizeRichTextContent(content);
   const WrapperTag = inline ? "span" : "div";
 
   return (
-    <WrapperTag className="study-markdown-root" style={style}>
+    <WrapperTag className={styles.root}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkMath]}
         rehypePlugins={[rehypeKatex]}
         components={{
           p: ({ children }) =>
             inline ? (
-              <span style={styles.inlineParagraph}>{children}</span>
+              <span className={styles.inlineParagraph}>{children}</span>
             ) : (
-              <p style={styles.paragraph}>{children}</p>
+              <p className={styles.paragraph}>{children}</p>
             ),
-          ul: ({ children }) => <ul style={styles.list}>{children}</ul>,
-          ol: ({ children }) => <ol style={styles.orderedList}>{children}</ol>,
+          ul: ({ children }) => <ul className={styles.list}>{children}</ul>,
+          ol: ({ children }) => <ol className={styles.orderedList}>{children}</ol>,
           li: ({ children }) => (
-            <li style={styles.listItem}>
-              <div style={styles.listItemContent}>{children}</div>
+            <li className={styles.listItem}>
+              <div className={styles.listItemContent}>{children}</div>
             </li>
           ),
           blockquote: ({ children }) => (
-            <blockquote style={styles.blockquote}>{children}</blockquote>
+            <blockquote className={styles.blockquote}>{children}</blockquote>
           ),
-          h1: ({ children }) => <h1 style={styles.h1}>{children}</h1>,
-          h2: ({ children }) => <h2 style={styles.h2}>{children}</h2>,
-          h3: ({ children }) => <h3 style={styles.h3}>{children}</h3>,
-          hr: () => <hr style={styles.hr} />,
+          h1: ({ children }) => <h1 className={styles.h1}>{children}</h1>,
+          h2: ({ children }) => <h2 className={styles.h2}>{children}</h2>,
+          h3: ({ children }) => <h3 className={styles.h3}>{children}</h3>,
+          hr: () => <hr className={styles.hr} />,
           table: ({ children }) => (
-            <div style={styles.tableWrap}>
-              <table style={styles.table}>{children}</table>
+            <div className={styles.tableWrap}>
+              <table className={styles.table}>{children}</table>
             </div>
           ),
-          th: ({ children }) => <th style={styles.th}>{children}</th>,
-          td: ({ children }) => <td style={styles.td}>{children}</td>,
+          th: ({ children }) => <th className={styles.th}>{children}</th>,
+          td: ({ children }) => <td className={styles.td}>{children}</td>,
           a: ({ href, children }) => (
-            <a href={href} target="_blank" rel="noreferrer" style={styles.link}>
+            <a href={href} target="_blank" rel="noreferrer" className={styles.link}>
               {children}
             </a>
           ),
-          code: ({ className, children, ...props }: any) => {
-            const isBlock = Boolean(className);
-            if (isBlock) {
-              return (
-                <code className={className} style={styles.codeBlock} {...props}>
-                  {children}
-                </code>
-              );
-            }
-            return (
-              <code style={styles.inlineCode} {...props}>
-                {children}
-              </code>
-            );
-          },
+          code: ({ className, children }) => (
+            <code className={className ? `${styles.code} ${className}` : styles.code}>
+              {children}
+            </code>
+          ),
           pre: ({ children }) => {
             const mermaidChart = extractMermaidChart(children);
             if (mermaidChart) {
               return <MermaidDiagram chart={mermaidChart} />;
             }
-            return <pre style={styles.pre}>{children}</pre>;
+            return <pre className={styles.pre}>{children}</pre>;
           },
         }}
       >
@@ -105,104 +94,3 @@ function extractMermaidChart(children: ReactNode) {
     .replace(/\n$/, "")
     .trim();
 }
-
-const styles: Record<string, CSSProperties> = {
-  paragraph: {
-    margin: "0 0 10px",
-  },
-  inlineParagraph: {
-    margin: 0,
-    display: "inline",
-  },
-  list: {
-    margin: "0 0 10px",
-    paddingLeft: 20,
-    whiteSpace: "normal",
-  },
-  orderedList: {
-    margin: "0 0 10px",
-    paddingLeft: 22,
-    whiteSpace: "normal",
-  },
-  listItem: {
-    lineHeight: 1.75,
-    margin: "0 0 6px",
-  },
-  listItemContent: {
-    minWidth: 0,
-    whiteSpace: "normal",
-    wordBreak: "break-word",
-  },
-  blockquote: {
-    margin: "0 0 10px",
-    padding: "8px 12px",
-    borderLeft: "2px solid var(--border-strong)",
-    background: "var(--panel)",
-    color: "var(--ink-2)",
-  },
-  h1: {
-    margin: "2px 0 10px",
-    fontSize: 20,
-    lineHeight: 1.3,
-  },
-  h2: {
-    margin: "2px 0 10px",
-    fontSize: 18,
-    lineHeight: 1.35,
-  },
-  h3: {
-    margin: "2px 0 8px",
-    fontSize: 16,
-    lineHeight: 1.4,
-  },
-  hr: {
-    border: "none",
-    borderTop: "1px solid var(--border)",
-    margin: "12px 0",
-  },
-  tableWrap: {
-    overflowX: "auto",
-    marginBottom: 10,
-  },
-  table: {
-    width: "100%",
-    borderCollapse: "collapse",
-    fontSize: 13,
-  },
-  th: {
-    textAlign: "left",
-    border: "1px solid var(--border)",
-    padding: "8px 10px",
-    background: "var(--panel)",
-  },
-  td: {
-    border: "1px solid var(--border)",
-    padding: "8px 10px",
-    verticalAlign: "top",
-  },
-  link: {
-    color: "var(--accent)",
-    textDecoration: "underline",
-    textUnderlineOffset: 2,
-  },
-  inlineCode: {
-    padding: "1px 5px",
-    border: "1px solid var(--border)",
-    background: "var(--panel)",
-    fontFamily: "var(--font-mono)",
-    fontSize: "0.92em",
-  },
-  pre: {
-    margin: "0 0 10px",
-    padding: "10px 12px",
-    border: "1px solid var(--border)",
-    background: "#f8fbfc",
-    overflowX: "auto",
-  },
-  codeBlock: {
-    fontFamily: "var(--font-mono)",
-    fontSize: 12,
-    lineHeight: 1.7,
-    whiteSpace: "pre",
-  },
-};

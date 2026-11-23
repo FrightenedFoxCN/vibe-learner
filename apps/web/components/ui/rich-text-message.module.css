@@ -1,0 +1,148 @@
+@layer components {
+  .root {
+    min-width: 0;
+  }
+
+  .paragraph,
+  .list,
+  .orderedList,
+  .blockquote,
+  .pre {
+    margin: 0 0 10px;
+  }
+
+  .inlineParagraph {
+    display: inline;
+    margin: 0;
+  }
+
+  .list,
+  .orderedList {
+    white-space: normal;
+  }
+
+  .list {
+    padding-inline-start: 20px;
+  }
+
+  .orderedList {
+    padding-inline-start: 22px;
+  }
+
+  .listItem {
+    margin: 0 0 6px;
+    line-height: 1.75;
+  }
+
+  .listItemContent {
+    min-width: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .blockquote {
+    padding: 8px 12px;
+    border-inline-start: 2px solid var(--border-strong);
+    background: var(--panel);
+    color: var(--ink-2);
+  }
+
+  .h1 {
+    margin: 2px 0 10px;
+    font-size: 20px;
+    line-height: 1.3;
+  }
+
+  .h2 {
+    margin: 2px 0 10px;
+    font-size: 18px;
+    line-height: 1.35;
+  }
+
+  .h3 {
+    margin: 2px 0 8px;
+    font-size: 16px;
+    line-height: 1.4;
+  }
+
+  .hr {
+    margin: 12px 0;
+    border: 0;
+    border-block-start: 1px solid var(--border);
+  }
+
+  .tableWrap {
+    margin-bottom: 10px;
+    overflow-x: auto;
+  }
+
+  .table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  .th,
+  .td {
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+  }
+
+  .th {
+    background: var(--panel);
+    text-align: start;
+  }
+
+  .td {
+    vertical-align: top;
+  }
+
+  .link {
+    color: var(--accent);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  .code {
+    padding: 1px 5px;
+    border: 1px solid var(--border);
+    background: var(--panel);
+    font-family: var(--font-mono);
+    font-size: 0.92em;
+  }
+
+  .pre {
+    overflow-x: auto;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    background: var(--panel);
+  }
+
+  .pre > .code {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    font-size: 12px;
+    line-height: 1.7;
+    white-space: pre;
+  }
+
+  .root :global(.katex),
+  .root :global(.katex-display) {
+    max-width: 100%;
+  }
+
+  .root :global(.katex-display) {
+    margin: 0.35em 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
+  .root :global(.katex-display) > :global(.katex) {
+    padding: 6px 0;
+  }
+
+  .root > :last-child {
+    margin-bottom: 0;
+  }
+}

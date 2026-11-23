@@ -1,5 +1,3 @@
-import type { CSSProperties } from "react";
-
 import { AppLink } from "../lib/app-navigation";
 import { MaterialIcon, type MaterialIconName } from "../components/ui/material-icon";
 import { TopNav } from "../components/layout/top-nav";
@@ -72,32 +70,37 @@ const PAGES = [
 
 export default function HomePage() {
   return (
-    <main className="with-app-nav" style={styles.page}>
+    <main className="with-app-nav mx-auto grid min-h-screen max-w-[1280px] content-start gap-10 px-8 pt-12 pb-16">
       <TopNav currentPath="/" />
 
-      <header style={styles.header}>
-        <h1 style={styles.title}>学习工作台</h1>
-        <p style={styles.subtitle}>计划 · 对话 · 人格</p>
-        <div style={styles.rule} />
+      <header className="grid gap-2">
+        <h1 className="m-0 text-[28px] leading-[1.2] font-extrabold tracking-[-0.02em] text-ink">
+          学习工作台
+        </h1>
+        <p className="m-0 text-sm tracking-[0.01em] text-muted">计划 · 对话 · 人格</p>
+        <div className="mt-2 h-px bg-border" />
       </header>
 
-      <nav className="home-nav-grid">
+      <nav className="grid grid-cols-3 gap-px border border-border bg-border max-[800px]:grid-cols-1">
         {PAGES.map((page) => (
           <AppLink
             key={page.href}
             path={page.href}
-            className="home-nav-item"
-            style={styles.navItem}
+            className="grid gap-2 bg-bg px-7 pt-7 pb-6 no-underline transition-colors hover:bg-panel"
           >
-            <div style={styles.navTopRow}>
-              <span style={styles.navNum}>{page.num}</span>
-              <span style={styles.navIconWrap}>
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-[11px] font-bold tracking-[0.12em] text-accent">
+                {page.num}
+              </span>
+              <span className="inline-flex size-7 items-center justify-center rounded-full border border-accent/25 bg-accent-soft/25 text-accent">
                 <MaterialIcon name={page.icon} size={18} />
               </span>
             </div>
-            <span style={styles.navTitle}>{page.title}</span>
-            <span style={styles.navDesc}>{page.desc}</span>
-            <span style={styles.navArrow}>
+            <span className="text-lg leading-[1.2] font-bold text-ink">
+              {page.title}
+            </span>
+            <span className="text-[13px] leading-[1.65] text-muted">{page.desc}</span>
+            <span className="mt-1 inline-flex items-center text-border-strong">
               <MaterialIcon name="arrow_forward" size={18} />
             </span>
           </AppLink>
@@ -106,85 +109,3 @@ export default function HomePage() {
     </main>
   );
 }
-
-const styles: Record<string, CSSProperties> = {
-  page: {
-    minHeight: "100vh",
-    maxWidth: 1280,
-    margin: "0 auto",
-    padding: "48px 32px 64px",
-    display: "grid",
-    gap: 40,
-    alignContent: "start",
-  },
-  header: {
-    display: "grid",
-    gap: 8,
-  },
-  title: {
-    margin: 0,
-    fontSize: 28,
-    fontWeight: 800,
-    color: "var(--ink)",
-    letterSpacing: "-0.02em",
-    lineHeight: 1.2,
-  },
-  subtitle: {
-    margin: 0,
-    fontSize: 14,
-    color: "var(--muted)",
-    letterSpacing: "0.01em",
-  },
-  rule: {
-    height: 1,
-    background: "var(--border)",
-    marginTop: 8,
-  },
-  navItem: {
-    display: "grid",
-    gap: 8,
-    padding: "28px 28px 24px",
-    background: "var(--bg)",
-    textDecoration: "none",
-  },
-  navNum: {
-    fontSize: 11,
-    fontWeight: 700,
-    color: "var(--accent)",
-    letterSpacing: "0.12em",
-  },
-  navTopRow: {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 12,
-  },
-  navIconWrap: {
-    width: 28,
-    height: 28,
-    borderRadius: 999,
-    border: "1px solid color-mix(in srgb, var(--accent) 24%, var(--border))",
-    background: "color-mix(in srgb, white 84%, var(--accent-soft))",
-    color: "var(--accent)",
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  navTitle: {
-    fontSize: 18,
-    fontWeight: 700,
-    color: "var(--ink)",
-    lineHeight: 1.2,
-  },
-  navDesc: {
-    fontSize: 13,
-    color: "var(--muted)",
-    lineHeight: 1.65,
-  },
-  navArrow: {
-    display: "inline-flex",
-    alignItems: "center",
-    color: "var(--border-strong)",
-    marginTop: 4,
-  },
-};

@@ -40,7 +40,7 @@
   - 新建 `apps/web/components/ui/`（基于 Tailwind v4 语义 Token）：`Button`、`Badge`、`Alert`、`Card`、`Collapsible`、`ConfirmDialog`。
   - `ConfirmDialog` 替代 8 处原生 `confirm`（含 `use-persona-persistence.ts` 等以参数注入的默认实现）与零散删除弹窗。注意两类约束：注入签名由 `(message) => boolean` 变为 `Promise<boolean>` 会改变调用方控制流；`use-persona-draft.ts` 的链接点击捕获守卫必须同步 `preventDefault()`，须改为“先拦截、确认后再路由跳转”，`beforeunload` 仍保留浏览器原生提示。
   - 新建 `apps/web/lib/format.ts` 统一日期、时间、耗时格式化，替换分散在 7 个组件中的重复实现（`plan-history`、`plan-overview`、`study-debug-panels`、`document-debug-panels`、`document-setup`、`scene-workspace-view`、`model-usage/page`）。
-- [ ] **P2-FE-05 淘汰 TS 样式对象与内联样式，清理 `!important`**
+- [x] **P2-FE-05 淘汰 TS 样式对象与内联样式，清理 `!important`**
   - 真实规模：`style={…}` 共约 1,300 处，其中字面量 `style={{}}` 159 处，其余为引用 TS 样式对象；热点为 `persona-workspace-view`、`scene-workspace-view`、`settings-sections`、`study-console`、`document-debug-panels`、`model-usage/page`（各 100+ 处）。
   - 将 3 个 TS `CSSProperties` 样式表（`persona-workspace-styles.ts`、`scene-workspace-styles.ts`、`settings-styles.ts`，合计 2,022 行）随所属域切片迁移为 Tailwind CSS v4 工具类与语义基元。
   - 将 135 处硬编码 hex/rgba 色值归口至设计基线 Token（`--negative` / `--accent` / `--panel` 等）；建立例外白名单而非强行清零：`brand-mark.tsx` 品牌 SVG、`mermaid-diagram.tsx` 主题配置（无法读取 CSS 变量）、`projected-pdf-viewer.tsx` 数据驱动的叠加色（改用 `color-mix` 替代 hex 拼接透明度）。
@@ -51,7 +51,7 @@
 - [x] **P2-FE-06 规范目录结构与薄路由边界**
   - 按域整理 `apps/web/components/`（`ui/`、`layout/`、`plan/`、`study/`、`tavern/`、`debug/` 与既有 `persona/`、`scene/`、`settings/`）；目录迁移以纯 `git mv` + 导入路径修正的独立提交完成，先于任何拆分。
   - 重构 `apps/web/app/model-usage/page.tsx`（690 行）与 `apps/web/app/sensory-tools/page.tsx`（689 行）为薄路由 + 域组件 + controller hook，与其余路由保持一致。
-- [ ] **P2-FE-07 拆解超千行巨型组件**（与 P2-FE-05 按域同批完成）
+- [x] **P2-FE-07 拆解超千行巨型组件**（与 P2-FE-05 按域同批完成）
   - `study-console.tsx`（2,077 行 / 53 Props）拆分为消息流、交互题卡片、附件与输入区、角色事件详情与状态栏子组件。
   - `study-dialog-page.tsx`（1,170 行）下沉预览与副作用逻辑至独立 Hook/面板组件。
   - `tavern-workspace-panels.tsx`（1,043 行）按 7 个标准区块拆分为独立文件。
