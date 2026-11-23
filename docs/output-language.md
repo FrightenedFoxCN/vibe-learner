@@ -61,13 +61,12 @@ Tags are bounded to 35 ASCII characters and a BCP-47-style syntax. `unknown` is
 not a user preference; Planning uses the existing unknown-intent representation
 for automatic choice. The syntax check does not claim IANA registry validation.
 
-## Local mock and model-quality scope
+## Local mock scope
 
 The offline mock uses deterministic templates for the language choices shown in
 the field: Chinese (simplified/traditional), English, French, German, Spanish,
 Japanese, Korean, Portuguese, Italian, Russian and Arabic. Regional tags use
-their base language template. Its automatic choice is a small script/keyword
-heuristic, not language-detection certification. Unsupported custom mock tags
+their base language template. Unsupported custom mock tags
 return a recoverable refusal without a committed reply; configured model
 providers receive the typed language policy instead.
 

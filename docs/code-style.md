@@ -7,7 +7,7 @@ Formatting and linting have separate commands. TypeScript checking remains `npm 
 | `npm run style:check` | Lint all source against the explicit baseline; format-check added/modified files relative to `HEAD`, including staged and untracked source |
 | `npm run style:check -- --base <commit>` | The same gate, with changed-file formatting relative to a branch/PR base |
 | `npm run lint:web` | ESLint for JavaScript/TypeScript source in Web, shared contracts, desktop scripts and repository tooling |
-| `npm run lint:ai` | Ruff for Python source in the AI service and model-quality tooling |
+| `npm run lint:ai` | Ruff for Python source in the AI service and repository scripts |
 | `npm run format:check` | Formatting only for added/modified source; no files are rewritten |
 | `npm run style:all` | Full lint plus formatting of every file whose bytes do not match a known legacy formatting exemption |
 
