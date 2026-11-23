@@ -1,5 +1,7 @@
 import type { RuntimeFeatureProbeName, RuntimeSettings } from "@vibe-learner/shared";
 import { Button } from "../ui/button";
+import { runtimeProviderStatus } from "../../lib/runtime-provider-status";
+import { useRuntimeSettings } from "../layout/runtime-settings-provider";
 import { SettingsField, SettingsPanel, StatusBadge } from "./settings-ui";
 import { formatProbeHint, uniqueWithCurrent } from "./settings-utils";
 import type { SettingsController } from "./use-settings-controller";
@@ -47,6 +49,8 @@ export function ProviderCard({
   controller: SettingsController;
   settings: RuntimeSettings;
 }) {
+  const { settings: saved } = useRuntimeSettings();
+  const status = saved ? runtimeProviderStatus(saved) : null;
   return (
     <SettingsPanel>
       <h2 className="m-0 text-lg font-semibold text-ink">运行提供器</h2>
@@ -66,6 +70,16 @@ export function ProviderCard({
           <option value="litellm">LiteLLM SDK</option>
         </select>
       </SettingsField>
+      {status && (
+        <div role="status" className="text-sm text-muted">
+          当前运行：{status.provider === "mock" ? "本地模拟" : "LiteLLM SDK"}
+          （按服务端已确认设置）
+          {status.missing.length > 0 &&
+            (status.provider === "mock"
+              ? "。已配置 LiteLLM，但没有任何有效访问密钥，已回退到本地模拟。"
+              : `。缺少以下范围的有效密钥：${status.missing.join("、")}。`)}
+        </div>
+      )}
     </SettingsPanel>
   );
 }
