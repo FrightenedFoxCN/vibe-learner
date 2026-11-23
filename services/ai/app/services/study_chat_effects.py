@@ -865,7 +865,7 @@ def _apply_prepared_effect(
             else "update_learning_plan_progress"
         ),
         action_type=proposal.action.value,
-        plan_id=record.plan_id or "",
+        plan_id=text_or_empty(record.plan_id),
         title=title,
         summary=summary,
         preview_lines=preview_lines,

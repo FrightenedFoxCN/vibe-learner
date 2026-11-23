@@ -188,16 +188,16 @@ class StudyInteractiveQuestionRecordV2(BaseModel):
             return value
         payload = dict(value)
         question_type = text_at(payload, "question_type")
-        answer_key = str(payload.pop("answer_key", "") or "").strip()
+        answer_key = text_or_empty(payload.pop("answer_key", "")).strip()
         accepted_answers = [
             text_or_empty(item).strip()
             for item in payload.pop("accepted_answers", []) or []
             if text_or_empty(item).strip()
         ]
-        explanation = str(payload.pop("explanation", "") or "").strip()
-        submitted_answer = str(payload.pop("submitted_answer", "") or "").strip()
+        explanation = text_or_empty(payload.pop("explanation", "")).strip()
+        submitted_answer = text_or_empty(payload.pop("submitted_answer", "")).strip()
         is_correct = payload.pop("is_correct", None)
-        feedback_text = str(payload.pop("feedback_text", "") or "").strip()
+        feedback_text = text_or_empty(payload.pop("feedback_text", "")).strip()
 
         grading_spec: dict[str, Any] | None = None
         if question_type == "multiple_choice" and answer_key:

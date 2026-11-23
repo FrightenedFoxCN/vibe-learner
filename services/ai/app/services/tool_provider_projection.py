@@ -26,7 +26,7 @@ from app.models.tool_manifest import (
     provider_parameters_for_model,
     resolve_tool_manifest_entry,
 )
-from app.core.coerce import text_at
+from app.core.coerce import text_at, text_or_empty
 
 
 class ToolProviderProjectionModel(BaseModel):
@@ -487,10 +487,12 @@ def _adapt_study_runtime_success(
         normalized_hits = (
             [
                 {
-                    "memory_id": item.get("id") or item.get("session_id") or "",
+                    "memory_id": text_or_empty(
+                        item.get("id") or item.get("session_id")
+                    ),
                     "content": item.get("content") or item.get("snippet"),
-                    "source": item.get("source") or "",
-                    "created_at": item.get("created_at") or "",
+                    "source": text_or_empty(item.get("source")),
+                    "created_at": text_or_empty(item.get("created_at")),
                 }
                 for item in hits
                 if isinstance(item, Mapping)
@@ -508,7 +510,7 @@ def _adapt_study_runtime_success(
         normalized_items = (
             [
                 {
-                    "memory_id": item.get("id") or item.get("memory_id") or "",
+                    "memory_id": text_or_empty(item.get("id") or item.get("memory_id")),
                     "key": item.get("key"),
                     "content": item.get("content"),
                     "committed": item.get(

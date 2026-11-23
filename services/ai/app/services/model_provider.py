@@ -106,7 +106,7 @@ from app.models.study_question import (
     STUDY_QUESTION_TOOL_TRACE_PRIVATE_FIELDS,
 )
 from app.services.token_usage import TokenUsageService
-from app.core.coerce import text_at
+from app.core.coerce import text_at, text_or_empty
 
 
 logger = get_logger("vibe_learner.model_provider")
@@ -425,7 +425,9 @@ class MockModelProvider(LocalExerciseProvider, ModelProvider):
         )
 
     def _compact_objective(self, objective: str) -> str:
-        cleaned = re.sub(r"\s+", " ", objective or "").strip(" 。.!！?？;；：:")
+        cleaned = re.sub(r"\s+", " ", text_or_empty(objective)).strip(
+            " 。.!！?？;；：:"
+        )
         if not cleaned:
             return ""
         if len(cleaned) <= 20:

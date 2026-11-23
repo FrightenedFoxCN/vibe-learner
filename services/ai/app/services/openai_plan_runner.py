@@ -23,7 +23,7 @@ from app.core.model_runtime_limits import (
     PLANNING_MAX_UNOFFERED_TOOL_RETRIES,
 )
 from app.core.clock import utc_now_iso as _now
-from app.core.coerce import text_at
+from app.core.coerce import text_at, text_or_empty
 
 
 @dataclass(frozen=True)
@@ -161,7 +161,7 @@ class OpenAIPlanRunner:
                 current_messages.append(
                     {
                         "role": "assistant",
-                        "content": message.get("content") or "",
+                        "content": text_or_empty(message.get("content")),
                         "tool_calls": tool_calls,
                     }
                 )

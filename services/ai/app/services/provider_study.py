@@ -55,7 +55,7 @@ from app.services.session_scene import (
     extract_scene_profile_from_tool_results,
     serialize_chat_tool_trace_item,
 )
-from app.core.coerce import text_at
+from app.core.coerce import text_at, text_or_empty
 
 
 @dataclass(frozen=True)
@@ -217,13 +217,12 @@ class RemoteStudyProvider(StudyModelCapability):
             if tool_calls:
                 tool_budget_tracker.begin_round()
                 available_tool_names = {
-                    str((tool.get("function") or {}).get("name") or "")
-                    for tool in tool_specs
+                    text_at(tool.get("function") or {}, "name") for tool in tool_specs
                 }
                 current_messages.append(
                     {
                         "role": "assistant",
-                        "content": message_payload.get("content") or "",
+                        "content": text_or_empty(message_payload.get("content")),
                         "tool_calls": tool_calls,
                     }
                 )
@@ -591,7 +590,7 @@ def _extract_mermaid_blocks_from_text(
     blocks: list[RichTextBlockRecord] = []
 
     def replace(match: re.Match[str]) -> str:
-        content = (match.group(1) or match.group(2) or "").strip()
+        content = (text_or_empty(match.group(1) or match.group(2))).strip()
         if content:
             blocks.append(RichTextBlockRecord(kind="mermaid", content=content))
         return "\n\n"
@@ -1275,9 +1274,9 @@ def _decode_study_chat_reply_proposal(
     fence_match = CHAT_JSON_FENCE_RE.fullmatch(stripped)
     fence_language = ""
     if fence_match is not None:
-        fence_language = (fence_match.group("language") or "").lower()
+        fence_language = (text_or_empty(fence_match.group("language"))).lower()
         if fence_language in {"", "json"}:
-            candidate = (fence_match.group("body") or "").strip()
+            candidate = (text_or_empty(fence_match.group("body"))).strip()
 
     try:
         payload = json.loads(candidate)

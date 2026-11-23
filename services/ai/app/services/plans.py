@@ -115,11 +115,13 @@ class LearningPlanService:
                 document.id,
                 DocumentDebugRecord,
             )
-        client_request_id = str(getattr(goal, "client_request_id", "") or "").strip()
+        client_request_id = text_or_empty(
+            getattr(goal, "client_request_id", "")
+        ).strip()
         if not client_request_id:
             client_request_id = f"plan-request-{uuid4().hex}"
         expected_document_updated_at = str(
-            getattr(goal, "expected_document_updated_at", "") or ""
+            text_or_empty(getattr(goal, "expected_document_updated_at", ""))
         ).strip()
         if document is not None and not expected_document_updated_at:
             expected_document_updated_at = document.updated_at

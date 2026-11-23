@@ -63,6 +63,7 @@ from app.persistence.models import (
     LearningPlanOperationRow,
     StudyUnitRevisionOperationRow,
 )
+from app.core.coerce import text_or_empty
 
 
 class StudyUnitRevisionRepository:
@@ -390,7 +391,7 @@ class StudyUnitRevisionRepository:
             planning_context_revision=receipt.planning_context_revision
             if receipt
             else None,
-            error_code=row.error_code or "",
+            error_code=text_or_empty(row.error_code),
         )
 
     def _recover_in_session(

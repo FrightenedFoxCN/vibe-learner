@@ -43,7 +43,7 @@ from app.persistence.models import (
     TavernRunRow,
     TavernRunStepRow,
 )
-from app.core.coerce import text_at
+from app.core.coerce import text_at, text_or_empty
 
 
 _TAVERN_ROOM_CURSOR_VERSION = 1
@@ -1525,8 +1525,8 @@ def _room_to_row(room: TavernRoomRecord) -> TavernRoomRow:
 def _room_from_row(row: TavernRoomRow) -> TavernRoomRecord:
     return TavernRoomRecord(
         id=row.id,
-        creation_key=row.creation_key or "",
-        creation_input_digest=row.creation_input_digest or "",
+        creation_key=text_or_empty(row.creation_key),
+        creation_input_digest=text_or_empty(row.creation_input_digest),
         title=row.title,
         scene_profile=row.scene_profile,
         harness_policy=TavernHarnessPolicy.model_validate(row.harness_policy or {}),
@@ -1645,11 +1645,11 @@ def _run_from_row(
         context_digest=text_at(payload, "context_digest"),
         mode=row.mode,
         trigger_kind=str(payload.get("trigger_kind") or "user_message"),
-        parent_run_id=row.parent_run_id or "",
+        parent_run_id=text_or_empty(row.parent_run_id),
         root_run_id=str(payload.get("root_run_id") or row.id),
         input_message_id=row.input_message_id or None,
         anchor_message_id=str(
-            payload.get("anchor_message_id") or row.input_message_id or ""
+            text_or_empty(payload.get("anchor_message_id") or row.input_message_id)
         ),
         scheduled_participant_ids=[
             str(item)
@@ -1694,7 +1694,7 @@ def _apply_run_to_row(row: TavernRunRow, run: TavernRunRecord) -> None:
     row.parent_run_id = run.parent_run_id or None
     row.status = run.status.value
     row.mode = run.mode.value
-    row.input_message_id = run.input_message_id or ""
+    row.input_message_id = text_or_empty(run.input_message_id)
     row.expected_room_revision = run.expected_room_revision
     row.error_code = run.error_code
     row.created_at = run.created_at
@@ -1745,7 +1745,7 @@ def _step_from_row(row: TavernRunStepRow) -> TavernSpeakerStepRecord:
         persona_id=row.persona_id,
         participant_prompt_hash=row.participant_prompt_hash,
         status=row.status,
-        message_id=row.message_id or "",
+        message_id=text_or_empty(row.message_id),
         reply_to_message_id=row.reply_to_message_id,
         error_code=row.error_code,
         harness_trace=(

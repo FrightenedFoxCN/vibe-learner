@@ -118,6 +118,7 @@ from app.services.tavern_v3 import (
     snapshot_ref_from_registration,
 )
 from app.core.clock import utc_now_iso_micro as _now
+from app.core.coerce import text_or_empty
 
 
 TAVERN_STEP_LEASE_SECONDS = 120
@@ -751,7 +752,7 @@ class TavernService:
                     recent_messages = self.repository.list_recent_messages(
                         run.room_id,
                         limit=detail.room.harness_policy.context_message_limit,
-                        exclude_message_id=run.input_message_id or "",
+                        exclude_message_id=text_or_empty(run.input_message_id),
                     )
                     # The Run schedule, not the mutable claimed-step return
                     # object, owns the anchor used to construct the protected

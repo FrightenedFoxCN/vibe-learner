@@ -761,7 +761,7 @@ def _metadata(record: StudySessionRecord) -> dict[str, object]:
         "id": record.id,
         "document_id": record.document_id,
         "persona_id": record.persona_id,
-        "plan_id": record.plan_id or "",
+        "plan_id": text_or_empty(record.plan_id),
         "study_unit_id": record.study_unit_id,
         "status": record.status,
         "revision": record.revision,
@@ -786,7 +786,7 @@ def _immutable_projection(record: StudySessionRecord) -> dict[str, str]:
         "id": record.id,
         "document_id": record.document_id,
         "persona_id": record.persona_id,
-        "plan_id": record.plan_id or "",
+        "plan_id": text_or_empty(record.plan_id),
         "created_at": record.created_at,
     }
 
@@ -970,7 +970,7 @@ def _validate_row_projection(
         "id": (record.id, row.id),
         "document_id": (record.document_id, row.document_id),
         "persona_id": (record.persona_id, row.persona_id),
-        "plan_id": (record.plan_id or "", row.plan_id),
+        "plan_id": (text_or_empty(record.plan_id), row.plan_id),
         "study_unit_id": (record.study_unit_id, row.study_unit_id),
         "status": (record.status, row.status),
         "revision": (record.revision, row.revision),

@@ -75,6 +75,7 @@ from app.persistence.models import (
 from app.models.study_unit_revision import StudyUnitRevisionPreviewV1
 from app.persistence.study_unit_revision_repository import StudyUnitRevisionRepository
 from app.core.clock import utc_now_iso as _now
+from app.core.coerce import text_or_empty
 
 
 class LearningPlanOperationRepository:
@@ -859,7 +860,7 @@ def _apply_trace_row(
     trace: PlanGenerationTraceRecord,
 ) -> None:
     row.document_id = trace_key
-    row.plan_id = trace.plan_id or ""
+    row.plan_id = text_or_empty(trace.plan_id)
     row.model = trace.model
     row.created_at = trace.created_at
     row.payload = trace.model_dump(mode="json")
@@ -883,7 +884,7 @@ def _from_row(row: LearningPlanOperationRow) -> LearningPlanOperationRecord:
         {
             "operation_id": row.operation_id,
             "client_request_id": row.client_request_id,
-            "document_id": row.document_id or "",
+            "document_id": text_or_empty(row.document_id),
             "persona_id": row.persona_id,
             "request_schema_version": row.request_schema_version,
             "fingerprint_contract_version": row.fingerprint_contract_version,

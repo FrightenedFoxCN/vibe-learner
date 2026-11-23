@@ -17,6 +17,7 @@ from app.models.domain import (
     StudyUnitRecord,
     build_schedule_chapter_id,
 )
+from app.core.coerce import text_or_empty
 
 
 class StudyArrangementService:
@@ -26,7 +27,7 @@ class StudyArrangementService:
         goal: LearningGoalInput,
         base_document_id: str,
     ) -> list[StudyUnitRecord]:
-        objective = re.sub(r"\s+", " ", goal.objective or "").strip()
+        objective = re.sub(r"\s+", " ", text_or_empty(goal.objective)).strip()
         fragments = [
             item.strip(" 。.!！?？;；：:")
             for item in re.split(r"[，、；;。\n]+", objective)
@@ -34,7 +35,10 @@ class StudyArrangementService:
         ]
         unit_titles: list[str]
         if len(fragments) >= 3:
-            unit_titles = [self._goal_unit_title(item, index + 1) for index, item in enumerate(fragments[:3])]
+            unit_titles = [
+                self._goal_unit_title(item, index + 1)
+                for index, item in enumerate(fragments[:3])
+            ]
         elif len(fragments) == 2:
             unit_titles = [
                 self._goal_unit_title(fragments[0], 1),
@@ -135,7 +139,9 @@ class StudyArrangementService:
             deduped_anchors.append((section, title, unit_kind, confidence))
 
         study_units: list[StudyUnitRecord] = []
-        for index, (section, title, unit_kind, confidence) in enumerate(deduped_anchors, start=1):
+        for index, (section, title, unit_kind, confidence) in enumerate(
+            deduped_anchors, start=1
+        ):
             next_start = (
                 deduped_anchors[index][0].page_start - 1
                 if index < len(deduped_anchors)
@@ -146,13 +152,18 @@ class StudyArrangementService:
             if (
                 page_start == 1
                 and page_end <= 10
-                and title.casefold() in {self._normalize_title(document.title).casefold(), "front matter"}
+                and title.casefold()
+                in {self._normalize_title(document.title).casefold(), "front matter"}
             ):
                 unit_kind = "front_matter"
             if (
                 page_start <= 10
                 and unit_kind == "chapter"
-                and not re.match(r"^(?:\d+(?:\.\d+)*\.?\s+|Chapter\s+|Part\s+|Appendix\s+)", title, re.IGNORECASE)
+                and not re.match(
+                    r"^(?:\d+(?:\.\d+)*\.?\s+|Chapter\s+|Part\s+|Appendix\s+)",
+                    title,
+                    re.IGNORECASE,
+                )
                 and title not in {"Preliminaries"}
             ):
                 unit_kind = "front_matter"
@@ -215,40 +226,44 @@ class StudyArrangementService:
             debug_report=debug_report,
         )
         objective_hint = self._summarize_objective(goal.objective)
-        today_tasks = [
-            f"{item.title} · {item.focus}"
-            for item in schedule[:3]
-        ] or [
+        today_tasks = [f"{item.title} · {item.focus}" for item in schedule[:3]] or [
             f"阅读 {document.title} 的第一页内容，确认学习目标与术语。",
         ]
         if objective_hint:
             today_tasks.insert(0, f"先对照学习目标：{objective_hint}。")
         if persona is not None:
             from app.models.domain import persona_slot_content
+
             enc_style = persona_slot_content(persona, "encouragement_style")
             if enc_style:
-                today_tasks = [
-                    f"[{enc_style}] {task}"
-                    for task in today_tasks
-                ]
+                today_tasks = [f"[{enc_style}] {task}" for task in today_tasks]
         # objective stays as learner-authored goal text; overview/course_title are generated display fields.
         persona_hint = ""
         if persona is not None:
-            from app.models.domain import persona_narrative_mode_label, persona_slot_content
+            from app.models.domain import (
+                persona_narrative_mode_label,
+                persona_slot_content,
+            )
+
             narrative_mode = persona_narrative_mode_label(
                 persona_slot_content(persona, "narrative_mode", "稳态导学")
             )
             correction_style = persona_slot_content(persona, "correction_style")
-            persona_hint = f" \u91c7\u7528{narrative_mode}\u53d9\u4e8b\uff0c\u5e76\u4fdd\u6301{correction_style}\u7684\u53cd\u9988\u8282\u594f\u3002" if correction_style else f" \u91c7\u7528{narrative_mode}\u53d9\u4e8b\u3002"
+            persona_hint = (
+                f" \u91c7\u7528{narrative_mode}\u53d9\u4e8b\uff0c\u5e76\u4fdd\u6301{correction_style}\u7684\u53cd\u9988\u8282\u594f\u3002"
+                if correction_style
+                else f" \u91c7\u7528{narrative_mode}\u53d9\u4e8b\u3002"
+            )
         overview = (
             f"{persona_name} 将带你完成 {document.title} 的"
             f" {len(plannable_units)} 个学习单元，先从 {plannable_units[0].title if plannable_units else document.title} 开始。"
             f"{f' 目标优先：{objective_hint}。' if objective_hint else ''}"
             f"{persona_hint}"
         )
-        course_title = " / ".join(
-            [unit.title for unit in plannable_units[:2] if unit.title]
-        ) or document.title
+        course_title = (
+            " / ".join([unit.title for unit in plannable_units[:2] if unit.title])
+            or document.title
+        )
         return LearningPlanRecord(
             id="",
             document_id=document.id,
@@ -273,17 +288,19 @@ class StudyArrangementService:
         persona_name: str,
         persona: PersonaProfile | None = None,
     ) -> LearningPlanRecord:
-        units = self.build_goal_only_study_units(goal=goal, base_document_id=base_document_id)
+        units = self.build_goal_only_study_units(
+            goal=goal, base_document_id=base_document_id
+        )
         schedule = self._build_schedule(units=units, debug_report=None)
         objective_hint = self._summarize_objective(goal.objective)
-        today_tasks = [
-            f"{item.title} · {item.focus}"
-            for item in schedule[:3]
-        ] or ["先拆出目标边界，再确认第一轮学习动作。"]
+        today_tasks = [f"{item.title} · {item.focus}" for item in schedule[:3]] or [
+            "先拆出目标边界，再确认第一轮学习动作。"
+        ]
         if objective_hint:
             today_tasks.insert(0, f"先对照学习目标：{objective_hint}。")
         if persona is not None:
             from app.models.domain import persona_slot_content
+
             enc_style = persona_slot_content(persona, "encouragement_style")
             if enc_style:
                 today_tasks = [f"[{enc_style}] {task}" for task in today_tasks]
@@ -310,7 +327,9 @@ class StudyArrangementService:
         )
 
     def _summarize_objective(self, objective: str) -> str:
-        normalized = re.sub(r"\s+", " ", objective or "").strip(" 。.!！?？;；：:")
+        normalized = re.sub(r"\s+", " ", text_or_empty(objective)).strip(
+            " 。.!！?？;；：:"
+        )
         if not normalized:
             return ""
         if len(normalized) <= 24:
@@ -395,7 +414,9 @@ class StudyArrangementService:
             normalized,
             flags=re.IGNORECASE,
         )
-        normalized = re.sub(r"\bExercises?\b", "Exercises", normalized, flags=re.IGNORECASE)
+        normalized = re.sub(
+            r"\bExercises?\b", "Exercises", normalized, flags=re.IGNORECASE
+        )
         normalized = re.sub(r"\bChapter\]\b", "Chapter 1", normalized)
         return normalized.strip()
 
@@ -403,7 +424,9 @@ class StudyArrangementService:
         if not title:
             return False
         lowered = title.casefold()
-        if lowered in {"body text", "intro body text"} or lowered.startswith("body text "):
+        if lowered in {"body text", "intro body text"} or lowered.startswith(
+            "body text "
+        ):
             return False
         if self._looks_like_exercise_prompt(title):
             return False
@@ -464,7 +487,11 @@ class StudyArrangementService:
             return True
         if len(alpha_words) < 2 and not self._is_backmatter_title(title):
             return True
-        if uppercase_count > max(4, alpha_count * 0.75) and alpha_count > 6 and digit_count > 0:
+        if (
+            uppercase_count > max(4, alpha_count * 0.75)
+            and alpha_count > 6
+            and digit_count > 0
+        ):
             return True
         if re.search(r"[{}\\<>~=]{2,}", title):
             return True
@@ -527,9 +554,13 @@ class StudyArrangementService:
         if unit_kind == "chapter":
             return f"聚焦 {title}，覆盖教材第 {page_start}-{page_end} 页。"
         if unit_kind == "solutions":
-            return f"{title} 位于教材第 {page_start}-{page_end} 页，默认不进入主学习排期。"
+            return (
+                f"{title} 位于教材第 {page_start}-{page_end} 页，默认不进入主学习排期。"
+            )
         if unit_kind == "back_matter":
-            return f"{title} 属于附录/索引类内容，位于教材第 {page_start}-{page_end} 页。"
+            return (
+                f"{title} 属于附录/索引类内容，位于教材第 {page_start}-{page_end} 页。"
+            )
         return f"{title} 位于教材第 {page_start}-{page_end} 页。"
 
     def _build_schedule(
@@ -600,9 +631,15 @@ class StudyArrangementService:
                 section
                 for section in debug_report.sections
                 if section.level >= 2
-                and max(unit.page_start, section.page_start) <= min(unit.page_end, section.page_end)
+                and max(unit.page_start, section.page_start)
+                <= min(unit.page_end, section.page_end)
             ],
-            key=lambda section: (section.page_start, section.level, section.page_end, section.id),
+            key=lambda section: (
+                section.page_start,
+                section.level,
+                section.page_end,
+                section.id,
+            ),
         )
         if not related_sections:
             return [
@@ -635,7 +672,9 @@ class StudyArrangementService:
                     }
                 )
                 continue
-            group["anchor_page_end"] = max(int(group["anchor_page_end"]), section.page_end)
+            group["anchor_page_end"] = max(
+                int(group["anchor_page_end"]), section.page_end
+            )
             group["source_section_ids"] = list(
                 dict.fromkeys([*group["source_section_ids"], section.id])
             )
@@ -653,7 +692,9 @@ class StudyArrangementService:
                     title=str(group["title"]),
                     anchor_page_start=int(group["anchor_page_start"]),
                     anchor_page_end=int(group["anchor_page_end"]),
-                    source_section_ids=[str(item) for item in group["source_section_ids"]],
+                    source_section_ids=[
+                        str(item) for item in group["source_section_ids"]
+                    ],
                     content_slices=list(group["content_slices"]),
                 )
             )
@@ -673,7 +714,9 @@ class StudyArrangementService:
         schedule_id: str,
     ) -> ScheduleChapterRecord:
         normalized_title = title.strip() or unit.title
-        normalized_sources = [str(item).strip() for item in unit.source_section_ids if str(item).strip()]
+        normalized_sources = [
+            str(item).strip() for item in unit.source_section_ids if str(item).strip()
+        ]
         return ScheduleChapterRecord(
             id=build_schedule_chapter_id(
                 unit_id=unit.id,
@@ -713,7 +756,9 @@ class StudyArrangementService:
             return f"目标二：{compact}"
         return f"综合巩固：{compact}"
 
-    def _fallback_units_from_sections(self, document: DocumentRecord) -> list[StudyUnitRecord]:
+    def _fallback_units_from_sections(
+        self, document: DocumentRecord
+    ) -> list[StudyUnitRecord]:
         if document.study_units:
             return document.study_units
         return [
@@ -744,7 +789,8 @@ class StudyArrangementService:
 
             previous = merged[-1]
             should_merge = (
-                self._canonical_title(previous.title) == self._canonical_title(unit.title)
+                self._canonical_title(previous.title)
+                == self._canonical_title(unit.title)
                 or (previous.unit_kind == unit.unit_kind == "front_matter")
                 or (previous.unit_kind == unit.unit_kind == "back_matter")
             )
@@ -754,10 +800,16 @@ class StudyArrangementService:
 
             previous.page_end = max(previous.page_end, unit.page_end)
             previous.source_section_ids.extend(unit.source_section_ids)
-            previous.source_section_ids = list(dict.fromkeys(previous.source_section_ids))
+            previous.source_section_ids = list(
+                dict.fromkeys(previous.source_section_ids)
+            )
             previous.confidence = round(max(previous.confidence, unit.confidence), 2)
             if previous.unit_kind in {"front_matter", "back_matter"}:
-                previous.title = "Front Matter" if previous.unit_kind == "front_matter" else previous.title
+                previous.title = (
+                    "Front Matter"
+                    if previous.unit_kind == "front_matter"
+                    else previous.title
+                )
                 previous.include_in_plan = False
                 previous.summary = self._build_unit_summary(
                     title=previous.title,
