@@ -1,4 +1,5 @@
 """Application-instance dependencies; importing routes never starts services."""
+
 from fastapi import Request
 
 from app.core.bootstrap import Container

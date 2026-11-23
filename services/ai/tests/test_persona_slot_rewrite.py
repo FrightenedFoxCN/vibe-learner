@@ -10,7 +10,7 @@ from unittest.mock import patch
 from app.models.domain import PersonaSlot
 from app.services.model_provider import OpenAIModelProvider
 from app.services.persona import PersonaEngine
-from app.api import routes
+from app.api.routers import persona_scene as routes
 from app.models.api import PersonaSlotAssistRequest, PersonaSettingAssistRequest
 from app.services.local_store import LocalJsonStore
 from app.services.harness_broad_adoption import (

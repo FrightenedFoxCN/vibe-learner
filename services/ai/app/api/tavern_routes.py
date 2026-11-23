@@ -52,12 +52,16 @@ def _structured_tavern_error(
         )
         if persisted_run is not None:
             run_id = persisted_run.id
-    if code in {
-        "tavern_run_failed",
-        "tavern_run_in_progress",
-        "tavern_run_canceled",
-        "tavern_run_superseded",
-    } and len(parts) > 1:
+    if (
+        code
+        in {
+            "tavern_run_failed",
+            "tavern_run_in_progress",
+            "tavern_run_canceled",
+            "tavern_run_superseded",
+        }
+        and len(parts) > 1
+    ):
         run_id = parts[1]
     if code == "tavern_retry_already_created" and len(parts) > 1:
         child_run_id = parts[1]
@@ -66,7 +70,11 @@ def _structured_tavern_error(
         if room is not None:
             current_revision = room.room.revision
 
-    if exc.status_code == 502 and persisted_run is not None and persisted_run.status.value != "pending":
+    if (
+        exc.status_code == 502
+        and persisted_run is not None
+        and persisted_run.status.value != "pending"
+    ):
         action = TavernRecoveryAction.REPLAY_SAME_REQUEST
         code = "tavern_run_failed"
     elif code == "tavern_run_failed":
@@ -103,7 +111,9 @@ def _structured_tavern_error(
 
 
 @router.post("/rooms", response_model=TavernRoomDetail)
-def create_tavern_room(payload: CreateTavernRoomRequest, *, container: Container = Depends(get_container)) -> TavernRoomDetail:
+def create_tavern_room(
+    payload: CreateTavernRoomRequest, *, container: Container = Depends(get_container)
+) -> TavernRoomDetail:
     try:
         result = container.tavern_service.create_room(payload)
         reference_resource("tavern_room", result.room.id, revision=result.room.revision)
@@ -152,7 +162,9 @@ def list_tavern_runs(
     *,
     container: Container = Depends(get_container),
 ) -> TavernRunListResponse:
-    return TavernRunListResponse(items=container.tavern_service.list_runs(room_id, limit=limit))
+    return TavernRunListResponse(
+        items=container.tavern_service.list_runs(room_id, limit=limit)
+    )
 
 
 @router.get(
@@ -184,7 +196,9 @@ def update_tavern_room(
         reference_resource("tavern_room", result.room.id, revision=result.room.revision)
         return result
     except HTTPException as exc:
-        raise _structured_tavern_error(exc, room_id=room_id, container=container) from exc
+        raise _structured_tavern_error(
+            exc, room_id=room_id, container=container
+        ) from exc
 
 
 @router.delete("/rooms/{room_id}")
@@ -200,12 +214,19 @@ def delete_tavern_room(
             expected_revision=expected_revision,
         )
     except HTTPException as exc:
-        raise _structured_tavern_error(exc, room_id=room_id, container=container) from exc
+        raise _structured_tavern_error(
+            exc, room_id=room_id, container=container
+        ) from exc
     return {"deleted_room_id": room_id}
 
 
 @router.post("/rooms/{room_id}/turns", response_model=TavernTurnResponse)
-def run_tavern_turn(room_id: str, payload: TavernTurnRequest, *, container: Container = Depends(get_container)) -> TavernTurnResponse:
+def run_tavern_turn(
+    room_id: str,
+    payload: TavernTurnRequest,
+    *,
+    container: Container = Depends(get_container),
+) -> TavernTurnResponse:
     try:
         result = container.tavern_service.run_turn(room_id=room_id, payload=payload)
         reference_tavern_result(result)
@@ -271,7 +292,9 @@ def retry_tavern_run(
     "/rooms/{room_id}/runs/{run_id}/cancel",
     response_model=TavernTurnResponse,
 )
-def cancel_tavern_run(room_id: str, run_id: str, *, container: Container = Depends(get_container)) -> TavernTurnResponse:
+def cancel_tavern_run(
+    room_id: str, run_id: str, *, container: Container = Depends(get_container)
+) -> TavernTurnResponse:
     try:
         result = container.tavern_service.cancel_run(room_id=room_id, run_id=run_id)
         reference_tavern_result(result)
@@ -289,7 +312,9 @@ def cancel_tavern_run(room_id: str, run_id: str, *, container: Container = Depen
     "/rooms/{room_id}/runs/{run_id}/resume",
     response_model=TavernTurnResponse,
 )
-def resume_tavern_run(room_id: str, run_id: str, *, container: Container = Depends(get_container)) -> TavernTurnResponse:
+def resume_tavern_run(
+    room_id: str, run_id: str, *, container: Container = Depends(get_container)
+) -> TavernTurnResponse:
     try:
         result = container.tavern_service.resume_run(room_id=room_id, run_id=run_id)
         reference_tavern_result(result)
