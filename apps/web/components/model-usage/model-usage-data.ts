@@ -31,6 +31,11 @@ export function workflowLabel(value: string): string {
   return WORKFLOW_LABELS[value] ?? (value || "未关联 workflow");
 }
 
+// Prefix risky text cells before CSV quoting; numeric token columns are untouched.
+function spreadsheetText(value: string): string {
+  return /^[\t\r\n]|^[\s\u200B]*[=+\-@＝＋－＠]/u.test(value) ? "'" + value : value;
+}
+
 export function serializeUsageCsv(records: TokenUsageCallRecord[], timeZone: string) {
   const escape = (value: string) => `"${value.replaceAll('"', '""')}"`;
   const rows = [
@@ -47,13 +52,13 @@ export function serializeUsageCsv(records: TokenUsageCallRecord[], timeZone: str
       "合计 Token",
     ],
     ...records.map((record) => [
-      formatTimestamp(record.createdAt, { style: "full", timeZone }),
-      timeZone,
-      record.workflow,
-      record.operationId,
-      record.stage,
-      featureLabel(record.feature),
-      record.model,
+      spreadsheetText(formatTimestamp(record.createdAt, { style: "full", timeZone })),
+      spreadsheetText(timeZone),
+      spreadsheetText(record.workflow),
+      spreadsheetText(record.operationId),
+      spreadsheetText(record.stage),
+      spreadsheetText(featureLabel(record.feature)),
+      spreadsheetText(record.model),
       String(record.promptTokens),
       String(record.completionTokens),
       String(record.totalTokens),
