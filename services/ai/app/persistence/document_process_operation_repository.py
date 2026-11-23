@@ -61,6 +61,7 @@ from app.persistence.models import (
     DocumentRow,
 )
 from app.core.clock import utc_now_iso as _now
+from app.persistence.row_mapping import payload_of
 
 
 class DocumentProcessOperationRepository:
@@ -749,8 +750,8 @@ def _validate_read_back(
 ) -> None:
     if document_row is None or debug_row is None:
         raise DocumentProcessReadBackError(record.operation_id, "projection_missing")
-    document_digest = document_process_projection_digest(document_row.payload or {})
-    debug_digest = document_process_projection_digest(debug_row.payload or {})
+    document_digest = document_process_projection_digest(payload_of(document_row))
+    debug_digest = document_process_projection_digest(payload_of(debug_row))
     if document_digest != record.document_digest:
         raise DocumentProcessReadBackError(
             record.operation_id, "document_digest_mismatch"

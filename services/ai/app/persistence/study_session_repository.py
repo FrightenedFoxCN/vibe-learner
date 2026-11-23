@@ -54,6 +54,7 @@ from app.persistence.harness_operation_repository import (
 from app.persistence.harness_effect_repository import HarnessEffectJournalRepository
 from app.services.study_chat_effects import commit_study_chat_effects
 from app.core.coerce import text_or_empty
+from app.persistence.row_mapping import payload_of
 
 
 class StudySessionRepository:
@@ -901,7 +902,7 @@ def _read_question_attempt(
 
 
 def _session_scene_from_row(row: SessionSceneRow) -> SessionSceneRecord:
-    record = SessionSceneRecord.model_validate(row.payload or {})
+    record = SessionSceneRecord.model_validate(payload_of(row))
     expected = {
         "scene_instance_id": row.scene_instance_id,
         "session_id": row.session_id,
@@ -917,7 +918,7 @@ def _session_scene_from_row(row: SessionSceneRow) -> SessionSceneRecord:
 
 
 def _from_row(row: StudySessionRow) -> StudySessionRecord:
-    raw_payload = dict(row.payload or {})
+    raw_payload = dict(payload_of(row))
     _validate_stored_watermark(raw_payload, "revision", row.revision)
     _validate_stored_watermark(
         raw_payload,

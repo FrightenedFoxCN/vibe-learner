@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from app.models.domain import DocumentDebugRecord, DocumentRecord
 from app.persistence.database import Database
 from app.persistence.models import DocumentDebugRow, DocumentRow
+from app.persistence.row_mapping import payload_of
 
 
 class DocumentNotFound(RuntimeError):
@@ -18,7 +19,9 @@ class DocumentNotFound(RuntimeError):
 
 class DocumentRevisionConflict(RuntimeError):
     def __init__(self, document_id: str, expected: int, actual: int | None) -> None:
-        super().__init__(f"document_revision_conflict:{document_id}:{expected}:{actual}")
+        super().__init__(
+            f"document_revision_conflict:{document_id}:{expected}:{actual}"
+        )
 
 
 class DocumentProcessingConflict(RuntimeError):
@@ -56,11 +59,15 @@ class DocumentRepository:
             ).all()
             return [document_from_row(row) for row in rows]
 
-    def get_with_debug(self, document_id: str) -> tuple[DocumentRecord, DocumentDebugRecord | None] | None:
+    def get_with_debug(
+        self, document_id: str
+    ) -> tuple[DocumentRecord, DocumentDebugRecord | None] | None:
         with self.database.session() as session:
             pair = session.execute(
                 select(DocumentRow, DocumentDebugRow)
-                .outerjoin(DocumentDebugRow, DocumentDebugRow.document_id == DocumentRow.id)
+                .outerjoin(
+                    DocumentDebugRow, DocumentDebugRow.document_id == DocumentRow.id
+                )
                 .where(DocumentRow.id == document_id)
             ).one_or_none()
             if pair is None:
@@ -68,7 +75,9 @@ class DocumentRepository:
             document_row, debug_row = pair
             return (
                 document_from_row(document_row),
-                DocumentDebugRecord.model_validate(debug_row.payload) if debug_row is not None else None,
+                DocumentDebugRecord.model_validate(debug_row.payload)
+                if debug_row is not None
+                else None,
             )
 
     def import_legacy(self, documents: list[DocumentRecord]) -> None:
@@ -110,10 +119,15 @@ class DocumentRepository:
                 raise DocumentNotFound(document_id)
             document = document_from_row(row)
             if document.revision != expected_revision:
-                raise DocumentRevisionConflict(document_id, expected_revision, document.revision)
+                raise DocumentRevisionConflict(
+                    document_id, expected_revision, document.revision
+                )
             if document.status == "processing":
                 raise DocumentProcessingConflict(document_id)
-            unit = next((unit for unit in document.study_units if unit.id == study_unit_id), None)
+            unit = next(
+                (unit for unit in document.study_units if unit.id == study_unit_id),
+                None,
+            )
             if unit is None:
                 raise StudyUnitNotFound(study_unit_id)
             unit.title = title
@@ -122,10 +136,12 @@ class DocumentRepository:
                     section.title = title
             document.revision += 1
             document.updated_at = datetime.now(timezone.utc).isoformat()
-            replace_document_in_session(session, document, expected_revision=expected_revision)
+            replace_document_in_session(
+                session, document, expected_revision=expected_revision
+            )
             debug_row = session.get(DocumentDebugRow, document_id)
             if debug_row is not None:
-                debug = DocumentDebugRecord.model_validate(debug_row.payload or {})
+                debug = DocumentDebugRecord.model_validate(payload_of(debug_row))
                 for debug_unit in debug.study_units:
                     if debug_unit.id == study_unit_id:
                         debug_unit.title = title
@@ -135,7 +151,7 @@ class DocumentRepository:
 
 
 def document_from_row(row: DocumentRow) -> DocumentRecord:
-    document = DocumentRecord.model_validate(row.payload or {})
+    document = DocumentRecord.model_validate(payload_of(row))
     if document.revision != row.revision:
         raise ValueError(f"document_revision_projection_mismatch:{row.id}")
     return document
@@ -157,7 +173,9 @@ def replace_document_in_session(
         .execution_options(synchronize_session="fetch")
     )
     if result.rowcount != 1:
-        actual = session.scalar(select(DocumentRow.revision).where(DocumentRow.id == document.id))
+        actual = session.scalar(
+            select(DocumentRow.revision).where(DocumentRow.id == document.id)
+        )
         raise DocumentRevisionConflict(document.id, expected_revision, actual)
 
 
@@ -170,7 +188,9 @@ def fence_document_in_session(session: Session, document: DocumentRecord) -> Non
         .execution_options(synchronize_session=False)
     )
     if result.rowcount != 1:
-        actual = session.scalar(select(DocumentRow.revision).where(DocumentRow.id == document.id))
+        actual = session.scalar(
+            select(DocumentRow.revision).where(DocumentRow.id == document.id)
+        )
         raise DocumentRevisionConflict(document.id, document.revision, actual)
 
 

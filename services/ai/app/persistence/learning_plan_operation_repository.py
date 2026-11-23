@@ -76,6 +76,7 @@ from app.models.study_unit_revision import StudyUnitRevisionPreviewV1
 from app.persistence.study_unit_revision_repository import StudyUnitRevisionRepository
 from app.core.clock import utc_now_iso as _now
 from app.core.coerce import text_or_empty
+from app.persistence.row_mapping import payload_of
 
 
 class LearningPlanOperationRepository:
@@ -154,10 +155,10 @@ class LearningPlanOperationRepository:
                         )
                     base_document_updated_at = document_row.updated_at
                     base_document_digest = planning_projection_digest(
-                        document_row.payload or {}
+                        payload_of(document_row)
                     )
                     base_document = DocumentRecord.model_validate(
-                        document_row.payload or {}
+                        payload_of(document_row)
                     )
                     validate_physical_input(
                         request.planning_intent, base_document.page_count
@@ -170,7 +171,7 @@ class LearningPlanOperationRepository:
                                 "document_debug",
                             )
                         base_debug_digest = planning_projection_digest(
-                            debug_row.payload or {}
+                            payload_of(debug_row)
                         )
 
                 if document_id is None:
@@ -335,7 +336,7 @@ class LearningPlanOperationRepository:
                 document_row = session.get(DocumentRow, request.document_id)
                 if document_row is None:
                     raise LearningPlanDocumentNotFound(request.document_id)
-                current_digest = planning_projection_digest(document_row.payload or {})
+                current_digest = planning_projection_digest(payload_of(document_row))
                 if (
                     document_row.updated_at != operation.base_document_updated_at
                     or current_digest != operation.base_document_digest
@@ -353,7 +354,7 @@ class LearningPlanOperationRepository:
                             "document_debug",
                         )
                     current_debug_digest = planning_projection_digest(
-                        debug_row.payload or {}
+                        payload_of(debug_row)
                     )
                     if current_debug_digest != operation.base_debug_digest:
                         raise LearningPlanStaleDebugProjection(request.document_id)
@@ -814,7 +815,7 @@ def _validate_current_projection(session, record: LearningPlanOperationRecord) -
         if document_row is None:
             raise LearningPlanReadBackError(record.operation_id, "document_missing")
         if (
-            planning_projection_digest(document_row.payload or {})
+            planning_projection_digest(payload_of(document_row))
             != projection.document_digest
         ):
             raise LearningPlanReadBackError(
@@ -824,10 +825,7 @@ def _validate_current_projection(session, record: LearningPlanOperationRecord) -
         debug_row = session.get(DocumentDebugRow, projection.document_id)
         if debug_row is None:
             raise LearningPlanReadBackError(record.operation_id, "debug_missing")
-        if (
-            planning_projection_digest(debug_row.payload or {})
-            != projection.debug_digest
-        ):
+        if planning_projection_digest(payload_of(debug_row)) != projection.debug_digest:
             raise LearningPlanReadBackError(
                 record.operation_id, "debug_digest_mismatch"
             )
@@ -836,10 +834,7 @@ def _validate_current_projection(session, record: LearningPlanOperationRecord) -
         trace_row = session.get(PlanningTraceRow, trace_key)
         if trace_row is None:
             raise LearningPlanReadBackError(record.operation_id, "trace_missing")
-        if (
-            planning_projection_digest(trace_row.payload or {})
-            != projection.trace_digest
-        ):
+        if planning_projection_digest(payload_of(trace_row)) != projection.trace_digest:
             raise LearningPlanReadBackError(
                 record.operation_id, "trace_digest_mismatch"
             )

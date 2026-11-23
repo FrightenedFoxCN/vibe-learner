@@ -54,6 +54,7 @@ from app.services.study_chat_effects import (
 from app.services.study_chat_attachments import (
     validate_committed_study_chat_attachment_read_back,
 )
+from app.persistence.row_mapping import payload_of
 
 
 class StudyChatOperationRepository:
@@ -658,7 +659,7 @@ def _validate_committed_read_back(
             record=response_session,
             scene_records=scene_records,
         )
-    current_payload = dict(session_row.payload or {})
+    current_payload = dict(payload_of(session_row))
     current_payload["revision"] = session_row.revision
     current_payload["last_turn_sequence"] = session_row.last_turn_sequence
     current_session = StudySessionRecord.model_validate(current_payload)
@@ -797,7 +798,7 @@ def _load_operation_scene_records(
         row = session.get(SessionSceneRow, scene_id)
         if row is None:
             raise ValueError("study_chat_operation_committed_scene_missing")
-        scene_record = SessionSceneRecord.model_validate(row.payload or {})
+        scene_record = SessionSceneRecord.model_validate(payload_of(row))
         expected = {
             "scene_instance_id": row.scene_instance_id,
             "session_id": row.session_id,
