@@ -82,12 +82,12 @@ explicitly exported/removed before downgrade.
 
 ## Focused evidence
 
-- `npm run test:ai:document:checkpoints`: ten cases covering page failure, parent
+- 已移除的测试 `test:ai:document:checkpoints`（曾覆盖 ten cases covering page failure, parent
   budget expiry after complete Units, restart/fencing, changed input/config,
   corruption, capacity, concurrent duplicate admission, degraded-page retry,
   stale revision and actual HTTP restart/read-back. Real HTTP checkpoint JSON is
   decoded by the production TypeScript decoder in Node.
-- `npm run test:acceptance:document-checkpoints`: three fresh Python processes;
+- 已移除的验收 `test:acceptance:document-checkpoints`（曾覆盖 three fresh Python processes;
   the first exits via `os._exit` during OCR, the second opens the database and
   recognizes only the two remaining pages, the third repeats the resume and
   proves zero parser calls with the same committed result.

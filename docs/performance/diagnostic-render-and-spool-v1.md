@@ -8,7 +8,7 @@ must remain separate from full application or cross-platform acceptance.
 ## Chromium collector
 
 ```bash
-node apps/web/tests/diagnostic-collector-benchmark.mjs /tmp/diagnostic-collector.json
+# 已移除：node apps/web/tests/diagnostic-collector-benchmark.mjs /tmp/diagnostic-collector.json
 ```
 
 The probe bundles `apps/web/lib/diagnostics.ts` unchanged. After 1,000 warmups,
@@ -22,8 +22,8 @@ include JSON work and exclude network. This is not a complete UI frame budget.
 ## React timeline
 
 ```bash
-node apps/web/tests/diagnostic-render-benchmark.mjs /tmp/diagnostic-render-small.json
-node apps/web/tests/diagnostic-render-benchmark.mjs /tmp/diagnostic-render-rich.json --rich
+# 已移除：node apps/web/tests/diagnostic-render-benchmark.mjs /tmp/diagnostic-render-small.json
+# 已移除：node apps/web/tests/diagnostic-render-benchmark.mjs /tmp/diagnostic-render-rich.json --rich
 ```
 
 The production `DiagnosticTimeline` and strict decoder run in a 560×720 scroll
@@ -53,8 +53,8 @@ Both runners share `installSyntheticFetch` and `measureTimeline` assertions.
 
 ```bash
 cargo build --manifest-path apps/desktop/src-tauri/Cargo.toml --example diagnostic_render
-node apps/web/tests/diagnostic-native-render-benchmark.mjs /tmp/diagnostic-native-render-small.json
-node apps/web/tests/diagnostic-native-render-benchmark.mjs /tmp/diagnostic-native-render-rich.json --rich
+# 已移除：node apps/web/tests/diagnostic-native-render-benchmark.mjs /tmp/diagnostic-native-render-small.json
+# 已移除：node apps/web/tests/diagnostic-native-render-benchmark.mjs /tmp/diagnostic-native-render-rich.json --rich
 ```
 
 ## Native spool

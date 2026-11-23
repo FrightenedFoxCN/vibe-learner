@@ -18,7 +18,7 @@
     "bench:diagnostics": "cd services/ai && UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m app.services.diagnostic_benchmark",
     "bench:harness": "cd services/ai && UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m app.services.harness_performance_benchmark",
     "bench:web-bundle": "node scripts/performance/web-bundle.mjs",
-    "check": "npm run style:check && npm run check:contracts && npm run check:web && npm run test:baseline",
+    "check": "npm run style:check && npm run check:contracts && npm run check:web && npm run check:api-reference && npm run test:baseline",
     "check:release": "npm run check && npm run build:web",
     "style:check": "node scripts/style/check.mjs",
     "lint:ai": "node scripts/style/check.mjs --kind python --lint-only",
@@ -28,7 +28,9 @@
     "check:contracts": "tsc -p packages/shared/tsconfig.json && tsc -p packages/shared/tsconfig.contracts.json",
     "test:invariants": "cd services/ai && UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m unittest tests.test_harness_operation_identity tests.test_harness_operation_commit tests.test_harness_runtime tests.test_harness_effect_journal tests.test_study_chat_operation tests.test_document_checkpoints tests.test_tavern_schema tests.test_tavern_facilitated tests.test_tavern_prompt_safety tests.test_persona_lifecycle tests.test_persona_slot_rewrite tests.test_persona_generation_contracts tests.test_planning_no_repair",
     "test:invariants:web": "node --experimental-strip-types --test apps/web/tests/async-result-fence.test.ts",
-    "test:baseline": "npm run test:invariants && npm run test:invariants:web"
+    "test:baseline": "npm run test:invariants && npm run test:invariants:web",
+    "gen:api-reference": "cd services/ai && UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python ../../scripts/gen_api_reference.py",
+    "check:api-reference": "cd services/ai && UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python ../../scripts/gen_api_reference.py --check"
   },
   "dependencies": {
     "rehype-katex": "^7.0.1"

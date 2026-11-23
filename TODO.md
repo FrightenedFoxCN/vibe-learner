@@ -8,18 +8,18 @@
 
 ## UX 与文档
 
-- [ ] `UX-DENSITY-SENSORY-001` `[P2]` 补真实触控设备上的密度、长错误及慢网连续保存复核，检查滚动与焦点稳定性（人工实机验收暂缓）。桌面与窄屏 Chromium 回归入口见 `docs/frontend-test-boundaries.md`。
+- [ ] `UX-DENSITY-SENSORY-001` `[P2]` 补真实触控设备上的密度、长错误及慢网连续保存复核，检查滚动与焦点稳定性（人工实机验收暂缓）。桌面与窄屏 Chromium 回归目前没有自动化入口（原 frontend test boundaries 文档已删除）；以人工实机验收为准。
 - [ ] `UX-DENSITY-PERSONA-001` `[P2]` 补真实设备的保存/错误焦点、滚动和触控复核，包含候选选择/拒绝、字段 diff、名称必填定位及危险操作分层（人工实机验收暂缓）。
 - [ ] `UX-DENSITY-SCENE-001` `[P2]` 补真实设备的保存/错误定位、滚动和触控复核，包含结构/字段 diff、冲突提示及危险操作分层。实机及规则语义人工验收暂缓。
 - [ ] `DOC-USER-001` `[P2]` 独立走查 `/manual` 用户手册。
   - 真实 provider 首次配置与 real 主流程验收暂缓；新数据 mock 路线复跑入口为 `playwright.manual-acceptance.config.ts`。
-  - 补原生安装/Vault、Windows NSIS 与 Linux AppImage 安装、含密钥及浏览器草稿的设备级完整恢复；Vault 人工恢复验收暂缓。同路径 SQLite/文件恢复入口见 `docs/backend-test-boundaries.md`；手册中的路径/留存、unsigned 和 SHA-256 说明仍需与各平台实测对照。
+  - 补原生安装/Vault、Windows NSIS 与 Linux AppImage 安装、含密钥及浏览器草稿的设备级完整恢复；Vault 人工恢复验收暂缓。同路径 SQLite/文件恢复目前没有自动化入口（原 backend test boundaries 文档已删除）；手册中的路径/留存、unsigned 和 SHA-256 说明仍需与各平台实测对照。
 
 ## 性能、可靠性与部署
 
 - [ ] `REL-DESKTOP-001` `[P2]` 完成真实桌面/浏览器恢复验收。
   - 补原生桌面安装/退出及设备级慢网/断网、刷新/离页、未保存/异步返回、删除/归档组合；设备级 IME 和完整焦点顺序的人工实机验收暂缓。
-  - 浏览器 Settings 在途离页/丢响应、Tavern 空状态/整页键盘/删除归档组合，以及编辑器异步保存和 Study 恢复的回归入口见 `docs/frontend-test-boundaries.md`；合成 API 的浏览器结果不替代实机或真实 provider 验收。
+  - 浏览器 Settings 在途离页/丢响应、Tavern 空状态/整页键盘/删除归档组合，以及编辑器异步保存和 Study 恢复目前没有自动化回归入口；合成 API 的浏览器结果不替代实机或真实 provider 验收。
 - [ ] `PERF-TAV-LIVE-001` `[P2]` 验收代表性真实 provider 的 Tavern 性能。
   - 暂缓验收；开始前需明确 provider 配置与调用/费用上限。
   - 使用六人名册、每次最多四个调度目标及长对话，记录 token、实际计费、P50/P95、修复/失败率及 retry/cancel 行为。
@@ -46,3 +46,15 @@
 - `SKILL-DISTILL-001`：只抽取稳定、可验证、无密钥/用户数据的流程；`AGENTS.md` 仍是事实真源。
 
 性能任务须记录 fixture、环境、raw samples 和 before/after；预算变更遵循 `docs/performance-budgets-v1.md`。`QG-002` / `web-strict-decode-adversarial-v1` 保持不可变，扩展使用新版本。
+
+## 已知风险（原 AGENTS.md Near-Term Risks）
+
+- OCR cleanup is still heuristic-heavy and remains the main source of planning noise.
+- Tool-enabled planning increases latency and timeout pressure on upstream model providers.
+- The frontend now depends on historical debug and plan artifacts; changes to local storage shape should be made carefully.
+- Study Session aggregate writes use revision CAS and contiguous turn sequencing; compatibility reads share repository projection validation, and committed Turn content is immutable except the dedicated interactive-answer fields. Study Chat has production v3 evidence for its Session/Turn primary output and typed DB/Scene/file-effect slices; provider exactly-once remains unsupported. Tavern keeps its separate normalized Room/Run/Step/Message repository.
+- Production workflows use the v3 Harness runtime. Registered implementation and deterministic test success do not certify every platform or model quality; follow the scoped remaining tasks in `TODO.md`.
+- Harness resource references need evidence policies; never pass a constant `revision=0` for a resource that has no authoritative revision.
+- Use `HARNESS_RESOURCE_EVIDENCE_POLICIES` before constructing v3 context or commit evidence. A Tavern Room revision covers metadata and run-admission CAS, not transcript drift; a Tavern Message is currently unsupported as a context subject until a room-scoped protected transcript snapshot can be resolved. One committed Tavern Message uses one room-scoped sequence point, never a range. Unsupported resources may appear as honest `not_committed` attempts but cannot claim committed or rolled-back proof.
+- Resource evidence policy validates generic proof shape, not operation truth. Production v3 commit evidence must match a registered workflow/stage/output/payload key, an allowed resource set, and a versioned committed-projection DTO that proves all application-owned scope fields. The current Tavern actor policy proves one committed Message as `primary_output_only`, not every Room/Run/Step side effect.
+- Use `npm run check` for shared/Web reliability and type gates, and `npm run check:release` for the full backend test plus production Web build gate. `npm run lint:web` runs ESLint against the reviewed baseline; `npm run lint:ai` runs Ruff. Use `npm run style:check -- --base <commit>` for changed-file formatting and lint gates; see `docs/code-style.md`.

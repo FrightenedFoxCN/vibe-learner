@@ -311,13 +311,13 @@ Database tables are authoritative for Documents, Debug records, Learning Plans, 
 
 - `services/ai/data/uploads/`
   raw uploaded PDFs
-- `services/ai/data/documents.json`
+- `services/ai/data/documents.json`（运行时镜像，不随仓库分发）
   compatibility mirror for document shells and post-parse summaries
 - `services/ai/data/document_debug/`
   parser/debug payloads with pages, sections, chunks, warnings, and study units
 - `services/ai/data/document_process_stream/`
   parse progress stream records
-- `services/ai/data/plans.json`
+- `services/ai/data/plans.json`（运行时镜像，不随仓库分发）
   compatibility mirror for learning plans
 - `services/ai/data/learning_plan_stream/`
   plan-generation progress stream records

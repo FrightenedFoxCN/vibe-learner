@@ -44,7 +44,7 @@ internal orchestration receives it explicitly. Two applications can therefore
 use independent databases and runtime settings in one process.
 
 Route tests use instance-level dependency overrides in `tests.support.api`.
-`npm run test:ai:lifecycle` separately tests real lifespan and import behavior;
+real lifespan and import behavior currently have no automated coverage (the former `test:ai:lifecycle` was removed);
 route fault tests do not implicitly initialize the normal runtime database.
 
 ## Document checkpoint boundary

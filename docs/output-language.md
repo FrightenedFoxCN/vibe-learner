@@ -79,7 +79,7 @@ Live-provider quality conclusions are outside this document; it only defines out
 
 ## Focused checks
 
-- `npm run test:ai:output-language`: historical fingerprint parity, changed-input
+- 已移除的测试 `test:ai:output-language`（曾覆盖 historical fingerprint parity, changed-input
   rejection, French plan/session inheritance, mock language output, commit/failure
   behavior and HTTP read-back after restart.
 - `npm --workspace @vibe-learner/web run test:workspace:output-language`:

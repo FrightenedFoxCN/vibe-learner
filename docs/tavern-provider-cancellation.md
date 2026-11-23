@@ -83,7 +83,8 @@ a synchronous transport-cleanup acknowledgement or a provider refund receipt.
 ## Reproducible production-adapter check
 
 ```bash
-npm run test:acceptance:tavern-transport-cancel
+# 该验收命令已随测试套件移除；Tavern 调度与取消不变量改由
+# `npm run test:baseline`（test_tavern_facilitated）覆盖。
 ```
 
 This executes five focused tests using the actual production provider adapter

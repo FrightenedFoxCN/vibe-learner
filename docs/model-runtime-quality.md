@@ -63,4 +63,4 @@ VIBE_LEARNER_DOCUMENT_LAYOUT_TIMEOUT_SECONDS=90
 
 ## 验证入口
 
-代码回归使用 `npm run test:ai`、`npm run test:contracts`；发布门使用 `npm run check:release`。确定性回归验证结构与固定案例，模型语义质量、学习效果和跨平台行为需要各自的验收证据。
+代码回归使用 `npm run test:baseline`（不变量基线）、`npm run check:contracts`（共享契约类型检查）；发布门使用 `npm run check:release`。确定性回归验证结构与固定案例，模型语义质量、学习效果和跨平台行为需要各自的验收证据。

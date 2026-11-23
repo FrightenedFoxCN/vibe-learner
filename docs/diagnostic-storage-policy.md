@@ -10,9 +10,9 @@ physical admission and transient recovery have separate limits.
 | Browser ingestion | At most 100 events/batch and 16 KiB serialized/event | `services/ai/app/api/diagnostic_routes.py` |
 | Event payload retention | Seven days from DB ingestion, 10,000 rows, 64 MiB UTF-8 payload | `core/diagnostic_retention.py`, event retention tests |
 | Operation links | Seven days, 10,000 rows, 4 MiB payload | `core/diagnostic_record_retention.py` |
-| Harness diagnostic index | Seven days, 5,000 rows, 32 MiB payload | `core/diagnostic_record_retention.py`, `services/diagnostic_index.py` |
+| Harness diagnostic index | Seven days, 5,000 rows, 32 MiB payload | `services/ai/app/core/diagnostic_record_retention.py`, `services/ai/app/services/diagnostic_index.py` |
 | Event database admission | 128 MiB owned DB/side-file envelope | `core/diagnostic_quota.py` and quota tests |
-| Index database admission | 64 MiB owned DB/side-file envelope | `services/diagnostic_index.py` and quota tests |
+| Index database admission | 64 MiB owned DB/side-file envelope | `services/ai/app/services/diagnostic_index.py` and quota checks |
 | Native event spool | 256 files, seven days, maximum 16 KiB/new event; 4 MiB event envelope | `apps/desktop/src-tauri/src/diagnostics.rs` and native tests |
 
 Python paths above are relative to `services/ai/app`. Payload and physical limits

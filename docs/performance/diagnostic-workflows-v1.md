@@ -1,6 +1,6 @@
 # Diagnostic workflow overhead v1
 
-`services/ai/tests/diagnostic_workflow_probe.py` measures real ASGI request chains
+诊断工作流探针（原 `tests/diagnostic_workflow_probe.py`，已随测试套件移除）曾测量真实 ASGI request chains
 with the mock provider and temporary application storage. The enabled side uses
 normal diagnostic middleware, sink and workers. The disabled control bypasses
 only those components; canonical Harness, console logging and Python GC remain

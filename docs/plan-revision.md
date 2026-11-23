@@ -30,7 +30,7 @@ The diff shows the base/current revisions, content and order. Conflicts require 
 
 ## Validation
 
-- `npm run eval:harness:plan-revision`: seven developer-authored cases through the shared HarnessEvalRunner, with real revision-operation admission, deterministic grading and full system/source identity. Measures strict proposal and patch behavior, not model quality or full transactional rollback.
+- 已移除的评估套件 `eval:harness:plan-revision`（曾覆盖 seven developer-authored cases through the shared HarnessEvalRunner, with real revision-operation admission, deterministic grading and full system/source identity）。它衡量的是严格提案与补丁行为，不是模型质量或完整事务回滚。
 - `tests.test_plan_revision` and `tests.test_plan_revision_evals`: lifecycle, provider ambiguity and gate regression checks.
 - Concurrency, migration, rollback, receipt binding and browser behavior are covered by the current backend/frontend test-boundary commands. OS-level crash/desktop and representative live-provider gates remain separate from this deterministic acceptance; model-quality conclusions are outside this document.
 

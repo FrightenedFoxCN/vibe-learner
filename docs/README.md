@@ -11,7 +11,11 @@
 | [Tavern 架构](tavern-architecture.md) | 房间、消息、调度、事务和恢复 |
 | [Tavern 回应顺序验收](tavern-order-acceptance.md) | 逆序选择、房间恢复和部分失败子重试的验证协议 |
 | [Tavern 请求取消](tavern-provider-cancellation.md) | 可取消传输能力、本地连接/线程释放、数据库取消与上游计费边界 |
-| [API 参考](api-reference.md) | HTTP 和流式协议 |
+| [API 参考（生成）](api-reference.md) | 由 FastAPI OpenAPI 生成的端点清单；勿手改 |
+| [API 契约说明](api-contracts.md) | 手写：契约语义、版本与兼容边界 |
+| [关键入口清单](entry-points.md) | 按子域列出的代码入口与所有权 |
+| [工作机制与约定](conventions.md) | Harness 生命周期、提交证据、提案归属等 31 条约定 |
+| [页面命名与术语](page-vocabulary.md) | 页面、区块、命名规则与数据术语 |
 | [诊断审计统计](diagnostic-audit.md) | 统计分组、分位数、去重与未知数据语义 |
 | [诊断存储策略](diagnostic-storage-policy.md) | 已验证的分库配额、留存与恢复例外；200 MiB 非安装硬上限 |
 | [原生计数检查点](diagnostic-native-counter.md) | 双槽格式、旧格式迁移、损坏恢复及降级行为 |

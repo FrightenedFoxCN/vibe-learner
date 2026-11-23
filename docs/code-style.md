@@ -10,7 +10,6 @@ Formatting and linting have separate commands. TypeScript checking remains `npm 
 | `npm run lint:ai` | Ruff for Python source in the AI service and model-quality tooling |
 | `npm run format:check` | Formatting only for added/modified source; no files are rewritten |
 | `npm run style:all` | Full lint plus formatting of every file whose bytes do not match a known legacy formatting exemption |
-| `npm run test:style` | Real ESLint/Ruff smoke cases and baseline ratchet behavior; no app/provider/database |
 
 Install tools with `npm ci` at the root and `cd services/ai && uv sync --frozen`. CI can install only the Python development group with `uv sync --project services/ai --frozen --only-group dev`. Tool versions are pinned in `package-lock.json` and `services/ai/uv.lock`; Ruff also checks its exact version. The JavaScript parser does not require a TypeScript program, so the lint gate is independent of a production build.
 

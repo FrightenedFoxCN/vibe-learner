@@ -74,7 +74,7 @@ is visible to browser clients.
 
 ## Focused verification
 
-- `npm run test:ai:document:input-limits`: byte/page equality and overflow,
+- 已移除的测试 `test:ai:document:input-limits`（曾覆盖 byte/page equality and overflow、
   bounded reads, no admission/storage effects on preflight rejection, retained
   text, hard-limit failure/checkpoints, actual HTTP/NDJSON recovery, and
   absent/misleading request length.

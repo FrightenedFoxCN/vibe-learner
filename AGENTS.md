@@ -1,269 +1,57 @@
 # AGENTS
 
-## Repository Layout
+本文件只放**每次对话都必须遵守的约束**。机制细节在下方索引里按需阅读，不在这里重复。
 
-The codebase is a monorepo with four product/runtime surfaces and one docs area:
+## 仓库布局
 
-- `apps/web`: Next.js 16 app-router frontend for upload, global debug, planning, study, persona/scene editing, and Tavern interaction.
-- `services/ai`: FastAPI backend for document ingestion, OCR parsing, Study Unit cleanup, planning, persona/scene APIs, Study Chat, Tavern orchestration, and Harness evidence.
-- `packages/shared`: shared TypeScript contracts used by the frontend, including Tavern and Harness projections.
-- `apps/desktop`: Tauri 2 desktop shell, bundle scripts, icons, and Rust sidecar integration.
-- `docs`: project docs. Keep architecture and API reference here.
+`apps/web`（Next.js 16 前端）· `services/ai`（FastAPI 后端）· `packages/shared`（TS 契约）· `apps/desktop`（Tauri 壳）· `docs`（文档）
 
-## Key Entry Points
+未完成工作只由 [TODO](TODO.md) 维护。
 
-- Web app entry: `apps/web/app/page.tsx`
-- Debug entry: global `apps/web/components/debug-overlay.tsx`; the old `/debug` page no longer exists.
-- Frontend API client: `apps/web/lib/api.ts`
-- API router: `services/ai/app/api/routes.py`
-- Backend container bootstrap: `services/ai/app/core/bootstrap.py`
-- Document OCR checkpoints: `services/ai/app/models/document_checkpoint.py`, `services/ai/app/persistence/document_checkpoint_repository.py`, and `docs/document-checkpoints.md`. Checkpoint-only work does not prove Document commit; resume admits one distinct child operation per source and never replays a completed child.
-- Document parsing pipeline: `services/ai/app/services/document_parser.py`
-- Document input bounds: `services/ai/app/models/document_input_limits.py`, `services/ai/app/api/document_upload_limit.py`, and `docs/document-input-limits.md`. Keep byte/page preflight before storage/admission; the 1,400-character chunk target is separate from the 65,536-character indivisible-unit limit.
-- Document revision/CAS persistence: `services/ai/app/persistence/document_repository.py`; runtime writes must not use `LocalJsonStore.save_list("documents", ...)`.
-- Planning physical page scope: `services/ai/app/models/pdf_page_scope.py`, `apps/web/lib/planning-page-scope.ts`, and `docs/planning-page-scope.md`. Physical PDF positions constrain tools/proposals/commits; PDF metadata printed labels are a separate read-only reference.
-- Study-unit cleanup and plan heuristics: `services/ai/app/services/study_arrangement.py`
-- Study Unit revision confirmation: `services/ai/app/models/study_unit_revision.py`, `services/ai/app/persistence/study_unit_revision_repository.py`, `apps/web/components/study-unit-revision-panel.tsx`, and `docs/study-unit-revision.md`. Planning suggestions never replace the current tool context or shared Document until explicit confirmation.
-- Plan revision/CAS: `services/ai/app/persistence/learning_plan_repository.py`, `services/ai/app/services/plan_revision.py`, and `docs/plan-revision.md`.
-- Plan prompting and tool context: `services/ai/app/services/plan_prompt.py`
-- Model/tool-call planner: `services/ai/app/services/model_provider.py`
-- Shared contracts: `packages/shared/src/`
-- Harness contracts: `services/ai/app/models/harness.py` and `packages/shared/src/harness.ts`; v1/v2 are read-only compatibility contracts, while v3 is the production contract used by adopted workflows.
-- Harness workflow manifest: `services/ai/app/models/harness_manifest.py`, `packages/shared/src/harness-manifest.ts`, and `packages/shared/fixtures/harness/workflow-manifest-v1.json`.
-- Harness operation identity: `services/ai/app/models/harness_operation.py`, `services/ai/app/persistence/harness_operation_repository.py`, and `services/ai/alembic/versions/20260825_0013_harness_operation_bindings.py`.
-- Harness artifact authorization: `services/ai/app/models/harness_artifact_access.py`, `packages/shared/src/harness-artifact-access.ts`, and the artifact-access fixtures under `packages/shared/fixtures/harness/`.
-- Harness protected artifacts and effects: `services/ai/app/persistence/harness_artifact_repository.py`, `services/ai/app/persistence/harness_effect_repository.py`, `services/ai/app/models/harness_effect.py`, and `packages/shared/src/harness-effect.ts`.
-- Tool Manifest: `services/ai/app/models/tool_manifest.py`, `services/ai/app/services/tool_provider_projection.py`, `packages/shared/src/tool-manifest.ts`, and `packages/shared/fixtures/harness/tool-manifest-v1.json`.
-- Harness eval contracts: `services/ai/app/models/harness_eval.py` and `packages/shared/src/harness-eval.ts`; the eval execution runners and their suite fixtures were removed.
-- Operation commit contracts: `services/ai/app/models/tavern_commit.py` and `packages/shared/fixtures/harness/operation-commit-policies-v1.json`.
-- Harness engineering guide and source ownership map: `docs/harness/README.md`
-- Unified active backlog: `TODO.md`
-- Planning/Study output language: `services/ai/app/models/output_language.py`, `services/ai/app/services/output_language.py`, and `docs/output-language.md`. Explicit preferences bind operation identity and save with successful Session commits; source quotations stay verbatim and legacy absent fields preserve fingerprint bytes.
-- Versioned performance gates: `docs/performance-budgets-v1.md`
-- Populated frontend request-count gates: `docs/performance/web-resource-reads-v1.md`; focus may join owned in-flight reads, while explicit refresh and post-mutation recovery need fresh projection tickets. Do not share a URL-only cache across operation/owner boundaries.
-- Harness performance gates: `docs/performance-budgets-v1.md`; run `npm run bench:harness -- --samples 30 --output /tmp/harness-local.json` for provider-free local measurements.
-- Tavern contracts and persistence: `services/ai/app/models/tavern.py`, `services/ai/app/persistence/tavern_repository.py`, and `packages/shared/src/tavern.ts`
-- Study Session CAS persistence: `services/ai/app/persistence/study_session_repository.py`; new Study Session writes must not return to `LocalJsonStore.save_list("sessions", ...)`.
-- Study Chat operation contracts: `services/ai/app/models/study_chat_operation.py`, `services/ai/app/persistence/study_chat_operation_repository.py`, and `apps/web/lib/study-chat-operation-decode.ts`.
-- Study browser recovery: `apps/web/hooks/use-study-chat-recovery.ts`, `apps/web/lib/study-request-deadline.ts`, and `docs/study-recovery.md`. Browser timeouts never prove server cancellation; bounded GET recovery must keep the original identity and never replay `uncertain` outcomes.
-- Typed effect contracts: `services/ai/app/models/harness_effect.py`, `services/ai/app/models/study_chat_effect.py`, `services/ai/app/services/study_chat_effects.py`, and `packages/shared/src/harness-effect.ts`.
+## 铁律
 
-## Current Runtime Layout
+1. **数据分层与兜底**：外部形状（外部 JSON / 旧行 / 模型输出）只在 `app/core/coerce.py` 归一化；域模型保持 strict，必填字段缺失必须报错；前端 decode 只校验形状，不发明语义默认值。见 [data-flow-layers](docs/data-flow-layers.md)。
+2. **Harness 生命周期**：新增或迁移工作流必须走 typed input → versioned context → strict decode → invariant validation → bounded recovery → atomic commit → trace。见 [harness/README](docs/harness/README.md)。
+3. **Operation identity**：与领域操作准入在**同一数据库事务**内分配；不得从 provider `tool_call_id` 推导，不得为 legacy 行捏造。
+4. **提交证据**：必须匹配已注册的 operation key 与版本化 committed projection；通用资源证据不足以声称提交成功。
+5. **提案 ≠ 已提交**：模型/heuristic 提案与已提交记录、API 响应严格分离；生成的 ID、身份、顺序、修订、时间戳不得进入模型自有 schema。
+6. **交互题评分材料**只存在于服务端；浏览器只渲染持久化后的 Session 读回。
+7. **验证入口**：`npm run test:baseline`（不变量基线）+ `npm run check`（style + contracts + web types + baseline）。完整测试套件与 `eval:harness:*` 已移除，不要引用旧命令。
+8. **新增 `test:*` 脚本前**先确认对应测试入口存在；没有入口就不要加脚本。
 
-- Frontend runs separately from backend.
-- Backend defaults to local SQLite and can use PostgreSQL through `DATABASE_URL`.
-- `LocalJsonStore` is now a compatibility/database wrapper and still mirrors several legacy aggregates to JSON under `services/ai/data/`; do not route new append-heavy domains through `save_list`. For Documents and Study Sessions, `save_list` is insert-only legacy import, rejects same-ID divergence, and never replaces/deletes runtime rows.
-- Documents use single-row inserts and revision CAS. Study Unit title changes commit Document/Debug together and require `expected_revision`; parsing and Planning commits fence the same Document revision. Legacy revision 0 is omitted from payloads to preserve historical v1 snapshot digests.
-- Study Sessions are database-authoritative. The legacy `sessions.json` is import compatibility only; normal Session writes use row CAS and do not synchronously rewrite the full JSON list.
-- Uploaded files are stored under `services/ai/data/uploads/`.
-- Document debug artifacts live under `services/ai/data/document_debug/`.
-- Planning traces live under `services/ai/data/planning_trace/`.
+## 运行形态（要点）
 
-## Main Flows
+- 前端与后端分离运行；后端默认 SQLite，可用 `DATABASE_URL` 指向 PostgreSQL。
+- `LocalJsonStore` 是兼容层；Documents / Study Sessions 必须走单行插入 + revision CAS，不得回退到 `save_list`。
+- Tavern 是独立域（rooms / participants / messages / runs / steps），不要把 Tavern 字段塞进 `StudySessionRecord`。
 
-### 1. Document parsing
-
-`POST /documents` -> `POST /documents/{id}/process` or `POST /documents/{id}/process/stream`
-
-The backend creates a local document record, parses the uploaded PDF, falls back to OCR when needed, strips noisy structure, builds study units, and stores a debug record for replay and inspection. Completed pages/stages have bounded operation-scoped checkpoints; explicit resume reuses authorized saved work and commits through the normal CAS/Harness boundary.
-
-### 2. Planning
-
-`GET /documents/{id}/planning-context` -> `POST /learning-plans` or `POST /learning-plans/stream`
-
-The planner receives cleaned study units plus finer outline/detail context. With the real LiteLLM provider enabled (legacy `openai` configuration is normalized to `litellm`), it may call any configured member of the six-tool Planning catalog before returning a strict `LearningPlanProposalV1`.
-
-### 3. Study interaction
-
-`POST /study-sessions` -> `POST /study-sessions/{id}/chat`
-
-The frontend consumes structured chat replies with citations and `character_events`, not free-form roleplay text parsing. Chat requests use durable operation admission and query-only recovery for ambiguous outcomes. Study Chat resolves an operation-scoped protected snapshot before one provider call, strictly validates the complete nested reply, and commits the Session/Turn, database effects, operation receipt, and terminal v3 trace together. Scene mutation and operation-owned attachment staging retain separate strict read-back or compensation boundaries, while upstream provider calls remain `uncertain` without provider idempotency/read-back. The Study commit policy is `primary_output_only`: it proves the Session/Turn projection, not every Scene, file, or provider effect. Interactive-question UX waits for persisted Session read-back and never receives the server-only grading specification.
-
-### 4. Tavern interaction (active implementation)
-
-Tavern is a separate domain from Study Session. Its normalized schema uses `tavern_rooms`, `tavern_participants`, `tavern_messages`, `tavern_runs`, and `tavern_run_steps`; messages are append-only and use a per-room sequence. Direct and facilitated runs are active. Facilitated targets are a set; the server schedules them by participant `display_order`, commits each validated actor separately, and records partial/failed/blocked steps for scoped child retry. Generating steps use database-clock leases, heartbeat renewal, owner/claim fencing, and at most three claims. Cancel immediately fences persistence and later recovery calls. Compatible Chat Completions uses a call-owned cancellable HTTP adapter; other synchronous protocols retain timeout fallback. Local connection closure never proves upstream computation/billing stopped; see `docs/tavern-provider-cancellation.md`. Do not add Tavern fields to `StudySessionRecord`.
-
-Read `docs/harness/README.md` and the ownership rules in this file before modifying any reliability or model-owned schema boundary. Also read `docs/harness/tavern.md` and `docs/tavern-architecture.md` for Tavern changes.
-
-## Local Development Commands
-
-Install JavaScript dependencies from repo root:
+## 常用命令
 
 ```bash
 npm install
-```
-
-Install backend dependencies with `uv`:
-
-```bash
-cd services/ai
-uv sync
-```
-
-Run the frontend:
-
-```bash
 npm run dev:web
-```
-
-Run the backend:
-
-```bash
-cd services/ai
-uv run uvicorn app.main:app --reload
-```
-
-Build the frontend:
-
-```bash
 npm run build:web
-```
-
-Run the remaining verification gates:
-
-```bash
+npm run test:baseline
 npm run check
+
+cd services/ai && uv sync
+cd services/ai && uv run uvicorn app.main:app --reload
 ```
 
-> Full test suites were removed from this repository; what survives is the core
-> invariant baseline: Harness lifecycle plus Tavern scheduling/recovery and Persona
-> lifecycle/slot-rewrite. Run `npm run test:baseline` (129 backend invariant tests +
-> 11 frontend async-fence tests, about 15s) or its halves `test:invariants` and
-> `test:invariants:web`. `npm run check` runs that baseline alongside style and type
-> gates. Do not reintroduce other `test:*` scripts unless a real entry point exists.
+## 配置
 
-## Configuration Notes
+- Python 一律 `uv`，不要假定全局激活的虚拟环境。
+- 规划 provider 默认来自 `services/ai/.env`；数据库权威运行时设置可无需重启覆盖。
+- `VIBE_LEARNER_PLAN_PROVIDER=mock` 保持本地确定性；`litellm` 走真实模型。
 
-- Python work in this repo is `uv`-first. Do not assume a globally activated virtualenv.
-- Planner provider defaults come from `services/ai/.env`; database-authoritative runtime settings can override them without a restart.
-- `VIBE_LEARNER_PLAN_PROVIDER=mock` keeps planning deterministic and local.
-- `VIBE_LEARNER_PLAN_PROVIDER=litellm` enables real model planning through the configured OpenAI-compatible base URL; `openai` remains a normalized compatibility alias.
+## 按需阅读
 
-## Working Conventions
-
-- Keep the backend/frontend contract aligned through `packages/shared/src/` and the response normalizers in `apps/web/lib/api.ts`.
-- Follow `docs/data-flow-layers.md` for missing-data defaults: normalize untrusted shapes only through `app/core/coerce.py`, keep domain models strict, and never re-invent semantic defaults in the frontend decoders.
-- For new backend routes, update the appropriate bounded model module (for Tavern, `models/tavern.py`), `apps/web/lib/api.ts`, and `packages/shared/src/`.
-- All new workflows and migrated existing model/heuristic workflows must follow the shared Harness lifecycle: typed input, versioned context, strict decode, invariant validation, bounded recovery, atomic commit, and trace/eval coverage.
-- Construct v3 context only from an admitted `HarnessOperationBindingV1` and an executable `HarnessWorkflowManifestV1` entry. A manifest registration or context fixture is routing/configuration evidence, not production adoption.
-- Allocate Harness identity in the same database transaction as domain operation admission. Never derive it from a provider `tool_call_id`, never fabricate it for legacy rows, and retain the immutable binding as an admission tombstone if product retention removes the domain row.
-- Artifact grants use the server-resolved local-installation principal and exact operation/artifact/contract/permission scope; they are not bearer tokens. The resolver authorizes before reading protected content and returns typed retention/digest failures.
-- Durable effects use one admitted Harness operation plus a global slot for stable journal identity. Keep adapter/contract/target bindings immutable, use database-clock claim fencing, and require exact read-back or compensation evidence before emitting a terminal outcome; unsupported provider read-back remains `uncertain`.
-- The versioned Tool Manifest is the single catalog for all six Planning and thirty-one Study tools. Provider schemas, runtime input/result adapters, redacted trace projections, call ceilings, and provider ID correlation must remain consistent with its shared golden fixture.
-- Eval samples bind one admitted Harness operation and complete tested-system configuration. Python owns canonical eval identities/digests; infrastructure, case-data, grader, and metric failures must remain distinct from candidate failures and cannot count as candidate success.
-- `HarnessOperationRuntime` owns durable fenced v3 lifecycle state; Tavern identity and Planning tool pilot baselines run in PR checks. Legacy recovery migration is projection-only and fail-closed: it requires a real admitted binding plus existing v3 trace attempt, and post-cutoff legacy rows remain read-only.
-- Tavern actor generation and Study Chat resolve authorized protected snapshots before provider execution, emit v3 attempts/checks and terminal traces, and run deterministic held-out eval suites. Historical v1/v2 evidence remains read-only compatibility data.
-- V3 commit claims must match a registered full operation key and versioned committed projection. Generic resource evidence is insufficient; the Tavern actor Message policy is `primary_output_only`, not proof of all Room/Run/Step effects in its transaction.
-- Tavern persona Messages persist server-only operation/effect receipt metadata atomically. Keep it out of API/OpenAPI, and use `get_actor_commit_read_back` so Message/Run/Step/Participant/reply-anchor evidence comes from one database snapshot.
-- Treat Harness as a repository-wide lifecycle. Document/OCR/Study Unit, Planning, Persona/Scene, Study and Tavern have production v3 boundaries and frontend decoders. Remaining work is listed only in `TODO.md`; deterministic regression gates do not make model-quality claims.
-- Fix the unsafe write/schema boundary before claiming workflow adoption: Study follows concurrent-safe append → operation admission/receipt → typed effect schema → effect commit/staging → v3 trace/eval; Document and Planning have durable admission, atomic committed projections and v3 lifecycle evidence; Scene keeps model proposal, user-authored save, committed projection and API DTO separate.
-- Study Session revision and turn sequence are application-owned committed state. Keep them out of Study Chat/model proposal schemas; Session CAS is concurrency infrastructure, not durable request admission or successful Harness commit evidence.
-- Interactive Question grading material must remain server-only before submission. Keep model proposal, grading spec, public prompt, committed result, and Turn-bound attempt input separate; the browser must render only persisted Session read-back.
-- UX/reliability findings require independent revalidation before closure; developer-authored happy-path tests alone are insufficient.
-- Treat `HarnessStage`, `HarnessAttemptPhase`, and stream event types as separate vocabularies. Stages are domain operations such as page extraction or one planning tool execution; generate/decode/validate/repair/commit/rollback are phases inside a stage; progress names such as `page_parsed` are stream events. Keep the Python/TypeScript operation-stage registry and its shared golden fixture atomic.
-- An application component contract versions reviewed algorithm behavior; it is not a dependency/model version. An unaudited component uses a null registration and blocks context construction—never invent `pending-*`, `latest`, `unknown`, or a package version as adoption evidence.
-- Only digest explicitly reviewed `HarnessSafeManifest` DTOs. User/document/prompt/transcript content belongs behind an authorized artifact resolver; SHA-256 is integrity evidence, not confidentiality or replay availability. Python is the canonical digest authority until a cross-language canonical-bytes contract is added.
-- Keep model/heuristic proposals separate from committed records and API responses. Use domain-owned proposal models and the ownership rules here; generated IDs, identity, ordering, revisions, timestamps and committed state effects must not enter model-owned proposal schemas.
-- Preserve the split between:
-  - learning UI
-  - character shell
-  - debug console
-- Prefer adding new docs under `docs/` instead of expanding root README into a long design memo.
-
-## Page Vocabulary
-
-Use the following standard names when discussing frontend pages and page blocks. Avoid vague terms such as "that panel on the left" when a stable block name exists.
-
-### Page Names
-
-- `/` = `Navigation Home`
-- `/plan` = `Plan Workspace`
-- `/study` = `Study Dialog`
-- `/persona-spectrum` = `Persona Spectrum`
-- `/scene-setup` = `Scene Setup`
-- `/tavern` = `Tavern Workspace` (frontend and backend active)
-- Debug is a global overlay, not a standalone page.
-
-### `Tavern Workspace` Block Names
-
-- `Tavern Header`: page title, active room title, create action, and status.
-- `Tavern Session Panel`: recent rooms and room switching. Archive/restore is currently in `Tavern Header`; broader room management remains backlog work.
-- `Tavern Setup Panel`: persona multi-select, optional scene, title, and room creation.
-- `Tavern Conversation Panel`: ordered user/director/persona/system transcript.
-- `Participant Roster`: cast, target selection, and per-persona generation state.
-- `Interaction Composer`: visible message, optional next-round guidance, recipient preview, and send/stop actions.
-- `Reliability Details`: collapsed user-readable Harness recovery summary; raw trace belongs in debug UI.
-
-### `Learning Workspace` Block Names
-
-- `Hero Header`: the top banner area in `apps/web/components/learning-workspace.tsx` with product title, status notice, and debug link.
-- `Persona Selector`: the persona dropdown block rendered by `apps/web/components/persona-selector.tsx`.
-- `Study Column`: the main left-column flow container on the home page.
-- `Document Setup Panel`: the upload-and-generate block rendered by `apps/web/components/document-setup.tsx`.
-- `Plan History Panel`: the historical plan selection block rendered by `apps/web/components/plan-history.tsx`.
-- `Plan Overview Panel`: the current plan summary block inside `LearningWorkspace`, showing overview, main themes, and today tasks.
-- `Study Console`: the chapter chat/request block rendered by `apps/web/components/study-console.tsx`.
-- `Character Shell`: the right-column teacher/persona block rendered by `apps/web/components/character-shell.tsx`.
-- `Character Event Snapshot`: the JSON event preview area inside `Character Shell`.
-
-### `Document Debug Console` Block Names
-
-- `Debug Hero Header`: the top banner with page title, current status message, and back link.
-- `Document List Sidebar`: the left-side document picker.
-- `Parse Summary Card`: the summary block titled `解析摘要`.
-- `Process Stream Panel`: the block titled `流式处理反馈`.
-- `Plan Stream Panel`: the block titled `流式生成学习计划`.
-- `Section Guess Panel`: the block titled `章节猜测`.
-- `Study Unit Cleanup Panel`: the block titled `学习编排清洗结果`.
-- `Planning Outline Panel`: the block titled `计划输入目录`.
-- `Planning Tools Panel`: the block titled `计划工具与章节详情`.
-- `Planning Trace Panel`: the block titled `计划模型 Trace`.
-- `Parse Warning Panel`: the block titled `解析告警`.
-- `Chunk Inspector Panel`: the block titled `切块结果`.
-- `Page Extraction Panel`: the block titled `逐页抽取`.
-
-### Naming Rules
-
-- Use `Panel` for standalone content cards inside a page.
-- Use `Header` for the top banner area of a page.
-- Use `Sidebar` only for the document picker inside the global `Document Debug Console` overlay.
-- Use `Shell` only for the persona/character container, not for ordinary study cards.
-- Use `Study Unit` for cleaned planning units, not `section`, unless referring to raw parser-detected `sections`.
-- Use `Section` for raw parse structure or cited textbook structure.
-
-### Data-Term Mapping
-
-- `Document`: uploaded textbook file plus derived processing status.
-- `Section`: raw parser-detected chapter/subchapter structure in debug artifacts.
-- `Study Unit`: cleaned planning unit derived from sections and OCR text cleanup.
-- `Learning Plan`: persisted planner output.
-- `Study Session`: interactive tutor session bound to one document, persona, and active section.
-- `Character Event`: structured performance instruction consumed by the character layer.
-- `Tavern Room`: durable free-interaction container with an optional scene and persona snapshots.
-- `Tavern Participant`: room-scoped immutable persona snapshot plus prompt hash.
-- `Tavern Message`: append-only attributed message with a monotonic room sequence.
-- `Tavern Run`: idempotent, revision-checked generation attempt with a server-owned schedule, normalized speaker steps, context digest, and Harness traces.
-- `Tavern Speaker Step`: one scheduled persona attempt with pending/generating/completed/failed/blocked state and a reply anchor.
-- `Harness Trace`: workflow-neutral validate/repair evidence; it applies across parsing, planning, generation, study, Tavern, and frontend decoding.
-
-## Documentation Map
-
-- Project overview: `README.md`
-- Docs index: `docs/README.md`
-- Architecture: `docs/architecture.md`
-- API reference: `docs/api-reference.md`
-- Harness engineering guide and source ownership map: `docs/harness/README.md`
-- Unified active backlog: `TODO.md`
-- Tavern architecture: `docs/tavern-architecture.md`
-
-## Near-Term Risks
-
-- OCR cleanup is still heuristic-heavy and remains the main source of planning noise.
-- Tool-enabled planning increases latency and timeout pressure on upstream model providers.
-- The frontend now depends on historical debug and plan artifacts; changes to local storage shape should be made carefully.
-- Study Session aggregate writes use revision CAS and contiguous turn sequencing; compatibility reads share repository projection validation, and committed Turn content is immutable except the dedicated interactive-answer fields. Study Chat has production v3 evidence for its Session/Turn primary output and typed DB/Scene/file-effect slices; provider exactly-once remains unsupported. Tavern keeps its separate normalized Room/Run/Step/Message repository.
-- Production workflows use the v3 Harness runtime. Registered implementation and deterministic test success do not certify every platform or model quality; follow the scoped remaining tasks in `TODO.md`.
-- Harness resource references need evidence policies; never pass a constant `revision=0` for a resource that has no authoritative revision.
-- Use `HARNESS_RESOURCE_EVIDENCE_POLICIES` before constructing v3 context or commit evidence. A Tavern Room revision covers metadata and run-admission CAS, not transcript drift; a Tavern Message is currently unsupported as a context subject until a room-scoped protected transcript snapshot can be resolved. One committed Tavern Message uses one room-scoped sequence point, never a range. Unsupported resources may appear as honest `not_committed` attempts but cannot claim committed or rolled-back proof.
-- Resource evidence policy validates generic proof shape, not operation truth. Production v3 commit evidence must match a registered workflow/stage/output/payload key, an allowed resource set, and a versioned committed-projection DTO that proves all application-owned scope fields. The current Tavern actor policy proves one committed Message as `primary_output_only`, not every Room/Run/Step side effect.
-- Use `npm run check` for shared/Web reliability and type gates, and `npm run check:release` for the full backend test plus production Web build gate. `npm run lint:web` runs ESLint against the reviewed baseline; `npm run lint:ai` runs Ruff. Use `npm run style:check -- --base <commit>` for changed-file formatting and lint gates; see `docs/code-style.md`.
+| 想知道 | 读 |
+|---|---|
+| 代码入口与所有权 | [docs/entry-points.md](docs/entry-points.md) |
+| 机制与工程约定（31 条） | [docs/conventions.md](docs/conventions.md) |
+| 页面、区块与术语命名 | [docs/page-vocabulary.md](docs/page-vocabulary.md) |
+| 系统结构与主流程 | [docs/architecture.md](docs/architecture.md) |
+| Harness 生命周期、数据库与恢复 | [docs/harness/README.md](docs/harness/README.md) |
+| 数据分层与兜底责任 | [docs/data-flow-layers.md](docs/data-flow-layers.md) |
+| 全部文档索引 | [docs/README.md](docs/README.md) |
