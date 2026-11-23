@@ -74,5 +74,5 @@ flowchart LR
 - commit policy：`services/ai/app/models/harness.py` 和 `packages/shared/fixtures/harness/operation-commit-policies-v1.json`
 - golden manifest：`packages/shared/fixtures/harness/workflow-manifest-v1.json`
 
-验证命令：`npm run test:baseline`（Harness 生命周期 + Tavern + Persona 不变量）；完整门禁为 `npm run check`。原先的 harness 契约/提交评估与 `eval:harness:*` 套件已移除。确定性回归通过不代表真实模型质量或全平台认证。
+验证命令：`npm run test:baseline`（Harness 生命周期 + Tavern + Persona 不变量）；完整门禁为 `npm run check`。原先的 harness 契约/提交评估与 `eval:harness:*` 套件已移除。
 

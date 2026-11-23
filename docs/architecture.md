@@ -353,9 +353,8 @@ Runtime settings in the configured database are authoritative. A legacy JSON mir
 - tool-enabled model calls increase provider latency and timeout pressure;
 - Document processing has durable admission, atomic Document/Debug projection commit, digest read-back, and startup recovery, and v3 evidence for extraction/OCR/cleanup stages;
 - Study Chat has production v3 context, trace, protected replay, deterministic eval, durable request admission, transactional Session/Scene database effects, and operation-owned attachment staging/read-back, while provider uncertainty remains explicit;
-- current production lifecycle coverage is shown in `harness/README.md`; deterministic implementation gates do not certify independent quality or every platform;
-- Tavern prompt/token/scene-depth budgets and deterministic evals are enforced; representative provider performance and billing acceptance remain in `TODO.md`;
-- `npm run check` runs shared/Web reliability and type gates; `npm run check:release` adds the full backend suite and production Web build. `npm run lint:web` runs ESLint and `npm run lint:ai` runs Ruff against the explicit baseline; changed-file formatting and CI rules are documented in [Code style gates](code-style.md).
+- production lifecycle coverage is tracked in `harness/README.md`; Tavern prompt/token/scene-depth budgets are enforced, while representative provider performance and billing acceptance remain in `TODO.md`;
+- `npm run check` runs style, shared-contract types, Web types, the generated API reference check and the invariant baseline; `npm run check:release` adds the production Web build. Lint and formatting rules are in [Code style gates](code-style.md).
 
 
 ## Debug snapshot ownership

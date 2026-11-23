@@ -73,9 +73,8 @@ providers receive the typed language policy instead.
 
 The reviewed production prompts are Planning v8, Study Chat v3 and Plan Revision
 v2. The Study pilot baseline for prompt v3 uses the existing deterministic
-fixtures; prompt-v1/v2 baseline directories remain immutable. These are routing,
-decoder and persistence checks, not independent linguistic/model-quality proof.
-Live-provider quality conclusions are outside this document; it only defines output-language behavior.
+fixtures; prompt-v1/v2 baseline directories remain immutable. This document defines
+output-language behavior only.
 
 ## Focused checks
 

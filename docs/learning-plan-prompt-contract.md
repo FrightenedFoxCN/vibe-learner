@@ -106,7 +106,7 @@ Planning v8 retains that source-minimal behavior and clarifies automatic/explici
 
 The same source-minimal strategy is separately adopted for Study Chat, including the rule that a tool effect may be described as completed only after successful execution. This document does not otherwise define the Study Chat contract. It does not change Tavern, Persona/Scene generation or multimodal defaults.
 
-The supporting evidence consists of development synthetic cases reviewed manually for semantic fidelity. It is not a keyword-based pass check and has not independently certified learning outcomes, production traffic quality, or generalization to the excluded workflows.
+The supporting evidence consists of development synthetic cases reviewed manually for semantic fidelity, not a keyword-based pass check.
 
 ## Tool-Loop Expectations
 

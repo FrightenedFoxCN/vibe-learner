@@ -47,4 +47,10 @@
 | [代码风格门](code-style.md) | ESLint、Ruff、格式化、既有基线与 CI |
 | [场景编辑器](scene-setup.md) | 层级场景和保存结构 |
 
+## 验证边界
+
+`npm run check` 与 `npm run test:baseline` 验证的是**实现不变量**：Harness 生命周期、提交证据、领域规则、前端 decode 契约与生成文件同步。
+
+它们不证明模型输出质量、学习效果、跨平台行为或真实 provider 性能——这些需要各自的人工验收或线上观测。各文档不再重复这句话。
+
 修改前先阅读对应领域文档及 [AGENTS](../AGENTS.md)。
