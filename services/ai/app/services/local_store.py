@@ -8,7 +8,7 @@ from typing import Any, Callable, TypeVar
 from uuid import uuid4
 
 from pydantic import BaseModel
-from sqlalchemy import Select, select, update
+from sqlalchemy import Select, delete, select, update
 from sqlalchemy.exc import IntegrityError
 
 from app.persistence.database import Database
@@ -503,6 +503,7 @@ class LocalJsonStore:
         *,
         expected_revision: int,
         model: type[T],
+        allow_insert: bool = True,
     ) -> T:
         if category not in {"scene_setup", "scene_library"}:
             raise ValueError("revisioned_category_unsupported")
@@ -535,7 +536,11 @@ class LocalJsonStore:
                             getattr(spec.entity, spec.key_attr) == item_id
                         )
                     )
-                    if actual_revision is not None or expected_revision != 0:
+                    if (
+                        actual_revision is not None
+                        or expected_revision != 0
+                        or not allow_insert
+                    ):
                         raise LocalStoreRevisionConflict(
                             item_id,
                             expected=expected_revision,
@@ -568,6 +573,31 @@ class LocalJsonStore:
         except OSError:
             pass
         return committed
+
+    def delete_item_cas(
+        self, category: str, item_id: str, *, expected_revision: int
+    ) -> bool:
+        if category != "scene_library":
+            raise ValueError("revisioned_delete_category_unsupported")
+        self._legacy.validate_item_path(category, item_id)
+        spec = CATEGORY_SPECS[category]
+        identity = getattr(spec.entity, spec.key_attr) == item_id
+        with self._db.session() as session:
+            result = session.execute(
+                delete(spec.entity).where(
+                    identity, spec.entity.revision == expected_revision
+                )
+            )
+            if result.rowcount != 1:
+                actual = session.scalar(select(spec.entity.revision).where(identity))
+                if actual is None:
+                    return False
+                raise LocalStoreRevisionConflict(
+                    item_id, expected=expected_revision, actual=int(actual)
+                )
+            # Prevent a normal compatibility read from importing the deleted mirror.
+            self._legacy.delete_item(category, item_id)
+        return True
 
     def load_category_items(self, category: str, model: type[T]) -> list[T]:
         if category in STREAM_CATEGORIES:

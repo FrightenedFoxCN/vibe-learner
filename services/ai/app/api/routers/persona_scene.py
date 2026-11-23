@@ -143,9 +143,14 @@ def update_scene_library_item(
 
 @router.delete("/scene-library/{scene_id}")
 def delete_scene_library_item(
-    scene_id: str, *, container: Container = Depends(get_container)
+    scene_id: str,
+    *,
+    expected_revision: int = Query(ge=0),
+    container: Container = Depends(get_container),
 ) -> dict[str, str]:
-    container.scene_library_service.delete_scene(scene_id)
+    container.scene_library_service.delete_scene(
+        scene_id, expected_revision=expected_revision
+    )
     return {"deleted_scene_id": scene_id}
 
 

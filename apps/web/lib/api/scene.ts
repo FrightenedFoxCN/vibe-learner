@@ -239,9 +239,10 @@ export async function updateSceneLibraryItem(
 
 export async function deleteSceneLibraryItem(
   sceneId: string,
+  expectedRevision: number,
 ): Promise<{ deletedSceneId: string }> {
   const diagnosticResponse = await request(
-    `${AI_BASE_URL()}/scene-library/${sceneId}`,
+    `${AI_BASE_URL()}/scene-library/${sceneId}?expected_revision=${expectedRevision}`,
     {
       method: "DELETE",
     },

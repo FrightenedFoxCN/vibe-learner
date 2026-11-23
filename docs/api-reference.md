@@ -552,7 +552,7 @@ Create Scene Library Item
 
 Delete Scene Library Item
 
-参数：`scene_id`（path，必填: string）
+参数：`scene_id`（path，必填: string）、`expected_revision`（query，必填: integer）
 
 响应：200、422 `HTTPValidationError`
 

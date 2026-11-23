@@ -79,16 +79,25 @@ class SceneLibraryService:
                 record,
                 expected_revision=expected_revision,
                 model=SceneLibraryRecord,
+                allow_insert=scene_id is None,
             )
         except LocalStoreRevisionConflict as exc:
             raise HTTPException(
                 status_code=409, detail="scene_revision_conflict"
             ) from exc
 
-    def delete_scene(self, scene_id: str) -> None:
-        if self._store.load_item("scene_library", scene_id, SceneLibraryRecord) is None:
+    def delete_scene(self, scene_id: str, *, expected_revision: int) -> None:
+        self.require_scene(scene_id)
+        try:
+            deleted = self._store.delete_item_cas(
+                "scene_library", scene_id, expected_revision=expected_revision
+            )
+        except LocalStoreRevisionConflict as exc:
+            raise HTTPException(
+                status_code=409, detail="scene_revision_conflict"
+            ) from exc
+        if not deleted:
             raise HTTPException(status_code=404, detail="scene_not_found")
-        self._store.delete_item("scene_library", scene_id)
 
     def _migrate_scene_summary(self, scene: SceneLibraryRecord) -> SceneLibraryRecord:
         if scene.scene_summary.strip() or scene.scene_profile is None:

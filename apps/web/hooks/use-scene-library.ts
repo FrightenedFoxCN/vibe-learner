@@ -2,6 +2,7 @@
 
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 import * as api from "../lib/data/scenes";
+import { isApiHttpError } from "../lib/http-error";
 
 type SceneLibraryPort = Pick<
   typeof api,
@@ -117,14 +118,16 @@ export function useSceneLibrary(port: SceneLibraryPort = api) {
     beforeRemove: () => void,
   ) {
     return mutate(`scene:${id}`, async () => {
-      // DELETE has no server-side CAS; do not interleave this precheck with local writes.
-      const current = await port.getSceneLibraryItem(id);
-      if (!scenes.active.current) return false;
-      if (current.revision !== expectedRevision) {
-        scenes.apply(id, current);
-        return false;
+      try {
+        await port.deleteSceneLibraryItem(id, expectedRevision);
+      } catch (error) {
+        if (!isApiHttpError(error)) throw error;
+        if (error.status === 409) {
+          scenes.apply(id, await port.getSceneLibraryItem(id));
+          return false;
+        }
+        if (error.status !== 404) throw error;
       }
-      await port.deleteSceneLibraryItem(id);
       if (!scenes.active.current) return false;
       beforeRemove();
       scenes.apply(id, null);
