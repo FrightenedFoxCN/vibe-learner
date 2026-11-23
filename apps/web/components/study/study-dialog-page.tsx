@@ -7,6 +7,10 @@ import { ProviderTruth } from "../ui/provider-truth";
 import { StudyConsole } from "./study-console";
 import { TopNav } from "../layout/top-nav";
 import { PLAN_SWITCH_NOTICE } from "../../lib/learning-workspace-copy";
+import {
+  advanceStudySchedule,
+  type StudyScheduleAdvance,
+} from "../../lib/study-schedule-advance";
 import { AppLink } from "../../lib/app-navigation";
 import type {
   StudyConsolePageCache,
@@ -118,6 +122,26 @@ export function StudyDialogPage() {
 
   const scheduleStartPage = resolveScheduleStartPage(currentScheduleId);
   const currentStudyUnitId = currentSchedule?.unitId ?? "";
+  const [partialAdvance, setPartialAdvance] = useState<StudyScheduleAdvance | null>(
+    null,
+  );
+  const scheduleScope = useRef<object | null>(null);
+  const visiblePartialAdvance =
+    partialAdvance?.planId === activePlan?.id &&
+    partialAdvance?.currentId === currentScheduleId &&
+    partialAdvance?.nextId ===
+      scheduleOptions[
+        scheduleOptions.findIndex((item) => item.id === currentScheduleId) + 1
+      ]?.id
+      ? partialAdvance
+      : null;
+  useEffect(() => {
+    const scope = {};
+    scheduleScope.current = scope;
+    return () => {
+      scheduleScope.current = null;
+    };
+  }, [activePlan?.id, currentScheduleId]);
 
   const navigateToSchedule = useCallback(
     async (scheduleId: string) => {
@@ -273,38 +297,32 @@ export function StudyDialogPage() {
     ["--study-heading-offset" as string]: `${headingHeight}px`,
   } as CSSProperties;
 
-  const handleCompleteCurrentSchedule = useCallback(async () => {
-    if (!activePlan || !currentScheduleId) {
-      return;
-    }
+  const runScheduleAdvance = async (advance: StudyScheduleAdvance, retry = false) => {
+    const scope = scheduleScope.current;
+    await advanceStudySchedule(
+      advance,
+      {
+        update: updatePlanProgress,
+        isCurrent: () => Boolean(scope && scheduleScope.current === scope),
+        navigate: navigateToSchedule,
+        onPartial: setPartialAdvance,
+      },
+      retry,
+    );
+  };
+
+  const handleCompleteCurrentSchedule = async () => {
+    if (!activePlan || !currentScheduleId) return;
     const currentIndex = scheduleOptions.findIndex(
       (item) => item.id === currentScheduleId,
     );
-    if (currentIndex < 0) {
-      return;
-    }
-    const nextSchedule = scheduleOptions[currentIndex + 1] ?? null;
-    const ok = await updatePlanProgress({
+    if (currentIndex < 0) return;
+    await runScheduleAdvance({
       planId: activePlan.id,
-      scheduleIds: [currentScheduleId],
-      status: "completed",
+      currentId: currentScheduleId,
+      nextId: scheduleOptions[currentIndex + 1]?.id ?? "",
     });
-    if (!ok || !nextSchedule) {
-      return;
-    }
-    await updatePlanProgress({
-      planId: activePlan.id,
-      scheduleIds: [nextSchedule.id],
-      status: "in_progress",
-    });
-    await navigateToSchedule(nextSchedule.id);
-  }, [
-    activePlan,
-    currentScheduleId,
-    navigateToSchedule,
-    scheduleOptions,
-    updatePlanProgress,
-  ]);
+  };
 
   return (
     <main className="with-app-nav study-dialog-workspace" style={pageStyle}>
@@ -314,6 +332,19 @@ export function StudyDialogPage() {
         <div className="study-dialog-heading-row">
           <h1 className="study-dialog-page-title">章节对话</h1>
           <ProviderTruth scope="study" />
+          {visiblePartialAdvance ? (
+            <div role="status" className="study-dialog-notice">
+              <span>本排期项已完成，但尚未确认下一项开始。你仍在当前排期项。</span>
+              <button
+                type="button"
+                className="study-console-ghost-btn study-console-btn-disabled"
+                disabled={isBusy}
+                onClick={() => void runScheduleAdvance(visiblePartialAdvance, true)}
+              >
+                重试开始下一项
+              </button>
+            </div>
+          ) : null}
           {notice ? (
             <div
               className="study-dialog-notice"
