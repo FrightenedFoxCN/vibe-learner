@@ -6,7 +6,7 @@ import {
   type PersonaProfile,
   type PersonaSlotKind,
 } from "@vibe-learner/shared";
-import { MaterialIcon, type MaterialIconName } from "../../components/material-icon";
+import { MaterialIcon, type MaterialIconName } from "../ui/material-icon";
 
 import { styles } from "./persona-workspace-styles";
 

@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import type { MouseEvent as ReactMouseEvent, ReactNode } from "react";
-import { MaterialIcon, type MaterialIconName } from "../../components/material-icon";
+import { MaterialIcon, type MaterialIconName } from "../ui/material-icon";
 import { type SceneObject, type SceneLayer } from "../../lib/scene-editor-model";
 import { type RewriteUndoEntry } from "../../hooks/use-scene-rewrite";
 

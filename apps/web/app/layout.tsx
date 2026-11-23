@@ -1,15 +1,15 @@
 import "./globals.css";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
-import { DiagnosticCollector } from "../components/diagnostic-collector";
-import { DebugProvider } from "../components/debug-provider";
-import { DebugOverlay } from "../components/debug-overlay";
-import { DesktopStartupGuard } from "../components/desktop-startup-guard";
-import { DesktopViewMenuBridge } from "../components/desktop-view-menu-bridge";
-import { LearningPageCacheProvider } from "../components/learning-page-cache-provider";
-import { PageDebugProvider } from "../components/page-debug-context";
+import { DiagnosticCollector } from "../components/debug/diagnostic-collector";
+import { DebugProvider } from "../components/debug/debug-provider";
+import { DebugOverlay } from "../components/debug/debug-overlay";
+import { DesktopStartupGuard } from "../components/layout/desktop-startup-guard";
+import { DesktopViewMenuBridge } from "../components/layout/desktop-view-menu-bridge";
+import { LearningPageCacheProvider } from "../components/layout/learning-page-cache-provider";
+import { PageDebugProvider } from "../components/debug/page-debug-context";
 import { ConfirmProvider } from "../components/ui/confirm-provider";
-import { RuntimeSettingsProvider } from "../components/runtime-settings-provider";
+import { RuntimeSettingsProvider } from "../components/layout/runtime-settings-provider";
 
 export const metadata: Metadata = {
   title: "Vibe Learner",

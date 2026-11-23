@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { AppLink } from "../../lib/app-navigation";
-import { TopNav } from "../../components/top-nav";
+import { TopNav } from "../../components/layout/top-nav";
 import styles from "./page.module.css";
 
 export const metadata: Metadata = {

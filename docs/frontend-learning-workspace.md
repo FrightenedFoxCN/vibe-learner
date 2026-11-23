@@ -22,7 +22,7 @@
 
 ### ① 页面组合层
 
-- 文件：`apps/web/components/learning-workspace.tsx`（`/plan`）、`apps/web/components/study-dialog-page.tsx`（`/study`）
+- 文件：`apps/web/components/plan/learning-workspace.tsx`（`/plan`）、`apps/web/components/study/study-dialog-page.tsx`（`/study`）
 - 职责：组装子面板、绑定 Controller 状态与回调、控制页面级布局。
 - 禁止：直接发起 API 调用、编排多步异步流、内联重复业务文案常量。
 

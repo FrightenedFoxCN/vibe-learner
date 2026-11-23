@@ -8,7 +8,7 @@ import type {
   RuntimeSettings,
 } from "@vibe-learner/shared";
 import { useSettingsSave } from "../../hooks/use-settings-save";
-import { useRuntimeSettings } from "../runtime-settings-provider";
+import { useRuntimeSettings } from "../layout/runtime-settings-provider";
 import {
   applyRuntimeSessionSecrets,
   clearRuntimeSessionSecrets,

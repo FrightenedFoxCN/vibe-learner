@@ -5,7 +5,7 @@ import type {
   SceneProfile,
 } from "@vibe-learner/shared";
 import type { SceneLibraryItemPayload } from "./data/scenes";
-import type { useRuntimeSettings } from "../components/runtime-settings-provider";
+import type { useRuntimeSettings } from "../components/layout/runtime-settings-provider";
 import type { getDesktopRuntimeConfig } from "./runtime-config";
 
 export function resolvePlanGenerationBlockedReason(input: {

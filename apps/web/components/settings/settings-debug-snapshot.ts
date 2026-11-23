@@ -1,4 +1,4 @@
-import type { PageDebugSnapshot } from "../page-debug-context";
+import type { PageDebugSnapshot } from "../debug/page-debug-context";
 import type { SettingsController } from "./use-settings-controller";
 import { NUMERIC_SETTING_CONFIGS, type NumericSettingKey } from "./settings-utils";
 

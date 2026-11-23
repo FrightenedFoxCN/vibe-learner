@@ -17,7 +17,7 @@
 | `/model-usage` | `Model Usage` | Token 与调用统计审计及 CSV 导出 |
 | `/manual` | `User Manual` | 应用内置操作手册 |
 
-全局调试控制台为挂载在应用根部的 `Debug Overlay`（`apps/web/components/debug-overlay.tsx`），不属于独立路由页面。
+全局调试控制台为挂载在应用根部的 `Debug Overlay`（`apps/web/components/debug/debug-overlay.tsx`），不属于独立路由页面。
 
 ## 2. `Plan Workspace` 与 `Study Dialog` 区块名称
 

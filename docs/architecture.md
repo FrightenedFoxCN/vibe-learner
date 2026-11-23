@@ -168,5 +168,5 @@ Harness 是覆盖全仓库的统一执行生命周期，适用于 Document/OCR/S
 
 全局 `DebugOverlay` 分为**当前页调试视图**与**全局诊断视图**：
 
-- **当前页调试**：通过 `apps/web/components/owned-debug-snapshot.tsx` 接入内存态页面适配器。注册绑定当前 `page_view_id` 与私有 owner token，只有所有者可更新或清理快照；路由切换时立即隐藏不匹配快照，不加载其他业务域数据，也不把大体积页面内容写入诊断事件。
+- **当前页调试**：通过 `apps/web/components/debug/owned-debug-snapshot.tsx` 接入内存态页面适配器。注册绑定当前 `page_view_id` 与私有 owner token，只有所有者可更新或清理快照；路由切换时立即隐藏不匹配快照，不加载其他业务域数据，也不把大体积页面内容写入诊断事件。
 - **全局诊断**：按需分页读取后端诊断事件、Harness 索引、操作关联、存储状态与审计导出。切换筛选条件或离开视图会中止在途请求并围栏过期响应；事件视图最多保留 500 行、索引视图最多 250 行。所有诊断投影均不构成业务提交证据，详见 [诊断与审计体系](diagnostics.md)。

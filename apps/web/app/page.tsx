@@ -1,8 +1,8 @@
 import type { CSSProperties } from "react";
 
 import { AppLink } from "../lib/app-navigation";
-import { MaterialIcon, type MaterialIconName } from "../components/material-icon";
-import { TopNav } from "../components/top-nav";
+import { MaterialIcon, type MaterialIconName } from "../components/ui/material-icon";
+import { TopNav } from "../components/layout/top-nav";
 
 const PAGES = [
   {

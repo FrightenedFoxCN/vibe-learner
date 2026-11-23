@@ -1,5 +1,5 @@
 import { ImageResponse } from "next/og";
-import { BrandMark, brandMarkStyle } from "../components/brand-mark";
+import { BrandMark, brandMarkStyle } from "../components/layout/brand-mark";
 
 export const dynamic = "force-static";
 

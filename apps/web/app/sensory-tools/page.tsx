@@ -7,9 +7,9 @@ import type {
   ModelToolStageConfig,
 } from "@vibe-learner/shared";
 
-import { AsyncFeedback } from "../../components/async-feedback";
-import { TopNav } from "../../components/top-nav";
-import { usePageDebugSnapshot } from "../../components/page-debug-context";
+import { AsyncFeedback } from "../../components/ui/async-feedback";
+import { TopNav } from "../../components/layout/top-nav";
+import { usePageDebugSnapshot } from "../../components/debug/page-debug-context";
 import { getModelToolConfig, updateModelToolConfig } from "../../lib/data/model-tools";
 
 type ToolToggle = { stageName: string; toolName: string; enabled: boolean };

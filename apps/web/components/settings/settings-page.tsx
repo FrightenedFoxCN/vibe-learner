@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 
-import { TopNav } from "../top-nav";
+import { TopNav } from "../layout/top-nav";
 import {
   DESKTOP_STARTUP_QUERY_KEY,
   DESKTOP_STARTUP_QUERY_VALUE,
@@ -21,7 +21,7 @@ import {
   StartupRequirementCard,
   AdvancedSettingsCard,
 } from "./settings-sections";
-import { usePageDebugSnapshot } from "../page-debug-context";
+import { usePageDebugSnapshot } from "../debug/page-debug-context";
 import { useSettingsController } from "./use-settings-controller";
 import { buildSettingsDebugSnapshot } from "./settings-debug-snapshot";
 

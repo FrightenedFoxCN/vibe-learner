@@ -8,11 +8,11 @@ import {
   type PersonaProfile,
   type PersonaSlotKind,
 } from "@vibe-learner/shared";
-import { AsyncFeedback } from "../async-feedback";
-import { TopNav } from "../../components/top-nav";
-import { MaterialIcon } from "../../components/material-icon";
-import { ModelFallbackNotice } from "../../components/model-fallback-notice";
-import { ProviderTruth } from "../../components/provider-truth";
+import { AsyncFeedback } from "../ui/async-feedback";
+import { TopNav } from "../layout/top-nav";
+import { MaterialIcon } from "../ui/material-icon";
+import { ModelFallbackNotice } from "../ui/model-fallback-notice";
+import { ProviderTruth } from "../ui/provider-truth";
 import { collectReferenceHintsFromCards } from "../../lib/persona-editor-model";
 
 import type { PersonaWorkspaceController } from "../../hooks/use-persona-workspace-controller";

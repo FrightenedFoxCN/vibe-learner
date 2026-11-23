@@ -23,7 +23,7 @@ import { useSceneDraft } from "./use-scene-draft";
 import { useSceneGeneration } from "./use-scene-generation";
 import { importJsonDraft } from "../lib/bounded-json-import";
 import { exportJson } from "../lib/export-json";
-import { usePageDebugSnapshot } from "../components/page-debug-context";
+import { usePageDebugSnapshot } from "../components/debug/page-debug-context";
 import { useSceneRewrite } from "./use-scene-rewrite";
 import { type ReusableSceneNodePayload } from "../lib/data/scenes";
 import { applyAsyncResult, AsyncResultFence } from "../lib/async-result-fence";

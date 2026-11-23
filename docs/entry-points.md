@@ -6,7 +6,7 @@
 
 | 职责 | 路径 |
 | --- | --- |
-| Web 根布局与全局 Debug Overlay | `apps/web/app/layout.tsx`、`apps/web/components/debug-overlay.tsx` |
+| Web 根布局与全局 Debug Overlay | `apps/web/app/layout.tsx`、`apps/web/components/debug/debug-overlay.tsx` |
 | Web 导航首页 | `apps/web/app/page.tsx` |
 | 前端领域数据入口 | `apps/web/lib/data/*.ts`（说明见 [`apps/web/lib/data/README.md`](../apps/web/lib/data/README.md)） |
 | 前端域级 API 传输模块 | `apps/web/lib/api/_shared.ts`、`apps/web/lib/api/*.ts`（兼容汇总 `apps/web/lib/api.ts`） |
@@ -23,9 +23,9 @@
 | PDF 解析与 OCR 流水线 | `services/ai/app/services/document_parser.py`、`services/ai/app/services/ocr_engine.py` |
 | Study Unit 清洗与启发式排期 | `services/ai/app/services/study_arrangement.py` |
 | Document 持久化与 CAS | `services/ai/app/persistence/document_repository.py`、`services/ai/app/persistence/document_process_operation_repository.py` |
-| OCR 断点与显式续跑 | `services/ai/app/models/document_checkpoint.py`、`services/ai/app/persistence/document_checkpoint_repository.py`、`apps/web/components/document-checkpoint-panel.tsx` |
+| OCR 断点与显式续跑 | `services/ai/app/models/document_checkpoint.py`、`services/ai/app/persistence/document_checkpoint_repository.py`、`apps/web/components/plan/document-checkpoint-panel.tsx` |
 | 物理页与印刷页码对照 | `services/ai/app/models/pdf_page_scope.py`、`services/ai/app/services/document_page_numbering.py`、`apps/web/lib/planning-page-scope.ts` |
-| Study Unit 修订确认 | `services/ai/app/models/study_unit_revision.py`、`services/ai/app/services/study_unit_revision.py`、`services/ai/app/persistence/study_unit_revision_repository.py`、`apps/web/components/study-unit-revision-panel.tsx` |
+| Study Unit 修订确认 | `services/ai/app/models/study_unit_revision.py`、`services/ai/app/services/study_unit_revision.py`、`services/ai/app/persistence/study_unit_revision_repository.py`、`apps/web/components/plan/study-unit-revision-panel.tsx` |
 
 ## 学习计划（Planning）
 
@@ -34,9 +34,9 @@
 | Prompt 组装与模板 | `services/ai/app/services/plan_prompt.py`、`services/ai/app/prompts/learning_plan_prompt.txt` |
 | 规划运行器与工具执行 | `services/ai/app/services/openai_plan_runner.py`、`services/ai/app/services/provider_planning.py`、`services/ai/app/services/plan_tool_runtime.py` |
 | 计划服务与操作持久化 | `services/ai/app/services/plans.py`、`services/ai/app/persistence/learning_plan_repository.py`、`services/ai/app/persistence/learning_plan_operation_repository.py` |
-| 计划修订与回滚 | `services/ai/app/services/plan_revision.py`、`services/ai/app/persistence/plan_revision_repository.py`、`apps/web/components/plan-revision-panel.tsx` |
+| 计划修订与回滚 | `services/ai/app/services/plan_revision.py`、`services/ai/app/persistence/plan_revision_repository.py`、`apps/web/components/plan/plan-revision-panel.tsx` |
 | 输出语言偏好 | `services/ai/app/models/output_language.py`、`services/ai/app/services/output_language.py`、`apps/web/lib/output-language.ts` |
-| 前端 Plan / Study 编排 | `apps/web/components/learning-workspace-provider.tsx`、`apps/web/hooks/use-learning-workspace-controller.ts`、`apps/web/lib/learning-workspace-reducer.ts` |
+| 前端 Plan / Study 编排 | `apps/web/components/layout/learning-workspace-provider.tsx`、`apps/web/hooks/use-learning-workspace-controller.ts`、`apps/web/lib/learning-workspace-reducer.ts` |
 
 ## 学习对话（Study Session & Chat）
 
@@ -59,7 +59,7 @@
 | Tavern 契约与编排 | `services/ai/app/models/tavern.py`、`services/ai/app/models/tavern_commit.py`、`services/ai/app/services/tavern.py`、`services/ai/app/services/tavern_harness.py`、`services/ai/app/services/tavern_v3.py` |
 | Tavern 持久化（拆分模块） | `services/ai/app/persistence/tavern_repository.py`、`tavern_room_ops.py`、`tavern_msg_ops.py`、`tavern_run_ops.py`、`tavern_rows.py`、`transaction_validation.py` |
 | Tavern 可取消 HTTP 传输 | `services/ai/app/services/provider_cancellation.py`、`services/ai/app/services/provider_http_chat.py` |
-| Tavern 前端工作区 | `apps/web/components/tavern-workspace.tsx`、`apps/web/hooks/use-tavern-*.ts`、`apps/web/lib/tavern-decode.ts` |
+| Tavern 前端工作区 | `apps/web/components/tavern/tavern-workspace.tsx`、`apps/web/hooks/use-tavern-*.ts`、`apps/web/lib/tavern-decode.ts` |
 
 ## Harness、模型运行时与诊断
 

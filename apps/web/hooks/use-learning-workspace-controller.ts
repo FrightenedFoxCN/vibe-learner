@@ -50,7 +50,7 @@ import {
 import { resolveStudySessionErrorNotice } from "../lib/study-session-decode";
 import { logWorkspaceError } from "../lib/learning-workspace-telemetry";
 import { getDesktopRuntimeConfig } from "../lib/runtime-config";
-import { useRuntimeSettings } from "../components/runtime-settings-provider";
+import { useRuntimeSettings } from "../components/layout/runtime-settings-provider";
 import { StudyAsyncViewFence } from "../lib/async-result-fence";
 
 export type { GeneratePlanInput } from "./use-plan-generation";

@@ -6,8 +6,8 @@ import type {
   TokenUsageDailyBucket,
   TokenUsageStats,
 } from "@vibe-learner/shared";
-import { TopNav } from "../../components/top-nav";
-import { usePageDebugSnapshot } from "../../components/page-debug-context";
+import { TopNav } from "../../components/layout/top-nav";
+import { usePageDebugSnapshot } from "../../components/debug/page-debug-context";
 import { formatTimestamp } from "../../lib/format";
 import { getModelUsageStats } from "../../lib/data/model-usage";
 

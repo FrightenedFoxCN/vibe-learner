@@ -24,7 +24,7 @@
   - 将仍引用旧 barrel 的 4 处文件迁移至 `lib/data/*`：`plan-revision-panel.tsx`、`tavern-workspace-panels.tsx`、`use-tavern-workspace-state.ts`、`use-tavern-run-recovery.ts`。
 - [x] **P1-FE-02 根布局与重依赖按需懒加载**
   - 首屏改造前后的六路由采样、环境与门槛见 [性能预算](docs/performance-budgets.md)。
-  - 将 `apps/web/components/debug-overlay.tsx` 的面板体、文档调试与诊断时间线/审计/存储视图改为打开时 `next/dynamic` 懒加载，避免将约 6,000 行诊断 JSON Schema（export / query / storage）同步打入全站首屏。
+  - 将 `apps/web/components/debug/debug-overlay.tsx` 的面板体、文档调试与诊断时间线/审计/存储视图改为打开时 `next/dynamic` 懒加载，避免将约 6,000 行诊断 JSON Schema（export / query / storage）同步打入全站首屏。
   - 将 KaTeX 与 react-pdf TextLayer 样式从全局下沉至富文本组件与 `projected-pdf-viewer.tsx`；下沉后仍须位于 `vendor` 层（以含 `@import … layer(vendor)` 的样式入口引入），不得退回未分层的 JS `import`。
   - 将 `rich-text-message.tsx` 改为 `next/dynamic` 按需加载 `rich-text-message-client.tsx`，加载期以纯文本兜底渲染，避免流式消息闪烁与布局跳动。
   - 将 `/study`、`/plan` 加入 `scripts/performance/web-bundle.mjs` 的测量路由并重录基线；统一脚本默认端口（13417）与 `docs/performance-budgets.md` 示例端口（3417）。完成后运行 `npm run bench:web-bundle` 验证首屏 gzip 体积显著下降且满足基线门禁。

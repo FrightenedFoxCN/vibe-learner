@@ -19,7 +19,7 @@ import {
 import { importJsonDraft } from "../lib/bounded-json-import";
 import { exportJson } from "../lib/export-json";
 import { useConfirm } from "../components/ui/confirm-provider";
-import { usePageDebugSnapshot } from "../components/page-debug-context";
+import { usePageDebugSnapshot } from "../components/debug/page-debug-context";
 import { usePersonaPersistence } from "./use-persona-persistence";
 import { usePersonaLibrary } from "./use-persona-library";
 import { applyAsyncResult, AsyncResultFence } from "../lib/async-result-fence";

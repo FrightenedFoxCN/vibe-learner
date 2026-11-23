@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { AsyncFeedback } from "../async-feedback";
-import { MaterialIcon } from "../../components/material-icon";
-import { ModelFallbackNotice } from "../../components/model-fallback-notice";
-import { ProviderTruth } from "../../components/provider-truth";
+import { AsyncFeedback } from "../ui/async-feedback";
+import { MaterialIcon } from "../ui/material-icon";
+import { ModelFallbackNotice } from "../ui/model-fallback-notice";
+import { ProviderTruth } from "../ui/provider-truth";
 import {
   type SceneObject,
   normalizeSceneTreeNodeForProfile,
@@ -13,7 +13,7 @@ import {
 } from "../../lib/scene-editor-model";
 import { formatTimestamp } from "../../lib/format";
 import { SceneProposalPreview } from "./scene-proposal-preview";
-import { TopNav } from "../../components/top-nav";
+import { TopNav } from "../layout/top-nav";
 
 import type { SceneWorkspaceController } from "../../hooks/use-scene-workspace-controller";
 import { SceneLayerCard, RewriteStateButton } from "./scene-tree-components";
