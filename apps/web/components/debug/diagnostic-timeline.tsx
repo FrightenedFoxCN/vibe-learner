@@ -15,6 +15,7 @@ import {
   queryDiagnosticLinks,
   queryDiagnosticWriters,
 } from "../../lib/diagnostic-query";
+import { diagnosticLinkPagination } from "../../lib/diagnostic-link-pagination";
 import { currentDiagnosticPage, subscribeDiagnosticPage } from "../../lib/diagnostics";
 import { useDiagnosticPages } from "../../hooks/use-diagnostic-pages";
 import schemas from "../../../../packages/shared/fixtures/diagnostics/query-schemas-v1.json";
@@ -82,6 +83,7 @@ function OperationDetails({ operationId }: { operationId: string }) {
   );
   const index = useDiagnosticPages(indexQuery, "" as string, traceId, 250);
   const links = useDiagnosticPages(linksQuery, "" as string, requestId);
+  const linkPagination = diagnosticLinkPagination(links.page, links.items.length);
   return (
     <section aria-label="Operation 关联详情" className={styles.card}>
       <h3 className={styles.breakAnywhere}>{operationId}</h3>
@@ -94,8 +96,11 @@ function OperationDetails({ operationId }: { operationId: string }) {
       {index.page?.coverage.freshness === "unavailable" && (
         <p role="alert">Harness 索引不可用。</p>
       )}
-      {links.page?.gap && !links.items.length && (
-        <p role="status">关联缺口：{links.page.gap}</p>
+      {!links.loading && linkPagination.alert && (
+        <p role="alert">{linkPagination.alert}</p>
+      )}
+      {!links.loading && linkPagination.status && (
+        <p role="status">{linkPagination.status}</p>
       )}
       <button
         className={styles.button}
@@ -142,13 +147,13 @@ function OperationDetails({ operationId }: { operationId: string }) {
           allowOperation={false}
         />
       )}
-      {links.page?.items.length === 100 && (
+      {linkPagination.next && (
         <button
           className={styles.button}
           disabled={links.loading || links.atCapacity}
           onClick={links.more}
         >
-          继续读取关联请求
+          {linkPagination.next}
         </button>
       )}
       {(index.atCapacity || links.atCapacity) && (
