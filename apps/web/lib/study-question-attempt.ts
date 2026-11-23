@@ -1,4 +1,9 @@
 import type { StudySessionRecord } from "@vibe-learner/shared";
+import { StrictResponseDecoder } from "./strict-response-decode.ts";
+
+const attemptShape = new StrictResponseDecoder((field) => {
+  throw new Error(`study_question_attempt_response_${field ? `${field}_` : ""}invalid`);
+});
 
 export interface StudyQuestionAttemptResponse {
   schemaVersion: "study-question-attempt-response-v1";
@@ -28,10 +33,7 @@ export interface StudyQuestionAttemptApplyInput extends StudyQuestionAttemptRead
 }
 
 export type StudyQuestionAttemptApplyDecision =
-  | "apply_returned"
-  | "keep_current"
-  | "committed_in_inactive_session"
-  | "reject";
+  "apply_returned" | "keep_current" | "committed_in_inactive_session" | "reject";
 
 export function decodeStudyQuestionAttemptResponse(
   raw: unknown,
@@ -40,12 +42,9 @@ export function decodeStudyQuestionAttemptResponse(
     turnId: string;
     clientAttemptId: string;
     expectedSessionRevision: number;
-  }
+  },
 ): StudyQuestionAttemptResponse {
-  if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
-    throw new Error("study_question_attempt_response_invalid");
-  }
-  const value = raw as Record<string, unknown>;
+  const value = attemptShape.record(raw, "");
   const allowed = new Set([
     "schema_version",
     "attempt_id",
@@ -64,38 +63,33 @@ export function decodeStudyQuestionAttemptResponse(
     throw new Error("study_question_attempt_response_extra_field");
   }
   const requiredString = (field: string) => {
-    const candidate = value[field];
-    if (typeof candidate !== "string" || !candidate.trim()) {
+    const candidate = attemptShape.string(value[field], field);
+    if (!candidate.trim()) {
       throw new Error(`study_question_attempt_response_${field}_invalid`);
     }
     return candidate;
   };
-  const requiredRevision = (field: string) => {
-    const candidate = value[field];
-    if (!Number.isSafeInteger(candidate) || Number(candidate) < 0) {
-      throw new Error(`study_question_attempt_response_${field}_invalid`);
-    }
-    return Number(candidate);
-  };
-  if (
-    value.schema_version !== "study-question-attempt-response-v1" ||
-    typeof value.is_correct !== "boolean" ||
-    typeof value.explanation !== "string"
-  ) {
+  const schemaVersion = value.schema_version;
+  if (schemaVersion !== "study-question-attempt-response-v1") {
     throw new Error("study_question_attempt_response_invalid");
   }
+  const isCorrect = attemptShape.boolean(value.is_correct, "");
+  const explanation = attemptShape.string(value.explanation, "", true);
   const response: StudyQuestionAttemptResponse = {
-    schemaVersion: value.schema_version,
+    schemaVersion,
     attemptId: requiredString("attempt_id"),
     clientAttemptId: requiredString("client_attempt_id"),
     sessionId: requiredString("session_id"),
     turnId: requiredString("turn_id"),
     submittedAnswer: requiredString("submitted_answer"),
-    isCorrect: value.is_correct,
+    isCorrect,
     feedbackText: requiredString("feedback_text"),
-    explanation: value.explanation,
-    beforeRevision: requiredRevision("before_revision"),
-    committedRevision: requiredRevision("committed_revision"),
+    explanation,
+    beforeRevision: attemptShape.integer(value.before_revision, "before_revision"),
+    committedRevision: attemptShape.integer(
+      value.committed_revision,
+      "committed_revision",
+    ),
     committedAt: requiredString("committed_at"),
   };
   if (
@@ -111,7 +105,7 @@ export function decodeStudyQuestionAttemptResponse(
 }
 
 export function validateStudyQuestionAttemptReadBack(
-  input: StudyQuestionAttemptReadBackInput
+  input: StudyQuestionAttemptReadBackInput,
 ): boolean {
   if (
     input.after.id !== input.before.id ||
@@ -146,7 +140,7 @@ export function validateStudyQuestionAttemptReadBack(
 }
 
 export function decideStudyQuestionAttemptApply(
-  input: StudyQuestionAttemptApplyInput
+  input: StudyQuestionAttemptApplyInput,
 ): StudyQuestionAttemptApplyDecision {
   if (!validateStudyQuestionAttemptReadBack(input)) {
     return "reject";
@@ -175,7 +169,7 @@ export function decideStudyQuestionAttemptApply(
 
 function hasStableTurnPrefix(
   before: StudySessionRecord,
-  after: StudySessionRecord
+  after: StudySessionRecord,
 ): boolean {
   if (after.turns.length < before.turns.length) {
     return false;
@@ -221,7 +215,7 @@ function sameValue(left: unknown, right: unknown): boolean {
       Array.isArray(left) &&
       Array.isArray(right) &&
       left.length === right.length &&
-      left.every((item, index) => sameValue(item, right[index]))
+      left.every((item, index) => sameValue(item, right[index])),
     );
   }
   if (!left || !right || typeof left !== "object" || typeof right !== "object") {
@@ -235,17 +229,19 @@ function sameValue(left: unknown, right: unknown): boolean {
 
 function hasCommittedStudyQuestionAttempt(
   session: StudySessionRecord,
-  input: Pick<StudyQuestionAttemptReadBackInput, "turnId" | "attempt">
+  input: Pick<StudyQuestionAttemptReadBackInput, "turnId" | "attempt">,
 ): boolean {
   const question = session.turns.find(
-    (turn) => turn.id === input.turnId
+    (turn) => turn.id === input.turnId,
   )?.interactiveQuestion;
   return matchesAttemptResult(question?.result ?? null, input.attempt);
 }
 
 function matchesAttemptResult(
-  result: NonNullable<StudySessionRecord["turns"][number]["interactiveQuestion"]>["result"],
-  attempt: StudyQuestionAttemptResponse
+  result: NonNullable<
+    StudySessionRecord["turns"][number]["interactiveQuestion"]
+  >["result"],
+  attempt: StudyQuestionAttemptResponse,
 ): boolean {
   return Boolean(
     result &&
@@ -257,6 +253,6 @@ function matchesAttemptResult(
     result.explanation === attempt.explanation &&
     result.beforeRevision === attempt.beforeRevision &&
     result.committedRevision === attempt.committedRevision &&
-    result.committedAt === attempt.committedAt
+    result.committedAt === attempt.committedAt,
   );
 }

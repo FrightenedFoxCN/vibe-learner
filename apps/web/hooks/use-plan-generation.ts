@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { DocumentRecord, LearningPlan, SceneProfile } from "@vibe-learner/shared";
 import {
   createDiagnosticId,
@@ -67,15 +67,20 @@ export function usePlanGeneration(
   const [processStreamDocumentId, setProcessStreamDocumentId] = useState("");
   const [planStreamDocumentId, setPlanStreamDocumentId] = useState("");
   const generationDiagnosticRef = useRef<DiagnosticContext | null>(null);
-  const generationAbortControllerRef = useRef<AbortController | null>(null);
+  const activeOperationRef = useRef<{
+    controller: AbortController;
+    port: PlanGenerationPort;
+  } | null>(null);
   const processStreamIdRef = useRef("");
   const planStreamIdRef = useRef("");
   const processingCompletedRef = useRef(false);
   const mountedRef = useRef(true);
   const ownsOperation = (controller: AbortController) =>
-    mountedRef.current && generationAbortControllerRef.current === controller;
+    mountedRef.current && activeOperationRef.current?.controller === controller;
 
-  const stopActiveOperation = async () => {
+  const stopActiveOperation = useCallback(async () => {
+    const operation = activeOperationRef.current;
+    if (!operation) return;
     const streams = new Set(
       [processStreamIdRef.current, planStreamIdRef.current]
         .map((id) => id.trim())
@@ -85,21 +90,21 @@ export function usePlanGeneration(
     const cancellation = diagnostic
       ? { ...diagnostic, action_id: createDiagnosticId() }
       : undefined;
-    generationAbortControllerRef.current?.abort();
+    operation.controller.abort();
     await Promise.allSettled(
-      [...streams].map((id) => port.cancelStreamRun(id, cancellation)),
+      [...streams].map((id) => operation.port.cancelStreamRun(id, cancellation)),
     );
-  };
+  }, []);
 
   useEffect(() => {
     mountedRef.current = true;
     return () => {
       mountedRef.current = false;
       void stopActiveOperation();
-      generationAbortControllerRef.current = null;
+      activeOperationRef.current = null;
       generationDiagnosticRef.current = null;
     };
-  }, []);
+  }, [stopActiveOperation]);
 
   useEffect(() => {
     if (!isGeneratingPlan) return;
@@ -112,7 +117,7 @@ export function usePlanGeneration(
   }, [isGeneratingPlan]);
 
   const cancelPlanGeneration = async () => {
-    if (!generationAbortControllerRef.current) return;
+    if (!activeOperationRef.current) return;
     setIsInterruptingPlan(true);
     options.onNotice("正在中断当前任务…");
     await stopActiveOperation();
@@ -128,7 +133,8 @@ export function usePlanGeneration(
     const diagnostic = diagnosticContext(createDiagnosticId());
     generationDiagnosticRef.current = diagnostic;
     const abortController = new AbortController();
-    generationAbortControllerRef.current = abortController;
+    // Cancel through the same transport that created this operation, even after a rerender.
+    activeOperationRef.current = { controller: abortController, port };
     processStreamIdRef.current = "";
     planStreamIdRef.current = "";
     setIsInterruptingPlan(false);
@@ -321,7 +327,7 @@ export function usePlanGeneration(
       logWorkspaceError("workflow:upload:error", error);
     } finally {
       if (ownsOperation(abortController)) {
-        generationAbortControllerRef.current = null;
+        activeOperationRef.current = null;
         generationDiagnosticRef.current = null;
         processStreamIdRef.current = "";
         planStreamIdRef.current = "";

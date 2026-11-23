@@ -56,7 +56,7 @@
   - `study-dialog-page.tsx`（1,170 行）下沉预览与副作用逻辑至独立 Hook/面板组件。
   - `tavern-workspace-panels.tsx`（1,043 行）按 7 个标准区块拆分为独立文件。
   - 拆解 `document-setup.tsx`（1,103 行）、`plan-overview.tsx`（1,035 行）、`persona-workspace-view.tsx`（1,391 行）与 `scene-workspace-view.tsx`（1,127 行）。
-- [ ] **P2-FE-08 清零前端 ESLint 基线债务与补齐单元测试**
+- [x] **P2-FE-08 清零前端 ESLint 基线债务与补齐单元测试**
   - 逐域修复 `scripts/style/baseline.json` 中的 53 条前端 Lint 豁免（合计 54 处；41 条位于 `apps/web/hooks/`），并同步收紧基线。46 条 `react-hooks/exhaustive-deps` 须逐条审查：补齐依赖会改变 effect 触发时机，需排除重复请求、循环触发与陈旧闭包，不得机械修复。
   - 将手写校验的解码器迁移至 `strict-response-decode.ts` 原语：`study-chat-operation-decode.ts`（526 行）、`tavern-decode.ts`（758 行）、`study-question-attempt.ts`（`model-tools` / `model-usage` / `runtime-settings` 已经由 `model-response-decode.ts` 复用，无需处理）。
   - 围绕拆出的纯逻辑模块、格式化工具与核心解码器补充 `node --test` 单元测试并纳入 `test:invariants:web`。

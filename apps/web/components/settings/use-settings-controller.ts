@@ -169,20 +169,6 @@ export function useSettingsController(): SettingsController {
   ]);
 
   useEffect(() => {
-    if (initializedRef.current || !runtimeSettings.settings) {
-      return;
-    }
-    initializedRef.current = true;
-    const nextSettings = runtimeSettings.settings;
-    settingsRef.current = nextSettings;
-    setSettings(nextSettings);
-    setNumericDrafts(buildNumericDrafts(nextSettings));
-    setLastSavedAt(nextSettings.updatedAt);
-    saveCoordinator.acceptSaved(nextSettings);
-    setSavePhase("saved");
-  }, [runtimeSettings.settings]);
-
-  useEffect(() => {
     if (!settings) {
       return;
     }
@@ -255,6 +241,20 @@ export function useSettingsController(): SettingsController {
     },
     AUTO_SAVE_DELAY_MS,
   );
+
+  useEffect(() => {
+    if (initializedRef.current || !runtimeSettings.settings) {
+      return;
+    }
+    initializedRef.current = true;
+    const nextSettings = runtimeSettings.settings;
+    settingsRef.current = nextSettings;
+    setSettings(nextSettings);
+    setNumericDrafts(buildNumericDrafts(nextSettings));
+    setLastSavedAt(nextSettings.updatedAt);
+    saveCoordinator.acceptSaved(nextSettings);
+    setSavePhase("saved");
+  }, [runtimeSettings.settings, saveCoordinator]);
 
   function setSettingField<K extends keyof RuntimeSettings>(
     key: K,

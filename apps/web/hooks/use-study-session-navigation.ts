@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useEffectEvent, useRef, useState } from "react";
 import type {
   DocumentRecord,
   LearningPlan,
@@ -86,13 +86,14 @@ export function useStudySessionNavigation(
       )[0] ?? null
     );
   }
+  const fetchLatestForHydration = useEffectEvent(fetchLatest);
   useEffect(() => {
     const captured = latest.current;
     if (!captured.plan) return;
     let active = true;
     const planId = captured.plan.id;
     const revision = captured.view.viewRevision;
-    void fetchLatest(captured)
+    void fetchLatestForHydration(captured)
       .then((session) => {
         if (!active || !current(planId, revision)) return;
         const visible = latest.current.view.session;

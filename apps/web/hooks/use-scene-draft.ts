@@ -1,6 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type SetStateAction } from "react";
+import {
+  useCallback,
+  useEffect,
+  useEffectEvent,
+  useMemo,
+  useRef,
+  useState,
+  type SetStateAction,
+} from "react";
 import { createDiagnosticId, diagnosticContext } from "../lib/diagnostics";
 import type { AsyncResultScope } from "../lib/async-result-fence";
 import {
@@ -28,24 +36,44 @@ export interface SceneDraftClock {
   cancel: (handle: unknown) => void;
 }
 const localStorage: SceneDraftStorage = {
-  read: () => { const raw = globalThis.localStorage?.getItem(SCENE_STORAGE_KEY); return raw ? JSON.parse(raw) : null; },
-  write: payload => globalThis.localStorage?.setItem(SCENE_STORAGE_KEY, JSON.stringify(payload)),
+  read: () => {
+    const raw = globalThis.localStorage?.getItem(SCENE_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  },
+  write: (payload) =>
+    globalThis.localStorage?.setItem(SCENE_STORAGE_KEY, JSON.stringify(payload)),
 };
 const clock: SceneDraftClock = {
   schedule: (callback, delay) => setTimeout(callback, delay),
-  cancel: handle => clearTimeout(handle as ReturnType<typeof setTimeout>),
+  cancel: (handle) => clearTimeout(handle as ReturnType<typeof setTimeout>),
 };
 
-export function useSceneDraft({ onSelectionChange, onImported, onNotice }: {
-  onSelectionChange: () => void;
-  onImported: () => void;
-  onNotice: (message: string) => void;
-}, storage = localStorage, scheduler = clock) {
+export function useSceneDraft(
+  {
+    onSelectionChange,
+    onImported,
+    onNotice,
+  }: {
+    onSelectionChange: () => void;
+    onImported: () => void;
+    onNotice: (message: string) => void;
+  },
+  draftStorage = localStorage,
+  scheduler = clock,
+) {
+  // A mounted draft restores from and flushes to the same storage adapter.
+  const [storage] = useState(() => draftStorage);
   const [sceneLayers, setSceneLayers] = useState<SceneLayer[]>(INITIAL_SCENE);
   const [sceneName, setSceneName] = useState("示例场景");
-  const [sceneSummary, setSceneSummary] = useState("从世界整体的学术框架出发，逐层建立观察者在微观教室中的完整感受。这个示例展示了如何从宏观规则层层推导到具体互动对象。");
+  const [sceneSummary, setSceneSummary] = useState(
+    "从世界整体的学术框架出发，逐层建立观察者在微观教室中的完整感受。这个示例展示了如何从宏观规则层层推导到具体互动对象。",
+  );
   const [selectedLayerId, setSelectedLayerId] = useState(INITIAL_SCENE[0]?.id ?? "");
-  const [collapsedLayerIds, setCollapsedLayerIds] = useState<string[]>(() => collectLayerIds(INITIAL_SCENE).filter(id => !INITIAL_SCENE.some(layer => layer.id === id)));
+  const [collapsedLayerIds, setCollapsedLayerIds] = useState<string[]>(() =>
+    collectLayerIds(INITIAL_SCENE).filter(
+      (id) => !INITIAL_SCENE.some((layer) => layer.id === id),
+    ),
+  );
   const [selectedObjectId, setSelectedObjectId] = useState("");
   const sceneDraftRevisionRef = useRef(0);
   const diagnosticFlow = useRef<string | null>(null);
@@ -60,7 +88,9 @@ export function useSceneDraft({ onSelectionChange, onImported, onNotice }: {
   const activeSceneFieldTargetRef = useRef(
     `scene-layer:${INITIAL_SCENE[0]?.id ?? "none"}`,
   );
-  function currentSceneAsyncScope(fieldTarget = activeSceneFieldTargetRef.current): AsyncResultScope {
+  function currentSceneAsyncScope(
+    fieldTarget = activeSceneFieldTargetRef.current,
+  ): AsyncResultScope {
     return {
       subjectId: sceneSubjectIdRef.current,
       draftRevision: sceneDraftRevisionRef.current,
@@ -96,32 +126,50 @@ export function useSceneDraft({ onSelectionChange, onImported, onNotice }: {
     setSelectedObjectId(objectId);
   }
 
-  const selectedLayer = useMemo(() => findLayerById(sceneLayers, selectedLayerId), [sceneLayers, selectedLayerId]);
+  const selectedLayer = useMemo(
+    () => findLayerById(sceneLayers, selectedLayerId),
+    [sceneLayers, selectedLayerId],
+  );
   const selectedObjectTarget = useMemo(
     () => (selectedObjectId ? findObjectById(sceneLayers, selectedObjectId) : null),
-    [sceneLayers, selectedObjectId]
+    [sceneLayers, selectedObjectId],
   );
   // Editor focus may be an object or collapsed; persisted scenes still need a layer.
-  const sceneSelectionLayerId = selectedLayer?.id ?? selectedObjectTarget?.layer.id ?? sceneLayers[0]?.id ?? "";
-  const selectedPath = useMemo(() => findLayerPath(sceneLayers, selectedLayerId), [sceneLayers, selectedLayerId]);
+  const sceneSelectionLayerId =
+    selectedLayer?.id ?? selectedObjectTarget?.layer.id ?? sceneLayers[0]?.id ?? "";
+  const selectedPath = useMemo(
+    () => findLayerPath(sceneLayers, selectedLayerId),
+    [sceneLayers, selectedLayerId],
+  );
   const sceneProfilePreview = useMemo(
-    () => deriveSceneProfile(sceneLayers, sceneSelectionLayerId, sceneName.trim(), sceneSummary.trim()),
-    [sceneLayers, sceneSelectionLayerId, sceneName, sceneSummary]
+    () =>
+      deriveSceneProfile(
+        sceneLayers,
+        sceneSelectionLayerId,
+        sceneName.trim(),
+        sceneSummary.trim(),
+      ),
+    [sceneLayers, sceneSelectionLayerId, sceneName, sceneSummary],
   );
   const sceneNodeCount = useMemo(
-    () => countSceneNodes(sceneLayers.map((layer) => normalizeSceneTreeNodeForProfile(layer))),
-    [sceneLayers]
+    () =>
+      countSceneNodes(
+        sceneLayers.map((layer) => normalizeSceneTreeNodeForProfile(layer)),
+      ),
+    [sceneLayers],
   );
   const sceneObjectCount = useMemo(() => countSceneObjects(sceneLayers), [sceneLayers]);
+  const repairLayerSelection = useEffectEvent(selectSceneLayer);
+  const repairObjectSelection = useEffectEvent(selectSceneObject);
   useEffect(() => {
     if (selectedLayerId && !selectedLayer && sceneLayers[0]?.id) {
-      selectSceneLayer(sceneLayers[0].id);
+      repairLayerSelection(sceneLayers[0].id);
     }
   }, [sceneLayers, selectedLayer, selectedLayerId]);
 
   useEffect(() => {
     if (selectedObjectId && !selectedObjectTarget) {
-      selectSceneObject("");
+      repairObjectSelection("");
     }
   }, [selectedObjectId, selectedObjectTarget]);
 
@@ -136,7 +184,7 @@ export function useSceneDraft({ onSelectionChange, onImported, onNotice }: {
     const nextSelectedLayerId =
       imported.selectedLayerId && knownIds.has(imported.selectedLayerId)
         ? imported.selectedLayerId
-        : imported.sceneLayers[0]?.id ?? "";
+        : (imported.sceneLayers[0]?.id ?? "");
     sceneDraftRevisionRef.current += 1;
     sceneSubjectIdRef.current = subjectId;
     selectedLayerIdRef.current = nextSelectedLayerId;
@@ -153,12 +201,18 @@ export function useSceneDraft({ onSelectionChange, onImported, onNotice }: {
     onNotice(message);
   }
 
-  function setSceneFieldTarget(target: string) { activeSceneFieldTargetRef.current = target; }
-  function toggleLayerSelection(layerId: string) { selectSceneLayer(selectedLayerIdRef.current === layerId ? "" : layerId); }
-  function toggleObjectSelection(objectId: string) { selectSceneObject(selectedObjectIdRef.current === objectId ? "" : objectId); }
+  function setSceneFieldTarget(target: string) {
+    activeSceneFieldTargetRef.current = target;
+  }
+  function toggleLayerSelection(layerId: string) {
+    selectSceneLayer(selectedLayerIdRef.current === layerId ? "" : layerId);
+  }
+  function toggleObjectSelection(objectId: string) {
+    selectSceneObject(selectedObjectIdRef.current === objectId ? "" : objectId);
+  }
   const [hydrated, setHydrated] = useState(false);
   const pendingRef = useRef<SceneImportPayload | null>(null);
-  function flushDraft() {
+  const flushDraft = useCallback(() => {
     const pending = pendingRef.current;
     if (!pending) return;
     try {
@@ -167,27 +221,45 @@ export function useSceneDraft({ onSelectionChange, onImported, onNotice }: {
     } catch {
       // Local fallback is best effort; a later edit or pagehide can retry it.
     }
-  }
-  useEffect(() => {
+  }, [storage]);
+  const restoreDraft = useEffectEvent(() => {
     try {
       const raw = storage.read();
       if (raw) applySceneImport(parseSceneImportPayload(raw), "已加载本地保存场景。");
     } catch {
       onNotice("本地保存内容解析失败，已忽略。");
     }
+  });
+  useEffect(() => {
+    restoreDraft();
     setHydrated(true);
     window.addEventListener("pagehide", flushDraft);
     return () => {
       window.removeEventListener("pagehide", flushDraft);
       flushDraft();
     };
-  }, []);
+  }, [flushDraft]);
   useEffect(() => {
     if (!hydrated) return;
-    pendingRef.current = { sceneName, sceneSummary, sceneLayers, selectedLayerId: sceneSelectionLayerId, collapsedLayerIds };
+    pendingRef.current = {
+      sceneName,
+      sceneSummary,
+      sceneLayers,
+      selectedLayerId: sceneSelectionLayerId,
+      collapsedLayerIds,
+    };
     const timer = scheduler.schedule(flushDraft, 700);
     return () => scheduler.cancel(timer);
-  }, [hydrated, sceneLayers, sceneName, sceneSummary, sceneSelectionLayerId, collapsedLayerIds]);
+  }, [
+    hydrated,
+    sceneLayers,
+    sceneName,
+    sceneSummary,
+    sceneSelectionLayerId,
+    collapsedLayerIds,
+    scheduler,
+    flushDraft,
+  ]);
   return {
     sceneLayers,
     sceneName,

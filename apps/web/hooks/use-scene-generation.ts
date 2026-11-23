@@ -4,19 +4,38 @@ import { useEffect, useRef, useState } from "react";
 import type { ModelRecovery } from "@vibe-learner/shared";
 import { diagnosticContext } from "../lib/diagnostics";
 import { generateSceneTree } from "../lib/data/scenes";
-import { AsyncResultFence, type AsyncResultScope, type AsyncResultTicket } from "../lib/async-result-fence";
-import { parseSceneImportPayload, countSceneNodes, normalizeSceneTreeNodeForProfile, type SceneLayer } from "../lib/scene-editor-model";
+import {
+  AsyncResultFence,
+  type AsyncResultScope,
+  type AsyncResultTicket,
+} from "../lib/async-result-fence";
+import {
+  parseSceneImportPayload,
+  countSceneNodes,
+  normalizeSceneTreeNodeForProfile,
+  type SceneLayer,
+} from "../lib/scene-editor-model";
 import { humanizeSettingGenerationError } from "../lib/generation-error-copy";
 
-export function useSceneGeneration(currentSceneAsyncScope: (fieldTarget?: string) => AsyncResultScope, generate = generateSceneTree, beginDiagnosticAction = diagnosticContext) {
+export function useSceneGeneration(
+  currentSceneAsyncScope: (fieldTarget?: string) => AsyncResultScope,
+  generate = generateSceneTree,
+  beginDiagnosticAction = diagnosticContext,
+) {
   const [sceneKeywordInput, setSceneKeywordInput] = useState("");
   const [sceneLongTextFile, setSceneLongTextFile] = useState<File | null>(null);
-  const [sceneGenerateMode, setSceneGenerateMode] = useState<"keywords" | "long_text">("keywords");
+  const [sceneGenerateMode, setSceneGenerateMode] = useState<"keywords" | "long_text">(
+    "keywords",
+  );
   const [sceneGenerateLayerCount, setSceneGenerateLayerCount] = useState("");
-  const [sceneGeneratePending, setSceneGeneratePending] = useState<null | "keywords" | "long_text">(null);
+  const [sceneGeneratePending, setSceneGeneratePending] = useState<
+    null | "keywords" | "long_text"
+  >(null);
   const [sceneGenerateError, setSceneGenerateError] = useState("");
   const [sceneGenerateMessage, setSceneGenerateMessage] = useState("");
-  const [sceneGenerateModelRecoveries, setSceneGenerateModelRecoveries] = useState<ModelRecovery[]>([]);
+  const [sceneGenerateModelRecoveries, setSceneGenerateModelRecoveries] = useState<
+    ModelRecovery[]
+  >([]);
   const [generatedSceneCandidate, setGeneratedSceneCandidate] = useState<{
     sceneName: string;
     sceneSummary: string;
@@ -29,10 +48,19 @@ export function useSceneGeneration(currentSceneAsyncScope: (fieldTarget?: string
   } | null>(null);
   const sceneGenerationFenceRef = useRef(new AsyncResultFence());
   const mountedRef = useRef(true);
-  const canApply = (ticket: AsyncResultTicket) => mountedRef.current && sceneGenerationFenceRef.current.decide(ticket, currentSceneAsyncScope("scene-generation-candidate")) === "apply";
+  const canApply = (ticket: AsyncResultTicket) =>
+    mountedRef.current &&
+    sceneGenerationFenceRef.current.decide(
+      ticket,
+      currentSceneAsyncScope("scene-generation-candidate"),
+    ) === "apply";
   useEffect(() => {
+    const fence = sceneGenerationFenceRef.current;
     mountedRef.current = true;
-    return () => { mountedRef.current = false; sceneGenerationFenceRef.current.invalidate(); };
+    return () => {
+      mountedRef.current = false;
+      fence.invalidate();
+    };
   }, []);
   function resetSceneGeneration() {
     sceneGenerationFenceRef.current.invalidate();
@@ -69,7 +97,9 @@ export function useSceneGeneration(currentSceneAsyncScope: (fieldTarget?: string
       }
       if (!canApply(ticket)) return;
       if (!inputText) {
-        setSceneGenerateError(mode === "keywords" ? "请先输入关键词。" : "上传文件内容为空，请更换文件。");
+        setSceneGenerateError(
+          mode === "keywords" ? "请先输入关键词。" : "上传文件内容为空，请更换文件。",
+        );
         return;
       }
       const layerCountText = sceneGenerateLayerCount.trim();
@@ -82,11 +112,14 @@ export function useSceneGeneration(currentSceneAsyncScope: (fieldTarget?: string
         }
         layerCount = parsedLayerCount;
       }
-      const result = await generate({
-        mode,
-        inputText,
-        layerCount,
-      }, beginDiagnosticAction());
+      const result = await generate(
+        {
+          mode,
+          inputText,
+          layerCount,
+        },
+        beginDiagnosticAction(),
+      );
       const imported = parseSceneImportPayload({
         sceneName: result.sceneName,
         sceneSummary: result.sceneSummary,
@@ -105,7 +138,7 @@ export function useSceneGeneration(currentSceneAsyncScope: (fieldTarget?: string
       });
       setSceneGenerateModelRecoveries(result.modelRecoveries ?? []);
       setSceneGenerateMessage(
-        `已生成 ${countSceneNodes(imported.sceneLayers.map((layer) => normalizeSceneTreeNodeForProfile(layer)))} 个节点。模型：${result.usedModel || "unknown"}${result.usedWebSearch ? "，已启用联网搜索。" : "。"}`
+        `已生成 ${countSceneNodes(imported.sceneLayers.map((layer) => normalizeSceneTreeNodeForProfile(layer)))} 个节点。模型：${result.usedModel || "unknown"}${result.usedWebSearch ? "，已启用联网搜索。" : "。"}`,
       );
     } catch (error) {
       if (canApply(ticket)) {

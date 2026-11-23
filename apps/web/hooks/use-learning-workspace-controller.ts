@@ -16,7 +16,7 @@ import { useStudyChatRecovery } from "./use-study-chat-recovery";
 
 import { usePlanMutations } from "./use-plan-mutations";
 import { usePlanGeneration } from "./use-plan-generation";
-import { useEffect, useMemo, useReducer, useRef } from "react";
+import { useEffect, useEffectEvent, useMemo, useReducer, useRef } from "react";
 import type {
   LearningPlan,
   PersonaProfile,
@@ -151,22 +151,22 @@ export function useLearningWorkspaceController({
   };
 
   useEffect(() => {
+    const studyViewFence = studyViewFenceRef.current;
     mountedRef.current = true;
     snapshotLoader.activate();
     return () => {
       mountedRef.current = false;
       snapshotLoader.deactivate();
-      studyViewFenceRef.current.transition("learning-route:unmounted", true);
+      studyViewFence.transition("learning-route:unmounted", true);
     };
-  }, []);
+  }, [snapshotLoader]);
 
   useEffect(() => {
     selectedPersonaIdRef.current = state.selectedPersonaId;
     selectedPlanIdRef.current = state.selectedPlanId;
   }, [state.selectedPersonaId, state.selectedPlanId]);
 
-  useEffect(() => {
-    const nextSession = state.studySession;
+  const syncStudyView = useEffectEvent((nextSession: StudySessionRecord | null) => {
     const previousSession = studyViewFenceRef.current.session;
     if (
       previousSession?.id !== nextSession?.id ||
@@ -180,6 +180,10 @@ export function useLearningWorkspaceController({
       );
     }
     studyViewFenceRef.current.session = nextSession;
+  });
+
+  useEffect(() => {
+    syncStudyView(state.studySession);
   }, [state.studySession]);
 
   const applyWorkspaceSnapshot = (
@@ -446,13 +450,17 @@ export function useLearningWorkspaceController({
     });
   };
 
-  useEffect(() => {
+  const loadInitialSnapshot = useEffectEvent(() => {
     void syncWorkspaceSnapshot({
       includePersonas: true,
       preferredPlanId: selectedPlanIdRef.current,
       successNotice: CONNECTED_NOTICE,
       initial: true,
     });
+  });
+
+  useEffect(() => {
+    loadInitialSnapshot();
   }, []);
 
   const refreshOnFocusRef = useRef(() => {});

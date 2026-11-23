@@ -2,6 +2,7 @@
 
 import {
   useEffect,
+  useEffectEvent,
   useMemo,
   useRef,
   useState,
@@ -104,7 +105,6 @@ export function usePersonaWorkspaceController() {
     selectedPersonaId,
     draft,
     isDraftDirty,
-    currentPersonaSubject,
     currentPersonaAsyncScope,
     captureDraftIntent,
     updatePersonaDraft,
@@ -115,7 +115,6 @@ export function usePersonaWorkspaceController() {
     updatePersonaAssistInput,
     markPersonaDraftSaved,
     initializePersonaFromLibrary,
-    getSelectedPersonaId,
   } = personaEditor;
 
   const {
@@ -253,28 +252,29 @@ export function usePersonaWorkspaceController() {
     return () => document.removeEventListener("mousedown", handlePointerDown);
   }, [isRewritePopoverOpen]);
 
+  // Workspace entry loads both libraries; draft edits and list publication must not refetch.
+  const bootstrap = useEffectEvent(async (isCancelled: () => boolean) => {
+    setLoadError("");
+    const [personaResult, cardResult] = await Promise.allSettled([
+      listPersonas(),
+      listPersonaCards(),
+    ]);
+    if (isCancelled()) {
+      return;
+    }
+    if (personaResult.status === "fulfilled") {
+      const personaList = personaResult.value;
+      initializePersonaFromLibrary(personaList[0]);
+    } else {
+      setLoadError(String(personaResult.reason));
+    }
+    if (cardResult.status === "rejected") {
+      setCardError(`人格卡片库加载失败：${String(cardResult.reason)}`);
+    }
+  });
   useEffect(() => {
     let cancelled = false;
-    async function bootstrap() {
-      setLoadError("");
-      const [personaResult, cardResult] = await Promise.allSettled([
-        listPersonas(),
-        listPersonaCards(),
-      ]);
-      if (cancelled) {
-        return;
-      }
-      if (personaResult.status === "fulfilled") {
-        const personaList = personaResult.value;
-        initializePersonaFromLibrary(personaList[0]);
-      } else {
-        setLoadError(String(personaResult.reason));
-      }
-      if (cardResult.status === "rejected") {
-        setCardError(`人格卡片库加载失败：${String(cardResult.reason)}`);
-      }
-    }
-    void bootstrap();
+    void bootstrap(() => cancelled);
     return () => {
       cancelled = true;
     };

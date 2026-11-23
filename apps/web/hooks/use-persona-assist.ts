@@ -3,7 +3,11 @@
 import { useEffect, useRef, useState, type SetStateAction } from "react";
 import type { ModelRecovery } from "@vibe-learner/shared";
 import { assistPersonaSlot, assistPersonaSetting } from "../lib/data/personas";
-import { AsyncResultFence, type AsyncResultScope, type AsyncResultTicket } from "../lib/async-result-fence";
+import {
+  AsyncResultFence,
+  type AsyncResultScope,
+  type AsyncResultTicket,
+} from "../lib/async-result-fence";
 import { mergePersonaAssistSlots, type PersonaDraft } from "../lib/persona-draft";
 
 interface PersonaAssistPort {
@@ -11,31 +15,54 @@ interface PersonaAssistPort {
   assistPersonaSetting: typeof assistPersonaSetting;
 }
 const defaultPort = { assistPersonaSlot, assistPersonaSetting };
-export function usePersonaAssist({ draft, updatePersonaDraft, currentPersonaAsyncScope, onSettingStarted }: {
-  draft: PersonaDraft;
-  updatePersonaDraft: (update: SetStateAction<PersonaDraft>) => void;
-  currentPersonaAsyncScope: (fieldTarget: string) => AsyncResultScope;
-  onSettingStarted: () => void;
-}, port: PersonaAssistPort = defaultPort) {
+export function usePersonaAssist(
+  {
+    draft,
+    updatePersonaDraft,
+    currentPersonaAsyncScope,
+    onSettingStarted,
+  }: {
+    draft: PersonaDraft;
+    updatePersonaDraft: (update: SetStateAction<PersonaDraft>) => void;
+    currentPersonaAsyncScope: (fieldTarget: string) => AsyncResultScope;
+    onSettingStarted: () => void;
+  },
+  port: PersonaAssistPort = defaultPort,
+) {
   const [assistPending, setAssistPending] = useState(false);
   const [slotAssistIndex, setSlotAssistIndex] = useState<number | null>(null);
   const [assistError, setAssistError] = useState("");
-  const [assistModelRecoveries, setAssistModelRecoveries] = useState<ModelRecovery[]>([]);
+  const [assistModelRecoveries, setAssistModelRecoveries] = useState<ModelRecovery[]>(
+    [],
+  );
   const [retainRatio, setRetainRatio] = useState(0.7);
   const [systemPromptSuggestion, setSystemPromptSuggestion] = useState("");
   const [systemPromptSuggestionSource, setSystemPromptSuggestionSource] = useState("");
   const assistFenceRef = useRef(new AsyncResultFence());
   const mountedRef = useRef(true);
-  const canApply = (ticket: AsyncResultTicket) => mountedRef.current && assistFenceRef.current.decide(ticket, currentPersonaAsyncScope(ticket.fieldTarget)) === "apply";
+  const canApply = (ticket: AsyncResultTicket) =>
+    mountedRef.current &&
+    assistFenceRef.current.decide(
+      ticket,
+      currentPersonaAsyncScope(ticket.fieldTarget),
+    ) === "apply";
   useEffect(() => {
+    const fence = assistFenceRef.current;
     mountedRef.current = true;
-    return () => { mountedRef.current = false; assistFenceRef.current.invalidate(); };
+    return () => {
+      mountedRef.current = false;
+      fence.invalidate();
+    };
   }, []);
-  function clearAssistError() { setAssistError(""); }
+  function clearAssistError() {
+    setAssistError("");
+  }
   function resetPersonaAssist() {
     assistFenceRef.current.invalidate();
-    setAssistPending(false); setSlotAssistIndex(null);
-    setAssistError(""); setAssistModelRecoveries([]);
+    setAssistPending(false);
+    setSlotAssistIndex(null);
+    setAssistError("");
+    setAssistModelRecoveries([]);
     dismissSystemPromptSuggestion();
   }
   function setPromptSuggestion(value: string, source: string) {
@@ -49,7 +76,7 @@ export function usePersonaAssist({ draft, updatePersonaDraft, currentPersonaAsyn
       return;
     }
     setAssistError("");
-    updatePersonaDraft(draft => ({ ...draft, systemPrompt: systemPromptSuggestion }));
+    updatePersonaDraft((draft) => ({ ...draft, systemPrompt: systemPromptSuggestion }));
     setSystemPromptSuggestion("");
     setSystemPromptSuggestionSource("");
   }
@@ -76,7 +103,7 @@ export function usePersonaAssist({ draft, updatePersonaDraft, currentPersonaAsyn
         name: draft.name.trim(),
         summary: draft.summary.trim(),
         slot: targetSlot,
-        rewriteStrength: Number((1 - retainRatio).toFixed(2))
+        rewriteStrength: Number((1 - retainRatio).toFixed(2)),
       });
       if (!canApply(ticket)) {
         return;
@@ -112,7 +139,7 @@ export function usePersonaAssist({ draft, updatePersonaDraft, currentPersonaAsyn
         name: draft.name.trim(),
         summary: draft.summary.trim(),
         slots: draft.slots,
-        rewriteStrength: Number((1 - retainRatio).toFixed(2))
+        rewriteStrength: Number((1 - retainRatio).toFixed(2)),
       });
       if (!canApply(ticket)) {
         return;

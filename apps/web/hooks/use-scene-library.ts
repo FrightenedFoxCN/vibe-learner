@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useEffectEvent, useRef, useState } from "react";
 import * as api from "../lib/data/scenes";
 
 type SceneLibraryPort = Pick<
@@ -25,20 +25,24 @@ function useLibraryCollection<T>(
   const [error, setError] = useState("");
   const active = useRef(true);
   const committed = useRef(new Map<string, T | null>());
-  useEffect(() => {
-    active.current = true;
-    let current = true;
+  // Load the initial snapshot on mount, not when a write changes the collection.
+  const loadInitialSnapshot = useEffectEvent((isCurrent: () => boolean) => {
     void load()
       .then((snapshot) => {
-        if (!current) return;
+        if (!isCurrent()) return;
         const merged = new Map(snapshot.map((item) => [identity(item), item]));
         for (const [id, item] of committed.current)
           item === null ? merged.delete(id) : merged.set(id, item);
         setItems([...merged.values()]);
       })
       .catch((reason) => {
-        if (current) setError(String(reason));
+        if (isCurrent()) setError(String(reason));
       });
+  });
+  useEffect(() => {
+    active.current = true;
+    let current = true;
+    loadInitialSnapshot(() => current);
     return () => {
       current = false;
       active.current = false;

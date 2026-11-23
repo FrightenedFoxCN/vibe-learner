@@ -100,7 +100,22 @@ export function useTavernRunRecovery(
         if (isCurrent()) await refreshRoom(diagnostic);
       }
     },
-    [refreshRoom, syncTurnResult, resumeTavernRun],
+    [
+      refreshRoom,
+      syncTurnResult,
+      resumeTavernRun,
+      mountedRef,
+      mutationOperationRef,
+      resumeRunRef,
+      activeRoomIdRef,
+      requestedRoomIdRef,
+      roomLoadVersion,
+      mutationOperationVersionRef,
+      resumeAttemptsRef,
+      setNotice,
+      setVisibleError,
+      setRawError,
+    ],
   );
 
   useEffect(() => {
@@ -119,7 +134,16 @@ export function useTavernRunRecovery(
       Math.min(10000, 2500 * 2 ** attempt),
     );
     return () => clock.clearTimeout(timer);
-  }, [activeRoom, busyAction, resumePendingRun, runs, clock]);
+  }, [
+    activeRoom,
+    busyAction,
+    resumePendingRun,
+    runs,
+    clock,
+    mutationOperationRef,
+    foregroundRunRef,
+    resumeAttemptsRef,
+  ]);
 
   useEffect(() => {
     if (!activeRoom || (busyAction !== "turn" && busyAction !== "retry")) return;
@@ -175,5 +199,19 @@ export function useTavernRunRecovery(
       runPollVersionRef.current += 1;
       clock.clearInterval(timer);
     };
-  }, [activeRoom, busyAction, listTavernRuns, clock]);
+  }, [
+    activeRoom,
+    busyAction,
+    listTavernRuns,
+    clock,
+    foregroundOperationIdRef,
+    mutationOperationRef,
+    runPollVersionRef,
+    activeRoomIdRef,
+    requestedRoomIdRef,
+    runsRef,
+    foregroundRunRef,
+    setRuns,
+    setRawError,
+  ]);
 }

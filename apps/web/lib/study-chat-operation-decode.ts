@@ -1,3 +1,5 @@
+import { StrictResponseDecoder } from "./strict-response-decode.ts";
+
 export const STUDY_CHAT_OPERATION_STATUSES = [
   "admitted",
   "running",
@@ -6,8 +8,7 @@ export const STUDY_CHAT_OPERATION_STATUSES = [
   "uncertain",
 ] as const;
 
-export type StudyChatOperationStatus =
-  (typeof STUDY_CHAT_OPERATION_STATUSES)[number];
+export type StudyChatOperationStatus = (typeof STUDY_CHAT_OPERATION_STATUSES)[number];
 
 export interface StudyChatOperationReceipt<TResult = Record<string, unknown>> {
   operationId: string;
@@ -37,14 +38,23 @@ export class StudyChatOperationDecodeError extends Error {
   }
 }
 
+// Preserve the receipt's diagnostic vocabulary at the shared shape boundary.
+const shape = new StrictResponseDecoder((path, reason) => {
+  const range = /^expected_safe_integer_(\d+)_to_\d+$/.exec(reason);
+  if (range) reason = `expected_safe_integer_at_least_${range[1]}`;
+  if (reason.startsWith("unexpected_enum_")) reason = "expected_registered_status";
+  throw new StudyChatOperationDecodeError(path, reason);
+});
+
 export function isStudyChatOperationDecodeError(
   error: unknown,
 ): error is StudyChatOperationDecodeError {
-  return error instanceof StudyChatOperationDecodeError || (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    error.code === "study_chat_operation_response_decode_error"
+  return (
+    error instanceof StudyChatOperationDecodeError ||
+    (typeof error === "object" &&
+      error !== null &&
+      "code" in error &&
+      error.code === "study_chat_operation_response_decode_error")
   );
 }
 
@@ -75,9 +85,7 @@ export interface DecodeStudyChatOperationOptions<TResult> {
  * committed chat result remains a separate contract boundary: api.ts can
  * inject its existing Study Chat/Session decoder through `decodeResult`.
  */
-export function decodeStudyChatOperationReceipt<
-  TResult,
->(
+export function decodeStudyChatOperationReceipt<TResult>(
   raw: unknown,
   options: DecodeStudyChatOperationOptions<TResult>,
 ): StudyChatOperationReceipt<TResult> {
@@ -88,19 +96,19 @@ export function decodeStudyChatOperationReceipt<
       "committed_result_decoder_required",
     );
   }
-  const value = record(raw, path);
+  const value = shape.record(raw, path);
   const operationId = boundedNonEmptyString(
-    required(value, "operation_id", path),
+    shape.field(value, "operation_id", path),
     `${path}.operation_id`,
     64,
   );
   const sessionId = boundedNonEmptyString(
-    required(value, "session_id", path),
+    shape.field(value, "session_id", path),
     `${path}.session_id`,
     64,
   );
   const clientRequestId = boundedNonEmptyString(
-    required(value, "client_request_id", path),
+    shape.field(value, "client_request_id", path),
     `${path}.client_request_id`,
     80,
   );
@@ -116,42 +124,42 @@ export function decodeStudyChatOperationReceipt<
     `${path}.client_request_id`,
     "client_request_identity_mismatch",
   );
-  const status = operationStatus(
-    required(value, "status", path),
-    `${path}.status`,
-  );
-  const admittedSessionRevision = safeInteger(
-    required(value, "admitted_session_revision", path),
+  const status = operationStatus(shape.field(value, "status", path), `${path}.status`);
+  const admittedSessionRevision = shape.integer(
+    shape.field(value, "admitted_session_revision", path),
     `${path}.admitted_session_revision`,
     0,
   );
-  const safeToRetry = booleanValue(
-    required(value, "safe_to_retry", path),
+  const safeToRetry = shape.boolean(
+    shape.field(value, "safe_to_retry", path),
     `${path}.safe_to_retry`,
   );
 
-  const committedSessionRevision = nullableSafeInteger(
-    required(value, "committed_session_revision", path),
+  const committedSessionRevision = shape.nullable(
+    shape.field(value, "committed_session_revision", path),
     `${path}.committed_session_revision`,
-    0,
+    (candidate, fieldPath) => shape.integer(candidate, fieldPath),
   );
-  const committedTurnId = nullableNonEmptyString(
-    required(value, "committed_turn_id", path),
+  const committedTurnId = shape.nullable(
+    shape.field(value, "committed_turn_id", path),
     `${path}.committed_turn_id`,
+    nonEmptyString,
   );
-  const committedTurnSequence = nullableSafeInteger(
-    required(value, "committed_turn_sequence", path),
+  const committedTurnSequence = shape.nullable(
+    shape.field(value, "committed_turn_sequence", path),
     `${path}.committed_turn_sequence`,
-    1,
+    (candidate, fieldPath) => shape.integer(candidate, fieldPath, 1),
   );
-  const rawResult = required(value, "result", path);
-  const completedAt = nullableTimestamp(
-    required(value, "completed_at", path),
+  const rawResult = shape.field(value, "result", path);
+  const completedAt = shape.nullable(
+    shape.field(value, "completed_at", path),
     `${path}.completed_at`,
+    timestamp,
   );
 
   const isCommitted = status === "committed";
-  const isTerminal = isCommitted || status === "not_committed" || status === "uncertain";
+  const isTerminal =
+    isCommitted || status === "not_committed" || status === "uncertain";
 
   if (safeToRetry !== (status === "not_committed")) {
     throw new StudyChatOperationDecodeError(
@@ -195,7 +203,7 @@ export function decodeStudyChatOperationReceipt<
       );
     }
     const resultPath = `${path}.result`;
-    const resultRecord = record(rawResult, resultPath);
+    const resultRecord = shape.record(rawResult, resultPath);
     const evidence = {
       operationId,
       sessionId,
@@ -243,11 +251,11 @@ export function decodeStudyChatOperationReceipt<
   }
 
   const createdAt = timestamp(
-    required(value, "created_at", path),
+    shape.field(value, "created_at", path),
     `${path}.created_at`,
   );
   const updatedAt = timestamp(
-    required(value, "updated_at", path),
+    shape.field(value, "updated_at", path),
     `${path}.updated_at`,
   );
   assertTimestampOrder(createdAt, updatedAt, `${path}.updated_at`);
@@ -267,7 +275,7 @@ export function decodeStudyChatOperationReceipt<
     committedTurnSequence,
     result,
     errorCode: operationErrorCode(
-      required(value, "error_code", path),
+      shape.field(value, "error_code", path),
       `${path}.error_code`,
       status,
     ),
@@ -278,51 +286,23 @@ export function decodeStudyChatOperationReceipt<
 }
 
 function isStudySessionDecodeError(error: unknown): boolean {
-  return typeof error === "object" && error !== null && "code" in error &&
-    error.code === "study_session_response_decode_error";
-}
-
-function record(raw: unknown, path: string): Record<string, unknown> {
-  if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
-    throw new StudyChatOperationDecodeError(path, "expected_object");
-  }
-  return raw as Record<string, unknown>;
-}
-
-function required(
-  value: Record<string, unknown>,
-  key: string,
-  path: string,
-): unknown {
-  if (!Object.prototype.hasOwnProperty.call(value, key)) {
-    throw new StudyChatOperationDecodeError(
-      `${path}.${key}`,
-      "missing_required_field",
-    );
-  }
-  return value[key];
-}
-
-function stringValue(raw: unknown, path: string): string {
-  if (typeof raw !== "string") {
-    throw new StudyChatOperationDecodeError(path, "expected_string");
-  }
-  return raw;
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    error.code === "study_session_response_decode_error"
+  );
 }
 
 function nonEmptyString(raw: unknown, path: string): string {
-  const value = stringValue(raw, path);
+  const value = shape.string(raw, path, true);
   if (!value.trim()) {
     throw new StudyChatOperationDecodeError(path, "expected_non_empty_string");
   }
   return value;
 }
 
-function boundedNonEmptyString(
-  raw: unknown,
-  path: string,
-  maximum: number,
-): string {
+function boundedNonEmptyString(raw: unknown, path: string, maximum: number): string {
   const value = nonEmptyString(raw, path);
   if (value.length > maximum) {
     throw new StudyChatOperationDecodeError(path, `expected_length_at_most_${maximum}`);
@@ -330,43 +310,12 @@ function boundedNonEmptyString(
   return value;
 }
 
-function nullableNonEmptyString(raw: unknown, path: string): string | null {
-  return raw === null ? null : nonEmptyString(raw, path);
-}
-
-function booleanValue(raw: unknown, path: string): boolean {
-  if (typeof raw !== "boolean") {
-    throw new StudyChatOperationDecodeError(path, "expected_boolean");
-  }
-  return raw;
-}
-
-function safeInteger(raw: unknown, path: string, minimum: number): number {
-  if (!Number.isSafeInteger(raw) || (raw as number) < minimum) {
-    throw new StudyChatOperationDecodeError(
-      path,
-      `expected_safe_integer_at_least_${minimum}`,
-    );
-  }
-  return raw as number;
-}
-
-function nullableSafeInteger(
-  raw: unknown,
-  path: string,
-  minimum: number,
-): number | null {
-  return raw === null ? null : safeInteger(raw, path, minimum);
-}
-
 function operationStatus(raw: unknown, path: string): StudyChatOperationStatus {
-  if (
-    typeof raw !== "string" ||
-    !STUDY_CHAT_OPERATION_STATUSES.includes(raw as StudyChatOperationStatus)
-  ) {
+  // Reject malformed values without allowing them to run a string conversion.
+  if (typeof raw !== "string") {
     throw new StudyChatOperationDecodeError(path, "expected_registered_status");
   }
-  return raw as StudyChatOperationStatus;
+  return shape.enumeration(raw, STUDY_CHAT_OPERATION_STATUSES, path);
 }
 
 function operationErrorCode(
@@ -374,7 +323,7 @@ function operationErrorCode(
   path: string,
   status: StudyChatOperationStatus,
 ): string {
-  const value = stringValue(raw, path);
+  const value = shape.string(raw, path, true);
   const failureTerminal = status === "not_committed" || status === "uncertain";
   if (failureTerminal !== Boolean(value.trim())) {
     throw new StudyChatOperationDecodeError(
@@ -389,7 +338,10 @@ function operationErrorCode(
 
 function timestamp(raw: unknown, path: string): string {
   const value = nonEmptyString(raw, path);
-  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d+)?(Z|([+-])(\d{2}):(\d{2}))$/.exec(value);
+  const match =
+    /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d+)?(Z|([+-])(\d{2}):(\d{2}))$/.exec(
+      value,
+    );
   if (!match) {
     throw new StudyChatOperationDecodeError(path, "expected_rfc3339_timestamp");
   }
@@ -401,9 +353,12 @@ function timestamp(raw: unknown, path: string): string {
   const second = Number(match[6]);
   const offsetHour = match[7] === "Z" ? 0 : Number(match[9]);
   const offsetMinute = match[7] === "Z" ? 0 : Number(match[10]);
-  const daysInMonth = month >= 1 && month <= 12
-    ? [31, isLeapYear(year) ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month - 1]!
-    : 0;
+  const daysInMonth =
+    month >= 1 && month <= 12
+      ? [31, isLeapYear(year) ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][
+          month - 1
+        ]!
+      : 0;
   if (
     day < 1 ||
     day > daysInMonth ||
@@ -423,15 +378,7 @@ function isLeapYear(year: number): boolean {
   return year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
 }
 
-function nullableTimestamp(raw: unknown, path: string): string | null {
-  return raw === null ? null : timestamp(raw, path);
-}
-
-function assertTimestampOrder(
-  earlier: string,
-  later: string,
-  path: string,
-): void {
+function assertTimestampOrder(earlier: string, later: string, path: string): void {
   if (Date.parse(later) < Date.parse(earlier)) {
     throw new StudyChatOperationDecodeError(path, "timestamp_before_prior_state");
   }
@@ -463,9 +410,9 @@ function validateCommittedResultBinding(
   evidence: StudyChatCommittedResultEvidence,
 ): void {
   const sessionPath = `${path}.session`;
-  const session = record(required(result, "session", path), sessionPath);
+  const session = shape.record(shape.field(result, "session", path), sessionPath);
   const resultSessionId = boundedNonEmptyString(
-    required(session, "id", sessionPath),
+    shape.field(session, "id", sessionPath),
     `${sessionPath}.id`,
     64,
   );
@@ -475,8 +422,8 @@ function validateCommittedResultBinding(
       "committed_result_session_mismatch",
     );
   }
-  const resultRevision = safeInteger(
-    required(session, "revision", sessionPath),
+  const resultRevision = shape.integer(
+    shape.field(session, "revision", sessionPath),
     `${sessionPath}.revision`,
     0,
   );
@@ -486,8 +433,8 @@ function validateCommittedResultBinding(
       "committed_result_revision_mismatch",
     );
   }
-  const lastTurnSequence = safeInteger(
-    required(session, "last_turn_sequence", sessionPath),
+  const lastTurnSequence = shape.integer(
+    shape.field(session, "last_turn_sequence", sessionPath),
     `${sessionPath}.last_turn_sequence`,
     1,
   );
@@ -498,26 +445,28 @@ function validateCommittedResultBinding(
     );
   }
   const turnsPath = `${sessionPath}.turns`;
-  const rawTurns = required(session, "turns", sessionPath);
-  if (!Array.isArray(rawTurns)) {
-    throw new StudyChatOperationDecodeError(turnsPath, "expected_array");
-  }
-  const matchingTurns = rawTurns.filter((rawTurn, index) => {
-    const turn = record(rawTurn, `${turnsPath}[${index}]`);
-    const turnId = boundedNonEmptyString(
-      required(turn, "id", `${turnsPath}[${index}]`),
-      `${turnsPath}[${index}].id`,
-      64,
-    );
-    const turnSequence = safeInteger(
-      required(turn, "sequence", `${turnsPath}[${index}]`),
-      `${turnsPath}[${index}].sequence`,
-      1,
-    );
-    return turnId === evidence.committedTurnId &&
-      turnSequence === evidence.committedTurnSequence;
-  });
-  if (matchingTurns.length !== 1) {
+  const bindings = shape.array(
+    shape.field(session, "turns", sessionPath),
+    turnsPath,
+    (rawTurn, turnPath) => {
+      const turn = shape.record(rawTurn, turnPath);
+      const turnId = boundedNonEmptyString(
+        shape.field(turn, "id", turnPath),
+        `${turnPath}.id`,
+        64,
+      );
+      const turnSequence = shape.integer(
+        shape.field(turn, "sequence", turnPath),
+        `${turnPath}.sequence`,
+        1,
+      );
+      return (
+        turnId === evidence.committedTurnId &&
+        turnSequence === evidence.committedTurnSequence
+      );
+    },
+  );
+  if (bindings.filter(Boolean).length !== 1) {
     throw new StudyChatOperationDecodeError(
       turnsPath,
       "expected_exact_committed_turn_binding",

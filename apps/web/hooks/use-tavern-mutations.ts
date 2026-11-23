@@ -107,7 +107,14 @@ export function useTavernMutations(
       mutationOperationRef.current = operation;
       return operation;
     },
-    [],
+    [
+      activeRoomIdRef,
+      mountedRef,
+      mutationOperationRef,
+      mutationOperationVersionRef,
+      olderLoadRoomRef,
+      requestedRoomIdRef,
+    ],
   );
 
   const operationIsCurrent = useCallback(
@@ -124,7 +131,7 @@ export function useTavernMutations(
       setBusyAction((current) => (current === operation.action ? null : current));
       return true;
     },
-    [operationIsCurrent],
+    [operationIsCurrent, mutationOperationRef, setBusyAction],
   );
 
   const releaseForegroundOperation = useCallback(
@@ -223,6 +230,23 @@ export function useTavernMutations(
       rememberActiveTavernRoomId,
       writeTavernCreationDraft,
       makeRequestKey,
+      roomRefreshVersion,
+      setBusyAction,
+      setVisibleError,
+      setRawError,
+      setNotice,
+      activeRoomIdRef,
+      requestedRoomIdRef,
+      roomLoadVersion,
+      messagesRef,
+      detailRef,
+      runsRef,
+      setDetail,
+      setMessages,
+      setRuns,
+      setRecoveryChains,
+      setTargetPersonaIds,
+      setShowSetup,
     ],
   );
 
@@ -294,6 +318,17 @@ export function useTavernMutations(
     runPending,
     updateRooms,
     updateTavernRoom,
+    activeRoomIdRef,
+    detailRef,
+    messagesRef,
+    requestedRoomIdRef,
+    roomRefreshVersion,
+    setBusyAction,
+    setDetail,
+    setMessages,
+    setNotice,
+    setRawError,
+    setVisibleError,
   ]);
 
   const handleTurn = useCallback(
@@ -436,6 +471,15 @@ export function useTavernMutations(
       readTavernRoomDraft,
       writeTavernRoomDraft,
       makeRequestKey,
+      foregroundOperationIdRef,
+      roomRefreshVersion,
+      setGeneratingPersonaIds,
+      setBusyAction,
+      setVisibleError,
+      setRawError,
+      setNotice,
+      activeRoomIdRef,
+      requestedRoomIdRef,
     ],
   );
 
@@ -500,6 +544,14 @@ export function useTavernMutations(
     syncTurnResult,
     cancelTavernRun,
     writeTavernRoomDraft,
+    foregroundOperationIdRef,
+    setBusyAction,
+    setNotice,
+    setVisibleError,
+    activeRoomIdRef,
+    requestedRoomIdRef,
+    setGeneratingPersonaIds,
+    setRawError,
   ]);
 
   const handleRetry = useCallback(
@@ -577,6 +629,15 @@ export function useTavernMutations(
       updateRunRecovery,
       retryTavernRun,
       makeRequestKey,
+      foregroundOperationIdRef,
+      roomRefreshVersion,
+      setGeneratingPersonaIds,
+      setBusyAction,
+      setVisibleError,
+      setRawError,
+      setNotice,
+      activeRoomIdRef,
+      requestedRoomIdRef,
     ],
   );
 

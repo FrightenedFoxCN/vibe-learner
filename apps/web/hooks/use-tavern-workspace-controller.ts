@@ -17,19 +17,22 @@ export function useTavernWorkspaceController(
   useTavernRunRecovery(state, ports, queries);
   const mutations = useTavernMutations(state, ports, queries);
   const { setTargetPersonaIds, setVisibleError } = state;
-  const handleTargetToggle = useCallback((personaId: string) => {
-    setTargetPersonaIds((current) => {
-      if (current.includes(personaId)) {
-        return current.filter((id) => id !== personaId);
-      }
-      if (current.length >= 4) {
-        setVisibleError("一次多人互动最多选择 4 位角色。你可以在下一轮更换目标。");
-        return current;
-      }
-      setVisibleError("");
-      return [...current, personaId];
-    });
-  }, []);
+  const handleTargetToggle = useCallback(
+    (personaId: string) => {
+      setTargetPersonaIds((current) => {
+        if (current.includes(personaId)) {
+          return current.filter((id) => id !== personaId);
+        }
+        if (current.length >= 4) {
+          setVisibleError("一次多人互动最多选择 4 位角色。你可以在下一轮更换目标。");
+          return current;
+        }
+        setVisibleError("");
+        return [...current, personaId];
+      });
+    },
+    [setTargetPersonaIds, setVisibleError],
+  );
 
   const {
     rooms,
