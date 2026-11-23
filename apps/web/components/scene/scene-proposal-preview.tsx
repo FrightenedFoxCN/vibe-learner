@@ -176,7 +176,7 @@ export function SceneProposalPreview({
     items.reduce((count, item) => count + item.layer.objects.length, 0);
 
   return (
-    <div className="proposal-diff">
+    <div className="grid gap-2 text-xs/[1.5] wrap-anywhere [&_p]:m-0 [&_del]:text-muted [&_ins]:text-accent [&_ins]:no-underline">
       <p>
         层级：{before.length} → {after.length}；物体：{objectCount(before)} →{" "}
         {objectCount(after)}

@@ -1,0 +1,165 @@
+@layer components {
+  .heading {
+    border-color: color-mix(in srgb, var(--border) 76%, white);
+    background: color-mix(in srgb, white 92%, var(--bg));
+  }
+
+  .notice {
+    overflow-wrap: anywhere;
+    background: color-mix(in srgb, white 72%, var(--accent-soft));
+  }
+
+  .panelSurface,
+  .editorSection {
+    background: color-mix(in srgb, white 99%, var(--panel));
+  }
+
+  .sectionDivider {
+    border-color: color-mix(in srgb, var(--border) 76%, white);
+  }
+
+  .input {
+    width: 100%;
+    border: 1px solid var(--border);
+    background: var(--panel);
+    color: var(--ink);
+    font-size: 13px;
+    outline-offset: 2px;
+  }
+
+  .fieldLabel {
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+  }
+
+  .libraryCard {
+    display: grid;
+    gap: 6px;
+    padding: 10px;
+    border: 1px solid color-mix(in srgb, var(--border) 80%, white);
+    background: color-mix(in srgb, white 96%, var(--panel));
+  }
+
+  .libraryCard[data-selected="true"] {
+    border-color: var(--accent);
+    box-shadow: inset 0 0 0 1px var(--accent);
+  }
+
+  .sidebarButton {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 1px solid color-mix(in srgb, var(--border) 76%, white);
+    background: color-mix(in srgb, white 72%, var(--surface));
+    color: var(--ink);
+    cursor: pointer;
+  }
+
+  .sidebarButton[data-primary="true"] {
+    border: 0;
+    background: var(--accent);
+    color: white;
+  }
+
+  .modeSwitch {
+    background: color-mix(in srgb, white 88%, var(--panel));
+  }
+
+  .modeButton {
+    background: transparent;
+    color: var(--muted);
+  }
+
+  .modeButton[aria-pressed="true"] {
+    background: color-mix(in srgb, white 65%, var(--accent-soft));
+    color: var(--ink);
+    font-weight: 600;
+  }
+
+  .layerCard {
+    background: color-mix(in srgb, white 54%, var(--accent-soft));
+  }
+
+  .layerCard[data-selected="true"] {
+    background: color-mix(in srgb, white 28%, var(--accent-soft));
+    box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--accent) 24%, transparent);
+  }
+
+  .objectCard {
+    border: 1px solid color-mix(in srgb, var(--border) 82%, white);
+    background: color-mix(in srgb, white 98%, var(--panel));
+  }
+
+  .objectCard[data-selected="true"] {
+    border-color: var(--accent);
+    box-shadow: inset 0 0 0 2px var(--accent-soft);
+  }
+
+  .objectBadge {
+    border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+    background: color-mix(in srgb, white 84%, var(--accent-soft));
+  }
+
+  .inlineEditor {
+    border-color: color-mix(in srgb, var(--border) 74%, white);
+  }
+
+  .editorSection {
+    border-color: color-mix(in srgb, var(--border) 80%, white);
+  }
+
+  .treeButton {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0;
+    border: 1px solid var(--border);
+    background: var(--panel);
+    color: var(--ink);
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .treeButton[data-size="micro"] {
+    background: transparent;
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: inherit;
+  }
+
+  .treeButton[data-variant="accent"] {
+    border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+    background: color-mix(in srgb, white 76%, var(--accent-soft));
+    color: var(--accent);
+  }
+
+  .treeButton[data-variant="accent"][data-size="micro"] {
+    background: color-mix(in srgb, white 84%, var(--accent-soft));
+  }
+
+  .treeButton[data-variant="danger"] {
+    border-color: color-mix(in srgb, var(--danger) 38%, var(--border));
+    background: color-mix(in srgb, white 88%, var(--danger));
+    color: var(--danger);
+  }
+
+  .treeButton[data-variant="danger"][data-size="micro"] {
+    background: color-mix(in srgb, white 92%, var(--danger));
+  }
+
+  .rewritePopover {
+    border-color: color-mix(in srgb, var(--border) 76%, white);
+    box-shadow: 0 12px 28px color-mix(in srgb, var(--ink) 12%, transparent);
+  }
+}

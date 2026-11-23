@@ -6,7 +6,7 @@ import { MaterialIcon, type MaterialIconName } from "../ui/material-icon";
 import { type SceneObject, type SceneLayer } from "../../lib/scene-editor-model";
 import { type RewriteUndoEntry } from "../../hooks/use-scene-rewrite";
 
-import { styles } from "./scene-workspace-styles";
+import css from "./scene-workspace.module.css";
 
 export function SceneLayerCard({
   layer,
@@ -59,56 +59,68 @@ export function SceneLayerCard({
       handler();
     };
   return (
-    <div style={styles.cardGroup}>
+    <div className="grid gap-1.5">
       <article
-        style={{
-          ...styles.layerCard,
-          ...(isSelected ? styles.layerCardActive : null),
-        }}
+        className={`${css.layerCard} grid cursor-pointer gap-2 p-3`}
+        data-selected={isSelected}
         onClick={() => onSelect(layer.id)}
       >
-        <div style={styles.layerTopRow}>
-          <div style={styles.layerIndexBadge}>{String(index + 1).padStart(2, "0")}</div>
-          <div style={styles.layerHeadCopy}>
-            <span style={styles.layerScope}>{layer.scopeLabel}</span>
-            <h2 style={styles.layerTitle}>{layer.title}</h2>
+        <div className="flex items-start gap-2">
+          <div className="grid size-[22px] shrink-0 place-items-center bg-accent text-[10px] font-extrabold tracking-[0.06em] text-white">
+            {String(index + 1).padStart(2, "0")}
+          </div>
+          <div className="grid min-w-0 gap-0.5">
+            <span className="text-[10px] font-semibold tracking-[0.07em] text-muted uppercase">
+              {layer.scopeLabel}
+            </span>
+            <h2 className="m-0 text-[13px]/[1.2] font-semibold text-ink">
+              {layer.title}
+            </h2>
           </div>
         </div>
 
         {!isSelected ? (
           <>
-            <p style={styles.layerSummary}>{layer.summary}</p>
+            <p className="m-0 text-xs/[1.5] text-muted">{layer.summary}</p>
 
-            <div style={styles.objectChipRow}>
+            <div className="flex flex-wrap gap-1">
               {layer.tags
                 .split(",")
                 .map((tag) => tag.trim())
                 .filter(Boolean)
                 .slice(0, 2)
                 .map((tag) => (
-                  <span key={`${layer.id}:${tag}`} style={styles.tagChip}>
+                  <span
+                    key={`${layer.id}:${tag}`}
+                    className="border border-accent-soft bg-accent-soft px-1.5 py-0.5 text-[10px] text-accent"
+                  >
                     #{tag}
                   </span>
                 ))}
               {layer.objects.slice(0, 3).map((object) => (
-                <span key={object.id} style={styles.objectChip}>
+                <span
+                  key={object.id}
+                  className="border border-border bg-bg px-1.5 py-0.5 text-[10px] text-muted"
+                >
                   {object.name}
                 </span>
               ))}
               {layer.objects.length > 3 ? (
-                <span style={styles.objectChip}>+{layer.objects.length - 3}</span>
+                <span className="border border-border bg-bg px-1.5 py-0.5 text-[10px] text-muted">
+                  +{layer.objects.length - 3}
+                </span>
               ) : null}
             </div>
           </>
         ) : null}
 
-        <div style={styles.cardActions}>
+        <div className="flex flex-wrap gap-1">
           {(hasChildren || hasObjects) && onToggleChildren ? (
             <button
               type="button"
               aria-expanded={!isCollapsed}
               aria-label={`${isCollapsed ? "展开" : "收起"}${layer.title}的子层和物体`}
-              style={{ ...styles.iconButton, minWidth: 44, minHeight: 44 }}
+              className={css.treeButton}
               onClick={stopCardAction(() => onToggleChildren(layer.id))}
             >
               <MaterialIcon
@@ -164,13 +176,16 @@ export function SceneLayerCard({
       </article>
 
       {isSelected ? (
-        <div id={`scene-node-editor-${layer.id}`} style={styles.nodeInlineEditor}>
+        <div
+          id={`scene-node-editor-${layer.id}`}
+          className={`${css.inlineEditor} mt-1.5 grid content-start gap-3 border-t pt-3.5`}
+        >
           {editorContent}
         </div>
       ) : null}
 
       {(hasObjects || hasChildren) && !isCollapsed ? (
-        <div style={styles.childStack}>
+        <div className="grid gap-1.5 border-l-2 border-border pl-3">
           {layer.objects.map((object) => (
             <SceneObjectCard
               key={object.id}
@@ -241,27 +256,31 @@ export function SceneObjectCard({
     };
 
   return (
-    <div style={styles.cardGroup}>
+    <div className="grid gap-1.5">
       <article
-        style={{
-          ...styles.objectNodeCard,
-          ...(isSelected ? styles.objectNodeCardActive : null),
-        }}
+        className={`${css.objectCard} grid cursor-pointer gap-2 p-3`}
+        data-selected={isSelected}
         onClick={() => onSelect(object.id)}
       >
-        <div style={styles.objectNodeTopRow}>
-          <div style={styles.objectNodeBadge}>
+        <div className="flex items-start gap-2">
+          <div
+            className={`${css.objectBadge} grid size-[22px] shrink-0 place-items-center border text-accent`}
+          >
             <MaterialIcon name="category" size={14} />
           </div>
-          <div style={styles.layerHeadCopy}>
-            <span style={styles.layerScope}>物体节点</span>
-            <h3 style={styles.layerTitle}>{object.name}</h3>
+          <div className="grid min-w-0 gap-0.5">
+            <span className="text-[10px] font-semibold tracking-[0.07em] text-muted uppercase">
+              物体节点
+            </span>
+            <h3 className="m-0 text-[13px]/[1.2] font-semibold text-ink">
+              {object.name}
+            </h3>
           </div>
         </div>
 
         {!isSelected ? (
           <>
-            <p style={styles.layerSummary}>
+            <p className="m-0 text-xs/[1.5] text-muted">
               {(object.description || object.interaction || "尚未填写细节").slice(
                 0,
                 96,
@@ -270,14 +289,17 @@ export function SceneObjectCard({
                 ? "..."
                 : ""}
             </p>
-            <div style={styles.objectChipRow}>
+            <div className="flex flex-wrap gap-1">
               {object.tags
                 .split(",")
                 .map((tag) => tag.trim())
                 .filter(Boolean)
                 .slice(0, 3)
                 .map((tag) => (
-                  <span key={`${object.id}:${tag}`} style={styles.tagChip}>
+                  <span
+                    key={`${object.id}:${tag}`}
+                    className="border border-accent-soft bg-accent-soft px-1.5 py-0.5 text-[10px] text-accent"
+                  >
                     #{tag}
                   </span>
                 ))}
@@ -285,7 +307,7 @@ export function SceneObjectCard({
           </>
         ) : null}
 
-        <div style={styles.cardActions}>
+        <div className="flex flex-wrap gap-1">
           <SceneIconButton
             icon={
               reusableActionPendingId === object.id
@@ -320,7 +342,7 @@ export function SceneObjectCard({
       {isSelected ? (
         <div
           id={`scene-object-editor-${layerId}-${object.id}`}
-          style={styles.nodeInlineEditor}
+          className={`${css.inlineEditor} mt-1.5 grid content-start gap-3 border-t pt-3.5`}
         >
           {editorContent}
         </div>
@@ -348,20 +370,6 @@ export function SceneIconButton({
   expanded?: boolean;
   controls?: string;
 }) {
-  const style = {
-    ...(size === "micro" ? styles.iconButtonMicro : styles.iconButton),
-    ...(variant === "accent"
-      ? size === "micro"
-        ? styles.iconButtonMicroAccent
-        : styles.iconButtonAccent
-      : variant === "danger"
-        ? size === "micro"
-          ? styles.iconButtonMicroDanger
-          : styles.iconButtonDanger
-        : {}),
-    minWidth: 44,
-    minHeight: 44,
-  };
   return (
     <button
       type="button"
@@ -369,7 +377,9 @@ export function SceneIconButton({
       aria-expanded={expanded}
       aria-controls={controls}
       title={label}
-      style={style}
+      className={css.treeButton}
+      data-size={size}
+      data-variant={variant}
       onClick={onClick}
       disabled={disabled}
     >
@@ -433,7 +443,7 @@ export function RewriteStateButton({
   return (
     <div
       ref={actionGroupRef}
-      style={styles.rewriteActionGroup}
+      className="relative inline-flex items-center gap-1"
       onKeyDown={(event) => {
         if (event.key === "Escape" && isStrengthOpen) {
           event.stopPropagation();
@@ -461,19 +471,23 @@ export function RewriteStateButton({
         disabled={Boolean(pendingKey)}
       />
       {!isPending && !isUndo && isStrengthOpen ? (
-        <div id={popoverId} ref={strengthPopoverRef} style={styles.rewritePopoverWrap}>
+        <div
+          id={popoverId}
+          ref={strengthPopoverRef}
+          className="absolute top-[calc(100%+8px)] right-0 z-20"
+        >
           <div
-            style={styles.rewritePopover}
+            className={`${css.rewritePopover} relative grid w-[220px] gap-2.5 border bg-panel px-3 pt-3 pb-2.5`}
             onClick={(event) => event.stopPropagation()}
           >
-            <div style={styles.rewritePopoverSection}>
-              <span style={styles.rewritePopoverTitle}>重写强度</span>
-              <span style={styles.rewritePopoverValue}>
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-xs/[1.5] font-semibold text-ink">重写强度</span>
+              <span className="text-xs/[1.5] font-semibold text-ink">
                 {(rewriteStrength * 100).toFixed(0)}%
               </span>
             </div>
             <input
-              style={styles.rewriteSlider}
+              className="min-h-11 w-full shrink-0"
               aria-label={`${label}重写强度`}
               aria-valuetext={`${(rewriteStrength * 100).toFixed(0)}%`}
               type="range"
@@ -483,12 +497,12 @@ export function RewriteStateButton({
               value={rewriteStrength}
               onChange={(event) => onRewriteStrengthChange(Number(event.target.value))}
             />
-            <p style={styles.rewritePopoverHint}>
+            <p className="m-0 text-xs/[1.5] text-muted">
               数值越高，AI 对原始设定的改写幅度越大。
             </p>
             <button
               type="button"
-              style={styles.rewritePopoverButton}
+              className="h-11 cursor-pointer border-0 bg-accent text-xs/[1.5] font-semibold text-white"
               onClick={(event) => {
                 event.stopPropagation();
                 actionGroupRef.current
