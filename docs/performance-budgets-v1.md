@@ -174,7 +174,7 @@ must be below 2 seconds; at that response boundary neither `litellm` nor `onnxtr
 and connection attempts before application imports; any attempt fails the gate.
 Do not set `LITELLM_LOCAL_MODEL_COST_MAP` to hide a startup SDK import.
 
-The `test:acceptance:startup` probe that produced this baseline was removed; reproduce it manually or reinstate a probe before comparing against these numbers.
+
 The raw artifact records each sample, environment, module/network evidence and
 process exit. This is a local process-start gate, not a cold-disk, OCR-first-use,
 model-first-call or deployment readiness latency guarantee. SDK injection remains

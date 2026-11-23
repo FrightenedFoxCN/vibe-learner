@@ -16,7 +16,7 @@
 4. **提交证据**：必须匹配已注册的 operation key 与版本化 committed projection；通用资源证据不足以声称提交成功。
 5. **提案 ≠ 已提交**：模型/heuristic 提案与已提交记录、API 响应严格分离；生成的 ID、身份、顺序、修订、时间戳不得进入模型自有 schema。
 6. **交互题评分材料**只存在于服务端；浏览器只渲染持久化后的 Session 读回。
-7. **验证入口**：`npm run test:baseline`（不变量基线）+ `npm run check`（style + contracts + web types + baseline）。完整测试套件与 `eval:harness:*` 已移除，不要引用旧命令。
+7. **验证入口**：`npm run test:baseline`（不变量基线）+ `npm run check`（style + contracts + web types + api-reference 同步 + baseline）。
 8. **新增 `test:*` 脚本前**先确认对应测试入口存在；没有入口就不要加脚本。
 
 ## 运行形态（要点）
