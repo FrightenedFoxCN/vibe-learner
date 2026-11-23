@@ -9,18 +9,15 @@ import {
   DESKTOP_STARTUP_QUERY_VALUE,
   resolveDesktopStartupRequirement,
 } from "../../lib/desktop-startup";
-import { settingsStyles as styles } from "./settings-styles";
+import { Alert } from "../ui/alert";
+import { AdvancedSettingsCard } from "./settings-advanced";
+import { CapabilityAuditCard } from "./settings-capability-audit";
 import {
-  AutoSaveStatusBar,
-  CapabilityAuditCard,
-  ConnectionModelsCard,
   DesktopSecurityCard,
-  DebugVisibilityCard,
-  ProviderCard,
-  SettingsHeader,
   StartupRequirementCard,
-  AdvancedSettingsCard,
-} from "./settings-sections";
+} from "./settings-desktop-security";
+import { AutoSaveStatusBar, DebugVisibilityCard } from "./settings-feedback";
+import { ConnectionModelsCard, ProviderCard } from "./settings-model-connection";
 import { usePageDebugSnapshot } from "../debug/page-debug-context";
 import { useSettingsController } from "./use-settings-controller";
 import { buildSettingsDebugSnapshot } from "./settings-debug-snapshot";
@@ -52,28 +49,52 @@ export function SettingsPage() {
     controller.settings &&
     (controller.settings.planProvider === "litellm" || startupRequirement),
   );
+  const {
+    loadError,
+    saveError,
+    loading,
+    savePhase,
+    lastSavedAt,
+    settings,
+    desktopSecurity,
+    numericDrafts,
+    probeState,
+  } = controller;
   const debugSnapshot = useMemo(
-    () => buildSettingsDebugSnapshot(controller),
+    () =>
+      buildSettingsDebugSnapshot({
+        loadError,
+        saveError,
+        loading,
+        savePhase,
+        lastSavedAt,
+        settings,
+        desktopSecurity,
+        numericDrafts,
+        probeState,
+      }),
     [
-      controller.loadError,
-      controller.saveError,
-      controller.loading,
-      controller.savePhase,
-      controller.lastSavedAt,
-      controller.settings,
-      controller.desktopSecurity,
-      controller.numericDrafts,
-      controller.probeState,
+      loadError,
+      saveError,
+      loading,
+      savePhase,
+      lastSavedAt,
+      settings,
+      desktopSecurity,
+      numericDrafts,
+      probeState,
     ],
   );
 
   usePageDebugSnapshot(debugSnapshot);
 
   return (
-    <main className="with-app-nav" style={styles.page}>
+    <main className="with-app-nav mx-auto grid min-h-screen min-w-0 max-w-[1160px] content-start gap-5 px-4 pt-[38px] pb-16 md:px-8">
       <TopNav currentPath="/settings" />
 
-      <SettingsHeader />
+      <h1 className="m-0 text-[28px] leading-tight font-extrabold tracking-tight text-ink">
+        统一设置
+      </h1>
       {startupRequirement ? (
         <StartupRequirementCard
           title={startupRequirement.title}
@@ -81,18 +102,22 @@ export function SettingsPage() {
         />
       ) : null}
 
-      {controller.loading ? <div style={styles.loading}>正在加载设置…</div> : null}
+      {controller.loading ? (
+        <div role="status" className="text-sm text-muted">
+          正在加载设置…
+        </div>
+      ) : null}
       {controller.loadError ? (
-        <div style={styles.error}>设置加载失败：{controller.loadError}</div>
+        <Alert variant="negative">设置加载失败：{controller.loadError}</Alert>
       ) : null}
       {!controller.loading && !controller.settings && showDesktopSecurityCard ? (
-        <div className="settings-form" style={styles.form}>
+        <div className="grid min-w-0 gap-4">
           <DesktopSecurityCard controller={controller} />
         </div>
       ) : null}
 
       {!controller.loading && controller.settings ? (
-        <div className="settings-form" style={styles.form}>
+        <div className="grid min-w-0 gap-4">
           <ProviderCard controller={controller} settings={controller.settings} />
           {showDesktopSecurityCard ? (
             <DesktopSecurityCard controller={controller} />
