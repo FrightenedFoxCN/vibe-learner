@@ -6,6 +6,7 @@ import {
   buildDayMap,
   buildFeatureModelSummary,
   buildFeatureSummary,
+  buildUsageBuckets,
   filterUsageRecords,
   RECORD_PAGE_SIZE,
   serializeUsageCsv,
@@ -58,15 +59,6 @@ export function useModelUsageController() {
     };
   }, []);
 
-  const days = useMemo(() => (stats ? buildDayMap(stats.buckets) : []), [stats]);
-  const featureSummary = useMemo(
-    () => (stats ? buildFeatureSummary(stats.buckets) : []),
-    [stats],
-  );
-  const buckets = useMemo(
-    () => (stats ? sortUsageBuckets(stats.buckets) : []),
-    [stats],
-  );
   const filteredRecords = useMemo(
     () =>
       filterUsageRecords(stats?.records ?? [], {
@@ -77,6 +69,20 @@ export function useModelUsageController() {
       }),
     [dateFrom, dateTo, operationFilter, stats, workflowFilter],
   );
+  const hasAggregateOnlyHistory = Boolean(
+    stats?.buckets.length && !stats.records.length,
+  );
+  const buckets = useMemo(
+    () =>
+      sortUsageBuckets(
+        hasAggregateOnlyHistory
+          ? (stats?.buckets ?? [])
+          : buildUsageBuckets(filteredRecords),
+      ),
+    [hasAggregateOnlyHistory, stats, filteredRecords],
+  );
+  const days = useMemo(() => buildDayMap(buckets), [buckets]);
+  const featureSummary = useMemo(() => buildFeatureSummary(buckets), [buckets]);
   const featureModelSummary = useMemo(
     () => buildFeatureModelSummary(filteredRecords),
     [filteredRecords],
@@ -85,10 +91,17 @@ export function useModelUsageController() {
     () => sortedUsageOptions((stats?.records ?? []).map((record) => record.workflow)),
     [stats],
   );
-  // Operation options intentionally follow all active filters, including operation.
   const operationOptions = useMemo(
-    () => sortedUsageOptions(filteredRecords.map((record) => record.operationId)),
-    [filteredRecords],
+    () =>
+      sortedUsageOptions(
+        filterUsageRecords(stats?.records ?? [], {
+          workflow: workflowFilter,
+          operation: "",
+          dateFrom,
+          dateTo,
+        }).map((record) => record.operationId),
+      ),
+    [stats, workflowFilter, dateFrom, dateTo],
   );
   const visibleRecords = filteredRecords.slice(
     (recordPage - 1) * RECORD_PAGE_SIZE,
@@ -125,6 +138,7 @@ export function useModelUsageController() {
 
   return {
     ready: stats !== null,
+    hasAggregateOnlyHistory,
     loading,
     error,
     filters: {
@@ -156,10 +170,12 @@ export function useModelUsageController() {
       },
       onDateFromChange(value: string) {
         setDateFrom(value);
+        setOperationFilter("");
         setRecordPage(1);
       },
       onDateToChange(value: string) {
         setDateTo(value);
+        setOperationFilter("");
         setRecordPage(1);
       },
       onExport: () => downloadUsageCsv(filteredRecords, timeZone),

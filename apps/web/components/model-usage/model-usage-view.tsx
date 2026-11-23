@@ -130,6 +130,7 @@ function UsageSummary({ count, totals }: ModelUsageController["summary"]) {
 
 export function ModelUsageView({
   ready,
+  hasAggregateOnlyHistory,
   loading,
   error,
   filters,
@@ -159,20 +160,28 @@ export function ModelUsageView({
         )}
         {ready && (
           <>
-            <UsageFilters {...filters} />
-            <p className="m-0 mb-5 text-xs text-muted wrap-anywhere">
-              当前显示时区：{filters.timeZone}。统计按已记录的 provider Token
-              汇总；价格未配置时不虚构金额，实际费用以服务商账单为准。筛选结果{" "}
-              {summary.count} 条。
-            </p>
-            <UsageSummary {...summary} />
+            {hasAggregateOnlyHistory ? (
+              <p role="status">旧版接口仅提供全量聚合，无法按调用筛选或导出。</p>
+            ) : (
+              <>
+                <UsageFilters {...filters} />
+                <p className="m-0 mb-5 text-xs text-muted wrap-anywhere">
+                  当前显示时区：{filters.timeZone}
+                  。筛选和分组按记录日期（UTC），不随显示时区变化。 Token 按 provider
+                  返回值统计，实际费用以服务商账单为准。筛选结果 {summary.count} 条。
+                </p>
+                <UsageSummary {...summary} />
+              </>
+            )}
             <UsageSection title="按日期的 Token 用量（堆积柱状图）">
               <StackedBarChart days={days} />
             </UsageSection>
             <FeatureSummaryTable rows={featureSummary} />
-            <FeatureModelSummaryTable rows={featureModelSummary} />
+            {!hasAggregateOnlyHistory && (
+              <FeatureModelSummaryTable rows={featureModelSummary} />
+            )}
             <DailyBucketTable rows={buckets} />
-            <CallRecordsTable {...calls} />
+            {!hasAggregateOnlyHistory && <CallRecordsTable {...calls} />}
           </>
         )}
       </div>

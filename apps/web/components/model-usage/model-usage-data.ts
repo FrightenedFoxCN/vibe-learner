@@ -189,6 +189,33 @@ export function sumUsageRecords(records: TokenUsageCallRecord[]) {
   );
 }
 
+export function buildUsageBuckets(
+  records: TokenUsageCallRecord[],
+): TokenUsageDailyBucket[] {
+  const buckets = new Map<string, TokenUsageDailyBucket>();
+  for (const {
+    createdAt,
+    feature,
+    model,
+    promptTokens,
+    completionTokens,
+    totalTokens,
+  } of records) {
+    const date = createdAt.slice(0, 10);
+    const key = JSON.stringify([date, feature, model]);
+    const bucket = buckets.get(key);
+    buckets.set(key, {
+      date,
+      feature,
+      model,
+      promptTokens: (bucket?.promptTokens ?? 0) + promptTokens,
+      completionTokens: (bucket?.completionTokens ?? 0) + completionTokens,
+      totalTokens: (bucket?.totalTokens ?? 0) + totalTokens,
+    });
+  }
+  return [...buckets.values()];
+}
+
 export function sortUsageBuckets(buckets: TokenUsageDailyBucket[]) {
   return [...buckets].sort(
     (a, b) => b.date.localeCompare(a.date) || a.feature.localeCompare(b.feature),
