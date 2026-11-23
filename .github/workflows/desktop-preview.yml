@@ -23,7 +23,7 @@ jobs:
       matrix:
         include:
           - name: macOS DMG
-            os: macos-14
+            os: macos-15
             artifact_name: vibe-learner-macos-dmg-preview
             artifact_path: apps/desktop/src-tauri/target/release/bundle/dmg/*.dmg
           - name: Windows NSIS
