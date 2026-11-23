@@ -96,24 +96,20 @@ def get_model_tool_config(
                 available = False
                 unavailable_reason = stage_reason
             elif tool_name == "read_page_range_images":
-                if (
-                    current_stage_name == "plan_generation"
-                    and not provider.supports_page_image_tools()
-                ):
-                    available = False
-                    unavailable_reason = "当前计划模型未启用多模态能力。"
-                    audit_basis.append("plan_multimodal=off")
-                else:
-                    audit_basis.append("plan_multimodal=on")
-                if (
-                    current_stage_name == "study_chat"
-                    and not provider.supports_chat_page_image_tools()
-                ):
-                    available = False
-                    unavailable_reason = "当前对话模型未启用多模态能力。"
-                    audit_basis.append("chat_multimodal=off")
+                if current_stage_name == "plan_generation":
+                    available = provider.supports_page_image_tools()
+                    audit_basis.append(
+                        f"plan_multimodal={'on' if available else 'off'}"
+                    )
+                    if not available:
+                        unavailable_reason = "当前计划模型未启用多模态能力。"
                 elif current_stage_name == "study_chat":
-                    audit_basis.append("chat_multimodal=on")
+                    available = provider.supports_chat_page_image_tools()
+                    audit_basis.append(
+                        f"chat_multimodal={'on' if available else 'off'}"
+                    )
+                    if not available:
+                        unavailable_reason = "当前对话模型未启用多模态能力。"
             elif tool_name == "retrieve_memory_context":
                 audit_basis.append("chat_memory_gate=managed_by_model_tools")
             tool["available"] = available
