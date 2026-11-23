@@ -8,6 +8,8 @@ import {
   listStudySessions,
   type StudyChatOperationResponse,
 } from "../lib/data/study-sessions";
+import { isExactStudyCommit } from "../lib/study-composer-receipt";
+import { commitDeferredStudyCallbacks } from "../lib/study-dialogue-interruption";
 import { isMissingStudyChatOperationError } from "../lib/http-error";
 import {
   withStudyRequestDeadline,
@@ -30,6 +32,7 @@ interface StudyRecoveryOptions {
   view: StudyAsyncViewFence<StudySessionRecord>;
   getSelectedPlanId: () => string;
   onExchange: (result: StudyChatResponse & { session: StudySessionRecord }) => void;
+  onDialogueInterruptionChanged: () => void;
   onSession: (session: StudySessionRecord | null, clearResponse: boolean) => void;
   onResetView: () => void;
   onNotice: (notice: string) => void;
@@ -107,8 +110,17 @@ export function useStudyChatRecovery(
       ticket: AsyncResultTicket,
     ): boolean => {
       try {
+        const sameCommittedRequest = isExactStudyCommit(receipt, draft);
+        if (
+          sameCommittedRequest &&
+          draft.messageKind === "learner" &&
+          draft.deferredCallbackReceipt &&
+          commitDeferredStudyCallbacks(draft.sessionId, draft.deferredCallbackReceipt)
+        ) {
+          optionsRef.current.onDialogueInterruptionChanged();
+        }
         if (!isCurrentStudyResponseTicket(ticket, receipt.clientRequestId)) {
-          if (receipt.status === "committed") store.clearPendingStudyOperation(receipt);
+          if (sameCommittedRequest) store.clearPendingStudyOperation(receipt);
           logWorkspaceInfo("workflow:study_chat:stale_result_discarded", {
             sessionId: receipt.sessionId,
             clientRequestId: receipt.clientRequestId,
@@ -116,6 +128,7 @@ export function useStudyChatRecovery(
           return false;
         }
         if (receipt.status === "committed" && receipt.result) {
+          if (!sameCommittedRequest) return false;
           const currentSession = view.session;
           if (currentSession?.id !== receipt.sessionId) {
             store.clearPendingStudyOperation(receipt);
@@ -124,6 +137,7 @@ export function useStudyChatRecovery(
           if (currentSession.revision <= receipt.result.session.revision) {
             optionsRef.current.onExchange(receipt.result);
           }
+          draft.onCommitted?.();
           setChatFailure(null);
           store.clearPendingStudyOperation(receipt);
           store.clearLastNotCommittedStudyOperation(receipt);

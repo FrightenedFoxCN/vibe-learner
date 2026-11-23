@@ -146,6 +146,11 @@ export function StudyConsole({
           pendingComposerInsert={pendingComposerInsert}
           onConsumeComposerInsert={onConsumeComposerInsert}
           onAsk={onAsk}
+          draftScope={JSON.stringify([
+            selectedPlanId,
+            selectedScheduleId,
+            outputLanguageScope,
+          ])}
           personaName={persona.name}
           message={message}
           setMessage={setMessage}

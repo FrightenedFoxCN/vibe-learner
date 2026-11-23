@@ -14,6 +14,7 @@ import {
   type StudyOperationStore,
 } from "../lib/study-operation-state";
 import { StudyAsyncViewFence } from "../lib/async-result-fence";
+import { captureDeferredStudyCallbacks } from "../lib/study-dialogue-interruption";
 import { createStudyChatRequestId } from "../lib/client-request-id";
 import { StudyRequestWaitExpired } from "../lib/study-request-deadline";
 import { resolveStudySessionErrorNotice } from "../lib/study-session-decode";
@@ -41,9 +42,6 @@ interface StudyMessageOptions {
   ensureSessionForSection: ReturnType<
     typeof useStudySessionNavigation
   >["ensureSessionForSection"];
-  isDialogueInterruptedForSession: (id: string) => boolean;
-  peekDeferredInteractiveCallbackPrefix: (id: string) => string;
-  clearInterruptedDialogueState: (id: string, consumedPrefix: string) => void;
   onNotice: (notice: string) => void;
 }
 export interface StudyMessagePort {
@@ -171,6 +169,7 @@ export function useStudyMessages(
     message: string,
     attachments: File[] = [],
     outputLanguage?: string,
+    onCommitted?: () => void,
   ) => {
     if (!view.session) {
       return false;
@@ -180,6 +179,7 @@ export function useStudyMessages(
       view.session.studyUnitId,
       attachments,
       outputLanguage,
+      onCommitted,
     );
   };
 
@@ -188,6 +188,7 @@ export function useStudyMessages(
     studyUnitId: string,
     attachments: File[] = [],
     outputLanguage?: string,
+    onCommitted?: () => void,
   ) => {
     const failure = latest.current.recovery.chatFailure;
     if (
@@ -205,6 +206,7 @@ export function useStudyMessages(
         studyUnitId,
         attachments,
         outputLanguage,
+        onCommitted,
       );
     } finally {
       learnerInFlight.current = false;
@@ -217,6 +219,7 @@ export function useStudyMessages(
     studyUnitId: string,
     attachments: File[],
     outputLanguage?: string,
+    onCommitted?: () => void,
   ) => {
     setChatFailure(null);
     let targetSession: StudySessionRecord | null;
@@ -244,11 +247,7 @@ export function useStudyMessages(
     ) {
       return false;
     }
-    const hiddenMessagePrefix = latest.current.isDialogueInterruptedForSession(
-      targetSession.id,
-    )
-      ? latest.current.peekDeferredInteractiveCallbackPrefix(targetSession.id)
-      : "";
+    const deferred = captureDeferredStudyCallbacks(targetSession.id);
     const draft: StudyChatDraft = {
       sessionId: targetSession.id,
       clientRequestId: createStudyChatRequestId("learner"),
@@ -257,7 +256,9 @@ export function useStudyMessages(
       studyUnitId,
       attachments,
       messageKind: "learner",
-      hiddenMessagePrefix,
+      hiddenMessagePrefix: deferred?.prefix ?? "",
+      deferredCallbackReceipt: deferred?.receipt,
+      onCommitted,
       ...(outputLanguage !== undefined ? { outputLanguage } : {}),
     };
     persistPendingStudyOperation(draft);
@@ -287,10 +288,6 @@ export function useStudyMessages(
         }
         return false;
       }
-      latest.current.clearInterruptedDialogueState(
-        targetSession.id,
-        draft.hiddenMessagePrefix ?? "",
-      );
       logWorkspaceInfo("workflow:study_chat:done", {
         sessionId: targetSession.id,
         citations: next.result?.citations.length ?? 0,
@@ -347,6 +344,7 @@ export function useStudyMessages(
       chatFailure.studyUnitId,
       chatFailure.attachments,
       chatFailure.outputLanguage,
+      chatFailure.onCommitted,
     );
   };
 

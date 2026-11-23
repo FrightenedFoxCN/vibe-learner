@@ -1,4 +1,5 @@
-import { createStudyChatRequestId } from "./client-request-id";
+import type { DeferredStudyCallbackReceipt } from "./study-dialogue-interruption";
+import { createStudyChatRequestId } from "./client-request-id.ts";
 import type { StudyChatOperationStatus } from "./study-chat-operation-decode";
 import type { StudyChatOperationResponse } from "./data/study-sessions";
 
@@ -13,6 +14,8 @@ export type ChatFailureState = {
   messageKind: string;
   followUpId?: string;
   hiddenMessagePrefix?: string;
+  deferredCallbackReceipt?: DeferredStudyCallbackReceipt;
+  onCommitted?: () => void;
   outputLanguage?: string;
   operationStatus: StudyChatOperationStatus | "unresolved";
   canQuery: boolean;
@@ -31,6 +34,7 @@ export type PendingStudyOperationIdentity = Pick<
 > & {
   messageKind?: string;
   studyUnitId?: string;
+  deferredCallbackReceipt?: DeferredStudyCallbackReceipt;
 };
 
 const PENDING_STUDY_OPERATION_STORAGE_KEY =
@@ -218,6 +222,7 @@ export function createStudyOperationStore(
           expectedSessionRevision: operation.expectedSessionRevision,
           messageKind: operation.messageKind,
           studyUnitId: operation.studyUnitId,
+          deferredCallbackReceipt: operation.deferredCallbackReceipt,
         }),
       );
     } catch {
@@ -303,6 +308,9 @@ export function createStudyOperationStore(
           typeof value.messageKind === "string" ? value.messageKind : undefined,
         studyUnitId:
           typeof value.studyUnitId === "string" ? value.studyUnitId : undefined,
+        deferredCallbackReceipt: decodeDeferredCallbackReceipt(
+          value.deferredCallbackReceipt,
+        ),
       };
     } catch {
       return null;
@@ -340,6 +348,30 @@ export function createStudyOperationStore(
     clearLastNotCommittedStudyOperation,
   };
 }
+function decodeDeferredCallbackReceipt(
+  value: unknown,
+): DeferredStudyCallbackReceipt | undefined {
+  if (
+    !value ||
+    typeof value !== "object" ||
+    !("epoch" in value) ||
+    !("count" in value)
+  ) {
+    return undefined;
+  }
+  const { epoch, count } = value;
+  if (
+    typeof epoch !== "string" ||
+    !epoch ||
+    typeof count !== "number" ||
+    !Number.isSafeInteger(count) ||
+    count < 0
+  ) {
+    return undefined;
+  }
+  return { epoch, count };
+}
+
 export const studyOperationStore = createStudyOperationStore(() =>
   typeof window === "undefined" ? null : window.localStorage,
 );

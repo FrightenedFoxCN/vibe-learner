@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useEffectEvent, useRef, useState } from "react";
+import { useCallback, useEffect, useEffectEvent, useRef, useState } from "react";
 import type { StudySessionRecord } from "@vibe-learner/shared";
 import { StudyAsyncViewFence } from "../lib/async-result-fence";
 import {
@@ -16,8 +16,6 @@ import {
   readInterruptedDialogueSessionId,
   writeInterruptedDialogueSessionId,
   appendDeferredInteractiveCallback,
-  readDeferredInteractiveCallbacks,
-  clearDeferredInteractiveCallbacks,
 } from "../lib/study-dialogue-interruption";
 import { studyOperationStore } from "../lib/study-operation-state";
 import {
@@ -48,8 +46,6 @@ export interface StudyContinuationPort {
   readInterruptedDialogueSessionId: typeof readInterruptedDialogueSessionId;
   writeInterruptedDialogueSessionId: typeof writeInterruptedDialogueSessionId;
   appendDeferredInteractiveCallback: typeof appendDeferredInteractiveCallback;
-  readDeferredInteractiveCallbacks: typeof readDeferredInteractiveCallbacks;
-  clearDeferredInteractiveCallbacks: typeof clearDeferredInteractiveCallbacks;
   hasPendingOperation: (sessionId: string) => boolean;
   now: () => number;
   setTimeout: (callback: () => void, delay: number) => number;
@@ -61,8 +57,6 @@ const defaultPort: StudyContinuationPort = {
   readInterruptedDialogueSessionId,
   writeInterruptedDialogueSessionId,
   appendDeferredInteractiveCallback,
-  readDeferredInteractiveCallbacks,
-  clearDeferredInteractiveCallbacks,
   hasPendingOperation: (id) =>
     studyOperationStore.readPendingStudyOperation()?.sessionId === id,
   now: Date.now,
@@ -106,42 +100,21 @@ export function useStudyContinuation(
   }
   const isDialogueInterruptedForSession = (id: string) =>
     Boolean(id.trim() && paused.current === id.trim());
-  const peekDeferredInteractiveCallbackPrefix = (id: string) =>
-    port.readDeferredInteractiveCallbacks(id.trim()).join("\n\n");
-  function clearInterruptedDialogueState(id: string, consumedPrefix: string) {
-    if (!id.trim()) return;
-    const callbacks = port.readDeferredInteractiveCallbacks(id.trim());
-    const consumed = consumedPrefix
-      ? callbacks.findIndex(
-          (_, index) => callbacks.slice(0, index + 1).join("\n\n") === consumedPrefix,
-        ) + 1
-      : 0;
-    if (consumed > 0) {
-      port.clearDeferredInteractiveCallbacks(id.trim());
-      callbacks
-        .slice(consumed)
-        .forEach((message) =>
-          port.appendDeferredInteractiveCallback(id.trim(), message),
-        );
-    }
-    if (
-      callbacks.length === consumed &&
-      isDialogueInterruptedForSession(id) &&
-      mounted.current
-    )
-      pause("");
-  }
-  useEffect(() => {
-    mounted.current = true;
+  const syncDialogueInterruption = useCallback(() => {
+    if (!mounted.current) return;
     paused.current = port.readInterruptedDialogueSessionId();
     setPausedSession(paused.current);
+  }, [port]);
+  useEffect(() => {
+    mounted.current = true;
+    syncDialogueInterruption();
     const scheduledTimers = timers.current;
     return () => {
       mounted.current = false;
       scheduledTimers.forEach((id) => port.clearTimeout(id));
       scheduledTimers.clear();
     };
-  }, [port]);
+  }, [port, syncDialogueInterruption]);
 
   async function runPrelude(
     session: StudySessionRecord,
@@ -459,8 +432,7 @@ export function useStudyContinuation(
     triggerInteractiveQuestionCallback,
     interruptDialogue,
     isDialogueInterruptedForSession,
-    peekDeferredInteractiveCallbackPrefix,
-    clearInterruptedDialogueState,
+    syncDialogueInterruption,
     isDialogueInterrupted: Boolean(
       options.session?.id && options.session.id === pausedSession,
     ),

@@ -1,5 +1,12 @@
-import { useEffect, useRef, type Dispatch, type SetStateAction } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  type Dispatch,
+  type SetStateAction,
+} from "react";
 import { outputLanguageError } from "../../lib/output-language";
+import { whenStudyDraftCommitted } from "../../lib/study-composer-receipt";
 import { hasStudyLearnerInput } from "../../lib/study-chat-input";
 import { MaterialIcon } from "../ui/material-icon";
 import type { StudyConsoleProps } from "./study-console-types";
@@ -16,6 +23,7 @@ type StudyComposerProps = Pick<
   | "onConsumeComposerInsert"
   | "onAsk"
 > & {
+  draftScope: string;
   personaName: string;
   message: string;
   setMessage: Dispatch<SetStateAction<string>>;
@@ -35,6 +43,7 @@ export function StudyComposer({
   pendingComposerInsert,
   onConsumeComposerInsert,
   onAsk,
+  draftScope,
   personaName,
   message,
   setMessage,
@@ -47,6 +56,13 @@ export function StudyComposer({
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const languageError = outputLanguageError(languagePreference);
   const hasInput = hasStudyLearnerInput(message, attachments);
+  const draftVersion = useRef<object | null>(null);
+  useLayoutEffect(() => {
+    draftVersion.current = { draftScope, message, attachments, languagePreference };
+    return () => {
+      draftVersion.current = null;
+    };
+  }, [draftScope, message, attachments, languagePreference]);
 
   useEffect(() => {
     if (!pendingComposerInsert?.id || !pendingComposerInsert.text) {
@@ -124,12 +140,11 @@ export function StudyComposer({
             }
             onClick={async () => {
               if (languageError || !hasInput) return;
-              const didSend = await onAsk(message, attachments, languagePreference);
-              if (!didSend) {
-                return;
-              }
-              setMessage("");
-              setAttachments([]);
+              const onCommitted = whenStudyDraftCommitted(draftVersion, () => {
+                setMessage("");
+                setAttachments([]);
+              });
+              await onAsk(message, attachments, languagePreference, onCommitted);
             }}
             aria-label={
               recoveryLocked

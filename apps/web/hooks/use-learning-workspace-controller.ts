@@ -347,6 +347,7 @@ export function useLearningWorkspaceController({
     view: studyViewFenceRef.current,
     getSelectedPlanId: () => selectedPlanIdRef.current,
     onExchange: applyChatExchange,
+    onDialogueInterruptionChanged: () => continuation.syncDialogueInterruption(),
     onSession: (studySession, clearResponse) => {
       if (studySession) activateStudySessionView(studySession);
       dispatch({ type: "study_session_set", studySession, clearResponse });
@@ -397,12 +398,6 @@ export function useLearningWorkspaceController({
       applyStudyChatOperation,
     },
     ensureSessionForSection,
-    isDialogueInterruptedForSession: (id) =>
-      continuation.isDialogueInterruptedForSession(id),
-    peekDeferredInteractiveCallbackPrefix: (id) =>
-      continuation.peekDeferredInteractiveCallbackPrefix(id),
-    clearInterruptedDialogueState: (id, prefix) =>
-      continuation.clearInterruptedDialogueState(id, prefix),
     onNotice: (notice) => dispatch({ type: "notice_set", notice }),
   });
 

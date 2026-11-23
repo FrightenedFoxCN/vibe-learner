@@ -22,6 +22,7 @@ export interface StudyConsoleProps {
     message: string,
     attachments: File[],
     outputLanguage?: string,
+    onCommitted?: () => void,
   ) => Promise<boolean> | boolean;
   outputLanguage?: string;
   outputLanguageScope?: string;

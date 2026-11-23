@@ -197,7 +197,12 @@ export function StudyDialogPage() {
   }, [handleOpenPdfPage, scheduleStartPage]);
 
   const handleAskByCurrentChapter = useCallback(
-    async (message: string, attachments: File[] = [], outputLanguage?: string) => {
+    async (
+      message: string,
+      attachments: File[] = [],
+      outputLanguage?: string,
+      onCommitted?: () => void,
+    ) => {
       const targetStudyUnitId = currentStudyUnitId || studySession?.studyUnitId || "";
       if (targetStudyUnitId) {
         return handleAskForSection(
@@ -205,9 +210,10 @@ export function StudyDialogPage() {
           targetStudyUnitId,
           attachments,
           outputLanguage,
+          onCommitted,
         );
       }
-      return handleAsk(message, attachments, outputLanguage);
+      return handleAsk(message, attachments, outputLanguage, onCommitted);
     },
     [currentStudyUnitId, handleAsk, handleAskForSection, studySession?.studyUnitId],
   );
