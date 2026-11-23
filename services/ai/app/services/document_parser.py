@@ -29,6 +29,7 @@ from app.models.domain import (
 )
 from app.services.ocr_engine import OcrPageResult, OnnxtrOcrEngine
 from app.core.clock import utc_now_iso as _now
+from app.core.coerce import text_or_empty
 
 HEADING_PATTERNS = [
     re.compile(r"^(chapter|section|part|appendix)\s+\d+", re.IGNORECASE),
@@ -1219,7 +1220,7 @@ class DocumentParser:
         raw_result = self._ocr_page(page)
         if isinstance(raw_result, OcrPageResult):
             return raw_result
-        text = str(raw_result or "")
+        text = text_or_empty(raw_result)
         return OcrPageResult(
             text=text,
             status="completed" if text.strip() else "failed",
@@ -1584,7 +1585,7 @@ def _unique_preserving_order(items: Iterable[object]) -> list[str]:
     seen: set[str] = set()
     ordered: list[str] = []
     for item in items:
-        text = str(item or "").strip()
+        text = text_or_empty(item).strip()
         if not text or text in seen:
             continue
         seen.add(text)

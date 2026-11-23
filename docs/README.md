@@ -6,6 +6,7 @@
 | --- | --- |
 | [用户手册](user_manual.md) | 页面功能与使用流程 |
 | [系统架构](architecture.md) | Web、AI、共享契约、桌面与存储边界 |
+| [数据流分层与兜底责任](data-flow-layers.md) | 外部输入 → 归一化 → 域模型 → 持久化 → DTO → 前端 decode 的责任边界 |
 | [Harness 工程手册](harness/README.md) | 按用户工作流整理的生命周期、数据库、模型约束、恢复与预算 |
 | [Tavern 架构](tavern-architecture.md) | 房间、消息、调度、事务和恢复 |
 | [Tavern 回应顺序验收](tavern-order-acceptance.md) | 逆序选择、房间恢复和部分失败子重试的验证协议 |

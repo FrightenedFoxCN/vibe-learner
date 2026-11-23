@@ -106,6 +106,7 @@ from app.models.study_question import (
     STUDY_QUESTION_TOOL_TRACE_PRIVATE_FIELDS,
 )
 from app.services.token_usage import TokenUsageService
+from app.core.coerce import text_at
 
 
 logger = get_logger("vibe_learner.model_provider")
@@ -886,7 +887,7 @@ class OpenAIModelProvider(ModelProvider):
         for transport_features, payload, request_kind in transports:
             _, adjustments = adapt_openai_compatible_payload(
                 payload,
-                model=str(payload.get("model") or ""),
+                model=text_at(payload, "model"),
             )
             failure: RuntimeError | None = None
             readiness_note = "最小代表请求已沿当前 LiteLLM 调用路径成功返回。"
@@ -894,7 +895,7 @@ class OpenAIModelProvider(ModelProvider):
                 self._request_openai_chat_completion(
                     payload,
                     request_kind=request_kind,
-                    model=str(payload.get("model") or ""),
+                    model=text_at(payload, "model"),
                 )
             except RuntimeError as exc:
                 if (
@@ -908,7 +909,7 @@ class OpenAIModelProvider(ModelProvider):
                         self._request_openai_chat_completion(
                             fallback_payload,
                             request_kind=request_kind,
-                            model=str(payload.get("model") or ""),
+                            model=text_at(payload, "model"),
                         )
                     except RuntimeError as fallback_exc:
                         failure = fallback_exc
@@ -920,7 +921,7 @@ class OpenAIModelProvider(ModelProvider):
 
             if failure is None:
                 readiness = {
-                    "model": str(payload.get("model") or ""),
+                    "model": text_at(payload, "model"),
                     "status": "ready",
                     "code": "",
                     "note": readiness_note,
@@ -929,7 +930,7 @@ class OpenAIModelProvider(ModelProvider):
             else:
                 code = str(failure).split(":", 1)[0]
                 readiness = {
-                    "model": str(payload.get("model") or ""),
+                    "model": text_at(payload, "model"),
                     "status": (
                         "unsupported"
                         if code.endswith("_request_unsupported_params")
@@ -1439,7 +1440,7 @@ def _build_mock_scene_layers(
 def _public_chat_tool_trace_result(result: dict[str, Any]) -> dict[str, Any]:
     """Remove server-only question grading material from public tool traces."""
 
-    if str(result.get("question_type") or "") not in {
+    if text_at(result, "question_type") not in {
         "multiple_choice",
         "fill_blank",
     }:

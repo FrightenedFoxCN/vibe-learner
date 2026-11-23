@@ -23,11 +23,15 @@ from app.services.performance import PerformanceMapper
 from app.services.study_memory import build_memory_context, retrieve_memory_hits
 from app.models.study_question import project_study_question_proposal
 from app.models.study_chat_operation import StudyChatMessageKind
+from app.core.coerce import text_at
 
 
 class PedagogyOrchestrator:
     def __init__(
-        self, *, model_provider: TeachingModelCapability, performance_mapper: PerformanceMapper
+        self,
+        *,
+        model_provider: TeachingModelCapability,
+        performance_mapper: PerformanceMapper,
     ) -> None:
         self.model_provider = model_provider
         self.performance_mapper = performance_mapper
@@ -198,7 +202,9 @@ class PedagogyOrchestrator:
         )
 
 
-def _build_conversation_history(turns: list[DialogueTurnRecord]) -> list[dict[str, str]]:
+def _build_conversation_history(
+    turns: list[DialogueTurnRecord],
+) -> list[dict[str, str]]:
     history: list[dict[str, str]] = []
     for turn in turns[-6:]:
         learner_text = turn.learner_message.strip()
@@ -239,24 +245,25 @@ def _build_section_context(
     page_end = 0
     related_ids = {study_unit_id}
 
-    study_unit = next((unit for unit in debug_report.study_units if unit.id == study_unit_id), None)
+    study_unit = next(
+        (unit for unit in debug_report.study_units if unit.id == study_unit_id), None
+    )
     if study_unit is not None:
         resolved_study_unit_title = study_unit.title
         page_start = study_unit.page_start
         page_end = study_unit.page_end
         related_ids.update(study_unit.source_section_ids)
 
-    parsed_section = next((section for section in debug_report.sections if section.id == study_unit_id), None)
+    parsed_section = next(
+        (section for section in debug_report.sections if section.id == study_unit_id),
+        None,
+    )
     if parsed_section is not None and resolved_study_unit_title == study_unit_id:
         resolved_study_unit_title = parsed_section.title
         page_start = parsed_section.page_start
         page_end = parsed_section.page_end
 
-    chunks = [
-        chunk
-        for chunk in debug_report.chunks
-        if chunk.section_id in related_ids
-    ]
+    chunks = [chunk for chunk in debug_report.chunks if chunk.section_id in related_ids]
     if not chunks and page_start > 0 and page_end > 0:
         chunks = [
             chunk
@@ -280,7 +287,10 @@ def _build_section_context(
             parts.append(f"学习目标：{active_plan.objective.strip()}")
         parts.append(f"教材摘录：\n{excerpt_text}")
         return "\n".join(parts)
-    parts = [f"学习单元：{resolved_study_unit_title} ({study_unit_id})", f"页码：{page_start}-{page_end}"]
+    parts = [
+        f"学习单元：{resolved_study_unit_title} ({study_unit_id})",
+        f"页码：{page_start}-{page_end}",
+    ]
     if theme_hint.strip():
         parts.append(f"当前主题：{theme_hint.strip()}")
     if active_plan is not None and active_plan.objective.strip():
@@ -314,11 +324,20 @@ def _build_goal_only_section_context(
         if matching_unit is not None and matching_unit.summary.strip():
             parts.append(f"阶段摘要：{matching_unit.summary.strip()}")
         study_unit_progress = next(
-            (item for item in active_plan.study_unit_progress if item.unit_id == study_unit_id),
+            (
+                item
+                for item in active_plan.study_unit_progress
+                if item.unit_id == study_unit_id
+            ),
             None,
         )
-        if study_unit_progress is not None and study_unit_progress.objective_fragment.strip():
-            parts.append(f"学习单元目标：{study_unit_progress.objective_fragment.strip()}")
+        if (
+            study_unit_progress is not None
+            and study_unit_progress.objective_fragment.strip()
+        ):
+            parts.append(
+                f"学习单元目标：{study_unit_progress.objective_fragment.strip()}"
+            )
     elif theme_hint.strip():
         parts.append(f"当前主题：{theme_hint.strip()}")
     return "\n".join(parts)
@@ -339,14 +358,18 @@ def _build_grounded_citations(
     page_end = 1
     related_ids = {study_unit_id}
 
-    unit = next((item for item in debug_report.study_units if item.id == study_unit_id), None)
+    unit = next(
+        (item for item in debug_report.study_units if item.id == study_unit_id), None
+    )
     if unit is not None:
         title = unit.title
         page_start = unit.page_start
         page_end = unit.page_end
         related_ids.update(unit.source_section_ids)
 
-    section = next((item for item in debug_report.sections if item.id == study_unit_id), None)
+    section = next(
+        (item for item in debug_report.sections if item.id == study_unit_id), None
+    )
     if section is not None and title == study_unit_id:
         title = section.title
         page_start = section.page_start
@@ -354,9 +377,7 @@ def _build_grounded_citations(
 
     tokens = citation_tokens(message)
     candidate_chunks = [
-        chunk
-        for chunk in debug_report.chunks
-        if chunk.section_id in related_ids
+        chunk for chunk in debug_report.chunks if chunk.section_id in related_ids
     ]
     if not candidate_chunks:
         candidate_chunks = [
@@ -370,7 +391,9 @@ def _build_grounded_citations(
         chunk_tokens = citation_tokens(f"{chunk.text_preview}\n{chunk.content}")
         score = len(tokens & chunk_tokens)
         if score > 0:
-            scored_chunks.append((score, chunk.page_start, chunk.page_end, chunk.section_id))
+            scored_chunks.append(
+                (score, chunk.page_start, chunk.page_end, chunk.section_id)
+            )
 
     scored_chunks.sort(key=lambda item: (item[0], -(item[2] - item[1])), reverse=True)
 
@@ -394,7 +417,9 @@ def _build_grounded_citations(
 
 
 def _tokenize(text: str) -> list[str]:
-    return [token for token in re.findall(r"[a-zA-Z0-9\u4e00-\u9fff]{2,}", text.lower())]
+    return [
+        token for token in re.findall(r"[a-zA-Z0-9\u4e00-\u9fff]{2,}", text.lower())
+    ]
 
 
 def _truncate_for_prompt(text: str, *, limit: int) -> str:
@@ -404,7 +429,9 @@ def _truncate_for_prompt(text: str, *, limit: int) -> str:
     return compact[: limit - 3] + "..."
 
 
-def _build_persona_slot_trace(*, persona: PersonaProfile, message: str) -> list[PersonaSlotTraceRecord]:
+def _build_persona_slot_trace(
+    *, persona: PersonaProfile, message: str
+) -> list[PersonaSlotTraceRecord]:
     tokens = set(_tokenize(message))
     scored: list[tuple[int, int, PersonaSlotTraceRecord]] = []
     for index, slot in enumerate(persona_sorted_slots(persona.slots)):
@@ -413,7 +440,11 @@ def _build_persona_slot_trace(*, persona: PersonaProfile, message: str) -> list[
             continue
         content_lower = content.lower()
         score = sum(1 for token in tokens if token in content_lower)
-        if score == 0 and slot.kind not in ("teaching_method", "thinking_style", "worldview"):
+        if score == 0 and slot.kind not in (
+            "teaching_method",
+            "thinking_style",
+            "worldview",
+        ):
             continue
         reason = "命中提问关键词" if score > 0 else "作为人格基础策略默认参与"
         scored.append(
@@ -443,12 +474,14 @@ def _normalize_memory_trace(
         try:
             result.append(
                 MemoryTraceHitRecord(
-                    session_id=str(item.get("session_id") or ""),
-                    study_unit_id=str(item.get("study_unit_id") or item.get("section_id") or ""),
+                    session_id=text_at(item, "session_id"),
+                    study_unit_id=text_at(
+                        item.get("study_unit_id") or item, "section_id"
+                    ),
                     scene_title=str(item.get("scene_title") or "未设置场景"),
                     score=float(item.get("score") or 0),
-                    snippet=str(item.get("snippet") or ""),
-                    created_at=str(item.get("created_at") or ""),
+                    snippet=text_at(item, "snippet"),
+                    created_at=text_at(item, "created_at"),
                     source=str(item.get("source") or "tool_call"),
                 )
             )

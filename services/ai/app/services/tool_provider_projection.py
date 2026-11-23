@@ -26,6 +26,7 @@ from app.models.tool_manifest import (
     provider_parameters_for_model,
     resolve_tool_manifest_entry,
 )
+from app.core.coerce import text_at
 
 
 class ToolProviderProjectionModel(BaseModel):
@@ -183,8 +184,12 @@ def _bounded_json_size(
         raise error_type(code, detail="byte_budget_exceeded")
 
 
-def _first_validation_error(error: ValidationError) -> tuple[tuple[str | int, ...], str]:
-    item = error.errors(include_url=False, include_context=False, include_input=False)[0]
+def _first_validation_error(
+    error: ValidationError,
+) -> tuple[tuple[str | int, ...], str]:
+    item = error.errors(include_url=False, include_context=False, include_input=False)[
+        0
+    ]
     path = tuple(item.get("loc", ()))
     detail = str(item.get("type", "validation_error"))
     return path, detail
@@ -267,7 +272,9 @@ def validate_tool_runtime_result(
     entry: ToolManifestEntryV1,
     payload: Mapping[str, Any] | BaseModel,
 ) -> BaseModel:
-    raw: Any = payload.model_dump(mode="python") if isinstance(payload, BaseModel) else payload
+    raw: Any = (
+        payload.model_dump(mode="python") if isinstance(payload, BaseModel) else payload
+    )
     if not isinstance(raw, Mapping):
         raise ToolResultValidationError("tool_result_object_required")
     try:
@@ -410,14 +417,21 @@ def adapt_tool_runtime_result(
             tool_name=entry.canonical_name,
             error=str(raw_result.get("error") or "tool_runtime_failed"),
             path=_path_parts(raw_result.get("path")),
-            detail=str(raw_result.get("detail") or ""),
+            detail=text_at(raw_result, "detail"),
         )
-        if entry.workflow == HarnessWorkflow.PLANNING and raw_result.get("recovery") is not None:
+        if (
+            entry.workflow == HarnessWorkflow.PLANNING
+            and raw_result.get("recovery") is not None
+        ):
             # Validate application metadata through the canonical error contract;
             # never copy arbitrary runtime fields into provider feedback.
-            return validate_tool_runtime_result(entry, {
-                **error_result.model_dump(mode="json"), "recovery": raw_result["recovery"],
-            })
+            return validate_tool_runtime_result(
+                entry,
+                {
+                    **error_result.model_dump(mode="json"),
+                    "recovery": raw_result["recovery"],
+                },
+            )
         return validate_tool_runtime_result(entry, error_result)
     if entry.workflow == HarnessWorkflow.PLANNING:
         payload = {
@@ -441,7 +455,7 @@ def _adapt_study_runtime_success(
         "schema_version": "study-chat-tool-result-v1",
         "ok": True,
         "tool_name": name,
-        "summary": str(raw.get("summary") or ""),
+        "summary": text_at(raw, "summary"),
     }
     if name == "ask_multiple_choice_question":
         return {
@@ -470,16 +484,20 @@ def _adapt_study_runtime_success(
         }
     if name == "retrieve_memory_context":
         hits = raw.get("hits")
-        normalized_hits = [
-            {
-                "memory_id": item.get("id") or item.get("session_id") or "",
-                "content": item.get("content") or item.get("snippet"),
-                "source": item.get("source") or "",
-                "created_at": item.get("created_at") or "",
-            }
-            for item in hits
-            if isinstance(item, Mapping)
-        ] if isinstance(hits, list) else []
+        normalized_hits = (
+            [
+                {
+                    "memory_id": item.get("id") or item.get("session_id") or "",
+                    "content": item.get("content") or item.get("snippet"),
+                    "source": item.get("source") or "",
+                    "created_at": item.get("created_at") or "",
+                }
+                for item in hits
+                if isinstance(item, Mapping)
+            ]
+            if isinstance(hits, list)
+            else []
+        )
         return {
             **base,
             "hit_count": len(normalized_hits),
@@ -487,16 +505,22 @@ def _adapt_study_runtime_success(
         }
     if name == "read_session_memory":
         items = raw.get("memory_items")
-        normalized_items = [
-            {
-                "memory_id": item.get("id") or item.get("memory_id") or "",
-                "key": item.get("key"),
-                "content": item.get("content"),
-                "committed": item.get("committed", item.get("effect_state") != "prepared"),
-            }
-            for item in items
-            if isinstance(item, Mapping)
-        ] if isinstance(items, list) else []
+        normalized_items = (
+            [
+                {
+                    "memory_id": item.get("id") or item.get("memory_id") or "",
+                    "key": item.get("key"),
+                    "content": item.get("content"),
+                    "committed": item.get(
+                        "committed", item.get("effect_state") != "prepared"
+                    ),
+                }
+                for item in items
+                if isinstance(item, Mapping)
+            ]
+            if isinstance(items, list)
+            else []
+        )
         return {**base, "memory_items": normalized_items}
     if name == "write_session_memory":
         proposal = _mapping(raw.get("prepared_proposal"))
@@ -542,15 +566,19 @@ def _adapt_study_runtime_success(
     if name == "read_learning_plan_progress":
         progress = _mapping(raw.get("progress_summary"))
         schedule = raw.get("schedule")
-        normalized_schedule = [
-            {
-                "item_id": item.get("id"),
-                "title": item.get("title"),
-                "status": item.get("status"),
-            }
-            for item in schedule
-            if isinstance(item, Mapping)
-        ] if isinstance(schedule, list) else []
+        normalized_schedule = (
+            [
+                {
+                    "item_id": item.get("id"),
+                    "title": item.get("title"),
+                    "status": item.get("status"),
+                }
+                for item in schedule
+                if isinstance(item, Mapping)
+            ]
+            if isinstance(schedule, list)
+            else []
+        )
         return {
             **base,
             "course_title": raw.get("course_title"),
@@ -643,9 +671,7 @@ def _adapt_study_runtime_success(
             **base,
             **_prepared_effect_fields(raw),
             "source_kind": (
-                "attachment_pdf"
-                if "pdf" in name
-                else predicted.get("source_kind", "")
+                "attachment_pdf" if "pdf" in name else predicted.get("source_kind", "")
             ),
             "source_id": predicted.get("source_id", ""),
             "page_number": predicted.get("page_number", proposal.get("page_number", 0)),
@@ -674,7 +700,8 @@ def _adapt_study_runtime_success(
             **base,
             **_prepared_effect_fields(raw),
             "scene_instance_id": raw.get("scene_instance_id"),
-            "selected_scene_id": raw.get("selected_scene_id") or _mapping(raw.get("scene_profile")).get("scene_id", ""),
+            "selected_scene_id": raw.get("selected_scene_id")
+            or _mapping(raw.get("scene_profile")).get("scene_id", ""),
             "added_scene_id": raw.get("added_scene_id", ""),
             "object_id": raw.get("object_id", ""),
         }
@@ -747,25 +774,54 @@ def _provider_result_projection(
         # Carry reviewed machine-readable recovery evidence, not arbitrary
         # exception text that may contain local paths or protected values.
         validation_codes = {
-            "missing", "extra_forbidden", "int_type", "int_parsing", "float_type",
-            "float_parsing", "bool_type", "bool_parsing", "string_type", "list_type",
-            "dict_type", "literal_error", "enum", "greater_than", "greater_than_equal",
-            "less_than", "less_than_equal", "string_too_long", "string_too_short",
-            "too_long", "too_short", "finite_number", "json_invalid", "value_error",
+            "missing",
+            "extra_forbidden",
+            "int_type",
+            "int_parsing",
+            "float_type",
+            "float_parsing",
+            "bool_type",
+            "bool_parsing",
+            "string_type",
+            "list_type",
+            "dict_type",
+            "literal_error",
+            "enum",
+            "greater_than",
+            "greater_than_equal",
+            "less_than",
+            "less_than_equal",
+            "string_too_long",
+            "string_too_short",
+            "too_long",
+            "too_short",
+            "finite_number",
+            "json_invalid",
+            "value_error",
             "byte_budget_exceeded",
         }
         revision_code = isinstance(detail, str) and re.fullmatch(
-            r"study_unit_\d+_(?:overlaps_previous|page_out_of_range|invalid_page_range|missing_title)", detail)
-        if isinstance(detail, str) and (detail in validation_codes or (
-            canonical.get("error") == "invalid_study_unit_revision" and revision_code
-        )):
+            r"study_unit_\d+_(?:overlaps_previous|page_out_of_range|invalid_page_range|missing_title)",
+            detail,
+        )
+        if isinstance(detail, str) and (
+            detail in validation_codes
+            or (
+                canonical.get("error") == "invalid_study_unit_revision"
+                and revision_code
+            )
+        ):
             projected["detail"] = detail
         recovery = canonical.get("recovery")
-        if (entry.workflow == HarnessWorkflow.PLANNING and name == "revise_study_units"
-                and canonical.get("error") == "invalid_study_unit_revision"
-                and revision_code and not detail.endswith("_missing_title")
-                and isinstance(recovery, Mapping)
-                and recovery.get("kind") == "non_overlapping_physical_pages"):
+        if (
+            entry.workflow == HarnessWorkflow.PLANNING
+            and name == "revise_study_units"
+            and canonical.get("error") == "invalid_study_unit_revision"
+            and revision_code
+            and not detail.endswith("_missing_title")
+            and isinstance(recovery, Mapping)
+            and recovery.get("kind") == "non_overlapping_physical_pages"
+        ):
             page_count = recovery["document_page_count"]
             projected["recovery_guidance"] = (
                 f"本PDF共{page_count}个物理页。Study Unit页范围必须按顺序且互不重叠，不能为避免重叠而杜撰新页。"
@@ -813,9 +869,18 @@ def _provider_result_projection(
         }
     elif name == "read_projected_pdf_layout_candidates":
         allowed = {
-            "schema_version", "ok", "tool_name", "source_kind", "source_id",
-            "page_number", "target", "labels", "recursive_picture", "engine_status",
-            "candidate_count", "candidates",
+            "schema_version",
+            "ok",
+            "tool_name",
+            "source_kind",
+            "source_id",
+            "page_number",
+            "target",
+            "labels",
+            "recursive_picture",
+            "engine_status",
+            "candidate_count",
+            "candidates",
         }
     else:
         allowed = {
@@ -865,7 +930,7 @@ def _safe_observability_projection(
     return {
         **base,
         "content_free": True,
-        "summary": str(canonical.get("summary") or ""),
+        "summary": text_at(canonical, "summary"),
     }
 
 
@@ -884,7 +949,11 @@ def _mapping(value: Any) -> Mapping[str, Any]:
 def _path_parts(value: Any) -> list[str | int]:
     if not isinstance(value, list):
         return []
-    return [item for item in value if isinstance(item, (str, int)) and not isinstance(item, bool)][:16]
+    return [
+        item
+        for item in value
+        if isinstance(item, (str, int)) and not isinstance(item, bool)
+    ][:16]
 
 
 def _scene_tool_members(value: Any) -> dict[str, Any]:
@@ -903,13 +972,25 @@ def _scene_tool_members(value: Any) -> dict[str, Any]:
                 truncated = True
                 return
             scene_id = node.get("id")
-            scenes.append({"scene_id": scene_id, "parent_scene_id": parent_id, "title": node.get("title")})
+            scenes.append(
+                {
+                    "scene_id": scene_id,
+                    "parent_scene_id": parent_id,
+                    "title": node.get("title"),
+                }
+            )
             for obj in node.get("objects") or []:
                 if len(objects) >= 128:
                     truncated = True
                     break
-                objects.append({"object_id": obj.get("id"), "scene_id": scene_id,
-                    "name": obj.get("name"), "description": obj.get("description", "")})
+                objects.append(
+                    {
+                        "object_id": obj.get("id"),
+                        "scene_id": scene_id,
+                        "name": obj.get("name"),
+                        "description": obj.get("description", ""),
+                    }
+                )
             visit(node.get("children"), scene_id)
 
     visit(value)
@@ -944,7 +1025,9 @@ def tool_manifest_golden_snapshot() -> dict[str, Any]:
         "provider_functions": [
             {
                 "key": entry.key,
-                "projection": provider_function_for_entry(entry).model_dump(mode="json"),
+                "projection": provider_function_for_entry(entry).model_dump(
+                    mode="json"
+                ),
             }
             for entry in TOOL_MANIFEST_REGISTRY.tools
         ],

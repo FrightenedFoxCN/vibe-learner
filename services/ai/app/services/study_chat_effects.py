@@ -55,6 +55,7 @@ from app.models.study_chat_effect import (
     StudySceneReplaceCommittedProjectionV1,
     StudySceneReplaceEffectProposalV1,
 )
+from app.core.coerce import text_or_empty
 
 
 MAX_STUDY_CHAT_EFFECTS_PER_OPERATION = 12
@@ -78,7 +79,7 @@ class StudyChatEffectCollector:
     ) -> None:
         self.operation_id = operation_id
         self.session_id = session_id
-        self.plan_id = (plan_id or "").strip()
+        self.plan_id = text_or_empty(plan_id).strip()
         self.allowed_schedule_ids = frozenset(allowed_schedule_ids)
         if (operation_binding is None) != (effect_journal is None):
             raise ValueError("study_chat_effect_journal_binding_incomplete")
@@ -203,7 +204,9 @@ class StudyChatEffectCollector:
             proposal = effect.proposal
             if not isinstance(proposal, StudyMemoryUpsertEffectProposalV1):
                 continue
-            existing = next((item for item in items if item["key"] == proposal.key), None)
+            existing = next(
+                (item for item in items if item["key"] == proposal.key), None
+            )
             if existing is None:
                 existing = {
                     "id": _stable_id("memory", effect.effect_id),
@@ -649,11 +652,10 @@ def _validate_prepared_batch(
             expected_contract = STUDY_PLAN_CONFIRMATION_PROPOSAL_CONTRACT
             if not record.plan_id:
                 raise ValueError("study_plan_confirmation_plan_target_required")
-            expected_targets.add(
-                (HarnessResourceType.LEARNING_PLAN, record.plan_id)
-            )
+            expected_targets.add((HarnessResourceType.LEARNING_PLAN, record.plan_id))
             if (
-                proposal.action == StudyPlanConfirmationEffectAction.UPDATE_PLAN_PROGRESS
+                proposal.action
+                == StudyPlanConfirmationEffectAction.UPDATE_PLAN_PROGRESS
                 and not set(proposal.schedule_ids).issubset(allowed_schedule_ids)
             ):
                 raise ValueError("study_plan_confirmation_schedule_target_unknown")
@@ -664,8 +666,7 @@ def _validate_prepared_batch(
         if effect.proposal_contract != expected_contract:
             raise ValueError("study_chat_effect_contract_mismatch")
         actual_targets = {
-            (target.resource_type, target.resource_id)
-            for target in effect.target_refs
+            (target.resource_type, target.resource_id) for target in effect.target_refs
         }
         if actual_targets != expected_targets:
             raise ValueError("study_chat_effect_target_mismatch")
@@ -1005,10 +1006,7 @@ def _validate_scene_record(record: SessionSceneRecord) -> None:
             visit(layer.children)
 
     visit(record.scene_layers)
-    if (
-        len(layer_ids) != len(set(layer_ids))
-        or len(object_ids) != len(set(object_ids))
-    ):
+    if len(layer_ids) != len(set(layer_ids)) or len(object_ids) != len(set(object_ids)):
         raise ValueError("study_scene_identity_duplicate")
     if record.selected_layer_id and record.selected_layer_id not in set(layer_ids):
         raise ValueError("study_scene_selected_layer_missing")

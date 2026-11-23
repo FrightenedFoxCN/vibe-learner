@@ -20,6 +20,7 @@ from app.core.model_runtime_limits import (
 from app.models.domain import RuntimeSettingsRecord
 from app.services.local_store import LocalJsonStore
 from app.core.clock import utc_now_iso as _now_iso
+from app.core.coerce import text_at, text_or_empty
 
 SECRET_FIELDS = (
     "openai_api_key",
@@ -329,7 +330,7 @@ class RuntimeSettingsService:
         for field_name in SECRET_FIELDS:
             if field_name not in updates:
                 continue
-            next_state[field_name] = str(updates.get(field_name) or "").strip()
+            next_state[field_name] = text_at(updates, field_name).strip()
         self._session_secrets = next_state
 
     def clear_session_secrets(self) -> None:
@@ -485,7 +486,7 @@ def _empty_secret_state() -> dict[str, str]:
 
 
 def _normalize_plan_provider(value: Any) -> str:
-    provider = str(value or "").strip().lower() or "mock"
+    provider = text_or_empty(value).strip().lower() or "mock"
     if provider == "openai":
         return "litellm"
     if provider not in {"mock", "litellm"}:
@@ -494,11 +495,11 @@ def _normalize_plan_provider(value: Any) -> str:
 
 
 def _normalize_base_url(value: Any, fallback: str = "https://api.openai.com/v1") -> str:
-    return str(value or "").strip().rstrip("/") or fallback
+    return text_or_empty(value).strip().rstrip("/") or fallback
 
 
 def _normalize_optional_base_url(value: Any) -> str:
-    return str(value or "").strip().rstrip("/")
+    return text_or_empty(value).strip().rstrip("/")
 
 
 def _normalize_int(value: Any, *, code: str, min_value: int, max_value: int) -> int:

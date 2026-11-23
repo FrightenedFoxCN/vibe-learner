@@ -10,6 +10,7 @@ from app.models.study_chat_effect import (
 )
 from app.services.study_tools.context import StudyToolContext
 from fastapi import HTTPException
+from app.core.coerce import text_at, text_or_empty
 
 
 @dataclass
@@ -24,7 +25,7 @@ class FollowUpTools:
             "iso_datetime": now.isoformat(),
             "date": now.strftime("%Y-%m-%d"),
             "time": now.strftime("%H:%M:%S"),
-            "timezone": str(now.tzinfo or ""),
+            "timezone": text_or_empty(now.tzinfo),
             "weekday": now.strftime("%A"),
         }
 
@@ -32,8 +33,8 @@ class FollowUpTools:
         delay_seconds = int(arguments.get("delay_seconds") or 30)
         if delay_seconds < 10 or delay_seconds > 1800:
             raise HTTPException(status_code=422, detail="follow_up_delay_invalid")
-        prompt = str(arguments.get("prompt") or "").strip()
-        reason = str(arguments.get("reason") or "").strip()
+        prompt = text_at(arguments, "prompt").strip()
+        reason = text_at(arguments, "reason").strip()
         if not prompt:
             raise HTTPException(status_code=422, detail="follow_up_prompt_required")
         if self.context.effects is None:

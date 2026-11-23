@@ -20,6 +20,7 @@ from app.services.provider_cancellation import (
     ProviderRequestCanceled,
     check_provider_cancellation,
 )
+from app.core.coerce import text_at
 
 logger = get_logger("vibe_learner.provider_transport")
 
@@ -397,7 +398,7 @@ def _extract_litellm_error_from_body(
         error = body.get("error")
         if isinstance(error, dict):
             return (
-                str(error.get("code") or error.get("type") or ""),
+                text_at(error.get("code") or error, "type"),
                 str(error.get("message") or fallback_message),
             )
         return "", fallback_message

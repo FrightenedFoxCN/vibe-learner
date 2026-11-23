@@ -11,6 +11,7 @@ from app.core.execution_budget import execution_call_timeout_seconds
 from app.core.logging import get_logger
 from app.services.provider_transport import ProviderTransport
 from app.services.provider_cancellation import ProviderCancellationCapability
+from app.core.coerce import text_at
 
 REASONING_CHAT_MODEL_RE = re.compile(
     r"^(?:gpt-5(?:[.-]|$)|o[134](?:[.-]|$))",
@@ -310,7 +311,7 @@ class ProviderRequestAdapter:
         api_base: str,
     ) -> dict[str, Any]:
         resolved_payload = dict(payload)
-        raw_model = str(resolved_payload.get("model") or "").strip()
+        raw_model = text_at(resolved_payload, "model").strip()
         resolved_payload["model"] = _normalize_litellm_model_name(
             model=raw_model,
             api_base=api_base,

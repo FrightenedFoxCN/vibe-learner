@@ -11,6 +11,7 @@ from app.core.harness_component_versions import (
     STUDY_UNIT_CLEANER_CONTRACT_VERSION,
 )
 from app.models.harness import canonical_harness_digest
+from app.core.coerce import text_or_empty
 
 
 def configuration_digest(parser) -> str:
@@ -36,7 +37,7 @@ def configuration_digest(parser) -> str:
             "cleanup_contract": STUDY_UNIT_CLEANER_CONTRACT_VERSION,
             "parser_class": f"{type(parser).__module__}.{type(parser).__qualname__}",
             "ocr_engine": getattr(parser, "ocr_engine_name", ""),
-            "model_dir": str(model_dir or ""),
+            "model_dir": text_or_empty(model_dir),
             "model_files": files,
             "packages": packages,
         }

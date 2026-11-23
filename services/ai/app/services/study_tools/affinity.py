@@ -8,6 +8,7 @@ from app.models.study_chat_effect import (
 )
 from app.services.study_tools.context import StudyToolContext
 from fastapi import HTTPException
+from app.core.coerce import text_at
 
 
 @dataclass
@@ -37,7 +38,7 @@ class AffinityTools:
         delta = int(arguments.get("delta") or 0)
         if delta < -20 or delta > 20:
             raise HTTPException(status_code=422, detail="affinity_delta_invalid")
-        reason = str(arguments.get("reason") or "").strip()
+        reason = text_at(arguments, "reason").strip()
         if self.context.effects is None:
             raise HTTPException(
                 status_code=409, detail="study_chat_effect_collector_required"

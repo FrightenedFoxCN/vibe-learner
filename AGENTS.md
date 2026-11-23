@@ -142,6 +142,7 @@ npm run check
 ## Working Conventions
 
 - Keep the backend/frontend contract aligned through `packages/shared/src/` and the response normalizers in `apps/web/lib/api.ts`.
+- Follow `docs/data-flow-layers.md` for missing-data defaults: normalize untrusted shapes only through `app/core/coerce.py`, keep domain models strict, and never re-invent semantic defaults in the frontend decoders.
 - For new backend routes, update the appropriate bounded model module (for Tavern, `models/tavern.py`), `apps/web/lib/api.ts`, and `packages/shared/src/`.
 - All new workflows and migrated existing model/heuristic workflows must follow the shared Harness lifecycle: typed input, versioned context, strict decode, invariant validation, bounded recovery, atomic commit, and trace/eval coverage.
 - Construct v3 context only from an admitted `HarnessOperationBindingV1` and an executable `HarnessWorkflowManifestV1` entry. A manifest registration or context fixture is routing/configuration evidence, not production adoption.

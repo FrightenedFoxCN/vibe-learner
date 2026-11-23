@@ -58,6 +58,7 @@ from app.api._shared import (
     _map_setting_generation_error,
     _map_persona_card_generation_error,
 )
+from app.core.coerce import text_at
 
 router = APIRouter()
 
@@ -198,7 +199,7 @@ def generate_scene_tree(
                     layer_count=layer_count if isinstance(layer_count, int) else None,
                 )
             return SceneGenerationProposalV1(
-                used_model=str(result.get("used_model") or ""),
+                used_model=text_at(result, "used_model"),
                 used_web_search=bool(result.get("used_web_search")),
                 proposal=SceneTreeProposalV1.model_validate(result.get("proposal")),
             )

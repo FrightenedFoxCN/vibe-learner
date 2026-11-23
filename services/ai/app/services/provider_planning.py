@@ -38,6 +38,7 @@ from app.services.provider_capabilities import (
 from app.services.provider_payload import _extract_json_payload
 from app.services.planning_chapter_validation import find_chapter_violation
 from app.services.planning_intent import validate_schedule_against_intent
+from app.core.coerce import text_or_empty
 
 logger = get_logger("vibe_learner.model_provider")
 
@@ -387,7 +388,7 @@ def _validate_learning_plan_proposal_refs(
         if (
             explicit_language.status == "user_explicit"
             and proposal.output_language.casefold()
-            != (explicit_language.value or "").casefold()
+            != text_or_empty(explicit_language.value).casefold()
         ):
             raise RuntimeError(
                 "plan_proposal_invariant_failed:output_language:explicit_language_mismatch"

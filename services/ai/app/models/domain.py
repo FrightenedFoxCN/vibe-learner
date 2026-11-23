@@ -21,6 +21,7 @@ from app.core.model_runtime_limits import (
 from app.models.study_question import (
     StudyInteractiveQuestionRecordV2 as InteractiveQuestion,
 )
+from app.core.coerce import text_at, text_or_empty
 
 
 PERSONA_SLOT_KINDS = [
@@ -106,7 +107,7 @@ def persona_slot_list(persona: PersonaProfile, kind: str) -> list[str]:
 
 def normalize_persona_narrative_mode(value: str) -> str:
     """Normalize legacy and localized narrative-mode content to internal codes."""
-    text = (value or "").strip()
+    text = text_or_empty(value).strip()
     lowered = text.lower()
     if "light_story" in lowered or "轻剧情" in text:
         return "light_story"
@@ -578,7 +579,7 @@ def repair_legacy_duplicate_schedule_chapter_ids(
         for raw_chapter in raw_chapters:
             if not isinstance(raw_chapter, dict):
                 continue
-            chapter_id = str(raw_chapter.get("id") or "").strip()
+            chapter_id = text_at(raw_chapter, "id").strip()
             if chapter_id:
                 chapter_id_uses[chapter_id] = chapter_id_uses.get(chapter_id, 0) + 1
     duplicate_chapter_ids = {
@@ -592,7 +593,7 @@ def repair_legacy_duplicate_schedule_chapter_ids(
             next_schedule.append(raw_item)
             continue
         schedule_id = str(raw_item.get("id") or f"schedule-{schedule_index}").strip()
-        unit_id = str(raw_item.get("unit_id") or "").strip()
+        unit_id = text_at(raw_item, "unit_id").strip()
         raw_chapters = raw_item.get("schedule_chapters")
         if not isinstance(raw_chapters, list):
             next_schedule.append(raw_item)
@@ -602,7 +603,7 @@ def repair_legacy_duplicate_schedule_chapter_ids(
             if not isinstance(raw_chapter, dict):
                 next_chapters.append(raw_chapter)
                 continue
-            chapter_id = str(raw_chapter.get("id") or "").strip()
+            chapter_id = text_at(raw_chapter, "id").strip()
             legacy_id = f"{unit_id}:schedule-chapter:{chapter_index}"
             if chapter_id in duplicate_chapter_ids and chapter_id == legacy_id:
                 raw_chapter = {
@@ -671,11 +672,11 @@ def _legacy_study_chapter_title_map(payload: dict[str, Any]) -> dict[str, str]:
     raw_study_units = payload.get("study_units")
     if isinstance(raw_study_units, list):
         unit_ids = [
-            str(item.get("id") or "").strip()
+            text_at(item, "id").strip()
             for item in raw_study_units
             if isinstance(item, dict)
             and bool(item.get("include_in_plan", True))
-            and str(item.get("id") or "").strip()
+            and text_at(item, "id").strip()
         ]
     if not unit_ids:
         seen: set[str] = set()
@@ -684,7 +685,7 @@ def _legacy_study_chapter_title_map(payload: dict[str, Any]) -> dict[str, str]:
             for item in raw_schedule:
                 if not isinstance(item, dict):
                     continue
-                unit_id = str(item.get("unit_id") or "").strip()
+                unit_id = text_at(item, "unit_id").strip()
                 if not unit_id or unit_id in seen:
                     continue
                 seen.add(unit_id)
@@ -715,7 +716,7 @@ class StudyScheduleRecord(BaseModel):
             return value
         if value.get("schedule_chapters") is not None:
             return value
-        unit_id = str(value.get("unit_id") or "").strip()
+        unit_id = text_at(value, "unit_id").strip()
         page_start = int(value.get("_unit_page_start") or 0)
         page_end = int(value.get("_unit_page_end") or 0)
         if not unit_id or page_start <= 0 or page_end <= 0:
@@ -723,11 +724,11 @@ class StudyScheduleRecord(BaseModel):
         source_section_ids = value.get("_unit_source_section_ids")
         if not isinstance(source_section_ids, list):
             source_section_ids = []
-        legacy_title = str(value.get("_legacy_study_chapter_title") or "").strip()
+        legacy_title = text_at(value, "_legacy_study_chapter_title").strip()
         fallback_title = (
             legacy_title
-            or str(value.get("focus") or "").strip()
-            or str(value.get("title") or "").strip()
+            or text_at(value, "focus").strip()
+            or text_at(value, "title").strip()
             or unit_id
         )
         value["schedule_chapters"] = [
@@ -842,7 +843,7 @@ class LearningPlanRecord(BaseModel):
             for raw_unit in study_units:
                 if not isinstance(raw_unit, dict):
                     continue
-                unit_id = str(raw_unit.get("id") or "").strip()
+                unit_id = text_at(raw_unit, "id").strip()
                 if not unit_id:
                     continue
                 study_unit_by_id[unit_id] = raw_unit
@@ -856,7 +857,7 @@ class LearningPlanRecord(BaseModel):
                     next_schedule.append(raw_item)
                     continue
                 if raw_item.get("schedule_chapters") is None:
-                    unit_id = str(raw_item.get("unit_id") or "").strip()
+                    unit_id = text_at(raw_item, "unit_id").strip()
                     unit = study_unit_by_id.get(unit_id, {})
                     page_start = int(unit.get("page_start") or 0)
                     page_end = int(unit.get("page_end") or 0)
@@ -1167,7 +1168,7 @@ class StudySessionRecord(BaseModel):
         if isinstance(turns, list) and turns:
             identity_state = [
                 (
-                    bool(str(turn.get("id") or "").strip()),
+                    bool(text_at(turn, "id").strip()),
                     turn.get("sequence") not in (None, "", 0),
                 )
                 for turn in turns
@@ -1177,7 +1178,7 @@ class StudySessionRecord(BaseModel):
                 not has_id and not has_sequence
                 for has_id, has_sequence in identity_state
             ):
-                session_id = str(value.get("id") or "")
+                session_id = text_at(value, "id")
                 for index, turn in enumerate(turns, start=1):
                     if not isinstance(turn, dict):
                         continue

@@ -9,6 +9,7 @@ from app.models.study_chat_effect import (
 )
 from app.services.study_tools.context import StudyToolContext
 from fastapi import HTTPException
+from app.core.coerce import text_at
 
 
 @dataclass
@@ -18,8 +19,8 @@ class PlanConfirmationTools:
     def update_learning_plan(self, arguments: dict[str, Any]) -> dict[str, Any]:
         if not self.context.plan_id:
             raise HTTPException(status_code=400, detail="plan_not_bound")
-        course_title = str(arguments.get("course_title") or "").strip()
-        note = str(arguments.get("note") or "").strip()
+        course_title = text_at(arguments, "course_title").strip()
+        note = text_at(arguments, "note").strip()
         if not course_title:
             raise HTTPException(status_code=422, detail="plan_update_empty")
         plan = self.context.plans.require_plan(self.context.plan_id)
@@ -56,8 +57,8 @@ class PlanConfirmationTools:
             raise HTTPException(status_code=400, detail="plan_not_bound")
         plan = self.context.plans.require_plan(self.context.plan_id)
         schedule_ids = _collect_schedule_ids(plan, arguments)
-        status = str(arguments.get("status") or "").strip()
-        note = str(arguments.get("note") or "").strip()
+        status = text_at(arguments, "status").strip()
+        note = text_at(arguments, "note").strip()
         if not schedule_ids:
             raise HTTPException(status_code=422, detail="schedule_ids_required")
         if status not in {"planned", "in_progress", "completed", "blocked", "skipped"}:
@@ -97,7 +98,7 @@ class PlanConfirmationTools:
 
 def _collect_schedule_ids(plan, arguments: dict[str, Any]) -> list[str]:
     schedule_ids: list[str] = []
-    single_schedule_id = str(arguments.get("schedule_id") or "").strip()
+    single_schedule_id = text_at(arguments, "schedule_id").strip()
     if single_schedule_id:
         schedule_ids.append(single_schedule_id)
     raw_schedule_ids = arguments.get("schedule_ids")
@@ -106,7 +107,7 @@ def _collect_schedule_ids(plan, arguments: dict[str, Any]) -> list[str]:
             str(item).strip() for item in raw_schedule_ids if str(item).strip()
         )
     study_unit_ids: list[str] = []
-    single_study_unit_id = str(arguments.get("study_unit_id") or "").strip()
+    single_study_unit_id = text_at(arguments, "study_unit_id").strip()
     if single_study_unit_id:
         study_unit_ids.append(single_study_unit_id)
     raw_study_unit_ids = arguments.get("study_unit_ids")

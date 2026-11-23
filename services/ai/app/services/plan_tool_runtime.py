@@ -39,6 +39,7 @@ from app.services.tool_provider_projection import (
     provider_function_for_entry,
 )
 from app.core.clock import utc_now_iso as _now
+from app.core.coerce import text_at
 
 
 @dataclass(frozen=True)
@@ -338,7 +339,7 @@ def _execute_get_study_unit_detail(
     arguments: dict[str, Any],
     context: PlanToolRuntimeContext,
 ) -> PlanToolResult:
-    target_id = str(arguments.get("study_unit_id") or "").strip()
+    target_id = text_at(arguments, "study_unit_id").strip()
     if not target_id:
         return PlanToolResult(
             payload={
@@ -363,7 +364,7 @@ def _execute_get_study_unit_detail(
         payload={
             "ok": True,
             "tool_name": "get_study_unit_detail",
-            "requested_focus": str(arguments.get("focus") or ""),
+            "requested_focus": text_at(arguments, "focus"),
             "detail": detail,
         },
         trace_summary=f"已读取学习单元详情：{target_id}",
@@ -375,7 +376,7 @@ def _execute_ask_planning_question(
     arguments: dict[str, Any],
     context: PlanToolRuntimeContext,
 ) -> PlanToolResult:
-    question = str(arguments.get("question") or "").strip()
+    question = text_at(arguments, "question").strip()
     if not question:
         return PlanToolResult(
             payload={
@@ -385,7 +386,7 @@ def _execute_ask_planning_question(
             trace_summary="缺少需要向学习者确认的问题",
             follow_up_messages=[],
         )
-    reason = str(arguments.get("reason") or "").strip()
+    reason = text_at(arguments, "reason").strip()
     assumptions: list[str] = []
     assumptions_raw = arguments.get("assumptions")
     if isinstance(assumptions_raw, list):
@@ -444,7 +445,7 @@ def _execute_estimate_plan_completion(
     arguments: dict[str, Any],
     context: PlanToolRuntimeContext,
 ) -> PlanToolResult:
-    focus = str(arguments.get("focus") or "").strip()
+    focus = text_at(arguments, "focus").strip()
     plannable_units = [
         unit for unit in context.study_units if unit.include_in_plan
     ] or list(context.study_units)
@@ -612,7 +613,7 @@ def _execute_revise_study_units(
             "ok": True,
             "tool_name": "revise_study_units",
             "requires_confirmation": True,
-            "rationale": str(arguments.get("rationale") or ""),
+            "rationale": text_at(arguments, "rationale"),
             "study_unit_count": len(revised_units),
             "plannable_count": len(
                 [unit for unit in revised_units if unit.include_in_plan]
@@ -630,7 +631,7 @@ def _execute_revise_study_units(
         },
         trace_summary=_build_study_unit_revision_summary(
             revised_units=revised_units,
-            rationale=str(arguments.get("rationale") or ""),
+            rationale=text_at(arguments, "rationale"),
         ),
         follow_up_messages=[
             {
@@ -697,7 +698,7 @@ def _validate_revised_study_units(
     for index, raw_unit in enumerate(raw_units, start=1):
         if not isinstance(raw_unit, dict):
             raise ValueError("study_unit_item_must_be_object")
-        title = str(raw_unit.get("title") or "").strip()
+        title = text_at(raw_unit, "title").strip()
         if not title:
             raise ValueError(f"study_unit_{index}_missing_title")
         page_start = int(raw_unit.get("page_start") or 0)

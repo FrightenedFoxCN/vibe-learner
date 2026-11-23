@@ -6,6 +6,7 @@ from collections.abc import MutableMapping
 from pathlib import Path
 
 import certifi
+from app.core.coerce import text_at
 
 
 _CA_BUNDLE_ENV_VARS = (
@@ -28,15 +29,15 @@ def configure_outbound_tls_environment(
     target = os.environ if environment is None else environment
     configured_path = next(
         (
-            str(target.get(name) or "").strip()
+            text_at(target, name).strip()
             for name in _CA_BUNDLE_ENV_VARS
-            if str(target.get(name) or "").strip()
+            if text_at(target, name).strip()
         ),
         "",
     )
     ca_bundle_path = configured_path or certifi_ca_bundle_path()
     for name in _CA_BUNDLE_ENV_VARS:
-        if not str(target.get(name) or "").strip():
+        if not text_at(target, name).strip():
             target[name] = ca_bundle_path
     return ca_bundle_path
 

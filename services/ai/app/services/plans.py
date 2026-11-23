@@ -73,6 +73,7 @@ from app.services.harness_runtime import (
 from app.models.pdf_page_scope import PhysicalPageScopeViolation
 from app.models.study_unit_revision import StudyUnitRevisionPreviewV1
 from app.core.clock import utc_now_iso as _now
+from app.core.coerce import text_at, text_or_empty
 
 
 class LearningPlanService:
@@ -661,7 +662,7 @@ class LearningPlanService:
         course_title: str | None = None,
         expected_revision: int | None = None,
     ) -> LearningPlanRecord:
-        title = (course_title or "").strip()
+        title = text_or_empty(course_title).strip()
         if not title:
             raise HTTPException(422, "course_title_required")
 
@@ -748,13 +749,13 @@ class LearningPlanService:
         def apply(plan, confirmation):
             payload = confirmation.payload
             if confirmation.action_type == "update_plan":
-                title = str(payload.get("course_title") or "").strip()
+                title = text_at(payload, "course_title").strip()
                 if not title:
                     raise HTTPException(422, "course_title_required")
                 plan.course_title = title
             elif confirmation.action_type == "update_plan_progress":
                 ids = list(dict.fromkeys(payload.get("schedule_ids") or []))
-                status = str(payload.get("status") or "")
+                status = text_at(payload, "status")
                 if not ids or not set(ids) <= {item.id for item in plan.schedule}:
                     raise HTTPException(409, "plan_confirmation_schedule_unavailable")
                 if status not in {
@@ -888,7 +889,9 @@ class LearningPlanService:
         ]
 
     def _goal_only_document_title(self, goal: LearningGoalInput) -> str:
-        objective = " ".join((goal.objective or "").split()).strip(" 。.!！?？;；：:")
+        objective = " ".join(text_or_empty(goal.objective).split()).strip(
+            " 。.!！?？;；：:"
+        )
         if not objective:
             return "目标导向学习计划"
         if len(objective) <= 24:

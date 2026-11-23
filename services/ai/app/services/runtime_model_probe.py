@@ -8,6 +8,7 @@ import urllib.request
 from typing import Any
 
 from app.core.tls import create_outbound_ssl_context
+from app.core.coerce import text_at
 
 
 _IMAGE_MODALITY_TOKENS = {
@@ -43,7 +44,9 @@ _MULTIMODAL_NAME_HINTS = (
 )
 
 
-def probe_openai_models(*, api_key: str, base_url: str, timeout_seconds: int) -> dict[str, Any]:
+def probe_openai_models(
+    *, api_key: str, base_url: str, timeout_seconds: int
+) -> dict[str, Any]:
     request = urllib.request.Request(
         url=f"{base_url.rstrip('/')}/models",
         headers={
@@ -99,7 +102,7 @@ def parse_model_probe_payload(raw_payload: Any) -> dict[str, Any]:
         for item in models_raw:
             if not isinstance(item, dict):
                 continue
-            model_id = str(item.get("id") or "").strip()
+            model_id = text_at(item, "id").strip()
             if not model_id:
                 continue
             model_ids.append(model_id)
@@ -114,7 +117,7 @@ def parse_model_probe_payload(raw_payload: Any) -> dict[str, Any]:
 
 
 def describe_model_capabilities(model_payload: dict[str, Any]) -> dict[str, Any]:
-    model_id = str(model_payload.get("id") or "").strip()
+    model_id = text_at(model_payload, "id").strip()
     input_modalities = _collect_modalities(model_payload, prefix="input")
     output_modalities = _collect_modalities(model_payload, prefix="output")
     tool_types = _collect_tool_types(model_payload)
@@ -157,7 +160,9 @@ def _detect_multimodal_signal(
         )
 
     if input_modalities:
-        has_image_input = any(token in _IMAGE_MODALITY_TOKENS for token in input_modalities)
+        has_image_input = any(
+            token in _IMAGE_MODALITY_TOKENS for token in input_modalities
+        )
         return _capability_signal(
             has_image_input,
             source="metadata",
@@ -174,7 +179,9 @@ def _detect_multimodal_signal(
     return _unknown_signal("未从上游模型元数据中读取到图像输入能力。")
 
 
-def _detect_web_search_signal(model_payload: dict[str, Any], tool_types: list[str]) -> dict[str, str]:
+def _detect_web_search_signal(
+    model_payload: dict[str, Any], tool_types: list[str]
+) -> dict[str, str]:
     explicit_flag = _read_bool_signal(
         model_payload,
         (
@@ -247,7 +254,9 @@ def _collect_tool_types(model_payload: dict[str, Any]) -> list[str]:
     return _unique_strings(collected)
 
 
-def _read_bool_signal(model_payload: dict[str, Any], paths: tuple[tuple[str, ...], ...]) -> bool | None:
+def _read_bool_signal(
+    model_payload: dict[str, Any], paths: tuple[tuple[str, ...], ...]
+) -> bool | None:
     for path in paths:
         current: Any = model_payload
         for segment in path:

@@ -29,6 +29,7 @@ from app.persistence.models import (
     StudySessionRow,
 )
 from app.persistence.storage import StorageManager
+from app.core.coerce import text_at, text_or_empty
 
 T = TypeVar("T", bound=BaseModel)
 
@@ -53,66 +54,66 @@ class _RepoSpec:
 
 def _document_metadata(payload: dict[str, Any]) -> dict[str, Any]:
     return {
-        "id": str(payload.get("id") or ""),
-        "title": str(payload.get("title") or ""),
-        "original_filename": str(payload.get("original_filename") or ""),
-        "stored_path": str(payload.get("stored_path") or ""),
-        "status": str(payload.get("status") or ""),
-        "ocr_status": str(payload.get("ocr_status") or ""),
-        "created_at": str(payload.get("created_at") or ""),
-        "updated_at": str(payload.get("updated_at") or ""),
+        "id": text_at(payload, "id"),
+        "title": text_at(payload, "title"),
+        "original_filename": text_at(payload, "original_filename"),
+        "stored_path": text_at(payload, "stored_path"),
+        "status": text_at(payload, "status"),
+        "ocr_status": text_at(payload, "ocr_status"),
+        "created_at": text_at(payload, "created_at"),
+        "updated_at": text_at(payload, "updated_at"),
     }
 
 
 def _plan_metadata(payload: dict[str, Any]) -> dict[str, Any]:
     return {
-        "id": str(payload.get("id") or ""),
-        "document_id": str(payload.get("document_id") or ""),
-        "persona_id": str(payload.get("persona_id") or ""),
+        "id": text_at(payload, "id"),
+        "document_id": text_at(payload, "document_id"),
+        "persona_id": text_at(payload, "persona_id"),
         "creation_mode": str(payload.get("creation_mode") or "document"),
-        "course_title": str(payload.get("course_title") or ""),
-        "created_at": str(payload.get("created_at") or ""),
+        "course_title": text_at(payload, "course_title"),
+        "created_at": text_at(payload, "created_at"),
     }
 
 
 def _session_metadata(payload: dict[str, Any]) -> dict[str, Any]:
     return {
-        "id": str(payload.get("id") or ""),
-        "document_id": str(payload.get("document_id") or ""),
-        "persona_id": str(payload.get("persona_id") or ""),
-        "plan_id": str(payload.get("plan_id") or ""),
-        "study_unit_id": str(payload.get("study_unit_id") or payload.get("section_id") or ""),
-        "status": str(payload.get("status") or ""),
+        "id": text_at(payload, "id"),
+        "document_id": text_at(payload, "document_id"),
+        "persona_id": text_at(payload, "persona_id"),
+        "plan_id": text_at(payload, "plan_id"),
+        "study_unit_id": text_at(payload.get("study_unit_id") or payload, "section_id"),
+        "status": text_at(payload, "status"),
         "revision": int(payload.get("revision") or 0),
         "last_turn_sequence": int(payload.get("last_turn_sequence") or 0),
-        "created_at": str(payload.get("created_at") or ""),
-        "updated_at": str(payload.get("updated_at") or ""),
+        "created_at": text_at(payload, "created_at"),
+        "updated_at": text_at(payload, "updated_at"),
     }
 
 
 def _document_debug_metadata(payload: dict[str, Any]) -> dict[str, Any]:
     return {
-        "document_id": str(payload.get("document_id") or ""),
-        "processed_at": str(payload.get("processed_at") or ""),
+        "document_id": text_at(payload, "document_id"),
+        "processed_at": text_at(payload, "processed_at"),
         "page_count": int(payload.get("page_count") or 0),
-        "extraction_method": str(payload.get("extraction_method") or ""),
+        "extraction_method": text_at(payload, "extraction_method"),
     }
 
 
 def _planning_trace_metadata(payload: dict[str, Any]) -> dict[str, Any]:
     plan_id = payload.get("plan_id")
     return {
-        "document_id": str(payload.get("document_id") or ""),
-        "plan_id": str(plan_id or ""),
-        "model": str(payload.get("model") or ""),
-        "created_at": str(payload.get("created_at") or ""),
+        "document_id": text_at(payload, "document_id"),
+        "plan_id": text_or_empty(plan_id),
+        "model": text_at(payload, "model"),
+        "created_at": text_at(payload, "created_at"),
     }
 
 
 def _runtime_settings_metadata(payload: dict[str, Any]) -> dict[str, Any]:
     return {
         "config_id": str(payload.get("config_id") or "default"),
-        "updated_at": str(payload.get("updated_at") or ""),
+        "updated_at": text_at(payload, "updated_at"),
         "plan_provider": str(payload.get("plan_provider") or "mock"),
     }
 
@@ -120,7 +121,7 @@ def _runtime_settings_metadata(payload: dict[str, Any]) -> dict[str, Any]:
 def _model_tool_config_metadata(payload: dict[str, Any]) -> dict[str, Any]:
     return {
         "config_id": str(payload.get("config_id") or "default"),
-        "updated_at": str(payload.get("updated_at") or ""),
+        "updated_at": text_at(payload, "updated_at"),
     }
 
 
@@ -128,73 +129,75 @@ def _scene_setup_metadata(payload: dict[str, Any]) -> dict[str, Any]:
     return {
         "config_id": str(payload.get("config_id") or "default"),
         "revision": int(payload.get("revision") or 0),
-        "updated_at": str(payload.get("updated_at") or ""),
+        "updated_at": text_at(payload, "updated_at"),
     }
 
 
 def _scene_library_metadata(payload: dict[str, Any]) -> dict[str, Any]:
     return {
-        "scene_id": str(payload.get("scene_id") or ""),
+        "scene_id": text_at(payload, "scene_id"),
         "revision": int(payload.get("revision") or 0),
-        "scene_name": str(payload.get("scene_name") or ""),
-        "created_at": str(payload.get("created_at") or ""),
-        "updated_at": str(payload.get("updated_at") or ""),
+        "scene_name": text_at(payload, "scene_name"),
+        "created_at": text_at(payload, "created_at"),
+        "updated_at": text_at(payload, "updated_at"),
     }
 
 
 def _reusable_scene_node_metadata(payload: dict[str, Any]) -> dict[str, Any]:
     return {
-        "node_id": str(payload.get("node_id") or ""),
-        "node_type": str(payload.get("node_type") or ""),
-        "title": str(payload.get("title") or ""),
-        "source_scene_id": str(payload.get("source_scene_id") or ""),
-        "created_at": str(payload.get("created_at") or ""),
-        "updated_at": str(payload.get("updated_at") or ""),
+        "node_id": text_at(payload, "node_id"),
+        "node_type": text_at(payload, "node_type"),
+        "title": text_at(payload, "title"),
+        "source_scene_id": text_at(payload, "source_scene_id"),
+        "created_at": text_at(payload, "created_at"),
+        "updated_at": text_at(payload, "updated_at"),
     }
 
 
 def _session_scene_metadata(payload: dict[str, Any]) -> dict[str, Any]:
     return {
-        "scene_instance_id": str(payload.get("scene_instance_id") or ""),
-        "session_id": str(payload.get("session_id") or ""),
-        "document_id": str(payload.get("document_id") or ""),
-        "persona_id": str(payload.get("persona_id") or ""),
-        "created_at": str(payload.get("created_at") or ""),
-        "updated_at": str(payload.get("updated_at") or payload.get("created_at") or ""),
+        "scene_instance_id": text_at(payload, "scene_instance_id"),
+        "session_id": text_at(payload, "session_id"),
+        "document_id": text_at(payload, "document_id"),
+        "persona_id": text_at(payload, "persona_id"),
+        "created_at": text_at(payload, "created_at"),
+        "updated_at": text_at(payload.get("updated_at") or payload, "created_at"),
     }
 
 
 def _persona_metadata(payload: dict[str, Any]) -> dict[str, Any]:
     return {
-        "id": str(payload.get("id") or ""),
-        "name": str(payload.get("name") or ""),
+        "id": text_at(payload, "id"),
+        "name": text_at(payload, "name"),
         "source": str(payload.get("source") or "user"),
     }
 
 
 def _persona_card_metadata(payload: dict[str, Any]) -> dict[str, Any]:
     return {
-        "id": str(payload.get("id") or ""),
-        "title": str(payload.get("title") or ""),
+        "id": text_at(payload, "id"),
+        "title": text_at(payload, "title"),
         "kind": str(payload.get("kind") or "custom"),
         "source": str(payload.get("source") or "manual"),
-        "updated_at": str(payload.get("updated_at") or ""),
+        "updated_at": text_at(payload, "updated_at"),
     }
 
 
 def _stream_report_metadata(payload: dict[str, Any]) -> dict[str, Any]:
     return {
-        "stream_kind": str(payload.get("stream_kind") or ""),
+        "stream_kind": text_at(payload, "stream_kind"),
         "status": str(payload.get("status") or "idle"),
-        "created_at": str(payload.get("created_at") or ""),
-        "updated_at": str(payload.get("updated_at") or ""),
+        "created_at": text_at(payload, "created_at"),
+        "updated_at": text_at(payload, "updated_at"),
     }
 
 
 LIST_SPECS: dict[str, _RepoSpec] = {
     "documents": _RepoSpec(DocumentRow, "id", ("created_at", "id"), _document_metadata),
     "plans": _RepoSpec(LearningPlanRow, "id", ("created_at", "id"), _plan_metadata),
-    "sessions": _RepoSpec(StudySessionRow, "id", ("created_at", "id"), _session_metadata),
+    "sessions": _RepoSpec(
+        StudySessionRow, "id", ("created_at", "id"), _session_metadata
+    ),
 }
 
 CATEGORY_SPECS: dict[str, _RepoSpec] = {
@@ -261,7 +264,9 @@ STREAM_CATEGORIES = {"document_process_stream", "learning_plan_stream"}
 class LocalJsonStore:
     """Compatibility wrapper that now persists aggregate records through PostgreSQL."""
 
-    def __init__(self, db: Database | Path, storage: StorageManager | None = None) -> None:
+    def __init__(
+        self, db: Database | Path, storage: StorageManager | None = None
+    ) -> None:
         if isinstance(db, Path):
             storage = StorageManager(db)
             db = Database(f"sqlite:///{db / 'vibe_learner.db'}")
@@ -350,10 +355,13 @@ class LocalJsonStore:
             return repository.list()  # type: ignore[return-value]
         if name == "plans":
             from app.persistence.learning_plan_repository import LearningPlanRepository
+
             repository = LearningPlanRepository(self._db)
             # A deletion tombstone prevents legacy JSON from resurrecting plans.
             with self._db.session() as session:
-                initialized = session.scalar(select(LearningPlanRow.id).limit(1)) is not None
+                initialized = (
+                    session.scalar(select(LearningPlanRow.id).limit(1)) is not None
+                )
             if not initialized:
                 repository.import_legacy(self._legacy.load_list(name, model))
             return repository.list()
@@ -383,16 +391,23 @@ class LocalJsonStore:
             from app.models.domain import DocumentRecord
             from app.persistence.document_repository import DocumentRepository
 
-            DocumentRepository(self._db).import_legacy([
-                DocumentRecord.model_validate(item.model_dump(mode="json")) for item in items
-            ])
+            DocumentRepository(self._db).import_legacy(
+                [
+                    DocumentRecord.model_validate(item.model_dump(mode="json"))
+                    for item in items
+                ]
+            )
             return
         if name == "plans":
             from app.models.domain import LearningPlanRecord
             from app.persistence.learning_plan_repository import LearningPlanRepository
-            LearningPlanRepository(self._db).import_legacy([
-                LearningPlanRecord.model_validate(item.model_dump(mode="json")) for item in items
-            ])
+
+            LearningPlanRepository(self._db).import_legacy(
+                [
+                    LearningPlanRecord.model_validate(item.model_dump(mode="json"))
+                    for item in items
+                ]
+            )
             return
         spec = LIST_SPECS[name]
         serialized = [item.model_dump(mode="json") for item in items]
@@ -401,8 +416,7 @@ class LocalJsonStore:
             self._legacy.save_list(name, items)
             return
         incoming_keys = {
-            str(spec.metadata_builder(payload)[spec.key_attr])
-            for payload in serialized
+            str(spec.metadata_builder(payload)[spec.key_attr]) for payload in serialized
         }
         with self._db.session() as session:
             existing_rows = {
@@ -585,7 +599,9 @@ class LocalJsonStore:
         self._legacy.validate_item_path(category, item_id)
         if category in STREAM_CATEGORIES:
             with self._db.session() as session:
-                row = session.get(StreamReportRow, self._stream_record_id(category, item_id))
+                row = session.get(
+                    StreamReportRow, self._stream_record_id(category, item_id)
+                )
                 if row is not None:
                     session.delete(row)
             try:
@@ -611,7 +627,11 @@ class LocalJsonStore:
         if bucket in STREAM_CATEGORIES:
             with self._db.session() as session:
                 return len(
-                    session.scalars(select(StreamReportRow).where(StreamReportRow.category == bucket)).all()
+                    session.scalars(
+                        select(StreamReportRow).where(
+                            StreamReportRow.category == bucket
+                        )
+                    ).all()
                 )
         spec = CATEGORY_SPECS[bucket]
         with self._db.session() as session:
@@ -624,7 +644,10 @@ class LocalJsonStore:
             with self._db.session() as session:
                 rows = session.scalars(select(spec.entity)).all()
                 for row in rows:
-                    if item_id is not None and str(getattr(row, spec.key_attr)) != item_id:
+                    if (
+                        item_id is not None
+                        and str(getattr(row, spec.key_attr)) != item_id
+                    ):
                         continue
                     session.delete(row)
                     removed += 1
@@ -632,7 +655,9 @@ class LocalJsonStore:
             return removed
         if bucket in STREAM_CATEGORIES:
             with self._db.session() as session:
-                query = select(StreamReportRow).where(StreamReportRow.category == bucket)
+                query = select(StreamReportRow).where(
+                    StreamReportRow.category == bucket
+                )
                 if item_id is not None:
                     query = query.where(StreamReportRow.document_id == item_id)
                 rows = session.scalars(query).all()
@@ -653,7 +678,9 @@ class LocalJsonStore:
         self._legacy.clear_bucket(bucket, item_id=item_id)
         return removed
 
-    def _load_stream_item(self, category: str, item_id: str, model: type[T]) -> T | None:
+    def _load_stream_item(
+        self, category: str, item_id: str, model: type[T]
+    ) -> T | None:
         record_id = self._stream_record_id(category, item_id)
         with self._db.session() as session:
             row = session.get(StreamReportRow, record_id)
@@ -661,7 +688,9 @@ class LocalJsonStore:
                 return None
             return model.model_validate(row.payload or {})
 
-    def _save_stream_item(self, category: str, item_id: str, payload: dict[str, Any]) -> None:
+    def _save_stream_item(
+        self, category: str, item_id: str, payload: dict[str, Any]
+    ) -> None:
         record_id = self._stream_record_id(category, item_id)
         with self._db.session() as session:
             row = session.get(StreamReportRow, record_id) or StreamReportRow()
@@ -678,7 +707,9 @@ class LocalJsonStore:
             *(getattr(spec.entity, attr_name) for attr_name in spec.order_by)
         )
 
-    def _apply_payload(self, row: Any, payload: dict[str, Any], spec: _RepoSpec) -> None:
+    def _apply_payload(
+        self, row: Any, payload: dict[str, Any], spec: _RepoSpec
+    ) -> None:
         row.payload = payload
         for key, value in spec.metadata_builder(payload).items():
             setattr(row, key, value)

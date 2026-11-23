@@ -16,6 +16,7 @@ from app.services.study_chat_attachments import (
 )
 from app.services.study_tools.context import StudyToolContext
 from fastapi import HTTPException
+from app.core.coerce import text_at
 
 
 @dataclass
@@ -23,7 +24,7 @@ class ProjectionWriteTools:
     context: StudyToolContext
 
     def project_uploaded_pdf(self, arguments: dict[str, Any]) -> dict[str, Any]:
-        attachment_id = str(arguments.get("attachment_id") or "").strip()
+        attachment_id = text_at(arguments, "attachment_id").strip()
         page_number = max(1, int(arguments.get("page_number") or 1))
         attachment = self.context.require_pdf_attachment(attachment_id)
         if self.context.effects is None:
@@ -63,7 +64,7 @@ class ProjectionWriteTools:
         }
 
     def project_uploaded_image(self, arguments: dict[str, Any]) -> dict[str, Any]:
-        attachment_id = str(arguments.get("attachment_id") or "").strip()
+        attachment_id = text_at(arguments, "attachment_id").strip()
         attachment = self.context.require_image_attachment(attachment_id)
         if self.context.effects is None:
             raise HTTPException(
@@ -140,8 +141,8 @@ class ProjectionWriteTools:
     def highlight_projected_pdf_text(self, arguments: dict[str, Any]) -> dict[str, Any]:
         attachment, _ = self.context.require_projected_pdf_attachment()
         page_number = max(1, int(arguments.get("page_number") or 1))
-        quote_text = str(arguments.get("quote_text") or "").strip()
-        label = str(arguments.get("label") or "").strip()
+        quote_text = text_at(arguments, "quote_text").strip()
+        label = text_at(arguments, "label").strip()
         color = str(arguments.get("color") or "#FACC15").strip() or "#FACC15"
         rects = search_pdf_text_rects(
             pdf_path=attachment.stored_path,
@@ -197,7 +198,7 @@ class ProjectionWriteTools:
     ) -> dict[str, Any]:
         attachment, _ = self.context.require_projected_pdf_attachment()
         page_number = max(1, int(arguments.get("page_number") or 1))
-        label = str(arguments.get("label") or "").strip()
+        label = text_at(arguments, "label").strip()
         color = str(arguments.get("color") or "#38BDF8").strip() or "#38BDF8"
         rect = PdfRectRecord(
             x=float(arguments.get("x") or 0.0),
@@ -273,7 +274,7 @@ class ProjectionWriteTools:
         self, arguments: dict[str, Any]
     ) -> dict[str, Any]:
         projected_pdf = self.context.require_projected_image_projection()
-        label = str(arguments.get("label") or "").strip()
+        label = text_at(arguments, "label").strip()
         color = str(arguments.get("color") or "#38BDF8").strip() or "#38BDF8"
         rect = PdfRectRecord(
             x=float(arguments.get("x") or 0.0),

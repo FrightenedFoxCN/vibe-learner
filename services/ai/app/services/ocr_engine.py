@@ -8,6 +8,7 @@ from typing import Any
 import fitz
 
 from app.core.logging import get_logger
+from app.core.coerce import text_or_empty
 
 logger = get_logger("vibe_learner.ocr")
 
@@ -23,7 +24,9 @@ class OcrPageResult:
 
 
 class OnnxtrOcrEngine:
-    def __init__(self, *, runtime_temp_root: Path | None = None, model_dir: str = "") -> None:
+    def __init__(
+        self, *, runtime_temp_root: Path | None = None, model_dir: str = ""
+    ) -> None:
         self._runtime_temp_root = runtime_temp_root
         self._model_dir = Path(model_dir).expanduser() if model_dir else None
         self._predictor: Any | None = None
@@ -60,7 +63,9 @@ class OnnxtrOcrEngine:
             temp_file_kwargs["dir"] = str(self._runtime_temp_root)
 
         try:
-            with tempfile.NamedTemporaryFile(delete=False, **temp_file_kwargs) as handle:
+            with tempfile.NamedTemporaryFile(
+                delete=False, **temp_file_kwargs
+            ) as handle:
                 image_path = Path(handle.name)
             pixmap = page.get_pixmap(matrix=fitz.Matrix(2, 2), alpha=False)
             pixmap.save(image_path)
@@ -75,14 +80,16 @@ class OnnxtrOcrEngine:
             elif isinstance(rendered, list):
                 text = "\n".join(str(item) for item in rendered if item)
             else:
-                text = str(rendered or "")
+                text = text_or_empty(rendered)
 
             return OcrPageResult(
                 text=text,
                 status="completed" if text.strip() else "failed",
                 engine_name=self.engine_name,
                 model_id=self._model_id,
-                warning=self._initialization_warning if text.strip() else "onnxtr_empty_result",
+                warning=self._initialization_warning
+                if text.strip()
+                else "onnxtr_empty_result",
             )
         except Exception as exc:
             logger.warning("ocr.onnxtr_page_failed error=%s", exc)
@@ -118,17 +125,29 @@ class OnnxtrOcrEngine:
                 detector_path = self._model_dir / "detector.onnx"
                 recognizer_path = self._model_dir / "recognizer.onnx"
                 vocab_path = self._model_dir / "recognizer_vocab.txt"
-                if detector_path.exists() and recognizer_path.exists() and vocab_path.exists():
+                if (
+                    detector_path.exists()
+                    and recognizer_path.exists()
+                    and vocab_path.exists()
+                ):
                     vocab = vocab_path.read_text(encoding="utf-8")
                     predictor = ocr_predictor(
-                        det_arch=linknet_resnet18(str(detector_path), engine_cfg=engine_cfg),
-                        reco_arch=parseq(str(recognizer_path), vocab=vocab, engine_cfg=engine_cfg),
+                        det_arch=linknet_resnet18(
+                            str(detector_path), engine_cfg=engine_cfg
+                        ),
+                        reco_arch=parseq(
+                            str(recognizer_path), vocab=vocab, engine_cfg=engine_cfg
+                        ),
                         assume_straight_pages=True,
                         straighten_pages=False,
                         resolve_blocks=False,
                     )
                     self._model_id = "custom:linknet_resnet18+parseq"
-                    logger.info("ocr.onnxtr_loaded model_id=%s model_dir=%s", self._model_id, self._model_dir)
+                    logger.info(
+                        "ocr.onnxtr_loaded model_id=%s model_dir=%s",
+                        self._model_id,
+                        self._model_dir,
+                    )
                     return predictor
 
             predictor = ocr_predictor(
@@ -151,13 +170,18 @@ class OnnxtrOcrEngine:
                 from onnxruntime import get_available_providers
                 from onnxtr.models.engine import EngineConfig
 
-                if not any(provider in get_available_providers() for provider in ("CoreMLExecutionProvider", "CUDAExecutionProvider")):
+                if not any(
+                    provider in get_available_providers()
+                    for provider in ("CoreMLExecutionProvider", "CUDAExecutionProvider")
+                ):
                     raise
                 # An installed accelerator may reject this graph. Retry once
                 # with the same model on CPU; do not make OCR permanently
                 # unavailable merely because hardware compilation failed.
                 logger.warning("ocr.onnxtr_accelerator_init_failed fallback=cpu")
-                self._predictor = build_predictor(EngineConfig(providers=["CPUExecutionProvider"]))
+                self._predictor = build_predictor(
+                    EngineConfig(providers=["CPUExecutionProvider"])
+                )
                 self._initialization_warning = "onnxtr_cpu_fallback"
             return self._predictor
         except Exception as exc:

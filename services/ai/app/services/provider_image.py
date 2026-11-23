@@ -6,10 +6,13 @@ from typing import Any, Protocol
 import re
 
 from app.services.provider_capabilities import ImageModelCapability
+from app.core.coerce import text_at
 
 
 class ImageRequest(Protocol):
-    def __call__(self, payload: dict[str, Any], *, request_kind: str, model: str) -> tuple[dict[str, Any], int]: ...
+    def __call__(
+        self, payload: dict[str, Any], *, request_kind: str, model: str
+    ) -> tuple[dict[str, Any], int]: ...
 
 
 CHAT_IMAGE_GENERATION_MODEL_HINTS = (
@@ -22,7 +25,6 @@ CHAT_IMAGE_GENERATION_MODEL_HINTS = (
 )
 
 
-
 @dataclass(frozen=True)
 class RemoteImageProvider(ImageModelCapability):
     """Image capability with captured model/readiness and no SDK dependency."""
@@ -32,7 +34,9 @@ class RemoteImageProvider(ImageModelCapability):
     request: ImageRequest
 
     def supports_chat_generated_image_tools(self) -> bool:
-        return self.responses_available and _model_supports_chat_image_generation(self.chat_model)
+        return self.responses_available and _model_supports_chat_image_generation(
+            self.chat_model
+        )
 
     def generate_projected_image(
         self,
@@ -63,7 +67,6 @@ class RemoteImageProvider(ImageModelCapability):
         return _extract_response_output_image(raw_payload)
 
 
-
 def _extract_response_output_image(payload: dict[str, Any]) -> dict[str, str]:
     output = payload.get("output")
     if not isinstance(output, list):
@@ -89,10 +92,9 @@ def _extract_response_output_image(payload: dict[str, Any]) -> dict[str, str]:
             if image_base64:
                 return {
                     "image_url": f"data:image/png;base64,{image_base64}",
-                    "revised_prompt": str(item.get("revised_prompt") or "").strip(),
+                    "revised_prompt": text_at(item, "revised_prompt").strip(),
                 }
     raise RuntimeError("chat_image_generation_empty_response")
-
 
 
 def _normalize_generated_image_size(value: str) -> str:
@@ -102,10 +104,10 @@ def _normalize_generated_image_size(value: str) -> str:
     return "1024x1024"
 
 
-
 def _model_supports_chat_image_generation(model: str) -> bool:
     normalized = model.strip()
     if not normalized:
         return False
-    return any(pattern.search(normalized) for pattern in CHAT_IMAGE_GENERATION_MODEL_HINTS)
-
+    return any(
+        pattern.search(normalized) for pattern in CHAT_IMAGE_GENERATION_MODEL_HINTS
+    )

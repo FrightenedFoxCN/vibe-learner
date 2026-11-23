@@ -10,6 +10,7 @@ from app.services.study_chat_attachments import (
 )
 from app.services.study_tools.context import StudyToolContext
 from fastapi import HTTPException
+from app.core.coerce import text_at
 
 
 @dataclass
@@ -81,7 +82,7 @@ class ProjectionReadTools:
         )
         page_number = min(page_number, max(1, attachment.page_count or page_number))
         labels = list(arguments.get("labels") or [])
-        target = str(arguments.get("target") or "").strip()
+        target = text_at(arguments, "target").strip()
         recursive_picture = bool(arguments.get("recursive_picture", True))
         max_candidates = max(1, min(int(arguments.get("max_candidates") or 24), 32))
         rendered = read_page_range_images(
@@ -91,7 +92,7 @@ class ProjectionReadTools:
             max_images=1,
         )
         images = rendered.get("images") or []
-        if not images or not str(images[0].get("image_url") or "").startswith(
+        if not images or not text_at(images[0], "image_url").startswith(
             "data:image/png;base64,"
         ):
             raise HTTPException(

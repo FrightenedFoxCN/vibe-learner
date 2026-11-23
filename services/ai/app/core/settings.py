@@ -15,6 +15,7 @@ from app.core.model_runtime_limits import (
     DEFAULT_SETTING_MAX_TOKENS,
     DEFAULT_SETTING_TEMPERATURE,
 )
+from app.core.coerce import text_or_empty
 
 
 @dataclass(frozen=True)
@@ -23,7 +24,10 @@ class Settings:
     storage_root: str = ""
     auto_migrate_local_data: bool = False
     desktop_mode: bool = False
-    allowed_origins: tuple[str, ...] = ("http://localhost:3000", "http://127.0.0.1:3000")
+    allowed_origins: tuple[str, ...] = (
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+    )
     ocr_engine: str = "onnxtr"
     onnxtr_model_dir: str = ""
     document_layout_engine: str = "disabled"
@@ -76,18 +80,27 @@ class Settings:
 
     @property
     def resolved_storage_root(self) -> Path:
-        return Path(self.storage_root).expanduser() if self.storage_root else Path(__file__).resolve().parents[2] / "data"
+        return (
+            Path(self.storage_root).expanduser()
+            if self.storage_root
+            else Path(__file__).resolve().parents[2] / "data"
+        )
 
     @classmethod
     def from_env(cls) -> "Settings":
         _load_dotenv()
         global_api_key = os.getenv("OPENAI_API_KEY", "").strip()
-        global_base_url = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1").rstrip("/")
+        global_base_url = os.getenv(
+            "OPENAI_BASE_URL", "https://api.openai.com/v1"
+        ).rstrip("/")
         project_data_root = Path(__file__).resolve().parents[2] / "data"
         default_database_url = f"sqlite:///{project_data_root / 'vibe_learner.db'}"
-        allowed_origins = _parse_allowed_origins(os.getenv("VIBE_LEARNER_ALLOWED_ORIGINS", ""))
+        allowed_origins = _parse_allowed_origins(
+            os.getenv("VIBE_LEARNER_ALLOWED_ORIGINS", "")
+        )
         return cls(
-            database_url=os.getenv("DATABASE_URL", default_database_url).strip() or default_database_url,
+            database_url=os.getenv("DATABASE_URL", default_database_url).strip()
+            or default_database_url,
             storage_root=os.getenv("VIBE_LEARNER_STORAGE_ROOT", "").strip(),
             auto_migrate_local_data=_to_bool(
                 os.getenv("VIBE_LEARNER_AUTO_MIGRATE_LOCAL_DATA", "false"),
@@ -97,44 +110,76 @@ class Settings:
                 os.getenv("VIBE_LEARNER_DESKTOP_MODE", "false"),
                 default=False,
             ),
-            allowed_origins=allowed_origins or ("http://localhost:3000", "http://127.0.0.1:3000"),
-            ocr_engine=(os.getenv("VIBE_LEARNER_OCR_ENGINE", "onnxtr").strip().lower() or "onnxtr"),
+            allowed_origins=allowed_origins
+            or ("http://localhost:3000", "http://127.0.0.1:3000"),
+            ocr_engine=(
+                os.getenv("VIBE_LEARNER_OCR_ENGINE", "onnxtr").strip().lower()
+                or "onnxtr"
+            ),
             onnxtr_model_dir=os.getenv("VIBE_LEARNER_ONNXTR_MODEL_DIR", "").strip(),
             document_layout_engine=(
-                os.getenv("VIBE_LEARNER_DOCUMENT_LAYOUT_ENGINE", "disabled").strip().lower()
+                os.getenv("VIBE_LEARNER_DOCUMENT_LAYOUT_ENGINE", "disabled")
+                .strip()
+                .lower()
                 or "disabled"
             ),
-            document_layout_python=os.getenv("VIBE_LEARNER_DOCUMENT_LAYOUT_PYTHON", "").strip(),
-            document_layout_model_path=os.getenv("VIBE_LEARNER_DOCUMENT_LAYOUT_MODEL_PATH", "").strip(),
-            document_layout_model_sha256=os.getenv("VIBE_LEARNER_DOCUMENT_LAYOUT_MODEL_SHA256", "").strip(),
+            document_layout_python=os.getenv(
+                "VIBE_LEARNER_DOCUMENT_LAYOUT_PYTHON", ""
+            ).strip(),
+            document_layout_model_path=os.getenv(
+                "VIBE_LEARNER_DOCUMENT_LAYOUT_MODEL_PATH", ""
+            ).strip(),
+            document_layout_model_sha256=os.getenv(
+                "VIBE_LEARNER_DOCUMENT_LAYOUT_MODEL_SHA256", ""
+            ).strip(),
             document_layout_timeout_seconds=_to_int(
-                os.getenv("VIBE_LEARNER_DOCUMENT_LAYOUT_TIMEOUT_SECONDS", "90"), default=90
+                os.getenv("VIBE_LEARNER_DOCUMENT_LAYOUT_TIMEOUT_SECONDS", "90"),
+                default=90,
             ),
             plan_provider=_normalize_plan_provider(
-                os.getenv("VIBE_LEARNER_PLAN_PROVIDER", "mock").strip().lower() or "mock"
+                os.getenv("VIBE_LEARNER_PLAN_PROVIDER", "mock").strip().lower()
+                or "mock"
             ),
             openai_api_key=global_api_key,
             openai_base_url=global_base_url,
-            openai_plan_api_key=(os.getenv("OPENAI_PLAN_API_KEY", "").strip() or global_api_key),
-            openai_plan_base_url=os.getenv("OPENAI_PLAN_BASE_URL", "").strip().rstrip("/"),
-            openai_plan_model=os.getenv("OPENAI_PLAN_MODEL", DEFAULT_MODEL_NAME).strip() or DEFAULT_MODEL_NAME,
-            openai_setting_api_key=(os.getenv("OPENAI_SETTING_API_KEY", "").strip() or global_api_key),
-            openai_setting_base_url=os.getenv("OPENAI_SETTING_BASE_URL", "").strip().rstrip("/"),
-            openai_setting_model=os.getenv("OPENAI_SETTING_MODEL", DEFAULT_MODEL_NAME).strip()
+            openai_plan_api_key=(
+                os.getenv("OPENAI_PLAN_API_KEY", "").strip() or global_api_key
+            ),
+            openai_plan_base_url=os.getenv("OPENAI_PLAN_BASE_URL", "")
+            .strip()
+            .rstrip("/"),
+            openai_plan_model=os.getenv("OPENAI_PLAN_MODEL", DEFAULT_MODEL_NAME).strip()
+            or DEFAULT_MODEL_NAME,
+            openai_setting_api_key=(
+                os.getenv("OPENAI_SETTING_API_KEY", "").strip() or global_api_key
+            ),
+            openai_setting_base_url=os.getenv("OPENAI_SETTING_BASE_URL", "")
+            .strip()
+            .rstrip("/"),
+            openai_setting_model=os.getenv(
+                "OPENAI_SETTING_MODEL", DEFAULT_MODEL_NAME
+            ).strip()
             or DEFAULT_MODEL_NAME,
             openai_setting_web_search_enabled=_to_bool(
                 os.getenv("OPENAI_SETTING_WEB_SEARCH_ENABLED", "true"),
                 default=True,
             ),
-            openai_chat_api_key=(os.getenv("OPENAI_CHAT_API_KEY", "").strip() or global_api_key),
-            openai_chat_base_url=os.getenv("OPENAI_CHAT_BASE_URL", "").strip().rstrip("/"),
-            openai_chat_model=os.getenv("OPENAI_CHAT_MODEL", DEFAULT_MODEL_NAME).strip() or DEFAULT_MODEL_NAME,
+            openai_chat_api_key=(
+                os.getenv("OPENAI_CHAT_API_KEY", "").strip() or global_api_key
+            ),
+            openai_chat_base_url=os.getenv("OPENAI_CHAT_BASE_URL", "")
+            .strip()
+            .rstrip("/"),
+            openai_chat_model=os.getenv("OPENAI_CHAT_MODEL", DEFAULT_MODEL_NAME).strip()
+            or DEFAULT_MODEL_NAME,
             openai_chat_temperature=_to_float(
                 os.getenv("OPENAI_CHAT_TEMPERATURE", str(DEFAULT_CHAT_TEMPERATURE)),
                 default=DEFAULT_CHAT_TEMPERATURE,
             ),
             openai_setting_temperature=_to_float(
-                os.getenv("OPENAI_SETTING_TEMPERATURE", str(DEFAULT_SETTING_TEMPERATURE)),
+                os.getenv(
+                    "OPENAI_SETTING_TEMPERATURE", str(DEFAULT_SETTING_TEMPERATURE)
+                ),
                 default=DEFAULT_SETTING_TEMPERATURE,
             ),
             openai_setting_max_tokens=_to_int(
@@ -146,28 +191,38 @@ class Settings:
                 default=DEFAULT_CHAT_MAX_TOKENS,
             ),
             openai_chat_history_messages=_to_int(
-                os.getenv("OPENAI_CHAT_HISTORY_MESSAGES", str(DEFAULT_CHAT_HISTORY_MESSAGES)),
+                os.getenv(
+                    "OPENAI_CHAT_HISTORY_MESSAGES", str(DEFAULT_CHAT_HISTORY_MESSAGES)
+                ),
                 default=DEFAULT_CHAT_HISTORY_MESSAGES,
             ),
             openai_chat_tool_max_rounds=_to_int(
-                os.getenv("OPENAI_CHAT_TOOL_MAX_ROUNDS", str(DEFAULT_CHAT_TOOL_MAX_ROUNDS)),
+                os.getenv(
+                    "OPENAI_CHAT_TOOL_MAX_ROUNDS", str(DEFAULT_CHAT_TOOL_MAX_ROUNDS)
+                ),
                 default=DEFAULT_CHAT_TOOL_MAX_ROUNDS,
             ),
-            openai_embedding_model=os.getenv("OPENAI_EMBEDDING_MODEL", DEFAULT_EMBEDDING_MODEL).strip()
+            openai_embedding_model=os.getenv(
+                "OPENAI_EMBEDDING_MODEL", DEFAULT_EMBEDDING_MODEL
+            ).strip()
             or DEFAULT_EMBEDDING_MODEL,
             openai_chat_model_multimodal=_to_bool(
                 os.getenv("OPENAI_CHAT_MODEL_MULTIMODAL", "false"),
                 default=False,
             ),
             openai_timeout_seconds=_to_int(
-                os.getenv("OPENAI_TIMEOUT_SECONDS", str(DEFAULT_PROVIDER_TIMEOUT_SECONDS)),
+                os.getenv(
+                    "OPENAI_TIMEOUT_SECONDS", str(DEFAULT_PROVIDER_TIMEOUT_SECONDS)
+                ),
                 default=DEFAULT_PROVIDER_TIMEOUT_SECONDS,
             ),
             openai_plan_model_multimodal=_to_bool(
                 os.getenv("OPENAI_PLAN_MODEL_MULTIMODAL", "false"),
                 default=False,
             ),
-            openai_plan_fallback_model=os.getenv("OPENAI_PLAN_FALLBACK_MODEL", "").strip(),
+            openai_plan_fallback_model=os.getenv(
+                "OPENAI_PLAN_FALLBACK_MODEL", ""
+            ).strip(),
             openai_plan_fallback_disable_tools=_to_bool(
                 os.getenv("OPENAI_PLAN_FALLBACK_DISABLE_TOOLS", "true"),
                 default=True,
@@ -190,7 +245,7 @@ def _to_float(value: str, *, default: float) -> float:
 
 
 def _to_bool(value: str, *, default: bool) -> bool:
-    normalized = (value or "").strip().lower()
+    normalized = text_or_empty(value).strip().lower()
     if normalized in {"1", "true", "yes", "on"}:
         return True
     if normalized in {"0", "false", "no", "off"}:
@@ -199,7 +254,7 @@ def _to_bool(value: str, *, default: bool) -> bool:
 
 
 def _normalize_plan_provider(value: str) -> str:
-    provider = (value or "").strip().lower() or "mock"
+    provider = text_or_empty(value).strip().lower() or "mock"
     if provider == "openai":
         return "litellm"
     if provider not in {"mock", "litellm"}:
@@ -224,8 +279,6 @@ def _load_dotenv() -> None:
 
 def _parse_allowed_origins(value: str) -> tuple[str, ...]:
     origins = tuple(
-        item.strip()
-        for item in (value or "").split(",")
-        if item.strip()
+        item.strip() for item in text_or_empty(value).split(",") if item.strip()
     )
     return origins

@@ -53,6 +53,7 @@ from app.persistence.harness_operation_repository import (
 )
 from app.persistence.harness_effect_repository import HarnessEffectJournalRepository
 from app.services.study_chat_effects import commit_study_chat_effects
+from app.core.coerce import text_or_empty
 
 
 class StudySessionRepository:
@@ -509,7 +510,7 @@ class StudySessionRepository:
                 )
             )
             record.last_turn_sequence = next_sequence
-            normalized_prepared = (prepared_study_unit_id or "").strip()
+            normalized_prepared = text_or_empty(prepared_study_unit_id).strip()
             if (
                 normalized_prepared
                 and normalized_prepared not in record.prepared_study_unit_ids

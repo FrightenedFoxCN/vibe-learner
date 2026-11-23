@@ -23,6 +23,7 @@ from app.core.model_runtime_limits import (
     PLANNING_MAX_UNOFFERED_TOOL_RETRIES,
 )
 from app.core.clock import utc_now_iso as _now
+from app.core.coerce import text_at
 
 
 @dataclass(frozen=True)
@@ -117,7 +118,7 @@ class OpenAIPlanRunner:
                     {
                         "round_index": round_index,
                         "elapsed_ms": elapsed_ms,
-                        "finish_reason": str(choice.get("finish_reason") or ""),
+                        "finish_reason": text_at(choice, "finish_reason"),
                         "error": "plan_model_unoffered_tool_call",
                     },
                 )
@@ -148,7 +149,7 @@ class OpenAIPlanRunner:
                 )
                 trace_round = PlanGenerationRoundRecord(
                     round_index=round_index,
-                    finish_reason=str(choice.get("finish_reason") or ""),
+                    finish_reason=text_at(choice, "finish_reason"),
                     assistant_content=_coerce_text_content(message.get("content")),
                     thinking=thinking,
                     elapsed_ms=elapsed_ms,
@@ -220,7 +221,7 @@ class OpenAIPlanRunner:
                     {
                         "round_index": round_index,
                         "elapsed_ms": elapsed_ms,
-                        "finish_reason": str(choice.get("finish_reason") or ""),
+                        "finish_reason": text_at(choice, "finish_reason"),
                         "tool_call_count": len(tool_calls),
                     },
                 )
@@ -229,7 +230,7 @@ class OpenAIPlanRunner:
                 continue
 
             content = _coerce_text_content(message.get("content"))
-            finish_reason = str(choice.get("finish_reason") or "")
+            finish_reason = text_at(choice, "finish_reason")
             if content.strip():
                 if (
                     tool_runtime.has_tools()
@@ -459,7 +460,7 @@ def _resolve_pending_plan_recoveries(
             reason=str(item.get("reason") or "unknown"),
             strategy=str(item.get("strategy") or "unknown"),
             attempts=int(item.get("attempts") or 1),
-            note=str(item.get("note") or ""),
+            note=text_at(item, "note"),
         )
     pending_recoveries.clear()
     return get_model_recovery_state()[round_recovery_start:]

@@ -963,6 +963,9 @@ class TavernService:
                     policy=detail.room.harness_policy,
                     recoveries=[],
                 )
+                # Capture once: the closure below outlives the except block,
+                # and Python deletes the exception variable when the block exits.
+                failure_error_code = _error_code(exc)
                 runtime_failure = None
                 if (
                     generated is not None
@@ -976,14 +979,14 @@ class TavernService:
                             session,
                             prepared=prepared_runtime,
                             commit_evidence=non_commit_evidence,
-                            error_code=_error_code(exc),
+                            error_code=failure_error_code,
                         ).trace
 
                 try:
                     failed_run = self.repository.fail_step(
                         run_id=run.id,
                         step_index=index,
-                        error_code=_error_code(exc),
+                        error_code=failure_error_code,
                         completed_at=_now(),
                         harness_trace=failure_trace,
                         lease_owner=execution_owner,

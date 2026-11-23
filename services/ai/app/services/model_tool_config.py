@@ -7,6 +7,7 @@ from app.models.harness import HarnessStage, HarnessWorkflow
 from app.models.tool_manifest import resolve_tool_manifest_entry
 from app.services.local_store import LocalJsonStore
 from app.core.clock import utc_now_iso as _now_iso
+from app.core.coerce import text_at
 
 PLAN_STAGE = "plan_generation"
 CHAT_STAGE = "study_chat"
@@ -306,8 +307,8 @@ class ModelToolConfigService:
         }
 
         for item in updates:
-            stage_name = str(item.get("stage_name") or "").strip()
-            tool_name = str(item.get("tool_name") or "").strip()
+            stage_name = text_at(item, "stage_name").strip()
+            tool_name = text_at(item, "tool_name").strip()
             enabled = item.get("enabled")
             if not stage_name or not tool_name or not isinstance(enabled, bool):
                 raise ValueError("invalid_tool_toggle")

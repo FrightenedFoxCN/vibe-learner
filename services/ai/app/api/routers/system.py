@@ -25,6 +25,7 @@ from app.services.runtime_model_probe import probe_openai_models
 from app.api._shared import (
     _into_response,
 )
+from app.core.coerce import text_at
 
 router = APIRouter()
 
@@ -72,7 +73,7 @@ def get_model_tool_config(
     }
 
     for stage in described["stages"]:
-        current_stage_name = str(stage.get("name") or "")
+        current_stage_name = text_at(stage, "name")
         stage_flag, stage_reason = stage_enabled.get(
             current_stage_name, (False, "当前模型提供器不支持此阶段工具。")
         )
@@ -84,7 +85,7 @@ def get_model_tool_config(
         ]
         tools = stage.get("tools") or []
         for tool in tools:
-            tool_name = str(tool.get("name") or "")
+            tool_name = text_at(tool, "name")
             available = True
             unavailable_reason = ""
             audit_basis = [

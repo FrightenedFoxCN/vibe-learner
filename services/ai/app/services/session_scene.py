@@ -20,6 +20,7 @@ from app.services.local_store import LocalJsonStore
 from app.services.study_chat_effects import scene_state_digest
 from app.services.tool_provider_projection import provider_function_for_entry
 from app.core.clock import utc_now_iso as _now_iso
+from app.core.coerce import text_at
 
 if TYPE_CHECKING:
     from app.services.study_chat_effects import StudyChatEffectCollector
@@ -98,46 +99,46 @@ class SessionSceneToolRuntime:
                 return self._prepare_add_scene(arguments)
             return self._service.add_scene(
                 self.scene_instance_id,
-                parent_scene_id=str(arguments.get("parent_scene_id") or "").strip(),
-                title=str(arguments.get("title") or "").strip(),
-                scope_label=str(arguments.get("scope_label") or "").strip(),
-                summary=str(arguments.get("summary") or "").strip(),
-                atmosphere=str(arguments.get("atmosphere") or "").strip(),
-                rules=str(arguments.get("rules") or "").strip(),
-                entrance=str(arguments.get("entrance") or "").strip(),
+                parent_scene_id=text_at(arguments, "parent_scene_id").strip(),
+                title=text_at(arguments, "title").strip(),
+                scope_label=text_at(arguments, "scope_label").strip(),
+                summary=text_at(arguments, "summary").strip(),
+                atmosphere=text_at(arguments, "atmosphere").strip(),
+                rules=text_at(arguments, "rules").strip(),
+                entrance=text_at(arguments, "entrance").strip(),
             )
         if tool_name == "move_to_scene":
             if self._effect_collector is not None:
                 return self._prepare_move_to_scene(arguments)
             return self._service.move_to_scene(
                 self.scene_instance_id,
-                scene_id=str(arguments.get("scene_id") or "").strip(),
+                scene_id=text_at(arguments, "scene_id").strip(),
             )
         if tool_name == "add_object":
             if self._effect_collector is not None:
                 return self._prepare_add_object(arguments)
             return self._service.add_object(
                 self.scene_instance_id,
-                scene_id=str(arguments.get("scene_id") or "").strip(),
-                name=str(arguments.get("name") or "").strip(),
-                description=str(arguments.get("description") or "").strip(),
-                interaction=str(arguments.get("interaction") or "").strip(),
-                tags=str(arguments.get("tags") or "").strip(),
+                scene_id=text_at(arguments, "scene_id").strip(),
+                name=text_at(arguments, "name").strip(),
+                description=text_at(arguments, "description").strip(),
+                interaction=text_at(arguments, "interaction").strip(),
+                tags=text_at(arguments, "tags").strip(),
             )
         if tool_name == "update_object_description":
             if self._effect_collector is not None:
                 return self._prepare_update_object_description(arguments)
             return self._service.update_object_description(
                 self.scene_instance_id,
-                object_id=str(arguments.get("object_id") or "").strip(),
-                description=str(arguments.get("description") or "").strip(),
+                object_id=text_at(arguments, "object_id").strip(),
+                description=text_at(arguments, "description").strip(),
             )
         if tool_name == "delete_object":
             if self._effect_collector is not None:
                 return self._prepare_delete_object(arguments)
             return self._service.delete_object(
                 self.scene_instance_id,
-                object_id=str(arguments.get("object_id") or "").strip(),
+                object_id=text_at(arguments, "object_id").strip(),
             )
         raise HTTPException(status_code=400, detail="scene_tool_unknown")
 
@@ -147,26 +148,25 @@ class SessionSceneToolRuntime:
         return self._service.require_scene(self.scene_instance_id)
 
     def _prepare_add_scene(self, arguments: dict[str, Any]) -> dict[str, Any]:
-        title = str(arguments.get("title") or "").strip()
-        scope_label = str(arguments.get("scope_label") or "").strip()
+        title = text_at(arguments, "title").strip()
+        scope_label = text_at(arguments, "scope_label").strip()
         if not title:
             raise HTTPException(status_code=400, detail="scene_title_required")
         if not scope_label:
             raise HTTPException(status_code=400, detail="scene_scope_label_required")
         record = self._current_record()
         target_parent_id = (
-            str(arguments.get("parent_scene_id") or "").strip()
-            or record.selected_layer_id
+            text_at(arguments, "parent_scene_id").strip() or record.selected_layer_id
         )
         effect_id = self._require_effect_collector().next_effect_id()
         new_layer = SceneLayerStateRecord(
             id=_stable_scene_member_id("scene-layer", effect_id),
             title=title,
             scope_label=scope_label,
-            summary=str(arguments.get("summary") or "").strip(),
-            atmosphere=str(arguments.get("atmosphere") or "").strip(),
-            rules=str(arguments.get("rules") or "").strip(),
-            entrance=str(arguments.get("entrance") or "").strip(),
+            summary=text_at(arguments, "summary").strip(),
+            atmosphere=text_at(arguments, "atmosphere").strip(),
+            rules=text_at(arguments, "rules").strip(),
+            entrance=text_at(arguments, "entrance").strip(),
             objects=[],
             children=[],
         )
@@ -195,7 +195,7 @@ class SessionSceneToolRuntime:
         )
 
     def _prepare_move_to_scene(self, arguments: dict[str, Any]) -> dict[str, Any]:
-        scene_id = str(arguments.get("scene_id") or "").strip()
+        scene_id = text_at(arguments, "scene_id").strip()
         if not scene_id:
             raise HTTPException(status_code=400, detail="scene_id_required")
         record = self._current_record()
@@ -221,12 +221,12 @@ class SessionSceneToolRuntime:
         )
 
     def _prepare_add_object(self, arguments: dict[str, Any]) -> dict[str, Any]:
-        name = str(arguments.get("name") or "").strip()
+        name = text_at(arguments, "name").strip()
         if not name:
             raise HTTPException(status_code=400, detail="scene_object_name_required")
         record = self._current_record()
         target_scene_id = (
-            str(arguments.get("scene_id") or "").strip() or record.selected_layer_id
+            text_at(arguments, "scene_id").strip() or record.selected_layer_id
         )
         if not target_scene_id:
             raise HTTPException(status_code=400, detail="scene_target_required")
@@ -234,9 +234,9 @@ class SessionSceneToolRuntime:
         added_object = SceneObjectStateRecord(
             id=_stable_scene_member_id("scene-object", effect_id),
             name=name,
-            description=str(arguments.get("description") or "").strip(),
-            interaction=str(arguments.get("interaction") or "").strip(),
-            tags=str(arguments.get("tags") or "").strip(),
+            description=text_at(arguments, "description").strip(),
+            interaction=text_at(arguments, "interaction").strip(),
+            tags=text_at(arguments, "tags").strip(),
         )
         next_layers = [node.model_copy(deep=True) for node in record.scene_layers]
         if not _append_object(next_layers, target_scene_id, added_object):
@@ -261,7 +261,7 @@ class SessionSceneToolRuntime:
         self,
         arguments: dict[str, Any],
     ) -> dict[str, Any]:
-        object_id = str(arguments.get("object_id") or "").strip()
+        object_id = text_at(arguments, "object_id").strip()
         if not object_id:
             raise HTTPException(status_code=400, detail="scene_object_id_required")
         next_layers = [
@@ -270,7 +270,7 @@ class SessionSceneToolRuntime:
         updated_object = _update_object_description(
             next_layers,
             object_id,
-            str(arguments.get("description") or "").strip(),
+            text_at(arguments, "description").strip(),
         )
         if updated_object is None:
             raise HTTPException(status_code=404, detail="scene_object_not_found")
@@ -288,7 +288,7 @@ class SessionSceneToolRuntime:
         )
 
     def _prepare_delete_object(self, arguments: dict[str, Any]) -> dict[str, Any]:
-        object_id = str(arguments.get("object_id") or "").strip()
+        object_id = text_at(arguments, "object_id").strip()
         if not object_id:
             raise HTTPException(status_code=400, detail="scene_object_id_required")
         next_layers = [
@@ -735,10 +735,10 @@ def _stable_scene_member_id(prefix: str, effect_id: str) -> str:
 
 
 def summarize_chat_tool_result(result: dict[str, Any]) -> str:
-    summary = str(result.get("summary") or "").strip()
+    summary = text_at(result, "summary").strip()
     if summary:
         return summary
-    if str(result.get("tool_name") or "") == "read_scene_overview":
+    if text_at(result, "tool_name") == "read_scene_overview":
         return f"场景读取完成，当前共有 {result.get('object_count') or 0} 个物体。"
     if result.get("ok") is False:
         return str(result.get("error") or "工具调用失败")

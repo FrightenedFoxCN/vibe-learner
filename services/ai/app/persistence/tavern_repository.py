@@ -43,6 +43,7 @@ from app.persistence.models import (
     TavernRunRow,
     TavernRunStepRow,
 )
+from app.core.coerce import text_at
 
 
 _TAVERN_ROOM_CURSOR_VERSION = 1
@@ -1604,15 +1605,15 @@ def _message_from_row(row: TavernMessageRow) -> TavernMessageRecord:
         run_id=row.run_id,
         author_kind=row.author_kind,
         persona_id=row.persona_id,
-        persona_name=str(payload.get("persona_name") or ""),
+        persona_name=text_at(payload, "persona_name"),
         content=row.content,
         emotion=str(payload.get("emotion") or "calm"),
-        action=str(payload.get("action") or ""),
-        speech_style=str(payload.get("speech_style") or ""),
+        action=text_at(payload, "action"),
+        speech_style=text_at(payload, "speech_style"),
         addressed_participant_ids=[
             str(item) for item in (payload.get("addressed_participant_ids") or [])
         ],
-        reply_to_message_id=str(payload.get("reply_to_message_id") or ""),
+        reply_to_message_id=text_at(payload, "reply_to_message_id"),
         client_request_id=row.client_request_id,
         created_at=row.created_at,
         harness_trace=(
@@ -1640,8 +1641,8 @@ def _run_from_row(
         id=row.id,
         room_id=row.room_id,
         idempotency_key=row.idempotency_key,
-        request_digest=str(payload.get("request_digest") or ""),
-        context_digest=str(payload.get("context_digest") or ""),
+        request_digest=text_at(payload, "request_digest"),
+        context_digest=text_at(payload, "context_digest"),
         mode=row.mode,
         trigger_kind=str(payload.get("trigger_kind") or "user_message"),
         parent_run_id=row.parent_run_id or "",
@@ -1659,7 +1660,7 @@ def _run_from_row(
             )
         ],
         speaker_steps=speaker_steps,
-        guidance=str(payload.get("guidance") or ""),
+        guidance=text_at(payload, "guidance"),
         status=row.status,
         expected_room_revision=row.expected_room_revision,
         generated_message_ids=(

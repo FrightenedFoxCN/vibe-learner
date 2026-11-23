@@ -625,6 +625,7 @@ from app.models.domain import (
     VersionedLearningPlanRecord,
     repair_legacy_duplicate_schedule_chapter_ids,
 )
+from app.core.coerce import text_at
 
 
 class LearningPlanResponse(VersionedLearningPlanRecord):
@@ -773,7 +774,7 @@ class ChatToolCallTraceResponse(ChatToolCallTraceRecord):
         )
         if payload is None:
             return value
-        tool_name = str(payload.get("tool_name") or "")
+        tool_name = text_at(payload, "tool_name")
         raw_result = payload.get("result_json")
         if tool_name not in {
             "ask_multiple_choice_question",

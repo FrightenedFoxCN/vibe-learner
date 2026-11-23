@@ -1,17 +1,25 @@
 """Pure application-owned Plan progress projections shared by reads and revisions."""
-from app.models.domain import (LearningPlanRecord, LearningGoalInput, StudyScheduleRecord,
-    PlanProgressSummaryRecord, StudyUnitProgressRecord)
+
+from app.models.domain import (
+    LearningPlanRecord,
+    LearningGoalInput,
+    StudyScheduleRecord,
+    PlanProgressSummaryRecord,
+    StudyUnitProgressRecord,
+)
+from app.core.coerce import text_or_empty
 
 
 class PlanProgressProjector:
     def _goal_only_document_title(self, goal: LearningGoalInput) -> str:
-        objective = " ".join((goal.objective or "").split()).strip(" 。.!！?？;；：:")
+        objective = " ".join(text_or_empty(goal.objective).split()).strip(
+            " 。.!！?？;；：:"
+        )
         if not objective:
             return "目标导向学习计划"
         if len(objective) <= 24:
             return objective
         return f"{objective[:24].rstrip()}…"
-
 
     def _build_progress_summary(
         self,
@@ -32,15 +40,24 @@ class PlanProgressProjector:
             completion_percent=completion_percent,
         )
 
-
-    def _build_study_unit_progress(self, plan: LearningPlanRecord) -> list[StudyUnitProgressRecord]:
-        plannable_units = [unit for unit in plan.study_units if unit.include_in_plan] or list(plan.study_units)
+    def _build_study_unit_progress(
+        self, plan: LearningPlanRecord
+    ) -> list[StudyUnitProgressRecord]:
+        plannable_units = [
+            unit for unit in plan.study_units if unit.include_in_plan
+        ] or list(plan.study_units)
         result = []
         for unit in plannable_units:
-            related_schedule = [item for item in plan.schedule if item.unit_id == unit.id]
+            related_schedule = [
+                item for item in plan.schedule if item.unit_id == unit.id
+            ]
             total = len(related_schedule)
-            completed = sum(1 for item in related_schedule if item.status == "completed")
-            in_progress = sum(1 for item in related_schedule if item.status == "in_progress")
+            completed = sum(
+                1 for item in related_schedule if item.status == "completed"
+            )
+            in_progress = sum(
+                1 for item in related_schedule if item.status == "in_progress"
+            )
             blocked = sum(1 for item in related_schedule if item.status == "blocked")
             pending = max(0, total - completed - in_progress - blocked)
             if total and completed == total:
@@ -98,9 +115,12 @@ class PlanProgressProjector:
             )
         return result
 
-
-    def _refresh_plan_derived_fields(self, plan: LearningPlanRecord) -> LearningPlanRecord:
-        creation_mode = plan.creation_mode or ("goal_only" if not plan.document_id else "document")
+    def _refresh_plan_derived_fields(
+        self, plan: LearningPlanRecord
+    ) -> LearningPlanRecord:
+        creation_mode = plan.creation_mode or (
+            "goal_only" if not plan.document_id else "document"
+        )
         return plan.model_copy(
             update={
                 "creation_mode": creation_mode,
@@ -108,7 +128,6 @@ class PlanProgressProjector:
                 "study_unit_progress": self._build_study_unit_progress(plan),
             }
         )
-
 
 
 def refresh_plan_progress(plan):

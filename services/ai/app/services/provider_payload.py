@@ -1,4 +1,5 @@
 """Shared compatible response envelope decoding; domain schemas stay with capabilities."""
+
 from __future__ import annotations
 
 import json
@@ -6,6 +7,7 @@ from typing import Any
 from app.services.provider_transport import _coerce_int
 
 from app.core.logging import get_logger
+from app.core.coerce import text_at
 
 logger = get_logger("vibe_learner.model_provider")
 
@@ -63,7 +65,6 @@ def _extract_json_payload(
     return payload
 
 
-
 def _escape_invalid_backslashes_in_json_strings(raw: str) -> str:
     result: list[str] = []
     in_string = False
@@ -105,7 +106,6 @@ def _escape_invalid_backslashes_in_json_strings(raw: str) -> str:
     return "".join(result)
 
 
-
 def _extract_choice_content(
     payload: dict[str, Any],
     *,
@@ -137,7 +137,7 @@ def _extract_choice_content(
         for item in content:
             if not isinstance(item, dict):
                 continue
-            item_type = str(item.get("type") or "").strip().lower()
+            item_type = text_at(item, "type").strip().lower()
             if item_type not in {"text", "output_text", "message"}:
                 continue
             text_value = item.get("text")
@@ -181,7 +181,7 @@ def _extract_choice_diagnostics(payload: dict[str, Any]) -> tuple[str, int, int]
     choices = payload.get("choices")
     finish_reason = ""
     if isinstance(choices, list) and choices and isinstance(choices[0], dict):
-        finish_reason = str(choices[0].get("finish_reason") or "")
+        finish_reason = text_at(choices[0], "finish_reason")
 
     usage = payload.get("usage") if isinstance(payload, dict) else None
     completion_tokens = 0

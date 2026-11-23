@@ -11,6 +11,7 @@ from app.models.study_chat_effect import (
 from app.models.study_chat_operation import study_chat_provider_effect_id
 from app.services.study_tools.context import StudyToolContext
 from fastapi import HTTPException
+from app.core.coerce import text_at
 
 
 @dataclass
@@ -26,8 +27,8 @@ class ImageGenerationTools:
             raise HTTPException(
                 status_code=409, detail="study_chat_effect_collector_required"
             )
-        prompt = str(arguments.get("prompt") or "").strip()
-        title = str(arguments.get("title") or "").strip() or "AI 生成图像"
+        prompt = text_at(arguments, "prompt").strip()
+        title = text_at(arguments, "title").strip() or "AI 生成图像"
         size = str(arguments.get("size") or "1024x1024").strip() or "1024x1024"
         if not prompt:
             raise HTTPException(
@@ -55,7 +56,7 @@ class ImageGenerationTools:
             title=title,
             page_number=1,
             page_count=1,
-            image_url=str(generated.get("image_url") or ""),
+            image_url=text_at(generated, "image_url"),
         )
         effect = self.context.effects.prepare_projection(proposal)
         if effect.effect_id != expected_projection_effect_id:
@@ -79,5 +80,5 @@ class ImageGenerationTools:
                 "study_provider_execution"
             ].model_dump(mode="json"),
             "external_effect_read_back": "unsupported",
-            "revised_prompt": str(generated.get("revised_prompt") or ""),
+            "revised_prompt": text_at(generated, "revised_prompt"),
         }

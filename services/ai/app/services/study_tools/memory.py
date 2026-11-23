@@ -9,6 +9,7 @@ from app.models.study_chat_effect import (
 from app.models.study_chat_tool_contracts import WriteSessionMemoryArgumentsV1
 from app.services.study_tools.context import StudyToolContext
 from fastapi import HTTPException
+from app.core.coerce import text_at
 
 
 @dataclass
@@ -17,7 +18,7 @@ class SessionMemoryTools:
 
     def read_session_memory(self, arguments: dict[str, Any]) -> dict[str, Any]:
         session = self.context.sessions.require_session(self.context.session_id)
-        requested_key = str(arguments.get("key") or "").strip()
+        requested_key = text_at(arguments, "key").strip()
         limit = max(1, min(int(arguments.get("limit") or 6), 12))
         items = (
             self.context.effects.preview_session_memory(session.session_memory)

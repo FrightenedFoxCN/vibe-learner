@@ -7,6 +7,7 @@ import unicodedata
 from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from app.core.coerce import text_at, text_or_empty
 
 
 STUDY_QUESTION_PROPOSAL_SCHEMA_VERSION = "study-question-proposal-v1"
@@ -47,7 +48,7 @@ class StudyQuestionOptionV1(BaseModel):
     @field_validator("key", "text", mode="before")
     @classmethod
     def strip_text(cls, value: object) -> str:
-        return str(value or "").strip()
+        return text_or_empty(value).strip()
 
 
 class StudyQuestionProposalV1(BaseModel):
@@ -71,12 +72,12 @@ class StudyQuestionProposalV1(BaseModel):
     @field_validator("prompt", "topic", "explanation", mode="before")
     @classmethod
     def strip_text(cls, value: object) -> str:
-        return str(value or "").strip()
+        return text_or_empty(value).strip()
 
     @field_validator("answer_key", mode="before")
     @classmethod
     def normalize_optional_answer_key(cls, value: object) -> str | None:
-        normalized = str(value or "").strip()
+        normalized = text_or_empty(value).strip()
         return normalized or None
 
     @field_validator("accepted_answers", mode="before")
@@ -86,7 +87,7 @@ class StudyQuestionProposalV1(BaseModel):
             return []
         if not isinstance(value, list):
             raise ValueError("study_question_accepted_answers_list_required")
-        answers = [str(item or "").strip() for item in value]
+        answers = [text_or_empty(item).strip() for item in value]
         return [answer for answer in answers if answer]
 
     @model_validator(mode="after")
@@ -94,7 +95,9 @@ class StudyQuestionProposalV1(BaseModel):
         if self.question_type == "multiple_choice":
             if len(self.options) < 2:
                 raise ValueError("study_question_multiple_choice_options_required")
-            normalized_keys = [normalize_study_answer(option.key) for option in self.options]
+            normalized_keys = [
+                normalize_study_answer(option.key) for option in self.options
+            ]
             if len(normalized_keys) != len(set(normalized_keys)):
                 raise ValueError("study_question_option_key_duplicate")
             if self.answer_key is None:
@@ -184,12 +187,12 @@ class StudyInteractiveQuestionRecordV2(BaseModel):
         ):
             return value
         payload = dict(value)
-        question_type = str(payload.get("question_type") or "")
+        question_type = text_at(payload, "question_type")
         answer_key = str(payload.pop("answer_key", "") or "").strip()
         accepted_answers = [
-            str(item or "").strip()
+            text_or_empty(item).strip()
             for item in payload.pop("accepted_answers", []) or []
-            if str(item or "").strip()
+            if text_or_empty(item).strip()
         ]
         explanation = str(payload.pop("explanation", "") or "").strip()
         submitted_answer = str(payload.pop("submitted_answer", "") or "").strip()
@@ -235,7 +238,10 @@ class StudyInteractiveQuestionRecordV2(BaseModel):
 
     @model_validator(mode="after")
     def validate_record_contract(self) -> "StudyInteractiveQuestionRecordV2":
-        if self.grading_spec is not None and self.grading_spec.question_type != self.question_type:
+        if (
+            self.grading_spec is not None
+            and self.grading_spec.question_type != self.question_type
+        ):
             raise ValueError("study_question_grading_type_mismatch")
         if self.question_type == "multiple_choice" and len(self.options) < 2:
             # Legacy persisted questions without options remain readable only if
@@ -270,9 +276,9 @@ class StudyQuestionResultResponseV1(BaseModel):
             return value
         payload = dict(value)
         payload.pop("normalized_answer", None)
-        payload["attempt_id"] = str(payload.get("attempt_id") or "") or None
-        payload["client_attempt_id"] = str(payload.get("client_attempt_id") or "") or None
-        payload["committed_at"] = str(payload.get("committed_at") or "") or None
+        payload["attempt_id"] = text_at(payload, "attempt_id") or None
+        payload["client_attempt_id"] = text_at(payload, "client_attempt_id") or None
+        payload["committed_at"] = text_at(payload, "committed_at") or None
         return payload
 
 
@@ -392,7 +398,11 @@ def grade_study_question(
         }
         is_correct = normalized in accepted
         reference = " / ".join(grading.accepted_answers)
-        feedback = "回答正确" if is_correct else f"未匹配预设答案，请核对题目要求的措辞与格式。参考答案：{reference}"
+        feedback = (
+            "回答正确"
+            if is_correct
+            else f"未匹配预设答案，请核对题目要求的措辞与格式。参考答案：{reference}"
+        )
     return normalized, is_correct, feedback, grading.explanation
 
 
@@ -425,7 +435,7 @@ def study_question_attempt_response_digest(
 
 
 def normalize_study_answer(value: str) -> str:
-    normalized = unicodedata.normalize("NFKC", str(value or "")).casefold().strip()
+    normalized = unicodedata.normalize("NFKC", text_or_empty(value)).casefold().strip()
     return re.sub(r"\s+", " ", normalized)
 
 
@@ -433,7 +443,7 @@ def _deduplicate_answers(values: list[str]) -> list[str]:
     answers: list[str] = []
     seen: set[str] = set()
     for value in values:
-        stripped = str(value or "").strip()
+        stripped = text_or_empty(value).strip()
         normalized = normalize_study_answer(stripped)
         if not normalized or normalized in seen:
             continue

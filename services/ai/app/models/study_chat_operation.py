@@ -8,6 +8,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from app.models.harness import HarnessTraceV3
 from app.models.output_language import OutputLanguagePreference
+from app.core.coerce import text_or_empty
 
 
 STUDY_CHAT_REQUEST_SCHEMA_VERSION = "study-chat-request-v3"
@@ -81,7 +82,7 @@ class StudyChatOperationRequestPayload(BaseModel):
     @field_validator("message_kind", "follow_up_id", mode="before")
     @classmethod
     def strip_normalized_fields(cls, value: object) -> object:
-        return str(value or "").strip()
+        return text_or_empty(value).strip()
 
 
 class StudyChatOperationRecord(BaseModel):
