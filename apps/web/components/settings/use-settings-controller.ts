@@ -140,6 +140,7 @@ export function useSettingsController(): SettingsController {
   const settingsRef = useRef<RuntimeSettings | null>(null);
   const desktopSecurityRef = useRef(desktopSecurity);
   const probeCacheRef = useRef<Map<string, CachedProbeResult>>(new Map());
+  const activeProbeRef = useRef(new Map<string, symbol>());
 
   useEffect(() => {
     settingsRef.current = settings;
@@ -307,19 +308,10 @@ export function useSettingsController(): SettingsController {
       return;
     }
 
-    const cached = probeCacheRef.current.get(endpointKey);
-    const hasCurrentFeatureReadiness = featureProbe.features.every(
-      (feature) => cached?.featureReadiness[feature]?.model === featureProbe.model,
-    );
-    if (cached && (scope === "global" || hasCurrentFeatureReadiness)) {
-      const refreshed = {
-        ...cached,
-        sourceScope: scope,
-      };
-      probeCacheRef.current.set(endpointKey, refreshed);
-      syncProbeScopesFromCache(settingsRef.current ?? settings, endpointKey, refreshed);
-      return;
-    }
+    // Clicks always send a new request. Cached results are for sharing evidence, not skipping probes.
+    const requestId = Symbol();
+    activeProbeRef.current.set(endpointKey, requestId);
+    const stillActive = () => activeProbeRef.current.get(endpointKey) === requestId;
 
     setProbeState((prev) => {
       const next = { ...prev };
@@ -341,6 +333,8 @@ export function useSettingsController(): SettingsController {
         model: featureProbe.model,
         features: featureProbe.features,
       });
+      if (!stillActive()) return;
+      const cached = probeCacheRef.current.get(endpointKey);
       const nextCached: CachedProbeResult = {
         available: result.available,
         models: result.models,
@@ -360,26 +354,20 @@ export function useSettingsController(): SettingsController {
         nextCached,
       );
     } catch (err) {
-      setProbeState((prev) => {
-        const next = { ...prev };
-        for (const candidate of resolveProbeConflictScopes(
-          settingsRef.current ?? settings,
-          scope,
-        )) {
-          next[candidate] = {
-            ...prev[candidate],
-            loading: false,
-            available: false,
-            models: [],
-            capabilities: {},
-            featureReadiness: prev[candidate].featureReadiness,
-            error: String(err),
-            endpointKey,
-            sharedFromScope: candidate === scope ? null : scope,
-          };
-        }
-        return next;
-      });
+      if (!stillActive()) return;
+      const failure: CachedProbeResult = {
+        available: false,
+        models: [],
+        capabilities: {},
+        featureReadiness: {},
+        error: String(err),
+        lastCheckedAt: new Date().toISOString(),
+        sourceScope: scope,
+      };
+      probeCacheRef.current.set(endpointKey, failure);
+      syncProbeScopesFromCache(settingsRef.current ?? settings, endpointKey, failure);
+    } finally {
+      if (stillActive()) activeProbeRef.current.delete(endpointKey);
     }
   }
 

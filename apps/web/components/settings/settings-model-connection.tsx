@@ -321,6 +321,9 @@ function ScopeModelCard({
             }
           />
         </div>
+        <p className="m-0 text-xs text-muted">
+          代表请求只检查连接与请求兼容性，不验证工具实际执行或完整工作流输出。
+        </p>
         {featureLabels.map(([feature, label]) => {
           const readiness = probe.featureReadiness[feature];
           const current = readiness?.model === currentModel ? readiness : undefined;
@@ -330,7 +333,7 @@ function ScopeModelCard({
                 <StatusBadge
                   label={`${label}：${
                     current?.status === "ready"
-                      ? "可调用"
+                      ? "代表请求已返回"
                       : current?.status === "unsupported"
                         ? "参数不兼容"
                         : current?.status === "failed"

@@ -85,7 +85,7 @@ def probe_openai_models(
             "capabilities": {},
             "error": "timeout",
         }
-    except json.JSONDecodeError:
+    except (json.JSONDecodeError, UnicodeDecodeError):
         return {
             "available": False,
             "models": [],
@@ -95,19 +95,29 @@ def probe_openai_models(
 
 
 def parse_model_probe_payload(raw_payload: Any) -> dict[str, Any]:
-    models_raw = raw_payload.get("data") if isinstance(raw_payload, dict) else []
+    models_raw = raw_payload.get("data") if isinstance(raw_payload, dict) else None
     capabilities: dict[str, Any] = {}
-    model_ids: list[str] = []
-    if isinstance(models_raw, list):
-        for item in models_raw:
-            if not isinstance(item, dict):
-                continue
-            model_id = text_at(item, "id").strip()
-            if not model_id:
-                continue
-            model_ids.append(model_id)
+    if not isinstance(models_raw, list):
+        return {
+            "available": False,
+            "models": [],
+            "capabilities": {},
+            "error": "invalid_model_list_response",
+        }
+    for item in models_raw:
+        if not isinstance(item, dict) or not isinstance(item.get("id"), str):
+            continue
+        model_id = text_at(item, "id").strip()
+        if model_id:
             capabilities[model_id] = describe_model_capabilities(item)
-    sorted_ids = sorted(set(model_ids))
+    if models_raw and not capabilities:
+        return {
+            "available": False,
+            "models": [],
+            "capabilities": {},
+            "error": "invalid_model_list_response",
+        }
+    sorted_ids = sorted(capabilities)
     return {
         "available": True,
         "models": sorted_ids,
