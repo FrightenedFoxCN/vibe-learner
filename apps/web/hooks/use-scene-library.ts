@@ -169,8 +169,21 @@ export function useSceneLibrary(port: SceneLibraryPort = api) {
         setReusableActionPendingId("");
     }
   }
+  async function refreshSceneLibraryItem(id: string) {
+    try {
+      const latest = await port.getSceneLibraryItem(id);
+      scenes.apply(id, latest);
+      return latest;
+    } catch (error) {
+      if (!isApiHttpError(error) || error.status !== 404) throw error;
+      scenes.apply(id, null);
+      if (binding.current?.sceneId === id) bindScene(null);
+      return null;
+    }
+  }
   return {
     savedScenes: scenes.items,
+    refreshSceneLibraryItem,
     reusableNodes: nodes.items,
     libraryError: [scenes.error, nodes.error].filter(Boolean).join("；"),
     selectedSavedSceneId: boundSceneId,

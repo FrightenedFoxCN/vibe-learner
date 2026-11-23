@@ -23,6 +23,7 @@ import { useSceneDraft } from "./use-scene-draft";
 import { useSceneGeneration } from "./use-scene-generation";
 import { readBoundedJsonImport } from "../lib/bounded-json-import";
 import { observeLocalAction } from "../lib/diagnostic-actions";
+import { isApiHttpError } from "../lib/http-error";
 import { exportJson } from "../lib/export-json";
 import { usePageDebugSnapshot } from "../components/debug/page-debug-context";
 import { useSceneRewrite } from "./use-scene-rewrite";
@@ -37,6 +38,7 @@ export function useSceneWorkspaceController() {
     selectedSavedSceneId,
     getSceneBinding,
     bindScene,
+    refreshSceneLibraryItem,
     createSceneLibraryItem,
     updateSceneLibraryItem,
     deleteSceneLibraryItem,
@@ -542,6 +544,7 @@ export function useSceneWorkspaceController() {
 
   async function saveLibraryScene(mode: "upsert" | "create" = "upsert") {
     beginSceneIo();
+    const boundScene = mode === "upsert" ? getSceneBinding() : null;
     try {
       const trimmedSceneName = sceneName.trim();
       const trimmedSceneSummary = sceneSummary.trim();
@@ -567,8 +570,7 @@ export function useSceneWorkspaceController() {
         )
           markSaved(contentFingerprint);
       };
-      const boundScene = getSceneBinding();
-      if (mode === "upsert" && boundScene) {
+      if (boundScene) {
         const updated = await updateSceneLibraryItem(
           boundScene.sceneId,
           {
@@ -584,8 +586,22 @@ export function useSceneWorkspaceController() {
       const created = await createSceneLibraryItem(payload, diagnostic);
       markSubmitted();
       setSceneIoMessage(`已保存场景“${created.sceneName}”。`);
-    } catch {
-      setSceneIoError("保存到场景库失败，请稍后重试。");
+    } catch (error) {
+      if (boundScene && isApiHttpError(error) && (error.status === 409 || error.status === 404)) {
+        if (getSceneBinding() !== boundScene) return;
+        try {
+          const latest = await refreshSceneLibraryItem(boundScene.sceneId);
+          if (latest && getSceneBinding() !== boundScene) return;
+          setSceneIoError(latest
+            ? "场景已在其他操作中更新，当前草稿仍在。可从场景库载入最新版本，或将草稿另存为新场景。"
+            : "原场景已不存在，当前草稿仍在。可另存为新场景。");
+        } catch {
+          if (getSceneBinding() === boundScene)
+            setSceneIoError("场景版本已变化，且未能读取最新版本。当前草稿仍在，可另存为新场景。");
+        }
+      } else {
+        setSceneIoError("保存到场景库失败，请稍后重试。");
+      }
     } finally {
       finishSceneIo();
     }
