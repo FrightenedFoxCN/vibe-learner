@@ -27,8 +27,8 @@ class StudyChatReplyProposalV1(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
 
     text: str = Field(min_length=1, max_length=40_000)
-    mood: str = Field(min_length=1, max_length=160)
-    action: str = Field(min_length=1, max_length=2_000)
+    mood: str = Field(default="", max_length=160)
+    action: str = Field(default="", max_length=2_000)
     speech_style: str = Field(default="", max_length=500)
     delivery_cue: str = Field(default="", max_length=2_000)
     state_commentary: str = Field(default="", max_length=4_000)
@@ -83,8 +83,10 @@ class StudyChatReplyProposalV1(BaseModel):
 
         if "call_back" in value and not isinstance(value["call_back"], bool):
             raise ValueError("study_chat_question_call_back_boolean_required")
-        if "answer_key" in value and value["answer_key"] is not None and not isinstance(
-            value["answer_key"], str
+        if (
+            "answer_key" in value
+            and value["answer_key"] is not None
+            and not isinstance(value["answer_key"], str)
         ):
             raise ValueError("study_chat_question_answer_key_string_required")
 
@@ -93,7 +95,9 @@ class StudyChatReplyProposalV1(BaseModel):
             if not isinstance(accepted_answers, list) or any(
                 not isinstance(item, str) for item in accepted_answers
             ):
-                raise ValueError("study_chat_question_accepted_answers_strings_required")
+                raise ValueError(
+                    "study_chat_question_accepted_answers_strings_required"
+                )
 
         if "options" in value:
             options = value["options"]
