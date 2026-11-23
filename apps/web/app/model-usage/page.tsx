@@ -1,9 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
-import type { TokenUsageCallRecord, TokenUsageDailyBucket, TokenUsageStats } from "@vibe-learner/shared";
+import type {
+  TokenUsageCallRecord,
+  TokenUsageDailyBucket,
+  TokenUsageStats,
+} from "@vibe-learner/shared";
 import { TopNav } from "../../components/top-nav";
 import { usePageDebugSnapshot } from "../../components/page-debug-context";
+import { formatTimestamp } from "../../lib/format";
 import { getModelUsageStats } from "../../lib/data/model-usage";
 
 const FEATURE_LABELS: Record<string, string> = {
@@ -44,35 +49,46 @@ function formatNumber(n: number): string {
   return String(n);
 }
 
-function formatDateTime(value: string, timeZone?: string): string {
-  if (!value) return "-";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-  return new Intl.DateTimeFormat("zh-CN", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: false,
-    ...(timeZone ? { timeZone } : {}),
-  }).format(date);
+function workflowLabel(value: string): string {
+  return WORKFLOW_LABELS[value] ?? (value || "未关联 workflow");
 }
-
-function workflowLabel(value: string): string { return WORKFLOW_LABELS[value] ?? (value || "未关联 workflow"); }
 
 function exportUsageCsv(records: TokenUsageCallRecord[], timeZone: string) {
   const escape = (value: string) => `"${value.replaceAll('"', '""')}"`;
   const rows = [
-    ["时间", "时区", "workflow", "operation", "stage", "功能", "模型", "输入 Token", "输出 Token", "合计 Token"],
-    ...records.map(record => [formatDateTime(record.createdAt, timeZone), timeZone, record.workflow, record.operationId, record.stage, featureLabel(record.feature), record.model, String(record.promptTokens), String(record.completionTokens), String(record.totalTokens)]),
+    [
+      "时间",
+      "时区",
+      "workflow",
+      "operation",
+      "stage",
+      "功能",
+      "模型",
+      "输入 Token",
+      "输出 Token",
+      "合计 Token",
+    ],
+    ...records.map((record) => [
+      formatTimestamp(record.createdAt, { style: "full", timeZone }),
+      timeZone,
+      record.workflow,
+      record.operationId,
+      record.stage,
+      featureLabel(record.feature),
+      record.model,
+      String(record.promptTokens),
+      String(record.completionTokens),
+      String(record.totalTokens),
+    ]),
   ];
-  const blob = new Blob(["\ufeff" + rows.map(row => row.map(escape).join(",")).join("\n")], { type: "text/csv;charset=utf-8" });
+  const blob = new Blob(
+    ["\ufeff" + rows.map((row) => row.map(escape).join(",")).join("\n")],
+    { type: "text/csv;charset=utf-8" },
+  );
   const link = document.createElement("a");
-  link.href = URL.createObjectURL(blob); link.download = `model-usage-${new Date().toISOString().slice(0, 10)}.csv`; link.click();
+  link.href = URL.createObjectURL(blob);
+  link.download = `model-usage-${new Date().toISOString().slice(0, 10)}.csv`;
+  link.click();
   URL.revokeObjectURL(link.href);
 }
 
@@ -89,7 +105,9 @@ function buildDayMap(buckets: TokenUsageDailyBucket[]): DayData[] {
       map.set(b.date, { date: b.date, segments: [], total: 0 });
     }
     const day = map.get(b.date)!;
-    const existing = day.segments.find((s) => s.feature === b.feature && s.model === b.model);
+    const existing = day.segments.find(
+      (s) => s.feature === b.feature && s.model === b.model,
+    );
     if (existing) {
       existing.tokens += b.totalTokens;
     } else {
@@ -102,9 +120,7 @@ function buildDayMap(buckets: TokenUsageDailyBucket[]): DayData[] {
 
 function StackedBarChart({ days }: { days: DayData[] }) {
   if (days.length === 0) {
-    return (
-      <div style={styles.emptyChart}>暂无数据</div>
-    );
+    return <div style={styles.emptyChart}>暂无数据</div>;
   }
 
   const maxTotal = Math.max(...days.map((d) => d.total), 1);
@@ -113,7 +129,9 @@ function StackedBarChart({ days }: { days: DayData[] }) {
   const gutter = Math.max(4, Math.min(12, Math.floor(200 / days.length)));
   const chartWidth = days.length * (barWidth + gutter) + gutter;
 
-  const uniqueFeatures = Array.from(new Set(days.flatMap((d) => d.segments.map((s) => s.feature)))).sort();
+  const uniqueFeatures = Array.from(
+    new Set(days.flatMap((d) => d.segments.map((s) => s.feature))),
+  ).sort();
 
   return (
     <div style={styles.chartWrapper}>
@@ -231,7 +249,12 @@ function buildFeatureSummary(buckets: TokenUsageDailyBucket[]): FeatureSummary[]
   const map = new Map<string, FeatureSummary>();
   for (const b of buckets) {
     if (!map.has(b.feature)) {
-      map.set(b.feature, { feature: b.feature, promptTokens: 0, completionTokens: 0, totalTokens: 0 });
+      map.set(b.feature, {
+        feature: b.feature,
+        promptTokens: 0,
+        completionTokens: 0,
+        totalTokens: 0,
+      });
     }
     const s = map.get(b.feature)!;
     s.promptTokens += b.promptTokens;
@@ -241,7 +264,9 @@ function buildFeatureSummary(buckets: TokenUsageDailyBucket[]): FeatureSummary[]
   return Array.from(map.values()).sort((a, b) => b.totalTokens - a.totalTokens);
 }
 
-function buildFeatureModelSummary(records: TokenUsageCallRecord[]): FeatureModelSummary[] {
+function buildFeatureModelSummary(
+  records: TokenUsageCallRecord[],
+): FeatureModelSummary[] {
   const map = new Map<string, FeatureModelSummary>();
   for (const record of records) {
     const key = `${record.feature}::${record.model}`;
@@ -268,7 +293,9 @@ export default function ModelUsagePage() {
   const [stats, setStats] = useState<TokenUsageStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [timeZone, setTimeZone] = useState(() => Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC");
+  const [timeZone, setTimeZone] = useState(
+    () => Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+  );
   const [workflowFilter, setWorkflowFilter] = useState("");
   const [operationFilter, setOperationFilter] = useState("");
   const [dateFrom, setDateFrom] = useState("");
@@ -290,27 +317,64 @@ export default function ModelUsagePage() {
       }
     }
     load();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  const days = useMemo(() => stats ? buildDayMap(stats.buckets) : [], [stats]);
-  const featureSummary = useMemo(() => stats ? buildFeatureSummary(stats.buckets) : [], [stats]);
-  const filteredRecords = useMemo(() => (stats?.records ?? []).filter(record =>
-    (!workflowFilter || record.workflow === workflowFilter) &&
-    (!operationFilter || record.operationId === operationFilter) &&
-    (!dateFrom || record.createdAt.slice(0, 10) >= dateFrom) &&
-    (!dateTo || record.createdAt.slice(0, 10) <= dateTo)
-  ), [dateFrom, dateTo, operationFilter, stats, workflowFilter]);
-  const featureModelSummary = useMemo(() => buildFeatureModelSummary(filteredRecords), [filteredRecords]);
-  const workflowOptions = useMemo(() => Array.from(new Set((stats?.records ?? []).map(record => record.workflow).filter(Boolean))).sort(), [stats]);
-  const operationOptions = useMemo(() => Array.from(new Set(filteredRecords.map(record => record.operationId).filter(Boolean))).sort(), [filteredRecords]);
+  const days = useMemo(() => (stats ? buildDayMap(stats.buckets) : []), [stats]);
+  const featureSummary = useMemo(
+    () => (stats ? buildFeatureSummary(stats.buckets) : []),
+    [stats],
+  );
+  const filteredRecords = useMemo(
+    () =>
+      (stats?.records ?? []).filter(
+        (record) =>
+          (!workflowFilter || record.workflow === workflowFilter) &&
+          (!operationFilter || record.operationId === operationFilter) &&
+          (!dateFrom || record.createdAt.slice(0, 10) >= dateFrom) &&
+          (!dateTo || record.createdAt.slice(0, 10) <= dateTo),
+      ),
+    [dateFrom, dateTo, operationFilter, stats, workflowFilter],
+  );
+  const featureModelSummary = useMemo(
+    () => buildFeatureModelSummary(filteredRecords),
+    [filteredRecords],
+  );
+  const workflowOptions = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          (stats?.records ?? []).map((record) => record.workflow).filter(Boolean),
+        ),
+      ).sort(),
+    [stats],
+  );
+  const operationOptions = useMemo(
+    () =>
+      Array.from(
+        new Set(filteredRecords.map((record) => record.operationId).filter(Boolean)),
+      ).sort(),
+    [filteredRecords],
+  );
   const recordPageSize = 50;
-  const visibleRecords = filteredRecords.slice((recordPage - 1) * recordPageSize, recordPage * recordPageSize);
-  const filteredTotals = useMemo(() => filteredRecords.reduce((totals, record) => ({
-    prompt: totals.prompt + record.promptTokens,
-    completion: totals.completion + record.completionTokens,
-    total: totals.total + record.totalTokens,
-  }), { prompt: 0, completion: 0, total: 0 }), [filteredRecords]);
+  const visibleRecords = filteredRecords.slice(
+    (recordPage - 1) * recordPageSize,
+    recordPage * recordPageSize,
+  );
+  const filteredTotals = useMemo(
+    () =>
+      filteredRecords.reduce(
+        (totals, record) => ({
+          prompt: totals.prompt + record.promptTokens,
+          completion: totals.completion + record.completionTokens,
+          total: totals.total + record.totalTokens,
+        }),
+        { prompt: 0, completion: 0, total: 0 },
+      ),
+    [filteredRecords],
+  );
   const debugSnapshot = useMemo(
     () => ({
       title: "用量审计调试面板",
@@ -321,16 +385,16 @@ export default function ModelUsagePage() {
         { label: "调用次数", value: String(stats?.records.length ?? 0) },
         { label: "聚合桶数", value: String(stats?.buckets.length ?? 0) },
         { label: "总 Token", value: String(stats?.totalTokens ?? 0) },
-        { label: "功能数", value: String(featureSummary.length) }
+        { label: "功能数", value: String(featureSummary.length) },
       ],
       details: [
         { title: "Token 统计快照", value: stats },
         { title: "按日聚合桶", value: days },
         { title: "功能模型汇总", value: featureModelSummary },
-        { title: "逐次调用（前 50 条）", value: stats?.records.slice(0, 50) ?? [] }
-      ]
+        { title: "逐次调用（前 50 条）", value: stats?.records.slice(0, 50) ?? [] },
+      ],
     }),
-    [days, error, featureModelSummary, featureSummary.length, loading, stats]
+    [days, error, featureModelSummary, featureSummary.length, loading, stats],
   );
 
   usePageDebugSnapshot(debugSnapshot);
@@ -350,29 +414,124 @@ export default function ModelUsagePage() {
         {stats && (
           <>
             <section style={styles.filters} aria-label="用量筛选">
-              <label style={styles.filterField}>显示时区<select value={timeZone} onChange={event => setTimeZone(event.target.value)} style={styles.filterControl}>
-                {[timeZone, "UTC", "Asia/Shanghai", "America/Los_Angeles", "Europe/London"].filter((value, index, values) => value && values.indexOf(value) === index).map(value => <option key={value} value={value}>{value}</option>)}
-              </select></label>
-              <label style={styles.filterField}>Workflow<select value={workflowFilter} onChange={event => { setWorkflowFilter(event.target.value); setOperationFilter(""); setRecordPage(1); }} style={styles.filterControl}><option value="">全部 workflow</option>{workflowOptions.map(value => <option key={value} value={value}>{workflowLabel(value)}</option>)}</select></label>
-              <label style={styles.filterField}>Operation<select value={operationFilter} onChange={event => { setOperationFilter(event.target.value); setRecordPage(1); }} style={styles.filterControl}><option value="">全部 operation</option>{operationOptions.map(value => <option key={value} value={value}>{value}</option>)}</select></label>
-              <label style={styles.filterField}>起始日期<input type="date" value={dateFrom} onChange={event => { setDateFrom(event.target.value); setRecordPage(1); }} style={styles.filterControl} /></label>
-              <label style={styles.filterField}>结束日期<input type="date" value={dateTo} onChange={event => { setDateTo(event.target.value); setRecordPage(1); }} style={styles.filterControl} /></label>
-              <button type="button" style={styles.exportButton} onClick={() => exportUsageCsv(filteredRecords, timeZone)}>导出当前筛选 CSV</button>
+              <label style={styles.filterField}>
+                显示时区
+                <select
+                  value={timeZone}
+                  onChange={(event) => setTimeZone(event.target.value)}
+                  style={styles.filterControl}
+                >
+                  {[
+                    timeZone,
+                    "UTC",
+                    "Asia/Shanghai",
+                    "America/Los_Angeles",
+                    "Europe/London",
+                  ]
+                    .filter(
+                      (value, index, values) =>
+                        value && values.indexOf(value) === index,
+                    )
+                    .map((value) => (
+                      <option key={value} value={value}>
+                        {value}
+                      </option>
+                    ))}
+                </select>
+              </label>
+              <label style={styles.filterField}>
+                Workflow
+                <select
+                  value={workflowFilter}
+                  onChange={(event) => {
+                    setWorkflowFilter(event.target.value);
+                    setOperationFilter("");
+                    setRecordPage(1);
+                  }}
+                  style={styles.filterControl}
+                >
+                  <option value="">全部 workflow</option>
+                  {workflowOptions.map((value) => (
+                    <option key={value} value={value}>
+                      {workflowLabel(value)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label style={styles.filterField}>
+                Operation
+                <select
+                  value={operationFilter}
+                  onChange={(event) => {
+                    setOperationFilter(event.target.value);
+                    setRecordPage(1);
+                  }}
+                  style={styles.filterControl}
+                >
+                  <option value="">全部 operation</option>
+                  {operationOptions.map((value) => (
+                    <option key={value} value={value}>
+                      {value}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label style={styles.filterField}>
+                起始日期
+                <input
+                  type="date"
+                  value={dateFrom}
+                  onChange={(event) => {
+                    setDateFrom(event.target.value);
+                    setRecordPage(1);
+                  }}
+                  style={styles.filterControl}
+                />
+              </label>
+              <label style={styles.filterField}>
+                结束日期
+                <input
+                  type="date"
+                  value={dateTo}
+                  onChange={(event) => {
+                    setDateTo(event.target.value);
+                    setRecordPage(1);
+                  }}
+                  style={styles.filterControl}
+                />
+              </label>
+              <button
+                type="button"
+                style={styles.exportButton}
+                onClick={() => exportUsageCsv(filteredRecords, timeZone)}
+              >
+                导出当前筛选 CSV
+              </button>
             </section>
-            <p style={styles.scopeNote}>当前显示时区：{timeZone}。统计按已记录的 provider Token 汇总；价格未配置时不虚构金额，实际费用以服务商账单为准。筛选结果 {filteredRecords.length} 条。</p>
+            <p style={styles.scopeNote}>
+              当前显示时区：{timeZone}。统计按已记录的 provider Token
+              汇总；价格未配置时不虚构金额，实际费用以服务商账单为准。筛选结果{" "}
+              {filteredRecords.length} 条。
+            </p>
             {/* Total summary row */}
             <div style={styles.summaryRow}>
               <div style={styles.summaryCard}>
                 <span style={styles.summaryLabel}>总 Token</span>
-                <span style={styles.summaryValue}>{formatNumber(filteredTotals.total)}</span>
+                <span style={styles.summaryValue}>
+                  {formatNumber(filteredTotals.total)}
+                </span>
               </div>
               <div style={styles.summaryCard}>
                 <span style={styles.summaryLabel}>输入 Token</span>
-                <span style={styles.summaryValue}>{formatNumber(filteredTotals.prompt)}</span>
+                <span style={styles.summaryValue}>
+                  {formatNumber(filteredTotals.prompt)}
+                </span>
               </div>
               <div style={styles.summaryCard}>
                 <span style={styles.summaryLabel}>输出 Token</span>
-                <span style={styles.summaryValue}>{formatNumber(filteredTotals.completion)}</span>
+                <span style={styles.summaryValue}>
+                  {formatNumber(filteredTotals.completion)}
+                </span>
               </div>
               <div style={styles.summaryCard}>
                 <span style={styles.summaryLabel}>调用次数</span>
@@ -405,12 +564,25 @@ export default function ModelUsagePage() {
                     {featureSummary.map((row) => (
                       <tr key={row.feature}>
                         <td style={styles.td}>
-                          <span style={{ ...styles.featureDot, background: featureColor(row.feature) }} />
+                          <span
+                            style={{
+                              ...styles.featureDot,
+                              background: featureColor(row.feature),
+                            }}
+                          />
                           {featureLabel(row.feature)}
                         </td>
-                        <td style={{ ...styles.td, textAlign: "right" }}>{formatNumber(row.promptTokens)}</td>
-                        <td style={{ ...styles.td, textAlign: "right" }}>{formatNumber(row.completionTokens)}</td>
-                        <td style={{ ...styles.td, textAlign: "right", fontWeight: 600 }}>{formatNumber(row.totalTokens)}</td>
+                        <td style={{ ...styles.td, textAlign: "right" }}>
+                          {formatNumber(row.promptTokens)}
+                        </td>
+                        <td style={{ ...styles.td, textAlign: "right" }}>
+                          {formatNumber(row.completionTokens)}
+                        </td>
+                        <td
+                          style={{ ...styles.td, textAlign: "right", fontWeight: 600 }}
+                        >
+                          {formatNumber(row.totalTokens)}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -439,14 +611,35 @@ export default function ModelUsagePage() {
                       {featureModelSummary.map((row) => (
                         <tr key={`${row.feature}-${row.model}`}>
                           <td style={styles.td}>
-                            <span style={{ ...styles.featureDot, background: featureColor(row.feature) }} />
+                            <span
+                              style={{
+                                ...styles.featureDot,
+                                background: featureColor(row.feature),
+                              }}
+                            />
                             {featureLabel(row.feature)}
                           </td>
-                          <td style={{ ...styles.td, ...styles.monospaceCell }}>{row.model}</td>
-                          <td style={{ ...styles.td, textAlign: "right" }}>{formatNumber(row.callCount)}</td>
-                          <td style={{ ...styles.td, textAlign: "right" }}>{formatNumber(row.promptTokens)}</td>
-                          <td style={{ ...styles.td, textAlign: "right" }}>{formatNumber(row.completionTokens)}</td>
-                          <td style={{ ...styles.td, textAlign: "right", fontWeight: 600 }}>{formatNumber(row.totalTokens)}</td>
+                          <td style={{ ...styles.td, ...styles.monospaceCell }}>
+                            {row.model}
+                          </td>
+                          <td style={{ ...styles.td, textAlign: "right" }}>
+                            {formatNumber(row.callCount)}
+                          </td>
+                          <td style={{ ...styles.td, textAlign: "right" }}>
+                            {formatNumber(row.promptTokens)}
+                          </td>
+                          <td style={{ ...styles.td, textAlign: "right" }}>
+                            {formatNumber(row.completionTokens)}
+                          </td>
+                          <td
+                            style={{
+                              ...styles.td,
+                              textAlign: "right",
+                              fontWeight: 600,
+                            }}
+                          >
+                            {formatNumber(row.totalTokens)}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -473,18 +666,41 @@ export default function ModelUsagePage() {
                     </thead>
                     <tbody>
                       {[...stats.buckets]
-                        .sort((a, b) => b.date.localeCompare(a.date) || a.feature.localeCompare(b.feature))
+                        .sort(
+                          (a, b) =>
+                            b.date.localeCompare(a.date) ||
+                            a.feature.localeCompare(b.feature),
+                        )
                         .map((b, i) => (
                           <tr key={`${b.date}-${b.feature}-${b.model}-${i}`}>
                             <td style={styles.td}>{b.date}</td>
                             <td style={styles.td}>
-                              <span style={{ ...styles.featureDot, background: featureColor(b.feature) }} />
+                              <span
+                                style={{
+                                  ...styles.featureDot,
+                                  background: featureColor(b.feature),
+                                }}
+                              />
                               {featureLabel(b.feature)}
                             </td>
-                            <td style={{ ...styles.td, ...styles.monospaceCell }}>{b.model}</td>
-                            <td style={{ ...styles.td, textAlign: "right" }}>{formatNumber(b.promptTokens)}</td>
-                            <td style={{ ...styles.td, textAlign: "right" }}>{formatNumber(b.completionTokens)}</td>
-                            <td style={{ ...styles.td, textAlign: "right", fontWeight: 600 }}>{formatNumber(b.totalTokens)}</td>
+                            <td style={{ ...styles.td, ...styles.monospaceCell }}>
+                              {b.model}
+                            </td>
+                            <td style={{ ...styles.td, textAlign: "right" }}>
+                              {formatNumber(b.promptTokens)}
+                            </td>
+                            <td style={{ ...styles.td, textAlign: "right" }}>
+                              {formatNumber(b.completionTokens)}
+                            </td>
+                            <td
+                              style={{
+                                ...styles.td,
+                                textAlign: "right",
+                                fontWeight: 600,
+                              }}
+                            >
+                              {formatNumber(b.totalTokens)}
+                            </td>
                           </tr>
                         ))}
                     </tbody>
@@ -511,26 +727,75 @@ export default function ModelUsagePage() {
                     <tbody>
                       {visibleRecords.map((record) => (
                         <tr key={record.id}>
-                          <td style={styles.td}>{formatDateTime(record.createdAt, timeZone)}</td>
                           <td style={styles.td}>
-                            <span style={{ ...styles.featureDot, background: featureColor(record.feature) }} />
-                            {featureLabel(record.feature)}<br /><small>{workflowLabel(record.workflow)} · {record.operationId || "无 operation"}</small>
+                            {formatTimestamp(record.createdAt, {
+                              style: "full",
+                              timeZone,
+                            })}
                           </td>
-                          <td style={{ ...styles.td, ...styles.monospaceCell }}>{record.model}</td>
-                          <td style={{ ...styles.td, textAlign: "right" }}>{formatNumber(record.promptTokens)}</td>
-                          <td style={{ ...styles.td, textAlign: "right" }}>{formatNumber(record.completionTokens)}</td>
-                          <td style={{ ...styles.td, textAlign: "right", fontWeight: 600 }}>{formatNumber(record.totalTokens)}</td>
+                          <td style={styles.td}>
+                            <span
+                              style={{
+                                ...styles.featureDot,
+                                background: featureColor(record.feature),
+                              }}
+                            />
+                            {featureLabel(record.feature)}
+                            <br />
+                            <small>
+                              {workflowLabel(record.workflow)} ·{" "}
+                              {record.operationId || "无 operation"}
+                            </small>
+                          </td>
+                          <td style={{ ...styles.td, ...styles.monospaceCell }}>
+                            {record.model}
+                          </td>
+                          <td style={{ ...styles.td, textAlign: "right" }}>
+                            {formatNumber(record.promptTokens)}
+                          </td>
+                          <td style={{ ...styles.td, textAlign: "right" }}>
+                            {formatNumber(record.completionTokens)}
+                          </td>
+                          <td
+                            style={{
+                              ...styles.td,
+                              textAlign: "right",
+                              fontWeight: 600,
+                            }}
+                          >
+                            {formatNumber(record.totalTokens)}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
-                <div style={styles.pagination} aria-label="用量分页"><span>第 {recordPage} / {Math.max(1, Math.ceil(filteredRecords.length / recordPageSize))} 页</span><button type="button" style={styles.pageButton} disabled={recordPage <= 1} onClick={() => setRecordPage(page => page - 1)}>上一页</button><button type="button" style={styles.pageButton} disabled={recordPage * recordPageSize >= filteredRecords.length} onClick={() => setRecordPage(page => page + 1)}>下一页</button></div>
+                <div style={styles.pagination} aria-label="用量分页">
+                  <span>
+                    第 {recordPage} /{" "}
+                    {Math.max(1, Math.ceil(filteredRecords.length / recordPageSize))} 页
+                  </span>
+                  <button
+                    type="button"
+                    style={styles.pageButton}
+                    disabled={recordPage <= 1}
+                    onClick={() => setRecordPage((page) => page - 1)}
+                  >
+                    上一页
+                  </button>
+                  <button
+                    type="button"
+                    style={styles.pageButton}
+                    disabled={recordPage * recordPageSize >= filteredRecords.length}
+                    onClick={() => setRecordPage((page) => page + 1)}
+                  >
+                    下一页
+                  </button>
+                </div>
               </div>
             )}
           </>
         )}
-
       </div>
     </main>
   );
@@ -564,10 +829,39 @@ const styles: Record<string, CSSProperties> = {
     color: "var(--muted)",
     margin: 0,
   },
-  filters: { display: "flex", flexWrap: "wrap", gap: 10, alignItems: "end", padding: 12, border: "1px solid var(--border)", background: "var(--panel)", marginBottom: 8 },
-  filterField: { display: "grid", gap: 4, minWidth: 150, color: "var(--muted)", fontSize: 11 },
-  filterControl: { minHeight: 40, border: "1px solid var(--border)", padding: "7px 9px", background: "var(--bg)", color: "var(--ink)" },
-  exportButton: { minHeight: 40, border: "1px solid var(--accent)", padding: "7px 12px", background: "var(--accent)", color: "white", cursor: "pointer", fontWeight: 600 },
+  filters: {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: 10,
+    alignItems: "end",
+    padding: 12,
+    border: "1px solid var(--border)",
+    background: "var(--panel)",
+    marginBottom: 8,
+  },
+  filterField: {
+    display: "grid",
+    gap: 4,
+    minWidth: 150,
+    color: "var(--muted)",
+    fontSize: 11,
+  },
+  filterControl: {
+    minHeight: 40,
+    border: "1px solid var(--border)",
+    padding: "7px 9px",
+    background: "var(--bg)",
+    color: "var(--ink)",
+  },
+  exportButton: {
+    minHeight: 40,
+    border: "1px solid var(--accent)",
+    padding: "7px 12px",
+    background: "var(--accent)",
+    color: "white",
+    cursor: "pointer",
+    fontWeight: 600,
+  },
   scopeNote: { margin: "0 0 20px", color: "var(--muted)", fontSize: 12 },
   statusText: {
     fontSize: 13,
@@ -680,8 +974,23 @@ const styles: Record<string, CSSProperties> = {
   tableScroll: {
     overflowX: "auto",
   },
-  pagination: { display: "flex", gap: 8, alignItems: "center", justifyContent: "flex-end", marginTop: 10, color: "var(--muted)", fontSize: 12 },
-  pageButton: { minHeight: 36, border: "1px solid var(--border)", padding: "6px 10px", background: "var(--bg)", color: "var(--ink-2)", cursor: "pointer" },
+  pagination: {
+    display: "flex",
+    gap: 8,
+    alignItems: "center",
+    justifyContent: "flex-end",
+    marginTop: 10,
+    color: "var(--muted)",
+    fontSize: 12,
+  },
+  pageButton: {
+    minHeight: 36,
+    border: "1px solid var(--border)",
+    padding: "6px 10px",
+    background: "var(--bg)",
+    color: "var(--ink-2)",
+    cursor: "pointer",
+  },
   monospaceCell: {
     fontFamily: "monospace",
     fontSize: 11,

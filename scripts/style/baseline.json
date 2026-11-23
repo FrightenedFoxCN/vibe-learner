@@ -410,7 +410,6 @@
     "apps/web/components/rich-text-message-client.tsx": "0ad685e5fb62ef1c38fb31fc74df2a352208f5a5d1cd22b0c84733b526c45fa1",
     "apps/web/components/rich-text-message.tsx": "39e4902d6766f089d36a3ea57b602d6ac8844d6f6896dfad2546b282006cb895",
     "apps/web/components/runtime-settings-provider.tsx": "0f4eade56668df8854f1001282945f3d03189164346981ab4f330cc1ae7ec338",
-    "apps/web/components/scene/scene-delete-dialog.tsx": "5deda2eca3bd9e312cb788c32bc2bb3000bd7be2cbc9f38558ac903bc52ea84a",
     "apps/web/components/scene/scene-tree-components.tsx": "10ccb78eb8fddf29c1c40deaa34e5a25bb502c6e2f1e0a097166d4eb651d4431",
     "apps/web/components/settings/settings-debug-snapshot.ts": "36bf8aaa2575e67d19e5c6ffa163275f6403041f28f26864d69c6a886a0a23fd",
     "apps/web/components/settings/settings-page.tsx": "423e7acbebca95b1406ee5809c2f03d53602c53c5ed227133f1e84887154a174",

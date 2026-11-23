@@ -218,9 +218,7 @@ export function LearningWorkspace() {
             onRefresh={() => {
               void refreshPlanSnapshot();
             }}
-            onDelete={(planId) => {
-              void removePlan(planId);
-            }}
+            onDelete={removePlan}
           />
         </div>
       </div>

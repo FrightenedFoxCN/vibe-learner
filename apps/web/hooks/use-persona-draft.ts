@@ -1,22 +1,63 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type SetStateAction } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type SetStateAction,
+} from "react";
+import type { ConfirmFn } from "../components/ui/confirm-provider";
+import { useDraftNavigationGuard } from "../lib/app-navigation";
 import type { PersonaProfile } from "@vibe-learner/shared";
 import { diagnosticContext } from "../lib/diagnostics";
 import type { AsyncResultScope } from "../lib/async-result-fence";
-import { EMPTY_PERSONA_DRAFT, personaDraftFingerprint, personaToDraft, type PersonaDraft } from "../lib/persona-draft";
+import {
+  EMPTY_PERSONA_DRAFT,
+  personaDraftFingerprint,
+  personaToDraft,
+  type PersonaDraft,
+} from "../lib/persona-draft";
 
-const confirmDiscard = (message: string) => window.confirm(message);
-
-export function usePersonaDraft({ personas, onSelectionChange, onPromptDismiss }: {
-  personas: PersonaProfile[];
-  onSelectionChange: () => void;
-  onPromptDismiss: () => void;
-}, confirm = confirmDiscard) {
+export function usePersonaDraft(
+  {
+    getPersonasSnapshot,
+    onSelectionChange,
+    onPromptDismiss,
+  }: {
+    getPersonasSnapshot: () => PersonaProfile[];
+    onSelectionChange: () => void;
+    onPromptDismiss: () => void;
+  },
+  confirm: ConfirmFn,
+) {
   const [selectedPersonaId, setSelectedPersonaId] = useState("");
   const selectedPersonaIdRef = useRef("");
   const draftRevisionRef = useRef(0);
   const draftEpochRef = useRef(0);
+  const ownerRef = useRef<object | null>(null);
+  useEffect(() => {
+    ownerRef.current = {};
+    return () => {
+      ownerRef.current = null;
+    };
+  }, []);
+  const captureDraftIntent = useCallback(() => {
+    const owner = ownerRef.current;
+    const revision = draftRevisionRef.current;
+    return () =>
+      owner !== null &&
+      ownerRef.current === owner &&
+      draftRevisionRef.current === revision;
+  }, []);
+  const readNavigationWarning = useCallback(
+    () => ({
+      message: "当前人格有未保存修改。离开页面会丢弃这些修改。",
+      isCurrent: captureDraftIntent(),
+    }),
+    [captureDraftIntent],
+  );
   const diagnosticFlow = useRef<string | null>(null);
   function beginDiagnosticAction() {
     diagnosticFlow.current ??= crypto.randomUUID();
@@ -67,24 +108,51 @@ export function usePersonaDraft({ personas, onSelectionChange, onPromptDismiss }
     setSelectedPersonaId(normalizedPersonaId);
   }
 
-  function confirmDiscardPersonaDraft(action: string): boolean {
-    if (!isDraftDirty) {
-      return true;
-    }
-    return confirm(`当前人格有未保存修改。${action}会丢弃这些修改，是否继续？`);
+  useDraftNavigationGuard(isDraftDirty ? readNavigationWarning : null, confirm);
+
+  async function confirmDiscardPersonaDraft(
+    action: string,
+    trigger?: HTMLElement,
+  ): Promise<boolean> {
+    const isCurrent = captureDraftIntent();
+    if (!isDraftDirty) return isCurrent();
+    const approved = await confirm({
+      title: "丢弃未保存修改？",
+      message: `${action}会丢弃当前人格的未保存修改。`,
+      confirmLabel: "丢弃修改",
+      danger: true,
+      trigger,
+    });
+    return approved && isCurrent();
   }
 
-  function activatePersonaDraft(personaId: string, action = "切换人格"): boolean {
+  async function activatePersonaDraft(
+    personaId: string,
+    action = "切换人格",
+    trigger?: HTMLElement,
+  ): Promise<boolean> {
     const normalizedPersonaId = personaId.trim();
     if (normalizedPersonaId === selectedPersonaIdRef.current) {
       return true;
     }
-    if (!confirmDiscardPersonaDraft(action)) {
+    const target = getPersonasSnapshot().find(
+      (persona) => persona.id === normalizedPersonaId,
+    );
+    const isCurrent = captureDraftIntent();
+    if (!(await confirmDiscardPersonaDraft(action, trigger)) || !isCurrent())
       return false;
-    }
+    const nextPersona = getPersonasSnapshot().find(
+      (persona) => persona.id === normalizedPersonaId,
+    );
+    if (
+      normalizedPersonaId &&
+      (!target || !nextPersona || target.revision !== nextPersona.revision)
+    )
+      return false;
     diagnosticFlow.current = null;
-    const nextPersona = personas.find((persona) => persona.id === normalizedPersonaId) ?? null;
-    const nextDraft = nextPersona ? personaToDraft(nextPersona) : { ...EMPTY_PERSONA_DRAFT };
+    const nextDraft = nextPersona
+      ? personaToDraft(nextPersona)
+      : { ...EMPTY_PERSONA_DRAFT };
     selectPersonaDraft(normalizedPersonaId);
     replacePersonaDraft(nextDraft, true);
     onPromptDismiss();
@@ -107,57 +175,35 @@ export function usePersonaDraft({ personas, onSelectionChange, onPromptDismiss }
     const warnBeforeUnload = (event: BeforeUnloadEvent) => {
       event.preventDefault();
     };
-    const guardLinkNavigation = (event: MouseEvent) => {
-      if (
-        event.defaultPrevented ||
-        event.button !== 0 ||
-        event.metaKey ||
-        event.ctrlKey ||
-        event.shiftKey ||
-        event.altKey
-      ) {
-        return;
-      }
-      const target = event.target;
-      const anchor = target instanceof Element ? target.closest("a[href]") : null;
-      if (!(anchor instanceof HTMLAnchorElement) || anchor.hasAttribute("download")) {
-        return;
-      }
-      const destination = new URL(anchor.href, window.location.href);
-      if (destination.href === window.location.href) {
-        return;
-      }
-      if (!confirm("当前人格有未保存修改。离开页面会丢弃这些修改，是否继续？")) {
-        event.preventDefault();
-      }
-    };
     window.addEventListener("beforeunload", warnBeforeUnload);
-    document.addEventListener("click", guardLinkNavigation, true);
-    return () => {
-      window.removeEventListener("beforeunload", warnBeforeUnload);
-      document.removeEventListener("click", guardLinkNavigation, true);
-    };
+    return () => window.removeEventListener("beforeunload", warnBeforeUnload);
   }, [isDraftDirty]);
 
-  function getSelectedPersonaId() { return selectedPersonaIdRef.current; }
+  function getSelectedPersonaId() {
+    return selectedPersonaIdRef.current;
+  }
   function markPersonaDraftSaved(saved: PersonaDraft) {
     setDraftBaselineFingerprint(personaDraftFingerprint(saved));
   }
   function initializePersonaFromLibrary(persona: PersonaProfile | undefined) {
     // Initial data may arrive after the user started a new draft or imported one.
-    if (!persona || selectedPersonaIdRef.current || draftRevisionRef.current !== 0) return;
+    if (!persona || selectedPersonaIdRef.current || draftRevisionRef.current !== 0)
+      return;
     selectPersonaDraft(persona.id);
     replacePersonaDraft(personaToDraft(persona), true);
   }
   return {
     beginDiagnosticAction,
-    resetDiagnosticFlow: () => { diagnosticFlow.current = null; },
+    resetDiagnosticFlow: () => {
+      diagnosticFlow.current = null;
+    },
     getDraftEpoch: () => draftEpochRef.current,
     selectedPersonaId,
     draft,
     isDraftDirty,
     currentPersonaSubject,
     currentPersonaAsyncScope,
+    captureDraftIntent,
     updatePersonaDraft,
     replacePersonaDraft,
     selectPersonaDraft,

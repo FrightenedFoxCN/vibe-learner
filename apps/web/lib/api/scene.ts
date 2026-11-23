@@ -146,7 +146,12 @@ export async function listSceneLibrary(): Promise<SceneLibraryItemPayload[]> {
 export async function getSceneLibraryItem(
   sceneId: string,
 ): Promise<SceneLibraryItemPayload> {
-  const diagnosticResponse = await request(`${AI_BASE_URL()}/scene-library/${sceneId}`);
+  const diagnosticResponse = await request(
+    `${AI_BASE_URL()}/scene-library/${sceneId}`,
+    {
+      cache: "no-store",
+    },
+  );
   const payload = await readJson<unknown>(diagnosticResponse);
   return diagnosticDecode(diagnosticResponse, () =>
     decodeSceneLibraryItem(payload, { expectedSceneId: sceneId }),

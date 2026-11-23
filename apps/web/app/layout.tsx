@@ -8,6 +8,7 @@ import { DesktopStartupGuard } from "../components/desktop-startup-guard";
 import { DesktopViewMenuBridge } from "../components/desktop-view-menu-bridge";
 import { LearningPageCacheProvider } from "../components/learning-page-cache-provider";
 import { PageDebugProvider } from "../components/page-debug-context";
+import { ConfirmProvider } from "../components/ui/confirm-provider";
 import { RuntimeSettingsProvider } from "../components/runtime-settings-provider";
 
 export const metadata: Metadata = {
@@ -19,19 +20,21 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="zh-CN">
       <body>
-        <RuntimeSettingsProvider>
-          <DesktopStartupGuard />
-          <DiagnosticCollector />
-          <DebugProvider>
-            <PageDebugProvider>
-              <LearningPageCacheProvider>
-                <DesktopViewMenuBridge />
-                {children}
-              </LearningPageCacheProvider>
-              <DebugOverlay />
-            </PageDebugProvider>
-          </DebugProvider>
-        </RuntimeSettingsProvider>
+        <ConfirmProvider>
+          <RuntimeSettingsProvider>
+            <DesktopStartupGuard />
+            <DiagnosticCollector />
+            <DebugProvider>
+              <PageDebugProvider>
+                <LearningPageCacheProvider>
+                  <DesktopViewMenuBridge />
+                  {children}
+                </LearningPageCacheProvider>
+                <DebugOverlay />
+              </PageDebugProvider>
+            </DebugProvider>
+          </RuntimeSettingsProvider>
+        </ConfirmProvider>
       </body>
     </html>
   );

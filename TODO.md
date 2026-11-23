@@ -36,7 +36,7 @@
 
 ### Phase 2：Tailwind CSS v4 收口与共享 UI 基元（P1 / P2）
 
-- [ ] **P1-FE-04 建设共享 UI 基元与格式化工具**
+- [x] **P1-FE-04 建设共享 UI 基元与格式化工具**
   - 新建 `apps/web/components/ui/`（基于 Tailwind v4 语义 Token）：`Button`、`Badge`、`Alert`、`Card`、`Collapsible`、`ConfirmDialog`。
   - `ConfirmDialog` 替代 8 处原生 `confirm`（含 `use-persona-persistence.ts` 等以参数注入的默认实现）与零散删除弹窗。注意两类约束：注入签名由 `(message) => boolean` 变为 `Promise<boolean>` 会改变调用方控制流；`use-persona-draft.ts` 的链接点击捕获守卫必须同步 `preventDefault()`，须改为“先拦截、确认后再路由跳转”，`beforeunload` 仍保留浏览器原生提示。
   - 新建 `apps/web/lib/format.ts` 统一日期、时间、耗时格式化，替换分散在 7 个组件中的重复实现（`plan-history`、`plan-overview`、`study-debug-panels`、`document-debug-panels`、`document-setup`、`scene-workspace-view`、`model-usage/page`）。

@@ -44,7 +44,7 @@ export function SceneLayerCard({
   onSaveObjectToReusable: (object: SceneObject) => void;
   onRemoveObject: (layerId: string, objectId: string) => void;
   reusableActionPendingId: string;
-  onRequestDelete: (layerId: string) => void;
+  onRequestDelete: (layerId: string, trigger: HTMLButtonElement) => void;
   canDeleteLayerForId: (layerId: string) => boolean;
   editorContent: ReactNode;
   renderObjectEditor: (layerId: string, object: SceneObject) => ReactNode;
@@ -53,16 +53,17 @@ export function SceneLayerCard({
   const isCollapsed = collapsedLayerIds.includes(layer.id);
   const hasChildren = layer.children.length > 0;
   const hasObjects = layer.objects.length > 0;
-  const stopCardAction = (handler: () => void) => (event: ReactMouseEvent<HTMLButtonElement>) => {
-    event.stopPropagation();
-    handler();
-  };
+  const stopCardAction =
+    (handler: () => void) => (event: ReactMouseEvent<HTMLButtonElement>) => {
+      event.stopPropagation();
+      handler();
+    };
   return (
     <div style={styles.cardGroup}>
       <article
         style={{
           ...styles.layerCard,
-          ...(isSelected ? styles.layerCardActive : null)
+          ...(isSelected ? styles.layerCardActive : null),
         }}
         onClick={() => onSelect(layer.id)}
       >
@@ -79,30 +80,62 @@ export function SceneLayerCard({
             <p style={styles.layerSummary}>{layer.summary}</p>
 
             <div style={styles.objectChipRow}>
-              {layer.tags.split(",").map((tag) => tag.trim()).filter(Boolean).slice(0, 2).map((tag) => (
-                <span key={`${layer.id}:${tag}`} style={styles.tagChip}>#{tag}</span>
-              ))}
+              {layer.tags
+                .split(",")
+                .map((tag) => tag.trim())
+                .filter(Boolean)
+                .slice(0, 2)
+                .map((tag) => (
+                  <span key={`${layer.id}:${tag}`} style={styles.tagChip}>
+                    #{tag}
+                  </span>
+                ))}
               {layer.objects.slice(0, 3).map((object) => (
-                <span key={object.id} style={styles.objectChip}>{object.name}</span>
+                <span key={object.id} style={styles.objectChip}>
+                  {object.name}
+                </span>
               ))}
-              {layer.objects.length > 3 ? <span style={styles.objectChip}>+{layer.objects.length - 3}</span> : null}
+              {layer.objects.length > 3 ? (
+                <span style={styles.objectChip}>+{layer.objects.length - 3}</span>
+              ) : null}
             </div>
           </>
         ) : null}
 
         <div style={styles.cardActions}>
           {(hasChildren || hasObjects) && onToggleChildren ? (
-            <button type="button" aria-expanded={!isCollapsed}
+            <button
+              type="button"
+              aria-expanded={!isCollapsed}
               aria-label={`${isCollapsed ? "展开" : "收起"}${layer.title}的子层和物体`}
               style={{ ...styles.iconButton, minWidth: 44, minHeight: 44 }}
-              onClick={stopCardAction(() => onToggleChildren(layer.id))}>
-              <MaterialIcon name={isCollapsed ? "chevron_right" : "expand_more"} size={18} />
+              onClick={stopCardAction(() => onToggleChildren(layer.id))}
+            >
+              <MaterialIcon
+                name={isCollapsed ? "chevron_right" : "expand_more"}
+                size={18}
+              />
             </button>
           ) : null}
-          <SceneIconButton icon="add_circle" label="添加子层" size="micro" variant="accent" onClick={stopCardAction(() => onAddChild(layer.id))} />
-          <SceneIconButton icon="category" label="添加物体" size="micro" onClick={stopCardAction(() => onAddObject(layer.id))} />
           <SceneIconButton
-            icon={reusableActionPendingId === layer.id ? "hourglass_top" : "create_new_folder"}
+            icon="add_circle"
+            label="添加子层"
+            size="micro"
+            variant="accent"
+            onClick={stopCardAction(() => onAddChild(layer.id))}
+          />
+          <SceneIconButton
+            icon="category"
+            label="添加物体"
+            size="micro"
+            onClick={stopCardAction(() => onAddObject(layer.id))}
+          />
+          <SceneIconButton
+            icon={
+              reusableActionPendingId === layer.id
+                ? "hourglass_top"
+                : "create_new_folder"
+            }
             label="加入节点库"
             size="micro"
             onClick={stopCardAction(() => onSaveToReusable(layer.id))}
@@ -113,7 +146,10 @@ export function SceneLayerCard({
             label="删除当前层级"
             size="micro"
             variant="danger"
-            onClick={stopCardAction(() => onRequestDelete(layer.id))}
+            onClick={(event) => {
+              event.stopPropagation();
+              onRequestDelete(layer.id, event.currentTarget);
+            }}
             disabled={!canDeleteLayerForId(layer.id)}
           />
           <SceneIconButton
@@ -127,7 +163,11 @@ export function SceneLayerCard({
         </div>
       </article>
 
-      {isSelected ? <div id={`scene-node-editor-${layer.id}`} style={styles.nodeInlineEditor}>{editorContent}</div> : null}
+      {isSelected ? (
+        <div id={`scene-node-editor-${layer.id}`} style={styles.nodeInlineEditor}>
+          {editorContent}
+        </div>
+      ) : null}
 
       {(hasObjects || hasChildren) && !isCollapsed ? (
         <div style={styles.childStack}>
@@ -194,10 +234,11 @@ export function SceneObjectCard({
   editorContent: ReactNode;
 }) {
   const isSelected = object.id === selectedObjectId;
-  const stopCardAction = (handler: () => void) => (event: ReactMouseEvent<HTMLButtonElement>) => {
-    event.stopPropagation();
-    handler();
-  };
+  const stopCardAction =
+    (handler: () => void) => (event: ReactMouseEvent<HTMLButtonElement>) => {
+      event.stopPropagation();
+      handler();
+    };
 
   return (
     <div style={styles.cardGroup}>
@@ -221,20 +262,36 @@ export function SceneObjectCard({
         {!isSelected ? (
           <>
             <p style={styles.layerSummary}>
-              {(object.description || object.interaction || "尚未填写细节").slice(0, 96)}
-              {(object.description || object.interaction || "").length > 96 ? "..." : ""}
+              {(object.description || object.interaction || "尚未填写细节").slice(
+                0,
+                96,
+              )}
+              {(object.description || object.interaction || "").length > 96
+                ? "..."
+                : ""}
             </p>
             <div style={styles.objectChipRow}>
-              {object.tags.split(",").map((tag) => tag.trim()).filter(Boolean).slice(0, 3).map((tag) => (
-                <span key={`${object.id}:${tag}`} style={styles.tagChip}>#{tag}</span>
-              ))}
+              {object.tags
+                .split(",")
+                .map((tag) => tag.trim())
+                .filter(Boolean)
+                .slice(0, 3)
+                .map((tag) => (
+                  <span key={`${object.id}:${tag}`} style={styles.tagChip}>
+                    #{tag}
+                  </span>
+                ))}
             </div>
           </>
         ) : null}
 
         <div style={styles.cardActions}>
           <SceneIconButton
-            icon={reusableActionPendingId === object.id ? "hourglass_top" : "create_new_folder"}
+            icon={
+              reusableActionPendingId === object.id
+                ? "hourglass_top"
+                : "create_new_folder"
+            }
             label="加入节点库"
             size="micro"
             onClick={stopCardAction(() => onSaveToReusable(object))}
@@ -251,14 +308,23 @@ export function SceneObjectCard({
             icon={isSelected ? "expand_more" : "chevron_right"}
             label={isSelected ? "收起物体编辑器" : "展开物体编辑器"}
             expanded={isSelected}
-            controls={isSelected ? `scene-object-editor-${layerId}-${object.id}` : undefined}
+            controls={
+              isSelected ? `scene-object-editor-${layerId}-${object.id}` : undefined
+            }
             size="micro"
             onClick={stopCardAction(() => onSelect(object.id))}
           />
         </div>
       </article>
 
-      {isSelected ? <div id={`scene-object-editor-${layerId}-${object.id}`} style={styles.nodeInlineEditor}>{editorContent}</div> : null}
+      {isSelected ? (
+        <div
+          id={`scene-object-editor-${layerId}-${object.id}`}
+          style={styles.nodeInlineEditor}
+        >
+          {editorContent}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -297,7 +363,16 @@ export function SceneIconButton({
     minHeight: 44,
   };
   return (
-    <button type="button" aria-label={label} aria-expanded={expanded} aria-controls={controls} title={label} style={style} onClick={onClick} disabled={disabled}>
+    <button
+      type="button"
+      aria-label={label}
+      aria-expanded={expanded}
+      aria-controls={controls}
+      title={label}
+      style={style}
+      onClick={onClick}
+      disabled={disabled}
+    >
       <MaterialIcon name={icon} size={size === "micro" ? 14 : 16} />
     </button>
   );
@@ -356,13 +431,17 @@ export function RewriteStateButton({
   }, [isPending]);
 
   return (
-    <div ref={actionGroupRef} style={styles.rewriteActionGroup} onKeyDown={(event) => {
-      if (event.key === "Escape" && isStrengthOpen) {
-        event.stopPropagation();
-        setIsStrengthOpen(false);
-        actionGroupRef.current?.querySelector<HTMLButtonElement>("button")?.focus();
-      }
-    }}>
+    <div
+      ref={actionGroupRef}
+      style={styles.rewriteActionGroup}
+      onKeyDown={(event) => {
+        if (event.key === "Escape" && isStrengthOpen) {
+          event.stopPropagation();
+          setIsStrengthOpen(false);
+          actionGroupRef.current?.querySelector<HTMLButtonElement>("button")?.focus();
+        }
+      }}
+    >
       <SceneIconButton
         icon={icon}
         label={buttonLabel}
@@ -381,12 +460,17 @@ export function RewriteStateButton({
         }}
         disabled={Boolean(pendingKey)}
       />
-      {(!isPending && !isUndo && isStrengthOpen) ? (
+      {!isPending && !isUndo && isStrengthOpen ? (
         <div id={popoverId} ref={strengthPopoverRef} style={styles.rewritePopoverWrap}>
-          <div style={styles.rewritePopover} onClick={(event) => event.stopPropagation()}>
+          <div
+            style={styles.rewritePopover}
+            onClick={(event) => event.stopPropagation()}
+          >
             <div style={styles.rewritePopoverSection}>
               <span style={styles.rewritePopoverTitle}>重写强度</span>
-              <span style={styles.rewritePopoverValue}>{(rewriteStrength * 100).toFixed(0)}%</span>
+              <span style={styles.rewritePopoverValue}>
+                {(rewriteStrength * 100).toFixed(0)}%
+              </span>
             </div>
             <input
               style={styles.rewriteSlider}
@@ -399,13 +483,17 @@ export function RewriteStateButton({
               value={rewriteStrength}
               onChange={(event) => onRewriteStrengthChange(Number(event.target.value))}
             />
-            <p style={styles.rewritePopoverHint}>数值越高，AI 对原始设定的改写幅度越大。</p>
+            <p style={styles.rewritePopoverHint}>
+              数值越高，AI 对原始设定的改写幅度越大。
+            </p>
             <button
               type="button"
               style={styles.rewritePopoverButton}
               onClick={(event) => {
                 event.stopPropagation();
-                actionGroupRef.current?.querySelector<HTMLButtonElement>("button")?.focus();
+                actionGroupRef.current
+                  ?.querySelector<HTMLButtonElement>("button")
+                  ?.focus();
                 setIsStrengthOpen(false);
                 onRewrite();
               }}
@@ -418,4 +506,3 @@ export function RewriteStateButton({
     </div>
   );
 }
-

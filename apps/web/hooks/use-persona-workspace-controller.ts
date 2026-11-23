@@ -18,6 +18,7 @@ import {
 } from "@vibe-learner/shared";
 import { importJsonDraft } from "../lib/bounded-json-import";
 import { exportJson } from "../lib/export-json";
+import { useConfirm } from "../components/ui/confirm-provider";
 import { usePageDebugSnapshot } from "../components/page-debug-context";
 import { usePersonaPersistence } from "./use-persona-persistence";
 import { usePersonaLibrary } from "./use-persona-library";
@@ -70,7 +71,10 @@ const DEFAULT_CONFIG_TEMPLATE: CreatePersonaInput = {
 };
 
 export function usePersonaWorkspaceController() {
+  const confirm = useConfirm();
   const configImportInputRef = useRef<HTMLInputElement>(null);
+  const configImportTriggerRef = useRef<HTMLElement | null>(null);
+  const configImportOwnerRef = useRef<object | null>(null);
   const personaLibrary = usePersonaLibrary();
   const { personas, personaCards, listPersonas, listPersonaCards, deletePersonaCard } =
     personaLibrary;
@@ -79,25 +83,30 @@ export function usePersonaWorkspaceController() {
   useEffect(
     () => () => {
       configImportFenceRef.current.invalidate();
+      configImportOwnerRef.current = null;
       cardDeleteOwnerRef.current = null;
     },
     [],
   );
 
-  const personaEditor = usePersonaDraft({
-    personas,
-    onSelectionChange: () => {
-      resetPersonaAssist();
-      resetCardGeneration();
+  const personaEditor = usePersonaDraft(
+    {
+      getPersonasSnapshot: personaLibrary.getPersonasSnapshot,
+      onSelectionChange: () => {
+        resetPersonaAssist();
+        resetCardGeneration();
+      },
+      onPromptDismiss: () => dismissSystemPromptSuggestion(),
     },
-    onPromptDismiss: () => dismissSystemPromptSuggestion(),
-  });
+    confirm,
+  );
   const {
     selectedPersonaId,
     draft,
     isDraftDirty,
     currentPersonaSubject,
     currentPersonaAsyncScope,
+    captureDraftIntent,
     updatePersonaDraft,
     replacePersonaDraft,
     selectPersonaDraft,
@@ -163,6 +172,8 @@ export function usePersonaWorkspaceController() {
     updatePersonaDraft,
     currentPersonaAsyncScope,
     beginDiagnosticAction: personaEditor.beginDiagnosticAction,
+    confirm,
+    captureDraftIntent,
   });
   const [cardSearchQuery, setCardSearchQuery] = useState("");
   const [cardDeletePendingId, setCardDeletePendingId] = useState("");
@@ -197,15 +208,18 @@ export function usePersonaWorkspaceController() {
     handleUpdatePersona,
     handleReloadSelectedPersona,
     handleDeletePersona,
-  } = usePersonaPersistence({
-    editor: personaEditor,
-    library: personaLibrary,
-    onStarted: () => {
-      setConfigError("");
-      setConfigMessage("");
+  } = usePersonaPersistence(
+    {
+      editor: personaEditor,
+      library: personaLibrary,
+      onStarted: () => {
+        setConfigError("");
+        setConfigMessage("");
+      },
+      onPromptDismiss: () => dismissSystemPromptSuggestion(),
     },
-    onPromptDismiss: () => dismissSystemPromptSuggestion(),
-  });
+    confirm,
+  );
   const rewritePopoverRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     if (!movePulse) {
@@ -430,7 +444,26 @@ export function usePersonaWorkspaceController() {
     }));
   }
 
-  function handleClearSlots() {
+  async function handleClearSlots(trigger: HTMLElement) {
+    if (!draft.slots.length) return;
+    const isCurrent = captureDraftIntent();
+    const approved = await confirm({
+      title: "清空全部插槽？",
+      message: `将清空当前 ${draft.slots.length} 个插槽。`,
+      confirmLabel: "清空",
+      danger: true,
+      trigger,
+    });
+    if (!approved || !isCurrent()) return;
+    if (
+      document.activeElement === trigger ||
+      document.activeElement === document.body
+    ) {
+      trigger
+        .closest("details")
+        ?.querySelector("summary")
+        ?.focus({ preventScroll: true });
+    }
     updatePersonaDraft((prev) => ({ ...prev, slots: [] }));
     setExpandedSlotIndex(null);
     setDraggingSlotIndex(null);
@@ -583,8 +616,9 @@ export function usePersonaWorkspaceController() {
     setSlotInsertIndex(null);
   }
 
-  function handleNewPersonaDraft() {
-    if (!confirmDiscardPersonaDraft("新建空白人格")) {
+  async function handleNewPersonaDraft(trigger: HTMLElement) {
+    const isCurrent = captureDraftIntent();
+    if (!(await confirmDiscardPersonaDraft("新建空白人格", trigger)) || !isCurrent()) {
       return;
     }
     setConfigError("");
@@ -644,20 +678,38 @@ export function usePersonaWorkspaceController() {
     }
   }
 
+  function requestImportConfig(trigger: HTMLElement) {
+    configImportTriggerRef.current = trigger;
+    configImportInputRef.current?.click();
+  }
+
   async function handleImportConfig(event: ChangeEvent<HTMLInputElement>) {
     setConfigError("");
     setConfigMessage("");
-    const file = event.target.files?.[0];
+    const input = event.currentTarget;
+    const file = input.files?.[0];
     if (!file) return;
-    if (isDraftDirty && !window.confirm("导入配置会覆盖当前未保存草稿。是否继续？")) {
-      event.target.value = "";
-      return;
-    }
+    const trigger = configImportTriggerRef.current;
+    configImportTriggerRef.current = null;
+    const owner = {};
+    configImportOwnerRef.current = owner;
     const fieldTarget = "persona-config-import";
-    const ticket = configImportFenceRef.current.begin(
-      currentPersonaAsyncScope(fieldTarget),
-    );
+    const fence = configImportFenceRef.current;
+    const ticket = fence.begin(currentPersonaAsyncScope(fieldTarget));
     try {
+      if (
+        isDraftDirty &&
+        !(await confirm({
+          title: "覆盖未保存草稿？",
+          message: "导入配置会覆盖当前未保存草稿。",
+          confirmLabel: "覆盖并导入",
+          danger: true,
+          trigger,
+        }))
+      )
+        return;
+      if (fence.decide(ticket, currentPersonaAsyncScope(fieldTarget)) !== "apply")
+        return;
       const applied = await importJsonDraft(
         file,
         "persona",
@@ -686,8 +738,11 @@ export function usePersonaWorkspaceController() {
         setConfigError(`导入失败: ${String(error)}`);
       }
     } finally {
-      configImportFenceRef.current.settle(ticket);
-      event.target.value = "";
+      fence.settle(ticket);
+      if (configImportOwnerRef.current === owner) {
+        configImportOwnerRef.current = null;
+        input.value = "";
+      }
     }
   }
 
@@ -727,14 +782,21 @@ export function usePersonaWorkspaceController() {
     }
   }
 
-  function activateLibraryPersona(persona: PersonaProfile) {
-    if (!activatePersonaDraft(persona.id, `载入人格「${persona.name}」`)) return;
+  async function activateLibraryPersona(
+    persona: PersonaProfile,
+    trigger?: HTMLElement,
+  ) {
+    if (
+      !(await activatePersonaDraft(persona.id, `载入人格「${persona.name}」`, trigger))
+    )
+      return;
     setPersonaLibraryError("");
     setPersonaLibraryMessage(`已载入人格「${persona.name}」。`);
   }
 
   return {
     activateLibraryPersona,
+    requestImportConfig,
     configImportInputRef,
     personas,
     selectedPersonaId,

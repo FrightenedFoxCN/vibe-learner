@@ -1,5 +1,6 @@
 "use client";
 
+import { formatElapsedMs } from "../lib/format";
 import { documentUploadError } from "../lib/document-upload-validation";
 import { OutputLanguageField } from "./output-language-field";
 import { outputLanguageError } from "../lib/output-language";
@@ -415,7 +416,7 @@ function DocumentSetupForm({
                 Token {planRoundSummary.totalTokens || "—"}
               </span>
               <span style={styles.progressStat}>
-                耗时 {formatElapsed(planRoundSummary.totalElapsedMs)}
+                耗时 {formatElapsedMs(planRoundSummary.totalElapsedMs)}
               </span>
               {planRoundSummary.repairCount ? (
                 <span style={styles.progressStat}>
@@ -978,11 +979,6 @@ function summarizeProcessProgress(events: StreamEventItem[]) {
     rate: rate || 0,
     eta: remaining ? `${remaining} 分钟` : "",
   };
-}
-
-function formatElapsed(value: number) {
-  if (!value) return "进行中";
-  return value < 1000 ? `${value} ms` : `${(value / 1000).toFixed(1)} s`;
 }
 
 function formatProcessStreamStatus(status: string) {

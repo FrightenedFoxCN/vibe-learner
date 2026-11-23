@@ -9,6 +9,7 @@ import type {
   StudyScheduleItem,
   StudyUnit,
 } from "@vibe-learner/shared";
+import { formatTimestamp } from "../lib/format";
 import { formatOcrStatus } from "../lib/ocr-status";
 
 interface PlanOverviewProps {
@@ -56,10 +57,14 @@ export function PlanOverview({
 }: PlanOverviewProps) {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState("");
-  const [planningAnswerDrafts, setPlanningAnswerDrafts] = useState<Record<string, string>>({});
+  const [planningAnswerDrafts, setPlanningAnswerDrafts] = useState<
+    Record<string, string>
+  >({});
   const [reviewDrafts, setReviewDrafts] = useState<Record<string, string>>({});
   const [showScheduleDetails, setShowScheduleDetails] = useState(false);
-  const [expandedScheduleItems, setExpandedScheduleItems] = useState<Record<string, boolean>>({});
+  const [expandedScheduleItems, setExpandedScheduleItems] = useState<
+    Record<string, boolean>
+  >({});
 
   useEffect(() => {
     setTitleDraft(plan?.courseTitle ?? "");
@@ -71,7 +76,7 @@ export function PlanOverview({
 
   useEffect(() => {
     const nextDrafts = Object.fromEntries(
-      (plan?.planningQuestions ?? []).map((item) => [item.id, item.answer ?? ""])
+      (plan?.planningQuestions ?? []).map((item) => [item.id, item.answer ?? ""]),
     );
     setPlanningAnswerDrafts(nextDrafts);
   }, [plan?.id, plan?.planningQuestions]);
@@ -79,7 +84,7 @@ export function PlanOverview({
   const activeCourseTitle = plan
     ? resolveCourseTitle(
         plan.courseTitle,
-        plan.creationMode === "goal_only" ? "目标导向学习计划" : documentTitle
+        plan.creationMode === "goal_only" ? "目标导向学习计划" : documentTitle,
       )
     : "这里会显示当前计划。";
 
@@ -94,12 +99,13 @@ export function PlanOverview({
   };
 
   const pendingPlanningQuestions = (plan?.planningQuestions ?? []).filter(
-    (item) => item.status !== "answered"
+    (item) => item.status !== "answered",
   );
   const visibleScheduleItems = showScheduleDetails
     ? (plan?.schedule ?? [])
     : (plan?.schedule ?? []).slice(0, 4);
-  const hasCollapsedScheduleItems = (plan?.schedule.length ?? 0) > visibleScheduleItems.length;
+  const hasCollapsedScheduleItems =
+    (plan?.schedule.length ?? 0) > visibleScheduleItems.length;
   const metaItems = plan
     ? [
         `教材 ${plan.creationMode === "goal_only" ? "仅学习目标" : documentTitle}`,
@@ -110,7 +116,7 @@ export function PlanOverview({
         sceneProfile || plan.sceneProfileSummary
           ? `场景 ${sceneProfile?.title || sceneProfile?.sceneName || plan.sceneProfileSummary}`
           : "",
-        `创建于 ${formatDate(plan.createdAt)}`,
+        `创建于 ${formatTimestamp(plan.createdAt, { style: "short" })}`,
       ].filter(Boolean)
     : [];
 
@@ -140,12 +146,20 @@ export function PlanOverview({
                     type="button"
                     style={{
                       ...styles.primaryButton,
-                      ...((isBusy || !titleDraft.trim() || titleDraft.trim() === plan.courseTitle.trim())
+                      ...(isBusy ||
+                      !titleDraft.trim() ||
+                      titleDraft.trim() === plan.courseTitle.trim()
                         ? styles.buttonDisabled
                         : {}),
                     }}
-                    disabled={isBusy || !titleDraft.trim() || titleDraft.trim() === plan.courseTitle.trim()}
-                    onClick={() => { void handleSaveTitle(); }}
+                    disabled={
+                      isBusy ||
+                      !titleDraft.trim() ||
+                      titleDraft.trim() === plan.courseTitle.trim()
+                    }
+                    onClick={() => {
+                      void handleSaveTitle();
+                    }}
                   >
                     保存题目
                   </button>
@@ -181,7 +195,9 @@ export function PlanOverview({
 
           <div style={styles.metaStrip}>
             {metaItems.map((item) => (
-              <span key={item} style={styles.metaChip}>{item}</span>
+              <span key={item} style={styles.metaChip}>
+                {item}
+              </span>
             ))}
           </div>
 
@@ -192,7 +208,9 @@ export function PlanOverview({
             </div>
             <ol style={styles.todayTaskList}>
               {plan.todayTasks.map((task, index) => (
-                <li key={`${index}:${task}`} style={styles.todayTask}>{task}</li>
+                <li key={`${index}:${task}`} style={styles.todayTask}>
+                  {task}
+                </li>
               ))}
             </ol>
           </div>
@@ -202,7 +220,9 @@ export function PlanOverview({
               <div style={styles.sectionHead}>
                 <div style={styles.sectionHeadMeta}>
                   <span style={styles.sectionLabel}>补充信息</span>
-                  <span style={styles.count}>{pendingPlanningQuestions.length} 条待答</span>
+                  <span style={styles.count}>
+                    {pendingPlanningQuestions.length} 条待答
+                  </span>
                 </div>
               </div>
               <div style={styles.questionList}>
@@ -210,11 +230,17 @@ export function PlanOverview({
                   <div key={item.id} style={styles.questionItem}>
                     <div style={styles.questionHeader}>
                       <strong style={styles.questionTitle}>{item.question}</strong>
-                      <span style={scheduleStatusStyle(item.status === "answered" ? "completed" : "planned")}>
+                      <span
+                        style={scheduleStatusStyle(
+                          item.status === "answered" ? "completed" : "planned",
+                        )}
+                      >
                         {item.status === "answered" ? "已回答" : "待回答"}
                       </span>
                     </div>
-                    {item.reason ? <span style={styles.questionReason}>备注：{item.reason}</span> : null}
+                    {item.reason ? (
+                      <span style={styles.questionReason}>备注：{item.reason}</span>
+                    ) : null}
                     <textarea
                       value={planningAnswerDrafts[item.id] ?? ""}
                       onChange={(event) =>
@@ -232,9 +258,13 @@ export function PlanOverview({
                         type="button"
                         style={{
                           ...styles.primaryButton,
-                          ...((isBusy || !(planningAnswerDrafts[item.id] ?? "").trim()) ? styles.buttonDisabled : {}),
+                          ...(isBusy || !(planningAnswerDrafts[item.id] ?? "").trim()
+                            ? styles.buttonDisabled
+                            : {}),
                         }}
-                        disabled={isBusy || !(planningAnswerDrafts[item.id] ?? "").trim()}
+                        disabled={
+                          isBusy || !(planningAnswerDrafts[item.id] ?? "").trim()
+                        }
                         onClick={() => {
                           void onAnswerPlanningQuestion({
                             planId: plan.id,
@@ -257,10 +287,13 @@ export function PlanOverview({
               <div style={styles.sectionHeadMeta}>
                 <span style={styles.sectionLabel}>推进</span>
                 <span style={styles.count}>
-                  {plan.progressSummary.completedScheduleCount}/{plan.progressSummary.totalScheduleCount}
+                  {plan.progressSummary.completedScheduleCount}/
+                  {plan.progressSummary.totalScheduleCount}
                 </span>
               </div>
-              <span style={styles.progressPercent}>{plan.progressSummary.completionPercent}%</span>
+              <span style={styles.progressPercent}>
+                {plan.progressSummary.completionPercent}%
+              </span>
             </div>
             <div style={styles.progressBarTrack}>
               <div
@@ -271,31 +304,46 @@ export function PlanOverview({
               />
             </div>
             <div style={styles.progressStats}>
-              <span style={styles.progressStat}>进行中 {plan.progressSummary.inProgressScheduleCount}</span>
-              <span style={styles.progressStat}>待处理 {plan.progressSummary.pendingScheduleCount}</span>
-              <span style={styles.progressStat}>阻塞 {plan.progressSummary.blockedScheduleCount}</span>
+              <span style={styles.progressStat}>
+                进行中 {plan.progressSummary.inProgressScheduleCount}
+              </span>
+              <span style={styles.progressStat}>
+                待处理 {plan.progressSummary.pendingScheduleCount}
+              </span>
+              <span style={styles.progressStat}>
+                阻塞 {plan.progressSummary.blockedScheduleCount}
+              </span>
             </div>
 
             {plan.schedule.length ? (
               <div style={styles.scheduleList}>
                 <p style={styles.startNotice}>
-                  点击“开始”会创建或打开对应学习会话，并调用模型准备该 Study Unit；这会产生模型用量。
+                  点击“开始”会创建或打开对应学习会话，并调用模型准备该 Study
+                  Unit；这会产生模型用量。
                 </p>
                 {visibleScheduleItems.map((item, index) => (
-                  <div key={item.id} style={styles.scheduleItem} data-plan-schedule={item.id}>
+                  <div
+                    key={item.id}
+                    style={styles.scheduleItem}
+                    data-plan-schedule={item.id}
+                  >
                     <div style={styles.scheduleHeader}>
                       <div style={styles.scheduleTitleBlock}>
                         <span style={styles.scheduleIndex}>第 {index + 1} 课</span>
                         <span style={styles.scheduleTitle}>{item.title}</span>
                       </div>
                       <div style={styles.scheduleHeaderActions}>
-                        <span style={scheduleStatusStyle(item.status)}>{formatScheduleStatus(item.status)}</span>
+                        <span style={scheduleStatusStyle(item.status)}>
+                          {formatScheduleStatus(item.status)}
+                        </span>
                         {item.scheduleChapters.length ? (
                           <button
                             type="button"
                             style={styles.inlineButton}
                             disabled={isBusy}
-                            aria-expanded={expandedScheduleItems[item.id] ? "true" : "false"}
+                            aria-expanded={
+                              expandedScheduleItems[item.id] ? "true" : "false"
+                            }
                             aria-label={`${expandedScheduleItems[item.id] ? "收起" : "展开"}第 ${index + 1} 课章节`}
                             onClick={() =>
                               setExpandedScheduleItems((current) => ({
@@ -325,7 +373,9 @@ export function PlanOverview({
                               scheduleId: item.id,
                               scheduleChapterId: firstScheduleChapter?.id,
                               chapter: firstScheduleChapter?.title || item.title,
-                              page: firstScheduleChapter?.anchorPageStart || studyUnit.pageStart,
+                              page:
+                                firstScheduleChapter?.anchorPageStart ||
+                                studyUnit.pageStart,
                               scheduleIds: [item.id],
                             });
                           }}
@@ -366,16 +416,25 @@ export function PlanOverview({
                     </div>
                     <div style={styles.scheduleMeta}>
                       <span style={styles.scheduleMetaItem}>
-                        时长 {item.durationMinutes ? `${item.durationMinutes} 分钟` : "未记录"}
+                        时长{" "}
+                        {item.durationMinutes
+                          ? `${item.durationMinutes} 分钟`
+                          : "未记录"}
                       </span>
-                      <span style={styles.scheduleMetaItem}>范围 {formatScheduleScope(item)}</span>
-                      <span style={styles.scheduleMetaItem}>方式 {formatActivityType(item.activityType)}</span>
+                      <span style={styles.scheduleMetaItem}>
+                        范围 {formatScheduleScope(item)}
+                      </span>
+                      <span style={styles.scheduleMetaItem}>
+                        方式 {formatActivityType(item.activityType)}
+                      </span>
                     </div>
                     <div style={styles.scheduleTaskBlock}>
                       <span style={styles.scheduleTaskLabel}>本次任务</span>
                       <p style={styles.scheduleFocus}>{item.focus}</p>
                     </div>
-                    {item.coverageMode && item.coverageMode !== "complete" && item.workloadRationale ? (
+                    {item.coverageMode &&
+                    item.coverageMode !== "complete" &&
+                    item.workloadRationale ? (
                       <p style={styles.scheduleFocus}>
                         {item.coverageMode === "overview" ? "导览说明" : "选读说明"}：
                         {item.workloadRationale}
@@ -425,7 +484,10 @@ export function PlanOverview({
                               note: reviewDrafts[item.id] ?? "",
                             });
                             if (didSave) {
-                              setReviewDrafts((current) => ({ ...current, [item.id]: "" }));
+                              setReviewDrafts((current) => ({
+                                ...current,
+                                [item.id]: "",
+                              }));
                             }
                           }}
                         >
@@ -437,7 +499,8 @@ export function PlanOverview({
                               <li key={event.id} style={styles.reviewEntry}>
                                 <span>{event.note}</span>
                                 <span style={styles.reviewMeta}>
-                                  {formatDate(event.createdAt)} · {formatScheduleStatus(event.status)}
+                                  {formatTimestamp(event.createdAt, { style: "short" })}{" "}
+                                  · {formatScheduleStatus(event.status)}
                                 </span>
                               </li>
                             ))}
@@ -928,18 +991,6 @@ function resolveCourseTitle(courseTitle: string, documentTitle: string) {
   return documentTitle || "未命名计划";
 }
 
-function formatDate(value: string) {
-  if (!value) return "未知时间";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleString("zh-CN", {
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
 function formatScheduleStatus(status: string) {
   switch (status) {
     case "completed":
@@ -965,7 +1016,7 @@ function formatScheduleScope(item: StudyScheduleItem) {
   const ranges = item.scheduleChapters.flatMap((chapter) =>
     chapter.contentSlices.length
       ? chapter.contentSlices.map((slice) => [slice.pageStart, slice.pageEnd] as const)
-      : [[chapter.anchorPageStart, chapter.anchorPageEnd] as const]
+      : [[chapter.anchorPageStart, chapter.anchorPageEnd] as const],
   );
   if (!ranges.length) return "未记录";
   const ordered = ranges
@@ -981,7 +1032,9 @@ function formatScheduleScope(item: StudyScheduleItem) {
     }
   });
   return merged.length
-    ? merged.map(([start, end]) => start === end ? `p.${start}` : `p.${start}–${end}`).join("、")
+    ? merged
+        .map(([start, end]) => (start === end ? `p.${start}` : `p.${start}–${end}`))
+        .join("、")
     : "未记录";
 }
 

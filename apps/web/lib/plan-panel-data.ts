@@ -1,7 +1,12 @@
-import type { DocumentRecord, LearningPlan, PersonaProfile } from "@vibe-learner/shared";
+import type {
+  DocumentRecord,
+  LearningPlan,
+  PersonaProfile,
+} from "@vibe-learner/shared";
 
 export interface PlanHistoryItem {
   id: string;
+  revision: number;
   courseTitle: string;
   documentTitle: string;
   personaName: string;
@@ -11,23 +16,23 @@ export interface PlanHistoryItem {
 
 export function sortLearningPlans(plans: LearningPlan[]): LearningPlan[] {
   return [...plans].sort((left, right) =>
-    (right.createdAt || "").localeCompare(left.createdAt || "")
+    (right.createdAt || "").localeCompare(left.createdAt || ""),
   );
 }
 
 export function upsertLearningPlan(
   plans: LearningPlan[],
-  nextPlan: LearningPlan
+  nextPlan: LearningPlan,
 ): LearningPlan[] {
   return sortLearningPlans([
     nextPlan,
-    ...plans.filter((plan) => plan.id !== nextPlan.id)
+    ...plans.filter((plan) => plan.id !== nextPlan.id),
   ]);
 }
 
 export function resolveSelectedPlanId(
   plans: LearningPlan[],
-  selectedPlanId: string
+  selectedPlanId: string,
 ): string {
   if (selectedPlanId && plans.some((plan) => plan.id === selectedPlanId)) {
     return selectedPlanId;
@@ -37,14 +42,14 @@ export function resolveSelectedPlanId(
 
 export function findLearningPlan(
   plans: LearningPlan[],
-  planId: string
+  planId: string,
 ): LearningPlan | null {
   return plans.find((plan) => plan.id === planId) ?? null;
 }
 
 export function findDocumentForPlan(
   plan: LearningPlan | null,
-  documents: DocumentRecord[]
+  documents: DocumentRecord[],
 ): DocumentRecord | null {
   if (!plan) {
     return null;
@@ -58,20 +63,21 @@ export function buildPlanHistoryItems(input: {
   personas: PersonaProfile[];
 }): PlanHistoryItem[] {
   const documentTitleById = new Map(
-    input.documents.map((document) => [document.id, document.title])
+    input.documents.map((document) => [document.id, document.title]),
   );
   const personaNameById = new Map(
-    input.personas.map((persona) => [persona.id, persona.name])
+    input.personas.map((persona) => [persona.id, persona.name]),
   );
 
   return input.plans.map((plan) => ({
     id: plan.id,
+    revision: plan.revision,
     courseTitle: plan.courseTitle,
     documentTitle:
       documentTitleById.get(plan.documentId) ??
       (plan.creationMode === "goal_only" ? "仅目标计划" : plan.documentId),
     personaName: personaNameById.get(plan.personaId) ?? plan.personaId,
     createdAt: plan.createdAt,
-    overview: plan.overview
+    overview: plan.overview,
   }));
 }

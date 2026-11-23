@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useConfirm } from "../components/ui/confirm-provider";
 import {
   type SceneObject,
   type SceneLayer,
@@ -28,14 +29,27 @@ import { type ReusableSceneNodePayload } from "../lib/data/scenes";
 import { applyAsyncResult, AsyncResultFence } from "../lib/async-result-fence";
 
 export function useSceneWorkspaceController() {
+  const confirm = useConfirm();
   const {
-    savedScenes, reusableNodes, selectedSavedSceneId, setSelectedSavedSceneId,
-    createSceneLibraryItem, updateSceneLibraryItem, deleteSceneLibraryItem,
-    createReusableSceneNode, deleteReusableSceneNode, libraryError,
-    reusableActionPendingId, reusableMessage, reusableError, setReusableMessage, setReusableError, runReusableAction,
+    savedScenes,
+    reusableNodes,
+    selectedSavedSceneId,
+    setSelectedSavedSceneId,
+    createSceneLibraryItem,
+    updateSceneLibraryItem,
+    deleteSceneLibraryItem,
+    createReusableSceneNode,
+    deleteReusableSceneNode,
+    libraryError,
+    reusableActionPendingId,
+    reusableMessage,
+    reusableError,
+    setReusableMessage,
+    setReusableError,
+    runReusableAction,
   } = useSceneLibrary();
   const pageHeadingRef = useRef<HTMLHeadingElement>(null);
-  const [pendingDeleteLayerId, setPendingDeleteLayerId] = useState("");
+  const deletedTrigger = useRef<HTMLElement | null>(null);
   const [sceneIoMessage, setSceneIoMessage] = useState("");
   const [sceneIoPendingCount, setSceneIoPendingCount] = useState(0);
   const [sceneIoError, setSceneIoError] = useState("");
@@ -78,9 +92,21 @@ export function useSceneWorkspaceController() {
     toggleObjectSelection,
   } = useSceneDraft({
     onSelectionChange: () => invalidateRewrite(),
-    onImported: () => { resetSceneGeneration(); resetRewrite(); },
+    onImported: () => {
+      resetSceneGeneration();
+      resetRewrite();
+    },
     onNotice: setSceneIoMessage,
   });
+  useLayoutEffect(() => {
+    const trigger = deletedTrigger.current;
+    if (!trigger || trigger.isConnected) return;
+    deletedTrigger.current = null;
+    // The shared dialog may restore focus before the deletion removes the button.
+    if (!document.activeElement || document.activeElement === document.body) {
+      pageHeadingRef.current?.focus({ preventScroll: true });
+    }
+  }, [savedScenes, sceneLayers]);
   const {
     sceneKeywordInput,
     setSceneKeywordInput,
@@ -110,13 +136,24 @@ export function useSceneWorkspaceController() {
     rewriteObjectField,
     invalidateRewrite,
     resetRewrite,
-  } = useSceneRewrite({ beginDiagnosticAction, sceneLayers, currentSceneAsyncScope, setSceneFieldTarget, updateLayer, updateObject });
+  } = useSceneRewrite({
+    beginDiagnosticAction,
+    sceneLayers,
+    currentSceneAsyncScope,
+    setSceneFieldTarget,
+    updateLayer,
+    updateObject,
+  });
   const importInputRef = useRef<HTMLInputElement | null>(null);
   const sceneImportFenceRef = useRef(new AsyncResultFence());
   useEffect(() => () => sceneImportFenceRef.current.invalidate(), []);
 
-  const [collapsedSidebarSections, setCollapsedSidebarSections] = useState<string[]>(["reuse", "saved"]);
-  const [collapsedNodeEditorSectionsByLayer, setCollapsedNodeEditorSectionsByLayer] = useState<Record<string, string[]>>({});
+  const [collapsedSidebarSections, setCollapsedSidebarSections] = useState<string[]>([
+    "reuse",
+    "saved",
+  ]);
+  const [collapsedNodeEditorSectionsByLayer, setCollapsedNodeEditorSectionsByLayer] =
+    useState<Record<string, string[]>>({});
   const [isCompactLayout, setIsCompactLayout] = useState(false);
 
   const filteredReusableNodes = useMemo(() => {
@@ -131,7 +168,9 @@ export function useSceneWorkspaceController() {
         item.tags.join(","),
         item.reuseHint,
         item.sourceSceneName,
-      ].join("\n").toLowerCase();
+      ]
+        .join("\n")
+        .toLowerCase();
       return haystack.includes(query);
     });
   }, [reusableNodes, reusableSearchQuery]);
@@ -142,8 +181,11 @@ export function useSceneWorkspaceController() {
     return io || generate || reusable;
   }, [reusableMessage, sceneGenerateMessage, sceneIoMessage]);
   const currentCollapsedNodeEditorSections = useMemo(
-    () => (selectedLayerId ? (collapsedNodeEditorSectionsByLayer[selectedLayerId] ?? []) : []),
-    [collapsedNodeEditorSectionsByLayer, selectedLayerId]
+    () =>
+      selectedLayerId
+        ? (collapsedNodeEditorSectionsByLayer[selectedLayerId] ?? [])
+        : [],
+    [collapsedNodeEditorSectionsByLayer, selectedLayerId],
   );
 
   const pageNotice = useMemo(() => {
@@ -162,9 +204,6 @@ export function useSceneWorkspaceController() {
     if (reusableActionPendingId) {
       return "可复用节点库更新中";
     }
-    if (pendingDeleteLayerId) {
-      return "等待确认删除层级";
-    }
     if (headerMessage) {
       return headerMessage;
     }
@@ -175,7 +214,15 @@ export function useSceneWorkspaceController() {
       return `当前编辑 · ${selectedLayer.title}`;
     }
     return "从左侧层级结构中选择一个节点开始编辑";
-  }, [sceneIoPending, headerMessage, pendingDeleteLayerId, reusableActionPendingId, rewritePendingKey, sceneGeneratePending, selectedLayer, selectedObjectTarget]);
+  }, [
+    sceneIoPending,
+    headerMessage,
+    reusableActionPendingId,
+    rewritePendingKey,
+    sceneGeneratePending,
+    selectedLayer,
+    selectedObjectTarget,
+  ]);
 
   useEffect(() => {
     const syncLayout = () => {
@@ -204,14 +251,27 @@ export function useSceneWorkspaceController() {
     () => ({
       title: "场景页调试面板",
       subtitle: "查看场景树、生成结果和错误。",
-      error: [sceneIoError, rewriteError, sceneGenerateError, reusableError, libraryError].filter(Boolean).join("；"),
+      error: [
+        sceneIoError,
+        rewriteError,
+        sceneGenerateError,
+        reusableError,
+        libraryError,
+      ]
+        .filter(Boolean)
+        .join("；"),
       summary: [
         { label: "场景名称", value: sceneName || "-" },
         { label: "选中层级", value: selectedLayer?.title || selectedLayerId || "-" },
         { label: "已保存场景", value: String(savedScenes.length) },
         { label: "可复用节点", value: String(reusableNodes.length) },
         { label: "生成候选", value: generatedSceneCandidate ? "是" : "否" },
-        { label: "AI 恢复记录", value: String(rewriteModelRecoveries.length + sceneGenerateModelRecoveries.length) }
+        {
+          label: "AI 恢复记录",
+          value: String(
+            rewriteModelRecoveries.length + sceneGenerateModelRecoveries.length,
+          ),
+        },
       ],
       details: [
         { title: "场景快照预览", value: sceneProfilePreview },
@@ -220,8 +280,8 @@ export function useSceneWorkspaceController() {
         { title: "已保存场景列表", value: savedScenes },
         { title: "可复用节点列表", value: reusableNodes.slice(0, 24) },
         { title: "场景生成恢复记录", value: sceneGenerateModelRecoveries },
-        { title: "文本重写恢复记录", value: rewriteModelRecoveries }
-      ]
+        { title: "文本重写恢复记录", value: rewriteModelRecoveries },
+      ],
     }),
     [
       generatedSceneCandidate,
@@ -238,8 +298,8 @@ export function useSceneWorkspaceController() {
       sceneProfilePreview,
       selectedLayer,
       selectedLayerId,
-      selectedPath
-    ]
+      selectedPath,
+    ],
   );
 
   usePageDebugSnapshot(debugSnapshot);
@@ -249,7 +309,10 @@ export function useSceneWorkspaceController() {
   }
 
   function parseTagList(text: string) {
-    return text.split(",").map((item) => item.trim()).filter(Boolean);
+    return text
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean);
   }
 
   async function saveLayerToReusableLibrary(layerId: string) {
@@ -257,39 +320,49 @@ export function useSceneWorkspaceController() {
     if (!targetLayer) {
       return;
     }
-    await runReusableAction(targetLayer.id, `已将层级 "${targetLayer.title}" 加入可复用节点库。`, () => createReusableSceneNode({
-        nodeType: "layer",
-        title: targetLayer.title,
-        summary: targetLayer.summary,
-        tags: parseTagList(targetLayer.tags),
-        reuseId: targetLayer.reuseId,
-        reuseHint: targetLayer.reuseHint,
-        sourceSceneId: sceneProfilePreview?.sceneId ?? "",
-        sourceSceneName: sceneName.trim(),
-        layerNode: normalizeSceneTreeNodeForProfile(targetLayer),
-      }));
+    await runReusableAction(
+      targetLayer.id,
+      `已将层级 "${targetLayer.title}" 加入可复用节点库。`,
+      () =>
+        createReusableSceneNode({
+          nodeType: "layer",
+          title: targetLayer.title,
+          summary: targetLayer.summary,
+          tags: parseTagList(targetLayer.tags),
+          reuseId: targetLayer.reuseId,
+          reuseHint: targetLayer.reuseHint,
+          sourceSceneId: sceneProfilePreview?.sceneId ?? "",
+          sourceSceneName: sceneName.trim(),
+          layerNode: normalizeSceneTreeNodeForProfile(targetLayer),
+        }),
+    );
   }
 
   async function saveObjectToReusableLibrary(object: SceneObject) {
-    await runReusableAction(object.id, `已将物体 "${object.name}" 加入可复用节点库。`, () => createReusableSceneNode({
-        nodeType: "object",
-        title: object.name,
-        summary: object.description,
-        tags: parseTagList(object.tags),
-        reuseId: object.reuseId,
-        reuseHint: object.reuseHint,
-        sourceSceneId: sceneProfilePreview?.sceneId ?? "",
-        sourceSceneName: sceneName.trim(),
-        objectNode: {
-          id: object.id,
-          name: object.name,
-          description: object.description,
-          interaction: object.interaction,
-          tags: object.tags,
+    await runReusableAction(
+      object.id,
+      `已将物体 "${object.name}" 加入可复用节点库。`,
+      () =>
+        createReusableSceneNode({
+          nodeType: "object",
+          title: object.name,
+          summary: object.description,
+          tags: parseTagList(object.tags),
           reuseId: object.reuseId,
           reuseHint: object.reuseHint,
-        },
-      }));
+          sourceSceneId: sceneProfilePreview?.sceneId ?? "",
+          sourceSceneName: sceneName.trim(),
+          objectNode: {
+            id: object.id,
+            name: object.name,
+            description: object.description,
+            interaction: object.interaction,
+            tags: object.tags,
+            reuseId: object.reuseId,
+            reuseHint: object.reuseHint,
+          },
+        }),
+    );
   }
 
   async function deleteReusableNode(nodeId: string) {
@@ -308,10 +381,7 @@ export function useSceneWorkspaceController() {
     if (item.nodeType === "object" && objectNode) {
       updateLayer(selectedLayer.id, (layer) => ({
         ...layer,
-        objects: [
-          ...layer.objects,
-          cloneSceneObjectFromLibrary(objectNode),
-        ],
+        objects: [...layer.objects, cloneSceneObjectFromLibrary(objectNode)],
       }));
       setReusableMessage(`已把物体 "${item.title}" 插入到 "${selectedLayer.title}"。`);
       return;
@@ -319,13 +389,14 @@ export function useSceneWorkspaceController() {
     if (item.nodeType === "layer" && layerNode) {
       updateLayer(selectedLayer.id, (layer) => ({
         ...layer,
-        children: [
-          ...layer.children,
-          cloneSceneLayerFromLibrary(layerNode),
-        ],
+        children: [...layer.children, cloneSceneLayerFromLibrary(layerNode)],
       }));
-      setCollapsedLayerIds((current) => current.filter((id) => id !== selectedLayer.id));
-      setReusableMessage(`已把层级 "${item.title}" 作为 "${selectedLayer.title}" 的子层插入。`);
+      setCollapsedLayerIds((current) =>
+        current.filter((id) => id !== selectedLayer.id),
+      );
+      setReusableMessage(
+        `已把层级 "${item.title}" 作为 "${selectedLayer.title}" 的子层插入。`,
+      );
       return;
     }
     setReusableError("所选节点数据不完整，无法插入。");
@@ -340,10 +411,13 @@ export function useSceneWorkspaceController() {
           createSceneLayer(
             layer.children[0]
               ? inferTemplateIndexFromLayer(layer.children[0])
-              : Math.min(inferTemplateIndexFromLayer(layer) + 1, LAYER_TEMPLATES.length - 1)
-          )
-        ]
-      }))
+              : Math.min(
+                  inferTemplateIndexFromLayer(layer) + 1,
+                  LAYER_TEMPLATES.length - 1,
+                ),
+          ),
+        ],
+      })),
     );
   }
 
@@ -351,7 +425,7 @@ export function useSceneWorkspaceController() {
     const newObject = createSceneObject();
     updateLayer(layerId, (layer) => ({
       ...layer,
-      objects: [...layer.objects, newObject]
+      objects: [...layer.objects, newObject],
     }));
     selectSceneObject(newObject.id);
     const targetId = `scene-object-editor-${layerId}-${newObject.id}`;
@@ -361,12 +435,17 @@ export function useSceneWorkspaceController() {
     }, 80);
   }
 
-  function updateObject(layerId: string, objectId: string, key: keyof SceneObject, value: string) {
+  function updateObject(
+    layerId: string,
+    objectId: string,
+    key: keyof SceneObject,
+    value: string,
+  ) {
     updateLayer(layerId, (layer) => ({
       ...layer,
       objects: layer.objects.map((object) =>
-        object.id === objectId ? { ...object, [key]: value } : object
-      )
+        object.id === objectId ? { ...object, [key]: value } : object,
+      ),
     }));
   }
 
@@ -376,7 +455,7 @@ export function useSceneWorkspaceController() {
     }
     updateLayer(layerId, (layer) => ({
       ...layer,
-      objects: layer.objects.filter((object) => object.id !== objectId)
+      objects: layer.objects.filter((object) => object.id !== objectId),
     }));
   }
 
@@ -390,27 +469,31 @@ export function useSceneWorkspaceController() {
     setCollapsedLayerIds((current) => current.filter((id) => id !== layerId));
   }
 
-  function requestDeleteLayer(layerId: string) {
-    if (!canDeleteLayerSafely(sceneLayers, layerId)) {
+  async function requestDeleteLayer(layerId: string, trigger: HTMLElement) {
+    const layer = findLayerById(sceneLayers, layerId);
+    if (!layer || !canDeleteLayerSafely(sceneLayers, layerId)) return;
+    const captured = currentSceneAsyncScope();
+    if (
+      !(await confirm({
+        title: "确认删除层级？",
+        message: `即将删除“${layer.title || "当前层级"}”及其所有子层级与物体。此操作不可自动恢复。`,
+        confirmLabel: "确认删除",
+        danger: true,
+        trigger,
+        fallbackFocus: () => pageHeadingRef.current,
+      }))
+    )
+      return;
+    const current = currentSceneAsyncScope();
+    if (
+      current.subjectId !== captured.subjectId ||
+      current.draftRevision !== captured.draftRevision
+    ) {
+      setSceneIoError("场景草稿已变化，请重新确认删除层级。");
       return;
     }
-    setPendingDeleteLayerId(layerId);
-  }
-
-  function cancelDeleteLayer() {
-    setPendingDeleteLayerId("");
-  }
-
-  function confirmDeleteLayer() {
-    if (!pendingDeleteLayerId) {
-      return;
-    }
-    if (!canDeleteLayerSafely(sceneLayers, pendingDeleteLayerId)) {
-      setPendingDeleteLayerId("");
-      return;
-    }
-    removeLayer(pendingDeleteLayerId);
-    setPendingDeleteLayerId("");
+    deletedTrigger.current = trigger;
+    removeLayer(layerId);
   }
 
   async function saveLibraryScene(mode: "upsert" | "create" = "upsert") {
@@ -432,16 +515,20 @@ export function useSceneWorkspaceController() {
       const diagnostic = beginDiagnosticAction();
       if (mode === "upsert" && selectedSavedSceneId) {
         const selectedSavedScene = savedScenes.find(
-          (item) => item.sceneId === selectedSavedSceneId
+          (item) => item.sceneId === selectedSavedSceneId,
         );
         if (!selectedSavedScene) {
           setSceneIoError("当前保存版本已不存在，请刷新场景库后重试。");
           return;
         }
-        const updated = await updateSceneLibraryItem(selectedSavedSceneId, {
-          ...payload,
-          expectedRevision: selectedSavedScene.revision,
-        }, diagnostic);
+        const updated = await updateSceneLibraryItem(
+          selectedSavedSceneId,
+          {
+            ...payload,
+            expectedRevision: selectedSavedScene.revision,
+          },
+          diagnostic,
+        );
         setSceneIoMessage(`已更新已保存场景“${updated.sceneName}”。`);
         return;
       }
@@ -481,17 +568,31 @@ export function useSceneWorkspaceController() {
     }
   }
 
-  async function deleteSavedScene(sceneId: string) {
+  async function deleteSavedScene(sceneId: string, trigger: HTMLElement) {
     const target = savedScenes.find((item) => item.sceneId === sceneId);
     if (!target) {
       return;
     }
-    if (!globalThis.confirm(`确认删除已保存场景“${target.sceneName}”？`)) {
+    if (
+      !(await confirm({
+        title: "确认删除已保存场景？",
+        message: `即将从场景库删除“${target.sceneName}”。此操作不可自动恢复。`,
+        confirmLabel: "确认删除",
+        danger: true,
+        trigger,
+        fallbackFocus: () => pageHeadingRef.current,
+      }))
+    )
       return;
-    }
     beginSceneIo();
     try {
-      await deleteSceneLibraryItem(sceneId);
+      const deleted = await deleteSceneLibraryItem(sceneId, target.revision, () => {
+        deletedTrigger.current = trigger;
+      });
+      if (!deleted) {
+        setSceneIoError("已保存场景的版本已变化，请核对后重新确认删除。");
+        return;
+      }
       setSceneIoMessage(`已删除场景“${target.sceneName}”。`);
     } catch {
       setSceneIoError("删除场景失败，请稍后重试。");
@@ -512,7 +613,10 @@ export function useSceneWorkspaceController() {
         selectedLayerId: sceneSelectionLayerId,
         collapsedLayerIds,
       };
-      const saved = await exportJson(`scene-setup-${new Date().toISOString().slice(0, 19).replace(/:/g, "-")}.json`, payload);
+      const saved = await exportJson(
+        `scene-setup-${new Date().toISOString().slice(0, 19).replace(/:/g, "-")}.json`,
+        payload,
+      );
       setSceneIoMessage(saved ? "场景已导出为 JSON 文件。" : "已取消导出。");
     } catch {
       setSceneIoError("导出失败，请稍后重试。");
@@ -533,17 +637,22 @@ export function useSceneWorkspaceController() {
     beginSceneIo();
     const fieldTarget = "scene-file-import";
     const ticket = sceneImportFenceRef.current.begin(
-        currentSceneAsyncScope(fieldTarget),
+      currentSceneAsyncScope(fieldTarget),
     );
     try {
-      await importJsonDraft(file, "scene", raw => parseSceneImportPayload(raw, true),
-        value => applyAsyncResult({
-          fence: sceneImportFenceRef.current,
-          ticket,
-          currentScope: currentSceneAsyncScope(fieldTarget),
-          value,
-          apply: (next) => applySceneImport(next, "场景导入成功。"),
-        }) === "apply");
+      await importJsonDraft(
+        file,
+        "scene",
+        (raw) => parseSceneImportPayload(raw, true),
+        (value) =>
+          applyAsyncResult({
+            fence: sceneImportFenceRef.current,
+            ticket,
+            currentScope: currentSceneAsyncScope(fieldTarget),
+            value,
+            apply: (next) => applySceneImport(next, "场景导入成功。"),
+          }) === "apply",
+      );
     } catch {
       if (
         sceneImportFenceRef.current.decide(
@@ -564,12 +673,17 @@ export function useSceneWorkspaceController() {
     if (!generatedSceneCandidate) {
       return;
     }
-    applySceneImport(generatedSceneCandidate, "已将生成场景树应用到当前编辑区。", "scene-editor:local", true);
+    applySceneImport(
+      generatedSceneCandidate,
+      "已将生成场景树应用到当前编辑区。",
+      "scene-editor:local",
+      true,
+    );
   }
 
   function toggleSidebarSection(key: string) {
     setCollapsedSidebarSections((prev) =>
-      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]
+      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key],
     );
   }
 
@@ -602,7 +716,6 @@ export function useSceneWorkspaceController() {
     selectSceneLayer(layerId);
   }
 
-
   return {
     savedScenes,
     selectedSavedSceneId,
@@ -611,7 +724,6 @@ export function useSceneWorkspaceController() {
     reusableActionPendingId,
     reusableError,
     pageHeadingRef,
-    pendingDeleteLayerId,
     reusableSearchQuery,
     setReusableSearchQuery,
     sceneLayers,
@@ -622,7 +734,12 @@ export function useSceneWorkspaceController() {
     selectedLayerId,
     selectedObjectId,
     collapsedLayerIds,
-    toggleLayerChildren: (id: string) => setCollapsedLayerIds(current => current.includes(id) ? current.filter(value => value !== id) : [...current, id]),
+    toggleLayerChildren: (id: string) =>
+      setCollapsedLayerIds((current) =>
+        current.includes(id)
+          ? current.filter((value) => value !== id)
+          : [...current, id],
+      ),
     updateSceneGenerationInput,
     selectedLayer,
     sceneNodeCount,
@@ -666,8 +783,6 @@ export function useSceneWorkspaceController() {
     updateObject,
     removeObject,
     requestDeleteLayer,
-    cancelDeleteLayer,
-    confirmDeleteLayer,
     saveLibraryScene,
     loadSavedScene,
     deleteSavedScene,

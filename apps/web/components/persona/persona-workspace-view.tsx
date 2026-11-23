@@ -48,6 +48,7 @@ export function PersonaWorkspaceView({
   const feedbackAction = useRef<Element | null>(null);
   const {
     activateLibraryPersona,
+    requestImportConfig,
     configImportInputRef,
     personas,
     selectedPersonaId,
@@ -332,7 +333,7 @@ export function PersonaWorkspaceView({
                       ...(savingPersona ? styles.basicIconButtonDisabled : {}),
                     }}
                     disabled={savingPersona}
-                    onClick={handleNewPersonaDraft}
+                    onClick={(event) => void handleNewPersonaDraft(event.currentTarget)}
                     title={savingPersona ? "保存中" : "新建人格草稿"}
                     aria-label={savingPersona ? "保存中" : "新建人格草稿"}
                   >
@@ -362,9 +363,9 @@ export function PersonaWorkspaceView({
                         : {}),
                     }}
                     disabled={!selectedPersona || savingPersona}
-                    onClick={() => {
-                      void handleReloadSelectedPersona();
-                    }}
+                    onClick={(event) =>
+                      void handleReloadSelectedPersona(event.currentTarget)
+                    }
                     title={savingPersona ? "保存中" : "重新载入人格"}
                     aria-label={savingPersona ? "保存中" : "重新载入人格"}
                   >
@@ -414,7 +415,11 @@ export function PersonaWorkspaceView({
                       id="persona-select"
                       value={selectedPersonaId}
                       onChange={(event) => {
-                        void activatePersonaDraft(event.target.value);
+                        void activatePersonaDraft(
+                          event.currentTarget.value,
+                          undefined,
+                          event.currentTarget,
+                        );
                       }}
                     >
                       <option value="">新建人格（未保存）</option>
@@ -570,7 +575,7 @@ export function PersonaWorkspaceView({
                     <button
                       type="button"
                       style={styles.ghostBtn}
-                      onClick={() => configImportInputRef.current?.click()}
+                      onClick={(event) => requestImportConfig(event.currentTarget)}
                     >
                       导入配置
                     </button>
@@ -615,14 +620,7 @@ export function PersonaWorkspaceView({
                     <button
                       type="button"
                       style={styles.ghostBtn}
-                      onClick={() => {
-                        if (
-                          window.confirm(
-                            `将清空当前 ${draft.slots.length} 个插槽，是否继续？`,
-                          )
-                        )
-                          handleClearSlots();
-                      }}
+                      onClick={(event) => void handleClearSlots(event.currentTarget)}
                       disabled={!draft.slots.length}
                     >
                       清空全部插槽
@@ -1244,8 +1242,10 @@ export function PersonaWorkspaceView({
                             generatedPersonaMeta.learnerAddress
                           )
                         }
-                        onClick={() => {
-                          const applied = applyGeneratedCardsToDraft();
+                        onClick={async (event) => {
+                          const applied = await applyGeneratedCardsToDraft(
+                            event.currentTarget,
+                          );
                           if (applied && !draft.name.trim())
                             document.getElementById("persona-draft-name")?.focus();
                         }}

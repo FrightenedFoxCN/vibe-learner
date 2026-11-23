@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import type { ConfirmFn } from "../components/ui/confirm-provider";
 import type { PersonaCard, ModelRecovery } from "@vibe-learner/shared";
 import { diagnosticContext, type DiagnosticContext } from "../lib/diagnostics";
 import { generatePersonaCards } from "../lib/data/persona-cards";
@@ -35,8 +36,12 @@ export function usePersonaCardGeneration(
     updatePersonaDraft,
     currentPersonaAsyncScope,
     beginDiagnosticAction = diagnosticContext,
+    confirm,
+    captureDraftIntent,
   }: {
     beginDiagnosticAction?: () => DiagnosticContext;
+    confirm: ConfirmFn;
+    captureDraftIntent: () => () => boolean;
     draft: PersonaDraft;
     updatePersonaDraft: (draft: PersonaDraft) => void;
     currentPersonaAsyncScope: (fieldTarget: string) => AsyncResultScope;
@@ -92,7 +97,20 @@ export function usePersonaCardGeneration(
     setCardError("");
     setCardModelRecoveries([]);
   }
-  function applyGeneratedCardsToDraft() {
+  const backfillVersion = useRef<object | null>(null);
+  useLayoutEffect(() => {
+    backfillVersion.current = {};
+    return () => {
+      backfillVersion.current = null;
+    };
+  }, [
+    clearBeforeBackfill,
+    generatedCards,
+    generatedPersonaMeta,
+    selectedGeneratedCardIds,
+  ]);
+
+  async function applyGeneratedCardsToDraft(trigger: HTMLElement) {
     const selectedCards = generatedCards.filter((card) =>
       selectedGeneratedCardIds.includes(card.id),
     );
@@ -110,13 +128,18 @@ export function usePersonaCardGeneration(
       );
       return false;
     }
-    if (
-      clearBeforeBackfill &&
-      !window.confirm(
-        "应用后会清空现有摘要、关系、称呼、参考提示和全部插槽。是否继续？",
-      )
-    ) {
-      return false;
+    if (clearBeforeBackfill) {
+      const isCurrent = captureDraftIntent();
+      const version = backfillVersion.current;
+      const approved = await confirm({
+        title: "清空后应用生成人格内容？",
+        message: "应用后会清空现有摘要、关系、称呼、参考提示和全部插槽。",
+        confirmLabel: "清空并应用",
+        danger: true,
+        trigger,
+      });
+      if (!approved || !isCurrent() || !version || backfillVersion.current !== version)
+        return false;
     }
     setCardError("");
     setCardMessage("");

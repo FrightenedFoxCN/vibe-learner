@@ -10,31 +10,14 @@ import {
   normalizeSceneTreeNodeForProfile,
   countSceneNodes,
   canDeleteLayerSafely,
-  findLayerById,
 } from "../../lib/scene-editor-model";
+import { formatTimestamp } from "../../lib/format";
 import { SceneProposalPreview } from "./scene-proposal-preview";
-import { SceneDeleteDialog } from "./scene-delete-dialog";
 import { TopNav } from "../../components/top-nav";
 
 import type { SceneWorkspaceController } from "../../hooks/use-scene-workspace-controller";
 import { SceneLayerCard, RewriteStateButton } from "./scene-tree-components";
 import { styles, SCENE_SIDEBAR_WIDTH } from "./scene-workspace-styles";
-
-function formatDate(value: string) {
-  if (!value) {
-    return "未知时间";
-  }
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-  return date.toLocaleString("zh-CN", {
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
 
 export function SceneWorkspaceView({
   controller,
@@ -51,7 +34,6 @@ export function SceneWorkspaceView({
     reusableActionPendingId,
     reusableError,
     pageHeadingRef,
-    pendingDeleteLayerId,
     reusableSearchQuery,
     setReusableSearchQuery,
     sceneLayers,
@@ -104,8 +86,6 @@ export function SceneWorkspaceView({
     updateObject,
     removeObject,
     requestDeleteLayer,
-    cancelDeleteLayer,
-    confirmDeleteLayer,
     saveLibraryScene,
     loadSavedScene,
     deleteSavedScene,
@@ -1050,7 +1030,7 @@ export function SceneWorkspaceView({
                                 {item.sceneName}
                               </strong>
                               <span style={styles.savedSceneMeta}>
-                                {formatDate(item.updatedAt)}
+                                {formatTimestamp(item.updatedAt, { style: "short" })}
                               </span>
                             </div>
                             <p style={styles.savedSceneSummary}>
@@ -1092,7 +1072,12 @@ export function SceneWorkspaceView({
                               <button
                                 style={styles.sidebarIconButton}
                                 type="button"
-                                onClick={() => void deleteSavedScene(item.sceneId)}
+                                onClick={(event) =>
+                                  void deleteSavedScene(
+                                    item.sceneId,
+                                    event.currentTarget,
+                                  )
+                                }
                                 title="删除已保存场景"
                                 aria-label="删除已保存场景"
                               >
@@ -1110,17 +1095,6 @@ export function SceneWorkspaceView({
           </div>
         </aside>
       </div>
-
-      {pendingDeleteLayerId ? (
-        <SceneDeleteDialog
-          layerName={
-            findLayerById(sceneLayers, pendingDeleteLayerId)?.title ?? "当前层级"
-          }
-          onCancel={cancelDeleteLayer}
-          onConfirm={confirmDeleteLayer}
-          fallbackFocus={pageHeadingRef}
-        />
-      ) : null}
     </main>
   );
 }

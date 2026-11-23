@@ -6,8 +6,9 @@ import type {
   DocumentPlanningTraceResponse,
   DocumentRecord,
   ModelToolConfig,
-  StreamReport
+  StreamReport,
 } from "@vibe-learner/shared";
+import { formatTimestamp } from "../lib/format";
 import { formatOcrStatus } from "../lib/ocr-status";
 import type { CSSProperties } from "react";
 
@@ -61,22 +62,27 @@ export function DocumentDebugPanels({
   planLiveEvents = [],
   planLiveStatus = "idle",
   loading = false,
-  error = ""
+  error = "",
 }: DocumentDebugPanelsProps) {
   if (!document) {
     return <DebugEmptyState message="暂无教材" />;
   }
 
-  const useLiveProcess = processLiveDocumentId === document.id && processLiveEvents.length > 0;
+  const useLiveProcess =
+    processLiveDocumentId === document.id && processLiveEvents.length > 0;
   const useLivePlan = planLiveDocumentId === document.id && planLiveEvents.length > 0;
   const displayProcessEvents = useLiveProcess
     ? processLiveEvents.map((event) => ({ ...event, createdAt: "" }))
-    : processReport?.events ?? [];
+    : (processReport?.events ?? []);
   const displayPlanEvents = useLivePlan
     ? planLiveEvents.map((event) => ({ ...event, createdAt: "" }))
-    : planReport?.events ?? [];
-  const displayProcessStatus = useLiveProcess ? processLiveStatus : processReport?.status ?? "idle";
-  const displayPlanStatus = useLivePlan ? planLiveStatus : planReport?.status ?? "idle";
+    : (planReport?.events ?? []);
+  const displayProcessStatus = useLiveProcess
+    ? processLiveStatus
+    : (processReport?.status ?? "idle");
+  const displayPlanStatus = useLivePlan
+    ? planLiveStatus
+    : (planReport?.status ?? "idle");
   const visibleChunks = debugRecord?.chunks.slice(0, 12) ?? [];
   const visiblePages = debugRecord?.pages.slice(0, 10) ?? [];
 
@@ -91,7 +97,9 @@ export function DocumentDebugPanels({
           <div style={styles.badgeRow}>
             {loading ? <span style={styles.badge}>刷新中</span> : null}
             <span style={styles.badge}>status: {document.status}</span>
-            <span style={styles.badge}>debug: {document.debugReady ? "ready" : "pending"}</span>
+            <span style={styles.badge}>
+              debug: {document.debugReady ? "ready" : "pending"}
+            </span>
           </div>
         </div>
         {error ? <p style={styles.error}>{error}</p> : null}
@@ -100,11 +108,23 @@ export function DocumentDebugPanels({
           <StatusPill label="plan" status={displayPlanStatus} />
         </div>
         <div style={styles.summaryGrid}>
-          <SummaryItem label="Pages" value={String(debugRecord?.pageCount ?? document.pageCount)} />
-          <SummaryItem label="Chunks" value={String(debugRecord?.chunks.length ?? document.chunkCount)} />
-          <SummaryItem label="Study Units" value={String(debugRecord?.studyUnits.length ?? document.studyUnitCount)} />
+          <SummaryItem
+            label="Pages"
+            value={String(debugRecord?.pageCount ?? document.pageCount)}
+          />
+          <SummaryItem
+            label="Chunks"
+            value={String(debugRecord?.chunks.length ?? document.chunkCount)}
+          />
+          <SummaryItem
+            label="Study Units"
+            value={String(debugRecord?.studyUnits.length ?? document.studyUnitCount)}
+          />
           <SummaryItem label="Parser" value={debugRecord?.parserName ?? "-"} />
-          <SummaryItem label="Extraction" value={debugRecord?.extractionMethod ?? "-"} />
+          <SummaryItem
+            label="Extraction"
+            value={debugRecord?.extractionMethod ?? "-"}
+          />
           <SummaryItem
             label="OCR"
             value={`${formatOcrStatus(debugRecord?.ocrStatus ?? document.ocrStatus)}${
@@ -165,7 +185,9 @@ export function DocumentDebugPanels({
                   p.{unit.pageStart}–{unit.pageEnd} · {unit.unitKind}
                   {unit.includeInPlan ? "" : " · skipped"}
                 </span>
-                <span style={styles.bodyText}>{truncateText(unit.summary || "-", 220)}</span>
+                <span style={styles.bodyText}>
+                  {truncateText(unit.summary || "-", 220)}
+                </span>
               </div>
             ))}
           </div>
@@ -204,11 +226,16 @@ export function DocumentDebugPanels({
 
       <details style={styles.card}>
         <summary style={styles.summary}>计划工具与章节详情</summary>
-        {planningContext || modelToolConfig || planningContextError || modelToolConfigError ? (
+        {planningContext ||
+        modelToolConfig ||
+        planningContextError ||
+        modelToolConfigError ? (
           <div style={styles.sectionStack}>
             <div style={styles.subSection}>
               <span style={styles.subTitle}>当前可用工具</span>
-              {planningContextError ? <PanelError message={planningContextError} /> : null}
+              {planningContextError ? (
+                <PanelError message={planningContextError} />
+              ) : null}
               {planningContext?.availableTools.length ? (
                 <div style={styles.tagRow}>
                   {planningContext.availableTools.map((tool) => (
@@ -221,18 +248,24 @@ export function DocumentDebugPanels({
             </div>
             <div style={styles.subSection}>
               <span style={styles.subTitle}>模型工具开关</span>
-              {modelToolConfigError ? <PanelError message={modelToolConfigError} /> : null}
+              {modelToolConfigError ? (
+                <PanelError message={modelToolConfigError} />
+              ) : null}
               {modelToolConfig?.stages.length ? (
                 <div style={styles.list}>
                   {modelToolConfig.stages.map((stage) => (
                     <div key={stage.name} style={styles.itemCard}>
                       <strong>{stage.label}</strong>
                       <span style={styles.caption}>
-                        {stage.stageEnabled ? "runtime on" : "runtime off"} · {stage.name}
+                        {stage.stageEnabled ? "runtime on" : "runtime off"} ·{" "}
+                        {stage.name}
                       </span>
                       <div style={styles.tagRow}>
                         {stage.tools.map((tool) => (
-                          <span key={tool.name} style={tool.effectiveEnabled ? styles.tag : styles.tagMuted}>
+                          <span
+                            key={tool.name}
+                            style={tool.effectiveEnabled ? styles.tag : styles.tagMuted}
+                          >
                             {tool.label}
                           </span>
                         ))}
@@ -244,7 +277,9 @@ export function DocumentDebugPanels({
             </div>
             <div style={styles.subSection}>
               <span style={styles.subTitle}>Study Unit Detail</span>
-              {planningContextError ? <PanelError message={planningContextError} /> : null}
+              {planningContextError ? (
+                <PanelError message={planningContextError} />
+              ) : null}
               {planningContext?.studyUnits.length ? (
                 <div style={styles.list}>
                   {planningContext.studyUnits.map((unit) => {
@@ -253,9 +288,12 @@ export function DocumentDebugPanels({
                       <div key={unit.unitId} style={styles.itemCard}>
                         <strong>{unit.title}</strong>
                         <span style={styles.caption}>
-                          p.{unit.pageStart}–{unit.pageEnd} · detail chunks: {detail?.chunkCount ?? 0}
+                          p.{unit.pageStart}–{unit.pageEnd} · detail chunks:{" "}
+                          {detail?.chunkCount ?? 0}
                         </span>
-                        <span style={styles.bodyText}>{truncateText(unit.summary || "-", 180)}</span>
+                        <span style={styles.bodyText}>
+                          {truncateText(unit.summary || "-", 180)}
+                        </span>
                         {detail?.subsectionTitles.length ? (
                           <div style={styles.tagRow}>
                             {detail.subsectionTitles.map((title, index) => (
@@ -266,7 +304,9 @@ export function DocumentDebugPanels({
                           </div>
                         ) : null}
                         {detail?.chunkExcerpts.length ? (
-                          <pre style={styles.preCompact}>{truncateText(detail.chunkExcerpts[0]?.content ?? "", 500)}</pre>
+                          <pre style={styles.preCompact}>
+                            {truncateText(detail.chunkExcerpts[0]?.content ?? "", 500)}
+                          </pre>
                         ) : null}
                       </div>
                     );
@@ -288,18 +328,33 @@ export function DocumentDebugPanels({
             <div style={styles.itemCard}>
               <strong>{planningTrace.trace.model || "unknown model"}</strong>
               <span style={styles.caption}>
-                rounds: {planningTrace.summary.roundCount} · tool calls: {planningTrace.summary.toolCallCount} · recoveries: {planningTrace.trace.rounds.reduce((sum, round) => sum + (round.recoveries?.length ?? 0), 0)}
+                rounds: {planningTrace.summary.roundCount} · tool calls:{" "}
+                {planningTrace.summary.toolCallCount} · recoveries:{" "}
+                {planningTrace.trace.rounds.reduce(
+                  (sum, round) => sum + (round.recoveries?.length ?? 0),
+                  0,
+                )}
               </span>
             </div>
             {planningTrace.trace.rounds.map((round) => (
-              <div key={`${round.roundIndex}:${round.finishReason}`} style={styles.itemCard}>
+              <div
+                key={`${round.roundIndex}:${round.finishReason}`}
+                style={styles.itemCard}
+              >
                 <strong>Round {round.roundIndex + 1}</strong>
                 <span style={styles.caption}>
-                  {round.finishReason || "no finish reason"} · {round.elapsedMs} ms · timeout {round.timeoutSeconds}s
+                  {round.finishReason || "no finish reason"} · {round.elapsedMs} ms ·
+                  timeout {round.timeoutSeconds}s
                 </span>
-                {round.thinking ? <pre style={styles.preCompact}>{truncateText(round.thinking, 900)}</pre> : null}
+                {round.thinking ? (
+                  <pre style={styles.preCompact}>
+                    {truncateText(round.thinking, 900)}
+                  </pre>
+                ) : null}
                 {round.assistantContent ? (
-                  <pre style={styles.preCompact}>{truncateText(round.assistantContent, 900)}</pre>
+                  <pre style={styles.preCompact}>
+                    {truncateText(round.assistantContent, 900)}
+                  </pre>
                 ) : null}
                 {round.recoveries?.length ? (
                   <div style={styles.tagRow}>
@@ -315,9 +370,15 @@ export function DocumentDebugPanels({
                     {round.toolCalls.map((toolCall) => (
                       <div key={toolCall.toolCallId} style={styles.toolCallCard}>
                         <strong>{toolCall.toolName}</strong>
-                        <span style={styles.caption}>{toolCall.resultSummary || "无结果摘要"}</span>
-                        <pre style={styles.preCompact}>{truncateText(toolCall.argumentsJson, 500)}</pre>
-                        <pre style={styles.preCompact}>{truncateText(toolCall.resultJson, 500)}</pre>
+                        <span style={styles.caption}>
+                          {toolCall.resultSummary || "无结果摘要"}
+                        </span>
+                        <pre style={styles.preCompact}>
+                          {truncateText(toolCall.argumentsJson, 500)}
+                        </pre>
+                        <pre style={styles.preCompact}>
+                          {truncateText(toolCall.resultJson, 500)}
+                        </pre>
                       </div>
                     ))}
                   </div>
@@ -359,7 +420,9 @@ export function DocumentDebugPanels({
                 <span style={styles.caption}>
                   p.{chunk.pageStart}–{chunk.pageEnd} · {chunk.charCount} chars
                 </span>
-                <pre style={styles.preCompact}>{truncateText(chunk.textPreview || chunk.content, 420)}</pre>
+                <pre style={styles.preCompact}>
+                  {truncateText(chunk.textPreview || chunk.content, 420)}
+                </pre>
               </div>
             ))}
           </div>
@@ -376,7 +439,8 @@ export function DocumentDebugPanels({
               <div key={page.pageNumber} style={styles.itemCard}>
                 <strong>Page {page.pageNumber}</strong>
                 <span style={styles.caption}>
-                  {page.charCount} chars · {page.wordCount} words · {page.extractionSource}
+                  {page.charCount} chars · {page.wordCount} words ·{" "}
+                  {page.extractionSource}
                 </span>
                 {page.headingCandidates.length ? (
                   <div style={styles.tagRow}>
@@ -387,7 +451,9 @@ export function DocumentDebugPanels({
                     ))}
                   </div>
                 ) : null}
-                <pre style={styles.preCompact}>{truncateText(page.textPreview || "[empty]", 420)}</pre>
+                <pre style={styles.preCompact}>
+                  {truncateText(page.textPreview || "[empty]", 420)}
+                </pre>
               </div>
             ))}
           </div>
@@ -403,15 +469,21 @@ function StreamPanel({
   status,
   events,
   error,
-  emptyMessage
+  emptyMessage,
 }: {
   status: string;
-  events: Array<{ stage: string; payload: Record<string, unknown>; createdAt?: string }>;
+  events: Array<{
+    stage: string;
+    payload: Record<string, unknown>;
+    createdAt?: string;
+  }>;
   error?: string;
   emptyMessage: string;
 }) {
   const visibleEvents = events.slice(-8).reverse();
-  const streamErrorEvent = [...events].reverse().find((event) => event.stage === "stream_error");
+  const streamErrorEvent = [...events]
+    .reverse()
+    .find((event) => event.stage === "stream_error");
   const streamError = error || extractEventError(streamErrorEvent?.payload);
   return (
     <div style={styles.sectionStack}>
@@ -427,7 +499,12 @@ function StreamPanel({
           {visibleEvents.map((event, index) => (
             <div key={`${event.stage}:${index}`} style={styles.itemCard}>
               <strong>{event.stage}</strong>
-              <span style={styles.caption}>{formatDateTime(event.createdAt)}</span>
+              <span style={styles.caption}>
+                {formatTimestamp(event.createdAt, {
+                  style: "debug",
+                  empty: "实时事件",
+                })}
+              </span>
               <pre style={styles.preCompact}>{truncateJson(event.payload, 500)}</pre>
             </div>
           ))}
@@ -489,55 +566,38 @@ function truncateText(value: string, maxLength: number) {
   return `${value.slice(0, Math.max(0, maxLength - 1)).trimEnd()}…`;
 }
 
-function formatDateTime(value?: string) {
-  if (!value) {
-    return "实时事件";
-  }
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-  return date.toLocaleString("zh-CN", {
-    hour12: false,
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit"
-  });
-}
-
 const styles: Record<string, CSSProperties> = {
   stack: {
     display: "grid",
-    gap: 12
+    gap: 12,
   },
   card: {
     border: "1px solid var(--border)",
-    background: "linear-gradient(180deg, color-mix(in srgb, white 76%, var(--accent-soft)) 0%, var(--bg) 72%)",
+    background:
+      "linear-gradient(180deg, color-mix(in srgb, white 76%, var(--accent-soft)) 0%, var(--bg) 72%)",
     borderRadius: 16,
-    padding: "14px 16px"
+    padding: "14px 16px",
   },
   cardHeader: {
     display: "flex",
     alignItems: "flex-start",
     justifyContent: "space-between",
     gap: 12,
-    flexWrap: "wrap"
+    flexWrap: "wrap",
   },
   headerCopy: {
     display: "grid",
-    gap: 4
+    gap: 4,
   },
   cardTitle: {
     fontSize: 15,
     fontWeight: 700,
-    color: "var(--ink)"
+    color: "var(--ink)",
   },
   badgeRow: {
     display: "flex",
     gap: 8,
-    flexWrap: "wrap"
+    flexWrap: "wrap",
   },
   badge: {
     fontSize: 11,
@@ -545,82 +605,82 @@ const styles: Record<string, CSSProperties> = {
     padding: "4px 8px",
     borderRadius: 999,
     background: "var(--accent-soft)",
-    color: "var(--accent)"
+    color: "var(--accent)",
   },
   statusStrip: {
     display: "flex",
     gap: 8,
     flexWrap: "wrap",
     alignItems: "center",
-    marginTop: 12
+    marginTop: 12,
   },
   metaText: {
     fontSize: 11,
-    color: "var(--muted)"
+    color: "var(--muted)",
   },
   liveText: {
     fontSize: 11,
     fontWeight: 700,
-    color: "var(--accent)"
+    color: "var(--accent)",
   },
   summaryGrid: {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))",
     gap: 10,
-    marginTop: 14
+    marginTop: 14,
   },
   summaryItem: {
     display: "grid",
     gap: 4,
     padding: "10px 12px",
     borderRadius: 12,
-    background: "var(--panel)"
+    background: "var(--panel)",
   },
   summary: {
     cursor: "pointer",
     fontSize: 14,
     fontWeight: 700,
-    color: "var(--ink)"
+    color: "var(--ink)",
   },
   sectionStack: {
     display: "grid",
     gap: 12,
-    marginTop: 12
+    marginTop: 12,
   },
   subSection: {
     display: "grid",
-    gap: 8
+    gap: 8,
   },
   subTitle: {
     fontSize: 12,
     fontWeight: 700,
     color: "var(--ink-2)",
     textTransform: "uppercase",
-    letterSpacing: "0.06em"
+    letterSpacing: "0.06em",
   },
   list: {
     display: "grid",
     gap: 10,
-    marginTop: 12
+    marginTop: 12,
   },
   itemCard: {
     display: "grid",
     gap: 6,
     padding: "12px 14px",
     borderRadius: 12,
-    background: "var(--panel)"
+    background: "var(--panel)",
   },
   toolCallCard: {
     display: "grid",
     gap: 6,
     padding: "10px 12px",
     borderRadius: 10,
-    background: "color-mix(in srgb, var(--panel) 82%, white)"
+    background: "color-mix(in srgb, var(--panel) 82%, white)",
   },
   tagRow: {
     display: "flex",
     gap: 8,
-    flexWrap: "wrap"
+    flexWrap: "wrap",
   },
   tag: {
     fontSize: 11,
@@ -628,7 +688,7 @@ const styles: Record<string, CSSProperties> = {
     borderRadius: 999,
     background: "white",
     border: "1px solid var(--border)",
-    color: "var(--ink-2)"
+    color: "var(--ink-2)",
   },
   tagMuted: {
     fontSize: 11,
@@ -636,14 +696,14 @@ const styles: Record<string, CSSProperties> = {
     borderRadius: 999,
     background: "var(--panel-strong)",
     border: "1px solid var(--border)",
-    color: "var(--muted)"
+    color: "var(--muted)",
   },
   statusRow: {
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
     gap: 8,
-    flexWrap: "wrap"
+    flexWrap: "wrap",
   },
   preCompact: {
     margin: 0,
@@ -655,21 +715,21 @@ const styles: Record<string, CSSProperties> = {
     overflowX: "auto",
     fontSize: 11,
     lineHeight: 1.6,
-    fontFamily: "var(--font-mono)"
+    fontFamily: "var(--font-mono)",
   },
   caption: {
     fontSize: 12,
-    color: "var(--muted)"
+    color: "var(--muted)",
   },
   bodyText: {
     fontSize: 13,
     color: "var(--ink-2)",
-    lineHeight: 1.6
+    lineHeight: 1.6,
   },
   empty: {
     margin: "12px 0 0",
     fontSize: 13,
-    color: "var(--muted)"
+    color: "var(--muted)",
   },
   errorPanel: {
     marginTop: 12,
@@ -680,36 +740,36 @@ const styles: Record<string, CSSProperties> = {
     color: "var(--negative)",
     fontSize: 13,
     lineHeight: 1.6,
-    whiteSpace: "pre-wrap"
+    whiteSpace: "pre-wrap",
   },
   error: {
     margin: "12px 0 0",
     fontSize: 13,
-    color: "var(--negative)"
-  }
+    color: "var(--negative)",
+  },
 };
 
 function statusBadgeStyle(status: string): CSSProperties {
   if (status === "completed") {
     return {
       background: "color-mix(in srgb, var(--positive, #0f9d58) 16%, white)",
-      color: "var(--positive, #0f9d58)"
+      color: "var(--positive, #0f9d58)",
     };
   }
   if (status === "running") {
     return {
       background: "color-mix(in srgb, var(--accent) 16%, white)",
-      color: "var(--accent)"
+      color: "var(--accent)",
     };
   }
   if (status === "error") {
     return {
       background: "color-mix(in srgb, var(--negative) 12%, white)",
-      color: "var(--negative)"
+      color: "var(--negative)",
     };
   }
   return {
     background: "var(--accent-soft)",
-    color: "var(--accent)"
+    color: "var(--accent)",
   };
 }

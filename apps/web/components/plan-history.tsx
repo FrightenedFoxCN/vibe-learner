@@ -1,10 +1,12 @@
 "use client";
 
 import type { CSSProperties } from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
+import { formatTimestamp } from "../lib/format";
 import type { PlanHistoryItem } from "../lib/plan-panel-data";
 import { MaterialIcon } from "./material-icon";
+import { useConfirm } from "./ui/confirm-provider";
 
 interface PlanHistoryProps {
   items: PlanHistoryItem[];
@@ -13,7 +15,7 @@ interface PlanHistoryProps {
   isBusy: boolean;
   onSelect: (planId: string) => void;
   onRefresh: () => void;
-  onDelete: (planId: string) => void | Promise<void>;
+  onDelete: (planId: string, expectedRevision: number) => Promise<boolean>;
 }
 
 export function PlanHistory({
@@ -26,7 +28,8 @@ export function PlanHistory({
   onDelete,
 }: PlanHistoryProps) {
   const [isExpanded, setIsExpanded] = useState(items.length <= 1);
-  const [pendingDeletePlanId, setPendingDeletePlanId] = useState("");
+  const heading = useRef<HTMLSpanElement>(null);
+  const confirm = useConfirm();
 
   useEffect(() => {
     if (!selectedPlanId || items.length <= 1) {
@@ -34,20 +37,37 @@ export function PlanHistory({
     }
   }, [items.length, selectedPlanId]);
 
-  useEffect(() => {
-    if (!pendingDeletePlanId) {
+  async function requestDelete(item: PlanHistoryItem, trigger: HTMLButtonElement) {
+    if (
+      !(await confirm({
+        title: "删除计划？",
+        message:
+          "将删除“" + (item.courseTitle || item.documentTitle) + "”。此操作不可撤销。",
+        confirmLabel: "删除计划",
+        danger: true,
+        trigger,
+        fallbackFocus: () => heading.current,
+      }))
+    )
       return;
+    if (await onDelete(item.id, item.revision)) {
+      // Do not steal focus from a user who moved elsewhere while deletion was pending.
+      if (
+        document.activeElement === document.body ||
+        document.activeElement === trigger
+      ) {
+        heading.current?.focus({ preventScroll: true });
+      }
     }
-    if (!items.some((item) => item.id === pendingDeletePlanId)) {
-      setPendingDeletePlanId("");
-    }
-  }, [items, pendingDeletePlanId]);
+  }
 
   return (
     <section style={styles.wrap}>
       <div style={styles.headerRow}>
         <div style={styles.headerMeta}>
-          <span style={styles.label}>计划历史 {items.length ? `· ${items.length} 条` : ""}</span>
+          <span ref={heading} tabIndex={-1} style={styles.label}>
+            计划历史 {items.length ? `· ${items.length} 条` : ""}
+          </span>
         </div>
         <div style={styles.headerActions}>
           <button
@@ -91,9 +111,12 @@ export function PlanHistory({
                 >
                   <div style={styles.itemTop}>
                     <div style={styles.itemBody}>
-                      <strong style={styles.itemTitle}>{item.courseTitle || item.documentTitle}</strong>
+                      <strong style={styles.itemTitle}>
+                        {item.courseTitle || item.documentTitle}
+                      </strong>
                       <span style={styles.itemMeta}>
-                        {item.documentTitle} · {item.personaName} · {formatDate(item.createdAt)}
+                        {item.documentTitle} · {item.personaName} ·{" "}
+                        {formatTimestamp(item.createdAt, { style: "short" })}
                       </span>
                     </div>
                     {selected ? <span style={styles.badge}>当前</span> : null}
@@ -106,55 +129,29 @@ export function PlanHistory({
                         ...styles.itemButton,
                         ...(selected ? styles.itemButtonSelected : {}),
                       }}
-                      onClick={() => { if (!selected) onSelect(item.id); }}
+                      onClick={() => {
+                        if (!selected) onSelect(item.id);
+                      }}
                       disabled={selected || isBusy}
                     >
                       <MaterialIcon name="event_note" size={16} />
                       <span>{selected ? "当前计划" : "查看计划"}</span>
                     </button>
-                    {pendingDeletePlanId === item.id ? (
-                      <>
-                        <button
-                          type="button"
-                          style={{
-                            ...styles.confirmDeleteButton,
-                            ...(isBusy ? styles.buttonDisabled : {}),
-                          }}
-                          disabled={isBusy}
-                          onClick={async () => {
-                            await onDelete(item.id);
-                            setPendingDeletePlanId("");
-                          }}
-                        >
-                          确认删除
-                        </button>
-                        <button
-                          type="button"
-                          style={{
-                            ...styles.itemButton,
-                            ...(isBusy ? styles.buttonDisabled : {}),
-                          }}
-                          disabled={isBusy}
-                          onClick={() => setPendingDeletePlanId("")}
-                        >
-                          取消
-                        </button>
-                      </>
-                    ) : (
-                      <button
-                        type="button"
-                        style={{
-                          ...styles.itemDeleteButton,
-                          ...(isBusy ? styles.buttonDisabled : {}),
-                        }}
-                        disabled={isBusy}
-                        onClick={() => setPendingDeletePlanId(item.id)}
-                        aria-label={`删除计划 ${item.courseTitle || item.documentTitle}`}
-                        title="删除计划"
-                      >
-                        <MaterialIcon name="delete" size={16} />
-                      </button>
-                    )}
+                    <button
+                      type="button"
+                      style={{
+                        ...styles.itemDeleteButton,
+                        ...(isBusy ? styles.buttonDisabled : {}),
+                      }}
+                      disabled={isBusy}
+                      onClick={(event) => void requestDelete(item, event.currentTarget)}
+                      aria-label={
+                        "删除计划 " + (item.courseTitle || item.documentTitle)
+                      }
+                      title="删除计划"
+                    >
+                      <MaterialIcon name="delete" size={16} />
+                    </button>
                   </div>
                 </div>
               );
@@ -301,18 +298,6 @@ const styles: Record<string, CSSProperties> = {
     alignItems: "center",
     justifyContent: "center",
   },
-  confirmDeleteButton: {
-    minHeight: 30,
-    border: "none",
-    padding: "0 10px",
-    background: "color-mix(in srgb, white 84%, var(--negative) 16%)",
-    color: "var(--negative)",
-    fontSize: 11,
-    fontWeight: 700,
-    cursor: "pointer",
-    display: "inline-flex",
-    alignItems: "center",
-  },
   buttonDisabled: {
     opacity: 0.45,
     cursor: "not-allowed",
@@ -324,15 +309,3 @@ const styles: Record<string, CSSProperties> = {
     fontSize: 14,
   },
 };
-
-function formatDate(value: string) {
-  if (!value) return "未知时间";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleString("zh-CN", {
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
