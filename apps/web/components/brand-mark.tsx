@@ -17,19 +17,40 @@ export function BrandMark({ size = 32, style, ...props }: BrandMarkProps) {
       {...props}
     >
       <defs>
-        <linearGradient id="brand-mark-bg" x1="16" y1="12" x2="112" y2="116" gradientUnits="userSpaceOnUse">
+        <linearGradient
+          id="brand-mark-bg"
+          x1="16"
+          y1="12"
+          x2="112"
+          y2="116"
+          gradientUnits="userSpaceOnUse"
+        >
           <stop stopColor="#0A5560" />
           <stop offset="0.55" stopColor="#0A6772" />
           <stop offset="1" stopColor="#15909B" />
         </linearGradient>
-        <linearGradient id="brand-mark-sheen" x1="26" y1="18" x2="96" y2="88" gradientUnits="userSpaceOnUse">
+        <linearGradient
+          id="brand-mark-sheen"
+          x1="26"
+          y1="18"
+          x2="96"
+          y2="88"
+          gradientUnits="userSpaceOnUse"
+        >
           <stop stopColor="rgba(255,255,255,0.24)" />
           <stop offset="1" stopColor="rgba(255,255,255,0)" />
         </linearGradient>
       </defs>
 
       <rect x="8" y="8" width="112" height="112" rx="30" fill="url(#brand-mark-bg)" />
-      <rect x="16" y="16" width="96" height="96" rx="24" fill="url(#brand-mark-sheen)" />
+      <rect
+        x="16"
+        y="16"
+        width="96"
+        height="96"
+        rx="24"
+        fill="url(#brand-mark-sheen)"
+      />
 
       <path
         d="M34 38.5C45 36.25 54.5 38.5 62.5 44.25V83.5C54.75 78.25 45.25 76.5 34 78.75V38.5Z"

@@ -3,7 +3,7 @@ import type {
   PersonaProfile,
   SessionAffinityState,
   SessionFollowUp,
-  StudyChatResponse
+  StudyChatResponse,
 } from "@vibe-learner/shared";
 
 interface CharacterShellProps {
@@ -23,7 +23,7 @@ export function CharacterShell({
   turnCount = 0,
   affinityState,
   nextFollowUp,
-  variant = "default"
+  variant = "default",
 }: CharacterShellProps) {
   const responseEvents = response?.characterEvents ?? [];
   const currentEvent = responseEvents[0] ?? null;
@@ -47,8 +47,16 @@ export function CharacterShell({
           value={currentEvent ? "表演状态已就绪" : pending ? "等待表演状态" : "待开始"}
         />
         <InfoRow label="对话" value={formatTurnCount(turnCount)} />
-        <InfoRow label="情绪" value={formatEmotionLabel(currentEvent?.emotion ?? "calm")} />
-        <InfoRow label="语气" value={formatSpeechStyleLabel(currentEvent?.speechStyle ?? persona.defaultSpeechStyle)} />
+        <InfoRow
+          label="情绪"
+          value={formatEmotionLabel(currentEvent?.emotion ?? "calm")}
+        />
+        <InfoRow
+          label="语气"
+          value={formatSpeechStyleLabel(
+            currentEvent?.speechStyle ?? persona.defaultSpeechStyle,
+          )}
+        />
         <InfoRow label="好感" value={formatAffinityLevel(affinityState?.level)} />
         <InfoRow label="续接" value={formatFollowUpState(nextFollowUp)} />
       </div>

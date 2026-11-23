@@ -7,7 +7,7 @@ import { TopNav } from "../top-nav";
 import {
   DESKTOP_STARTUP_QUERY_KEY,
   DESKTOP_STARTUP_QUERY_VALUE,
-  resolveDesktopStartupRequirement
+  resolveDesktopStartupRequirement,
 } from "../../lib/desktop-startup";
 import { settingsStyles as styles } from "./settings-styles";
 import {
@@ -19,7 +19,7 @@ import {
   ProviderCard,
   SettingsHeader,
   StartupRequirementCard,
-  AdvancedSettingsCard
+  AdvancedSettingsCard,
 } from "./settings-sections";
 import { usePageDebugSnapshot } from "../page-debug-context";
 import { useSettingsController } from "./use-settings-controller";
@@ -29,7 +29,8 @@ export function SettingsPage() {
   const controller = useSettingsController();
   const searchParams = useSearchParams();
   const showDesktopSecurityCard =
-    controller.desktopSecurity.enabled || Boolean(controller.desktopSecurity.startupError);
+    controller.desktopSecurity.enabled ||
+    Boolean(controller.desktopSecurity.startupError);
   const startupRequirement = useMemo(() => {
     if (searchParams.get(DESKTOP_STARTUP_QUERY_KEY) !== DESKTOP_STARTUP_QUERY_VALUE) {
       return null;
@@ -38,17 +39,18 @@ export function SettingsPage() {
       isDesktop: controller.desktopSecurity.enabled,
       startupError: controller.desktopSecurity.startupError,
       vaultState: controller.desktopSecurity.vaultState,
-      settings: controller.settings
+      settings: controller.settings,
     });
   }, [
     controller.desktopSecurity.enabled,
     controller.desktopSecurity.startupError,
     controller.desktopSecurity.vaultState,
     controller.settings,
-    searchParams
+    searchParams,
   ]);
   const showConnectionModelsCard = Boolean(
-    controller.settings && (controller.settings.planProvider === "litellm" || startupRequirement)
+    controller.settings &&
+    (controller.settings.planProvider === "litellm" || startupRequirement),
   );
   const debugSnapshot = useMemo(
     () => buildSettingsDebugSnapshot(controller),
@@ -61,8 +63,8 @@ export function SettingsPage() {
       controller.settings,
       controller.desktopSecurity,
       controller.numericDrafts,
-      controller.probeState
-    ]
+      controller.probeState,
+    ],
   );
 
   usePageDebugSnapshot(debugSnapshot);
@@ -80,7 +82,9 @@ export function SettingsPage() {
       ) : null}
 
       {controller.loading ? <div style={styles.loading}>正在加载设置…</div> : null}
-      {controller.loadError ? <div style={styles.error}>设置加载失败：{controller.loadError}</div> : null}
+      {controller.loadError ? (
+        <div style={styles.error}>设置加载失败：{controller.loadError}</div>
+      ) : null}
       {!controller.loading && !controller.settings && showDesktopSecurityCard ? (
         <div className="settings-form" style={styles.form}>
           <DesktopSecurityCard controller={controller} />
@@ -90,15 +94,26 @@ export function SettingsPage() {
       {!controller.loading && controller.settings ? (
         <div className="settings-form" style={styles.form}>
           <ProviderCard controller={controller} settings={controller.settings} />
-          {showDesktopSecurityCard ? <DesktopSecurityCard controller={controller} /> : null}
+          {showDesktopSecurityCard ? (
+            <DesktopSecurityCard controller={controller} />
+          ) : null}
 
           {showConnectionModelsCard ? (
-            <ConnectionModelsCard controller={controller} settings={controller.settings} />
+            <ConnectionModelsCard
+              controller={controller}
+              settings={controller.settings}
+            />
           ) : null}
           {controller.settings.planProvider === "litellm" ? (
             <>
-              <CapabilityAuditCard controller={controller} settings={controller.settings} />
-              <AdvancedSettingsCard controller={controller} settings={controller.settings} />
+              <CapabilityAuditCard
+                controller={controller}
+                settings={controller.settings}
+              />
+              <AdvancedSettingsCard
+                controller={controller}
+                settings={controller.settings}
+              />
             </>
           ) : null}
 

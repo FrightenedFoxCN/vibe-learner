@@ -366,52 +366,54 @@ export function StudyDialogPage() {
     }
   }, [requestedPage, activeDocument, projectedPdf]);
 
+  const { imageUrl, pageNumber, pageCount, sourceId, sourceKind, title, updatedAt } =
+    projectedPdf ?? {};
+  // A new projection can restore the preview even when its displayed fields are unchanged.
   useEffect(() => {
-    if (!projectedPdf) return;
-    if (projectedPdf.sourceKind === "attachment_pdf") {
+    if (
+      sourceKind === undefined ||
+      sourceId === undefined ||
+      title === undefined ||
+      pageNumber === undefined ||
+      pageCount === undefined
+    )
+      return;
+    if (sourceKind === "attachment_pdf") {
       setPreviewState({
         kind: "attachment_pdf",
-        sourceId: projectedPdf.sourceId,
-        title: projectedPdf.title,
-        page: projectedPdf.pageNumber,
-        pageCount: projectedPdf.pageCount,
+        sourceId,
+        title,
+        page: pageNumber,
+        pageCount,
       });
-    } else if (projectedPdf.sourceKind === "attachment_image") {
+    } else if (sourceKind === "attachment_image") {
       setPreviewState({
         kind: "attachment_image",
-        sourceId: projectedPdf.sourceId,
-        title: projectedPdf.title,
-        page: projectedPdf.pageNumber,
-        pageCount: projectedPdf.pageCount,
-        imageUrl: projectedPdf.imageUrl || "",
+        sourceId,
+        title,
+        page: pageNumber,
+        pageCount,
+        imageUrl: imageUrl || "",
       });
-    } else if (projectedPdf.sourceKind === "generated_image") {
+    } else if (sourceKind === "generated_image") {
       setPreviewState({
         kind: "generated_image",
-        sourceId: projectedPdf.sourceId,
-        title: projectedPdf.title,
-        page: projectedPdf.pageNumber,
-        pageCount: projectedPdf.pageCount,
-        imageUrl: projectedPdf.imageUrl || "",
+        sourceId,
+        title,
+        page: pageNumber,
+        pageCount,
+        imageUrl: imageUrl || "",
       });
     } else {
       setPreviewState({
         kind: "document",
-        sourceId: projectedPdf.sourceId,
-        title: projectedPdf.title,
-        page: projectedPdf.pageNumber,
-        pageCount: projectedPdf.pageCount,
+        sourceId,
+        title,
+        page: pageNumber,
+        pageCount,
       });
     }
-  }, [
-    projectedPdf?.imageUrl,
-    projectedPdf?.pageNumber,
-    projectedPdf?.pageCount,
-    projectedPdf?.sourceId,
-    projectedPdf?.sourceKind,
-    projectedPdf?.title,
-    projectedPdf?.updatedAt,
-  ]);
+  }, [imageUrl, pageNumber, pageCount, sourceId, sourceKind, title, updatedAt]);
 
   useEffect(() => {
     if (!studySession || !currentStudyUnitId) return;

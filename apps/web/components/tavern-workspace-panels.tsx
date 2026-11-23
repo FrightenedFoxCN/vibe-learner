@@ -393,7 +393,9 @@ export function TavernConversationPanel({
     viewportOffset: number;
   } | null>(null);
   const previousLatestSequence = useRef(0);
-  const latestSequence = messages[messages.length - 1]?.sequence ?? 0;
+  const loadedMessageCount = messages.length;
+  const firstSequence = messages[0]?.sequence;
+  const latestSequence = messages[loadedMessageCount - 1]?.sequence ?? 0;
   const names = useMemo(
     () =>
       new Map(
@@ -417,7 +419,6 @@ export function TavernConversationPanel({
   useLayoutEffect(() => {
     const anchor = pendingOlderAnchorRef.current;
     const scrollBox = scrollRef.current;
-    const firstSequence = messages[0]?.sequence;
     if (
       anchor &&
       scrollBox &&
@@ -440,7 +441,7 @@ export function TavernConversationPanel({
       scrollBox.style.scrollBehavior = priorBehavior;
       pendingOlderAnchorRef.current = null;
     }
-  }, [messages.length, messages[0]?.sequence]);
+  }, [loadedMessageCount, firstSequence]);
 
   const loadOlder = async () => {
     const scrollBox = scrollRef.current;

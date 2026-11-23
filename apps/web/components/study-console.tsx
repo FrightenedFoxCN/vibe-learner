@@ -2006,16 +2006,6 @@ function formatActionDescription(value: string) {
   return value.trim();
 }
 
-function formatSpeechStyleLabel(value: string) {
-  const normalized = value.trim().toLowerCase();
-  if (normalized === "steady") return "平稳";
-  if (normalized === "warm") return "温和";
-  if (normalized === "dramatic") return "戏剧化";
-  if (normalized === "gentle") return "轻柔";
-  if (normalized === "energetic") return "有活力";
-  return value || "默认";
-}
-
 function formatToolName(value: string) {
   const normalized = value.trim().toLowerCase();
   if (normalized === "update_learning_plan") return "提出计划修改";

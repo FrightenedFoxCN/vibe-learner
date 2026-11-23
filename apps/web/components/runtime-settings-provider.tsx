@@ -48,7 +48,7 @@ export function RuntimeSettingsProvider({ children }: { children: ReactNode }) {
         error,
         showDebugInfo: Boolean(settings?.showDebugInfo),
         refresh,
-        replaceSettings: setSettings
+        replaceSettings: setSettings,
       }}
     >
       {children}

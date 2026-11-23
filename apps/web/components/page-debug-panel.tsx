@@ -16,7 +16,7 @@ export function PageDebugPanel({
   error = "",
   summary = [],
   details = [],
-  children
+  children,
 }: PageDebugPanelProps) {
   return (
     <details style={styles.card} open>
@@ -69,13 +69,13 @@ const styles: Record<string, CSSProperties> = {
     border: "1px solid var(--border)",
     background: "var(--bg)",
     borderRadius: 16,
-    padding: "14px 16px"
+    padding: "14px 16px",
   },
   summary: {
     cursor: "pointer",
     fontSize: 14,
     fontWeight: 700,
-    color: "var(--ink)"
+    color: "var(--ink)",
   },
   error: {
     marginTop: 12,
@@ -86,45 +86,45 @@ const styles: Record<string, CSSProperties> = {
     color: "var(--negative)",
     fontSize: 13,
     lineHeight: 1.6,
-    whiteSpace: "pre-wrap"
+    whiteSpace: "pre-wrap",
   },
   summaryGrid: {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
     gap: 10,
-    marginTop: 12
+    marginTop: 12,
   },
   summaryItem: {
     display: "grid",
     gap: 4,
     padding: "10px 12px",
     borderRadius: 12,
-    background: "var(--panel)"
+    background: "var(--panel)",
   },
   summaryValue: {
     fontSize: 13,
     color: "var(--ink-2)",
-    wordBreak: "break-word"
+    wordBreak: "break-word",
   },
   caption: {
     fontSize: 12,
-    color: "var(--muted)"
+    color: "var(--muted)",
   },
   detailList: {
     display: "grid",
     gap: 10,
-    marginTop: 12
+    marginTop: 12,
   },
   detailCard: {
     display: "grid",
     gap: 6,
     padding: "12px 14px",
     borderRadius: 12,
-    background: "var(--panel)"
+    background: "var(--panel)",
   },
   detailTitle: {
     fontSize: 13,
-    color: "var(--ink)"
+    color: "var(--ink)",
   },
   pre: {
     margin: 0,
@@ -136,6 +136,6 @@ const styles: Record<string, CSSProperties> = {
     overflowX: "auto",
     fontSize: 11,
     lineHeight: 1.6,
-    fontFamily: "var(--font-mono)"
-  }
+    fontFamily: "var(--font-mono)",
+  },
 };

@@ -16,7 +16,8 @@ export function PersonaSelector({
   compact = false,
   selectId,
 }: PersonaSelectorProps) {
-  const selectedPersona = personas.find((persona) => persona.id === selectedPersonaId) ?? personas[0] ?? null;
+  const selectedPersona =
+    personas.find((persona) => persona.id === selectedPersonaId) ?? personas[0] ?? null;
 
   if (compact) {
     return (
@@ -58,12 +59,20 @@ export function PersonaSelector({
   );
 }
 
-function PersonaMiniCard({ persona, compact = false }: { persona: PersonaProfile; compact?: boolean }) {
+function PersonaMiniCard({
+  persona,
+  compact = false,
+}: {
+  persona: PersonaProfile;
+  compact?: boolean;
+}) {
   return (
     <div style={{ ...styles.card, ...(compact ? styles.cardCompact : {}) }}>
       <div style={styles.cardHead}>
         <span style={styles.cardName}>{persona.name}</span>
-        <span style={styles.cardSource}>{persona.source === "builtin" ? "内置" : "用户扩展"}</span>
+        <span style={styles.cardSource}>
+          {persona.source === "builtin" ? "内置" : "用户扩展"}
+        </span>
       </div>
       <p style={styles.cardSummary}>{persona.summary || "未填写摘要"}</p>
       <div style={styles.cardMetaGrid}>
@@ -89,7 +98,7 @@ const styles: Record<string, CSSProperties> = {
     color: "var(--muted)",
     fontSize: 12,
     fontWeight: 600,
-    letterSpacing: "0.04em"
+    letterSpacing: "0.04em",
   },
   select: {
     width: "100%",
@@ -98,11 +107,11 @@ const styles: Record<string, CSSProperties> = {
     border: "1px solid var(--border)",
     padding: "8px 10px",
     background: "var(--panel-strong)",
-    color: "var(--ink)"
+    color: "var(--ink)",
   },
   compactWrap: {
     display: "grid",
-    gap: 8
+    gap: 8,
   },
   selectCompact: {
     width: "100%",
@@ -111,7 +120,7 @@ const styles: Record<string, CSSProperties> = {
     padding: "0 10px",
     background: "color-mix(in srgb, white 72%, var(--surface))",
     color: "var(--ink)",
-    fontSize: 14
+    fontSize: 14,
   },
   card: {
     display: "grid",
@@ -119,47 +128,47 @@ const styles: Record<string, CSSProperties> = {
     padding: 12,
     borderRadius: 10,
     border: "1px solid var(--border)",
-    background: "color-mix(in srgb, white 84%, var(--panel-strong))"
+    background: "color-mix(in srgb, white 84%, var(--panel-strong))",
   },
   cardCompact: {
     padding: 10,
-    gap: 6
+    gap: 6,
   },
   cardHead: {
     display: "flex",
     alignItems: "baseline",
     justifyContent: "space-between",
     gap: 8,
-    flexWrap: "wrap"
+    flexWrap: "wrap",
   },
   cardName: {
     fontSize: 13,
     fontWeight: 700,
-    color: "var(--ink)"
+    color: "var(--ink)",
   },
   cardSource: {
     fontSize: 11,
-    color: "var(--muted)"
+    color: "var(--muted)",
   },
   cardSummary: {
     margin: 0,
     fontSize: 12,
     lineHeight: 1.5,
-    color: "var(--muted)"
+    color: "var(--muted)",
   },
   cardMetaGrid: {
     display: "grid",
     gridTemplateColumns: "auto 1fr",
     gap: "4px 8px",
-    alignItems: "center"
+    alignItems: "center",
   },
   cardMetaLabel: {
     fontSize: 11,
     color: "var(--muted)",
-    letterSpacing: "0.04em"
+    letterSpacing: "0.04em",
   },
   cardMetaValue: {
     fontSize: 12,
-    color: "var(--ink)"
-  }
+    color: "var(--ink)",
+  },
 };

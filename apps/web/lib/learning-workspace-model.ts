@@ -1,4 +1,9 @@
-import type { DocumentRecord, DocumentSection, LearningPlan, SceneProfile } from "@vibe-learner/shared";
+import type {
+  DocumentRecord,
+  DocumentSection,
+  LearningPlan,
+  SceneProfile,
+} from "@vibe-learner/shared";
 import type { SceneLibraryItemPayload } from "./data/scenes";
 import type { useRuntimeSettings } from "../components/runtime-settings-provider";
 import type { getDesktopRuntimeConfig } from "./runtime-config";
@@ -28,7 +33,7 @@ export function resolvePlanGenerationBlockedReason(input: {
 
 export function resolveSceneProfileFromLibrary(
   items: SceneLibraryItemPayload[],
-  selectedSceneLibraryId: string
+  selectedSceneLibraryId: string,
 ): SceneProfile | undefined {
   if (!selectedSceneLibraryId) {
     return undefined;
@@ -54,14 +59,14 @@ export function resolveSceneProfileFromLibrary(
 
 export function buildPlanDirectorySections(
   plan: LearningPlan | null,
-  document: DocumentRecord | null
+  document: DocumentRecord | null,
 ): DocumentSection[] {
   if (!plan) {
     return [];
   }
 
   const studyUnitById = new Map(
-    (document?.studyUnits ?? plan.studyUnits).map((unit) => [unit.id, unit])
+    (document?.studyUnits ?? plan.studyUnits).map((unit) => [unit.id, unit]),
   );
   const sections: DocumentSection[] = [];
 
@@ -76,7 +81,7 @@ export function buildPlanDirectorySections(
       title: item.title || unit.title,
       pageStart: unit.pageStart,
       pageEnd: unit.pageEnd,
-      level: 1
+      level: 1,
     });
   }
 
@@ -97,27 +102,40 @@ export function buildPlanDirectorySections(
   }
 
   return sections.filter(
-    (section, index) => sections.findIndex((candidate) => candidate.id === section.id) === index
+    (section, index) =>
+      sections.findIndex((candidate) => candidate.id === section.id) === index,
   );
 }
 
-export function resolveStudyUnitTitle(studyUnitId: string, planSections: DocumentSection[], activeDocument: DocumentRecord | null) {
+export function resolveStudyUnitTitle(
+  studyUnitId: string,
+  planSections: DocumentSection[],
+  activeDocument: DocumentRecord | null,
+) {
   const sectionFromPlan = planSections.find((section) => section.id === studyUnitId);
   if (sectionFromPlan?.title) {
     return sectionFromPlan.title;
   }
-  const sectionFromDocument = activeDocument?.sections.find((section) => section.id === studyUnitId);
+  const sectionFromDocument = activeDocument?.sections.find(
+    (section) => section.id === studyUnitId,
+  );
   if (sectionFromDocument?.title) {
     return sectionFromDocument.title;
   }
   return studyUnitId;
 }
 
-export function resolveThemeHintByStudyUnitId(studyUnitId: string, activePlan: LearningPlan | null, activeDocument: DocumentRecord | null) {
+export function resolveThemeHintByStudyUnitId(
+  studyUnitId: string,
+  activePlan: LearningPlan | null,
+  activeDocument: DocumentRecord | null,
+) {
   if (!activePlan) {
     return "";
   }
-  const studyUnitProgress = activePlan.studyUnitProgress.find((item) => item.unitId === studyUnitId);
+  const studyUnitProgress = activePlan.studyUnitProgress.find(
+    (item) => item.unitId === studyUnitId,
+  );
   if (studyUnitProgress?.objectiveFragment?.trim()) {
     return studyUnitProgress.objectiveFragment.trim();
   }
@@ -125,22 +143,28 @@ export function resolveThemeHintByStudyUnitId(studyUnitId: string, activePlan: L
   if (scheduleItem?.focus) {
     return scheduleItem.focus;
   }
-  const containingUnit = activePlan.studyUnits.find((unit) =>
-    unit.id === studyUnitId ||
-    unit.sourceSectionIds.includes(studyUnitId) ||
-    (
-      activeDocument?.sections.some((section) =>
-        section.id === studyUnitId &&
-        Math.max(unit.pageStart, section.pageStart) <= Math.min(unit.pageEnd, section.pageEnd)
-      ) ?? false
-    )
+  const containingUnit = activePlan.studyUnits.find(
+    (unit) =>
+      unit.id === studyUnitId ||
+      unit.sourceSectionIds.includes(studyUnitId) ||
+      (activeDocument?.sections.some(
+        (section) =>
+          section.id === studyUnitId &&
+          Math.max(unit.pageStart, section.pageStart) <=
+            Math.min(unit.pageEnd, section.pageEnd),
+      ) ??
+        false),
   );
   if (containingUnit) {
-    const containingSchedule = activePlan.schedule.find((item) => item.unitId === containingUnit.id);
+    const containingSchedule = activePlan.schedule.find(
+      (item) => item.unitId === containingUnit.id,
+    );
     if (containingSchedule?.focus) {
       return containingSchedule.focus;
     }
-    const containingChapter = containingSchedule?.scheduleChapters.find((chapter) => chapter.title.trim());
+    const containingChapter = containingSchedule?.scheduleChapters.find((chapter) =>
+      chapter.title.trim(),
+    );
     if (containingChapter?.title) {
       return containingChapter.title;
     }

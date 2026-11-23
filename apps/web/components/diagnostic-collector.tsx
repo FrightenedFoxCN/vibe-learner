@@ -12,10 +12,15 @@ export function DiagnosticCollector() {
     return page.dispose;
   }, [pathname]);
   useEffect(() => {
-    const flush = () => { void flushDiagnostics(getAiBaseUrl()); };
+    const flush = () => {
+      void flushDiagnostics(getAiBaseUrl());
+    };
     const timer = window.setInterval(flush, 2000);
     window.addEventListener("online", flush);
-    return () => { window.clearInterval(timer); window.removeEventListener("online", flush); };
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener("online", flush);
+    };
   }, []);
   return null;
 }

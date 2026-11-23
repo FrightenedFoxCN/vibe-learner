@@ -58,12 +58,7 @@ interface MaterialIconProps {
   title?: string;
 }
 
-export function MaterialIcon({
-  name,
-  size = 18,
-  style,
-  title,
-}: MaterialIconProps) {
+export function MaterialIcon({ name, size = 18, style, title }: MaterialIconProps) {
   return (
     <svg
       width={size}

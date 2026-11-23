@@ -9,47 +9,54 @@ import type { LearningWorkspacePageCache } from "../lib/learning-workspace-page-
 import { usePublishLearningDebugSnapshot } from "./debug-provider";
 import { mockPersonas } from "../lib/mock-data";
 
-type LearningWorkspaceControllerValue = ReturnType<typeof useLearningWorkspaceController> & {
+type LearningWorkspaceControllerValue = ReturnType<
+  typeof useLearningWorkspaceController
+> & {
   getPageCache: <K extends keyof LearningWorkspacePageCache>(
-    key: K
+    key: K,
   ) => LearningWorkspacePageCache[K] | undefined;
   setPageCache: <K extends keyof LearningWorkspacePageCache>(
     key: K,
-    value: LearningWorkspacePageCache[K]
+    value: LearningWorkspacePageCache[K],
   ) => void;
 };
 
-const LearningWorkspaceContext = createContext<LearningWorkspaceControllerValue | null>(null);
+const LearningWorkspaceContext = createContext<LearningWorkspaceControllerValue | null>(
+  null,
+);
 
 export function LearningWorkspaceProvider({ children }: { children: ReactNode }) {
   const { getPageCache, setPageCache } = useLearningPageCache();
   const controller = useLearningWorkspaceController({
     initialSelection: getPageCache("selection"),
-    initialPersonas: mockPersonas
+    initialPersonas: mockPersonas,
   });
-  const debugSnapshot = useMemo(() => ({
-    activeDocument: controller.activeDocument,
-    selectedPersona: controller.selectedPersona,
-    studySession: controller.studySession,
-    response: controller.response,
-    processStreamDocumentId: controller.processStreamDocumentId,
-    processStreamEvents: controller.processStreamEvents,
-    processStreamStatus: controller.processStreamStatus,
-    planStreamDocumentId: controller.planStreamDocumentId,
-    planStreamEvents: controller.planStreamEvents,
-    planStreamStatus: controller.planStreamStatus,
-  }), [
-    controller.activeDocument,
-    controller.selectedPersona,
-    controller.studySession,
-    controller.response,
-    controller.processStreamDocumentId,
-    controller.processStreamEvents,
-    controller.processStreamStatus,
-    controller.planStreamDocumentId,
-    controller.planStreamEvents,
-    controller.planStreamStatus,
-  ]);
+  const debugSnapshot = useMemo(
+    () => ({
+      activeDocument: controller.activeDocument,
+      selectedPersona: controller.selectedPersona,
+      studySession: controller.studySession,
+      response: controller.response,
+      processStreamDocumentId: controller.processStreamDocumentId,
+      processStreamEvents: controller.processStreamEvents,
+      processStreamStatus: controller.processStreamStatus,
+      planStreamDocumentId: controller.planStreamDocumentId,
+      planStreamEvents: controller.planStreamEvents,
+      planStreamStatus: controller.planStreamStatus,
+    }),
+    [
+      controller.activeDocument,
+      controller.selectedPersona,
+      controller.studySession,
+      controller.response,
+      controller.processStreamDocumentId,
+      controller.processStreamEvents,
+      controller.processStreamStatus,
+      controller.planStreamDocumentId,
+      controller.planStreamEvents,
+      controller.planStreamStatus,
+    ],
+  );
   usePublishLearningDebugSnapshot(debugSnapshot);
   useEffect(() => {
     setPageCache("selection", {
@@ -57,7 +64,12 @@ export function LearningWorkspaceProvider({ children }: { children: ReactNode })
       personaId: controller.selectedPersonaId,
       sceneLibraryId: controller.selectedSceneLibraryId,
     });
-  }, [controller.selectedPlanId, controller.selectedPersonaId, controller.selectedSceneLibraryId, setPageCache]);
+  }, [
+    controller.selectedPlanId,
+    controller.selectedPersonaId,
+    controller.selectedSceneLibraryId,
+    setPageCache,
+  ]);
   const value: LearningWorkspaceControllerValue = {
     ...controller,
     getPageCache,
@@ -74,7 +86,9 @@ export function LearningWorkspaceProvider({ children }: { children: ReactNode })
 export function useLearningWorkspace() {
   const value = useContext(LearningWorkspaceContext);
   if (!value) {
-    throw new Error("useLearningWorkspace must be used within LearningWorkspaceProvider");
+    throw new Error(
+      "useLearningWorkspace must be used within LearningWorkspaceProvider",
+    );
   }
   return value;
 }

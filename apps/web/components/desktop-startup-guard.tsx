@@ -8,7 +8,7 @@ import {
   DESKTOP_STARTUP_GUARD_SESSION_KEY,
   DESKTOP_STARTUP_QUERY_KEY,
   DESKTOP_STARTUP_QUERY_VALUE,
-  resolveDesktopStartupRequirement
+  resolveDesktopStartupRequirement,
 } from "../lib/desktop-startup";
 import { isDesktopVaultCreationRequired } from "../lib/desktop-vault";
 import { getDesktopRuntimeConfig } from "../lib/runtime-config";
@@ -33,7 +33,7 @@ export function DesktopStartupGuard() {
       if (pathname !== "/settings") {
         window.sessionStorage.setItem(DESKTOP_STARTUP_GUARD_SESSION_KEY, "1");
         appNavigator.replace("/settings", {
-          [DESKTOP_STARTUP_QUERY_KEY]: DESKTOP_STARTUP_QUERY_VALUE
+          [DESKTOP_STARTUP_QUERY_KEY]: DESKTOP_STARTUP_QUERY_VALUE,
         });
       }
       return;
@@ -52,14 +52,14 @@ export function DesktopStartupGuard() {
       isDesktop: desktopRuntimeConfig.isDesktop,
       startupError: desktopRuntimeConfig.startupError,
       vaultState: desktopRuntimeConfig.vaultState,
-      settings: runtimeSettings.settings
+      settings: runtimeSettings.settings,
     });
     if (!requirement || pathname === "/settings") {
       return;
     }
 
     appNavigator.replace("/settings", {
-      [DESKTOP_STARTUP_QUERY_KEY]: DESKTOP_STARTUP_QUERY_VALUE
+      [DESKTOP_STARTUP_QUERY_KEY]: DESKTOP_STARTUP_QUERY_VALUE,
     });
   }, [appNavigator, pathname, runtimeSettings.loading, runtimeSettings.settings]);
 

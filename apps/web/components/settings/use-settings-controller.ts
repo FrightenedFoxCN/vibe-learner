@@ -2,14 +2,18 @@
 
 import { useEffect, useRef, useState } from "react";
 
-import type { DesktopVaultState, RuntimeFeatureProbeName, RuntimeSettings } from "@vibe-learner/shared";
+import type {
+  DesktopVaultState,
+  RuntimeFeatureProbeName,
+  RuntimeSettings,
+} from "@vibe-learner/shared";
 import { useSettingsSave } from "../../hooks/use-settings-save";
 import { useRuntimeSettings } from "../runtime-settings-provider";
 import {
   applyRuntimeSessionSecrets,
   clearRuntimeSessionSecrets,
   probeRuntimeOpenAIModels,
-  updateRuntimeSettings
+  updateRuntimeSettings,
 } from "../../lib/data/runtime-settings";
 import {
   clearDesktopVaultSecrets,
@@ -20,7 +24,7 @@ import {
   loadDesktopVaultSecrets,
   lockDesktopVault as closeDesktopVault,
   saveDesktopVaultSecrets,
-  unlockDesktopVault
+  unlockDesktopVault,
 } from "../../lib/desktop-vault";
 import { getDesktopRuntimeConfig } from "../../lib/runtime-config";
 import {
@@ -41,7 +45,7 @@ import {
   resolveScopeEndpoint,
   serializeSettings,
   type ScopeProbeState,
-  type SettingsSavePhase
+  type SettingsSavePhase,
 } from "./settings-utils";
 
 export interface DesktopSecurityState {
@@ -65,11 +69,16 @@ export interface SettingsController {
   loading: boolean;
   loadError: string;
   setAdvancedExpanded: (expanded: boolean) => void;
-  setSettingField: <K extends keyof RuntimeSettings>(key: K, value: RuntimeSettings[K]) => void;
+  setSettingField: <K extends keyof RuntimeSettings>(
+    key: K,
+    value: RuntimeSettings[K],
+  ) => void;
   setNumericDraft: (key: NumericSettingKey, value: string) => void;
   commitNumericSetting: (key: NumericSettingKey) => void;
   probeScope: (scope: ProbeScope) => Promise<void>;
-  syncCapabilitySetting: (scope: Extract<ProbeScope, "plan" | "setting" | "chat">) => void;
+  syncCapabilitySetting: (
+    scope: Extract<ProbeScope, "plan" | "setting" | "chat">,
+  ) => void;
   initializeDesktopVault: (password: string) => Promise<void>;
   unlockDesktopVault: (password: string) => Promise<void>;
   lockDesktopVault: () => Promise<void>;
@@ -92,7 +101,9 @@ interface CachedProbeResult {
 export function useSettingsController(): SettingsController {
   const runtimeSettings = useRuntimeSettings();
   const desktopRuntimeConfig = getDesktopRuntimeConfig();
-  const desktopEnabled = Boolean(desktopRuntimeConfig?.isDesktop && isDesktopVaultAvailable());
+  const desktopEnabled = Boolean(
+    desktopRuntimeConfig?.isDesktop && isDesktopVaultAvailable(),
+  );
 
   const [settings, setSettings] = useState<RuntimeSettings | null>(null);
   const [advancedExpanded, setAdvancedExpanded] = useState(false);
@@ -101,11 +112,13 @@ export function useSettingsController(): SettingsController {
   const [lastSavedAt, setLastSavedAt] = useState("");
   const [desktopSecurity, setDesktopSecurity] = useState<DesktopSecurityState>({
     enabled: desktopEnabled,
-    vaultState: isDesktopVaultUnlocked() ? "unlocked" : desktopRuntimeConfig?.vaultState ?? "unconfigured",
+    vaultState: isDesktopVaultUnlocked()
+      ? "unlocked"
+      : (desktopRuntimeConfig?.vaultState ?? "unconfigured"),
     busy: false,
     error: "",
     vaultPath: desktopRuntimeConfig?.vaultPath ?? "",
-    startupError: desktopRuntimeConfig?.startupError ?? ""
+    startupError: desktopRuntimeConfig?.startupError ?? "",
   });
   const [numericDrafts, setNumericDrafts] = useState<NumericDraftState>({
     openaiTimeoutSeconds: "",
@@ -114,13 +127,13 @@ export function useSettingsController(): SettingsController {
     openaiSettingMaxTokens: "",
     openaiChatMaxTokens: "",
     openaiChatHistoryMessages: "",
-    openaiChatToolMaxRounds: ""
+    openaiChatToolMaxRounds: "",
   });
   const [probeState, setProbeState] = useState<Record<ProbeScope, ScopeProbeState>>({
     global: { ...EMPTY_PROBE_STATE },
     plan: { ...EMPTY_PROBE_STATE },
     setting: { ...EMPTY_PROBE_STATE },
-    chat: { ...EMPTY_PROBE_STATE }
+    chat: { ...EMPTY_PROBE_STATE },
   });
 
   const initializedRef = useRef(false);
@@ -144,11 +157,16 @@ export function useSettingsController(): SettingsController {
         ? "unlocked"
         : prev.vaultState === "unlocked"
           ? prev.vaultState
-          : desktopRuntimeConfig?.vaultState ?? "unconfigured",
+          : (desktopRuntimeConfig?.vaultState ?? "unconfigured"),
       vaultPath: desktopRuntimeConfig?.vaultPath ?? "",
-      startupError: desktopRuntimeConfig?.startupError ?? ""
+      startupError: desktopRuntimeConfig?.startupError ?? "",
     }));
-  }, [desktopEnabled, desktopRuntimeConfig?.startupError, desktopRuntimeConfig?.vaultPath, desktopRuntimeConfig?.vaultState]);
+  }, [
+    desktopEnabled,
+    desktopRuntimeConfig?.startupError,
+    desktopRuntimeConfig?.vaultPath,
+    desktopRuntimeConfig?.vaultState,
+  ]);
 
   useEffect(() => {
     if (initializedRef.current || !runtimeSettings.settings) {
@@ -174,14 +192,20 @@ export function useSettingsController(): SettingsController {
       const next = { ...prev };
 
       for (const scope of PROBE_SCOPES) {
-        const endpointKey = buildProbeEndpointKey(resolveScopeEndpoint(settings, scope));
+        const endpointKey = buildProbeEndpointKey(
+          resolveScopeEndpoint(settings, scope),
+        );
         if (prev[scope].endpointKey === endpointKey) {
           continue;
         }
 
         const cached = endpointKey ? probeCacheRef.current.get(endpointKey) : null;
         next[scope] = cached
-          ? buildScopeProbeState(cached, endpointKey, scope === cached.sourceScope ? null : cached.sourceScope)
+          ? buildScopeProbeState(
+              cached,
+              endpointKey,
+              scope === cached.sourceScope ? null : cached.sourceScope,
+            )
           : { ...EMPTY_PROBE_STATE, endpointKey };
         changed = true;
       }
@@ -197,14 +221,16 @@ export function useSettingsController(): SettingsController {
       serialize: serializeSettings,
       persist: async (snapshot: RuntimeSettings, context) => {
         const security = desktopSecurityRef.current;
-        const shouldPersistSecrets = security.enabled && security.vaultState === "unlocked";
+        const shouldPersistSecrets =
+          security.enabled && security.vaultState === "unlocked";
         if (shouldPersistSecrets) {
           const secrets = extractSecretPatch(snapshot);
           await saveDesktopVaultSecrets(secrets, context);
           await applyRuntimeSessionSecrets(secrets, context);
         }
         const backendNext = await updateRuntimeSettings(
-          buildRuntimeSettingsPatch(snapshot, { includeSecrets: !security.enabled }), context
+          buildRuntimeSettingsPatch(snapshot, { includeSecrets: !security.enabled }),
+          context,
         );
         return shouldPersistSecrets
           ? mergeRuntimeSettingsWithSecrets(backendNext, extractSecretPatch(snapshot))
@@ -213,7 +239,10 @@ export function useSettingsController(): SettingsController {
       saved: (next, submittedKey) => {
         setLastSavedAt(next.updatedAt);
         runtimeSettings.replaceSettings(next);
-        if (settingsRef.current && serializeSettings(settingsRef.current) === submittedKey) {
+        if (
+          settingsRef.current &&
+          serializeSettings(settingsRef.current) === submittedKey
+        ) {
           settingsRef.current = next;
           setSettings(next);
           setNumericDrafts(buildNumericDrafts(next));
@@ -227,7 +256,10 @@ export function useSettingsController(): SettingsController {
     AUTO_SAVE_DELAY_MS,
   );
 
-  function setSettingField<K extends keyof RuntimeSettings>(key: K, value: RuntimeSettings[K]) {
+  function setSettingField<K extends keyof RuntimeSettings>(
+    key: K,
+    value: RuntimeSettings[K],
+  ) {
     setSaveError("");
     setSettings((prev) => (prev ? { ...prev, [key]: value } : prev));
   }
@@ -240,7 +272,10 @@ export function useSettingsController(): SettingsController {
     if (!settings) {
       return;
     }
-    const nextValue = parseNumericSetting(numericDrafts[key], NUMERIC_SETTING_CONFIGS[key]);
+    const nextValue = parseNumericSetting(
+      numericDrafts[key],
+      NUMERIC_SETTING_CONFIGS[key],
+    );
     setNumericDrafts((prev) => ({ ...prev, [key]: String(nextValue) }));
     setSettingField(key, nextValue as RuntimeSettings[typeof key]);
   }
@@ -266,15 +301,15 @@ export function useSettingsController(): SettingsController {
           error: "请先填写可用的访问密钥和服务地址",
           lastCheckedAt: prev[scope].lastCheckedAt,
           endpointKey,
-          sharedFromScope: null
-        }
+          sharedFromScope: null,
+        },
       }));
       return;
     }
 
     const cached = probeCacheRef.current.get(endpointKey);
     const hasCurrentFeatureReadiness = featureProbe.features.every(
-      (feature) => cached?.featureReadiness[feature]?.model === featureProbe.model
+      (feature) => cached?.featureReadiness[feature]?.model === featureProbe.model,
     );
     if (cached && (scope === "global" || hasCurrentFeatureReadiness)) {
       const refreshed = {
@@ -294,7 +329,7 @@ export function useSettingsController(): SettingsController {
           loading: true,
           error: "",
           endpointKey,
-          sharedFromScope: candidate === scope ? null : scope
+          sharedFromScope: candidate === scope ? null : scope,
         };
       }
       return next;
@@ -316,14 +351,21 @@ export function useSettingsController(): SettingsController {
         },
         error: result.error,
         lastCheckedAt: new Date().toISOString(),
-        sourceScope: scope
+        sourceScope: scope,
       };
       probeCacheRef.current.set(endpointKey, nextCached);
-      syncProbeScopesFromCache(settingsRef.current ?? settings, endpointKey, nextCached);
+      syncProbeScopesFromCache(
+        settingsRef.current ?? settings,
+        endpointKey,
+        nextCached,
+      );
     } catch (err) {
       setProbeState((prev) => {
         const next = { ...prev };
-        for (const candidate of resolveProbeConflictScopes(settingsRef.current ?? settings, scope)) {
+        for (const candidate of resolveProbeConflictScopes(
+          settingsRef.current ?? settings,
+          scope,
+        )) {
           next[candidate] = {
             ...prev[candidate],
             loading: false,
@@ -344,19 +386,22 @@ export function useSettingsController(): SettingsController {
   function syncProbeScopesFromCache(
     currentSettings: RuntimeSettings,
     endpointKey: string,
-    cached: CachedProbeResult
+    cached: CachedProbeResult,
   ) {
     setProbeState((prev) => {
       const next = { ...prev };
 
       for (const scope of PROBE_SCOPES) {
-        if (buildProbeEndpointKey(resolveScopeEndpoint(currentSettings, scope)) !== endpointKey) {
+        if (
+          buildProbeEndpointKey(resolveScopeEndpoint(currentSettings, scope)) !==
+          endpointKey
+        ) {
           continue;
         }
         next[scope] = buildScopeProbeState(
           cached,
           endpointKey,
-          scope === cached.sourceScope ? null : cached.sourceScope
+          scope === cached.sourceScope ? null : cached.sourceScope,
         );
       }
 
@@ -364,7 +409,9 @@ export function useSettingsController(): SettingsController {
     });
   }
 
-  function syncCapabilitySetting(scope: Extract<ProbeScope, "plan" | "setting" | "chat">) {
+  function syncCapabilitySetting(
+    scope: Extract<ProbeScope, "plan" | "setting" | "chat">,
+  ) {
     if (!settings) {
       return;
     }
@@ -379,7 +426,10 @@ export function useSettingsController(): SettingsController {
     if (nextValue === null) {
       return;
     }
-    setSettingField(config.manualKey, nextValue as RuntimeSettings[typeof config.manualKey]);
+    setSettingField(
+      config.manualKey,
+      nextValue as RuntimeSettings[typeof config.manualKey],
+    );
   }
 
   async function activateDesktopVault(password: string, mode: "initialize" | "unlock") {
@@ -413,12 +463,17 @@ export function useSettingsController(): SettingsController {
       setLastSavedAt(next.updatedAt);
       setSavePhase("saved");
       setSaveError("");
-      setDesktopSecurity((prev) => ({ ...prev, vaultState: "unlocked", busy: false, error: "" }));
+      setDesktopSecurity((prev) => ({
+        ...prev,
+        vaultState: "unlocked",
+        busy: false,
+        error: "",
+      }));
     } catch (err) {
       setDesktopSecurity((prev) => ({
         ...prev,
         busy: false,
-        error: String(err)
+        error: String(err),
       }));
     }
   }
@@ -442,13 +497,13 @@ export function useSettingsController(): SettingsController {
         ...prev,
         vaultState: "locked",
         busy: false,
-        error: ""
+        error: "",
       }));
     } catch (err) {
       setDesktopSecurity((prev) => ({
         ...prev,
         busy: false,
-        error: String(err)
+        error: String(err),
       }));
     }
   }
@@ -463,7 +518,10 @@ export function useSettingsController(): SettingsController {
         await clearDesktopVaultSecrets();
       }
       const backendNext = await clearRuntimeSessionSecrets();
-      const next = mergeRuntimeSettingsWithSecrets(backendNext, emptyDesktopVaultSecrets());
+      const next = mergeRuntimeSettingsWithSecrets(
+        backendNext,
+        emptyDesktopVaultSecrets(),
+      );
       settingsRef.current = next;
       setSettings(next);
       setNumericDrafts(buildNumericDrafts(next));
@@ -476,7 +534,7 @@ export function useSettingsController(): SettingsController {
       setDesktopSecurity((prev) => ({
         ...prev,
         busy: false,
-        error: String(err)
+        error: String(err),
       }));
     }
   }
@@ -505,17 +563,19 @@ export function useSettingsController(): SettingsController {
     commitNumericSetting,
     probeScope,
     syncCapabilitySetting,
-    initializeDesktopVault: async (password: string) => activateDesktopVault(password, "initialize"),
-    unlockDesktopVault: async (password: string) => activateDesktopVault(password, "unlock"),
+    initializeDesktopVault: async (password: string) =>
+      activateDesktopVault(password, "initialize"),
+    unlockDesktopVault: async (password: string) =>
+      activateDesktopVault(password, "unlock"),
     lockDesktopVault: handleLockDesktopVault,
     clearDesktopSecrets: handleClearDesktopSecrets,
-    retrySave
+    retrySave,
   };
 }
 
 function resolveFeatureProbe(
   settings: RuntimeSettings,
-  scope: ProbeScope
+  scope: ProbeScope,
 ): { model: string; features: RuntimeFeatureProbeName[] } {
   if (scope === "plan") {
     return { model: settings.openaiPlanModel.trim(), features: ["plan"] };
@@ -538,7 +598,7 @@ function resolveFeatureProbe(
 function buildScopeProbeState(
   cached: CachedProbeResult,
   endpointKey: string,
-  sharedFromScope: ProbeScope | null
+  sharedFromScope: ProbeScope | null,
 ): ScopeProbeState {
   return {
     loading: false,
@@ -549,7 +609,7 @@ function buildScopeProbeState(
     error: cached.error,
     lastCheckedAt: cached.lastCheckedAt,
     endpointKey,
-    sharedFromScope
+    sharedFromScope,
   };
 }
 
@@ -558,7 +618,7 @@ function extractSecretPatch(settings: RuntimeSettings) {
     openaiApiKey: settings.openaiApiKey.trim(),
     openaiPlanApiKey: settings.openaiPlanApiKey.trim(),
     openaiSettingApiKey: settings.openaiSettingApiKey.trim(),
-    openaiChatApiKey: settings.openaiChatApiKey.trim()
+    openaiChatApiKey: settings.openaiChatApiKey.trim(),
   };
 }
 
@@ -570,7 +630,7 @@ function mergeRuntimeSettingsWithSecrets(
     openaiSettingApiKey?: string;
     openaiChatApiKey?: string;
   },
-  options: { configured?: boolean } = {}
+  options: { configured?: boolean } = {},
 ): RuntimeSettings {
   const configured = options.configured;
   return {
@@ -582,11 +642,26 @@ function mergeRuntimeSettingsWithSecrets(
     openaiApiKeyConfigured:
       configured ?? Boolean(secrets.openaiApiKey || settings.openaiApiKeyConfigured),
     openaiPlanApiKeyConfigured:
-      configured ?? Boolean(secrets.openaiPlanApiKey || secrets.openaiApiKey || settings.openaiPlanApiKeyConfigured),
+      configured ??
+      Boolean(
+        secrets.openaiPlanApiKey ||
+        secrets.openaiApiKey ||
+        settings.openaiPlanApiKeyConfigured,
+      ),
     openaiSettingApiKeyConfigured:
-      configured ?? Boolean(secrets.openaiSettingApiKey || secrets.openaiApiKey || settings.openaiSettingApiKeyConfigured),
+      configured ??
+      Boolean(
+        secrets.openaiSettingApiKey ||
+        secrets.openaiApiKey ||
+        settings.openaiSettingApiKeyConfigured,
+      ),
     openaiChatApiKeyConfigured:
-      configured ?? Boolean(secrets.openaiChatApiKey || secrets.openaiApiKey || settings.openaiChatApiKeyConfigured)
+      configured ??
+      Boolean(
+        secrets.openaiChatApiKey ||
+        secrets.openaiApiKey ||
+        settings.openaiChatApiKeyConfigured,
+      ),
   };
 }
 
@@ -600,6 +675,6 @@ function maskRuntimeSecrets(settings: RuntimeSettings): RuntimeSettings {
     openaiSettingApiKey: "",
     openaiSettingApiKeyConfigured: false,
     openaiChatApiKey: "",
-    openaiChatApiKeyConfigured: false
+    openaiChatApiKeyConfigured: false,
   };
 }

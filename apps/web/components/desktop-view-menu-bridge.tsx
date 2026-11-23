@@ -8,7 +8,7 @@ import {
   BROWSER_VIEW_TOGGLE_NAV_EVENT,
   dispatchBrowserViewToggle,
   TAURI_VIEW_TOGGLE_DEBUG_OVERLAY_EVENT,
-  TAURI_VIEW_TOGGLE_NAV_EVENT
+  TAURI_VIEW_TOGGLE_NAV_EVENT,
 } from "../lib/view-preferences";
 
 export function DesktopViewMenuBridge() {

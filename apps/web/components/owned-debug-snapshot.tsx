@@ -1,6 +1,14 @@
 "use client";
 
-import { createContext, useContext, useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type ReactNode,
+} from "react";
 import { usePathname } from "next/navigation";
 import { currentDiagnosticPage, subscribeDiagnosticPage } from "../lib/diagnostics";
 
@@ -14,10 +22,17 @@ interface Registration<T> {
 function createStore<T>() {
   let current: Registration<T> | null = null;
   const listeners = new Set<() => void>();
-  const notify = () => { for (const listener of listeners) listener(); };
+  const notify = () => {
+    for (const listener of listeners) listener();
+  };
   return {
     getSnapshot: () => current,
-    subscribe: (listener: () => void) => { listeners.add(listener); return () => { listeners.delete(listener); }; },
+    subscribe: (listener: () => void) => {
+      listeners.add(listener);
+      return () => {
+        listeners.delete(listener);
+      };
+    },
     claim(pageViewId: string, pagePath: string | null) {
       const owner = Symbol("debug-snapshot-owner");
       current = { owner, pageViewId, pagePath, snapshot: null };
@@ -51,22 +66,48 @@ export function createOwnedDebugSnapshot<T>() {
   function usePublish(snapshot: T | null) {
     const store = useContext(Context);
     const pathname = usePathname();
-    const page = useSyncExternalStore(subscribeDiagnosticPage, currentDiagnosticPage, emptySnapshot);
-    const handle = useRef<ReturnType<ReturnType<typeof createStore<T>>["claim"]> | null>(null);
+    const page = useSyncExternalStore(
+      subscribeDiagnosticPage,
+      currentDiagnosticPage,
+      emptySnapshot,
+    );
+    const handle = useRef<ReturnType<
+      ReturnType<typeof createStore<T>>["claim"]
+    > | null>(null);
     useEffect(() => {
       if (!store || !page?.id || page.path !== pathname) return;
       const registration = store.claim(page.id, page.path);
       handle.current = registration;
-      return () => { registration.dispose(); if (handle.current === registration) handle.current = null; };
+      return () => {
+        registration.dispose();
+        if (handle.current === registration) handle.current = null;
+      };
     }, [store, page, pathname]);
-    useEffect(() => { handle.current?.update(snapshot); }, [snapshot, store, page, pathname]);
+    useEffect(() => {
+      handle.current?.update(snapshot);
+    }, [snapshot, store, page, pathname]);
   }
   function useRegistration() {
     const store = useContext(Context);
     const pathname = usePathname();
-    const page = useSyncExternalStore(subscribeDiagnosticPage, currentDiagnosticPage, emptySnapshot);
-    const current = useSyncExternalStore(store?.subscribe ?? noSubscribe, store?.getSnapshot ?? emptySnapshot, emptySnapshot);
-    return current && current.pageViewId === page?.id && current.pagePath === pathname ? current : null;
+    const page = useSyncExternalStore(
+      subscribeDiagnosticPage,
+      currentDiagnosticPage,
+      emptySnapshot,
+    );
+    const current = useSyncExternalStore(
+      store?.subscribe ?? noSubscribe,
+      store?.getSnapshot ?? emptySnapshot,
+      emptySnapshot,
+    );
+    return current && current.pageViewId === page?.id && current.pagePath === pathname
+      ? current
+      : null;
   }
-  return { Provider, usePublish, useRegistration, useSnapshot: () => useRegistration()?.snapshot ?? null };
+  return {
+    Provider,
+    usePublish,
+    useRegistration,
+    useSnapshot: () => useRegistration()?.snapshot ?? null,
+  };
 }
