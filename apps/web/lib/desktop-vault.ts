@@ -2,7 +2,7 @@
 
 import {
   DESKTOP_STARTUP_GUARD_SESSION_KEY,
-  requiresDesktopVaultCreation
+  requiresDesktopVaultCreation,
 } from "./desktop-startup";
 import { getDesktopRuntimeConfig } from "./runtime-config";
 
@@ -10,13 +10,14 @@ import { observeLocalAction } from "./diagnostic-actions.ts";
 import type { DiagnosticContext } from "./diagnostics";
 
 const CLIENT_NAME = "vibe-learner-runtime";
-export const DESKTOP_VAULT_STATE_CHANGE_EVENT = "vibe-learner:desktop-vault-state-change";
+export const DESKTOP_VAULT_STATE_CHANGE_EVENT =
+  "vibe-learner:desktop-vault-state-change";
 
 const SECRET_KEY_MAP = {
   openaiApiKey: "openai_api_key",
   openaiPlanApiKey: "openai_plan_api_key",
   openaiSettingApiKey: "openai_setting_api_key",
-  openaiChatApiKey: "openai_chat_api_key"
+  openaiChatApiKey: "openai_chat_api_key",
 } as const;
 
 type SecretKey = keyof typeof SECRET_KEY_MAP;
@@ -50,24 +51,43 @@ export function isDesktopVaultCreationRequired() {
   });
 }
 
-export async function initializeDesktopVault(password: string, context?: DiagnosticContext) {
-  return observeLocalAction("vault_create", () => initializeDesktopVaultUnobserved(password), { context });
+export async function initializeDesktopVault(
+  password: string,
+  context?: DiagnosticContext,
+) {
+  return observeLocalAction(
+    "vault_create",
+    () => initializeDesktopVaultUnobserved(password),
+    { context },
+  );
 }
 
 async function initializeDesktopVaultUnobserved(password: string) {
   const { stronghold, client } = await loadStrongholdInstance(password);
+  try {
+    await stronghold.save();
+  } catch (error) {
+    await stronghold.unload().catch(() => undefined);
+    throw error;
+  }
   activeStronghold = stronghold;
   activeClient = client;
   activeVaultPath = stronghold.path;
-  await stronghold.save();
   if (typeof window !== "undefined") {
     window.sessionStorage.setItem(DESKTOP_STARTUP_GUARD_SESSION_KEY, "1");
   }
   notifyDesktopVaultStateChange();
 }
 
-export async function unlockDesktopVault(password: string, context?: DiagnosticContext) {
-  return observeLocalAction("vault_unlock", () => unlockDesktopVaultUnobserved(password), { context });
+export async function unlockDesktopVault(
+  password: string,
+  context?: DiagnosticContext,
+) {
+  return observeLocalAction(
+    "vault_unlock",
+    () => unlockDesktopVaultUnobserved(password),
+    { context },
+  );
 }
 
 async function unlockDesktopVaultUnobserved(password: string) {
@@ -79,21 +99,31 @@ async function unlockDesktopVaultUnobserved(password: string) {
 }
 
 export async function lockDesktopVault(context?: DiagnosticContext) {
-  return observeLocalAction("vault_lock", () => lockDesktopVaultUnobserved(), { context });
+  return observeLocalAction("vault_lock", () => lockDesktopVaultUnobserved(), {
+    context,
+  });
 }
 
 async function lockDesktopVaultUnobserved() {
-  if (activeStronghold) {
-    await activeStronghold.unload();
-  }
+  const stronghold = activeStronghold;
   activeStronghold = null;
   activeClient = null;
   activeVaultPath = "";
-  notifyDesktopVaultStateChange();
+  try {
+    if (stronghold) await stronghold.unload();
+  } finally {
+    notifyDesktopVaultStateChange();
+  }
 }
 
-export async function loadDesktopVaultSecrets(context?: DiagnosticContext): Promise<DesktopVaultSecrets> {
-  return observeLocalAction("vault_load_secrets", () => loadDesktopVaultSecretsUnobserved(), { context });
+export async function loadDesktopVaultSecrets(
+  context?: DiagnosticContext,
+): Promise<DesktopVaultSecrets> {
+  return observeLocalAction(
+    "vault_load_secrets",
+    () => loadDesktopVaultSecretsUnobserved(),
+    { context },
+  );
 }
 
 async function loadDesktopVaultSecretsUnobserved(): Promise<DesktopVaultSecrets> {
@@ -102,22 +132,31 @@ async function loadDesktopVaultSecretsUnobserved(): Promise<DesktopVaultSecrets>
     (Object.keys(SECRET_KEY_MAP) as SecretKey[]).map(async (key) => {
       const raw = await store.get(SECRET_KEY_MAP[key]);
       return [key, decodeSecret(raw)] as const;
-    })
+    }),
   );
   const records = Object.fromEntries(values) as Record<SecretKey, string>;
   return {
     openaiApiKey: records.openaiApiKey ?? "",
     openaiPlanApiKey: records.openaiPlanApiKey ?? "",
     openaiSettingApiKey: records.openaiSettingApiKey ?? "",
-    openaiChatApiKey: records.openaiChatApiKey ?? ""
+    openaiChatApiKey: records.openaiChatApiKey ?? "",
   };
 }
 
-export async function saveDesktopVaultSecrets(secrets: Partial<DesktopVaultSecrets>, context?: DiagnosticContext) {
-  return observeLocalAction("vault_save_secrets", () => saveDesktopVaultSecretsUnobserved(secrets), { context });
+export async function saveDesktopVaultSecrets(
+  secrets: Partial<DesktopVaultSecrets>,
+  context?: DiagnosticContext,
+) {
+  return observeLocalAction(
+    "vault_save_secrets",
+    () => saveDesktopVaultSecretsUnobserved(secrets),
+    { context },
+  );
 }
 
-async function saveDesktopVaultSecretsUnobserved(secrets: Partial<DesktopVaultSecrets>) {
+async function saveDesktopVaultSecretsUnobserved(
+  secrets: Partial<DesktopVaultSecrets>,
+) {
   const { stronghold, store } = requireUnlockedStore();
   for (const key of Object.keys(SECRET_KEY_MAP) as SecretKey[]) {
     const value = String(secrets[key] ?? "");
@@ -127,7 +166,11 @@ async function saveDesktopVaultSecretsUnobserved(secrets: Partial<DesktopVaultSe
 }
 
 export async function clearDesktopVaultSecrets(context?: DiagnosticContext) {
-  return observeLocalAction("vault_clear_secrets", () => clearDesktopVaultSecretsUnobserved(), { context });
+  return observeLocalAction(
+    "vault_clear_secrets",
+    () => clearDesktopVaultSecretsUnobserved(),
+    { context },
+  );
 }
 
 async function clearDesktopVaultSecretsUnobserved() {
@@ -143,7 +186,7 @@ export function emptyDesktopVaultSecrets(): DesktopVaultSecrets {
     openaiApiKey: "",
     openaiPlanApiKey: "",
     openaiSettingApiKey: "",
-    openaiChatApiKey: ""
+    openaiChatApiKey: "",
   };
 }
 
@@ -153,7 +196,10 @@ async function loadStrongholdInstance(password: string) {
     throw new Error("desktop_vault_unavailable");
   }
   const strongholdModule = await import("@tauri-apps/plugin-stronghold");
-  const stronghold = await strongholdModule.Stronghold.load(runtimeConfig.vaultPath, password);
+  const stronghold = await strongholdModule.Stronghold.load(
+    runtimeConfig.vaultPath,
+    password,
+  );
   const client = await loadOrCreateClient(stronghold);
   return { stronghold, client };
 }
@@ -172,7 +218,7 @@ function requireUnlockedStore() {
   }
   return {
     stronghold: activeStronghold,
-    store: activeClient.getStore()
+    store: activeClient.getStore(),
   };
 }
 

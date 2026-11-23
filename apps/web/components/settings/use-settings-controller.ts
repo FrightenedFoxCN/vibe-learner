@@ -26,6 +26,7 @@ import {
   saveDesktopVaultSecrets,
   unlockDesktopVault,
 } from "../../lib/desktop-vault";
+import { enqueueVaultOperation, saveWithVault } from "../../lib/desktop-vault-workflow";
 import { getDesktopRuntimeConfig } from "../../lib/runtime-config";
 import {
   AUTO_SAVE_DELAY_MS,
@@ -139,6 +140,8 @@ export function useSettingsController(): SettingsController {
   const initializedRef = useRef(false);
   const settingsRef = useRef<RuntimeSettings | null>(null);
   const desktopSecurityRef = useRef(desktopSecurity);
+  const vaultTransitionRef = useRef(false);
+  const vaultVersionRef = useRef(0);
   const probeCacheRef = useRef<Map<string, CachedProbeResult>>(new Map());
   const activeProbeRef = useRef(new Map<string, symbol>());
 
@@ -207,21 +210,36 @@ export function useSettingsController(): SettingsController {
     {
       serialize: serializeSettings,
       persist: async (snapshot: RuntimeSettings, context) => {
-        const security = desktopSecurityRef.current;
-        const shouldPersistSecrets =
-          security.enabled && security.vaultState === "unlocked";
-        if (shouldPersistSecrets) {
+        const shouldUseVault = desktopSecurityRef.current.enabled;
+        const commit = () =>
+          updateRuntimeSettings(
+            buildRuntimeSettingsPatch(snapshot, { includeSecrets: !shouldUseVault }),
+            context,
+          );
+        if (!shouldUseVault) return commit();
+        const version = vaultVersionRef.current;
+        return enqueueVaultOperation(async () => {
+          if (version !== vaultVersionRef.current || vaultTransitionRef.current) {
+            throw new Error("保险库状态正在变更，该次自动保存未应用。");
+          }
+          if (
+            desktopSecurityRef.current.vaultState !== "unlocked" ||
+            !isDesktopVaultUnlocked()
+          ) {
+            return commit();
+          }
           const secrets = extractSecretPatch(snapshot);
-          await saveDesktopVaultSecrets(secrets, context);
-          await applyRuntimeSessionSecrets(secrets, context);
-        }
-        const backendNext = await updateRuntimeSettings(
-          buildRuntimeSettingsPatch(snapshot, { includeSecrets: !security.enabled }),
-          context,
-        );
-        return shouldPersistSecrets
-          ? mergeRuntimeSettingsWithSecrets(backendNext, extractSecretPatch(snapshot))
-          : backendNext;
+          const backendNext = await saveWithVault(
+            {
+              read: () => loadDesktopVaultSecrets(context),
+              store: (value) => saveDesktopVaultSecrets(value, context),
+              apply: (value) => applyRuntimeSessionSecrets(value, context),
+              commit,
+            },
+            secrets,
+          );
+          return mergeRuntimeSettingsWithSecrets(backendNext, secrets);
+        });
       },
       saved: (next, submittedKey) => {
         setLastSavedAt(next.updatedAt);
@@ -261,6 +279,7 @@ export function useSettingsController(): SettingsController {
     key: K,
     value: RuntimeSettings[K],
   ) {
+    if (vaultTransitionRef.current) return;
     setSaveError("");
     setSettings((prev) => (prev ? { ...prev, [key]: value } : prev));
   }
@@ -420,115 +439,128 @@ export function useSettingsController(): SettingsController {
     );
   }
 
-  async function activateDesktopVault(password: string, mode: "initialize" | "unlock") {
-    if (!desktopEnabled) {
-      return;
-    }
+  function publishVaultSettings(next: RuntimeSettings) {
+    settingsRef.current = next;
+    setSettings(next);
+    setNumericDrafts(buildNumericDrafts(next));
+    runtimeSettings.replaceSettings(next);
+    saveCoordinator.acceptSaved(next);
+    setLastSavedAt(next.updatedAt);
+    setSavePhase("saved");
+    setSaveError("");
+  }
 
+  function setVaultState(vaultState: DesktopVaultState) {
+    desktopSecurityRef.current = { ...desktopSecurityRef.current, vaultState };
+    setDesktopSecurity((prev) => ({ ...prev, vaultState }));
+  }
+
+  async function runVaultTransition(operation: () => Promise<void>) {
+    if (!desktopEnabled || vaultTransitionRef.current) return;
+    vaultTransitionRef.current = true;
+    vaultVersionRef.current++;
+    saveCoordinator.discardPending();
     setDesktopSecurity((prev) => ({ ...prev, busy: true, error: "" }));
     try {
-      if (mode === "initialize") {
-        await initializeDesktopVault(password);
-        if (settingsRef.current) {
-          await saveDesktopVaultSecrets(extractSecretPatch(settingsRef.current));
-        } else {
-          await saveDesktopVaultSecrets(emptyDesktopVaultSecrets());
-        }
-      } else {
-        await unlockDesktopVault(password);
-      }
-
-      const secrets = isDesktopVaultUnlocked()
-        ? await loadDesktopVaultSecrets()
-        : emptyDesktopVaultSecrets();
-      const backendNext = await applyRuntimeSessionSecrets(secrets);
-      const next = mergeRuntimeSettingsWithSecrets(backendNext, secrets);
-      settingsRef.current = next;
-      setSettings(next);
-      setNumericDrafts(buildNumericDrafts(next));
-      runtimeSettings.replaceSettings(next);
-      saveCoordinator.acceptSaved(next);
-      setLastSavedAt(next.updatedAt);
-      setSavePhase("saved");
-      setSaveError("");
-      setDesktopSecurity((prev) => ({
-        ...prev,
-        vaultState: "unlocked",
-        busy: false,
-        error: "",
-      }));
-    } catch (err) {
-      setDesktopSecurity((prev) => ({
-        ...prev,
-        busy: false,
-        error: String(err),
-      }));
+      await enqueueVaultOperation(operation);
+    } catch (error) {
+      setDesktopSecurity((prev) => ({ ...prev, error: String(error) }));
+    } finally {
+      vaultTransitionRef.current = false;
+      setDesktopSecurity((prev) => ({ ...prev, busy: false }));
     }
+  }
+
+  async function activateDesktopVault(password: string, mode: "initialize" | "unlock") {
+    await runVaultTransition(async () => {
+      let created = false;
+      let applyAttempted = false;
+      try {
+        if (mode === "initialize") {
+          await initializeDesktopVault(password);
+          created = true;
+          const initial = settingsRef.current
+            ? extractSecretPatch(settingsRef.current)
+            : emptyDesktopVaultSecrets();
+          await saveDesktopVaultSecrets(initial);
+        } else {
+          await unlockDesktopVault(password);
+        }
+        const secrets = await loadDesktopVaultSecrets();
+        applyAttempted = true;
+        const next = await applyRuntimeSessionSecrets(secrets);
+        publishVaultSettings(mergeRuntimeSettingsWithSecrets(next, secrets));
+        setVaultState("unlocked");
+      } catch (error) {
+        const failures: string[] = [];
+        if (applyAttempted) {
+          try {
+            const next = await clearRuntimeSessionSecrets();
+            publishVaultSettings(maskRuntimeSecrets(next));
+          } catch {
+            failures.push("运行时密钥未确认清除");
+          }
+        }
+        if (isDesktopVaultUnlocked()) {
+          try {
+            await closeDesktopVault();
+          } catch {
+            failures.push("保险库未确认锁定");
+          }
+        }
+        if (created || mode === "unlock") setVaultState("locked");
+        if (failures.length)
+          throw new Error(failures.join("；") + "，请重试或重启应用。", {
+            cause: error,
+          });
+        throw error;
+      }
+    });
   }
 
   async function handleLockDesktopVault() {
-    if (!desktopEnabled) {
-      return;
-    }
-    setDesktopSecurity((prev) => ({ ...prev, busy: true, error: "" }));
-    try {
-      await clearRuntimeSessionSecrets();
-      await closeDesktopVault();
-      const next = settingsRef.current ? maskRuntimeSecrets(settingsRef.current) : null;
-      if (next) {
-        settingsRef.current = next;
-        setSettings(next);
-        runtimeSettings.replaceSettings(next);
-        saveCoordinator.acceptSaved(next);
+    await runVaultTransition(async () => {
+      const next = await clearRuntimeSessionSecrets();
+      publishVaultSettings(maskRuntimeSecrets(next));
+      setVaultState("locked");
+      try {
+        await closeDesktopVault();
+      } catch (error) {
+        throw new Error("运行时密钥已清除，但保险库未确认关闭。请重启应用。", {
+          cause: error,
+        });
       }
-      setDesktopSecurity((prev) => ({
-        ...prev,
-        vaultState: "locked",
-        busy: false,
-        error: "",
-      }));
-    } catch (err) {
-      setDesktopSecurity((prev) => ({
-        ...prev,
-        busy: false,
-        error: String(err),
-      }));
-    }
+    });
   }
 
   async function handleClearDesktopSecrets() {
-    if (!desktopEnabled) {
-      return;
-    }
-    setDesktopSecurity((prev) => ({ ...prev, busy: true, error: "" }));
-    try {
-      if (isDesktopVaultUnlocked()) {
-        await clearDesktopVaultSecrets();
+    await runVaultTransition(async () => {
+      const next = await clearRuntimeSessionSecrets();
+      publishVaultSettings(maskRuntimeSecrets(next));
+      try {
+        if (
+          desktopSecurityRef.current.vaultState === "unlocked" &&
+          isDesktopVaultUnlocked()
+        ) {
+          await clearDesktopVaultSecrets();
+        }
+      } catch (error) {
+        setVaultState("locked");
+        try {
+          await closeDesktopVault();
+        } catch {
+          /* report both as unconfirmed */
+        }
+        throw new Error(
+          "运行时密钥已清除，但无法确认磁盘保险库已清空；请重启后检查。",
+          { cause: error },
+        );
       }
-      const backendNext = await clearRuntimeSessionSecrets();
-      const next = mergeRuntimeSettingsWithSecrets(
-        backendNext,
-        emptyDesktopVaultSecrets(),
-      );
-      settingsRef.current = next;
-      setSettings(next);
-      setNumericDrafts(buildNumericDrafts(next));
-      runtimeSettings.replaceSettings(next);
-      saveCoordinator.acceptSaved(next);
-      setLastSavedAt(next.updatedAt);
-      setSavePhase("saved");
-      setDesktopSecurity((prev) => ({ ...prev, busy: false, error: "" }));
-    } catch (err) {
-      setDesktopSecurity((prev) => ({
-        ...prev,
-        busy: false,
-        error: String(err),
-      }));
-    }
+    });
   }
 
   function retrySave() {
-    if (!settings) {
+    if (!settings || vaultTransitionRef.current) {
       return;
     }
     saveCoordinator.retry(settings);

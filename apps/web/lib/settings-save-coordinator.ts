@@ -15,7 +15,7 @@ export interface SaveScheduler {
 }
 const scheduler: SaveScheduler = {
   schedule: (callback, delay) => setTimeout(callback, delay),
-  cancel: handle => clearTimeout(handle as ReturnType<typeof setTimeout>),
+  cancel: (handle) => clearTimeout(handle as ReturnType<typeof setTimeout>),
 };
 
 // Owns one serialized save queue. A navigation flush keeps draining the latest
@@ -32,7 +32,11 @@ export class SettingsSaveCoordinator<T> {
   private timer: unknown = null;
   private flushing = false;
 
-  constructor(port: SaveCoordinatorPort<T>, delay: number, clock: SaveScheduler = scheduler) {
+  constructor(
+    port: SaveCoordinatorPort<T>,
+    delay: number,
+    clock: SaveScheduler = scheduler,
+  ) {
     this.port = port;
     this.delay = delay;
     this.scheduler = clock;
@@ -40,6 +44,12 @@ export class SettingsSaveCoordinator<T> {
 
   acceptSaved(snapshot: T) {
     this.savedKey = this.port.serialize(snapshot);
+  }
+
+  discardPending() {
+    this.clearTimer();
+    this.pending = null;
+    this.blockedKey = "";
   }
 
   edit(snapshot: T) {
@@ -96,7 +106,9 @@ export class SettingsSaveCoordinator<T> {
     this.runningKey = pending.key;
     this.port.status("saving", "");
     try {
-      const next = await observeLocalAction("settings_save", context => this.port.persist(pending.snapshot, context));
+      const next = await observeLocalAction("settings_save", (context) =>
+        this.port.persist(pending.snapshot, context),
+      );
       this.savedKey = this.port.serialize(next);
       this.blockedKey = "";
       this.port.saved(next, pending.key);
@@ -107,7 +119,8 @@ export class SettingsSaveCoordinator<T> {
     } finally {
       this.runningKey = null;
       const next = this.pending as { snapshot: T; key: string } | null;
-      if (next && (next.key === this.savedKey || next.key === this.blockedKey)) this.pending = null;
+      if (next && (next.key === this.savedKey || next.key === this.blockedKey))
+        this.pending = null;
       if (this.pending) {
         if (this.flushing) void this.drain();
         else this.schedule();
