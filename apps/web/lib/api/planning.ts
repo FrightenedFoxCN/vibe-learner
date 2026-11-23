@@ -18,6 +18,11 @@ import {
 } from "../planning-decode";
 import { DocumentDecodeError } from "../document-decode";
 import { StrictStreamStateMachine } from "../stream-decode";
+import {
+  decodePlanGenerationOperation,
+  PlanStreamTerminalError,
+  type PlanGenerationIdentity,
+} from "../plan-generation-outcome";
 
 import { AI_BASE_URL, request, readJson } from "./_shared";
 import { serializeSceneProfile } from "./scene-serialize";
@@ -60,6 +65,50 @@ export async function listLearningPlans(): Promise<LearningPlan[]> {
   const diagnosticResponse = await request(`${AI_BASE_URL()}/learning-plans`);
   const payload = await readJson<unknown>(diagnosticResponse);
   return diagnosticDecode(diagnosticResponse, () => decodeLearningPlanList(payload));
+}
+
+export async function getPlanGenerationOperation(
+  identity: PlanGenerationIdentity,
+  options?: { signal?: AbortSignal; diagnostic?: DiagnosticContext },
+) {
+  const response = await request(
+    `${AI_BASE_URL()}/learning-plan-operations/${encodeURIComponent(identity.clientRequestId)}`,
+    { signal: options?.signal, cache: "no-store" },
+    options?.diagnostic,
+  );
+  const payload = await readJson<unknown>(response);
+  return diagnosticDecode(response, () =>
+    decodePlanGenerationOperation(
+      payload,
+      identity,
+      decodeLearningPlan,
+      (path, reason) => {
+        throw new PlanningDecodeError(path, reason);
+      },
+    ),
+  );
+}
+
+export async function getRecoveredLearningPlan(
+  planId: string,
+  identity: PlanGenerationIdentity,
+  options?: { signal?: AbortSignal; diagnostic?: DiagnosticContext },
+) {
+  const response = await request(
+    `${AI_BASE_URL()}/learning-plans/${encodeURIComponent(planId)}`,
+    { signal: options?.signal, cache: "no-store" },
+    options?.diagnostic,
+  );
+  const payload = await readJson<unknown>(response);
+  return diagnosticDecode(response, () => {
+    const plan = decodeLearningPlan(payload, {
+      expectedPlanId: planId,
+      expectedDocumentId: identity.documentId,
+    });
+    if (plan.personaId !== identity.personaId)
+      throw new PlanningDecodeError("learning_plan.persona_id", "identity_mismatch");
+    return plan;
+  });
 }
 
 export async function updateLearningPlanTitle(
@@ -182,8 +231,8 @@ export async function createLearningPlanStream(
     options?.diagnostic,
   );
   if (!response.ok || !response.body) {
-    const text = await response.text();
-    throw new Error(text || `HTTP ${response.status}`);
+    if (!response.ok) await readJson<unknown>(response);
+    throw new Error("learning_plan_stream_body_missing");
   }
 
   let finalPlan: LearningPlan | null = null;
@@ -213,11 +262,17 @@ export async function createLearningPlanStream(
     },
   );
   if (terminal.stage === "stream_cancelled") {
-    throw new DOMException("stream_interrupted", "AbortError");
+    throw new PlanStreamTerminalError(
+      "stream_interrupted",
+      true,
+      terminal.terminalEvidence?.commitStatus,
+    );
   }
   if (terminal.stage === "stream_error") {
-    throw new Error(
+    throw new PlanStreamTerminalError(
       formatStreamErrorPayload(terminal.payload, "learning_plan_stream_error"),
+      false,
+      terminal.terminalEvidence?.commitStatus,
     );
   }
   if (!finalPlan) {

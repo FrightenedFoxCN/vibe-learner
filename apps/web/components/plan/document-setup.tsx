@@ -25,6 +25,11 @@ import styles from "./document-setup.module.css";
 interface DocumentSetupProps extends PlanTeachingContextProps {
   onGenerate: (input: GeneratePlanInput) => void;
   onInterruptGeneration: () => void;
+  onCheckPendingPlan: () => void;
+  onDiscardMissingPlan: () => void;
+  hasPendingPlan: boolean;
+  isCheckingPlan: boolean;
+  missingPendingPlan: boolean;
   isBusy: boolean;
   planStreamEvents: StreamEventItem[];
   planStreamStatus: string;
@@ -62,6 +67,11 @@ function DocumentSetupForm({
   onSelectPersonaId,
   onGenerate,
   onInterruptGeneration,
+  onCheckPendingPlan,
+  onDiscardMissingPlan,
+  hasPendingPlan,
+  isCheckingPlan,
+  missingPendingPlan,
   isBusy,
   sceneLibraryItems,
   selectedSceneLibraryId,
@@ -123,6 +133,7 @@ function DocumentSetupForm({
   const isGenerateDisabled =
     Boolean(pageScopeError || uploadError || languageError) ||
     isBusy ||
+    hasPendingPlan ||
     (generationMode === "document" && !file) ||
     Boolean(generationBlockedReason);
   const generateButtonLabel = isBusy
@@ -207,6 +218,36 @@ function DocumentSetupForm({
             <AppLink path="/settings" className={styles.warningLink}>
               前往统一设置
             </AppLink>
+          </div>
+        ) : null}
+
+        {hasPendingPlan && !canInterruptGeneration ? (
+          <div className={styles.warningCard}>
+            <span className={styles.warningTitle}>上次计划生成待确认</span>
+            <span className={styles.warningText}>查询不会重新发送生成请求。</span>
+            <button
+              type="button"
+              className={styles.secondaryButton}
+              disabled={isBusy || isCheckingPlan}
+              onClick={onCheckPendingPlan}
+            >
+              {isCheckingPlan ? "查询中…" : "查询上次结果"}
+            </button>
+            {missingPendingPlan ? (
+              <>
+                <span className={styles.warningText}>
+                  原请求若延迟被接收，仍可能生成计划。
+                </span>
+                <button
+                  type="button"
+                  className={styles.secondaryButton}
+                  disabled={isBusy || isCheckingPlan}
+                  onClick={onDiscardMissingPlan}
+                >
+                  放弃查询
+                </button>
+              </>
+            ) : null}
           </div>
         ) : null}
 

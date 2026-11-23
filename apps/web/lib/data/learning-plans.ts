@@ -4,6 +4,8 @@ export {
   createPlanRevision,
   decidePlanRevision,
   getPlanRevision,
+  getPlanGenerationOperation,
+  getRecoveredLearningPlan,
   listPlanRevisions,
   createLearningPlanStream,
   getStudyUnitRevision,

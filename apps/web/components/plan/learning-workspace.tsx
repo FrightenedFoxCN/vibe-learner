@@ -48,6 +48,11 @@ export function LearningWorkspace() {
     setSelectedSceneLibraryId,
     generatePlanWorkflow,
     cancelPlanGeneration,
+    checkPendingPlan,
+    discardMissingPlan,
+    hasPendingPlan,
+    isCheckingPlan,
+    missingPendingPlan,
     selectPlan,
     renamePlanTitle,
     updatePlanProgress,
@@ -146,6 +151,11 @@ export function LearningWorkspace() {
             planStreamStatus={planStreamStatus}
             processStreamEvents={processStreamEvents}
             processStreamStatus={processStreamStatus}
+            onCheckPendingPlan={() => void checkPendingPlan()}
+            onDiscardMissingPlan={discardMissingPlan}
+            hasPendingPlan={hasPendingPlan}
+            isCheckingPlan={isCheckingPlan}
+            missingPendingPlan={missingPendingPlan}
             canInterruptGeneration={isGeneratingPlan}
             isInterruptingGeneration={isInterruptingPlan}
             generationBlockedReason={planGenerationBlockedReason}
@@ -160,7 +170,7 @@ export function LearningWorkspace() {
           <DocumentCheckpointPanel
             documentId={processStreamDocumentId}
             status={processStreamStatus}
-            blocked={isBusy}
+            blocked={isBusy || hasPendingPlan}
             onContinue={(document) =>
               void generatePlanWorkflow({
                 mode: "document",
