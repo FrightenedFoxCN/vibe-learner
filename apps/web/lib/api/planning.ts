@@ -1,0 +1,369 @@
+import { decodePlanRevision } from "../plan-revision-decode";
+import { decodeStudyUnitRevision } from "../study-unit-revision-decode";
+import {
+  diagnosticDecode,
+  DiagnosticContext as DiagnosticContext,
+} from "../diagnostics";
+import type {
+  LearningGoal,
+  LearningPlan,
+  StreamEvent,
+  StudySessionRecord,
+} from "@vibe-learner/shared";
+import { decodeStudyPlanConfirmationDecisionResponse } from "../study-session-decode";
+import { PlanningDecodeError, decodeLearningPlanList } from "../planning-decode";
+import { StrictStreamStateMachine } from "../stream-decode";
+
+import {
+  serializeSceneProfile,
+  AI_BASE_URL,
+  request,
+  readJson,
+  consumeDiagnosticStream,
+  formatStreamErrorPayload,
+  normalizePlan,
+  createLearningPlanRequestId,
+  serializePlanningIntent,
+} from "./_shared";
+
+export interface StudyPlanConfirmationDecisionResponse {
+  session: StudySessionRecord;
+  plan: LearningPlan | null;
+}
+
+export async function createLearningPlan(goal: LearningGoal): Promise<LearningPlan> {
+  const clientRequestId = goal.clientRequestId?.trim() || createLearningPlanRequestId();
+  const sceneSummary = goal.sceneProfileSummary ?? goal.sceneProfile?.summary ?? "";
+  const diagnosticResponse = await request(`${AI_BASE_URL()}/learning-plans`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      document_id: goal.documentId ?? "",
+      persona_id: goal.personaId,
+      client_request_id: clientRequestId,
+      expected_document_updated_at: goal.expectedDocumentUpdatedAt ?? "",
+      objective: goal.objective,
+      scene_profile_summary: sceneSummary,
+      scene_profile: serializeSceneProfile(goal.sceneProfile),
+      planning_intent: serializePlanningIntent(goal.planningIntent),
+    }),
+  });
+  const payload = await readJson<unknown>(diagnosticResponse);
+  return diagnosticDecode(diagnosticResponse, () =>
+    normalizePlan(payload, {
+      expectedDocumentId: goal.documentId ?? "",
+      requireHarnessTrace: true,
+    }),
+  );
+}
+
+export async function listLearningPlans(): Promise<LearningPlan[]> {
+  const diagnosticResponse = await request(`${AI_BASE_URL()}/learning-plans`);
+  const payload = await readJson<unknown>(diagnosticResponse);
+  return diagnosticDecode(diagnosticResponse, () => decodeLearningPlanList(payload));
+}
+
+export async function updateLearningPlanTitle(
+  planId: string,
+  courseTitle: string,
+  expectedRevision?: number,
+): Promise<LearningPlan> {
+  const diagnosticResponse = await request(
+    `${AI_BASE_URL()}/learning-plans/${planId}`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        expected_revision: expectedRevision,
+        course_title: courseTitle,
+      }),
+    },
+  );
+  const payload = await readJson<unknown>(diagnosticResponse);
+  return diagnosticDecode(diagnosticResponse, () =>
+    normalizePlan(payload, { expectedPlanId: planId }),
+  );
+}
+
+export async function updateLearningPlanProgress(input: {
+  planId: string;
+  scheduleIds: string[];
+  expectedRevision?: number;
+  status: string;
+  note?: string;
+}): Promise<LearningPlan> {
+  const diagnosticResponse = await request(
+    `${AI_BASE_URL()}/learning-plans/${input.planId}/progress`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        expected_revision: input.expectedRevision,
+        schedule_ids: input.scheduleIds,
+        status: input.status,
+        note: input.note ?? "",
+      }),
+    },
+  );
+  const payload = await readJson<unknown>(diagnosticResponse);
+  return diagnosticDecode(diagnosticResponse, () =>
+    normalizePlan(payload, { expectedPlanId: input.planId }),
+  );
+}
+
+export async function answerLearningPlanQuestion(input: {
+  planId: string;
+  questionId: string;
+  expectedRevision?: number;
+  answer: string;
+}): Promise<LearningPlan> {
+  const diagnosticResponse = await request(
+    `${AI_BASE_URL()}/learning-plans/${input.planId}/planning-questions/${input.questionId}`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        expected_revision: input.expectedRevision,
+        answer: input.answer,
+      }),
+    },
+  );
+  const payload = await readJson<unknown>(diagnosticResponse);
+  return diagnosticDecode(diagnosticResponse, () =>
+    normalizePlan(payload, { expectedPlanId: input.planId }),
+  );
+}
+
+export async function deleteLearningPlan(
+  planId: string,
+  expectedRevision?: number,
+): Promise<void> {
+  await readJson<{ deleted_plan_id: string }>(
+    await request(
+      `${AI_BASE_URL()}/learning-plans/${planId}${expectedRevision === undefined ? "" : `?expected_revision=${expectedRevision}`}`,
+      {
+        method: "DELETE",
+      },
+    ),
+  );
+}
+
+export async function createLearningPlanStream(
+  goal: LearningGoal,
+  onEvent: (event: StreamEvent) => void,
+  options?: { signal?: AbortSignal; diagnostic?: DiagnosticContext },
+): Promise<LearningPlan> {
+  const clientRequestId = goal.clientRequestId?.trim() || createLearningPlanRequestId();
+  const sceneSummary = goal.sceneProfileSummary ?? goal.sceneProfile?.summary ?? "";
+  const response = await request(
+    `${AI_BASE_URL()}/learning-plans/stream`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      signal: options?.signal,
+      body: JSON.stringify({
+        document_id: goal.documentId ?? "",
+        persona_id: goal.personaId,
+        client_request_id: clientRequestId,
+        expected_document_updated_at: goal.expectedDocumentUpdatedAt ?? "",
+        objective: goal.objective,
+        scene_profile_summary: sceneSummary,
+        scene_profile: serializeSceneProfile(goal.sceneProfile),
+        planning_intent: serializePlanningIntent(goal.planningIntent),
+      }),
+    },
+    options?.diagnostic,
+  );
+  if (!response.ok || !response.body) {
+    const text = await response.text();
+    throw new Error(text || `HTTP ${response.status}`);
+  }
+
+  let finalPlan: LearningPlan | null = null;
+  const expectedDocumentId = goal.documentId ?? "";
+  const machine = new StrictStreamStateMachine({
+    streamKind: "learning_plan",
+    subject: expectedDocumentId
+      ? { subjectType: "document", subjectId: expectedDocumentId }
+      : { subjectType: "learning_plan_request", subjectId: clientRequestId },
+  });
+  const terminal = await consumeDiagnosticStream(
+    response,
+    response.body,
+    machine,
+    (event) => {
+      if (event.stage === "stream_completed") {
+        finalPlan = normalizePlan(event.committedProjection, {
+          expectedPlanId: event.terminalEvidence?.resourceId ?? undefined,
+          expectedDocumentId,
+          path: "stream.committed_projection",
+          requireHarnessTrace: true,
+        });
+      }
+      onEvent(event);
+    },
+  );
+  if (terminal.stage === "stream_cancelled") {
+    throw new DOMException("stream_interrupted", "AbortError");
+  }
+  if (terminal.stage === "stream_error") {
+    throw new Error(
+      formatStreamErrorPayload(terminal.payload, "learning_plan_stream_error"),
+    );
+  }
+  if (!finalPlan) {
+    throw new Error("learning_plan_stream_committed_terminal_without_plan");
+  }
+  return finalPlan;
+}
+
+export async function resolveStudyPlanConfirmation(input: {
+  sessionId: string;
+  confirmationId: string;
+  decision: "approve" | "reject";
+  note?: string;
+}): Promise<StudyPlanConfirmationDecisionResponse> {
+  const diagnosticResponse = await request(
+    `${AI_BASE_URL()}/study-sessions/${input.sessionId}/plan-confirmations/${input.confirmationId}`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        decision: input.decision,
+        note: input.note ?? "",
+      }),
+    },
+  );
+  const payload = await readJson<unknown>(diagnosticResponse);
+  return diagnosticDecode(diagnosticResponse, () =>
+    decodeStudyPlanConfirmationDecisionResponse(payload, {
+      expectedSessionId: input.sessionId,
+      expectedConfirmationId: input.confirmationId,
+      expectedDecision: input.decision,
+      decodePlan: (rawPlan, path, expectedPlanId, expectedDocumentId) =>
+        normalizePlan(rawPlan, {
+          path,
+          expectedPlanId,
+          expectedDocumentId,
+        }),
+    }),
+  );
+}
+
+export async function createPlanRevision(
+  planId: string,
+  input: {
+    clientRequestId: string;
+    baseRevision: number;
+    instruction?: string;
+    rollbackRevision?: number;
+  },
+) {
+  const response = await request(
+    `${AI_BASE_URL()}/learning-plans/${planId}/revisions`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        client_request_id: input.clientRequestId,
+        base_revision: input.baseRevision,
+        instruction: input.instruction ?? "",
+        rollback_revision: input.rollbackRevision ?? null,
+      }),
+    },
+  );
+  const raw = await readJson<unknown>(response);
+  return diagnosticDecode(response, () =>
+    decodePlanRevision(raw, planId, input.clientRequestId, input),
+  );
+}
+
+export async function getPlanRevision(planId: string, requestId: string) {
+  const response = await request(
+    `${AI_BASE_URL()}/learning-plans/${planId}/revisions/${requestId}`,
+  );
+  const raw = await readJson<unknown>(response);
+  return diagnosticDecode(response, () => decodePlanRevision(raw, planId, requestId));
+}
+
+export async function decidePlanRevision(
+  planId: string,
+  requestId: string,
+  decision: "accept" | "reject",
+) {
+  const response = await request(
+    `${AI_BASE_URL()}/learning-plans/${planId}/revisions/${requestId}/decision`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ decision }),
+    },
+  );
+  const raw = await readJson<unknown>(response);
+  return diagnosticDecode(response, () => decodePlanRevision(raw, planId, requestId));
+}
+
+export async function listPlanRevisions(planId: string): Promise<number[]> {
+  const response = await request(
+    `${AI_BASE_URL()}/learning-plans/${planId}/revision-history`,
+  );
+  const raw = await readJson<unknown>(response);
+  if (
+    !raw ||
+    typeof raw !== "object" ||
+    !("revisions" in raw) ||
+    !Array.isArray(raw.revisions) ||
+    raw.revisions.some((value) => !Number.isSafeInteger(value) || value < 0) ||
+    raw.revisions.some(
+      (value, index, values) => index > 0 && value >= values[index - 1],
+    )
+  ) {
+    throw new PlanningDecodeError("plan_revision_history", "invalid_history");
+  }
+  return raw.revisions as number[];
+}
+
+export async function getStudyUnitRevision(planId: string, documentId: string) {
+  const response = await request(
+    `${AI_BASE_URL()}/learning-plans/${planId}/study-unit-revision`,
+  );
+  const raw = await readJson<unknown>(response);
+  return diagnosticDecode(response, () =>
+    decodeStudyUnitRevision(raw, planId, documentId),
+  );
+}
+
+export async function decideStudyUnitRevision(
+  planId: string,
+  documentId: string,
+  operationId: string,
+  decision: "accept" | "reject",
+) {
+  const response = await request(
+    `${AI_BASE_URL()}/learning-plans/${planId}/study-unit-revision/${operationId}/decision`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ decision }),
+    },
+  );
+  const raw = await readJson<unknown>(response);
+  return diagnosticDecode(response, () => {
+    const value = decodeStudyUnitRevision(raw, planId, documentId);
+    if (value.preview.operationId !== operationId)
+      throw new PlanningDecodeError("study_unit_revision", "identity_mismatch");
+    return value;
+  });
+}
