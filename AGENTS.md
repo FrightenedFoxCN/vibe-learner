@@ -34,8 +34,7 @@ The codebase is a monorepo with four product/runtime surfaces and one docs area:
 - Harness artifact authorization: `services/ai/app/models/harness_artifact_access.py`, `packages/shared/src/harness-artifact-access.ts`, and the artifact-access fixtures under `packages/shared/fixtures/harness/`.
 - Harness protected artifacts and effects: `services/ai/app/persistence/harness_artifact_repository.py`, `services/ai/app/persistence/harness_effect_repository.py`, `services/ai/app/models/harness_effect.py`, and `packages/shared/src/harness-effect.ts`.
 - Tool Manifest: `services/ai/app/models/tool_manifest.py`, `services/ai/app/services/tool_provider_projection.py`, `packages/shared/src/tool-manifest.ts`, and `packages/shared/fixtures/harness/tool-manifest-v1.json`.
-- Harness eval contracts: `services/ai/app/models/harness_eval.py`, `packages/shared/src/harness-eval.ts`, and the eval contract/taxonomy fixtures under `packages/shared/fixtures/harness/`.
-- Harness eval execution: `services/ai/app/services/harness_eval_runner.py`; use `npm run eval:harness` with an explicit registry and selected suite, or its `:pr`, `:manual`, and `:nightly` profile aliases. `eval:harness:pr` runs all 15 suites; `eval:harness:stages` runs the ten stage regressions. `npm run test:acceptance:recovery-limits` covers process-crash, size and frontend recovery regressions.
+- Harness eval contracts: `services/ai/app/models/harness_eval.py` and `packages/shared/src/harness-eval.ts`; the eval execution runners and their suite fixtures were removed.
 - Operation commit contracts: `services/ai/app/models/tavern_commit.py` and `packages/shared/fixtures/harness/operation-commit-policies-v1.json`.
 - Harness engineering guide and source ownership map: `docs/harness/README.md`
 - Unified active backlog: `TODO.md`
@@ -126,11 +125,12 @@ Run the remaining verification gates:
 npm run check
 ```
 
-> The automated test suites were removed from this repository: backend `tests/`,
-> web `tests/`, shared `tests/`, model-quality `tests/`, acceptance artifacts and
-> the harness eval runners no longer exist here. Only style, shared-contract type
-> checking and Web type checking remain. Do not reintroduce `test:*` scripts unless
-> a real test entry point exists.
+> Full test suites were removed from this repository; what survives is the core
+> Harness invariant baseline only. Run `npm run test:baseline` (62 backend invariant
+> tests + 11 frontend async-fence tests, under 5s) or its halves `test:invariants`
+> and `test:invariants:web`. `npm run check` runs that baseline alongside style and
+> type gates. Do not reintroduce other `test:*` scripts unless a real entry point
+> exists.
 
 ## Configuration Notes
 
