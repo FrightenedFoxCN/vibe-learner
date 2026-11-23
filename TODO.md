@@ -48,7 +48,7 @@
 
 ### Phase 3：按域重组、巨型组件拆解与清债（P2）
 
-- [ ] **P2-FE-06 规范目录结构与薄路由边界**
+- [x] **P2-FE-06 规范目录结构与薄路由边界**
   - 按域整理 `apps/web/components/`（`ui/`、`layout/`、`plan/`、`study/`、`tavern/`、`debug/` 与既有 `persona/`、`scene/`、`settings/`）；目录迁移以纯 `git mv` + 导入路径修正的独立提交完成，先于任何拆分。
   - 重构 `apps/web/app/model-usage/page.tsx`（690 行）与 `apps/web/app/sensory-tools/page.tsx`（689 行）为薄路由 + 域组件 + controller hook，与其余路由保持一致。
 - [ ] **P2-FE-07 拆解超千行巨型组件**（与 P2-FE-05 按域同批完成）
