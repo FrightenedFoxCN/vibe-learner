@@ -1493,10 +1493,6 @@
   }
 
   /* Effective touch targets for the editor and tool configuration controls. */
-  .persona-workspace-page button,
-  .persona-workspace-page select,
-  .persona-workspace-page textarea,
-  .persona-workspace-page input:not([type="hidden"]),
   .tavern-page button,
   .tavern-page select,
   .tavern-page input:not([type="hidden"]),

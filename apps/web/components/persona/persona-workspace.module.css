@@ -1,0 +1,460 @@
+@layer theme, vendor, base, components, utilities;
+
+@layer components {
+  .workspace {
+    width: 100%;
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: 0 28px 28px;
+    background: var(--bg);
+  }
+
+  /* Keep the touch target floor above the individual control defaults. */
+  .workspace :is(button, select, textarea, input:not([type="hidden"])) {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .heading {
+    display: grid;
+    gap: 8px;
+    position: sticky;
+    top: 0;
+    z-index: 15;
+    padding-top: 20px;
+    margin-bottom: 16px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid color-mix(in srgb, var(--border) 76%, white);
+    background: color-mix(in srgb, white 92%, var(--bg));
+  }
+
+  .errorBanner {
+    border: 1px solid color-mix(in srgb, var(--negative) 40%, transparent);
+    background: color-mix(in srgb, var(--negative) 8%, white);
+    color: var(--negative);
+    padding: 10px 12px;
+    margin-bottom: 14px;
+    font-size: 13px;
+  }
+
+  .workspaceShell {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    gap: 14px;
+  }
+
+  .mainColumn {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .editorArea {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    gap: 14px;
+  }
+
+  .basicPane {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+    min-width: 0;
+    border: none;
+    background: transparent;
+    width: 300px;
+    flex-shrink: 0;
+  }
+
+  .slotsPane {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    background: var(--panel);
+  }
+
+  .sidebarPane {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-height: 0;
+    overflow-y: auto;
+    width: 360px;
+    flex-shrink: 0;
+  }
+
+  .workspace[data-compact="true"] .workspaceShell {
+    flex-direction: column;
+    overflow-y: auto;
+  }
+
+  .workspace[data-compact="true"] .editorArea {
+    flex-direction: column;
+  }
+
+  .workspace[data-compact="true"]
+    :is(.mainColumn, .editorArea, .basicPane, .slotsPane, .sidebarPane) {
+    overflow: visible;
+  }
+
+  .workspace[data-compact="true"] :is(.basicPane, .sidebarPane) {
+    width: 100%;
+  }
+
+  /* Shared field and button treatments within Persona. */
+
+  .textField {
+    width: 100%;
+    height: 38px;
+    border: 1px solid color-mix(in srgb, var(--border) 76%, white);
+    background: color-mix(in srgb, white 72%, var(--surface));
+    padding: 0 10px;
+    color: var(--ink);
+    font-size: 14px;
+  }
+
+  .fileInput {
+    width: 100%;
+    border: 1px solid color-mix(in srgb, var(--border) 76%, white);
+    padding: 8px 10px;
+    background: color-mix(in srgb, white 72%, var(--surface));
+    color: var(--ink);
+    font-size: 14px;
+  }
+
+  .summaryTextarea,
+  .systemPromptField {
+    width: 100%;
+    border: 1px solid color-mix(in srgb, var(--border) 76%, white);
+    background: color-mix(in srgb, white 72%, var(--surface));
+    padding: 10px 12px;
+    resize: vertical;
+    color: var(--ink);
+    font-size: 14px;
+    line-height: 1.65;
+  }
+
+  .summaryTextarea {
+    flex: 1;
+    min-height: 0;
+  }
+
+  .systemPromptField {
+    min-height: 120px;
+  }
+
+  .basicIconButton,
+  .sidebarIconButton {
+    border: 1px solid color-mix(in srgb, var(--border) 76%, white);
+    padding: 0;
+    background: color-mix(in srgb, white 72%, var(--surface));
+    color: var(--ink);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .basicIconButton {
+    width: 32px;
+    height: 32px;
+  }
+
+  .sidebarIconButton {
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+  }
+
+  .basicIconButton[data-primary="true"],
+  .sidebarIconButton[data-primary="true"] {
+    border: none;
+    background: var(--accent);
+    color: white;
+  }
+
+  .basicIconButton:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  .primaryBtn {
+    border: 1px solid color-mix(in srgb, var(--accent) 38%, var(--border));
+    background: color-mix(in srgb, white 86%, var(--accent-soft));
+    color: var(--ink);
+    height: 36px;
+    padding: 0 14px;
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .ghostBtn {
+    border: 1px solid var(--border);
+    background: color-mix(in srgb, white 98%, var(--panel));
+    color: var(--ink);
+    height: 36px;
+    padding: 0 12px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .iconBtn {
+    height: 24px;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    padding: 0;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  /* Basic settings and editor panels. */
+
+  .rewritePopover {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    z-index: 20;
+    width: 220px;
+    display: grid;
+    gap: 10px;
+    padding: 12px 12px 10px;
+    border: 1px solid color-mix(in srgb, var(--border) 76%, white);
+    background: var(--panel);
+    box-shadow: 0 12px 28px color-mix(in srgb, var(--ink) 12%, transparent);
+  }
+
+  .basicPaneSection {
+    padding-top: 14px;
+    margin-top: 14px;
+    border-top: 1px solid color-mix(in srgb, var(--border) 68%, white);
+    display: grid;
+    gap: 12px;
+  }
+
+  .promptSuggestionCard {
+    border: none;
+    border-left: 2px solid color-mix(in srgb, var(--accent) 52%, var(--border));
+    background: transparent;
+    padding: 4px 0 4px 10px;
+    display: grid;
+    gap: 6px;
+  }
+
+  .panelHeader {
+    flex-shrink: 0;
+    padding: 10px 16px;
+    border-bottom: 1px solid color-mix(in srgb, var(--border) 76%, white);
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 40px;
+    gap: 8px;
+  }
+
+  /* Slot drag, insertion and movement cues, in priority order. */
+
+  .slotDropArea {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .slotDropArea[data-active="true"] {
+    box-shadow: 0 0 0 2px var(--accent-soft) inset;
+    border-radius: 4px;
+    padding: 8px;
+    background: color-mix(in srgb, white 70%, var(--accent-soft));
+  }
+
+  .slotInsertMarker {
+    height: 10px;
+    border-radius: 999px;
+    transition:
+      background 140ms ease,
+      transform 140ms ease,
+      box-shadow 140ms ease;
+  }
+
+  .slotInsertMarker[data-active="true"] {
+    background: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+    transform: scaleY(1.2);
+  }
+
+  .slotCard {
+    border: none;
+    border-bottom: 1px solid color-mix(in srgb, var(--border) 68%, white);
+    background: transparent;
+    padding: 6px 0 8px;
+    display: grid;
+    gap: 4px;
+    margin-bottom: 0;
+    transition:
+      transform 180ms ease,
+      box-shadow 180ms ease,
+      border-color 180ms ease,
+      opacity 180ms ease;
+  }
+
+  .slotCard[data-dragging="true"] {
+    opacity: 0.7;
+    transform: scale(0.99);
+    border-bottom: 1px solid var(--teal);
+  }
+
+  .slotCard[data-move="up"] {
+    transform: translateY(-8px);
+    border-bottom: 1px solid var(--accent);
+  }
+
+  .slotCard[data-move="down"] {
+    transform: translateY(8px);
+    border-bottom: 1px solid var(--accent);
+  }
+
+  .emptySlotDropTarget {
+    border: 1px dashed var(--border);
+    background: var(--panel);
+    color: var(--muted);
+    padding: 14px 12px;
+    font-size: 12px;
+    line-height: 1.6;
+    text-align: center;
+  }
+
+  .emptySlotDropTarget[data-active="true"] {
+    border: 1px dashed var(--accent);
+    background: color-mix(in srgb, white 70%, var(--accent-soft));
+    color: var(--ink);
+  }
+
+  .slotKindSelect,
+  .slotLabelInput {
+    width: 100%;
+    min-width: 0;
+    border: none;
+    border-bottom: 1px solid color-mix(in srgb, var(--border) 68%, white);
+    background: transparent;
+    font-size: 12px;
+    color: var(--ink);
+  }
+
+  .slotKindSelect {
+    padding: 0 2px 0 0;
+  }
+
+  .slotLabelInput {
+    padding: 0 2px;
+  }
+
+  .slotContent {
+    width: 100%;
+    min-height: 60px;
+    border: 1px solid color-mix(in srgb, var(--border) 62%, white);
+    background: color-mix(in srgb, white 55%, var(--bg));
+    padding: 8px 10px;
+    resize: vertical;
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--ink);
+  }
+
+  /* Generation and libraries. */
+
+  .sidebarSection {
+    border: 1px solid var(--border);
+    background: color-mix(in srgb, white 99%, var(--panel));
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+
+  .modeSwitch {
+    display: inline-flex;
+    border: 1px solid var(--border);
+    background: color-mix(in srgb, white 88%, var(--panel));
+    min-height: 28px;
+    min-width: 0;
+    flex: 1;
+  }
+
+  .modeSwitchButton {
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    padding: 0 10px;
+    font-size: 12px;
+    cursor: pointer;
+    flex: 1;
+  }
+
+  .modeSwitchButton[data-active="true"] {
+    background: color-mix(in srgb, white 65%, var(--accent-soft));
+    color: var(--ink);
+    font-weight: 600;
+  }
+
+  .generatedResultCard {
+    display: grid;
+    gap: 4px;
+    padding-top: 8px;
+    border: none;
+    border-top: 1px solid color-mix(in srgb, var(--border) 68%, white);
+    background: transparent;
+  }
+
+  .personaLibraryCard,
+  .personaSlotLibraryCard {
+    border: 1px solid var(--border);
+    background: transparent;
+    padding: 10px;
+    display: grid;
+    gap: 6px;
+  }
+
+  .personaSlotLibraryCard {
+    cursor: pointer;
+    transition:
+      transform 160ms ease,
+      box-shadow 160ms ease,
+      opacity 160ms ease,
+      border-color 160ms ease,
+      background 160ms ease;
+  }
+
+  .personaSlotLibraryCard[data-dragging="true"] {
+    opacity: 0.7;
+    transform: scale(0.99);
+  }
+
+  .personaLibraryCard[data-selected="true"] {
+    border: 1px solid var(--accent);
+    background: color-mix(in srgb, white 94%, var(--accent-soft));
+  }
+}
