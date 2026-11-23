@@ -22,6 +22,7 @@ import {
 } from "../lib/tavern-workspace-state";
 
 import { friendlyTavernError, recordError } from "../lib/tavern-client-errors";
+import { refreshTavernTranscript } from "../lib/tavern-transcript-refresh";
 import type { TavernRoomQueryPorts } from "../lib/tavern-workspace-ports";
 import type { TavernWorkspaceState } from "./use-tavern-workspace-state";
 
@@ -234,27 +235,42 @@ export function useTavernRoomQueries(
             getTavernRunRecovery(roomId, 50, context),
             listTavernRooms({ limit: TAVERN_ROOM_PAGE_SIZE }, context),
           ]);
-        if (
-          activeRoomIdRef.current !== roomId ||
-          requestedRoomIdRef.current !== roomId ||
-          refreshVersion !== roomRefreshVersion.current
-        ) {
-          return;
-        }
+        const isCurrent = () =>
+          mountedRef.current &&
+          activeRoomIdRef.current === roomId &&
+          requestedRoomIdRef.current === roomId &&
+          refreshVersion === roomRefreshVersion.current;
+        if (!isCurrent()) return;
         const currentDetail = detailRef.current;
         if (
           currentDetail?.room.id !== roomId ||
           !isTavernRoomStateAtLeast(nextDetail.room, currentDetail.room)
         )
           return;
+        const currentMessages = messagesRef.current;
+        const transcript = await refreshTavernTranscript(
+          {
+            messages: currentMessages,
+            nextBeforeSequence: currentDetail.nextBeforeSequence,
+          },
+          nextDetail,
+          (afterSequence, limit) =>
+            getTavernRoom({ roomId, afterSequence, limit }, context),
+        );
+        if (!isCurrent()) return;
+        // Preserve a concurrent older-page read if the loaded window was retained.
+        const keepOlderPage =
+          transcript.messages[0]?.sequence === currentMessages[0]?.sequence &&
+          messagesRef.current !== currentMessages;
+        const nextMessages = keepOlderPage
+          ? mergeTavernMessages(messagesRef.current, transcript.messages)
+          : transcript.messages;
         const refreshedDetail = {
           ...nextDetail,
-          nextBeforeSequence: currentDetail.nextBeforeSequence,
+          nextBeforeSequence: keepOlderPage
+            ? (detailRef.current?.nextBeforeSequence ?? null)
+            : transcript.nextBeforeSequence,
         };
-        const nextMessages = mergeTavernMessages(
-          messagesRef.current,
-          nextDetail.messages,
-        );
         const reconciledRuns = reconcileTavernRuns(runsRef.current, nextRuns);
         detailRef.current = refreshedDetail;
         runsRef.current = reconciledRuns;
