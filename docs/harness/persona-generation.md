@@ -1,17 +1,17 @@
 # Persona Generation Harness
 
-Persona Spectrum 的关键词生成、长文本生成、整体辅助编辑和单 slot 辅助编辑共享 setting provider，但 Harness production stage 是 `persona:persona_generation`。admission 使用 `harness_workflow_operations`；结果是候选内容，不是已保存 Persona。
+Persona Spectrum 的关键词生成、长文本提取、整体设定辅助编辑与单槽位改写共享 Setting Provider，生产 Harness 阶段为 `persona:persona_generation`，准入记录存于 `harness_workflow_operations`。生成结果仅为未持久化候选，用户保存属于独立的 Persona 写边界。
 
-## 输出限制
+## 输出约束
 
-- `PersonaGenerationProposalV1` 严格禁止额外字段；cards 最多 24、slots 最多 64。
-- card title/label 最多 500 字符、content 最多 8000、tags 最多 24；system prompt suggestion 最多 16000。
-- 指定 count 时必须精确返回该数量，否则失败关闭。
-- 模型只生成内容字段；Persona ID、revision、source、保存时间由应用在用户保存时分配。
+- `PersonaGenerationProposalV1` 严格禁止额外字段（`extra="forbid"`）：最多 24 张 cards、64 个 slots。
+- 单张卡片 title/label ≤ 500 字符、content ≤ 8000 字符、tags ≤ 24 个；system prompt 建议 ≤ 16000 字符。
+- 请求指定生成数量时，返回条目数必须精确匹配，否则 fail-closed。
+- 模型仅产出内容字段；Persona ID、revision、source 与时间戳由应用在保存时分配。
 
-## 恢复
+## 恢复与预算
 
-结构化 chat/Responses 输出遇到 invalid JSON、invalid payload、empty response 或允许恢复的 content filter 时，只做一次低温结构修复。关键词 web search 在 provider 明确不支持时回退为无网络 chat，并记录 typed `feature_fallback`；不能把普通内容质量失败伪装成 capability fallback。
-
-短辅助编辑使用可配置 `setting_max_tokens`；Persona card 长生成使用 `max(setting_max_tokens, 8192)`。完整次数见 [配置与预算](configuration.md)。候选经 `PersonaGenerationWorkflowAdapter` 严格解码后返回；真正写 `personas` / `persona_cards` 是后续 user-authored persistence boundary。
-
+- 结构化输出遇到 invalid JSON、invalid payload、空响应或可恢复的 content filter 时，最多执行 1 次低温结构修复（与初始校验共享恢复预算）。
+- 关键词模式联网搜索在 Provider 明确不支持时降级为无网络 chat，并记录强类型 `feature_fallback`，不掩盖普通内容质量失败。
+- 短辅助编辑使用 `setting_max_tokens`；Persona Card 长结构生成使用 `max(setting_max_tokens, 8192)`（完整次数见 [配置与预算](configuration.md)）。
+- 候选内容经 `PersonaGenerationWorkflowAdapter` 严格解码返回，保存至 `personas` / `persona_cards` 须通过带 `expected_revision` 的独立保存接口。

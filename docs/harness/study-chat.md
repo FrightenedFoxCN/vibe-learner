@@ -1,36 +1,34 @@
 # Study Chat Harness
 
-`POST /study-sessions/{id}/chat` 先创建 durable `study_chat_operations` admission 和 Harness binding，再解析 operation-scoped protected snapshot。服务端只进行一次上层 pedagogy orchestration；该调用内部可执行 bounded provider/tool rounds。
+`POST /study-sessions/{id}/chat` 与 `/chat-with-attachments` 先持久准入 `study_chat_operations` 与 Harness 绑定，再解析 operation-scoped 受保护快照，随后由 `StudyChatApplication` 执行单次教学编排与有界工具循环。
 
-## 输入、输出与 effects
+## 输入、输出与强类型效果
 
-- protected snapshot 包含原始 learner message、Session、Document/Planning/Scene context 和 attachment metadata；artifact resolver 授权后才能读取。
-- model proposal 是完整的 `StudyChatReplyProposalV1`：reply、citations、character events、interactive question proposal 和 tool results 必须一次严格解码。
-- application projection 分配 Turn identity/sequence，隐藏 grading spec，并生成 typed DB/Scene/file/provider effects。
-- Session/Turn、DB effects、operation receipt 和 terminal v3 trace 原子提交。Scene mutation、attachment staging 和外部 provider effect 分别要求 read-back、compensation 或 `uncertain`。
+- **受保护快照**：包含原始学习者消息、Session、Document/Planning/Scene 上下文、输出语言偏好与附件清单，经制品解析器授权后读取。
+- **模型提案**：单次严格解码完整 `StudyChatReplyProposalV1`（正文、引用、Character Events、交互题提案与工具结果）。
+- **应用投影与提交**：应用分配 Turn ID 与连续序号，隔离服务端私有交互题评分规格，并汇集强类型 DB/Scene/文件/外部 Provider 效果。
+- **原子边界**：Session/Turn、数据库效果、操作回执与终态 v3 Trace 在同一事务提交；Scene 变更附加行级 CAS 与快照读回；附件采用操作自有暂存与摘要校验；外部图片生成与上游模型调用无幂等读回能力，模糊结果保留 `uncertain`。
+- **Commit Policy**：`primary_output_only`，仅证明 Session/Turn 主输出，不声称所有外部副作用均成功。
 
-## 工具和恢复
+## 32 个 Study 工具与分发结构
 
-32 个 Study tools 由 Tool Manifest 提供。每个 tool call 先严格解码 canonical arguments，再按 per-round/per-operation budget admission；provider tool-call ID 只作 transport correlation。模型最多运行 `max(tool_max_rounds + 12, tool_max_rounds * 3)` rounds，默认 16；exempt 只读/收尾工具不消耗 limited round，但仍受总 round 和 Tool Manifest 限制。
+全部 32 个 Study 工具以 Tool Manifest 为唯一注册目录（Schema、预算、适配器与脱敏 Trace）。单个对话最多运行 `max(tool_max_rounds + 12, tool_max_rounds * 3)` 个生成 round（默认 16）；只读/收尾豁免工具不消耗受限轮次，但仍受总轮次与 Tool Manifest 上限约束。
 
-`StudySessionChatToolRuntime` 是其中 20 个 Session 工具的公共适配入口，保留原工具展示顺序、可用性判断、上下文和引用收集。实际执行分布在 `services/ai/app/services/study_tools/`：
+其中 20 个 Session 领域工具由 `StudySessionChatToolRuntime` 统一适配，实际处理器位于 `services/ai/app/services/study_tools/`：
 
 | 模块 | 职责 |
 | --- | --- |
-| `memory.py`、`affinity.py`、`follow_up.py` | 临时记忆、好感、时间与自动续接提案 |
-| `projection_read.py` | PDF 文本、图片与版面候选读取 |
-| `projection_write.py` | 附件投影、焦点、标注与覆盖层提案 |
+| `memory.py`、`affinity.py`、`follow_up.py` | 临时记忆、好感、系统时间与自动续接提案 |
+| `projection_read.py` | PDF 文本、页面图片与版面图形候选读取 |
+| `projection_write.py` | 附件投射、焦点定位、标注与覆盖层提案 |
 | `image_generation.py` | 外部图片生成及其操作/槽位关联 |
 | `plan_confirmation.py` | 计划标题与进度的待确认提案 |
-| `context.py` | 共享服务、附件解析、引用去重及同一 operation 的 effect collector |
+| `context.py` | 共享服务上下文、附件解析、引用去重与同操作 effect collector |
 
-入口按既有 Manifest 的 canonical name、owner 和 adapter 绑定分派到唯一处理器；处理器不维护第二份工具目录。参数解码、调用预算和结果投影继续由 `provider_study.py` 与既有 Tool Manifest 适配层负责。所有处理器共享同一个 `StudyToolContext`，因此跨领域读取能看到本轮准备的 overlay，而 `prepared` 结果不能冒充已提交状态。最终事务仍由 Session repository 统一提交；拆分不修改模型可见 schema、effect adapter/slot、回滚或 server-only 字段边界。
+所有处理器共享同一个 `StudyToolContext`：本轮已准备（`effect_state=prepared`）的变更可被同轮后续读取叠加看到（read-your-writes），但在最终事务提交前绝不改变持久化状态。
 
-最终输出 invalid payload 或 content filter 时，只允许一次 tools-disabled、低温、`max(chat_max_tokens, 1600)` 的完整结构恢复。恢复仍失败则 operation 记为 not committed；上游请求已经发出但无法证明副作用状态时必须保留 uncertain。客户端遇到模糊网络结果只查询 operation read-back，不盲目重发。
+## 恢复与输出语言
 
-Study commit policy 是 `primary_output_only`：证明 Session/Turn projection，不声称所有 Scene、文件或 provider effect 都成功。交互题必须等待持久化 Session read-back 后显示，浏览器永远不接收未作答 grading spec。
-
-输出语言是应用输入：request v3 对显式语言绑定指纹，input manifest v2 与 protected snapshot v3 保留选择；Study prompt v3 在原文证据之外统一指导语语言。Session 语言与成功 Turn 一起 CAS 保存，失败/uncertain 不提前修改；历史 v1/v2 指纹和附件读回不放宽。详见[输出语言偏好](../output-language.md)。
-
-浏览器将 60 秒本地等待上限与服务端运行状态分开：超时只查询原请求，单次查询/显式 Session 刷新上限 15 秒，admitted/running 每次恢复访问最多六次后台查询，uncertain 不自动轮询或重发。断网保留身份，终态刷新只读取回执，不恢复缺失的消息/附件重放能力。协议与真实临时后端验收见 [Study 请求恢复](../study-recovery.md)。
-
+- 最终回复遇到 invalid payload 或 content filter 时，允许 1 次无工具、低温、`max(chat_max_tokens, 1600)` 的完整结构恢复；仍失败则记为 `not_committed`。已发出上游请求但无法证实副作用时保留 `uncertain`。
+- 显式 `output_language` 进入 `study-chat-request-v3` 规范指纹并在成功提交 Turn 时与 Session 一并 CAS 持久化，不进入模型提案 schema。
+- 浏览器恢复协议（60 秒等待上限、15 秒查询上限、6 次退避查询与 `uncertain` 不重放规则）详见 [学习会话与对话恢复](../study-session.md)。

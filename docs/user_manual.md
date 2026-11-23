@@ -1,9 +1,14 @@
 # 用户手册
 
-用户手册现已作为应用内独立页面提供：从导航首页点击 **用户手册**，或访问 `/manual`。
+Vibe Learner 的完整操作指南直接内置在应用页面中：启动应用后，从导航首页点击 **用户手册** 或直接访问 `/manual`。
 
-内容涵盖快速开始（本地模拟 / 真实模型）、教材与纯目标计划、章节学习、人格与场景、酒馆、故障恢复、数据备份及桌面安装。页面带有目录和功能直达链接。
+手册覆盖以下内容：
 
-正文维护在 `apps/web/app/manual/page.tsx`，样式位于同目录的 `page.module.css`，避免网页与文档维护两份不同的操作说明。
+- 快速开始（本地模拟与真实模型配置）
+- 教材上传解析与纯目标计划生成
+- 章节学习对话、PDF 预览与交互题
+- Persona Spectrum 人格编辑与 Scene Setup 场景编排
+- Tavern 多角色房间互动与恢复
+- 故障恢复、数据备份与桌面端安装
 
-开发环境启动见 [项目说明](../README.md)，桌面构建与发布细节见 [桌面打包](desktop-packaging.md)。
+手册正文与样式统一维护在 `apps/web/app/manual/page.tsx` 与 `apps/web/app/manual/page.module.css`。开发启动说明见 [README.md](../README.md)，桌面构建与发布流程见 [桌面打包与发布](desktop-packaging.md)。

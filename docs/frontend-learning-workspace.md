@@ -1,217 +1,104 @@
-# Frontend Workspace Boundary
+# 前端页面边界与分层架构
 
-This document defines the current frontend boundary for the split workspace pages in `apps/web`.
+本文定义 `apps/web` 各业务工作区的状态归属、路由边界与代码分层约定。改动或重构前端时应保持职责分离，避免渲染、异步编排、状态迁移与文案常量重新揉回单个巨型组件。
 
-## Goal
+## 1. 路由分组与 Provider 作用域
 
-The frontend is intentionally split so rendering, async workflows, state transitions, pure state rules, and UI copy do not collapse back into one page component.
+| 路由 | 归属域 | 状态边界 |
+| --- | --- | --- |
+| `/`、`/manual` | 导航首页与用户手册 | 无业务域 Provider，仅展示导航与静态手册 |
+| `/plan`、`/study` | `(learning)` 路由组 | 共享 `LearningWorkspaceProvider`；仅在此路由组内初始化教材/计划/会话数据 |
+| `/persona-spectrum` | Persona 域 | 独立组合与域 Hook，不初始化学习域资源 |
+| `/scene-setup` | Scene 域 | 独立组合与域 Hook，不初始化学习域资源 |
+| `/tavern` | Tavern 域 | 独立状态、查询、恢复与变更 Hook，不初始化学习域资源 |
+| `/settings`、`/sensory-tools`、`/model-usage` | 系统配置与观测 | 各自按需消费对应 `lib/data/*` 模块 |
 
-When changing this area, preserve the separation below unless there is a clear architectural reason to move it.
+根布局挂载两个轻量级跨路由基础设施：
 
-## Page Split
+- **`LearningPageCacheProvider`**：跨页面保留局部草稿（内存中的已选 `File` 对象与可序列化的 `sessionStorage` 表单/预览定位草稿；硬刷新后 `File` 不恢复）。
+- **`DebugProvider` 与 `DebugOverlay`**：接收当前页只读调试投影并在页面离开时自动清理；学习域卸载时同步取消本地流读取、作废过期响应 ticket，并向已知流操作发出取消请求（模糊 Study Chat 写操作保留原身份供返回时查询恢复）。
 
-- `/` = navigation home
-- `/plan` = `Plan Workspace` (upload, process, generate, history)
-- `/study` = `Study Dialog` (chat + PDF + chapter switching)
-- `/persona-spectrum` = `Persona Spectrum` (persona slots, style tuning, import/export)
-- `/scene-setup` = `Scene Setup` (world-to-classroom layered scene editing)
+## 2. 学习工作区六层架构（`/plan` 与 `/study`）
 
-`/plan` and `/study` share one runtime state source through `LearningWorkspaceProvider`.
+### ① 页面组合层
 
-The learning provider lives in the `(learning)` route group. Settings, Model Usage,
-Persona, Scene and Tavern do not initialize learning data. The global
-`DebugProvider` receives a narrow read-only learning projection and clears it
-when the learning owner leaves.
+- 文件：`apps/web/components/learning-workspace.tsx`（`/plan`）、`apps/web/components/study-dialog-page.tsx`（`/study`）
+- 职责：组装子面板、绑定 Controller 状态与回调、控制页面级布局。
+- 禁止：直接发起 API 调用、编排多步异步流、内联重复业务文案常量。
 
-A lightweight root `LearningPageCacheProvider` preserves page-local drafts:
+### ② 工作流编排层（Controller Hooks）
 
-- in-memory files and text survive navigation out of Plan/Study;
-- `sessionStorage` preserves serializable state across same-tab refresh;
-- `File` objects remain memory-only and cannot be restored after hard refresh.
+`apps/web/hooks/use-learning-workspace-controller.ts` 组合多个职责单一的子 Owner，每个异步 Owner 按需接收窄接口端口（API / 存储 / 时钟）：
 
-Leaving the learning route invalidates response tickets and stops local stream
-reading. Known stream operations receive cancellation requests; ambiguous Study
-Chat writes retain their original identity and recover by query on return.
-
-## Boundary Map
-
-### Page Composition
-
-File:
-
-- `apps/web/components/learning-workspace.tsx` (`/plan`)
-- `apps/web/components/study-dialog-page.tsx` (`/study`)
-
-Responsibilities:
-
-- compose page-level UI from smaller blocks
-- bind controller state and actions into component props
-- contain page-local layout and presentation styles only
-
-Must not own:
-
-- API calls
-- workflow orchestration
-- multi-step state transition logic
-- repeated UI copy constants
-
-### Workflow Controller
-
-File:
-
-- `apps/web/hooks/use-learning-workspace-controller.ts`
-
-The controller composes module owners and projects reducer state for pages. API
-writes, recovery, timers and draft lifecycles have explicit independently tested
-boundaries:
-
-| Owner | Responsibility |
+| Owner | 职责 |
 | --- | --- |
-| `WorkspaceSnapshotLoader` | Initial/focus/manual learning snapshots and stale query suppression |
-| `useWorkspaceLibraries` | Persona/Scene refresh identity, selection and event subscriptions |
-| `usePlanGeneration` | Upload, parse/plan streams, cancellation and initial Session |
-| `usePlanMutations` | Plan/Study Unit writes, per-resource admission and feedback |
-| `useStudySessionNavigation` | Session history, creation and serialized chapter switching |
-| `useStudyMessages` | Learner/hidden messages, automatic request identity and admission failures |
-| `useStudyChatRecovery` | Query-only restore/read-back, explicit retry eligibility and view tickets |
-| `useStudyCommitActions` | Answer/confirmation committed projections and callback eligibility |
-| `useStudyContinuation` | Prelude, scheduled follow-up, pause and deferred answer callbacks |
-| `learning-workspace-model` | Pure directory, theme, Scene and configuration projections |
+| `WorkspaceSnapshotLoader` | 初始/聚焦/手动快照加载、在途聚焦请求合并与过期查询抑制 |
+| `useWorkspaceLibraries` | Persona / Scene 列表刷新身份、选中同步与存储事件监听 |
+| `usePlanGeneration` | 上传、解析/规划流式过程、取消控制与初始 Session 创建 |
+| `usePlanMutations` | 计划与 Study Unit 变更、资源级准入与用户反馈 |
+| `useStudySessionNavigation` | Session 历史、创建与串行章节切换 |
+| `useStudyMessages` | 学习者/隐藏消息发送、请求身份分配与准入失败处理 |
+| `useStudyChatRecovery` | 纯查询恢复、显式重试资格判定与视图围栏 ticket |
+| `useStudyCommitActions` | 交互题判分与计划确认的提交投影及回调资格判定 |
+| `useStudyContinuation` | 开场白、定时自动续接、暂停与延迟答复回调 |
+| `learning-workspace-model` | 目录、主题、场景与配置的纯派生投影 |
 
-Each asynchronous owner accepts a narrow API/storage/clock port where needed.
-A pending operation blocks new automatic generation during restore. Timers read
-the current Session revision when firing; failed timers wait for an authoritative
-Session refresh instead of re-polling on busy-state changes. Learner completion
-consumes only deferred callbacks captured before its request, preserving answers
-queued while it was in flight.
+核心协作规则：
 
-Persona Spectrum and Scene Setup similarly use route composition, domain-owned
-library/draft/generation/rewrite/persistence hooks, and separate presentation
-components.
+- 存在待确认操作时阻塞新的自动生成；
+- 定时器触发时读取当前最新 Session revision，失败后等待权威刷新而不在 busy 切换时重轮询；
+- 学习者消息完成时仅消费本次请求前捕获的延迟回调，保留在途期间新入队的作答；
+- 异步结果统一经过 `async-result-fence.ts`（绑定操作身份、当前 Plan/Session 主体、单调视图版本与字段目标）；Persona 与 Scene 的异步生成与导入使用同一围栏原语。
 
-### Reducer State Layer
+### ③ Reducer 状态层
 
-File:
+- 文件：`apps/web/lib/learning-workspace-reducer.ts`
+- 职责：定义规范 `LearningWorkspaceState` 与 Action，集中处理状态迁移（文档、计划、会话、回复、选中态、提示与忙碌状态）。
+- 禁止：网络请求、浏览器事件监听或视图渲染。
 
-- `apps/web/lib/learning-workspace-reducer.ts`
+### ④ 纯状态与展示投影工具
 
-Responsibilities:
+- `apps/web/lib/learning-workspace-state.ts`：确定性、无副作用的快照合并、文档 upsert 与默认 Session 构造。
+- `apps/web/lib/plan-panel-data.ts`：计划历史排序、选中解析与 `Plan Overview Panel` 展示数据映射。
 
-- define the canonical `LearningWorkspaceState`
-- define reducer actions
-- apply state transitions in one place
-- keep notice, busy, session, response, selection, and snapshot application behavior consistent
+### ⑤ 文案与遥测常量
 
-Must not own:
+- `apps/web/lib/learning-workspace-copy.ts`、`apps/web/lib/learning-workspace-telemetry.ts`：集中维护重复提示语与工作流日志前缀，不散落回组件层。
 
-- network requests
-- browser event wiring
-- view rendering
+### ⑥ 数据与解码层
 
-The reducer-backed state is still the source of truth for documents, plans, sessions, and replies.
+- 数据入口统一走 `apps/web/lib/data/*.ts`，底层传输位于 `apps/web/lib/api/*.ts`，严格解码位于 `apps/web/lib/*-decode.ts`。
 
-Study Chat POST, operation query, and rejected-admission refresh results also pass through `StudyAsyncViewFence`. Its ticket binds operation identity, current Plan/Session subject, a monotonic view revision, and the current Session/Study Unit field target. Switching Plan, Session, or Study Unit invalidates older tickets; a late result may be logged or its pending identity cleared, but it cannot overwrite the new view. Persona and Scene async generation/file reads use the same subject/draft-revision/field-target fencing primitive in their own pages.
+## 3. 核心页面区块与交互约定
 
-Page-cache state is only for page-local UI continuity such as:
+### `/plan`（Plan Workspace）
 
-- `/plan` upload mode, objective draft, and selected-but-not-yet-submitted PDF file
-- `/study` chapter/subsection selection, preview window position, and unsent chat draft
+核心子区块：`PersonaSelector`、`DocumentSetup`、`DocumentCheckpointPanel`、`PlanOverview`、`PlanRevisionPanel`、`StudyUnitRevisionPanel`。
 
-### Pure State Utilities
+`Plan Overview` 固定展示规则：
 
-File:
+- `courseTitle` 为主标题，`objective` 为其下辅助目标文本；
+- `todayTasks`、`schedule` 与嵌套 `scheduleChapters` 均为顺序阅读内容，采用纵向流式布局，不排成多列卡片网格；
+- 嵌套 `scheduleChapters` 在父 `schedule` 项下展开并保留物理页码锚点。
 
-- `apps/web/lib/learning-workspace-state.ts`
+### `/study`（Study Dialog）
 
-Responsibilities:
+核心子区块：`PersonaSelector`、`StudyConsole`、`CharacterShell` 与内嵌 PDF/图片预览面板。
 
-- resolve snapshot application results
-- upsert document records
-- build default study-session creation input
+核心交互规则：
 
-These functions should stay deterministic and side-effect free.
+- 章节目录源自当前计划的 `schedule[].unitId` 映射到的教材 Study Units（为空时回退至文档 `sections`）；切换父排期项才切换或创建对应 `study_unit_id` 的 Session，并清理旧回复；切换子章节只更新本地预览与快捷跳页锚点。
+- 消息列表校验连续 Turn 序号，按时间从旧到新渲染并滚动至最新已提交 Turn。
+- 模糊网络结果展示显式查询操作并锁定新发送，仅在 `not_committed + safe_to_retry` 时允许重发；准入前明确拒绝要求先刷新 Session。
+- 未发送草稿、答题草稿与预览位置支持跨路由与同标签页刷新恢复。
+- 模型侧成功恢复记录仅展示在调试面板中，不打扰主学习界面。
 
-### Plan View Data
+## 4. 新功能归位决策
 
-File:
+改动或新增前端行为时，按以下顺序确定归属层：
 
-- `apps/web/lib/plan-panel-data.ts`
-
-Responsibilities:
-
-- sort plan history
-- resolve selected plan ids
-- map records into `Plan Overview Panel` selection items
-- preserve display-specific plan metadata such as `courseTitle` for the merged history selector
-
-This layer exists so plan selection and display mapping do not leak into the page component.
-
-### Copy And Telemetry
-
-Files:
-
-- `apps/web/lib/learning-workspace-copy.ts`
-- `apps/web/lib/learning-workspace-telemetry.ts`
-
-Responsibilities:
-
-- centralize repeated notice/copy strings
-- centralize workflow log formatting
-
-Do not scatter workflow notice strings or telemetry prefixes back into the page/component layer.
-
-## Component Inputs
-
-The `/plan` page currently renders these blocks:
-
-- `PersonaSelector`
-- `DocumentSetup`
-- `PlanOverview`
-
-The `/study` page currently renders these blocks:
-
-- `PersonaSelector`
-- `StudyConsole`
-- `CharacterShell`
-- embedded PDF pane
-
-Current `/study` interaction details:
-
-- theme selector routes to a concrete section id before sending chat
-- quick action allows jumping PDF preview to the current theme start page
-- transcript validates contiguous sequence and displays turns oldest-to-newest, scrolling to the latest committed Turn
-- ambiguous chat outcomes show an explicit query action for the original operation and lock new sends; only explicit `not_committed + safe_to_retry` permits resend, while known pre-admission rejection requires a Session refresh first
-- unsent composer text, question draft state, and preview/chapter position recover after route changes and same-tab refresh
-- successful model-side recoveries are debug-only: they surface in `StudyDebugPanels`, persona/scene page debug snapshots, and plan trace/debug panels, but not in the main user-facing page blocks
-
-Each block should receive already-prepared data via props.
-
-Examples:
-
-- `PlanOverview` receives `items`, `selectedPlanId`, `plan`, `documentTitle`, and actions such as `onSelectPlan`
-- `StudyConsole` receives the active section list, current response, and handlers for asking/switching/opening textbook pages
-
-Chapter switching rules:
-
-- The chapter source is the active plan directory (`plan.schedule.unitId` mapped to document study units).
-- If schedule-derived units are empty, fallback is document sections.
-- Switching chapter re-enters or creates a section-scoped session for the active plan, then clears stale response.
-
-For `Plan Overview`, keep these display rules stable:
-
-- `courseTitle` is the main heading
-- `objective` is supporting goal text, not the heading
-- `todayTasks`, `schedule`, and nested `scheduleChapters` are sequential content and should render as vertical reading flow, not same-row card grids
-- `schedule` is rendered in `Plan Overview`; nested chapters expand under their parent schedule item and retain their page anchors
-
-## Design Rule
-
-When adding new behavior to the `Learning Workspace`, place it by answering this question first:
-
-- Is it rendering? Put it in the component.
-- Is it async orchestration? Put it in the controller hook.
-- Is it a state transition? Put it in the reducer.
-- Is it pure derivation or normalization? Put it in `lib` utility state helpers.
-- Is it repeated wording or workflow logging? Put it in copy/telemetry helpers.
-
-If a change would require updating multiple layers, keep each layer limited to its own responsibility instead of shortcutting everything into the hook or page component.
+1. 纯 UI 渲染与局部交互细节 → `components/`
+2. 跨请求异步编排、定时与恢复 → `hooks/`
+3. 规范状态迁移 → `lib/*-reducer.ts` 或 `lib/*-state.ts`
+4. 线上解码与数据访问 → `lib/*-decode.ts` + `lib/api/` + `lib/data/`
+5. 重复提示文案与日志格式化 → `lib/*-copy.ts` / `lib/*-telemetry.ts`

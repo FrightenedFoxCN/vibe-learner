@@ -1,32 +1,31 @@
 # TODO
 
-本文件是唯一未完成任务入口。运行约束见 [AGENTS](AGENTS.md)，架构与操作说明见 [docs](docs/README.md)。
+本文件是仓库唯一的未完成任务与研究事项入口。日常约束见 [AGENTS.md](AGENTS.md)，系统文档见 [docs/README.md](docs/README.md)。
 
-- `P1`：用户可用性、数据一致性或跨工作流基础边界。
-- `P2`：产品、性能或可靠性改进。
-- `P3`：文档、账务和候选验证。
+## 优先级定义
+
+- **P1**：用户可用性、数据一致性或跨工作流基础边界。
+- **P2**：产品体验、性能或可靠性改进。
+- **P3**：文档完善、工程整理与候选验证。
+
+## 开放事项
+
+当前暂无已排期的 P1/P2 阻断项。
 
 ## 未排期研究
 
-研究任务须有触发证据、假设、time-box、产出物和采用/放弃标准：
+每项研究在立项前须明确触发证据、假设、时间盒（time-box）、产出物以及采用/放弃标准：
 
-- `RND-RUST-001`：profiling 证明 Python/TypeScript 热点后再评估 Rust 重写。
-- `RND-THEME-001`：先确定用户需求、design tokens、对比度基线与关闭开关。
-- `RND-LIVE2D-001`：先确定授权、资源预算、动画降级和设备性能。
-- `RND-TTS-001`：先确定隐私、延迟、成本、可取消传输、字幕和静音降级。
-- 桌面自动更新、崩溃上报及 sidecar 打包形态：先确定发布策略并测量性能。
-- `SKILL-DISTILL-001`：只抽取稳定、可验证、无密钥/用户数据的流程；[AGENTS](AGENTS.md) 与 [docs](docs/README.md) 仍是事实真源。
+| 编号 | 主题 | 前置评估条件 |
+| --- | --- | --- |
+| `RND-RUST-001` | 热点模块 Rust 重写 | 先以 profiling 证明 Python/TypeScript 存在明确性能瓶颈 |
+| `RND-THEME-001` | 多主题与深色模式 | 先明确用户需求、design tokens、对比度基线与关闭开关 |
+| `RND-LIVE2D-001` | 角色 Live2D 渲染接入 | 先确认资源授权、内存与帧率预算、动画降级策略 |
+| `RND-TTS-001` | 语音合成（TTS）接入 | 先明确隐私、延迟、成本、可取消传输、字幕与静音降级 |
+| `RND-DESKTOP-001` | 桌面自动更新、崩溃上报与分发签名 | 先明确发布策略、开发者签名/公证链路与包体性能预算 |
+| `SKILL-DISTILL-001` | 可复用工作流沉淀 | 仅抽取稳定、可验证、无密钥与无用户数据的流程；事实真源仍归 `AGENTS.md` 与 `docs/` |
 
-性能任务须记录 fixture、环境、raw samples 和 before/after；预算变更遵循 `docs/performance-budgets-v1.md`。`QG-002` / `web-strict-decode-adversarial-v1` 保持不可变，扩展使用新版本。
+## 变更准入要求
 
-## 已知风险
-
-- OCR cleanup 仍是启发式主导，是规划噪声的主要来源。
-- 工具化规划会增加 provider 延迟与超时压力。
-- 前端依赖历史 debug 与 plan 产物；改本地存储形状需谨慎。
-- Study Session 聚合写入使用 revision CAS 与连续 turn 序号；已提交 Turn 内容除交互题答案字段外不可变。provider exactly-once 不支持。
-- 生产工作流使用 v3 Harness runtime；剩余范围任务即本文件。
-- Harness 资源引用必须有 evidence policy；无权威 revision 的资源不得传常量 `revision=0`。
-- 构造 v3 context 或 commit evidence 前使用 `HARNESS_RESOURCE_EVIDENCE_POLICIES`。Tavern Room revision 覆盖元数据与 run 准入 CAS，不覆盖 transcript 漂移；Tavern Message 在能解析房间级受保护 transcript 快照前不支持作为 context subject。
-- 生产 v3 commit evidence 必须匹配注册的 workflow/stage/output/payload key、允许的资源集合，以及能证明全部应用自有 scope 字段的版本化 committed-projection DTO；当前 Tavern actor policy 只证明一条 `primary_output_only` Message。
-- 门禁入口：`npm run check`（style + contract types + Web types + API reference 同步 + 不变量基线）；`npm run check:release` 额外构建生产 Web。`npm run style:check -- --base <commit>` 做改动文件的格式与 lint 检查，见 `docs/code-style.md`。
+- 涉及性能门禁调整的事项须遵循 [性能预算](docs/performance-budgets.md)，完整记录夹具、环境与原始样本。
+- 涉及接口或路由变更的事项须同步运行 `npm run gen:api-reference` 并通过 `npm run check`。

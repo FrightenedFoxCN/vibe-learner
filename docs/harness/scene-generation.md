@@ -1,17 +1,16 @@
 # Scene Generation Harness
 
-Scene Setup 的关键词或长文本生成进入 `scene:scene_generation`；operation admission 存在 `harness_workflow_operations`。模型返回 `SceneTreeProposalV1`，adapter 投影为 generated projection，用户确认保存才进入 `scene_setup_states` 或 scene library。
+Scene Setup 的关键词或长文本场景生成进入 `scene:scene_generation`，操作准入存于 `harness_workflow_operations`。模型提案、用户保存输入、已提交 Scene Profile 与公开 API DTO 四层严格隔离。
 
-## 输出限制
+## 输出约束
 
-- 根层最多 8、树深最多 8、总 layer 最多 64、总 object 最多 128、总文本预算 60000。
-- 每 layer 最多 8 children、16 objects、12 tags；字段长度由 `services/ai/app/models/scene.py` 的 Pydantic contract 限制。
-- proposal 中禁止可复用节点引用；应用投影阶段生成 committed IDs，并校验 selected path。
-- Scene model proposal、user-authored save input、committed profile 与 public API DTO 是四个边界，不能复用一个宽松 schema。
+- 严格解码为 `SceneTreeProposalV1`：根层 ≤ 8、树深 ≤ 8、总层级 ≤ 64、总物品 ≤ 128、聚合文本预算 ≤ 60,000 字符。
+- 每层最多 8 个子层、16 个物品、12 个标签；字段长度以 `services/ai/app/models/scene.py` 的 Pydantic 契约为准。
+- 模型提案不得携带 committed ID、revision、时间戳或未授权节点引用；应用投影阶段校验 `selected_path`、解析白名单可复用节点并分配全部 committed ID。
 
-## 恢复和提交
+## 恢复与保存边界
 
-结构错误允许一次低温 JSON repair；关键词 web search 不兼容可回退无网络生成。长结构输出为 `max(setting_max_tokens, 8192)`。adapter 再做 closed-world tree validation；失败为 generation operation failed，不修改当前 Scene。
-
-保存阶段使用 `expected_revision` CAS，并重新执行 committed-tree validation。生成成功只证明候选 projection，不证明用户已保存。前端 Scene 限制是后端值的跨语言镜像，相关 decoder tests 必须同时覆盖。
-
+- 结构错误允许最多 1 次低温 JSON 修复；关键词搜索在 Provider 不支持时降级为无网络生成。
+- 长结构生成上限为 `max(setting_max_tokens, 8192)`。
+- 适配器执行闭世界树结构校验；失败则操作终结为 `failed`，不改动当前已保存场景。
+- 用户保存草稿或场景库使用 `scene-committed-save-v1` 与 `expected_revision` 行级 CAS，并由服务端重建 `SceneProfile`。详见 [场景编辑器](../scene-setup.md)。

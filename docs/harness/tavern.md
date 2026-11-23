@@ -1,21 +1,19 @@
 # Tavern Harness
 
-Tavern 是独立于 Study Session 的领域。一次 direct/facilitated run 在 `tavern_runs` admission 时分配 Harness identity；facilitated targets 按 participant `display_order` 形成 server-owned schedule，每个 `tavern_run_steps` actor step 独立进入 `tavern:actor_reply`。
+Tavern 拥有独立于 Study Session 的持久化与执行域。每次直接或引导式回合在 `tavern_runs` 准入时分配 Harness 身份；服务端按参与者 `display_order` 生成固定说话顺序，每个 `tavern_run_steps` 角色步骤独立进入 `tavern:actor_reply`。
 
-## Snapshot 和生成
+## 受保护快照与预检
 
-- Room、participant snapshots、scene、transcript suffix 和 reply anchor 注册为 protected artifacts；grant 必须精确绑定本地 principal 与 operation。
-- prompt preflight 限制 canonical 256 KiB、token estimate 48000、scene 64 KiB/depth 8、transcript 128 KiB、persona instruction 64 KiB、cast 64 KiB；超限先按确定性策略缩减 transcript，仍超限则失败关闭。
-- actor 正常 `max_tokens=chat_max_tokens`。优先 strict JSON Schema；provider 明确不支持时退到 JSON object；语义输出无效再做一次 `max(chat_max_tokens, 900)` 的 strict actor repair。
-- `TavernActorHarness` 检查 speaker identity、target binding、跨角色冒充、空文本和允许的结构；可安全裁剪的冒充尾部才修复，不可判定时失败关闭。
+- Room、Participant 快照、Scene、Transcript 后缀与 Reply Anchor 均注册为受保护制品；`tavern-actor-workflow-adapter-v2` 在调用前授权解析并严格比对当前持久化 Run/Step 投影，防止任何篡改或过期上下文进入 Provider。
+- Prompt 预检预算上限：规范总字节 256 KiB、估算 token 48,000、Scene 64 KiB（树深 8）、Transcript 128 KiB、Persona 指令 64 KiB、阵容信息 64 KiB。超限时仅按确定性规则从最旧消息裁剪 Transcript 前缀，仍超限则 fail-closed。
+- 角色回复常规使用 `max_tokens = chat_max_tokens`：优先请求严格 `json_schema`；Provider 明确不支持时降级 `json_object`；语义无效时允许最多 1 次 `max(chat_max_tokens, 900)` 低温结构修复。
+- `TavernActorHarness` 校验说话人身份、目标成员归属、必需前置目标、Prompt 泄漏与非空内容，仅对可安全裁剪的跨角色冒充尾部执行修复，不可判定时 fail-closed。
 
-## Commit 和恢复
+## 租约、取消、提交与子重试
 
-step 使用数据库时钟 lease、heartbeat、owner/claim fencing，最多 3 claims。取消会立即 fence 后续 persistence。已确认 OpenAI 兼容 Chat Completions 路由使用拥有独立客户端的可取消 HTTP adapter；其他同步 provider 保留 timeout/commit fencing 边界。generation 中断后的真实终态 v3 trace 可按 claim count 关联到 canceled Step，不能复活步骤或追加 Message。本地断连不证明上游停止计算或计费。能力、清理和真实 HTTP 验收见 [Tavern 请求取消](../tavern-provider-cancellation.md)。
+- 每个 Speaker Step 使用数据库时钟租约、心跳与 `(owner, claim_count)` 围栏，最多 3 次认领（初始 + 2 次接管）。
+- 取消操作立即在数据库侧落栏阻止后续提交与恢复；对兼容的 OpenAI Chat Completions 路由同时通过独立 `httpx.AsyncClient` 取消本地 HTTP 请求并关闭连接，其他同步协议保留超时与提交围栏；本地断连不代表上游停止计算或计费。
+- 每个通过校验的角色逐条追加单调 `(room_id, sequence)` 消息，并原子写入服务端私有操作/效果回执。权威读回在同一数据库快照内核对 Message、Run、Step、Participant 与 reply anchor；Commit Policy 为 `primary_output_only`。
+- 部分失败的引导式回合保留已提交角色消息；子重试（`retry`）创建绑定父 Harness 身份的子 Run，仅调度未完成参与者，并校验 Room 修订号、消息序号、上下文摘要与参与者 Prompt Hash 未发生变化。
 
-每个通过校验的 actor 单独 append 一个 monotonic room-sequence Message，并原子写 server-only operation/effect receipt。authoritative read-back 必须在一个数据库快照中核对 Message、Run、Step、Participant 和 reply anchor。commit policy 为 `primary_output_only`，只证明该 Message。
-
-facilitated run 允许已完成 steps 保留、后续 steps failed/blocked；retry 创建带 parent Harness binding 的 scoped child，只调度未完成 participants，并验证原 room context、participant snapshot 和 retry chain 不变。缺少 provider idempotency/read-back 的已发请求不能自动宣称未执行。
-
-更完整的房间和调度结构见 [Tavern architecture](../tavern-architecture.md)，共享预算见 [配置与预算](configuration.md)。
-
+完整房间架构、交互面板顺序契约与取消传输细节见 [Tavern 多角色互动](../tavern.md)，共享预算见 [配置与预算](configuration.md)。

@@ -1,78 +1,86 @@
 # Harness 工程手册
 
-本目录是 Harness 实现、数据映射、模型输出约束、恢复语义和运行预算的代码对照手册。工程不变量仍以根目录 [AGENTS](../../AGENTS.md) 为准，未完成事项只在 [TODO](../../TODO.md) 维护。
+本目录维护 Harness 运行时生命周期、数据库映射、配置与预算以及各业务工作流的执行边界。核心约束见 [AGENTS.md](../../AGENTS.md)，共享表结构见 [数据库映射](database.md)，预算与配置见 [配置与预算](configuration.md)。
 
 ## 用户工作流索引
 
-| 用户工作流 | Harness workflow / 入口 stage | 文档 |
+| 用户工作流 | Workflow / 入口 Stage | 详细文档 |
 | --- | --- | --- |
-| 上传并处理教材 | `document_parse:document_parse`，并包含 page extraction、section detection、chunk building、OCR、Study Unit cleanup 子阶段 | [Document / OCR / Study Unit](document-processing.md) |
-| 生成或修订学习计划、确认教材单元建议 | `planning:plan_generation`、`planning:planning_tool_execution`、`planning:plan_revision`、`planning:study_unit_revision` | [Planning](planning.md) |
-| 生成人设卡或辅助编辑 | `persona:persona_generation` | [Persona generation](persona-generation.md) |
-| 生成场景树 | `scene:scene_generation` | [Scene generation](scene-generation.md) |
-| Study Dialog 对话 | `study_chat:study_chat_reply` | [Study Chat](study-chat.md) |
-| Tavern 直接或引导式互动 | `tavern:actor_reply` | [Tavern](tavern.md) |
+| 上传并处理教材 | `document_parse:document_parse`（含 page extraction、section detection、chunk building、OCR、Study Unit cleanup 子阶段） | [Document / OCR / Study Unit](document-processing.md) |
+| 生成/修订学习计划、确认单元建议 | `planning:plan_generation`、`planning:planning_tool_execution`、`planning:plan_revision`、`planning:study_unit_revision` | [Planning](planning.md) |
+| 生成人设卡与辅助编辑 | `persona:persona_generation` | [Persona Generation](persona-generation.md) |
+| 生成场景树 | `scene:scene_generation` | [Scene Generation](scene-generation.md) |
+| Study Dialog 教学对话 | `study_chat:study_chat_reply` | [Study Chat](study-chat.md) |
+| Tavern 多角色互动 | `tavern:actor_reply` | [Tavern](tavern.md) |
 | 浏览器严格解码 | `frontend_decode:response_decode` | 本页“前端边界” |
 
-共享数据库结构见 [数据库映射](database.md)，所有 `max_tokens`、调用次数、超时和配置来源见 [配置与预算](configuration.md)。
-
-## 整体生命周期
+## 统一生命周期
 
 ```mermaid
 flowchart TD
-    Input[Typed API input] --> Admission[Domain admission transaction]
-    Admission --> Binding[Immutable HarnessOperationBindingV1]
-    Binding --> Manifest[Executable workflow manifest entry]
-    Manifest --> Context[Safe manifest + versioned context]
-    Context --> Grant[Authorize protected artifacts]
-    Grant --> Runtime[Durable claim / lease / heartbeat / fencing]
-    Runtime --> Generate[Model or heuristic proposal]
-    Generate --> Decode[Strict decode]
-    Decode --> Validate[Domain invariants]
-    Validate -->|bounded repair| Generate
-    Validate --> Commit[Domain projection + receipt + terminal trace]
-    Validate -->|failure| Failure[not_committed / compensated / uncertain]
-    Commit --> Readback[Authoritative read-back]
+    Input[Typed API Input] --> Admission[领域操作准入事务]
+    Admission --> Binding[不可变 HarnessOperationBindingV1]
+    Binding --> Manifest[可执行 Workflow Manifest 条目]
+    Manifest --> Context[Safe Manifest + 版本化上下文]
+    Context --> Grant[授权受保护制品快照]
+    Grant --> Runtime[持久认领 / 租约 / 心跳 / 围栏]
+    Runtime --> Generate[模型或启发式提案]
+    Generate --> Decode[严格解码]
+    Decode --> Validate[领域不变量校验]
+    Validate -->|有界修复| Generate
+    Validate --> Commit[领域投影 + 回执 + 终态 Trace]
+    Validate -->|失败| Failure[not_committed / compensated / uncertain]
+    Commit --> Readback[权威读回]
     Failure --> Readback
-    Readback --> Frontend[Strict decoder + stale-result fence]
+    Readback --> Frontend[前端严格解码 + 过期结果围栏]
 ```
 
-顺序不能颠倒：先由领域操作 admission 分配 Harness identity，再构造 context；受保护内容必须经过 operation-scoped grant 才能读取；模型只产出 proposal；应用层分配 ID、revision、sequence、timestamp 并提交 projection。注册 manifest 或生成 trace fixture 只是路由证据，不等于生产采用。
+顺序不可颠倒：
 
-## 三组容易混淆的上限
+1. 先由领域操作准入在同一数据库事务内分配不可变 Harness 身份，再构造上下文；
+2. 受保护内容必须经过 operation-scoped grant 授权方可读取；
+3. 模型仅产出 proposal，所有应用 ID、修订号、序号、时间戳与已提交投影均由应用层分配；
+4. 仅登记 Manifest 或构造夹具属于路由/配置证据，不代表生产采用。
 
-1. `HarnessManifestAttemptCeilingV1` 的 `max_attempts=3`、`max_repair_attempts=2` 限制 Harness runtime 的 generate/repair 生命周期记录。
-2. `HarnessManifestExecutionBudgetV1` 登记 provider/tool/token/time 预算。当前 runtime **实际执行** wall time 与 per-call timeout；tool 次数由 Tool Manifest tracker 执行；`max_provider_calls`、`max_input_tokens`、`max_output_tokens` 目前是登记和诊断字段，不是通用计数器。
-3. Provider 内部循环和 transport retry 才决定真实请求次数。不能用 `max_attempts=3` 推断只会发三次模型请求。逐工作流上限见 [配置与预算](configuration.md)。
+## 三组上限的区分
+
+| 上限类型 | 归属 | 作用说明 |
+| --- | --- | --- |
+| 生命周期尝试上限 | `HarnessManifestAttemptCeilingV1`（`max_attempts=3`、`max_repair_attempts=2`） | 限制 Harness runtime 的 generate/repair 生命周期记录次数 |
+| 工作流登记预算 | `HarnessManifestExecutionBudgetV1` | 通用执行 wall time 与 per-call timeout；工具次数由 Tool Manifest 执行；`max_provider_calls` / `max_input_tokens` / `max_output_tokens` 为登记与审计字段 |
+| Provider 循环与传输重试 | Provider 运行器与 `ProviderTransport` | 决定真实发出的模型逻辑/物理请求次数，详见 [配置与预算](configuration.md) |
 
 ## 模型输出所有权
 
 ```mermaid
 flowchart LR
-    Model[Model proposal] --> Decode[Strict proposal DTO]
-    Decode --> Project[Application projection]
-    Project --> Domain[Committed domain rows]
-    Project --> Effects[Typed effect journal]
-    Domain --> API[Public API DTO]
-    Private[grading specs / protected snapshots / receipts] -. server only .-> Project
+    Model[模型提案] --> Decode[严格 Proposal DTO]
+    Decode --> Project[应用层投影]
+    Project --> Domain[已提交领域行]
+    Project --> Effects[强类型 Effect 日志]
+    Domain --> API[公开 API DTO]
+    Private[评分规格 / 受保护快照 / 内部回执] -. 仅存服务端 .-> Project
 ```
 
-模型不得分配 committed ID、speaker identity、revision、sequence、timestamp 或 effect receipt。Scene 和 Persona generation 返回候选内容，用户保存是独立写边界。Study 的交互题 grading spec 在提交前保持 server-only。Tavern 的 actor proposal 不能冒充其他 participant，且 committed proof 只证明一个 Message 主输出，不证明事务中的所有 Room/Run/Step 副作用。
+- 模型不得生成 committed ID、speaker identity、revision、sequence、timestamp 或 effect receipt。
+- Scene 与 Persona 生成仅产出候选内容，用户保存属于独立的 CAS 写边界。
+- Study 交互题评分规格在提交前仅存在于服务端。
+- Tavern 角色提案不得冒充其他参与者，且提交策略为 `primary_output_only`（仅证明单条主消息，不涵盖事务中所有 Room/Run/Step 副作用）。
 
 ## 前端边界
 
-前端通过 `apps/web/lib/*-decode.ts` 严格解码当前响应和历史 read-back；它不是后端 Pydantic 校验的替代品。Scene 的后端限制由 `services/ai/app/models/scene.py` 拥有，TypeScript 中的同值是跨语言解码镜像，必须由跨语言测试保持一致，不能把 Python 模块当作浏览器运行时配置源。
+前端通过 `apps/web/lib/*-decode.ts` 对当前响应与历史读回做 fail-closed 解码，用于防线兜底而非替代后端 Pydantic 校验。像 Scene 尺寸预算这类跨语言约束由后端 `services/ai/app/models/scene.py` 拥有权威定义，TypeScript 侧保持镜像一致。
 
 ## 权威代码入口
 
-- workflow/stage/contract：`services/ai/app/models/harness_manifest.py`
-- operation identity：`services/ai/app/models/harness_operation.py` 与 `services/ai/app/persistence/harness_operation_repository.py`
-- durable runtime：`services/ai/app/services/harness_runtime.py`
-- protected artifacts / effects：`services/ai/app/persistence/harness_artifact_repository.py`、`harness_effect_repository.py`
-- provider 运行限制：`services/ai/app/core/model_runtime_limits.py`
-- Tool Manifest：`services/ai/app/models/tool_manifest.py`
-- commit policy：`services/ai/app/models/harness.py` 和 `packages/shared/fixtures/harness/operation-commit-policies-v1.json`
-- golden manifest：`packages/shared/fixtures/harness/workflow-manifest-v1.json`
+| 边界 | 代码位置 |
+| --- | --- |
+| Workflow / Stage / Contract 清单 | `services/ai/app/models/harness_manifest.py`、`packages/shared/fixtures/harness/workflow-manifest-v1.json` |
+| Operation Identity | `services/ai/app/models/harness_operation.py`、`services/ai/app/persistence/harness_operation_repository.py` |
+| Durable Runtime | `services/ai/app/services/harness_runtime.py`、`services/ai/app/services/harness_broad_adoption.py` |
+| 受保护制品与效果日志 | `services/ai/app/persistence/harness_artifact_repository.py`、`services/ai/app/persistence/harness_effect_repository.py` |
+| Provider 运行时限制 | `services/ai/app/core/model_runtime_limits.py` |
+| Tool Manifest | `services/ai/app/models/tool_manifest.py`、`packages/shared/fixtures/harness/tool-manifest-v1.json` |
+| Commit Policy | `services/ai/app/models/harness.py`、`packages/shared/fixtures/harness/operation-commit-policies-v1.json` |
 
-验证命令：`npm run test:baseline`（Harness 生命周期 + Tavern + Persona 不变量）；完整门禁为 `npm run check`。
-
+验证入口：`npm run test:baseline`（不变量基线）与 `npm run check`（完整门禁）。

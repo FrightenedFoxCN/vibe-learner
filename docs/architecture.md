@@ -1,377 +1,172 @@
-# Architecture
+# 系统架构
 
-## Monorepo structure
+## 仓库结构
 
-- `apps/web`: Next.js 16 App Router frontend for navigation, plan generation, study dialog, persona/scene editing, Tavern interaction, settings, usage audit, and the global Debug Overlay.
-- `services/ai`: FastAPI backend for persistence, document ingestion, OCR, Study Unit cleanup, planning, persona/scene APIs, Study Chat, Tavern orchestration, and debug evidence.
-- `packages/shared`: TypeScript contracts consumed by the web application, including Tavern and Harness evidence projections.
-- `apps/desktop`: Tauri 2 desktop shell, Rust sidecar integration, bundle scripts, icons, and platform packaging configuration.
-- `docs`: implementation-facing architecture, contract, workflow, and user documentation.
+| 模块 | 技术栈与职责 |
+| --- | --- |
+| `apps/web` | Next.js 16（App Router）Web 前端，负责导航、计划工作区、学习对话、人设与场景编辑、Tavern 房间、设置、用量审计及全局 Debug Overlay |
+| `services/ai` | FastAPI 后端，负责数据持久化、文档上传与 OCR、Study Unit 清洗、学习计划生成、Persona/Scene 接口、Study Chat、Tavern 编排及诊断服务 |
+| `packages/shared` | 前后端共享 TypeScript 类型契约与标准夹具，覆盖学习记录、Persona/Scene、Character Event、Tavern、诊断与 Harness 证据投影 |
+| `apps/desktop` | Tauri 2 桌面壳，集成 Rust Sidecar 启动管理、Stronghold Vault 密钥库、原生 JSON 导出与跨平台安装包构建 |
+| `docs` | 面向实现与维护的架构、契约、工作流与运维文档 |
 
-## Runtime shape
+## 运行形态
 
-The product is local-first and has four cooperating runtime boundaries:
+产品采用本地优先架构，由四个协作边界组成：
 
 ```mermaid
 flowchart LR
-    W["Next.js web UI"] --> A["FastAPI service"]
-    D["Tauri desktop shell"] --> W
+    W["Next.js Web UI"] --> A["FastAPI AI Service"]
+    D["Tauri Desktop Shell"] --> W
     D --> A
-    A --> DB["SQLAlchemy: SQLite by default / PostgreSQL via DATABASE_URL"]
-    A --> FS["Local uploads, attachments, debug and temp files"]
-    A --> M["Mock or LiteLLM-compatible model provider"]
+    A --> DB["SQLAlchemy（默认 SQLite / 可选 PostgreSQL）"]
+    A --> FS["本地文件存储（上传、附件、调试镜像、临时目录）"]
+    A --> M["Mock 或 LiteLLM 兼容模型 Provider"]
 ```
 
-- The web frontend and FastAPI backend run separately during development.
-- The desktop build packages the exported web surface and Python backend sidecar through Tauri.
-- Structured records are database-authoritative. The default database is local SQLite; setting `DATABASE_URL` selects PostgreSQL.
-- Uploaded binaries, chat attachments, debug artifacts, and runtime temporary material remain under `services/ai/data/` unless a storage root is configured.
-- Planning is deterministic under the mock provider and uses the configured LiteLLM/OpenAI-compatible connection for real model work.
-
-There is no background queue, authentication layer, Live2D runtime, or TTS service in the current repository.
-
-Planning tool suggestions do not silently rewrite textbook units. Generation saves a conservative Plan and, when proposed, a separately admitted Study Unit preview. Explicit acceptance uses Document revision CAS and commits Document/Debug, an immutable receipt and a terminal v3 trace together. Existing plans retain their original unit snapshots. See [Study Unit revision](study-unit-revision.md).
-
-## Application lifecycle
-
-`create_app(settings=...)` builds an application without opening a database.
-Its FastAPI lifespan constructs one `Container`, runs explicit startup recovery,
-and closes it on exit or startup failure. Container construction configures
-logging before database and provider initialization; construction alone does not
-run recovery. Closing cancels registered streams and disposes database resources.
-Routes resolve the container from `Request.app.state` through `get_container`;
-internal orchestration receives it explicitly. Two applications can therefore
-use independent databases and runtime settings in one process.
-
-Route tests use instance-level dependency overrides in `tests.support.api`.
-real lifespan and import behavior currently have no automated coverage (the former `test:ai:lifecycle` was removed);
-route fault tests do not implicitly initialize the normal runtime database.
-
-## Document checkpoint boundary
-
-Document parsing saves operation-fenced page and stage checkpoints separately
-from the authoritative Document/Debug projection. A unique source-child relation
-is admitted atomically with each explicit resumed process operation and its
-Harness binding. Completed work enters the child's authorized protected snapshot;
-normal strict decode, CAS and atomic terminal commit still apply. Checkpoint-only
-work remains visible as intermediate data and cannot be consumed as a processed
-textbook. See [Document OCR checkpoints](document-checkpoints.md).
-
-## Study Chat application boundary
-
-`StudyChatApplication` owns admission, protected context, attachment staging,
-tools/effects, runtime execution and committed receipt read-back. It receives
-explicit dependencies and a frozen execution context; HTTP routes parse inputs,
-map application errors and project public DTOs. Server-only grading material is
-kept in the committed payload and filtered at that public projection boundary.
-`StudySessionRepository.commit_chat_operation_turn` remains the single owner of
-the atomic Session/Turn/effects/receipt/terminal-trace transaction.
-
-`StudySessionChatToolRuntime` delegates memory, affinity, follow-up, projection,
-image generation and Plan confirmation execution to `services/study_tools/`.
-These handlers share one operation context and effect collector; the existing
-Tool Manifest adapters, provider decoding/budgets and final commit boundary stay
-in place. See [Study Chat Harness](harness/study-chat.md).
+- 开发模式下 Web 前端与 FastAPI 后端分进程运行；桌面发布版由 Tauri 打包静态前端与 PyInstaller 生成的后端 Sidecar。
+- 结构化业务数据以数据库为权威真源（默认本地 SQLite，设置 `DATABASE_URL` 切换 PostgreSQL）。
+- 二进制上传文件、对话附件、调试镜像与临时文件存放在 `services/ai/data/`（或配置的存储根目录）。
+- `VIBE_LEARNER_PLAN_PROVIDER=mock` 提供本地确定性运行；`litellm` 通过配置连接真实模型服务。
+- 当前系统为单用户本地形态，不含账号认证层、外部异步任务队列、Live2D 渲染引擎或 TTS 服务。
 
-Study decode, application/commit and API projection tests run independently via
-`test:ai:study:decode`, `test:ai:study:application` and `test:ai:study:api`.
-
-## Core boundaries
-
-### Web
-
-The frontend owns presentation and client-side workflow coordination:
-
-- upload/process/plan/study flows;
-- Persona Spectrum and Scene Setup editors;
-- Tavern room setup, ordered transcript, target selection, direct/facilitated turns, recovery controls, and bounded history paging;
-- snake_case wire-to-camelCase projections;
-- request identity, stale-response fencing, and strict response decoding where adopted;
-- a global `DebugOverlay` mounted by `apps/web/app/layout.tsx`.
-
-Debug is not a standalone `/debug` route. The overlay reads the current page/debug context and exposes document parsing, plan traces, and related diagnostics without changing routes.
-
-The Learning Workspace is split into:
-
-- page composition in `apps/web/components/learning-workspace.tsx`;
-- async orchestration in `apps/web/hooks/use-learning-workspace-controller.ts`;
-- reducer transitions in `apps/web/lib/learning-workspace-reducer.ts`;
-- pure state helpers in `apps/web/lib/learning-workspace-state.ts`;
-- provider-level page-cache persistence in `apps/web/lib/learning-workspace-page-cache.ts`;
-- plan-view mapping in `apps/web/lib/plan-panel-data.ts`.
-
-`LearningWorkspaceProvider` is scoped to the `(learning)` route group for Plan and Study. Other routes retain only the page-draft cache and do not bootstrap learning resources.
-
-Tavern uses a separate client boundary:
-
-- `apps/web/components/tavern-workspace.tsx`: page composition and Debug publication;
-- `apps/web/components/tavern-workspace-panels.tsx`: the seven standard Workspace blocks and local form/focus behavior;
-- `apps/web/hooks/use-tavern-workspace-controller.ts`: composes shared state, Room queries, Run recovery and mutations;
-- `apps/web/hooks/use-tavern-room-queries.ts`: bootstrap, Room/history paging, read-back and monotonic reconciliation;
-- `apps/web/hooks/use-tavern-run-recovery.ts`: bounded auto-resume backoff and one in-flight foreground poll;
-- `apps/web/hooks/use-tavern-mutations.ts`: operation fencing, creation, archive, turn, cancel and scoped retry;
-- `apps/web/lib/tavern-workspace-ports.ts`: narrow injectable API, clock, request-key and draft storage boundaries;
-- `apps/web/lib/tavern-decode.ts`: fail-closed Tavern wire decoder with legacy v1/v2 compatibility and strict v3 evidence support;
-- `apps/web/lib/tavern-workspace-state.ts`: message/run reconciliation and monotonic state helpers.
-
-Domain-owned fail-closed client boundaries now cover Document, Planning,
-Persona/Scene, Study, Tavern, and versioned Document/Planning streams. They bind
-response identity, enums, finite numbers, nullability, ordering, ranges,
-cross-record references, duplicate IDs, derived projections, and each domain's
-operation/recovery versions before rendering. Frontend Decoder registration,
-`FRONTEND_REQUEST` evidence and v1/v2/v3 trace routing are implemented. Actual
-Study/Tavern HTTP read-back after service restart is covered by decoder tests.
-
-### AI service
-
-FastAPI owns application identities, persistence, model orchestration, and authoritative state effects:
-
-- storing document, plan, session, persona, scene, settings, usage, and Tavern records;
-- extracting PDF text and invoking OCR fallback;
-- cleaning raw Sections into plan-facing Study Units;
-- generating planning context and recording model/tool traces;
-- compiling teaching and Tavern persona prompts through separate boundaries;
-- returning structured citations and Character Events for Study Chat;
-- assigning Tavern speakers, schedule order, run lineage, message sequence, and revisions;
-- validating and committing Tavern actor output one scheduled speaker at a time.
-
-Model-owned schemas may propose content and bounded effects only. Application IDs, speaker identity, revision, sequence, timestamps, and committed state belong to the service.
-
-### Shared contracts and Harness
-
-`packages/shared` holds frontend-facing contracts for learning records, personas/scenes, Character Events, Tavern aggregates, and Harness evidence. Python Pydantic models remain the backend wire authority.
-
-Harness Engineering is a repository-wide lifecycle, not a Tavern synonym:
-
-1. prepare typed, bounded input;
-2. snapshot and digest versioned context;
-3. execute an unreliable worker/model;
-4. strictly decode a domain proposal;
-5. validate invariants;
-6. perform bounded recovery;
-7. atomically commit validated effects or persist terminal failure evidence;
-8. emit trace evidence.
-
-Document/OCR/Study Unit, Planning, Persona/Scene, Study and Tavern use production v3 lifecycle boundaries. Frontend strict decoders cover those boundaries. The shared flow is shown in the [Harness engineering guide](harness/README.md).
-
-Learning-plan text uses a stable cross-layer contract:
-
-- `course_title`: textbook-grounded plan header;
-- `objective`: learner-authored goal;
-- `overview`: summary paragraph;
-- `today_tasks`: actionable tasks;
-- `schedule[].title`: primary executable directory;
-- `schedule[].schedule_chapters[].title`: nested learning chapter directory.
-
-See `plan-text-contract.md` before changing these meanings.
-
-## Main flows
-
-### 1. Document ingestion and cleanup
-
-`POST /documents` stores the upload and creates a document shell.
-
-`DocumentRepository` inserts one row per upload and fences mutations with a
-database revision predicate. Study Unit title updates require the caller's
-`expected_revision` and commit Document/Debug together. Processing admission,
-successful projection commits, and failure restoration advance the same
-revision; cleanup cannot restore over a newer writer. Planning holds a revision
-fence even when its Document snapshot is unchanged, and advances revision only
-when it changes that projection. Legacy list imports insert missing rows and
-reject divergence without replacing or deleting runtime rows. Revision 0 is
-omitted from legacy payload serialization to preserve historical v1 digests.
-
-`POST /documents/{id}/process` or `/process/stream` then runs:
-
-1. PDF text extraction;
-2. OCR fallback when extraction is insufficient or forced;
-3. raw Section detection and Chunk generation;
-4. heuristic cleanup into ordered Study Units;
-5. atomic document/debug projection commit and stream evidence.
-
-Processing first admits a versioned request into the independent
-`document_process_operations` journal and marks the Document `processing` in
-the same transaction. Cleanup then runs without persisting either projection.
-Only after parsing and cleanup succeed are the Document projection, Debug
-projection, projection digests, and terminal operation receipt committed in one
-database transaction. A failed or interrupted operation records explicit
-`not_committed` truth, and startup recovery terminalizes abandoned `running`
-operations so a process exit cannot strand the Document indefinitely. JSON
-files are best-effort compatibility mirrors after the authoritative database
-commit. Document extraction, OCR and cleanup use the production v3 trace,
-protected replay boundary.
-
-### 2. Plan generation
-
-`GET /documents/{id}/planning-context` exposes cleaned Study Units, detail context, and available planner tools.
-
-`POST /learning-plans` or `/learning-plans/stream` runs:
+## 应用生命周期
 
-1. deterministic first-pass construction;
-2. model planning when enabled;
-3. optional use of the six registered planning tools for detail reads, clarification, completion estimates, Study Unit revision, page text, and multimodal page images; the effective set is filtered by configuration and runtime context;
-4. schedule normalization against known Study Units;
-5. one atomic Document/Debug/Planning Trace/Learning Plan commit plus terminal
-   operation receipt.
-
-Each of the six Planning tools now decodes a strict v1 argument contract and
-projects a strict v1 result. Malformed JSON, extra fields, and wrong primitive
-types return a typed field path without executing the tool. Final model output
-decodes as `LearningPlanProposalV1`; it contains only content and allowed Study
-Unit/Section references, never plan/schedule/chapter IDs, revision, state, or
-timestamps. One bounded repair is allowed. The application assigns committed
-schedule/chapter IDs and rejects unknown/duplicate Study Unit references,
-out-of-range chapters/slices, unordered anchors, and unknown Section refs
-instead of silently dropping them.
-
-Every plan-generation intent now carries a stable client request ID and, for a
-document-backed plan, the expected Document `updated_at` watermark. The
-`learning_plan_operations` journal admits one active operation per Document,
-records provider start plus Document/Debug base digests, and commits the revised
-Document, matching Debug projection, Planning Trace, Learning Plan, and
-versioned committed snapshot in
-one database transaction. Duplicate requests read the original committed
-snapshot; payload drift, active siblings, stale Document state, and missing
-Debug prerequisites fail closed. Startup recovery terminalizes abandoned work,
-and compatibility JSON files are mirrored only after the authoritative commit.
-Planning uses the production v3 operation, protected replay and trace boundary.
-
-### 3. Scene generation and saves
+`create_app(settings=...)` 仅构造应用实例，不会在构造期打开数据库连接。其 FastAPI `lifespan` 负责：
 
-`POST /scene-setup/generate` decodes model output only as strict
-`scene-tree-proposal-v1`. The proposal contains bounded content, tags, a
-zero-based selected path, and optional allow-listed reusable-node references;
-it cannot contain layer/object/reuse IDs, revisions, timestamps, or persistence
-state. Depth, layer/object counts, per-node children, selected path, primitive
-types, extra fields, and total text budget fail closed. After validation the
-application resolves authorized reusable references and assigns every committed
-layer, object, and reuse identity.
+1. 构造单个 `Container`（先配置日志，再初始化数据库与 Provider）；
+2. 执行显式启动恢复（终结未完成的运行中文档解析与计划生成操作）；
+3. 在进程退出或启动失败时取消已注册的流式任务并释放数据库连接池。
 
-User-authored `PUT /scene-setup` and Scene Library create/update requests use a
-separate strict `scene-committed-save-v1` DTO. It requires application IDs plus
-an `expected_revision`, validates global ID uniqueness and selected/collapsed
-references, and never accepts a caller-authored Scene Profile. The service
-rebuilds that profile from the validated tree and commits through row CAS;
-stale editors receive `409 scene_revision_conflict`. Legacy records decode with
-revision `0`, and migration `20260824_0011` adds authoritative revision columns.
-Scene generation uses the production protected context/replay and v3 trace.
+HTTP 路由通过 `get_container` 从 `Request.app.state` 获取容器，内部服务则显式接收依赖。同一进程内可同时创建互不干扰的独立应用实例（各自持有独立数据库与配置）。
 
-### 4. Study interaction
+## 核心职责边界
 
-`POST /study-sessions` creates or restores one document/persona/Study Unit scope. `POST /study-sessions/{id}/chat` returns a structured reply, citations, Character Events, and the refreshed session.
-
-The frontend never parses performance instructions out of roleplay text. Character performance remains structured so a future renderer can consume it independently.
-
-Study Session persistence is database-authoritative and uses a per-session revision CAS with bounded retry. Turns carry application-owned IDs plus a contiguous session-local sequence; legacy aggregate turns receive deterministic compatibility identities when decoded, while partial legacy identities fail closed. All Session reads validate row/payload projections. Legacy list import inserts only absent records and rejects same-ID divergence, so it cannot replace runtime state or delete siblings. Committed Turn identity/content is prefix-immutable except for the dedicated interactive-answer fields. Concurrent turn, follow-up, memory, affinity, confirmation, and projected-PDF updates no longer overwrite a stale whole-session list.
-
-Interactive questions now separate strict model proposal, private committed grading spec, public prompt/result projection, and durable Attempt identity. Unanswered API payloads expose only the question/options/callback flag; answer keys, accepted answers, normalization rules, and explanation remain inside the private Session record. `POST /study-sessions/{id}/attempt` accepts only Turn ID, expected Session revision, stable client attempt ID, and submitted answer. The server applies the versioned Unicode/case/whitespace policy, then commits the result and `study_question_attempts` receipt in the same database transaction. Same identity + same normalized answer is an idempotent read-back; identity/payload drift, a second attempt identity for the same Turn, cross-Session targeting, stale revision, and partial commit fail closed. Historical aggregate questions migrate during internal decode, while historical `study-chat-exchange-v1` payloads retain their original digest and are independently projected through the current redacted API DTO; new Chat operation payloads use `study-chat-exchange-v2`.
+### Web 前端（`apps/web`）
 
-The UI does not present a verdict before persistence. Each Turn owns a local submitting/failed state; after the narrow Attempt response, the browser reads the current Session and requires the exact attempt/Session/Turn/before+committed revision/result projection before displaying “recorded.” Concurrent answers on different Turns are fenced at read-back: a late lower-revision response cannot replace a newer Session snapshot, a valid append-only Turn suffix is accepted, committed Turn-prefix content cannot drift outside answer state, and a response for a Session that is no longer active is not applied to the current view. Automatic continuation is built from the committed result rather than a browser verdict. A failed request preserves the answer and reuses the same attempt identity.
-
-Study Chat adds a separate durable operation-admission boundary above the Session CAS. Both plain and attachment chat requests carry a stable browser-owned `client_request_id` plus `expected_session_revision`. Before provider work or attachment file writes, the backend stores a versioned canonical request fingerprint and attachment manifest in `study_chat_operations`; same-key payload/revision drift fails closed. Request v2 derives attachment/file identities and an operation-owned staging path from operation + input slot. Committed read-back verifies the Turn attachment projection and staged file digest, while terminal non-commit recovery can clean the fixed directory after a restart; request v1 remains readable as historical compatibility. Duplicate committed requests and `GET /study-sessions/{id}/chat-operations/{client_request_id}` read the original terminal receipt instead of invoking the model again. The receipt state machine is `admitted` / `running` / `committed` / `not_committed` / `uncertain`: only an execution-free `not_committed` operation can be safe to retry, while ambiguous or active operations must be queried under their original identity. `provider_started_at` is persisted before model/provider execution; because provider idempotency/read-back is unsupported, an ambiguous outcome after that point remains `uncertain` and cannot be reclaimed. A committed receipt binds its result to the committed Session revision and Turn identity/watermark.
-
-The typed database-effect slice now covers memory, affinity, follow-up create/complete/cancel, projected-document/image set/focus/overlay/clear, and the two plan-confirmation tools. One discriminated proposal union feeds a single append-only operation batch, so every Session database effect shares global slots and `(operation, slot)`-derived identities. Memory, affinity, follow-up, and projected-state reads overlay the authoritative Session with all earlier prepared slots, giving the model read-your-writes without changing persisted state. Tool results explicitly report `effect_state=prepared` and `committed=false`; learner-message cancellation is prepared before model tools, so a newly scheduled follow-up is not accidentally canceled by the same request.
-
-Before commit the server revalidates the complete batch identity, slots, adapter/contract versions, Session/Plan/Scene targets, schedule membership, and attachment projection source membership. It then applies Session slots with the final validated Turn, Session revision, operation receipt, durable effect-journal terminalization, and terminal v3 trace in one database transaction; Scene replacement adds row CAS plus an exact committed Scene snapshot/read-back in that boundary. Any adapter, validation, CAS, or response-build failure rolls the transaction back. Replayed committed operations read the original receipt rather than applying effects again. Attachment files use operation-owned staging, bounded cleanup/compensation, and committed digest read-back. Provider-generated artifacts retain a separate external failure boundary, and a generated-image tool result is explicitly `completed_uncommitted` until the final Session commit. The operation-scoped protected snapshot is authorized and resolved before the single provider call, and the complete reply, citations, Character Events, and nested tool payloads pass the strict v3 adapter. The operation commit policy proves only the Session/Turn primary output; it does not claim every Scene, file, or provider effect. Provider ambiguity remains `uncertain`.
-
-### 5. Tavern interaction
-
-Tavern is independent from Study Session and has no textbook/citation requirement.
-
-1. `POST /tavern/rooms` snapshots 1–6 personas and an optional scene into a durable room.
-2. `POST /tavern/rooms/{id}/turns` starts a direct or facilitated idempotent run under an expected room revision.
-3. The server derives the speaker schedule from participant `display_order`.
-4. Each actor reply is strictly decoded and semantically checked before a message is appended.
-5. Partial/failed/blocked steps remain durable and can receive a scoped child retry.
-6. Lease heartbeat, owner/claim fencing, bounded takeover, resume, and cancel prevent stale workers from committing.
-
-Cancel fences the result and future recovery calls. The compatible Chat Completions adapter also cancels and closes its owned local HTTP request; other synchronous protocols retain their timeout fallback. Local cleanup does not prove that upstream computation or billing stopped; see [Tavern provider cancellation](tavern-provider-cancellation.md). A recent run listing is bounded (default 50) and is not an authoritative retry-chain aggregate.
-
-The browser `Tavern Workspace` implements:
-
-- `Tavern Header`;
-- `Tavern Session Panel`;
-- `Tavern Setup Panel`;
-- `Tavern Conversation Panel`;
-- `Participant Roster`;
-- `Interaction Composer`;
-- `Reliability Details`.
-
-Tavern controller and browser checks cover creation, direct/facilitated runs,
-recovery lineage, authoritative roster/retry derivation, mutation errors,
-composition-event fencing and focus return.
-
-## Character layer
-
-The structured Character Event protocol reserves:
-
-- `emotion`;
-- `action`;
-- `intensity`;
-- `speech_style`;
-- `scene_hint`;
-- `line_segment_id`;
-- `timing_hint`.
-
-The current frontend renderer is a placeholder adapter. This keeps Study UI, character shell, and debug evidence separable for future Live2D/TTS work.
-
-## Persistence layout
-
-`Database` and SQLAlchemy are authoritative for structured records. Important tables include:
-
-- documents, document process operations, learning plans, study sessions, personas, persona cards;
-- scene setup/library/reusable nodes and session-scene state;
-- document debug, planning traces, stream reports, runtime settings, model-tool config, and token usage;
-- normalized `tavern_rooms`, `tavern_participants`, `tavern_messages`, `tavern_runs`, and `tavern_run_steps`.
-
-`LocalJsonStore` is a compatibility/database wrapper. It reads and writes database rows but still mirrors several legacy aggregates to JSON through its legacy adapter. New append-heavy domains must not use aggregate `save_list`; Tavern uses its normalized repository instead.
-
-Local files under `services/ai/data/` include:
-
-- `uploads/`: uploaded textbook files;
-- `chat_attachments/`: Study Chat attachments;
-- `document_debug/`: compatibility/debug artifacts;
-- `planning_trace/`: planning traces;
-- stream/debug compatibility mirrors;
-- `_tmp/`: OCR and runtime temporary files;
-- `cache/`: inspectable cache material.
-
-Runtime settings in the configured database are authoritative. A legacy JSON mirror may exist, but deleting only that file does not reset the database record.
-
-## Current constraints and risks
-
-- single-user and no authentication;
-- frontend and backend remain separate processes in web development;
-- no background queue, Live2D, or TTS runtime;
-- OCR cleanup remains heuristic-heavy;
-- tool-enabled model calls increase provider latency and timeout pressure;
-- Document processing has durable admission, atomic Document/Debug projection commit, digest read-back, and startup recovery, and v3 evidence for extraction/OCR/cleanup stages;
-- Study Chat has production v3 context, trace, protected replay, durable request admission, transactional Session/Scene database effects, and operation-owned attachment staging/read-back, while provider uncertainty remains explicit;
-- production lifecycle coverage is tracked in `harness/README.md`; Tavern prompt/token/scene-depth budgets are enforced;
-- `npm run check` runs style, shared-contract types, Web types, the generated API reference check and the invariant baseline; `npm run check:release` adds the production Web build. Lint and formatting rules are in [Code style gates](code-style.md).
-
-
-## Debug snapshot ownership
-
-The global Debug Overlay consumes in-memory page adapters through
-`components/owned-debug-snapshot.tsx`. Learning and general page providers share
-the same ownership protocol: registration binds the current diagnostic page-view
-and a private owner token; only that owner can update or clear its projection.
-Replacing a publisher fences its later updates and cleanup. Consumers immediately
-hide registrations whose page-view/path no longer matches navigation, without
-restoring older page snapshots. Stable subscription/publish APIs avoid snapshot
-updates re-triggering registration. The adapter does not load learning data or
-persist its rich content into diagnostic events. Diagnostic collection keeps its
-independent application lifetime when the overlay is closed.
-
-
-The Debug Overlay now has current-page and global diagnostic views. Rich page
-adapters remain in memory; current-page events load only when expanded. The
-global timeline requests validated diagnostic pages, never initializes all
-business providers, and loads Harness/index/request links only on selection.
-Changing filters or leaving the view aborts active queries and fences late
-responses. Event views retain at most 500 rows and index views 250; duplicate
-identities across pages are rejected. Time filters apply to event source times;
-Harness index filtering is explicitly limited to workflow/stage/operation.
-Query errors, writer health and reference gaps remain distinct from successful
-empty history. None of these projections establishes business commit truth.
+前端负责界面呈现与客户端工作流协调：
+
+- 文档上传/解析、学习计划生成与修订、学习对话与内嵌 PDF/图片预览；
+- Persona Spectrum 与 Scene Setup 结构化编辑器；
+- Tavern 房间创建、有序消息流、多角色调度预览、恢复控制与有界历史分页；
+- 响应数据的 `snake_case → camelCase` 严格解码（从 `unknown` 校验，fail-closed）与过期异步结果围栏（`async-result-fence`）；
+- 挂载在根布局 `apps/web/app/layout.tsx` 的全局 `DebugOverlay`，按当前页面路由实时消费页面级调试适配器与全局诊断时间线。
+
+状态边界按域隔离：
+
+- **学习域**（`/plan` 与 `/study`）：共享 `(learning)` 路由组内的 `LearningWorkspaceProvider`，内部拆分为页面组合、Controller Hook、Reducer、纯状态工具、页面草稿缓存与展示映射。详见 [前端页面边界与分层](frontend-learning-workspace.md)。
+- **Tavern 域**（`/tavern`）：独立拥有页面组合、面板、Controller Hook（查询/恢复/变更分离）、可注入端口、严格解码器与单调状态合并层。
+- **独立配置与编辑器页面**（`/persona-spectrum`、`/scene-setup`、`/settings`、`/sensory-tools`、`/model-usage`）：各自按域加载数据，不触发学习域初始化。
+
+### AI 后端（`services/ai`）
+
+后端拥有应用身份、持久化事务、模型编排与权威状态变更：
+
+- 管理 Document、Learning Plan、Study Session、Persona、Scene、Runtime Settings、Token Usage、Tavern 与诊断记录；
+- 执行 PDF 文本抽取、按需 OCR 与 Study Unit 清洗；
+- 组装 Planning Context 与受控工具环境，记录模型与工具调用 Trace；
+- 通过独立边界分别编译教学 Persona 与 Tavern Persona Prompt；
+- 为 Study Chat 返回结构化回复、教材引用、Character Events 与服务端受保护交互题；
+- 拥有 Tavern 说话人调度顺序、Run 谱系、单调消息序号与房间修订号，逐角色验证并提交输出。
+
+模型 Schema 只能提出内容与有界效果提案；所有应用 ID、说话人身份、修订号、序号、时间戳与已提交状态一律由服务端分配与校验。
+
+### 共享契约与 Harness（`packages/shared`）
+
+`packages/shared` 维护前端消费的 TypeScript 契约与跨语言标准夹具；后端 Python Pydantic 模型为线上契约权威。
+
+Harness 是覆盖全仓库的统一执行生命周期，适用于 Document/OCR/Study Unit、Planning、Persona/Scene、Study Chat 与 Tavern：
+
+1. 构造强类型、有界的输入；
+2. 快照并摘要版本化上下文，按操作授权读取受保护内容；
+3. 调用不可靠的模型或启发式执行器；
+4. 严格解码领域提案；
+5. 校验领域不变量；
+6. 在严格上限内执行有界恢复；
+7. 原子提交已验证效果，或持久化终态失败证据；
+8. 产出不可变 Trace 证据。
+
+详见 [Harness 工程手册](harness/README.md)。
+
+## 主业务流程概览
+
+### 1. 教材入库与解析
+
+1. `POST /documents` 预检文件大小与物理页上限，保存 PDF 并单行插入 Document 记录。
+2. `POST /documents/{id}/process`（或 `/process/stream`）在同一事务中准入处理操作与 Harness 绑定，并将文档置为 `processing`。
+3. 解析器逐页抽取文本、按需执行 OCR、提取原始 Section 与 Chunk，并保存操作围栏内的断点（Checkpoint）。
+4. 编排清洗服务将原始 Section 归一化为可供规划的 `StudyUnitRecord[]`。
+5. 单个数据库事务原子提交 Document 投影、Debug 投影、投影摘要与终态操作回执；失败时恢复至处理前基线并保留断点供显式续跑。
+
+详见 [教材解析与入库链路](document-pipeline.md)。
+
+### 2. 学习计划生成与修订
+
+1. `GET /documents/{id}/planning-context` 提供清洗后的 Study Units、详情映射与可用规划工具列表。
+2. `POST /learning-plans`（或 `/learning-plans/stream`）携带稳定 `client_request_id` 与文档水印准入操作。
+3. 后端先生成确定性启发式计划，再由模型结合 6 个受控规划工具迭代细化并输出严格的 `LearningPlanProposalV3`。
+4. 若模型通过 `revise_study_units` 提出教材单元重划建议，系统保存保守计划与独立待确认预览，不静默覆盖教材。
+5. 单事务原子提交 Learning Plan、关联投影、Planning Trace 与操作回执；后续修订与回滚通过独立的预览/确认流程与 Plan CAS 执行。
+
+详见 [学习计划链路与契约](learning-plan.md)。
+
+### 3. 场景生成与保存
+
+1. `POST /scene-setup/generate` 将模型输出严格解码为 `scene-tree-proposal-v1`（不含任何应用 ID），校验树深度、节点数与文本预算后由服务端分配所有 committed ID 并返回候选树。
+2. 用户编辑或保存至草稿/场景库时，通过 `scene-committed-save-v1` 与 `expected_revision` 执行行级 CAS，服务端根据校验后的树重新生成 `SceneProfile`。
+
+详见 [场景编辑器](scene-setup.md)。
+
+### 4. 学习对话（Study Dialog）
+
+1. `POST /study-sessions` 按 `(document_id, persona_id, study_unit_id)` 作用域创建或恢复会话。
+2. `POST /study-sessions/{id}/chat`（及附件端点）携带 `client_request_id` 与 `expected_session_revision` 先做持久化准入，再通过 `StudyChatApplication` 执行受保护快照解析、32 个注册工具调用与强类型效果准备（`effect_state=prepared`）。
+3. 单个数据库事务原子提交新 Turn（应用分配 ID 与连续序号）、Session 修订号推进、数据库内效果、操作回执与终态 v3 Trace；交互题评分材料仅存于服务端，作答通过 `POST /study-sessions/{id}/attempt` 独立判分提交。
+4. 浏览器在模糊网络结果下只查询原操作回执，不重放未知副作用。
+
+详见 [学习会话与对话恢复](study-session.md)。
+
+### 5. Tavern 多角色互动
+
+1. `POST /tavern/rooms` 以幂等键创建独立房间并冻结参与者 Persona 快照。
+2. `POST /tavern/rooms/{id}/turns` 在房间 `expected_revision` 上执行直接（单人）或引导式（多人）回合，服务端按参与者 `display_order` 固定说话顺序。
+3. 每个角色步骤在数据库时钟租约与认领计数围栏内逐个生成、严格解码并单条追加消息；部分失败时保留已提交消息，未完成步骤可通过作用域子重试（child retry）继续。
+4. 取消操作立即落库围栏阻止后续提交与恢复，并在兼容的异步 HTTP 传输上中止本地连接。
+
+详见 [Tavern 多角色互动](tavern.md)。
+
+## 角色表现层
+
+结构化 `CharacterEvent` 协议预留 `emotion`、`action`、`intensity`、`speech_style`、`scene_hint`、`line_segment_id` 与 `timing_hint` 字段。前端角色层消费结构化事件而不从台词正文中正则解析指令，当前由占位渲染器承接，保持学习 UI、角色表现与调试证据解耦。
+
+## 持久化布局
+
+### 数据库（权威真源）
+
+数据库由 SQLAlchemy 管理（SQLite 默认 + Alembic 迁移支持 PostgreSQL），核心表包括：
+
+- **业务聚合**：`documents`、`document_debug_records`、`learning_plans`、`learning_plan_revisions`、`study_sessions`、`study_question_attempts`、`personas`、`persona_cards`、`scene_setup_states`、`scene_library_entries`、`reusable_scene_nodes`、`session_scene_states`；
+- **操作与检查点**：`document_process_operations`、`document_checkpoints`、`document_checkpoint_resumes`、`learning_plan_operations`、`plan_revision_operations`、`study_unit_revision_operations`、`study_chat_operations`；
+- **Tavern 规范化表**：`tavern_rooms`、`tavern_participants`、`tavern_messages`、`tavern_runs`、`tavern_run_steps`；
+- **系统与统计**：`runtime_settings`、`model_tool_configs`、`planning_traces`、`stream_reports`、`token_usage_records`；
+- **Harness 基础设施**：`harness_operation_bindings`、`harness_workflow_operations`、`harness_runtime_executions`、`harness_artifact_*`、`harness_effect_*`。
+
+`LocalJsonStore` 为兼容封装层，部分聚合会在数据库提交后尽力写入 JSON 镜像，但文件镜像不构成提交边界；Documents、Learning Plans、Study Sessions 与 Tavern 均由各自 Repository 以行级写入与修订号 CAS 管理。
+
+### 本地文件目录（`services/ai/data/`）
+
+| 目录 | 用途 |
+| --- | --- |
+| `uploads/` | 上传的原始教材 PDF |
+| `chat_attachments/` | Study Chat 上传附件与操作级暂存目录 |
+| `document_debug/`、`planning_trace/` | 解析与规划调试兼容镜像 |
+| `document_process_stream/`、`learning_plan_stream/` | 有界流式进度快照 |
+| `diagnostics/` | 独立诊断事件库、Harness 索引库与桌面原生 Spool 目录 |
+| `_tmp/`、`cache/` | OCR 临时文件与可清理缓存 |
+
+## 全局 Debug Overlay 与所有权
+
+全局 `DebugOverlay` 分为**当前页调试视图**与**全局诊断视图**：
+
+- **当前页调试**：通过 `apps/web/components/owned-debug-snapshot.tsx` 接入内存态页面适配器。注册绑定当前 `page_view_id` 与私有 owner token，只有所有者可更新或清理快照；路由切换时立即隐藏不匹配快照，不加载其他业务域数据，也不把大体积页面内容写入诊断事件。
+- **全局诊断**：按需分页读取后端诊断事件、Harness 索引、操作关联、存储状态与审计导出。切换筛选条件或离开视图会中止在途请求并围栏过期响应；事件视图最多保留 500 行、索引视图最多 250 行。所有诊断投影均不构成业务提交证据，详见 [诊断与审计体系](diagnostics.md)。

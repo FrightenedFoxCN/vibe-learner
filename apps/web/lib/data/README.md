@@ -1,95 +1,45 @@
-# Data Lib Map
+# 前端数据入口说明
 
-Each domain structure now has one frontend entrypoint under `apps/web/lib/data/`.
+`apps/web/lib/data/` 按领域资源提供前端唯一的数据访问入口；底层传输与严格解码分别由 `apps/web/lib/api/*.ts` 与 `apps/web/lib/*-decode.ts` 承担。页面与组件层优先从 `lib/data/*` 导入，不按页面另建重复的 API 封装。
 
-- `personas.ts`
-  Used by: `app/persona-spectrum/page.tsx`, persona-related UI flows.
-  Owns: persona profile CRUD, persona assist APIs, persona asset fetch.
-- `persona-cards.ts`
-  Used by: `app/persona-spectrum/page.tsx`.
-  Owns: persona card CRUD and generation.
-- `documents.ts`
-  Used by: `hooks/use-learning-workspace-controller.ts`, `hooks/use-document-debug-data.ts`.
-  Owns: document CRUD, processing, debug/context/trace reads, process event reads, study-unit title update.
-- `learning-plans.ts`
-  Used by: `hooks/use-learning-workspace-controller.ts`.
-  Owns: learning-plan CRUD, stream creation, progress updates, planning-question answer.
-- `study-sessions.ts`
-  Used by: `hooks/use-learning-workspace-controller.ts`.
-  Owns: study-session CRUD, chat, question attempt, plan confirmation resolution.
-- `scenes.ts`
-  Used by: `app/scene-setup/page.tsx`, `components/document-setup.tsx`, `hooks/use-learning-workspace-controller.ts`.
-  Owns: scene setup state, saved scene library CRUD, reusable scene node CRUD, scene generation.
-- `tavern.ts`
-  Used by: `lib/tavern-workspace-ports.ts` and the Tavern query/recovery/mutation Hooks.
-  Owns: Room detail/history, Run/recovery reads, creation, turns, retry, resume, cancellation and archive mutations.
-- `runtime-settings.ts`
-  Used by: `components/runtime-settings-provider.tsx`, `components/settings/use-settings-controller.ts`.
-  Owns: runtime settings read/update and model probe.
-- `model-tools.ts`
-  Used by: `app/sensory-tools/page.tsx`, `hooks/use-document-debug-data.ts`.
-  Owns: model-tool config read/update.
-- `model-usage.ts`
-  Used by: `app/model-usage/page.tsx`.
-  Owns: model usage stats read.
+## 领域模块清单
 
-Settings、Model Tools、Model Probe 和 Model Usage 的响应分别由 `runtime-settings-decode.ts`、`model-tools-decode.ts`、`model-usage-decode.ts` 从 `unknown` 验证；版本和历史兼容规则见 `docs/api-reference.md`。
+| 模块 | 职责 | 主要消费者 |
+| --- | --- | --- |
+| `documents.ts` | 文档上传、处理、状态/调试/上下文/Trace 读取、Study Unit 改名与 Checkpoint 读回 | `use-learning-workspace-controller.ts`、`use-document-debug-data.ts` |
+| `learning-plans.ts` | 学习计划 CRUD、流式生成、进度更新、规划问题作答与计划修订 | `use-learning-workspace-controller.ts`、`use-plan-generation.ts`、`use-plan-mutations.ts` |
+| `study-sessions.ts` | Study Session CRUD、对话与附件发送、交互题提交与计划确认 | `use-learning-workspace-controller.ts`、`use-study-*.ts` |
+| `personas.ts` | Persona CRUD、辅助编辑与资产清单读取 | `use-persona-*.ts`、`use-scene-rewrite.ts`、`use-workspace-libraries.ts` |
+| `persona-cards.ts` | Persona Card CRUD 与生成 | `use-persona-card-generation.ts` |
+| `scenes.ts` | 场景草稿、已保存场景库、可复用节点与场景生成 | `use-scene-*.ts`、`use-workspace-libraries.ts` |
+| `tavern.ts` | Tavern 房间分页/详情、Run/恢复链查询、回合发送、重试、恢复、取消与归档 | `lib/tavern-workspace-ports.ts`、`use-tavern-*.ts` |
+| `runtime-settings.ts` | 运行时设置读写、会话密钥管理与模型连通性探测 | `runtime-settings-provider.tsx`、`use-settings-controller.ts` |
+| `model-tools.ts` | 模型工具开关配置读写 | `app/sensory-tools/page.tsx`、`use-document-debug-data.ts` |
+| `model-usage.ts` | Token 与调用统计读取 | `app/model-usage/page.tsx` |
 
-`apps/web/lib/api.ts` remains as a compatibility aggregator for transport and normalization internals. New page-level imports should prefer `lib/data/*`.
+Settings、Model Tools、Model Probe 与 Model Usage 的响应均通过 `runtime-settings-decode.ts`、`model-tools-decode.ts`、`model-usage-decode.ts` 从 `unknown` 严格解码。
 
-## Page Consumption Map
+## 页面资源依赖
 
-This map is based on actual page runtime dependencies, not only direct imports.
+| 路由 | 消费的领域数据模块 |
+| --- | --- |
+| `/`、`/manual` | 无直接业务 CRUD 请求 |
+| `/plan` | `documents.ts`、`learning-plans.ts`、`study-sessions.ts`、`personas.ts`、`scenes.ts`（经 `LearningWorkspaceProvider`） |
+| `/study` | 同 `/plan`（共享 `(learning)` 路由组上下文），另按 ID 打开 PDF 与附件预览 |
+| `/persona-spectrum` | `personas.ts`、`persona-cards.ts` |
+| `/scene-setup` | `scenes.ts`、`personas.ts`（文本改写复用 Persona 辅助接口） |
+| `/tavern` | `tavern.ts`、`personas.ts`、`scenes.ts` |
+| `/settings` | `runtime-settings.ts` |
+| `/sensory-tools` | `model-tools.ts` |
+| `/model-usage` | `model-usage.ts` |
 
-- `/`
-  Uses no backend CRUD directly.
-  Only links into other product pages.
-- `/plan`
-  Renders `LearningWorkspace`, which consumes:
-  `documents.ts`, `learning-plans.ts`, `study-sessions.ts`, `personas.ts`, `scenes.ts`
-  The page needs persona and scene data because plan generation, plan history labeling, session creation, and scene selection all depend on them.
-- `/study`
-  Renders `StudyDialogPage`, which consumes `LearningWorkspace` state and therefore also depends on:
-  `documents.ts`, `learning-plans.ts`, `study-sessions.ts`, `personas.ts`, `scenes.ts`
-  The page also opens document / attachment previews using IDs produced by those records.
-- `/persona-spectrum`
-  Consumes:
-  `personas.ts`, `persona-cards.ts`
-- `/scene-setup`
-  Consumes:
-  `scenes.ts`, `personas.ts`
-  Scene text rewrite uses persona assist APIs even though the page is scene-focused.
-- `/settings`
-  Consumes:
-  `runtime-settings.ts`
-  The page reads current runtime settings through `RuntimeSettingsProvider` and updates/probes through `use-settings-controller.ts`.
-- `/sensory-tools`
-  Consumes:
-  `model-tools.ts`
-- `/model-usage`
-  Consumes:
-  `model-usage.ts`
+## 全局运行时消费者
 
-## Shared Runtime Consumers
+- `hooks/use-learning-workspace-controller.ts`：`/plan` 与 `/study` 的跨页编排核心，汇总 `documents`、`learning-plans`、`study-sessions`、`personas`、`scenes`。
+- `hooks/use-document-debug-data.ts`：全局 Debug Overlay 的文档解析与工具配置数据源。
+- `components/runtime-settings-provider.tsx`：全局运行时配置上下文。
 
-- `hooks/use-learning-workspace-controller.ts`
-  This is the main cross-page orchestration hub for `/plan` and `/study`.
-  It is the authoritative consumer of:
-  `documents.ts`, `learning-plans.ts`, `study-sessions.ts`, `personas.ts`, `scenes.ts`
-- `hooks/use-document-debug-data.ts`
-  Consumes:
-  `documents.ts`, `model-tools.ts`
-- `components/runtime-settings-provider.tsx`
-  Consumes:
-  `runtime-settings.ts`
-- `components/debug-overlay.tsx`
-  Indirectly depends on `use-document-debug-data.ts` and `RuntimeSettingsProvider`.
+## 边界规则
 
-## Boundary Rule
-
-When a page needs a data structure, import from that structure's module even if the request is made indirectly by a shared controller.
-
-Examples:
-
-- If `/study` needs persona or scene-backed behavior, that still belongs to `personas.ts` / `scenes.ts`, even when the fetch is currently centralized inside `use-learning-workspace-controller.ts`.
-- Do not create page-specific copies such as `plan-api.ts` or `study-api.ts` for records that already have a structure-level home.
+- 按**数据结构归属**选择导入模块，而非按当前页面名称拆分副本（例如不在 `lib/data/` 中新建 `plan-api.ts` 或 `study-api.ts`）。
+- 新增页面级数据请求统一接入对应领域模块，并经由领域严格解码器校验后进入状态层。

@@ -1,29 +1,24 @@
 # Planning Harness
 
-`GET /documents/{id}/planning-context` 准备清洗后的 Study Units；`POST /learning-plans` 或 stream 入口先 admission `learning_plan_generation`，再进入 `planning:plan_generation`。Plan revision 使用独立的 `learning_plan_revision` operation 和 `planning:plan_revision`，不复用 generation identity。
+## 操作边界
 
-## 数据和所有权
+- **计划生成**：`POST /learning-plans`（或 `/stream`）先准入 `learning_plan_generation`，执行 `planning:plan_generation` 与工具阶段 `planning:planning_tool_execution`。
+- **计划修订**：使用独立的 `learning_plan_revision` 操作与 `planning:plan_revision` 阶段，不复用生成操作身份。
+- **教材单元修订确认**：当模型通过 `revise_study_units` 提出重划建议时，系统在生成事务中原子保存保守计划、不可变预览与独立的 `study_unit_revision` 准入绑定；用户确认时在 `planning:study_unit_revision` 阶段执行 Document revision CAS 提交。
 
-输出语言复用 `PlanningIntentV1.output_language`：显式选择与物理页范围共同进入请求指纹和计划读回；自动模式保持 unknown intent，仅把模型选择写入 resolved language。Planning prompt v8 和 Plan Revision prompt v2 保留这条约束，Study 默认继承已保存计划语言；详见[输出语言偏好](../output-language.md)。
+## 数据所有权与约束
 
-- protected input：Document debug、Study Unit input、planning context、Persona/Scene snapshot。
-- model proposal：`LearningPlanProposalV2/V3`；不得产生 committed ID、revision、timestamp 或完成度。
-- committed projection：`LearningPlanCommittedProjection`，由 repository 在同一事务写 Plan、operation receipt 和 terminal trace。
-- tools：6 个 Planning 工具，schema、预算、runtime adapter 和 trace projection 全部来自 Tool Manifest。
+- **受保护输入**：Document Debug、Study Unit 输入、Planning Context、Persona/Scene 快照。
+- **模型提案**：严格解码为 `LearningPlanProposalV3`，不包含应用 ID、revision、时间戳或完成状态。
+- **物理页范围与输出语言**：显式 PDF 物理页范围与输出语言偏好共同存入 `PlanningIntentV1`、操作指纹与计划读回；自动语言保持 `unknown` 意图并将模型选择写入独立 resolved projection。PDF 元数据印刷页码通过只读接口独立对照，不进入模型页码参数或提交范围。
+- **工具清单**：全部 6 个 Planning 工具的 Schema、配额、适配器与脱敏 Trace 均来自 Tool Manifest。
 
-## 生成与恢复
+## 生成与有界恢复
 
-1. runner 以 `max_tokens=8192`、最多 24 rounds 运行；工具仅在最多 1 个 round 提供，且 `parallel_tool_calls=false`。
-2. 对未提供工具的调用最多纠正 1 次；tool probe 最多 3 次；content filter 最多重试 2 次；空响应最多重试 1 次。
-3. primary 空响应或 tool-loop exhausted 可切换一次 configured fallback model；可按配置关闭 fallback tools。
-4. 最终 proposal 先严格解码，再允许一次本地 JSON repair；仍不合法才发起一次 tools-disabled strict contract repair runner。
-5. chapter refs、页范围、coverage/workload 和 planning intent 再做领域校验；失败为 not committed，不把部分 proposal 写成 Plan。
+1. Runner 以 `max_tokens = 8192`、最多 24 rounds 运行；工具仅在最多 1 个 round 中开放且 `parallel_tool_calls = false`。
+2. 未开放工具调用最多纠正 1 次；tool probe 最多 3 次；`content_filter` 最多重试 2 次；空响应最多重试 1 次。
+3. Primary 出现空响应或工具轮次耗尽时，可切换 1 次配置的 fallback 模型（可配置关闭 fallback 工具）。
+4. 最终提案先严格解码并允许 1 次本地 JSON 修复，仍不合法则发起 1 次无工具的 strict contract repair runner。
+5. 章节引用、物理页范围、覆盖模式/工作量理由与意图约束全部通过领域校验后原子提交；失败记为 `not_committed`。
 
-`revise_study_units` 的 v2 参数/结果契约只记录待确认建议，保留原工具上下文和当前计划的 `unit_index`。生成事务采用 `LearningPlanRuntimeOutputV2` / `LearningPlanCommittedProjectionV2`，同时保存保守 Plan、不可变预览和独立的 `study_unit_revision` admission binding；历史 v1 保持可读。澄清问题仍由 parent operation 保存，纯读工具不产生 durable effect。
-
-用户在 Plan Workspace 独立确认后，`planning:study_unit_revision` 从授权快照构造应用投影，原子提交 Document revision CAS、Debug、decision receipt 和 terminal v3 trace。拒绝或跳过不改变教材和计划；查询不重放生成或确认。页范围错误只允许附带应用拥有的 recovery metadata，provider trace/public projection 不泄露该 metadata。完整边界与验证入口见 [Study Unit 修订](../study-unit-revision.md)。
-
-调用和 token 预算见 [配置与预算](configuration.md)，Plan CAS 细节见 [Plan revision](../plan-revision.md)。
-
-
-显式 PDF 页范围从 Document Setup 输入并随草稿保存，进入既有 `PlanningIntentV1` 和 operation fingerprint。受理前验证教材物理页数；提交事务和 v2 创建读回重复验证锚点/切片范围及完整覆盖。PDF 元数据印刷标签通过独立的 `document-page-numbering-v1` 读取，只用于当前教材对照，不参与 model/tool 页参数和 commit scope。见 [物理页范围](../planning-page-scope.md)。
+详细业务流、Prompt 契约、计划修订与单元确认见 [学习计划链路与契约](../learning-plan.md) 与 [教材解析与入库链路](../document-pipeline.md)；预算与调用上限见 [配置与预算](configuration.md)。

@@ -1,29 +1,30 @@
 # AGENTS
 
-本文件只放**每次对话都必须遵守的约束**。机制细节在下方索引里按需阅读，不在这里重复。
+本文件只保留每次任务都必须遵守的核心约束；各领域详细设计见下方索引。
 
 ## 仓库布局
 
 `apps/web`（Next.js 16 前端）· `services/ai`（FastAPI 后端）· `packages/shared`（TS 契约）· `apps/desktop`（Tauri 壳）· `docs`（文档）
 
-未完成工作只由 [TODO](TODO.md) 维护。
+待办与未排期研究由 [TODO.md](TODO.md) 统一维护。
 
-## 铁律
+## 核心铁律
 
-1. **数据分层与兜底**：外部形状（外部 JSON / 旧行 / 模型输出）只在 `app/core/coerce.py` 归一化；域模型保持 strict，必填字段缺失必须报错；前端 decode 只校验形状，不发明语义默认值。见 [data-flow-layers](docs/data-flow-layers.md)。
-2. **Harness 生命周期**：新增或迁移工作流必须走 typed input → versioned context → strict decode → invariant validation → bounded recovery → atomic commit → trace。见 [harness/README](docs/harness/README.md)。
-3. **Operation identity**：与领域操作准入在**同一数据库事务**内分配；不得从 provider `tool_call_id` 推导，不得为 legacy 行捏造。
-4. **提交证据**：必须匹配已注册的 operation key 与版本化 committed projection；通用资源证据不足以声称提交成功。
-5. **提案 ≠ 已提交**：模型/heuristic 提案与已提交记录、API 响应严格分离；生成的 ID、身份、顺序、修订、时间戳不得进入模型自有 schema。
-6. **交互题评分材料**只存在于服务端；浏览器只渲染持久化后的 Session 读回。
-7. **验证入口**：`npm run test:baseline`（不变量基线）+ `npm run check`（style + contracts + web types + api-reference 同步 + baseline）。
-8. **新增 `test:*` 脚本前**先确认对应测试入口存在；没有入口就不要加脚本。
+1. **数据分层与兜底**：外部未知形状只在 `services/ai/app/core/coerce.py` 归一化；域模型保持 strict，必填字段缺失必须报错；前端 decode 只校验形状，不发明语义默认值。见 [数据流分层](docs/data-flow-layers.md)。
+2. **Harness 生命周期**：所有模型或启发式工作流遵循 `typed input → versioned context → strict decode → invariant validation → bounded recovery → atomic commit → trace`。见 [Harness 工程手册](docs/harness/README.md)。
+3. **Operation Identity**：Harness 身份与领域操作准入在同一数据库事务内分配；不得从 provider `tool_call_id` 推导，也不得为历史行捏造。
+4. **提交证据**：提交声明必须匹配已注册的 operation key 与版本化 committed projection；通用资源证据不足以证明提交成功。
+5. **提案与提交分离**：模型/启发式提案、已提交记录与 API 响应严格分离；系统生成的 ID、身份、顺序、修订号与时间戳不得进入模型自有 schema。
+6. **交互题评分隔离**：评分材料仅存在于服务端；浏览器只渲染持久化读回的 Session 状态。
+7. **验证门禁**：改动后运行 `npm run test:baseline`（不变量基线）与 `npm run check`（风格、契约类型、Web 类型、API 参考同步与基线）。
+8. **脚本诚实性**：新增 `test:*` 脚本前先确认对应测试入口存在。
 
-## 运行形态（要点）
+## 运行形态
 
-- 前端与后端分离运行；后端默认 SQLite，可用 `DATABASE_URL` 指向 PostgreSQL。
-- `LocalJsonStore` 是兼容层；Documents / Study Sessions 必须走单行插入 + revision CAS，不得回退到 `save_list`。
-- Tavern 是独立域（rooms / participants / messages / runs / steps），不要把 Tavern 字段塞进 `StudySessionRecord`。
+- 前端与后端分离运行；后端默认使用 SQLite，可通过 `DATABASE_URL` 切换至 PostgreSQL。
+- `LocalJsonStore` 仅为兼容层；Documents 与 Study Sessions 走单行写入与 revision CAS，不使用集合级 `save_list`。
+- Tavern 是独立领域（rooms / participants / messages / runs / steps），不与 `StudySessionRecord` 混用。
+- 页面与区块命名统一遵循 [页面命名与术语](docs/page-vocabulary.md)。
 
 ## 常用命令
 
@@ -34,24 +35,25 @@ npm run build:web
 npm run test:baseline
 npm run check
 
-cd services/ai && uv sync
+cd services/ai && uv sync --frozen
 cd services/ai && uv run uvicorn app.main:app --reload
 ```
 
-## 配置
+## 环境与配置
 
-- Python 一律 `uv`，不要假定全局激活的虚拟环境。
-- 规划 provider 默认来自 `services/ai/.env`；数据库权威运行时设置可无需重启覆盖。
+- Python 命令统一通过 `uv` 执行，不假定全局虚拟环境。
+- 模型默认配置来自 `services/ai/.env`；数据库内的运行时设置可在不重启服务的情况下覆盖默认值。
 - `VIBE_LEARNER_PLAN_PROVIDER=mock` 保持本地确定性；`litellm` 走真实模型。
 
 ## 按需阅读
 
-| 想知道 | 读 |
-|---|---|
+| 需求 | 文档 |
+| --- | --- |
+| 全部文档总目录 | [docs/README.md](docs/README.md) |
 | 代码入口与所有权 | [docs/entry-points.md](docs/entry-points.md) |
-| 机制与工程约定（31 条） | [docs/conventions.md](docs/conventions.md) |
-| 页面、区块与术语命名 | [docs/page-vocabulary.md](docs/page-vocabulary.md) |
-| 系统结构与主流程 | [docs/architecture.md](docs/architecture.md) |
-| Harness 生命周期、数据库与恢复 | [docs/harness/README.md](docs/harness/README.md) |
-| 数据分层与兜底责任 | [docs/data-flow-layers.md](docs/data-flow-layers.md) |
-| 全部文档索引 | [docs/README.md](docs/README.md) |
+| 工程机制与约定 | [docs/conventions.md](docs/conventions.md) |
+| 系统架构与主流程 | [docs/architecture.md](docs/architecture.md) |
+| 数据流分层与兜底 | [docs/data-flow-layers.md](docs/data-flow-layers.md) |
+| Harness 工程手册 | [docs/harness/README.md](docs/harness/README.md) |
+| 页面、区块与术语 | [docs/page-vocabulary.md](docs/page-vocabulary.md) |
+| 前端边界与设计基线 | [docs/frontend-learning-workspace.md](docs/frontend-learning-workspace.md) · [docs/frontend-design-baseline.md](docs/frontend-design-baseline.md) |

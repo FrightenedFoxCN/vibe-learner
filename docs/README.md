@@ -1,56 +1,58 @@
 # 项目文档
 
-未完成工作只由根 [TODO](../TODO.md) 维护。本目录保留当前架构、接口、操作手册、可执行预算和当前验收协议。
+本目录维护 Vibe Learner 当前的架构设计、领域契约、前端规范、Harness 工程手册与运维说明。未完成事项统一由根目录 [TODO.md](../TODO.md) 维护，开发铁律见 [AGENTS.md](../AGENTS.md)。
 
-| 文档 | 用途 |
+## 系统总览与工程规范
+
+| 文档 | 内容 |
 | --- | --- |
-| [用户手册](user_manual.md) | 页面功能与使用流程 |
-| [系统架构](architecture.md) | Web、AI、共享契约、桌面与存储边界 |
-| [数据流分层与兜底责任](data-flow-layers.md) | 外部输入 → 归一化 → 域模型 → 持久化 → DTO → 前端 decode 的责任边界 |
-| [Harness 工程手册](harness/README.md) | 按用户工作流整理的生命周期、数据库、模型约束、恢复与预算 |
-| [Tavern 架构](tavern-architecture.md) | 房间、消息、调度、事务和恢复 |
-| [Tavern 回应顺序验收](tavern-order-acceptance.md) | 逆序选择、房间恢复和部分失败子重试的验证协议 |
-| [Tavern 请求取消](tavern-provider-cancellation.md) | 可取消传输能力、本地连接/线程释放、数据库取消与上游计费边界 |
-| [API 参考（生成）](api-reference.md) | 由 FastAPI OpenAPI 生成的端点清单；勿手改 |
-| [API 契约说明](api-contracts.md) | 手写：契约语义、版本与兼容边界 |
-| [关键入口清单](entry-points.md) | 按子域列出的代码入口与所有权 |
-| [工作机制与约定](conventions.md) | Harness 生命周期、提交证据、提案归属等 31 条约定 |
-| [页面命名与术语](page-vocabulary.md) | 页面、区块、命名规则与数据术语 |
-| [诊断审计统计](diagnostic-audit.md) | 统计分组、分位数、去重与未知数据语义 |
-| [诊断存储策略](diagnostic-storage-policy.md) | 已验证的分库配额、留存与恢复例外；200 MiB 非安装硬上限 |
-| [原生计数检查点](diagnostic-native-counter.md) | 双槽格式、旧格式迁移、损坏恢复及降级行为 |
-| [桌面打包](desktop-packaging.md) | 本地构建、sidecar、Vault 与发布配置 |
-| [性能预算](performance-budgets-v1.md) | Room 分页、Harness 字节/调用/时延门 |
-| [后端启动测量](performance/backend-startup-v1.md) | 空库 mock 启动、延迟与网络隔离门 |
-| [Room 分页 HTTP](performance/tavern-room-http-v1.md) / [React 渲染](performance/tavern-room-react-v1.md) | 分页夹具、计时边界与复跑命令 |
-| [Web bundle](performance/web-bundle-v1.md) | 四个生产路由的 gzip 首屏传输量与 5% 回退门 |
-| [诊断存储测量](performance/diagnostic-local-baseline-v1.md) | 后端查询、配额、旧库恢复与安装压力 |
-| [诊断工作流开销](performance/diagnostic-workflows-v1.md) | 六类请求链的配对测量与持久化读回 |
-| [诊断渲染与原生 spool](performance/diagnostic-render-and-spool-v1.md) | Collector、React/WebView 与磁盘写入预算 |
-| [开发版 Vault 性能](performance/desktop-vault-dev-v1.md) | Rust 依赖优化与复跑探针 |
-| [前端资源读取边界](performance/web-resource-reads-v1.md) | 历史数据下 focus、跨页与恢复的请求计数门和原始 before/after |
-| [解析与规划数据流](parsing-and-planning-data-flow.md) | Document → Study Unit → Learning Plan |
-| [章节与日程](study-chapter-and-schedule.md) | 领域术语和 Session 范围 |
-| [计划修订](plan-revision.md) | Plan CAS、修订预览、接受/拒绝、历史回滚与恢复 |
-| [OCR 保存进度](document-checkpoints.md) | 逐页/阶段 checkpoint、显式续跑、重启与查询读回 |
-| [文档输入上限](document-input-limits.md) | 上传字节/物理页、不可分割文本块和可恢复拒绝 |
-| [输出语言偏好](output-language.md) | Planning/Study 的显式语言、自动模式、操作绑定和持久化 |
-| [Study 请求恢复](study-recovery.md) | 等待上限、有界查询、断网及终态刷新，不重放未知结果 |
-| [物理页范围](planning-page-scope.md) | PDF 物理页输入、印刷标签对照、取证与提交范围 |
-| [教材单元修订](study-unit-revision.md) | Planning 建议、独立确认、Document CAS 与查询恢复 |
-| [计划文本契约](plan-text-contract.md) | 面向学习者的文本字段语义 |
-| [模型运行时质量](model-runtime-quality.md) | 已采用的规划、记忆、多模态和 Provider 边界 |
-| [规划 Prompt 契约](learning-plan-prompt-contract.md) | Prompt 结构和模型输入 |
-| [学习工作区](frontend-learning-workspace.md) | Plan/Study 前端职责 |
-| [前端设计基线](frontend-design-baseline.md) | 间距、颜色、组件与可访问性约束 |
-| [生成可观测性](plan-observability-ocr-generation-output.md) | Planning/OCR/设定生成的预算和错误投影 |
-| [代码风格门](code-style.md) | ESLint、Ruff、格式化、既有基线与 CI |
-| [场景编辑器](scene-setup.md) | 层级场景和保存结构 |
+| [用户手册](user_manual.md) | 应用内 `/manual` 功能手册入口与维护位置 |
+| [系统架构](architecture.md) | Monorepo 结构、运行时形态、核心边界、主流程与存储布局 |
+| [关键入口清单](entry-points.md) | 按子域整理的代码入口、模块与所有权 |
+| [工程机制与约定](conventions.md) | 契约分层、Harness、提交所有权与持久化约定 |
+| [数据流分层与兜底责任](data-flow-layers.md) | 外部输入 → 归一化 → 域模型 → 持久化 → API DTO → 前端 decode → UI 职责边界 |
+| [代码风格门禁](code-style.md) | ESLint、Ruff、Prettier、基线管理与 CI 检查 |
+
+## 核心业务域
+
+| 文档 | 内容 |
+| --- | --- |
+| [教材解析与入库链路](document-pipeline.md) | 上传输入上限、PDF/OCR 解析、Study Unit 清洗、断点续跑、印刷页对照与单元修订 |
+| [学习计划链路与契约](learning-plan.md) | Planning Context、6 个规划工具、Prompt 与文本契约、物理页范围、计划修订与可观测性 |
+| [学习会话与对话恢复](study-session.md) | 章节与排期术语、Session 作用域、交互题判分、原文记忆指令、输出语言与浏览器恢复协议 |
+| [Tavern 多角色互动](tavern.md) | 房间/参与者/消息/Run/Step 存储模型、调度顺序、子重试、租约恢复与传输取消 |
+| [场景编辑器（Scene Setup）](scene-setup.md) | 层级场景结构、提案与保存契约、可复用节点库与前端数据流 |
+| [模型运行时行为与边界](model-runtime.md) | Provider 路由与重试、记忆与引用、可选 PDF 版面候选、Persona/OCR/Tavern 运行约束 |
+
+## Harness 工程手册
+
+| 文档 | 内容 |
+| --- | --- |
+| [Harness 总览](harness/README.md) | 统一生命周期、工作流索引、上限辨析、模型输出所有权与权威入口 |
+| [配置与预算](harness/configuration.md) | 配置优先级、可编辑参数范围、输出 token 上限、调用次数与 Manifest 预算 |
+| [数据库映射](harness/database.md) | 共享 Harness 表、领域表映射与恢复状态语义 |
+| [各工作流手册](harness/README.md#用户工作流索引) | [Document](harness/document-processing.md) · [Planning](harness/planning.md) · [Persona](harness/persona-generation.md) · [Scene](harness/scene-generation.md) · [Study Chat](harness/study-chat.md) · [Tavern](harness/tavern.md) |
+
+## 前端规范
+
+| 文档 | 内容 |
+| --- | --- |
+| [前端页面边界与分层](frontend-learning-workspace.md) | 路由分组、Provider 作用域、页面/Controller/Reducer/Data Lib 职责划分 |
+| [前端设计基线](frontend-design-baseline.md) | 视觉方向、尺寸间距、颜色 Token、组件规范、响应式与可访问性 |
+| [页面命名与术语](page-vocabulary.md) | 标准页面名、区块命名、命名规则与核心数据术语 |
+
+## 接口、诊断、性能与打包
+
+| 文档 | 内容 |
+| --- | --- |
+| [API 参考（自动生成）](api-reference.md) | 从 FastAPI OpenAPI 自动生成的全部 HTTP 端点清单（勿手改） |
+| [API 契约说明](api-contracts.md) | 响应版本与兼容规则、NDJSON 流信封、各域写语义、CAS/幂等与错误码 |
+| [诊断与审计体系](diagnostics.md) | 事件采集、分类关联、存储配额与回收、桌面原生 Spool、审计统计与导出边界 |
+| [性能预算与基准](performance-budgets.md) | Web 生产包门禁、Harness 运行时预算、分页/启动/读取约束与本地基准命令 |
+| [桌面打包与发布](desktop-packaging.md) | Tauri 桌面端本地构建、离线 OCR 打包、Sidecar、预览签名与 Release 流程 |
 
 ## 验证边界
 
-`npm run check` 与 `npm run test:baseline` 验证的是**实现不变量**：Harness 生命周期、提交证据、领域规则、前端 decode 契约与生成文件同步。
+`npm run check` 与 `npm run test:baseline` 验证的是**实现不变量**：代码风格、共享契约类型、Web 类型、API 参考同步、Harness 生命周期、提交证据、领域规则与前端解码契约。
 
-它们不证明模型输出质量、学习效果、跨平台行为或真实 provider 性能——这些需要各自的人工验收或线上观测。各文档不再重复这句话。
-
-修改前先阅读对应领域文档及 [AGENTS](../AGENTS.md)。
+自动化基线不替代真实模型输出质量、教学效果、跨平台桌面环境或线上 Provider 延迟评估；这些维度需通过各自的人工验收或线上观测确认。

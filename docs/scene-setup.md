@@ -1,204 +1,67 @@
-# Scene Setup
+# 场景编辑器（Scene Setup）
 
-This page defines the layered environment editor used by `/scene-setup`.
+`/scene-setup` 提供从宏观世界逐级下钻到具体教室的层级场景编辑器，支持保存草稿、场景库快照、可复用节点库以及基于关键词或长文本的 AI 场景树生成。对应的 Harness 边界见 [Scene Generation Harness](harness/scene-generation.md)。
 
-## Goal
+## 1. 概念结构
 
-- Build a scene from world scale down to a specific classroom.
-- Let each layer carry its own summary, atmosphere, entry transition, and local rules.
-- Add interactive objects to any layer so the scene can be queried or staged later.
-- Support generating a scene tree from keyword search or long-form setting text.
-- Ensure every layer and object carries explicit reuse metadata for later recombination.
+推荐层级链（可按需自定义）：**宏观世界 → 区域/城市群 → 校区/街区 → 建筑/楼层 → 教室**。
 
-## Recommended Layer Chain
+- **层级节点（Layer）**：描述该尺度控制的空间范围、氛围感受、从父层进入的过渡方式、子层继承的约束规则以及本层可交互物品。
+- **可交互物品（Object）**：描述名称、外观或用途、交互规则与复用标签。
+- **可复用节点库（Reusable Node）**：比完整场景更细粒度的复用单元——`node_type="layer"` 保存一整棵子树及其物品，`node_type="object"` 保存单个物品。插入当前选中层时会分配全新运行时 `id`，同时保留原 `reuse_id` 维持模板血缘。
 
-- World overall
-- Region or city cluster
-- District or campus block
-- Building or floor
-- Classroom
+## 2. 四层契约与树预算
 
-## Layer Content
+Scene 严格隔离四个模型边界：
 
-Each layer should describe:
+1. **模型提案（`scene-tree-proposal-v1`）**：仅包含内容、标签、零基 `selected_path` 与白名单内的可选可复用节点引用；禁止包含 `id`、`reuse_id`、`revision`、时间戳或 `scene_profile`。
+2. **用户保存输入（`scene-committed-save-v1`）**：`PUT /scene-setup`、`POST /scene-library` 与 `PUT /scene-library/{scene_id}` 使用；`extra="forbid"`，要求非空 `scene_name` / `scene_summary`、全局唯一的应用 `id` 与 `reuse_id`、有效 `selected_layer_id` / `collapsed_layer_ids` 以及 `expected_revision`（新建传 `0`），**拒绝调用方提交 `scene_profile`**。
+3. **服务端派生轮廓（`SceneProfileRecord`）**：保存时由服务端根据校验通过的场景树自动重建，随响应返回。
+4. **并发控制**：保存执行行级 revision CAS，过期写入返回 `409 scene_revision_conflict`。
 
-- what this scale controls
-- what it feels like
-- how the user enters it from the parent layer
-- which objects are interactive in this scope
-- what constraints apply to children
+全树硬上限（后端 `services/ai/app/models/scene.py` 权威定义，前端解码镜像对齐）：
 
-## Object Content
+| 维度 | 上限 |
+| --- | ---: |
+| 根层数量 / 最大树深 | 8 / 8 |
+| 全树总层级数 / 总物品数 | 64 / 128 |
+| 单层最大子层数 / 物品数 / 标签数 | 8 / 16 / 12 |
+| 聚合文本总预算 | 60,000 字符 |
 
-Interactive objects should usually include:
+## 3. 前后端字段映射与数据流
 
-- name
-- short appearance or purpose note
-- interaction rule
-- tags for later search or reuse
+后端模型使用 `snake_case`，前端状态使用 `camelCase`：
 
----
+- **Layer 核心映射**：`id`、`title`、`scope_label ↔ scopeLabel`、`summary`、`atmosphere`、`rules`、`entrance`、`tags`、`reuse_id ↔ reuseId`、`reuse_hint ↔ reuseHint`、`objects`、`children`。
+- **Object 核心映射**：`id`、`name`、`description`、`interaction`、`tags`、`reuse_id ↔ reuseId`、`reuse_hint ↔ reuseHint`。
+- **SceneProfile 映射**：`scene_id ↔ sceneId`、`scene_name ↔ sceneName`、`title`、`summary`、`tags`、`selected_path ↔ selectedPath`、`focus_object_names ↔ focusObjectNames`、`scene_tree ↔ sceneTree`。
 
-## Frontend–Backend Interface
+完整数据流与代码归属：
 
-### API Endpoints
-
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/scene-setup` | Load saved draft state (returns empty defaults if none) |
-| PUT | `/scene-setup` | Save / auto-sync draft state |
-| GET | `/scene-library` | List all saved scenes |
-| GET | `/scene-library/{scene_id}` | Get a single saved scene |
-| POST | `/scene-library` | Create a new saved scene |
-| PUT | `/scene-library/{scene_id}` | Update an existing saved scene |
-| DELETE | `/scene-library/{scene_id}` | Delete a saved scene |
-| POST | `/scene-setup/generate` | Generate a reusable scene tree from keywords or long text |
-| GET | `/reusable-scene-nodes` | List reusable layer/object nodes |
-| POST | `/reusable-scene-nodes` | Save one layer or object into the reusable node library |
-| DELETE | `/reusable-scene-nodes/{node_id}` | Delete a reusable node |
-
-### Request Payloads
-
-**PUT `/scene-setup`** and **POST/PUT `/scene-library`** use the strict `scene-committed-save-v1` field structure:
-
-```json
-{
-  "contract_version": "scene-committed-save-v1",
-  "expected_revision": 7,
-  "scene_name": "高一物理-力学基础",
-  "scene_summary": "从世界整体出发...",
-  "scene_layers": [ /* SceneLayerCommittedInputV1[] */ ],
-  "selected_layer_id": "scene-classroom",
-  "collapsed_layer_ids": []
-}
+```text
+前端编辑态 SceneLayer[]（camelCase）
+  │  提交保存（带 expected_revision）
+  ▼
+apps/web/lib/api/_shared.ts :: serializeSceneTree()   → snake_case JSON（不含 scene_profile）
+  ▼
+PUT /scene-setup  或  POST/PUT /scene-library         → 校验 SceneCommittedSaveV1 + 树上限 + 行级 CAS
+  ▼
+服务端落库并重建 SceneProfileRecord
+  ▼
+apps/web/lib/persona-scene-decode.ts :: decodeSceneSetupState / decodeSceneLibraryItem
+  │  从 unknown 递归严格解码，校验 revision / ID 唯一性 / 引用完整性 / 树预算
+  ▼
+前端状态 SceneTreeNode[]（camelCase）
 ```
 
-`scene_name` and `scene_summary` both have `min_length=1` (non-empty required). Sending an empty string produces a **422**. Create requests use `expected_revision=0`; update requests send the revision returned by the last successful read/write. The server rebuilds `scene_profile` from the validated tree and never accepts a caller-authored profile. A stale update returns **409** `scene_revision_conflict` instead of overwriting a newer editor.
+外部导入的 JSON 文件经 `apps/web/lib/scene-import-structure.ts`（`validateSceneImportStructure`）与 `apps/web/lib/scene-editor-model.ts`（`parseSceneImportPayload` / `normalizeSceneLayer`）统一归一化为 `camelCase` 后再进入 React 状态。HTTP 封装位于 `apps/web/lib/api/scene.ts`，页面统一通过 `apps/web/lib/data/scenes.ts` 调用；完整接口清单见 [API 参考](api-reference.md)。
 
-### SceneLayerStateRecord (Python ↔ TypeScript)
+## 4. 常见错误排查
 
-Python backend (`SceneLayerStateRecord`) uses **snake_case**. TypeScript frontend (`SceneLayer` / `SceneTreeNode`) uses **camelCase**.
-
-| Python field | TypeScript field | Notes |
-|---|---|---|
-| `id` | `id` | Unique layer ID |
-| `title` | `title` | Display name |
-| `scope_label` | `scopeLabel` | e.g. "宏观世界", "城市层" |
-| `summary` | `summary` | Layer purpose text |
-| `atmosphere` | `atmosphere` | Sensory / mood text |
-| `rules` | `rules` | Constraints that children inherit |
-| `entrance` | `entrance` | Transition description from parent |
-| `tags` | `tags` | Search and reuse tags for this node |
-| `reuse_id` | `reuseId` | Stable reusable-node identifier |
-| `reuse_hint` | `reuseHint` | How this node should be reused later |
-| `objects` | `objects` | `SceneObjectStateRecord[]` |
-| `children` | `children` | Recursive `SceneLayerStateRecord[]` |
-
-Committed layer identity/content fields and `reuse_id` are required. `tags` and `reuse_hint` may be omitted and default to empty strings. The full tree is additionally bounded to depth 8, 64 layers, 128 objects, 8 children per layer, 16 objects per layer, and a 60,000-character aggregate text budget.
-
-### SceneObjectStateRecord
-
-| Python field | TypeScript field |
-|---|---|
-| `id` | `id` |
-| `name` | `name` |
-| `description` | `description` |
-| `interaction` | `interaction` |
-| `tags` | `tags` (default `""`) |
-| `reuse_id` | `reuseId` |
-| `reuse_hint` | `reuseHint` |
-
-### Scene Tree Generation
-
-`POST /scene-setup/generate`
-
-```json
-{
-  "mode": "keywords",
-  "input_text": "赛博校园, 物理实验, 夜间自习",
-  "layer_count": 5
-}
-```
-
-- `mode` supports `keywords` and `long_text`.
-- Keywords mode may use web search when the runtime setting model allows it.
-- The response returns `scene_name`, `scene_summary`, `selected_layer_id`, and `scene_layers`.
-- Returned nodes are expected to already contain `tags`, `reuse_id`, and `reuse_hint`.
-
-### Reusable Node Library
-
-Reusable nodes are a smaller-granularity library than the full scene library.
-
-- `node_type="layer"` stores one `SceneLayerStateRecord`, including all nested children and objects.
-- `node_type="object"` stores one `SceneObjectStateRecord`.
-- The frontend inserts a saved layer as a child of the currently selected layer.
-- The frontend inserts a saved object into the currently selected layer's object list.
-- Inserted copies receive fresh runtime `id`s, but preserve `reuse_id` so the semantic template identity survives cloning.
-
-### SceneProfileRecord
-
-| Python field | TypeScript field |
-|---|---|
-| `scene_id` | `sceneId` |
-| `scene_name` | `sceneName` |
-| `title` | `title` |
-| `summary` | `summary` |
-| `tags` | `tags` |
-| `selected_path` | `selectedPath` |
-| `focus_object_names` | `focusObjectNames` |
-| `scene_tree` | `sceneTree` (same `SceneLayerStateRecord[]` shape) |
-
-### Serialization Functions (TypeScript → Python)
-
-Located in [apps/web/lib/api.ts](../apps/web/lib/api.ts):
-
-- **`serializeSceneTree(nodes)`** — recursively converts `SceneTreeNode[]` to snake_case objects for the API. Converts `scopeLabel` → `scope_label`. If any `SceneLayer` in React state was not normalized (still has snake_case fields), `node.scopeLabel` would be `undefined`, which `JSON.stringify` silently omits, causing a **422** on `scope_label`.
-- Scene saves deliberately do not serialize a caller Scene Profile; the response profile is application-owned committed state.
-
-### Deserialization Functions (Python → TypeScript)
-
-Located in [apps/web/lib/api.ts](../apps/web/lib/api.ts):
-
-- **`decodeSceneSetupState(payload)`** and **`decodeSceneLibraryItem(payload)`** consume `unknown`, recursively decode snake_case layers into `SceneTreeNode`, and validate revision, committed-ID uniqueness, selected/collapsed references, profile/tree consistency, and depth/count/text budgets.
-- List and reusable-node decoders also enforce unique aggregate identity and discriminated layer/object projections.
-
-### Page-Level Normalization (page.tsx)
-
-Located in [apps/web/app/scene-setup/page.tsx](../apps/web/app/scene-setup/page.tsx):
-
-- **`parseSceneImportPayload(input)`** — entry point for imported/generated/library layer data entering React state. Handles both camelCase (localStorage, JSON export) and snake_case compatibility containers. Calls `normalizeSceneLayer` on each layer.
-- **`normalizeSceneLayer(input)`** — converts a raw layer object to the page-local `SceneLayer` type. Accepts both `scopeLabel` (camelCase) and `scope_label` (snake_case) via fallback.
-
-**Critical invariant**: all untyped or imported `SceneLayer[]` values must pass through the strict API decoder or `normalizeSceneLayer` / `parseSceneImportPayload` before being set. A raw snake_case object placed directly into state makes `serializeSceneTree` produce malformed JSON.
-
-### Data Flow Summary
-
-```
-[Page renders / edits]
-  ↓
-SceneLayer[] in React state  (camelCase)
-  ↓  auto-save / save button with expected_revision
-serializeSceneTree()
-  ↓  snake_case JSON
-PUT /scene-setup  or  POST/PUT /scene-library
-  ↓  strict SceneCommittedSaveV1 + tree invariants + row CAS
-SceneSetupStateRecord / SceneLibraryRecord saved; Scene Profile rebuilt server-side
-
-[Page hydrates]
-GET /scene-setup  or  GET /scene-library
-  ↓  snake_case JSON
-decodeSceneSetupState / decodeSceneLibraryItem
-  ↓  strict recursive decode to camelCase
-SceneTreeNode[] in React state
-```
-
-### Known 422 Causes
-
-1. **`scope_label` missing** — an imported or untyped snake_case layer was placed into React state without normalization. `serializeSceneTree` writes `scope_label: undefined`, which `JSON.stringify` omits. Pydantic rejects the missing required field.
-   *Fix*: consume API results through the strict decoder and pass imported JSON through `parseSceneImportPayload` before `setSceneLayers`.
-
-2. **Empty `scene_name` or `scene_summary`** — both fields have `min_length=1`. The frontend guards against this before sending, but callers must not bypass the guard.
-
-3. **Caller sends `scene_profile`, duplicate IDs, or dangling selected/collapsed IDs** — the committed-save DTO is `extra="forbid"` and tree invariants fail closed. Send only committed tree fields; consume the server-built profile from the response.
-
-4. **Stale `expected_revision`** — this is a **409** conflict, not a 422. Reload the current Scene projection before applying a deliberate retry.
+| 状态码 | 典型原因 | 处理方式 |
+| --- | --- | --- |
+| `422` | 未归一化的 `snake_case` 层级进入状态导致 `scope_label` 序列化丢失 | 导入或读取数据时必须经过严格解码器或 `parseSceneImportPayload` |
+| `422` | `scene_name` 或 `scene_summary` 为空串，或缺失 `id` / `reuse_id` | 保持非空校验，使用服务端或模型工具生成的有效 ID |
+| `422` | 保存请求携带了 `scene_profile`、提案字段（`selected_path`）或重复/悬空 ID、超出树预算 | 仅提交 `scene-committed-save-v1` 允许字段，消费响应中的服务端 `scene_profile` |
+| `409` | `expected_revision` 过期（`scene_revision_conflict`） | 重新读取最新场景状态后再保存 |
+| `502` | 生成提案非法（`setting_model_invalid_payload`） | 不修改现有场景，调整输入或重试生成 |
