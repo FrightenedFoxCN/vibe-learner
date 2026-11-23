@@ -1,4 +1,5 @@
 """Best-effort bounded diagnostic writer isolated from business transactions."""
+
 from __future__ import annotations
 
 from contextlib import closing
@@ -7,18 +8,30 @@ from functools import wraps
 from datetime import datetime, timezone
 from pathlib import Path
 import queue
-import json
 import sqlite3
 import threading
 from uuid import uuid4
 
-from app.models.diagnostic import DiagnosticEventV1, DiagnosticHarnessReferenceV1, DiagnosticResourceReferenceV1
+from app.core.diagnostic_operation_links import (
+    link_stage_predicate,
+    public_operation_link,
+    remember_operation_link,
+)
+from app.models.diagnostic import (
+    DiagnosticEventV1,
+    DiagnosticHarnessReferenceV1,
+    DiagnosticResourceReferenceV1,
+)
 
-correlation: ContextVar[dict[str, str]] = ContextVar("diagnostic_correlation", default={})
+correlation: ContextVar[dict[str, str]] = ContextVar(
+    "diagnostic_correlation", default={}
+)
 
 active_span: ContextVar[str | None] = ContextVar("active_diagnostic_span", default=None)
 
-active_harness: ContextVar[DiagnosticHarnessReferenceV1 | None] = ContextVar("active_diagnostic_harness", default=None)
+active_harness: ContextVar[DiagnosticHarnessReferenceV1 | None] = ContextVar(
+    "active_diagnostic_harness", default=None
+)
 
 
 def diagnostic_runtime_scope(function):
@@ -29,20 +42,27 @@ def diagnostic_runtime_scope(function):
             return function(*args, **kwargs)
         finally:
             active_harness.reset(token)
+
     return scoped
 
 
 def set_diagnostic_execution(execution):
     try:
-        active_harness.set(DiagnosticHarnessReferenceV1(
-            operation_id=execution.harness_operation_id, workflow=execution.workflow,
-            stage=execution.stage, trace_id=execution.trace_id,
-        ))
+        active_harness.set(
+            DiagnosticHarnessReferenceV1(
+                operation_id=execution.harness_operation_id,
+                workflow=execution.workflow,
+                stage=execution.stage,
+                trace_id=execution.trace_id,
+            )
+        )
     except Exception:
         pass
 
 
-active_store: ContextVar["DiagnosticStore | None"] = ContextVar("active_diagnostic_store", default=None)
+active_store: ContextVar["DiagnosticStore | None"] = ContextVar(
+    "active_diagnostic_store", default=None
+)
 
 DIAGNOSTIC_STARTUP_MAX_ATTEMPTS = 5
 DIAGNOSTIC_STARTUP_RETRY_SECONDS = 1.0
@@ -56,19 +76,31 @@ def reference_harness(binding, trace=None):
             return
         if trace is not None and trace.operation_id != binding.harness_operation_id:
             return
-        store.emit("harness_reference", harness=DiagnosticHarnessReferenceV1(
-            operation_id=binding.harness_operation_id,
-            workflow=trace.workflow if trace is not None else binding.workflow,
-            stage=trace.stage if trace is not None else binding.entry_stage,
-            trace_id=trace.trace_id if trace is not None else None,
-        ))
+        store.emit(
+            "harness_reference",
+            harness=DiagnosticHarnessReferenceV1(
+                operation_id=binding.harness_operation_id,
+                workflow=trace.workflow if trace is not None else binding.workflow,
+                stage=trace.stage if trace is not None else binding.entry_stage,
+                trace_id=trace.trace_id if trace is not None else None,
+            ),
+        )
         if trace is not None:
             for attempt in trace.attempt_records:
-                store.emit("harness_reference", duration_ms=float(attempt.duration_ms), harness=DiagnosticHarnessReferenceV1(
-                    operation_id=trace.operation_id, workflow=trace.workflow, stage=trace.stage,
-                    trace_id=trace.trace_id, attempt_id=attempt.attempt_id,
-                    attempt_index=attempt.attempt_index, phase=attempt.phase, attempt_status=attempt.status,
-                ))
+                store.emit(
+                    "harness_reference",
+                    duration_ms=float(attempt.duration_ms),
+                    harness=DiagnosticHarnessReferenceV1(
+                        operation_id=trace.operation_id,
+                        workflow=trace.workflow,
+                        stage=trace.stage,
+                        trace_id=trace.trace_id,
+                        attempt_id=attempt.attempt_id,
+                        attempt_index=attempt.attempt_index,
+                        phase=attempt.phase,
+                        attempt_status=attempt.status,
+                    ),
+                )
     except Exception:
         # No diagnostic validation/storage failure may change the domain outcome.
         if active_store.get() is not None:
@@ -81,9 +113,14 @@ def reference_persona(persona):
     if store is None:
         return
     try:
-        store.emit("resource_reference", resource=DiagnosticResourceReferenceV1(
-            resource_type="persona", resource_id=persona.id, revision=persona.revision,
-        ))
+        store.emit(
+            "resource_reference",
+            resource=DiagnosticResourceReferenceV1(
+                resource_type="persona",
+                resource_id=persona.id,
+                revision=persona.revision,
+            ),
+        )
     except Exception:
         store.dropped += 1
 
@@ -94,24 +131,36 @@ def reference_scene(scene):
     if store is None:
         return
     try:
-        store.emit("resource_reference", resource=DiagnosticResourceReferenceV1(
-            resource_type="scene", resource_id=scene.scene_id, revision=scene.revision,
-        ))
+        store.emit(
+            "resource_reference",
+            resource=DiagnosticResourceReferenceV1(
+                resource_type="scene",
+                resource_id=scene.scene_id,
+                revision=scene.revision,
+            ),
+        )
     except Exception:
         store.dropped += 1
 
 
-
-def reference_resource(resource_type, resource_id, *, revision=None, sequence=None, parent_resource_id=None):
+def reference_resource(
+    resource_type, resource_id, *, revision=None, sequence=None, parent_resource_id=None
+):
     """Observed saved record identity only; callers supply application-owned fields."""
     store = active_store.get()
     if store is None:
         return
     try:
-        store.emit("resource_reference", resource=DiagnosticResourceReferenceV1(
-            resource_type=resource_type, resource_id=resource_id, revision=revision,
-            sequence=sequence, parent_resource_id=parent_resource_id,
-        ))
+        store.emit(
+            "resource_reference",
+            resource=DiagnosticResourceReferenceV1(
+                resource_type=resource_type,
+                resource_id=resource_id,
+                revision=revision,
+                sequence=sequence,
+                parent_resource_id=parent_resource_id,
+            ),
+        )
     except Exception:
         store.dropped += 1
 
@@ -121,11 +170,22 @@ def reference_tavern_result(result):
     if store is None:
         return
     try:
-        reference_resource("tavern_room", result.run.room_id, revision=result.room_state.revision)
-        reference_resource("tavern_run", result.run.id, parent_resource_id=result.run.room_id)
-        messages = ([result.input_message] if result.input_message is not None else []) + result.generated_messages
+        reference_resource(
+            "tavern_room", result.run.room_id, revision=result.room_state.revision
+        )
+        reference_resource(
+            "tavern_run", result.run.id, parent_resource_id=result.run.room_id
+        )
+        messages = (
+            [result.input_message] if result.input_message is not None else []
+        ) + result.generated_messages
         for message in messages[:5]:
-            reference_resource("tavern_message", message.id, sequence=message.sequence, parent_resource_id=message.room_id)
+            reference_resource(
+                "tavern_message",
+                message.id,
+                sequence=message.sequence,
+                parent_resource_id=message.room_id,
+            )
     except Exception:
         store.dropped += 1
 
@@ -135,25 +195,57 @@ class DiagnosticQueryUnavailable(RuntimeError):
 
 
 def diagnostic_event_predicate(after: int, filters: dict):
-    paths = {key: key for key in ("request_id", "action_id", "page_view_id", "flow_id", "source", "page_path", "severity")}
-    paths.update(resource_id="resource.resource_id", resource_type="resource.resource_type")
+    paths = {
+        key: key
+        for key in (
+            "request_id",
+            "action_id",
+            "page_view_id",
+            "flow_id",
+            "source",
+            "page_path",
+            "severity",
+        )
+    }
+    paths.update(
+        resource_id="resource.resource_id", resource_type="resource.resource_type"
+    )
     clauses = ["e.sequence > ?"]
     values = [after]
     for key, path in paths.items():
         if filters.get(key) is not None:
             clauses.append(f"json_extract(e.payload, '$.{path}') = ?")
             values.append(filters[key])
-    for key in ("operation_id", "workflow", "stage"):
-        if filters.get(key) is None:
-            continue
-        # Canonical references and durable request links cover transport/provider/tool events.
-        clauses.append(f"(json_extract(e.payload, '$.harness.{key}') = ? OR EXISTS (SELECT 1 FROM operation_links l WHERE "
-                       + ("l.operation_id = ?" if key == "operation_id" else f"json_extract(l.payload, '$.{key}') = ?")
-                       + " AND l.request_id=json_extract(e.payload, '$.request_id')))")
-        values.extend([filters[key], filters[key]])
+    harness_fields = [
+        (key, filters[key])
+        for key in ("operation_id", "workflow", "stage")
+        if filters.get(key) is not None
+    ]
+    if harness_fields:
+        direct = " AND ".join(
+            f"json_extract(e.payload, '$.harness.{key}')=?" for key, _ in harness_fields
+        )
+        link_match, link_values = link_stage_predicate(filters, payload="l.payload")
+        link_clauses = [
+            "l.request_id=json_extract(e.payload, '$.request_id')",
+            link_match,
+        ]
+        if filters.get("operation_id") is not None:
+            link_clauses.append("l.operation_id=?")
+            link_values.append(filters["operation_id"])
+        # Attribute unscoped transport/provider/tool events to one matching link.
+        # A scoped event uses its own reference, not another stage on its request.
+        clauses.append(
+            f"(({direct}) OR (json_extract(e.payload, '$.harness') IS NULL "
+            f"AND EXISTS (SELECT 1 FROM operation_links l WHERE {' AND '.join(link_clauses)})))"
+        )
+        values.extend(value for _, value in harness_fields)
+        values.extend(link_values)
     for key, operator in (("since", ">="), ("until", "<")):
         if filters.get(key) is not None:
-            clauses.append(f"julianday(json_extract(e.payload, '$.timestamp')) {operator} julianday(?)")
+            clauses.append(
+                f"julianday(json_extract(e.payload, '$.timestamp')) {operator} julianday(?)"
+            )
             values.append(filters[key])
     return " AND ".join(clauses), values
 
@@ -162,18 +254,27 @@ class DiagnosticStore:
     def __init__(self, path: Path, capacity: int = 1000, *, retention=None):
         from app.core.diagnostic_retention import DiagnosticEventRetention
         from app.core.diagnostic_writer_coverage import DiagnosticWriterCoverage
+
         self.writer_coverage = DiagnosticWriterCoverage(path, uuid4().hex)
         self.retention = retention or DiagnosticEventRetention()
         from app.core.diagnostic_record_retention import DiagnosticRecordRetention
+
         self.link_retention = DiagnosticRecordRetention("operation_links")
         from app.core.diagnostic_disk import DiagnosticDiskMaintenance
+
         self.disk_maintenance = DiagnosticDiskMaintenance()
         self.path = path
         from app.core.diagnostic_quota import DiagnosticDatabaseQuota
+
         self.quota = DiagnosticDatabaseQuota(path)
         self.disk_maintenance.quota = self.quota
         from app.core.diagnostic_recovery import DiagnosticOversizeRecovery
-        self.oversize_recovery = DiagnosticOversizeRecovery(self.quota, self._prune_for_recovery, pressure_prune=self._prune_for_pressure)
+
+        self.oversize_recovery = DiagnosticOversizeRecovery(
+            self.quota,
+            self._prune_for_recovery,
+            pressure_prune=self._prune_for_pressure,
+        )
         self.disk_maintenance.oversize_recovery = self.oversize_recovery
         self.queue: queue.Queue[DiagnosticEventV1] = queue.Queue(maxsize=capacity)
         self.dropped = 0
@@ -192,7 +293,9 @@ class DiagnosticStore:
                 return
             self._started = True
             try:
-                self._thread = threading.Thread(target=self._run, daemon=True, name="diagnostic-writer")
+                self._thread = threading.Thread(
+                    target=self._run, daemon=True, name="diagnostic-writer"
+                )
                 self._thread.start()
             except RuntimeError:
                 self.write_failures += 1
@@ -213,7 +316,9 @@ class DiagnosticStore:
     def emit(self, name: str, **fields):
         try:
             event = DiagnosticEventV1(
-                event_id=uuid4().hex, source="server", name=name,
+                event_id=uuid4().hex,
+                source="server",
+                name=name,
                 timestamp=datetime.now(timezone.utc).isoformat(),
                 **{**correlation.get(), **fields},
             )
@@ -234,35 +339,64 @@ class DiagnosticStore:
                 return False
 
     def health(self):
-        return {"dropped": self.dropped, "write_failures": self.write_failures, "read_failures": self.read_failures,
-                "queued": self.queue.qsize(),
-                "writer_alive": self._thread is not None and self._thread.is_alive()}
+        return {
+            "dropped": self.dropped,
+            "write_failures": self.write_failures,
+            "read_failures": self.read_failures,
+            "queued": self.queue.qsize(),
+            "writer_alive": self._thread is not None and self._thread.is_alive(),
+        }
 
-    def query(self, after: int, limit: int, filters: dict, *, strict=False, with_coverage=False):
+    def query(
+        self,
+        after: int,
+        limit: int,
+        filters: dict,
+        *,
+        strict=False,
+        with_coverage=False,
+    ):
         # All predicates target this diagnostic database, never domain transactions.
         from contextlib import closing
+
         if not 0 <= after or not 1 <= limit <= 101:
             raise ValueError("diagnostic_query_bounds")
         predicate, values = diagnostic_event_predicate(after, filters)
         try:
-            with closing(sqlite3.connect(f"file:{self.path}?mode=ro", uri=True, timeout=0.1)) as db:
+            with closing(
+                sqlite3.connect(f"file:{self.path}?mode=ro", uri=True, timeout=0.1)
+            ) as db:
                 db.execute("BEGIN")
                 coverage = self.retention.coverage(db, after) if with_coverage else None
-                rows = db.execute("SELECT e.sequence,e.payload FROM events e WHERE " +
-                                  predicate + " ORDER BY e.sequence LIMIT ?",
-                                  [*values, limit]).fetchall()
+                rows = db.execute(
+                    "SELECT e.sequence,e.payload FROM events e WHERE "
+                    + predicate
+                    + " ORDER BY e.sequence LIMIT ?",
+                    [*values, limit],
+                ).fetchall()
             # Revalidate stored bytes before returning anything to a global viewer/exporter.
-            items = [{"sequence": seq, "event": DiagnosticEventV1.model_validate_json(payload).model_dump(mode="json")} for seq, payload in rows]
+            items = [
+                {
+                    "sequence": seq,
+                    "event": DiagnosticEventV1.model_validate_json(payload).model_dump(
+                        mode="json"
+                    ),
+                }
+                for seq, payload in rows
+            ]
             return (items, coverage) if with_coverage else items
         except (sqlite3.Error, OSError, ValueError):
             self.read_failures += 1
             if strict:
-                raise DiagnosticQueryUnavailable("diagnostic_query_unavailable") from None
+                raise DiagnosticQueryUnavailable(
+                    "diagnostic_query_unavailable"
+                ) from None
             return []
 
     def persist_external_event(self, event: DiagnosticEventV1) -> bool:
         """Desktop spool acknowledgement means committed diagnostic bytes, never queue acceptance."""
         from contextlib import closing
+
         try:
             payload = event.model_dump_json()
             with closing(sqlite3.connect(self.path, timeout=0.1)) as db:
@@ -270,10 +404,17 @@ class DiagnosticStore:
                     self.quota.reserve(db)
                     self.disk_maintenance.configure(db)
                 with self.quota.transaction(db):
-                    existing = db.execute("SELECT payload FROM events WHERE event_id=?", (event.event_id,)).fetchone()
+                    existing = db.execute(
+                        "SELECT payload FROM events WHERE event_id=?", (event.event_id,)
+                    ).fetchone()
                     if existing is not None:
-                        return DiagnosticEventV1.model_validate_json(existing[0]) == event
-                    db.execute("INSERT INTO events(event_id,payload) VALUES (?,?)", (event.event_id, payload))
+                        return (
+                            DiagnosticEventV1.model_validate_json(existing[0]) == event
+                        )
+                    db.execute(
+                        "INSERT INTO events(event_id,payload) VALUES (?,?)",
+                        (event.event_id, payload),
+                    )
                     self.retention.prune(db)
                 self.disk_maintenance.maintain(db)
             return True
@@ -286,17 +427,37 @@ class DiagnosticStore:
             raise ValueError("diagnostic_link_page_limit")
         try:
             from contextlib import closing
-            with closing(sqlite3.connect(f"file:{self.path}?mode=ro", uri=True, timeout=0.1)) as db:
-                rows = db.execute("SELECT payload FROM operation_links WHERE operation_id=? AND request_id>? ORDER BY request_id LIMIT ?", (operation_id, after, limit)).fetchall()
-            from app.models.diagnostic import DiagnosticOperationLinkV1
-            items = [DiagnosticOperationLinkV1.model_validate_json(row[0]).model_dump(mode="json", exclude_unset=True) for row in rows]
-            if any(item["operation_id"] != operation_id or item["request_id"] <= after for item in items):
+
+            with closing(
+                sqlite3.connect(f"file:{self.path}?mode=ro", uri=True, timeout=0.1)
+            ) as db:
+                rows = db.execute(
+                    "SELECT payload FROM operation_links WHERE operation_id=? AND request_id>? ORDER BY request_id LIMIT ?",
+                    (operation_id, after, limit),
+                ).fetchall()
+            items = [
+                public_operation_link(row[0]).model_dump(
+                    mode="json", exclude_unset=True
+                )
+                for row in rows
+            ]
+            if any(
+                item["operation_id"] != operation_id or item["request_id"] <= after
+                for item in items
+            ):
                 raise ValueError("diagnostic_link_identity_mismatch")
-            return {"items": items, "next_cursor": items[-1]["request_id"] if items else after,
-                    "gap": None if items else "no_correlation_recorded_or_retained"}
+            return {
+                "items": items,
+                "next_cursor": items[-1]["request_id"] if items else after,
+                "gap": None if items else "no_correlation_recorded_or_retained",
+            }
         except (sqlite3.Error, OSError, ValueError):
             self.read_failures += 1
-            return {"items": [], "next_cursor": after, "gap": "diagnostic_store_unavailable"}
+            return {
+                "items": [],
+                "next_cursor": after,
+                "gap": "diagnostic_store_unavailable",
+            }
 
     def _prune_for_recovery(self, db):
         self.retention.initialize(db)
@@ -305,17 +466,33 @@ class DiagnosticStore:
     def _prune_for_pressure(self, db):
         from app.core.diagnostic_retention import DiagnosticEventRetention
         from app.core.diagnostic_record_retention import DiagnosticRecordRetention
+
         # Physical pressure can require a smaller retained suffix than the normal
         # payload ceiling. Existing deletion triggers preserve coverage evidence.
-        DiagnosticEventRetention(max_rows=min(self.retention.max_rows, max(1, self.quota.max_bytes // 16384)),
-            max_payload_bytes=min(self.retention.max_payload_bytes, max(1, self.quota.max_bytes // 8)),
-            max_age_seconds=self.retention.max_age_seconds).initialize(db)
-        DiagnosticRecordRetention("operation_links", max_rows=min(self.link_retention.max_rows, max(1, self.quota.max_bytes // 32768)),
-            max_payload_bytes=min(self.link_retention.max_payload_bytes, max(1, self.quota.max_bytes // 16)),
-            max_age_seconds=self.link_retention.max_age_seconds).initialize(db)
+        DiagnosticEventRetention(
+            max_rows=min(
+                self.retention.max_rows, max(1, self.quota.max_bytes // 16384)
+            ),
+            max_payload_bytes=min(
+                self.retention.max_payload_bytes, max(1, self.quota.max_bytes // 8)
+            ),
+            max_age_seconds=self.retention.max_age_seconds,
+        ).initialize(db)
+        DiagnosticRecordRetention(
+            "operation_links",
+            max_rows=min(
+                self.link_retention.max_rows, max(1, self.quota.max_bytes // 32768)
+            ),
+            max_payload_bytes=min(
+                self.link_retention.max_payload_bytes,
+                max(1, self.quota.max_bytes // 16),
+            ),
+            max_age_seconds=self.link_retention.max_age_seconds,
+        ).initialize(db)
 
     def _configure_database(self, db):
         from app.core.diagnostic_quota import DiagnosticQuotaExceeded
+
         try:
             with self.quota.lock():
                 self.quota.reserve(db)
@@ -331,11 +508,25 @@ class DiagnosticStore:
 
     def _initialize_schema(self, db):
         with self.quota.transaction(db):
-            db.execute("CREATE TABLE IF NOT EXISTS events (sequence INTEGER PRIMARY KEY AUTOINCREMENT, event_id TEXT UNIQUE NOT NULL, payload TEXT NOT NULL)")
-            db.execute("CREATE TABLE IF NOT EXISTS operation_links (operation_id TEXT NOT NULL, request_id TEXT NOT NULL, payload TEXT NOT NULL, PRIMARY KEY(operation_id,request_id))")
-            db.execute("CREATE INDEX IF NOT EXISTS operation_links_request ON operation_links(request_id,operation_id)")
-            for field in ("request_id", "action_id", "page_view_id", "flow_id", "source"):
-                db.execute(f"CREATE INDEX IF NOT EXISTS events_{field} ON events(json_extract(payload, '$.{field}'), sequence)")
+            db.execute(
+                "CREATE TABLE IF NOT EXISTS events (sequence INTEGER PRIMARY KEY AUTOINCREMENT, event_id TEXT UNIQUE NOT NULL, payload TEXT NOT NULL)"
+            )
+            db.execute(
+                "CREATE TABLE IF NOT EXISTS operation_links (operation_id TEXT NOT NULL, request_id TEXT NOT NULL, payload TEXT NOT NULL, PRIMARY KEY(operation_id,request_id))"
+            )
+            db.execute(
+                "CREATE INDEX IF NOT EXISTS operation_links_request ON operation_links(request_id,operation_id)"
+            )
+            for field in (
+                "request_id",
+                "action_id",
+                "page_view_id",
+                "flow_id",
+                "source",
+            ):
+                db.execute(
+                    f"CREATE INDEX IF NOT EXISTS events_{field} ON events(json_extract(payload, '$.{field}'), sequence)"
+                )
             self.retention.initialize(db)
             self.link_retention.initialize(db)
             self.writer_coverage.initialize(db)
@@ -378,6 +569,7 @@ class DiagnosticStore:
                     except queue.Empty:
                         # Expire inactive stores too; no business activity is needed.
                         import time
+
                         if time.monotonic() - last_cleanup >= 60:
                             try:
                                 with self.quota.transaction(db):
@@ -392,14 +584,11 @@ class DiagnosticStore:
                         continue
                     try:
                         with self.quota.transaction(db):
-                            db.execute("INSERT OR IGNORE INTO events(event_id,payload) VALUES (?,?)", (event.event_id, event.model_dump_json()))
-                            if event.source == "server" and event.harness is not None and event.request_id is not None:
-                                link = {"operation_id": event.harness.operation_id, "request_id": event.request_id,
-                                        "client_instance_id": event.client_instance_id, "page_view_id": event.page_view_id,
-                                        "flow_id": event.flow_id, "action_id": event.action_id,
-                                        "workflow": event.harness.workflow, "stage": event.harness.stage}
-                                db.execute("INSERT INTO operation_links(operation_id,request_id,payload) VALUES (?,?,?) ON CONFLICT(operation_id,request_id) DO UPDATE SET payload=excluded.payload",
-                                           (event.harness.operation_id, event.request_id, json.dumps(link, sort_keys=True)))
+                            db.execute(
+                                "INSERT OR IGNORE INTO events(event_id,payload) VALUES (?,?)",
+                                (event.event_id, event.model_dump_json()),
+                            )
+                            remember_operation_link(db, event)
                             # Retention and loss evidence commit with the event.
                             self.retention.prune(db)
                             self.link_retention.prune(db)
@@ -424,7 +613,11 @@ class DiagnosticStore:
 
     def _observe_writer(self, db, *, closed=False):
         with self._admission:
-            counters = dict(dropped=self.dropped, write_failures=self.write_failures, read_failures=self.read_failures)
+            counters = dict(
+                dropped=self.dropped,
+                write_failures=self.write_failures,
+                read_failures=self.read_failures,
+            )
         self.writer_coverage.observe(db, **counters, closed=closed)
 
     def close(self):

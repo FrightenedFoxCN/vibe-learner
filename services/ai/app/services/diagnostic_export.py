@@ -1,12 +1,17 @@
 """Bounded, validated snapshot export; never reads business/protected storage."""
+
 from contextlib import closing
 from datetime import datetime, timezone
 import sqlite3
 import json
 import time
 
+from app.core.diagnostic_operation_links import (
+    link_stage_predicate,
+    public_operation_link,
+)
 from app.core.diagnostics import diagnostic_event_predicate
-from app.models.diagnostic import DiagnosticEventV1, DiagnosticOperationLinkV1
+from app.models.diagnostic import DiagnosticEventV1
 from app.models.diagnostic_export import DiagnosticExportFiltersV1, DiagnosticExportV1
 from app.models.diagnostic_index import DiagnosticHarnessIndexV1
 from app.services.diagnostic_storage import observe_diagnostic_storage
@@ -45,7 +50,9 @@ class _Budget:
             raise DiagnosticExportTooLarge("diagnostic_export_too_large")
 
 
-def build_diagnostic_export(store, index, filters: DiagnosticExportFiltersV1, app_version: str) -> bytes:
+def build_diagnostic_export(
+    store, index, filters: DiagnosticExportFiltersV1, app_version: str
+) -> bytes:
     """No live pagination: each database is read through one pinned transaction.
 
     Event filters select events. Traces provide contextual operation records, so
@@ -56,7 +63,13 @@ def build_diagnostic_export(store, index, filters: DiagnosticExportFiltersV1, ap
         deadline = time.monotonic() + 5
         budget = _Budget(deadline)
         values = filters.model_dump(mode="json", exclude_none=True)
-        scope = "related_operations" if any(key not in ("workflow", "stage") for key in values) else "workflow_stage" if values else "all_retained"
+        scope = (
+            "related_operations"
+            if any(key not in ("workflow", "stage") for key in values)
+            else "workflow_stage"
+            if values
+            else "all_retained"
+        )
         predicate, params = diagnostic_event_predicate(0, values)
         events, links = [], []
         operations, requests = set(), set()
@@ -65,7 +78,12 @@ def build_diagnostic_export(store, index, filters: DiagnosticExportFiltersV1, ap
         with closing(_connect(store.path, deadline)) as db:
             retention = store.retention.coverage(db, 0)
             link_retention = store.link_retention.coverage(db)
-            for row in db.execute("SELECT e.sequence,e.event_id,e.payload FROM events e WHERE " + predicate + " ORDER BY e.sequence LIMIT 10001", params):
+            for row in db.execute(
+                "SELECT e.sequence,e.event_id,e.payload FROM events e WHERE "
+                + predicate
+                + " ORDER BY e.sequence LIMIT 10001",
+                params,
+            ):
                 if len(events) == 10000:
                     raise DiagnosticExportTooLarge("diagnostic_export_too_large")
                 budget.check(row["payload"])
@@ -84,16 +102,32 @@ def build_diagnostic_export(store, index, filters: DiagnosticExportFiltersV1, ap
             link_where, link_args = "", []
             if scope == "related_operations":
                 link_where = " WHERE request_id IN (SELECT value FROM json_each(?)) OR operation_id IN (SELECT value FROM json_each(?))"
-                link_args = [json.dumps(sorted(requests)), json.dumps(sorted(operations))]
+                link_args = [
+                    json.dumps(sorted(requests)),
+                    json.dumps(sorted(operations)),
+                ]
             elif scope == "workflow_stage":
-                link_where = " WHERE " + " AND ".join(f"json_extract(payload, '$.{key}')=?" for key in ("workflow", "stage") if key in values)
-                link_args = [values[key] for key in ("workflow", "stage") if key in values]
-            for row in db.execute("SELECT operation_id,request_id,payload FROM operation_links" + link_where + " ORDER BY operation_id,request_id LIMIT 5001", link_args):
+                membership, link_args = link_stage_predicate(
+                    values, payload="l.payload"
+                )
+                link_where = " WHERE " + membership
+            for row in db.execute(
+                "SELECT operation_id,request_id,payload FROM operation_links l"
+                + link_where
+                + " ORDER BY operation_id,request_id LIMIT 5001",
+                link_args,
+            ):
                 if len(links) == 5000:
                     raise DiagnosticExportTooLarge("diagnostic_export_too_large")
                 budget.check(row["payload"])
-                link = DiagnosticOperationLinkV1.model_validate_json(row["payload"])
-                if (link.operation_id, link.request_id) != (row["operation_id"], row["request_id"]):
+                link = public_operation_link(
+                    row["payload"],
+                    filters=values if scope == "workflow_stage" else None,
+                )
+                if (link.operation_id, link.request_id) != (
+                    row["operation_id"],
+                    row["request_id"],
+                ):
                     raise ValueError("diagnostic_link_identity_mismatch")
                 links.append(link)
             operations.update(link.operation_id for link in links)
@@ -110,13 +144,19 @@ def build_diagnostic_export(store, index, filters: DiagnosticExportFiltersV1, ap
                 after = page["next_cursor"]
         traces = []
         index_retention = None
-        coverage = dict(freshness="unavailable", scope=scope, missing_operation_count=len(operations))
+        coverage = dict(
+            freshness="unavailable",
+            scope=scope,
+            missing_operation_count=len(operations),
+        )
         # Missing index is an explicit coverage gap; a present but unreadable or
         # corrupt database fails the whole export, never leaks raw SQL/data.
         if index is not None and index.path.exists():
             with closing(_connect(index.path, deadline)) as db:
                 index_retention = index.retention.coverage(db)
-                checkpoint = db.execute("SELECT cursor,sweeps FROM checkpoint WHERE name='runtime'").fetchone()
+                checkpoint = db.execute(
+                    "SELECT cursor,sweeps FROM checkpoint WHERE name='runtime'"
+                ).fetchone()
                 if checkpoint is None:
                     raise ValueError("diagnostic_index_checkpoint_missing")
                 clauses, args = [], []
@@ -135,21 +175,56 @@ def build_diagnostic_export(store, index, filters: DiagnosticExportFiltersV1, ap
                         raise DiagnosticExportTooLarge("diagnostic_export_too_large")
                     budget.check(row["payload"])
                     trace = DiagnosticHarnessIndexV1.model_validate_json(row["payload"])
-                    if (trace.trace_id, trace.operation_id, trace.workflow, trace.stage) != (row["trace_id"], row["operation_id"], row["workflow"], row["stage"]):
+                    if (
+                        trace.trace_id,
+                        trace.operation_id,
+                        trace.workflow,
+                        trace.stage,
+                    ) != (
+                        row["trace_id"],
+                        row["operation_id"],
+                        row["workflow"],
+                        row["stage"],
+                    ):
                         raise ValueError("diagnostic_index_identity_mismatch")
                     traces.append(trace)
-                coverage.update(freshness="eventual", cursor=checkpoint["cursor"], completed_sweeps=checkpoint["sweeps"],
-                                missing_operation_count=len(operations - {trace.operation_id for trace in traces}))
+                coverage.update(
+                    freshness="eventual",
+                    cursor=checkpoint["cursor"],
+                    completed_sweeps=checkpoint["sweeps"],
+                    missing_operation_count=len(
+                        operations - {trace.operation_id for trace in traces}
+                    ),
+                )
         budget.check()
         try:
             audit = build_diagnostic_audit([row["event"] for row in events], traces)
         except ValueError as error:
-            if str(error) in {"diagnostic_audit_input_limit", "diagnostic_audit_sample_limit"}:
+            if str(error) in {
+                "diagnostic_audit_input_limit",
+                "diagnostic_audit_sample_limit",
+            }:
                 raise DiagnosticExportTooLarge("diagnostic_export_too_large") from None
             raise
-        result = DiagnosticExportV1(storage_observation=observe_diagnostic_storage(store, index), app_version=app_version, created_at=datetime.now(timezone.utc), filters=filters,
-            events=events, operation_links=links, retention=retention, link_retention=link_retention, index_retention=index_retention, writer_pages=writer_pages,
-            index=traces, index_coverage=coverage, audit=audit).model_dump_json().encode("utf-8")
+        result = (
+            DiagnosticExportV1(
+                storage_observation=observe_diagnostic_storage(store, index),
+                app_version=app_version,
+                created_at=datetime.now(timezone.utc),
+                filters=filters,
+                events=events,
+                operation_links=links,
+                retention=retention,
+                link_retention=link_retention,
+                index_retention=index_retention,
+                writer_pages=writer_pages,
+                index=traces,
+                index_coverage=coverage,
+                audit=audit,
+            )
+            .model_dump_json()
+            .encode("utf-8")
+        )
         budget.check()
         if len(result) > MAX_EXPORT_BYTES:
             raise DiagnosticExportTooLarge("diagnostic_export_too_large")
