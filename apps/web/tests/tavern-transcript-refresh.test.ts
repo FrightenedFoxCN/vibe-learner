@@ -3,7 +3,10 @@ import test from "node:test";
 
 import type { TavernMessage, TavernRoomDetail } from "@vibe-learner/shared";
 
-import { refreshTavernTranscript } from "../lib/tavern-transcript-refresh.ts";
+import {
+  mergeOlderTavernTranscript,
+  refreshTavernTranscript,
+} from "../lib/tavern-transcript-refresh.ts";
 
 function page(first: number, last: number, nextBeforeSequence: number | null) {
   return {
@@ -61,4 +64,14 @@ test("refresh of a previously empty room takes the new history cursor", async ()
     assert.fail("empty transcript does not need a bridge");
   });
   assert.deepEqual(result, tail);
+});
+
+test("older results from a replaced cursor cannot reopen a transcript gap", () => {
+  const freshTail = page(301, 340, 301);
+  const obsoletePage = page(21, 60, 21);
+  assert.equal(mergeOlderTavernTranscript(freshTail, 61, obsoletePage), null);
+  assert.deepEqual(
+    mergeOlderTavernTranscript(freshTail, 301, page(261, 300, 261)),
+    page(261, 340, 261),
+  );
 });

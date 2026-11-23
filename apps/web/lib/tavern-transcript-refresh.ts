@@ -18,6 +18,18 @@ function firstGap(messages: TavernMessage[]): { after: number; count: number } |
   return null;
 }
 
+export function mergeOlderTavernTranscript(
+  current: TranscriptWindow,
+  requestedBefore: number,
+  previous: TranscriptWindow,
+): TranscriptWindow | null {
+  if (requestedBefore !== current.nextBeforeSequence) return null;
+  return {
+    messages: mergeTavernMessages(current.messages, previous.messages),
+    nextBeforeSequence: previous.nextBeforeSequence,
+  };
+}
+
 export async function refreshTavernTranscript(
   current: TranscriptWindow,
   tail: TranscriptWindow,

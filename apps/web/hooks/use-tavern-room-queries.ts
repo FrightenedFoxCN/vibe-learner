@@ -23,7 +23,10 @@ import {
 
 import { friendlyTavernError, recordError } from "../lib/tavern-client-errors";
 import { readTavernRoomSnapshot, tavernReadNotice } from "../lib/tavern-room-read";
-import { refreshTavernTranscript } from "../lib/tavern-transcript-refresh";
+import {
+  mergeOlderTavernTranscript,
+  refreshTavernTranscript,
+} from "../lib/tavern-transcript-refresh";
 import type { TavernRoomQueryPorts } from "../lib/tavern-workspace-ports";
 import type { TavernWorkspaceState } from "./use-tavern-workspace-state";
 
@@ -749,6 +752,7 @@ export function useTavernRoomQueries(
       activeRoomIdRef.current === roomId &&
       requestedRoomIdRef.current === roomId &&
       olderLoadRoomRef.current === roomId;
+    const requestedBefore = detail.nextBeforeSequence;
     const firstLoadedSequence = messages[0]?.sequence ?? Number.POSITIVE_INFINITY;
     if (olderLoadRoomRef.current) return false;
     olderLoadRoomRef.current = roomId;
@@ -757,16 +761,25 @@ export function useTavernRoomQueries(
     try {
       const previous = await getTavernRoom({
         roomId,
-        beforeSequence: detail.nextBeforeSequence,
+        beforeSequence: requestedBefore,
         limit: TAVERN_PAGE_SIZE,
       });
       if (!ownsPage()) return false;
-      const nextMessages = mergeTavernMessages(messagesRef.current, previous.messages);
       const currentDetail = detailRef.current;
       if (!currentDetail || currentDetail.room.id !== roomId) return false;
+      const transcript = mergeOlderTavernTranscript(
+        {
+          messages: messagesRef.current,
+          nextBeforeSequence: currentDetail.nextBeforeSequence,
+        },
+        requestedBefore,
+        previous,
+      );
+      if (!transcript) return false;
+      const nextMessages = transcript.messages;
       const nextDetail = {
         ...currentDetail,
-        nextBeforeSequence: previous.nextBeforeSequence,
+        nextBeforeSequence: transcript.nextBeforeSequence,
       };
       messagesRef.current = nextMessages;
       detailRef.current = nextDetail;
@@ -776,7 +789,7 @@ export function useTavernRoomQueries(
         (message) => message.sequence < firstLoadedSequence,
       );
     } catch (error) {
-      if (ownsPage()) {
+      if (ownsPage() && detailRef.current?.nextBeforeSequence === requestedBefore) {
         recordError(error, "更早的消息暂时无法载入。", setVisibleError, setRawError);
       }
       return false;
