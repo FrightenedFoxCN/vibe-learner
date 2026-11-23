@@ -1,112 +1,220 @@
 import { classifyDiagnostic } from "../../../packages/shared/src/diagnostic.ts";
 import type { DiagnosticEventV1, DiagnosticPagePath } from "@vibe-learner/shared";
 
-export type DiagnosticContext = Pick<DiagnosticEventV1, "client_instance_id" | "page_view_id" | "flow_id" | "action_id"> & { page_path?: DiagnosticPagePath | null; local_span_id?: string | null };
+export type DiagnosticContext = Pick<
+  DiagnosticEventV1,
+  "client_instance_id" | "page_view_id" | "flow_id" | "action_id"
+> & { page_path?: DiagnosticPagePath | null; local_span_id?: string | null };
 const CAPACITY = 1000;
 let clientId: string | null = null;
 let page: { owner: symbol; id: string; path: DiagnosticPagePath | null } | null = null;
 let events: DiagnosticEventV1[] = [];
 let pending: DiagnosticEventV1[] = [];
 let dropped = 0;
+let bufferEvictions = 0;
+const bufferListeners = new Set<() => void>();
+
+export function diagnosticBufferEvictions() {
+  return bufferEvictions;
+}
+export function subscribeDiagnosticBufferEvictions(listener: () => void) {
+  bufferListeners.add(listener);
+  return () => {
+    bufferListeners.delete(listener);
+  };
+}
 const pageListeners = new Set<() => void>();
-export function currentDiagnosticPage() { return page; }
+export function currentDiagnosticPage() {
+  return page;
+}
 export function subscribeDiagnosticPage(listener: () => void) {
   pageListeners.add(listener);
-  return () => { pageListeners.delete(listener); };
+  return () => {
+    pageListeners.delete(listener);
+  };
 }
-function notifyPage() { for (const listener of pageListeners) listener(); }
+function notifyPage() {
+  for (const listener of pageListeners) listener();
+}
 let uploading = false;
-const responseContexts = new WeakMap<Response, { context: DiagnosticContext; method: DiagnosticEventV1["method"] }>();
+const responseContexts = new WeakMap<
+  Response,
+  { context: DiagnosticContext; method: DiagnosticEventV1["method"] }
+>();
 
-export function diagnosticDecode<T>(response: Response, decode: () => T, decodeContract?: string): T {
+export function diagnosticDecode<T>(
+  response: Response,
+  decode: () => T,
+  decodeContract?: string,
+): T {
   const started = performance.now();
-  try { return decode(); }
-  catch (error) {
+  try {
+    return decode();
+  } catch (error) {
     recordDecodeFailure(response, performance.now() - started, error, decodeContract);
     throw error;
   }
 }
 
 function reviewedDecodeField(value: unknown, maximum: number): string | null {
-  return typeof value === "string" && value.length <= maximum && /^[a-zA-Z0-9_.\[\]-]+$/.test(value)
+  return typeof value === "string" &&
+    value.length <= maximum &&
+    /^[a-zA-Z0-9_.\[\]-]+$/.test(value)
     ? value
     : null;
 }
 
-export function recordDecodeFailure(response: Response, duration: number, error?: unknown, decodeContract?: string) {
+export function recordDecodeFailure(
+  response: Response,
+  duration: number,
+  error?: unknown,
+  decodeContract?: string,
+) {
   try {
     const captured = responseContexts.get(response);
     if (!captured) return;
     emitDiagnostic("decode_failed", captured.context, {
-      request_id: response.headers.get("X-Request-ID"), status_code: response.status,
-      method: captured.method, duration_ms: duration,
+      request_id: response.headers.get("X-Request-ID"),
+      status_code: response.status,
+      method: captured.method,
+      duration_ms: duration,
       decode_contract: reviewedDecodeField(decodeContract, 96),
       decode_path: reviewedDecodeField(
-        typeof error === "object" && error !== null && "path" in error ? error.path : null,
+        typeof error === "object" && error !== null && "path" in error
+          ? error.path
+          : null,
         500,
       ),
     });
-  } catch { /* Telemetry never replaces the original decoder error. */ }
+  } catch {
+    /* Telemetry never replaces the original decoder error. */
+  }
 }
-
 
 export function createDiagnosticId(): string | null {
-  try { return crypto.randomUUID(); } catch { return null; }
+  try {
+    return crypto.randomUUID();
+  } catch {
+    return null;
+  }
 }
 
-const PAGE_PATHS = new Set<string>(["/", "/plan", "/study", "/persona-spectrum", "/scene-setup", "/tavern", "/settings", "/sensory-tools", "/model-usage"]);
+const PAGE_PATHS = new Set<string>([
+  "/",
+  "/plan",
+  "/study",
+  "/persona-spectrum",
+  "/scene-setup",
+  "/tavern",
+  "/settings",
+  "/sensory-tools",
+  "/model-usage",
+]);
 function reviewedPagePath(path: unknown): DiagnosticPagePath | null {
-  return typeof path === "string" && PAGE_PATHS.has(path) ? path as DiagnosticPagePath : null;
+  return typeof path === "string" && PAGE_PATHS.has(path)
+    ? (path as DiagnosticPagePath)
+    : null;
 }
 
 export function registerDiagnosticPage(pathname?: string) {
-  const registration = { owner: Symbol("page-view"), id: createDiagnosticId() ?? "", path: reviewedPagePath(pathname) };
+  const registration = {
+    owner: Symbol("page-view"),
+    id: createDiagnosticId() ?? "",
+    path: reviewedPagePath(pathname),
+  };
   page = registration;
   notifyPage();
   const context = diagnosticContext();
   const started = performance.now();
   let disposed = false;
   const fields = { request_id: null, status_code: null, method: null };
-  if (registration.id) emitDiagnostic("page_entered", context, { ...fields, duration_ms: null });
-  return { id: registration.id, dispose: () => {
-    if (disposed) return;
-    disposed = true;
-    if (registration.id) emitDiagnostic("page_left", context, { ...fields, duration_ms: performance.now() - started });
-    if (page?.owner === registration.owner) { page = null; notifyPage(); }
-  } };
+  if (registration.id)
+    emitDiagnostic("page_entered", context, { ...fields, duration_ms: null });
+  return {
+    id: registration.id,
+    dispose: () => {
+      if (disposed) return;
+      disposed = true;
+      if (registration.id)
+        emitDiagnostic("page_left", context, {
+          ...fields,
+          duration_ms: performance.now() - started,
+        });
+      if (page?.owner === registration.owner) {
+        page = null;
+        notifyPage();
+      }
+    },
+  };
 }
 
 export function diagnosticContext(flowId: string | null = null): DiagnosticContext {
   clientId ??= createDiagnosticId();
-  return { client_instance_id: clientId, page_view_id: page?.id || null, page_path: page?.path ?? null, flow_id: flowId,
-    action_id: createDiagnosticId() };
+  return {
+    client_instance_id: clientId,
+    page_view_id: page?.id || null,
+    page_path: page?.path ?? null,
+    flow_id: flowId,
+    action_id: createDiagnosticId(),
+  };
 }
 
 export function diagnosticSnapshot() {
   return { events: [...events], dropped, pending: pending.length };
 }
 
-export function emitDiagnostic(name: DiagnosticEventV1["name"], context: DiagnosticContext,
-  fields: Pick<DiagnosticEventV1, "request_id" | "duration_ms" | "status_code" | "method"> & Partial<Pick<DiagnosticEventV1, "action_name" | "span_id" | "parent_span_id" | "decode_contract" | "decode_path">>) {
+export function emitDiagnostic(
+  name: DiagnosticEventV1["name"],
+  context: DiagnosticContext,
+  fields: Pick<
+    DiagnosticEventV1,
+    "request_id" | "duration_ms" | "status_code" | "method"
+  > &
+    Partial<
+      Pick<
+        DiagnosticEventV1,
+        "action_name" | "span_id" | "parent_span_id" | "decode_contract" | "decode_path"
+      >
+    >,
+) {
   const eventId = createDiagnosticId();
-  if (!eventId) { dropped += 1; return; }
+  if (!eventId) {
+    dropped += 1;
+    return;
+  }
   // Explicit projection: no URLs, bodies, exception strings or arbitrary object spreads.
   const event: DiagnosticEventV1 = {
-    schema_version: "diagnostic-event-v1", event_id: eventId, source: "browser", name,
+    schema_version: "diagnostic-event-v1",
+    event_id: eventId,
+    source: "browser",
+    name,
     ...classifyDiagnostic(name, fields.status_code),
-    action_name: fields.action_name ?? null, span_id: fields.span_id ?? null, parent_span_id: fields.parent_span_id ?? null,
-    timestamp: new Date().toISOString(), route: null, page_path: reviewedPagePath(context.page_path),
-    client_instance_id: context.client_instance_id, page_view_id: context.page_view_id,
-    flow_id: context.flow_id, action_id: context.action_id,
-    request_id: fields.request_id, duration_ms: fields.duration_ms,
-    status_code: fields.status_code, method: fields.method,
+    action_name: fields.action_name ?? null,
+    span_id: fields.span_id ?? null,
+    parent_span_id: fields.parent_span_id ?? null,
+    timestamp: new Date().toISOString(),
+    route: null,
+    page_path: reviewedPagePath(context.page_path),
+    client_instance_id: context.client_instance_id,
+    page_view_id: context.page_view_id,
+    flow_id: context.flow_id,
+    action_id: context.action_id,
+    request_id: fields.request_id,
+    duration_ms: fields.duration_ms,
+    status_code: fields.status_code,
+    method: fields.method,
     decode_contract: fields.decode_contract ?? null,
     decode_path: fields.decode_path ?? null,
   };
   events.push(event);
   if (events.length > CAPACITY) events.shift();
   pending.push(event);
-  if (pending.length > CAPACITY) { pending.shift(); dropped += 1; }
+  if (pending.length > CAPACITY) {
+    pending.shift();
+    dropped += 1;
+    bufferEvictions += 1;
+    for (const listener of bufferListeners) listener();
+  }
 }
 
 export async function flushDiagnostics(baseUrl: string) {
@@ -116,34 +224,67 @@ export async function flushDiagnostics(baseUrl: string) {
   try {
     // Direct transport prevents recursive diagnostics. Retry retains event identities.
     const response = await fetch(`${baseUrl}/diagnostics/events`, {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ events: batch }), signal: AbortSignal.timeout(5000),
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ events: batch }),
+      signal: AbortSignal.timeout(5000),
     });
     if (response.ok) {
       const result: unknown = await response.json();
-      if (!result || typeof result !== "object" || !("dropped" in result) ||
-          typeof result.dropped !== "number" || !Number.isInteger(result.dropped) || result.dropped < 0) return;
+      if (
+        !result ||
+        typeof result !== "object" ||
+        !("dropped" in result) ||
+        typeof result.dropped !== "number" ||
+        !Number.isInteger(result.dropped) ||
+        result.dropped < 0
+      )
+        return;
       dropped += result.dropped;
-      const ids = new Set(batch.map(event => event.event_id));
-      pending = pending.filter(event => !ids.has(event.event_id));
+      const ids = new Set(batch.map((event) => event.event_id));
+      pending = pending.filter((event) => !ids.has(event.event_id));
     }
-  } catch { /* Offline diagnostics never change the business result. */ }
-  finally { uploading = false; }
+  } catch {
+    /* Offline diagnostics never change the business result. */
+  } finally {
+    uploading = false;
+  }
 }
 
-export async function diagnosticFetch(input: string, init?: RequestInit, context = diagnosticContext()): Promise<Response> {
+export async function diagnosticFetch(
+  input: string,
+  init?: RequestInit,
+  context = diagnosticContext(),
+): Promise<Response> {
   const method = (init?.method ?? "GET").toUpperCase();
-  const safeMethod = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"].includes(method)
-    ? method as DiagnosticEventV1["method"] : null;
+  const safeMethod = [
+    "GET",
+    "POST",
+    "PUT",
+    "PATCH",
+    "DELETE",
+    "OPTIONS",
+    "HEAD",
+  ].includes(method)
+    ? (method as DiagnosticEventV1["method"])
+    : null;
   const started = performance.now();
   let requestId: string | null = null;
   let status: number | null = null;
-  const emit = (name: DiagnosticEventV1["name"]) => emitDiagnostic(name, context, {
-    request_id: requestId, method: safeMethod, status_code: status,
-    duration_ms: name === "request_started" ? null : performance.now() - started,
-  });
+  const emit = (name: DiagnosticEventV1["name"]) =>
+    emitDiagnostic(name, context, {
+      request_id: requestId,
+      method: safeMethod,
+      status_code: status,
+      duration_ms: name === "request_started" ? null : performance.now() - started,
+    });
   const headers = new Headers(init?.headers);
-  for (const key of ["client_instance_id", "page_view_id", "flow_id", "action_id"] as const) {
+  for (const key of [
+    "client_instance_id",
+    "page_view_id",
+    "flow_id",
+    "action_id",
+  ] as const) {
     const value = context[key];
     if (value) headers.set(`X-Debug-${key.replaceAll("_", "-")}`, value);
   }
@@ -153,24 +294,42 @@ export async function diagnosticFetch(input: string, init?: RequestInit, context
     requestId = response.headers.get("X-Request-ID");
     status = response.status;
     emit("response_headers");
-    if (!response.body) { emit("request_finished"); responseContexts.set(response, { context: { ...context }, method: safeMethod }); return response; }
+    if (!response.body) {
+      emit("request_finished");
+      responseContexts.set(response, { context: { ...context }, method: safeMethod });
+      return response;
+    }
     const reader = response.body.getReader();
     let terminal = false;
-    const finish = (name: DiagnosticEventV1["name"]) => { if (!terminal) { terminal = true; emit(name); } };
+    const finish = (name: DiagnosticEventV1["name"]) => {
+      if (!terminal) {
+        terminal = true;
+        emit(name);
+      }
+    };
     const body = new ReadableStream<Uint8Array>({
       async pull(controller) {
         try {
           const result = await reader.read();
-          if (result.done) { finish("request_finished"); controller.close(); }
-          else controller.enqueue(result.value);
+          if (result.done) {
+            finish("request_finished");
+            controller.close();
+          } else controller.enqueue(result.value);
         } catch (error) {
           finish(init?.signal?.aborted ? "request_cancelled" : "request_failed");
           controller.error(error);
         }
       },
-      async cancel(reason) { finish("request_cancelled"); await reader.cancel(reason); },
+      async cancel(reason) {
+        finish("request_cancelled");
+        await reader.cancel(reason);
+      },
     });
-    const wrapped = new Response(body, { status: response.status, statusText: response.statusText, headers: response.headers });
+    const wrapped = new Response(body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers: response.headers,
+    });
     responseContexts.set(wrapped, { context: { ...context }, method: safeMethod });
     return wrapped;
   } catch (error) {

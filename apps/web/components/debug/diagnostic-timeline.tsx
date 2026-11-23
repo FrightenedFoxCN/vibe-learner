@@ -16,7 +16,12 @@ import {
   queryDiagnosticWriters,
 } from "../../lib/diagnostic-query";
 import { diagnosticLinkPagination } from "../../lib/diagnostic-link-pagination";
-import { currentDiagnosticPage, subscribeDiagnosticPage } from "../../lib/diagnostics";
+import {
+  currentDiagnosticPage,
+  diagnosticBufferEvictions,
+  subscribeDiagnosticBufferEvictions,
+  subscribeDiagnosticPage,
+} from "../../lib/diagnostics";
 import { useDiagnosticPages } from "../../hooks/use-diagnostic-pages";
 import schemas from "../../../../packages/shared/fixtures/diagnostics/query-schemas-v1.json";
 import styles from "./diagnostic-timeline.module.css";
@@ -39,6 +44,7 @@ const eventId = (row: DiagnosticEventPageV1["items"][number]) => row.event.event
 const traceId = (row: DiagnosticHarnessIndexV1) => row.trace_id;
 const requestId = (row: DiagnosticOperationLinkV1) => row.request_id;
 const emptyPage = () => null;
+const noBufferEvictions = () => 0;
 const paths = [
   "/",
   "/plan",
@@ -180,6 +186,11 @@ function EventResults({
     [serialized],
   );
   const state = useDiagnosticPages(query, 0 as number, eventId);
+  const bufferEvictions = useSyncExternalStore(
+    subscribeDiagnosticBufferEvictions,
+    diagnosticBufferEvictions,
+    noBufferEvictions,
+  );
   return (
     <>
       <Status loading={state.loading} error={state.error} count={state.items.length} />
@@ -193,12 +204,16 @@ function EventResults({
       {state.page && (
         <p>
           写入器：{state.page.health.writer_alive ? "运行中" : "已停止"}；队列{" "}
-          {state.page.health.queued}；丢弃 {state.page.health.dropped}；写入失败{" "}
+          {state.page.health.queued}；后端进程丢弃 {state.page.health.dropped}；写入失败{" "}
           {state.page.health.write_failures}；读取失败 {state.page.health.read_failures}
           {state.page.desktop_spool &&
             `；桌面拒绝 ${state.page.desktop_spool.rejected} / 失败 ${state.page.desktop_spool.failures}`}
         </p>
       )}
+      <p>
+        本标签页本次载入的待送缓冲因满移除 {bufferEvictions} 条（可能已在发送中）；
+        未送达总量及其他标签页的损失未知。
+      </p>
       {state.page?.retention && (
         <p>
           保留事件 {state.page.retention.retained_events}；累计移除{" "}
