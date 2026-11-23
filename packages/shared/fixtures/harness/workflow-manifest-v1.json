@@ -99,19 +99,6 @@
       "decoder_route": {
         "status": "registered",
         "value": "app.services.harness_broad_adoption.HarnessProposalRuntimeService.emit_document_stage_evidence"
-      },
-      "eval_route": {
-        "status": "registered",
-        "value": "document.chunk_building"
-      },
-      "eval_suites": {
-        "status": "registered",
-        "contracts": [
-          {
-            "name": "chunk_building_regression",
-            "version": "chunk-building-regression-v1"
-          }
-        ]
       }
     },
     {
@@ -221,19 +208,6 @@
       "decoder_route": {
         "status": "registered",
         "value": "app.services.harness_broad_adoption.DocumentProcessWorkflowAdapter"
-      },
-      "eval_route": {
-        "status": "registered",
-        "value": "document.parse"
-      },
-      "eval_suites": {
-        "status": "registered",
-        "contracts": [
-          {
-            "name": "document_process_regression",
-            "version": "document-process-regression-v1"
-          }
-        ]
       }
     },
     {
@@ -332,19 +306,6 @@
       "decoder_route": {
         "status": "registered",
         "value": "app.services.harness_broad_adoption.HarnessProposalRuntimeService.emit_document_stage_evidence"
-      },
-      "eval_route": {
-        "status": "registered",
-        "value": "document.page_extraction"
-      },
-      "eval_suites": {
-        "status": "registered",
-        "contracts": [
-          {
-            "name": "page_extraction_regression",
-            "version": "page-extraction-regression-v1"
-          }
-        ]
       }
     },
     {
@@ -444,19 +405,6 @@
       "decoder_route": {
         "status": "registered",
         "value": "app.services.harness_broad_adoption.HarnessProposalRuntimeService.emit_document_stage_evidence"
-      },
-      "eval_route": {
-        "status": "registered",
-        "value": "document.section_detection"
-      },
-      "eval_suites": {
-        "status": "registered",
-        "contracts": [
-          {
-            "name": "section_detection_regression",
-            "version": "section-detection-regression-v1"
-          }
-        ]
       }
     },
     {
@@ -555,19 +503,6 @@
       "decoder_route": {
         "status": "registered",
         "value": "apps.web.lib.harness-trace-decode.decodeHarnessTraceV3"
-      },
-      "eval_route": {
-        "status": "registered",
-        "value": "frontend.response_decode"
-      },
-      "eval_suites": {
-        "status": "registered",
-        "contracts": [
-          {
-            "name": "frontend_decode_regression",
-            "version": "frontend-decode-regression-v1"
-          }
-        ]
       }
     },
     {
@@ -667,19 +602,6 @@
       "decoder_route": {
         "status": "registered",
         "value": "app.services.harness_broad_adoption.HarnessProposalRuntimeService.emit_ocr_stage_evidence"
-      },
-      "eval_route": {
-        "status": "registered",
-        "value": "document.ocr_page"
-      },
-      "eval_suites": {
-        "status": "registered",
-        "contracts": [
-          {
-            "name": "ocr_page_regression",
-            "version": "ocr-page-regression-v1"
-          }
-        ]
       }
     },
     {
@@ -781,19 +703,6 @@
       "decoder_route": {
         "status": "registered",
         "value": "app.services.harness_broad_adoption.PersonaGenerationWorkflowAdapter"
-      },
-      "eval_route": {
-        "status": "registered",
-        "value": "persona.generation"
-      },
-      "eval_suites": {
-        "status": "registered",
-        "contracts": [
-          {
-            "name": "persona_generation_regression",
-            "version": "persona-generation-regression-v1"
-          }
-        ]
       }
     },
     {
@@ -923,19 +832,6 @@
       "decoder_route": {
         "status": "registered",
         "value": "app.services.harness_broad_adoption.LearningPlanWorkflowAdapter"
-      },
-      "eval_route": {
-        "status": "registered",
-        "value": "planning.plan_generation"
-      },
-      "eval_suites": {
-        "status": "registered",
-        "contracts": [
-          {
-            "name": "plan_generation_regression",
-            "version": "plan-generation-regression-v1"
-          }
-        ]
       }
     },
     {
@@ -1048,19 +944,6 @@
       "decoder_route": {
         "status": "registered",
         "value": "app.services.plan_revision.PlanRevisionService"
-      },
-      "eval_route": {
-        "status": "registered",
-        "value": "planning.plan_revision"
-      },
-      "eval_suites": {
-        "status": "registered",
-        "contracts": [
-          {
-            "name": "plan_revision_regression",
-            "version": "plan-revision-regression-v1"
-          }
-        ]
       }
     },
     {
@@ -1174,19 +1057,6 @@
       "decoder_route": {
         "status": "registered",
         "value": "app.services.harness_broad_adoption.HarnessProposalRuntimeService.emit_planning_tool_evidence"
-      },
-      "eval_route": {
-        "status": "registered",
-        "value": "planning.tool_execution"
-      },
-      "eval_suites": {
-        "status": "registered",
-        "contracts": [
-          {
-            "name": "planning_tool_eval",
-            "version": "planning-tool-eval-v1"
-          }
-        ]
       }
     },
     {
@@ -1299,19 +1169,6 @@
       "decoder_route": {
         "status": "registered",
         "value": "app.services.study_unit_revision.StudyUnitRevisionService"
-      },
-      "eval_route": {
-        "status": "registered",
-        "value": "planning.study_unit_revision"
-      },
-      "eval_suites": {
-        "status": "registered",
-        "contracts": [
-          {
-            "name": "study_unit_revision_regression",
-            "version": "study-unit-revision-regression-v1"
-          }
-        ]
       }
     },
     {
@@ -1414,19 +1271,6 @@
       "decoder_route": {
         "status": "registered",
         "value": "app.services.harness_broad_adoption.SceneGenerationWorkflowAdapter"
-      },
-      "eval_route": {
-        "status": "registered",
-        "value": "scene.generation"
-      },
-      "eval_suites": {
-        "status": "registered",
-        "contracts": [
-          {
-            "name": "scene_generation_regression",
-            "version": "scene-generation-regression-v1"
-          }
-        ]
       }
     },
     {
@@ -1580,19 +1424,6 @@
       "decoder_route": {
         "status": "registered",
         "value": "app.services.study_v3.StudyV3ReplyAdapter"
-      },
-      "eval_route": {
-        "status": "registered",
-        "value": "study_chat.reply"
-      },
-      "eval_suites": {
-        "status": "registered",
-        "contracts": [
-          {
-            "name": "study_chat_eval",
-            "version": "study-chat-eval-v1"
-          }
-        ]
       }
     },
     {
@@ -1692,19 +1523,6 @@
       "decoder_route": {
         "status": "registered",
         "value": "app.services.harness_broad_adoption.HarnessProposalRuntimeService.emit_study_unit_cleanup_evidence"
-      },
-      "eval_route": {
-        "status": "registered",
-        "value": "document.study_unit_cleanup"
-      },
-      "eval_suites": {
-        "status": "registered",
-        "contracts": [
-          {
-            "name": "study_unit_cleanup_regression",
-            "version": "study-unit-cleanup-regression-v1"
-          }
-        ]
       }
     },
     {
@@ -1840,19 +1658,6 @@
       "decoder_route": {
         "status": "registered",
         "value": "app.services.tavern_harness.TavernActorHarness"
-      },
-      "eval_route": {
-        "status": "registered",
-        "value": "tavern.actor_reply"
-      },
-      "eval_suites": {
-        "status": "registered",
-        "contracts": [
-          {
-            "name": "tavern_identity_eval",
-            "version": "tavern-identity-eval-v1"
-          }
-        ]
       }
     }
   ]

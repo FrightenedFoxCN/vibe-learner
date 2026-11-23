@@ -178,8 +178,7 @@
       "owner_module": "app.services.document_parser",
       "component_names": [
         "document_chunk_builder"
-      ],
-      "eval_route": "document.chunk_building"
+      ]
     },
     {
       "workflow": "document_parse",
@@ -187,8 +186,7 @@
       "owner_module": "app.services.document_parser",
       "component_names": [
         "document_parser"
-      ],
-      "eval_route": "document.parse"
+      ]
     },
     {
       "workflow": "document_parse",
@@ -196,8 +194,7 @@
       "owner_module": "app.services.document_parser",
       "component_names": [
         "document_page_extractor"
-      ],
-      "eval_route": "document.page_extraction"
+      ]
     },
     {
       "workflow": "document_parse",
@@ -205,8 +202,7 @@
       "owner_module": "app.services.document_parser",
       "component_names": [
         "document_section_detector"
-      ],
-      "eval_route": "document.section_detection"
+      ]
     },
     {
       "workflow": "frontend_decode",
@@ -214,8 +210,7 @@
       "owner_module": "apps.web.lib.api",
       "component_names": [
         "frontend_decoder"
-      ],
-      "eval_route": "frontend.response_decode"
+      ]
     },
     {
       "workflow": "ocr",
@@ -223,8 +218,7 @@
       "owner_module": "app.services.ocr_engine",
       "component_names": [
         "ocr_engine"
-      ],
-      "eval_route": "document.ocr_page"
+      ]
     },
     {
       "workflow": "persona",
@@ -232,8 +226,7 @@
       "owner_module": "app.services.persona_cards",
       "component_names": [
         "persona_compiler"
-      ],
-      "eval_route": "persona.generation"
+      ]
     },
     {
       "workflow": "planning",
@@ -242,8 +235,7 @@
       "component_names": [
         "planning_prompt",
         "planning_toolset"
-      ],
-      "eval_route": "planning.plan_generation"
+      ]
     },
     {
       "workflow": "planning",
@@ -251,8 +243,7 @@
       "owner_module": "app.services.plan_revision",
       "component_names": [
         "plan_revision_patch"
-      ],
-      "eval_route": "planning.plan_revision"
+      ]
     },
     {
       "workflow": "planning",
@@ -261,8 +252,7 @@
       "component_names": [
         "planning_tool_runtime",
         "planning_toolset"
-      ],
-      "eval_route": "planning.tool_execution"
+      ]
     },
     {
       "workflow": "planning",
@@ -270,8 +260,7 @@
       "owner_module": "app.services.study_unit_revision",
       "component_names": [
         "study_unit_revision_patch"
-      ],
-      "eval_route": "planning.study_unit_revision"
+      ]
     },
     {
       "workflow": "scene",
@@ -279,8 +268,7 @@
       "owner_module": "app.services.scene_setup",
       "component_names": [
         "scene_compiler"
-      ],
-      "eval_route": "scene.generation"
+      ]
     },
     {
       "workflow": "study_chat",
@@ -291,8 +279,7 @@
         "study_chat_toolset",
         "study_grounding",
         "study_visual_grounding"
-      ],
-      "eval_route": "study_chat.reply"
+      ]
     },
     {
       "workflow": "study_unit_cleanup",
@@ -300,8 +287,7 @@
       "owner_module": "app.services.study_arrangement",
       "component_names": [
         "study_unit_cleaner"
-      ],
-      "eval_route": "document.study_unit_cleanup"
+      ]
     },
     {
       "workflow": "tavern",
@@ -311,8 +297,7 @@
         "tavern_actor_prompt",
         "tavern_persona_compiler",
         "tavern_scheduler"
-      ],
-      "eval_route": "tavern.actor_reply"
+      ]
     }
   ]
 }

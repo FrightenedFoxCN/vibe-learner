@@ -4,7 +4,7 @@
 
 The Tavern is a separate interaction domain for conversations with saved personas and for user-directed interaction between personas. It reuses persona and scene snapshots, but it does not inherit the textbook, plan, citation, or Study Unit requirements of a Study Session. Its validation uses the repository-wide harness trace contract described in [the Harness guide](harness/README.md) and the [Tavern workflow page](harness/tavern.md); the harness is not Tavern-only.
 
-Tavern CRUD, direct single-persona turns, facilitated multi-persona turns, explicit continuation, partial failure evidence, scoped child retry, database-clock leases, heartbeat and owner/claim fencing, bounded takeover claims, resume, cancel, an authoritative retry-chain recovery view, structured mutation errors, provider-preflight prompt budgets, production v3 trace/protected replay, deterministic identity evals, and the browser Tavern Workspace are implemented. Local transport cancellation is implemented for compatible Chat Completions; other native protocols retain synchronous fallback. Real-provider performance thresholds remain separate work.
+Tavern CRUD, direct single-persona turns, facilitated multi-persona turns, explicit continuation, partial failure evidence, scoped child retry, database-clock leases, heartbeat and owner/claim fencing, bounded takeover claims, resume, cancel, an authoritative retry-chain recovery view, structured mutation errors, provider-preflight prompt budgets, production v3 trace/protected replay and the browser Tavern Workspace are implemented. Local transport cancellation is implemented for compatible Chat Completions; other native protocols retain synchronous fallback.
 
 ## Canonical vocabulary
 

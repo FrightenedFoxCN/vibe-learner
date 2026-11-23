@@ -8,18 +8,8 @@ import type {
 
 export const HARNESS_WORKFLOW_MANIFEST_SCHEMA_VERSION =
   "harness-workflow-manifest-v1" as const;
-export const HARNESS_WORKFLOW_MANIFEST_EVAL_CASE_VERSION =
-  "harness-eval-case-v1" as const;
 export const HARNESS_WORKFLOW_MANIFEST_TOOL_MANIFEST_VERSION =
   "tool-manifest-v1" as const;
-export const TAVERN_IDENTITY_EVAL_SUITE = {
-  name: "tavern_identity_eval",
-  version: "tavern-identity-eval-v1",
-} as const satisfies HarnessContractRef;
-export const PLANNING_TOOL_EVAL_SUITE = {
-  name: "planning_tool_eval",
-  version: "planning-tool-eval-v1",
-} as const satisfies HarnessContractRef;
 
 export type HarnessManifestSlotStatus =
   "registered" | "not_applicable" | "unregistered";
@@ -43,8 +33,7 @@ export type HarnessManifestUnregisteredReason =
   | "artifact_allowlist_not_registered"
   | "effect_adapter_not_registered"
   | "commit_policy_not_registered"
-  | "decoder_not_registered"
-  | "eval_suite_not_registered";
+  | "decoder_not_registered";
 
 export interface HarnessManifestRegisteredContractSlotV1 {
   status: "registered";
@@ -149,8 +138,6 @@ export interface HarnessWorkflowManifestEntryV1 {
   allowed_effect_adapters: HarnessManifestContractListSlotV1;
   commit_policy: HarnessManifestCommitPolicySlotV1;
   decoder_route: HarnessManifestStringSlotV1;
-  eval_route: HarnessManifestStringSlotV1;
-  eval_suites: HarnessManifestContractListSlotV1;
 }
 
 export interface HarnessWorkflowManifestV1 {
@@ -167,7 +154,6 @@ type StageVocabulary = {
     name: HarnessComponentName;
     contract: HarnessContractRef | null;
   }>;
-  evalRoute: string;
 };
 
 const STAGE_VOCABULARY: StageVocabulary[] = [
@@ -184,7 +170,6 @@ const STAGE_VOCABULARY: StageVocabulary[] = [
         },
       },
     ],
-    evalRoute: "planning.study_unit_revision",
   },
   {
     workflow: "planning",
@@ -196,7 +181,6 @@ const STAGE_VOCABULARY: StageVocabulary[] = [
         contract: { name: "plan_revision_patch", version: "plan-revision-patch-v1" },
       },
     ],
-    evalRoute: "planning.plan_revision",
   },
   {
     workflow: "document_parse",
@@ -208,7 +192,6 @@ const STAGE_VOCABULARY: StageVocabulary[] = [
         contract: { name: "document_parser", version: "document-parser-v3" },
       },
     ],
-    evalRoute: "document.parse",
   },
   {
     workflow: "document_parse",
@@ -223,7 +206,6 @@ const STAGE_VOCABULARY: StageVocabulary[] = [
         },
       },
     ],
-    evalRoute: "document.page_extraction",
   },
   {
     workflow: "document_parse",
@@ -238,7 +220,6 @@ const STAGE_VOCABULARY: StageVocabulary[] = [
         },
       },
     ],
-    evalRoute: "document.section_detection",
   },
   {
     workflow: "document_parse",
@@ -253,7 +234,6 @@ const STAGE_VOCABULARY: StageVocabulary[] = [
         },
       },
     ],
-    evalRoute: "document.chunk_building",
   },
   {
     workflow: "ocr",
@@ -265,7 +245,6 @@ const STAGE_VOCABULARY: StageVocabulary[] = [
         contract: { name: "ocr_engine", version: "ocr-engine-v1" },
       },
     ],
-    evalRoute: "document.ocr_page",
   },
   {
     workflow: "study_unit_cleanup",
@@ -277,7 +256,6 @@ const STAGE_VOCABULARY: StageVocabulary[] = [
         contract: { name: "study_unit_cleaner", version: "study-unit-cleaner-v1" },
       },
     ],
-    evalRoute: "document.study_unit_cleanup",
   },
   {
     workflow: "planning",
@@ -293,7 +271,6 @@ const STAGE_VOCABULARY: StageVocabulary[] = [
         contract: { name: "planning_toolset", version: "planning-toolset-v2" },
       },
     ],
-    evalRoute: "planning.plan_generation",
   },
   {
     workflow: "planning",
@@ -312,7 +289,6 @@ const STAGE_VOCABULARY: StageVocabulary[] = [
         contract: { name: "planning_toolset", version: "planning-toolset-v2" },
       },
     ],
-    evalRoute: "planning.tool_execution",
   },
   {
     workflow: "persona",
@@ -324,7 +300,6 @@ const STAGE_VOCABULARY: StageVocabulary[] = [
         contract: { name: "persona_compiler", version: "persona-compiler-v1" },
       },
     ],
-    evalRoute: "persona.generation",
   },
   {
     workflow: "scene",
@@ -336,7 +311,6 @@ const STAGE_VOCABULARY: StageVocabulary[] = [
         contract: { name: "scene_compiler", version: "scene-compiler-v1" },
       },
     ],
-    evalRoute: "scene.generation",
   },
   {
     workflow: "study_chat",
@@ -363,7 +337,6 @@ const STAGE_VOCABULARY: StageVocabulary[] = [
         },
       },
     ],
-    evalRoute: "study_chat.reply",
   },
   {
     workflow: "tavern",
@@ -386,7 +359,6 @@ const STAGE_VOCABULARY: StageVocabulary[] = [
         contract: { name: "tavern_scheduler", version: "tavern-schedule-v1" },
       },
     ],
-    evalRoute: "tavern.actor_reply",
   },
   {
     workflow: "frontend_decode",
@@ -398,7 +370,6 @@ const STAGE_VOCABULARY: StageVocabulary[] = [
         contract: { name: "frontend_decoder", version: "frontend-decoder-v1" },
       },
     ],
-    evalRoute: "frontend.response_decode",
   },
 ];
 
@@ -491,7 +462,6 @@ const unregisteredEntry = (
     toolset?: HarnessManifestContractSlotV1;
     noEffects?: boolean;
     noCommit?: boolean;
-    evalSuites?: HarnessContractRef[];
   },
 ): HarnessWorkflowManifestEntryV1 => {
   const vocabulary = vocabularyFor(workflow, stage);
@@ -519,10 +489,6 @@ const unregisteredEntry = (
       ? notApplicable("no_commit")
       : unregistered("commit_policy_not_registered"),
     decoder_route: unregistered("decoder_not_registered"),
-    eval_route: registeredString(vocabulary.evalRoute),
-    eval_suites: options.evalSuites?.length
-      ? registeredContracts(...options.evalSuites)
-      : unregistered("eval_suite_not_registered"),
   };
 };
 
@@ -581,8 +547,6 @@ const TAVERN_ENTRY: HarnessWorkflowManifestEntryV1 = {
     },
   },
   decoder_route: registeredString("app.services.tavern_harness.TavernActorHarness"),
-  eval_route: registeredString("tavern.actor_reply"),
-  eval_suites: registeredContracts(TAVERN_IDENTITY_EVAL_SUITE),
 };
 
 const STUDY_ENTRY: HarnessWorkflowManifestEntryV1 = {
@@ -644,50 +608,6 @@ const STUDY_ENTRY: HarnessWorkflowManifestEntryV1 = {
     },
   },
   decoder_route: registeredString("app.services.study_v3.StudyV3ReplyAdapter"),
-  eval_route: registeredString("study_chat.reply"),
-  eval_suites: registeredContracts(contract("study_chat_eval", "study-chat-eval-v1")),
-};
-
-// Independently typed projection: the golden test must compare two sources,
-// not compare a fixture to an unchecked cast of that same fixture.
-export const STAGE_EVAL_SUITES: Record<string, HarnessContractRef> = {
-  "document_parse:document_parse": contract(
-    "document_process_regression",
-    "document-process-regression-v1",
-  ),
-  "document_parse:page_extraction": contract(
-    "page_extraction_regression",
-    "page-extraction-regression-v1",
-  ),
-  "document_parse:section_detection": contract(
-    "section_detection_regression",
-    "section-detection-regression-v1",
-  ),
-  "document_parse:chunk_building": contract(
-    "chunk_building_regression",
-    "chunk-building-regression-v1",
-  ),
-  "ocr:ocr_page": contract("ocr_page_regression", "ocr-page-regression-v1"),
-  "study_unit_cleanup:study_unit_cleanup": contract(
-    "study_unit_cleanup_regression",
-    "study-unit-cleanup-regression-v1",
-  ),
-  "planning:plan_generation": contract(
-    "plan_generation_regression",
-    "plan-generation-regression-v1",
-  ),
-  "persona:persona_generation": contract(
-    "persona_generation_regression",
-    "persona-generation-regression-v1",
-  ),
-  "scene:scene_generation": contract(
-    "scene_generation_regression",
-    "scene-generation-regression-v1",
-  ),
-  "frontend_decode:response_decode": contract(
-    "frontend_decode_regression",
-    "frontend-decode-regression-v1",
-  ),
 };
 
 const executableEntry = (
@@ -705,7 +625,6 @@ const executableEntry = (
     policy: HarnessContractRef;
     toolset?: HarnessManifestContractSlotV1;
     commit?: HarnessManifestCommitPolicySlotV1;
-    evalSuites?: HarnessContractRef[];
   },
 ): HarnessWorkflowManifestEntryV1 => ({
   ...unregisteredEntry(workflow, stage, {
@@ -731,11 +650,6 @@ const executableEntry = (
   toolset_contract: options.toolset ?? notApplicable("no_tools"),
   commit_policy: options.commit ?? notApplicable("no_commit"),
   decoder_route: registeredString(options.decoder),
-  eval_suites: options.evalSuites?.length
-    ? registeredContracts(...options.evalSuites)
-    : STAGE_EVAL_SUITES[`${workflow}:${stage}`]
-      ? registeredContracts(STAGE_EVAL_SUITES[`${workflow}:${stage}`])
-      : unregistered("eval_suite_not_registered"),
 });
 
 const entries: HarnessWorkflowManifestEntryV1[] = [
@@ -755,9 +669,6 @@ const entries: HarnessWorkflowManifestEntryV1[] = [
     decoder: "app.services.study_unit_revision.StudyUnitRevisionService",
     prompt: contract("StudyUnitRevisionPrompt", "study-unit-revision-prompt-v1"),
     policy: contract("StudyUnitRevisionPolicy", "study-unit-revision-policy-v1"),
-    evalSuites: [
-      contract("study_unit_revision_regression", "study-unit-revision-regression-v1"),
-    ],
     commit: {
       status: "registered",
       key: {
@@ -787,7 +698,6 @@ const entries: HarnessWorkflowManifestEntryV1[] = [
     decoder: "app.services.plan_revision.PlanRevisionService",
     prompt: contract("PlanRevisionPrompt", "plan-revision-prompt-v2"),
     policy: contract("PlanRevisionPolicy", "plan-revision-policy-v1"),
-    evalSuites: [contract("plan_revision_regression", "plan-revision-regression-v1")],
     commit: {
       status: "registered",
       key: {
@@ -997,7 +907,6 @@ const entries: HarnessWorkflowManifestEntryV1[] = [
       "planning-tool-execution-harness-v1",
     ),
     toolset: TOOL_MANIFEST_SLOT,
-    evalSuites: [PLANNING_TOOL_EVAL_SUITE],
   }),
   executableEntry("persona", "persona_generation", {
     registration: contract(
@@ -1146,9 +1055,6 @@ export function requireExecutableWorkflowManifestEntry(
   ];
   if (optionalSlots.some((slot) => slot.status === "unregistered")) {
     throw new Error("harness_workflow_manifest_execution_slot_unregistered");
-  }
-  if (entry.eval_route.status !== "registered") {
-    throw new Error("harness_workflow_manifest_eval_route_unregistered");
   }
   return entry;
 }

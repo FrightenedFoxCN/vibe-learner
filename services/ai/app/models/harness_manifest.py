@@ -6,7 +6,6 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from app.models.harness_stage_eval_contracts import STAGE_EVAL_SUITES
 from app.models.harness import (
     HARNESS_COMPONENT_REGISTRATIONS,
     HARNESS_OPERATION_COMMIT_POLICIES,
@@ -19,24 +18,11 @@ from app.models.harness import (
     HarnessWorkflow,
     require_versioned_harness_contract,
 )
-from app.models.harness_eval import HARNESS_EVAL_CASE_SCHEMA_VERSION
 from app.models.tool_manifest import TOOL_MANIFEST_SCHEMA_VERSION
 from app.core.model_runtime_limits import STRUCTURED_GENERATION_MAX_TOKENS
 
 
 HARNESS_WORKFLOW_MANIFEST_SCHEMA_VERSION = "harness-workflow-manifest-v1"
-HARNESS_WORKFLOW_MANIFEST_EVAL_CASE_VERSION = HARNESS_EVAL_CASE_SCHEMA_VERSION
-TAVERN_IDENTITY_EVAL_SUITE = HarnessContractRef(
-    name="tavern_identity_eval",
-    version="tavern-identity-eval-v1",
-)
-PLANNING_TOOL_EVAL_SUITE = HarnessContractRef(
-    name="planning_tool_eval",
-    version="planning-tool-eval-v1",
-)
-STUDY_CHAT_EVAL_SUITE = HarnessContractRef(
-    name="study_chat_eval", version="study-chat-eval-v1"
-)
 
 
 class HarnessManifestModel(BaseModel):
@@ -75,7 +61,6 @@ class HarnessManifestUnregisteredReason(StrEnum):
     EFFECT_ADAPTER_NOT_REGISTERED = "effect_adapter_not_registered"
     COMMIT_POLICY_NOT_REGISTERED = "commit_policy_not_registered"
     DECODER_NOT_REGISTERED = "decoder_not_registered"
-    EVAL_SUITE_NOT_REGISTERED = "eval_suite_not_registered"
 
 
 class HarnessManifestContractRefV1(HarnessManifestModel):
@@ -259,8 +244,6 @@ class HarnessWorkflowManifestEntryV1(HarnessManifestModel):
     allowed_effect_adapters: HarnessManifestContractListSlotV1
     commit_policy: HarnessManifestCommitPolicySlotV1
     decoder_route: HarnessManifestStringSlotV1
-    eval_route: HarnessManifestStringSlotV1
-    eval_suites: HarnessManifestContractListSlotV1
 
     @model_validator(mode="after")
     def validate_entry(self) -> "HarnessWorkflowManifestEntryV1":
@@ -401,7 +384,6 @@ def _unregistered_entry(
     toolset: HarnessManifestContractSlotV1 | None = None,
     no_effects: bool = False,
     no_commit: bool = False,
-    eval_suites: tuple[HarnessContractRef, ...] = (),
 ) -> HarnessWorkflowManifestEntryV1:
     vocabulary = HARNESS_OPERATION_STAGE_REGISTRATIONS[(workflow, stage)]
     return HarnessWorkflowManifestEntryV1(
@@ -452,14 +434,6 @@ def _unregistered_entry(
         decoder_route=_unregistered(
             HarnessManifestUnregisteredReason.DECODER_NOT_REGISTERED
         ),
-        eval_route=_registered_string(vocabulary.eval_route),
-        eval_suites=(
-            _registered_contracts(*((item.name, item.version) for item in eval_suites))
-            if eval_suites
-            else _unregistered(
-                HarnessManifestUnregisteredReason.EVAL_SUITE_NOT_REGISTERED
-            )
-        ),
     )
 
 
@@ -479,10 +453,7 @@ def _executable_entry(
     toolset: HarnessManifestContractSlotV1 | None = None,
     commit_policy: HarnessManifestRegisteredCommitPolicySlotV1 | None = None,
     budget: HarnessManifestExecutionBudgetV1 = _DEFAULT_BUDGET,
-    eval_suites: tuple[HarnessContractRef, ...] = (),
 ) -> HarnessWorkflowManifestEntryV1:
-    if not eval_suites and f"{workflow.value}:{stage.value}" in STAGE_EVAL_SUITES:
-        eval_suites = (STAGE_EVAL_SUITES[f"{workflow.value}:{stage.value}"],)
     vocabulary = HARNESS_OPERATION_STAGE_REGISTRATIONS[(workflow, stage)]
     return HarnessWorkflowManifestEntryV1(
         key=f"{workflow.value}:{stage.value}",
@@ -516,14 +487,6 @@ def _executable_entry(
         commit_policy=commit_policy
         or _not_applicable(HarnessManifestNotApplicableReason.NO_COMMIT),
         decoder_route=_registered_string(decoder_route),
-        eval_route=_registered_string(vocabulary.eval_route),
-        eval_suites=(
-            _registered_contracts(*((item.name, item.version) for item in eval_suites))
-            if eval_suites
-            else _unregistered(
-                HarnessManifestUnregisteredReason.EVAL_SUITE_NOT_REGISTERED
-            )
-        ),
     )
 
 
@@ -607,10 +570,6 @@ _TAVERN_ENTRY = HarnessWorkflowManifestEntryV1(
         )
     ),
     decoder_route=_registered_string("app.services.tavern_harness.TavernActorHarness"),
-    eval_route=_registered_string("tavern.actor_reply"),
-    eval_suites=_registered_contracts(
-        (TAVERN_IDENTITY_EVAL_SUITE.name, TAVERN_IDENTITY_EVAL_SUITE.version),
-    ),
 )
 
 _STUDY_ENTRY = HarnessWorkflowManifestEntryV1(
@@ -668,10 +627,6 @@ _STUDY_ENTRY = HarnessWorkflowManifestEntryV1(
         )
     ),
     decoder_route=_registered_string("app.services.study_v3.StudyV3ReplyAdapter"),
-    eval_route=_registered_string("study_chat.reply"),
-    eval_suites=_registered_contracts(
-        (STUDY_CHAT_EVAL_SUITE.name, STUDY_CHAT_EVAL_SUITE.version)
-    ),
 )
 
 
@@ -830,11 +785,6 @@ _ENTRIES = (
         decoder_route="app.services.plan_revision.PlanRevisionService",
         prompt=("PlanRevisionPrompt", "plan-revision-prompt-v2"),
         policy=("PlanRevisionPolicy", "plan-revision-policy-v1"),
-        eval_suites=(
-            HarnessContractRef(
-                name="plan_revision_regression", version="plan-revision-regression-v1"
-            ),
-        ),
         commit_policy=HarnessManifestRegisteredCommitPolicySlotV1(
             key=HarnessManifestCommitPolicyKeyV1(
                 workflow=HarnessWorkflow.PLANNING,
@@ -867,12 +817,6 @@ _ENTRIES = (
         decoder_route="app.services.study_unit_revision.StudyUnitRevisionService",
         prompt=("StudyUnitRevisionPrompt", "study-unit-revision-prompt-v1"),
         policy=("StudyUnitRevisionPolicy", "study-unit-revision-policy-v1"),
-        eval_suites=(
-            HarnessContractRef(
-                name="study_unit_revision_regression",
-                version="study-unit-revision-regression-v1",
-            ),
-        ),
         commit_policy=HarnessManifestRegisteredCommitPolicySlotV1(
             key=HarnessManifestCommitPolicyKeyV1(
                 workflow=HarnessWorkflow.PLANNING,
@@ -963,7 +907,6 @@ _ENTRIES = (
             "planning-tool-execution-harness-v1",
         ),
         toolset=_TOOL_MANIFEST_SLOT,
-        eval_suites=(PLANNING_TOOL_EVAL_SUITE,),
     ),
     _executable_entry(
         HarnessWorkflow.PERSONA,
@@ -1075,10 +1018,6 @@ def _validate_entry_against_vocabulary(
             item.contract.contract.version,
         ) != (canonical.name, canonical.version):
             raise ValueError("harness_workflow_manifest_component_contract_mismatch")
-    if not isinstance(entry.eval_route, HarnessManifestRegisteredStringSlotV1):
-        raise ValueError("harness_workflow_manifest_eval_route_unregistered")
-    if entry.eval_route.value != vocabulary.eval_route:
-        raise ValueError("harness_workflow_manifest_eval_route_mismatch")
     if entry.stage == HarnessStage.PLANNING_TOOL_EXECUTION:
         if not isinstance(
             entry.toolset_contract,
@@ -1161,10 +1100,6 @@ def require_executable_workflow_manifest_entry(
         isinstance(item, HarnessManifestUnregisteredSlotV1) for item in optional_slots
     ):
         raise ValueError("harness_workflow_manifest_execution_slot_unregistered")
-    if not isinstance(entry.eval_route, HarnessManifestRegisteredStringSlotV1):
-        raise ValueError("harness_workflow_manifest_eval_route_unregistered")
-    # Eval suites are governance-visible but intentionally not an execution
-    # prerequisite until the runner/baseline wave establishes suite contracts.
     return entry
 
 

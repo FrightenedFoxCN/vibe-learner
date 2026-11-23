@@ -150,7 +150,7 @@ Harness Engineering is a repository-wide lifecycle, not a Tavern synonym:
 5. validate invariants;
 6. perform bounded recovery;
 7. atomically commit validated effects or persist terminal failure evidence;
-8. emit trace/eval evidence.
+8. emit trace evidence.
 
 Document/OCR/Study Unit, Planning, Persona/Scene, Study and Tavern use production v3 lifecycle boundaries. Frontend strict decoders cover those boundaries. The shared flow is shown in the [Harness engineering guide](harness/README.md).
 
@@ -254,8 +254,7 @@ references, and never accepts a caller-authored Scene Profile. The service
 rebuilds that profile from the validated tree and commits through row CAS;
 stale editors receive `409 scene_revision_conflict`. Legacy records decode with
 revision `0`, and migration `20260824_0011` adds authoritative revision columns.
-Scene generation uses the production protected context/replay, v3 trace and
-eval boundary.
+Scene generation uses the production protected context/replay and v3 trace.
 
 ### 4. Study interaction
 

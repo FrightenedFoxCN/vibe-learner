@@ -357,7 +357,6 @@ class HarnessOperationStageRegistration(NamedTuple):
     stage: HarnessStage
     owner_module: str
     component_names: tuple[HarnessComponentName, ...]
-    eval_route: str
 
 
 HARNESS_COMPONENT_REGISTRATIONS = MappingProxyType(
@@ -565,7 +564,6 @@ HARNESS_OPERATION_STAGE_REGISTRATIONS = MappingProxyType(
             HarnessStage.DOCUMENT_PARSE,
             "app.services.document_parser",
             (HarnessComponentName.DOCUMENT_PARSER,),
-            "document.parse",
         ),
         (
             HarnessWorkflow.DOCUMENT_PARSE,
@@ -575,7 +573,6 @@ HARNESS_OPERATION_STAGE_REGISTRATIONS = MappingProxyType(
             HarnessStage.PAGE_EXTRACTION,
             "app.services.document_parser",
             (HarnessComponentName.DOCUMENT_PAGE_EXTRACTOR,),
-            "document.page_extraction",
         ),
         (
             HarnessWorkflow.DOCUMENT_PARSE,
@@ -585,7 +582,6 @@ HARNESS_OPERATION_STAGE_REGISTRATIONS = MappingProxyType(
             HarnessStage.SECTION_DETECTION,
             "app.services.document_parser",
             (HarnessComponentName.DOCUMENT_SECTION_DETECTOR,),
-            "document.section_detection",
         ),
         (
             HarnessWorkflow.DOCUMENT_PARSE,
@@ -595,14 +591,12 @@ HARNESS_OPERATION_STAGE_REGISTRATIONS = MappingProxyType(
             HarnessStage.CHUNK_BUILDING,
             "app.services.document_parser",
             (HarnessComponentName.DOCUMENT_CHUNK_BUILDER,),
-            "document.chunk_building",
         ),
         (HarnessWorkflow.OCR, HarnessStage.OCR_PAGE): HarnessOperationStageRegistration(
             HarnessWorkflow.OCR,
             HarnessStage.OCR_PAGE,
             "app.services.ocr_engine",
             (HarnessComponentName.OCR_ENGINE,),
-            "document.ocr_page",
         ),
         (
             HarnessWorkflow.STUDY_UNIT_CLEANUP,
@@ -612,7 +606,6 @@ HARNESS_OPERATION_STAGE_REGISTRATIONS = MappingProxyType(
             HarnessStage.STUDY_UNIT_CLEANUP,
             "app.services.study_arrangement",
             (HarnessComponentName.STUDY_UNIT_CLEANER,),
-            "document.study_unit_cleanup",
         ),
         (
             HarnessWorkflow.PLANNING,
@@ -622,7 +615,6 @@ HARNESS_OPERATION_STAGE_REGISTRATIONS = MappingProxyType(
             HarnessStage.PLAN_REVISION,
             "app.services.plan_revision",
             (HarnessComponentName.PLAN_REVISION_PATCH,),
-            "planning.plan_revision",
         ),
         (
             HarnessWorkflow.PLANNING,
@@ -632,7 +624,6 @@ HARNESS_OPERATION_STAGE_REGISTRATIONS = MappingProxyType(
             HarnessStage.STUDY_UNIT_REVISION,
             "app.services.study_unit_revision",
             (HarnessComponentName.STUDY_UNIT_REVISION_PATCH,),
-            "planning.study_unit_revision",
         ),
         (
             HarnessWorkflow.PLANNING,
@@ -645,7 +636,6 @@ HARNESS_OPERATION_STAGE_REGISTRATIONS = MappingProxyType(
                 HarnessComponentName.PLANNING_PROMPT,
                 HarnessComponentName.PLANNING_TOOLSET,
             ),
-            "planning.plan_generation",
         ),
         (
             HarnessWorkflow.PLANNING,
@@ -658,7 +648,6 @@ HARNESS_OPERATION_STAGE_REGISTRATIONS = MappingProxyType(
                 HarnessComponentName.PLANNING_TOOL_RUNTIME,
                 HarnessComponentName.PLANNING_TOOLSET,
             ),
-            "planning.tool_execution",
         ),
         (
             HarnessWorkflow.PERSONA,
@@ -668,7 +657,6 @@ HARNESS_OPERATION_STAGE_REGISTRATIONS = MappingProxyType(
             HarnessStage.PERSONA_GENERATION,
             "app.services.persona_cards",
             (HarnessComponentName.PERSONA_COMPILER,),
-            "persona.generation",
         ),
         (
             HarnessWorkflow.SCENE,
@@ -678,7 +666,6 @@ HARNESS_OPERATION_STAGE_REGISTRATIONS = MappingProxyType(
             HarnessStage.SCENE_GENERATION,
             "app.services.scene_setup",
             (HarnessComponentName.SCENE_COMPILER,),
-            "scene.generation",
         ),
         (
             HarnessWorkflow.STUDY_CHAT,
@@ -693,7 +680,6 @@ HARNESS_OPERATION_STAGE_REGISTRATIONS = MappingProxyType(
                 HarnessComponentName.STUDY_GROUNDING,
                 HarnessComponentName.STUDY_VISUAL_GROUNDING,
             ),
-            "study_chat.reply",
         ),
         (
             HarnessWorkflow.TAVERN,
@@ -707,7 +693,6 @@ HARNESS_OPERATION_STAGE_REGISTRATIONS = MappingProxyType(
                 HarnessComponentName.TAVERN_PERSONA_COMPILER,
                 HarnessComponentName.TAVERN_SCHEDULER,
             ),
-            "tavern.actor_reply",
         ),
         (
             HarnessWorkflow.FRONTEND_DECODE,
@@ -717,7 +702,6 @@ HARNESS_OPERATION_STAGE_REGISTRATIONS = MappingProxyType(
             HarnessStage.FRONTEND_RESPONSE_DECODE,
             "apps.web.lib.api",
             (HarnessComponentName.FRONTEND_DECODER,),
-            "frontend.response_decode",
         ),
     }
 )
@@ -867,7 +851,6 @@ def validate_harness_operation_stage_registry(
         raise ValueError("harness_stage_registry_incomplete")
     stages: set[HarnessStage] = set()
     workflows: set[HarnessWorkflow] = set()
-    eval_routes: set[str] = set()
     for key, registration in stage_registry.items():
         if (
             not isinstance(key, tuple)
@@ -893,14 +876,6 @@ def validate_harness_operation_stage_registry(
             raise ValueError("harness_stage_component_not_registered")
         if not re.fullmatch(r"[A-Za-z0-9_.]+", registration.owner_module):
             raise ValueError("harness_stage_owner_module_invalid")
-        if not re.fullmatch(
-            r"[a-z][a-z0-9_]*(?:\.[a-z][a-z0-9_]*)+",
-            registration.eval_route,
-        ):
-            raise ValueError("harness_stage_eval_route_invalid")
-        if registration.eval_route in eval_routes:
-            raise ValueError("harness_stage_eval_route_duplicate")
-        eval_routes.add(registration.eval_route)
 
     if stages != set(HarnessStage):
         raise ValueError("harness_stage_registry_incomplete")
@@ -942,7 +917,6 @@ def harness_operation_stage_registry_snapshot() -> dict[str, object]:
                 "component_names": [
                     item.value for item in registration.component_names
                 ],
-                "eval_route": registration.eval_route,
             }
             for _, registration in sorted(
                 HARNESS_OPERATION_STAGE_REGISTRATIONS.items(),
