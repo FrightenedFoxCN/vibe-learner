@@ -87,8 +87,7 @@ queued while it was in flight.
 
 Persona Spectrum and Scene Setup similarly use route composition, domain-owned
 library/draft/generation/rewrite/persistence hooks, and separate presentation
-components. See [frontend test boundaries](frontend-test-boundaries.md) for the
-independent module and production-browser commands.
+components.
 
 ### Reducer State Layer
 

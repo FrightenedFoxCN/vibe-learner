@@ -40,8 +40,7 @@ business commit into rollback or success.
 The [storage probes](performance/diagnostic-local-baseline-v1.md) cover combined
 Rust/Python quota pressure, pinned-reader release, integrity and legacy recovery.
 Observed file lengths and sampled maxima do not certify atomic installation peaks
-or filesystem allocation. `disk_size_limit_certified` remains false until the
-installation-wide acceptance in root TODO is complete.
+or filesystem allocation; `disk_size_limit_certified` stays false.
 
 Native counter metadata now uses two bounded checksummed slots; see the
 [versioned protocol](diagnostic-native-counter.md) for migration and downgrade

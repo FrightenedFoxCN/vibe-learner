@@ -6,34 +6,6 @@
 - `P2`：产品、性能或可靠性改进。
 - `P3`：文档、账务和候选验证。
 
-标记 `暂缓` 表示当前缺设备或权限，不是遗漏。
-
-## UX 与文档
-
-- [ ] `UX-DENSITY-SENSORY-001` `[P2]` 真实触控设备上的密度、长错误与慢网连续保存复核：滚动与焦点稳定性。暂缓（无实机）。
-- [ ] `UX-DENSITY-PERSONA-001` `[P2]` 真实设备上 Persona 编辑的保存/错误焦点、滚动与触控复核，覆盖候选选择/拒绝、字段 diff、名称必填定位与危险操作分层。暂缓（无实机）。
-- [ ] `UX-DENSITY-SCENE-001` `[P2]` 真实设备上 Scene 编辑的保存/错误定位、滚动与触控复核，覆盖结构/字段 diff、冲突提示与危险操作分层。暂缓（无实机）。
-- [ ] `DOC-USER-001` `[P2]` 独立走查 `/manual` 用户手册。
-  - 真实 provider 首次配置与主流程走查暂缓；mock 路线复跑入口为 `playwright.manual-acceptance.config.ts`。
-  - 补原生安装/Vault、Windows NSIS 与 Linux AppImage 安装、含密钥与浏览器草稿的设备级恢复；手册中的路径/留存、unsigned 与 SHA-256 说明需与各平台实测对照。
-
-## 性能、可靠性与部署
-
-- [ ] `REL-DESKTOP-001` `[P2]` 完成真实桌面/浏览器恢复验收。
-  - 覆盖原生桌面安装/退出、设备级慢网/断网、刷新/离页、未保存/异步返回、删除/归档组合，以及设备级 IME 与完整焦点顺序。暂缓（无实机）。
-  - 覆盖浏览器 Settings 在途离页/丢响应、Tavern 空状态/整页键盘/删除归档组合、编辑器异步保存与 Study 恢复。
-- [ ] `PERF-TAV-LIVE-001` `[P2]` 验收代表性真实 provider 的 Tavern 性能。开始前需明确 provider 配置与调用/费用上限。
-  - 使用六人名册、每次最多四个调度目标及长对话，记录 token、实际计费、P50/P95、修复/失败率及 retry/cancel 行为。
-- [ ] `DESKTOP-RELEASE-001` `[P2]` 完成生产签名、公证和跨平台安装验收。
-  - 当前缺 Windows/Linux 桌面设备与 Apple Developer ID/公证配置。
-  - macOS sidecar/native dependencies 使用同一 Developer ID Team，验证后开启 hardened runtime；验证 Windows/Linux 安装、退出与校验和。
-  - 验收标准：签名、公证与跨平台安装实测通过。预览版允许 runtime OCR fallback 的策略见 `docs/desktop-packaging.md`；离线 OCR 分发须提供模型并启用 strict gate。
-- [ ] `DIAG-INSTALLATION-BUDGET-001` `[P2]` 验收诊断数据的安装级磁盘预算与恢复。
-  - 将 event、Harness index、桌面 spool、WAL/SHM/journal、锁文件与文件系统分配开销纳入同一 200 MiB 口径。
-  - 补 Windows 文件语义、外部写入与安装级整体约束；复用现有 macOS Rust/Python 并发压力与 Linux 容器配额/恢复测试。
-  - 跨进程、跨平台证据齐全后，导出的 `disk_size_limit_certified` 才可为 true。
-- [ ] `DIAG-NATIVE-EXPORT-001` `[P2]` 补真实原生保存对话框的取消/覆盖确认、IPC、桌面满盘及 Windows/Linux 文件落盘验收；macOS 自动化需可用的 System Events/辅助功能权限。32 MiB JSON/原子文件替换回归与 HFS+/APFS ENOSPC 协议见 `docs/diagnostic-audit.md`。暂缓（缺权限）。
-
 ## 未排期研究
 
 研究任务须有触发证据、假设、time-box、产出物和采用/放弃标准：

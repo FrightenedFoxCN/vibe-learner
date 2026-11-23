@@ -18,7 +18,7 @@ The frontend fetches the saved preview on mount, fences late responses after nav
 
 - Current Planning runtime/creation projections use v2; the v1 DTOs and commit policy remain available for historical read-back.
 - The revise tool has v2 arguments/results and adapter behavior; its result explicitly requires confirmation. Other Planning tools retain their versions.
-- Alembic `20261029_0024` adds `study_unit_revision_operations` and widens the closed admission route. SQLite runtime schema repair preserves existing admissions and guards. PostgreSQL DDL retains JSONB; actual migration and recovery evidence is in [PostgreSQL 迁移与恢复验收](postgres-recovery-acceptance.md).
+- Alembic `20261029_0024` adds `study_unit_revision_operations` and widens the closed admission route. SQLite runtime schema repair preserves existing admissions and guards. PostgreSQL DDL retains JSONB.
 - The local complete-transaction policy covers Document/Debug, the acceptance receipt and trace. Compatibility JSON mirrors run afterward and are not the authoritative commit.
 
 ## Focused verification
@@ -27,4 +27,4 @@ The frontend fetches the saved preview on mount, fences late responses after nav
 - 已移除的评估套件 `eval:harness:study-unit-revision`（曾覆盖 eight developer-authored, provider-free projection cases through the shared HarnessEvalRunner with real preview admissions）。
 - `cd services/ai && PYTHONPATH=. uv run python tests/acceptance/study_unit_revision_probe.py`: real PDF parsing, three conservative Plans, concurrent acceptance, stale/rejected decisions, atomic receipt/trace and fresh-application HTTP read-back in a temporary SQLite database.
 - `npm --workspace @vibe-learner/web run test:workspace:mutations`: includes the confirmation component's transport/navigation behavior. Strict decoder coverage is in `tests/study-unit-revision-decode.test.ts`.
-- `cd apps/web && npx playwright test --config playwright.study-unit-revision.config.ts`: two focused browser cases against a development server and fault-injected API fixtures, covering the diff, response loss, reload, skip and reject. This does not require a production build or replace the device/platform acceptance in `REL-DESKTOP-001`.
+- `cd apps/web && npx playwright test --config playwright.study-unit-revision.config.ts`: two focused browser cases against a development server and fault-injected API fixtures, covering the diff, response loss, reload, skip and reject. This does not require a production build.

@@ -2,8 +2,7 @@
 
 These provider-free probes use temporary SQLite databases and production
 middleware, writers, retention, queries and export code. Reports record runtime
-versions, source hashes, limits and raw samples. They measure local file lengths
-and request costs; installation-wide disk certification remains in root TODO.
+versions, source hashes, limits and raw samples. They measure local file lengths and request costs only.
 
 ## Backend queries and writer
 

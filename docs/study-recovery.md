@@ -83,6 +83,5 @@ clock. The adversarial paths check:
 - confirmed `not_committed` reload with no automatic resend.
 
 Fault routes exist only in the disposable acceptance server under `tests/`.
-They are absent from the production router. These cases do not call a real model,
-run a production Web build, or certify native/offline cold-load behavior. Device
-and live-provider acceptance remains tracked in the corresponding TODO items.
+They are absent from the production router. These cases do not call a real model
+or run a production Web build.

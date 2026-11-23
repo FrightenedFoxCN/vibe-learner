@@ -239,8 +239,7 @@ Maintenance failures do not relabel committed diagnostics or business results.
 Internal maintenance counters are process-local observations, separate from
 writer drop/write-failure counters. Physical total size is not certified by
 these settings: a pinned reader can retain WAL, live records consume pages,
-and multiple databases/spool files require aggregate budget enforcement. That
-installation-wide budget remains tracked in root TODO.
+and multiple databases/spool files require aggregate budget enforcement.
 Regression tests use real SQLite files and verify freelist/file/WAL reduction,
 pinned-reader recovery, interrupted legacy migration, active-transaction
 preservation and a successful application/Harness result during maintenance
@@ -352,4 +351,4 @@ read with the lower-bound/process-scope limits above.
 Verification: full Rust library tests include actual sidecar subprocess exit and
 two concurrent native writer processes; backend tests cover pending recovery,
 shared lock deferral, replacement preservation, expiry, symlink rejection,
-offline retry and duplicate identity. Installation-wide size and native-platform acceptance remain in root TODO.
+offline retry and duplicate identity.

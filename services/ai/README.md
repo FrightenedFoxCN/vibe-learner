@@ -27,7 +27,6 @@ SQLite is the default database; `DATABASE_URL` can select PostgreSQL.
 Configuration and budgets: [Harness configuration](../../docs/harness/configuration.md).
 Storage ownership: [Architecture](../../docs/architecture.md).
 HTTP contracts: [API reference](../../docs/api-reference.md).
-Focused test commands: [Backend test boundaries](../../docs/backend-test-boundaries.md).
 
 ## Chat payload troubleshooting
 

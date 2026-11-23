@@ -120,8 +120,7 @@ response identity, enums, finite numbers, nullability, ordering, ranges,
 cross-record references, duplicate IDs, derived projections, and each domain's
 operation/recovery versions before rendering. Frontend Decoder registration,
 `FRONTEND_REQUEST` evidence and v1/v2/v3 trace routing are implemented. Actual
-Study/Tavern HTTP read-back after service restart is covered by decoder tests;
-remaining native UI and independent acceptance work is tracked in `TODO.md`.
+Study/Tavern HTTP read-back after service restart is covered by decoder tests.
 
 ### AI service
 
@@ -153,7 +152,7 @@ Harness Engineering is a repository-wide lifecycle, not a Tavern synonym:
 7. atomically commit validated effects or persist terminal failure evidence;
 8. emit trace/eval evidence.
 
-Document/OCR/Study Unit, Planning, Persona/Scene, Study and Tavern use production v3 lifecycle boundaries. Frontend strict decoders and deterministic stage evals cover those boundaries. The shared flow is shown in the [Harness engineering guide](harness/README.md); remaining acceptance and product work lives only in [TODO](../TODO.md).
+Document/OCR/Study Unit, Planning, Persona/Scene, Study and Tavern use production v3 lifecycle boundaries. Frontend strict decoders cover those boundaries. The shared flow is shown in the [Harness engineering guide](harness/README.md).
 
 Learning-plan text uses a stable cross-layer contract:
 
@@ -200,8 +199,7 @@ database transaction. A failed or interrupted operation records explicit
 operations so a process exit cannot strand the Document indefinitely. JSON
 files are best-effort compatibility mirrors after the authoritative database
 commit. Document extraction, OCR and cleanup use the production v3 trace,
-protected replay and eval boundary. OCR stress and recovery acceptance is tracked
-in the root TODO.
+protected replay boundary.
 
 ### 2. Plan generation
 
@@ -236,8 +234,7 @@ one database transaction. Duplicate requests read the original committed
 snapshot; payload drift, active siblings, stale Document state, and missing
 Debug prerequisites fail closed. Startup recovery terminalizes abandoned work,
 and compatibility JSON files are mirrored only after the authoritative commit.
-Planning uses the production v3 operation, protected replay, trace and eval
-boundary. Remaining product work is tracked in the root TODO.
+Planning uses the production v3 operation, protected replay and trace boundary.
 
 ### 3. Scene generation and saves
 
@@ -303,9 +300,7 @@ The browser `Tavern Workspace` implements:
 
 Tavern controller and browser checks cover creation, direct/facilitated runs,
 recovery lineage, authoritative roster/retry derivation, mutation errors,
-composition-event fencing and focus return. Commands and test boundaries are
-listed in [Frontend test boundaries](frontend-test-boundaries.md). Device
-acceptance remains in the root TODO.
+composition-event fencing and focus return.
 
 ## Character layer
 
@@ -353,7 +348,7 @@ Runtime settings in the configured database are authoritative. A legacy JSON mir
 - tool-enabled model calls increase provider latency and timeout pressure;
 - Document processing has durable admission, atomic Document/Debug projection commit, digest read-back, and startup recovery, and v3 evidence for extraction/OCR/cleanup stages;
 - Study Chat has production v3 context, trace, protected replay, deterministic eval, durable request admission, transactional Session/Scene database effects, and operation-owned attachment staging/read-back, while provider uncertainty remains explicit;
-- production lifecycle coverage is tracked in `harness/README.md`; Tavern prompt/token/scene-depth budgets are enforced, while representative provider performance and billing acceptance remain in `TODO.md`;
+- production lifecycle coverage is tracked in `harness/README.md`; Tavern prompt/token/scene-depth budgets are enforced;
 - `npm run check` runs style, shared-contract types, Web types, the generated API reference check and the invariant baseline; `npm run check:release` adds the production Web build. Lint and formatting rules are in [Code style gates](code-style.md).
 
 

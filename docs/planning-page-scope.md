@@ -52,8 +52,7 @@ Document/Debug or rewrite historical creation digests.
   additionally cover forwarding, post-parse rejection and stored draft recovery.
 - `npm --workspace @vibe-learner/web run test:workspace:page-scope:browser`: two
   development Chromium cases with intercepted API fixtures for navigation/reload
-  and separate physical/printed display. Full platform/device UX and semantic
-  source correctness retain their independent TODO gates.
+  and separate physical/printed display.
 
 The existing page/intent/proposal contracts are unchanged. Acceptance hardens the
 current physical coordinate meaning rather than introducing model-owned printed

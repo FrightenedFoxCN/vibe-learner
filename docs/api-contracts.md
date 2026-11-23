@@ -59,8 +59,7 @@ If embeddings are unavailable, the backend falls back to local hashed-vector ret
   Planning live NDJSON plus persisted v1 reports additionally pass the strict
   versioned stream state machine. Subject/draft-revision/field-target fences
   reject stale async results. Frontend Decoder component registration and v2/v3
-  trace forwarding/resource evidence are implemented; remaining native and
-  independent real-wire acceptance is tracked only in the root TODO.
+  trace forwarding/resource evidence are implemented.
 
 ## Complete operation index
 
