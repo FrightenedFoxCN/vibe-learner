@@ -150,6 +150,9 @@ class RemotePlanningProvider(PlanningModelCapability):
             planning_intent=goal.planning_intent,
         )
         active_tool_runtime = tool_runtime
+        fallback_available = bool(
+            self.fallback_plan_model and self.fallback_plan_model != self.plan_model
+        )
         run_result = self._run_plan_model(
             model=self.plan_model,
             document_id=goal.document_id,
@@ -157,12 +160,9 @@ class RemotePlanningProvider(PlanningModelCapability):
             tool_runtime=tool_runtime,
             progress_callback=progress_callback,
             interrupt_check=interrupt_check,
+            allow_fallback=fallback_available,
         )
-        if (
-            self.fallback_plan_model
-            and self.fallback_plan_model != self.plan_model
-            and run_result is None
-        ):
+        if fallback_available and run_result is None:
             fallback_tools_enabled = (
                 self.plan_tools_enabled and not self.fallback_disable_tools
             )
