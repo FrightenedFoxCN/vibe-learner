@@ -27,6 +27,9 @@ import {
   type SceneImportPayload,
 } from "../lib/scene-editor-model";
 
+type SceneDraftSnapshot = SceneImportPayload & { draftDirty: boolean };
+let unpersistedLocalScene: SceneDraftSnapshot | null = null;
+
 export interface SceneDraftStorage {
   read: () => unknown;
   write: (
@@ -233,22 +236,27 @@ export function useSceneDraft(
     selectSceneObject(selectedObjectIdRef.current === objectId ? "" : objectId);
   }
   const [hydrated, setHydrated] = useState(false);
-  const pendingRef = useRef<(SceneImportPayload & { draftDirty: boolean }) | null>(
-    null,
-  );
+  const pendingRef = useRef<SceneDraftSnapshot | null>(null);
+  const reporting = useRef(false);
+  const [sceneStorageFailed, setSceneStorageFailed] = useState(false);
   const flushDraft = useCallback(() => {
     const pending = pendingRef.current;
-    if (!pending) return;
+    if (!pending) return true;
     try {
       storage.write({ ...pending, version: 1, savedAt: new Date().toISOString() });
       pendingRef.current = null;
+      if (storage === localStorage) unpersistedLocalScene = null;
+      if (reporting.current) setSceneStorageFailed(false);
+      return true;
     } catch {
-      // Local fallback is best effort; a later edit or pagehide can retry it.
+      if (storage === localStorage) unpersistedLocalScene = pending;
+      if (reporting.current) setSceneStorageFailed(true);
+      return false;
     }
   }, [storage]);
   const restoreDraft = useEffectEvent(() => {
     try {
-      const raw = storage.read();
+      const raw = (storage === localStorage && unpersistedLocalScene) || storage.read();
       if (raw) {
         const explicitlyClean =
           typeof raw === "object" && "draftDirty" in raw && raw.draftDirty === false;
@@ -265,10 +273,17 @@ export function useSceneDraft(
     }
   });
   useEffect(() => {
+    reporting.current = true;
     restoreDraft();
     setHydrated(true);
+    const beforeUnload = (event: BeforeUnloadEvent) => {
+      if (pendingRef.current?.draftDirty && !flushDraft()) event.preventDefault();
+    };
+    window.addEventListener("beforeunload", beforeUnload);
     window.addEventListener("pagehide", flushDraft);
     return () => {
+      reporting.current = false;
+      window.removeEventListener("beforeunload", beforeUnload);
       window.removeEventListener("pagehide", flushDraft);
       flushDraft();
     };
@@ -297,6 +312,8 @@ export function useSceneDraft(
     flushDraft,
   ]);
   return {
+    sceneStorageFailed,
+    flushDraft,
     contentFingerprint,
     isSceneDraftDirty,
     markSaved,

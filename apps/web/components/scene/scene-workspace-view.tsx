@@ -27,6 +27,9 @@ export function SceneWorkspaceView({
     pageNotice,
     sceneIoPending,
     sceneIoError,
+    sceneStorageFailed,
+    retrySceneStorage,
+    exportScene,
   } = controller;
   const feedbackRef = useRef<HTMLDivElement>(null);
   const actionTriggerRef = useRef<Element | null>(null);
@@ -88,6 +91,22 @@ export function SceneWorkspaceView({
               error={userError}
               message={pageNotice}
             />
+            {sceneStorageFailed ? (
+              <div
+                role="alert"
+                className="flex flex-wrap items-center gap-2 text-xs text-danger"
+              >
+                <span>
+                  本地草稿未保存。关闭或刷新前请重试、另存到场景库或导出 JSON。
+                </span>
+                <button type="button" onClick={retrySceneStorage}>
+                  重试本地保存
+                </button>
+                <button type="button" onClick={() => void exportScene()}>
+                  导出草稿
+                </button>
+              </div>
+            ) : null}
             {libraryError ? (
               <p role="alert" className="text-xs/[1.5] text-danger">
                 部分场景库数据未能读取，请刷新页面重试。

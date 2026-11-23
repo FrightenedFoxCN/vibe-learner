@@ -67,6 +67,8 @@ export function useSceneWorkspaceController() {
   const [reusableSearchQuery, setReusableSearchQuery] = useState("");
   const {
     contentFingerprint,
+    sceneStorageFailed,
+    flushDraft,
     isSceneDraftDirty,
     markSaved,
     sceneLayers,
@@ -840,6 +842,8 @@ export function useSceneWorkspaceController() {
     pageNotice,
     sceneIoPending,
     sceneIoError,
+    sceneStorageFailed,
+    retrySceneStorage: flushDraft,
     updateLayer,
     saveLayerToReusableLibrary,
     saveObjectToReusableLibrary,
