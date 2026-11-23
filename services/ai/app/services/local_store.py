@@ -8,7 +8,7 @@ from typing import Any, Callable, TypeVar
 from uuid import uuid4
 
 from pydantic import BaseModel
-from sqlalchemy import Select, delete, select, update
+from sqlalchemy import Select, delete, func, select, update
 from sqlalchemy.exc import IntegrityError
 
 from app.persistence.database import Database
@@ -490,6 +490,24 @@ class LocalJsonStore:
             row = session.get(spec.entity, item_id) or spec.entity()
             self._apply_payload(row, payload, spec)
             session.add(row)
+            if category in {"personas", "scene_library"}:
+                session.flush()
+                self._write_legacy_mirror(category, item_id, item)
+        if category not in {"personas", "scene_library"}:
+            self._write_legacy_mirror(category, item_id, item)
+
+    @staticmethod
+    def _item_revision(category: str):
+        if category == "personas":
+            # Old Persona JSON predates the field and decodes as revision zero.
+            return func.coalesce(PersonaRow.payload["revision"].as_integer(), 0)
+        if category in {"scene_setup", "scene_library"}:
+            return CATEGORY_SPECS[category].entity.revision
+        raise ValueError("revisioned_category_unsupported")
+
+    def _write_legacy_mirror(
+        self, category: str, item_id: str, item: BaseModel
+    ) -> None:
         try:
             self._legacy.save_item(category, item_id, item)
         except OSError:
@@ -505,9 +523,8 @@ class LocalJsonStore:
         model: type[T],
         allow_insert: bool = True,
     ) -> T:
-        if category not in {"scene_setup", "scene_library"}:
-            raise ValueError("revisioned_category_unsupported")
         spec = CATEGORY_SPECS[category]
+        revision = self._item_revision(category)
         self._legacy.validate_item_path(category, item_id)
         payload = item.model_dump(mode="json")
         payload["revision"] = expected_revision + 1
@@ -526,13 +543,13 @@ class LocalJsonStore:
                     update(spec.entity)
                     .where(
                         getattr(spec.entity, spec.key_attr) == item_id,
-                        spec.entity.revision == expected_revision,
+                        revision == expected_revision,
                     )
                     .values(**update_values)
                 )
                 if result.rowcount != 1:
                     actual_revision = session.scalar(
-                        select(spec.entity.revision).where(
+                        select(revision).where(
                             getattr(spec.entity, spec.key_attr) == item_id
                         )
                     )
@@ -550,6 +567,9 @@ class LocalJsonStore:
                     self._apply_payload(target, committed_payload, spec)
                     session.add(target)
                     session.flush()
+                # Serialize mirror updates with conditional deletes of the same row.
+                if category != "scene_setup":
+                    self._write_legacy_mirror(category, item_id, committed)
         except IntegrityError as exc:
             # A concurrent first-write can make both revision-0 UPDATEs miss,
             # after which one INSERT wins and the other violates the primary
@@ -557,7 +577,7 @@ class LocalJsonStore:
             # a fresh snapshot to report the authoritative winning revision.
             with self._db.session() as session:
                 actual_revision = session.scalar(
-                    select(spec.entity.revision).where(
+                    select(revision).where(
                         getattr(spec.entity, spec.key_attr) == item_id
                     )
                 )
@@ -568,28 +588,25 @@ class LocalJsonStore:
                 expected=expected_revision,
                 actual=int(actual_revision),
             ) from exc
-        try:
-            self._legacy.save_item(category, item_id, committed)
-        except OSError:
-            pass
+        if category == "scene_setup":
+            self._write_legacy_mirror(category, item_id, committed)
         return committed
 
     def delete_item_cas(
         self, category: str, item_id: str, *, expected_revision: int
     ) -> bool:
-        if category != "scene_library":
+        if category not in {"scene_library", "personas"}:
             raise ValueError("revisioned_delete_category_unsupported")
         self._legacy.validate_item_path(category, item_id)
         spec = CATEGORY_SPECS[category]
         identity = getattr(spec.entity, spec.key_attr) == item_id
+        revision = self._item_revision(category)
         with self._db.session() as session:
             result = session.execute(
-                delete(spec.entity).where(
-                    identity, spec.entity.revision == expected_revision
-                )
+                delete(spec.entity).where(identity, revision == expected_revision)
             )
             if result.rowcount != 1:
-                actual = session.scalar(select(spec.entity.revision).where(identity))
+                actual = session.scalar(select(revision).where(identity))
                 if actual is None:
                     return False
                 raise LocalStoreRevisionConflict(

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from threading import RLock
+from typing import NoReturn
 from uuid import uuid4
 
 from fastapi import HTTPException
@@ -16,7 +17,7 @@ from app.models.domain import (
     persona_narrative_mode_label,
     persona_sorted_slots,
 )
-from app.services.local_store import LocalJsonStore
+from app.services.local_store import LocalJsonStore, LocalStoreRevisionConflict
 
 
 class PersonaEngine:
@@ -32,9 +33,6 @@ class PersonaEngine:
         self._personas: dict[str, PersonaProfile] = {}
         for persona in self._builtin_personas():
             self._personas[persona.id] = persona
-        if self._store is not None:
-            for persona in self._store.load_category_items("personas", PersonaProfile):
-                self._personas[persona.id] = persona
 
     @staticmethod
     def _default_available_emotions() -> list[str]:
@@ -47,6 +45,10 @@ class PersonaEngine:
     def list_personas(self) -> list[PersonaProfile]:
         with self._lock:
             personas = list(self._personas.values())
+            if self._store is not None:
+                personas.extend(
+                    self._store.load_category_items("personas", PersonaProfile)
+                )
         return sorted(
             personas, key=lambda item: (item.source != "builtin", item.name.lower())
         )
@@ -54,6 +56,8 @@ class PersonaEngine:
     def require_persona(self, persona_id: str) -> PersonaProfile:
         with self._lock:
             persona = self._personas.get(persona_id)
+            if persona is None and self._store is not None:
+                persona = self._store.load_item("personas", persona_id, PersonaProfile)
         if persona is None:
             raise HTTPException(status_code=404, detail="persona_not_found")
         return persona
@@ -95,19 +99,17 @@ class PersonaEngine:
                 default_speech_style=(payload.default_speech_style or "warm").strip()
                 or "warm",
             )
-            # Persist first so a failed database commit cannot leak into the
-            # process-authoritative view.
-            self._save_persona(persona)
-            self._personas[persona.id] = persona
+            if self._store is not None:
+                self._store.save_item("personas", persona.id, persona)
+            else:
+                self._personas[persona.id] = persona
             return persona
 
     def update_persona(
         self, persona_id: str, payload: UpdatePersonaRequest
     ) -> PersonaProfile:
         with self._lock:
-            current = self._personas.get(persona_id)
-            if current is None:
-                raise HTTPException(status_code=404, detail="persona_not_found")
+            current = self.require_persona(persona_id)
             if current.source == "builtin":
                 raise HTTPException(status_code=403, detail="persona_readonly_builtin")
             self._require_expected_revision(current, payload.expected_revision)
@@ -145,15 +147,24 @@ class PersonaEngine:
                 ).strip()
                 or current.default_speech_style,
             )
-            self._save_persona(updated)
-            self._personas[current.id] = updated
-            return updated
+            if self._store is None:
+                self._personas[current.id] = updated
+                return updated
+            try:
+                return self._store.save_item_cas(
+                    "personas",
+                    current.id,
+                    updated,
+                    expected_revision=payload.expected_revision,
+                    model=PersonaProfile,
+                    allow_insert=False,
+                )
+            except LocalStoreRevisionConflict as exc:
+                self._raise_revision_conflict(exc.actual)
 
     def delete_persona(self, persona_id: str, *, expected_revision: int) -> None:
         with self._lock:
-            current = self._personas.get(persona_id)
-            if current is None:
-                raise HTTPException(status_code=404, detail="persona_not_found")
+            current = self.require_persona(persona_id)
             if current.source == "builtin":
                 raise HTTPException(status_code=403, detail="persona_readonly_builtin")
             self._require_expected_revision(current, expected_revision)
@@ -168,9 +179,17 @@ class PersonaEngine:
                     detail=f"persona_in_use:{':'.join(reference_parts)}",
                 )
 
-            if self._store is not None:
-                self._store.delete_item("personas", current.id)
-            self._personas.pop(current.id, None)
+            if self._store is None:
+                self._personas.pop(current.id, None)
+                return
+            try:
+                deleted = self._store.delete_item_cas(
+                    "personas", current.id, expected_revision=expected_revision
+                )
+            except LocalStoreRevisionConflict as exc:
+                self._raise_revision_conflict(exc.actual)
+            if not deleted:
+                raise HTTPException(status_code=404, detail="persona_not_found")
 
     def _allocate_persona_id(self) -> str:
         while True:
@@ -183,18 +202,17 @@ class PersonaEngine:
         current: PersonaProfile, expected_revision: int
     ) -> None:
         if current.revision != expected_revision:
-            raise HTTPException(
-                status_code=409,
-                detail={
-                    "code": "persona_revision_conflict",
-                    "current_revision": current.revision,
-                },
-            )
+            PersonaEngine._raise_revision_conflict(current.revision)
 
-    def _save_persona(self, persona: PersonaProfile) -> None:
-        if self._store is None or persona.source == "builtin":
-            return
-        self._store.save_item("personas", persona.id, persona)
+    @staticmethod
+    def _raise_revision_conflict(actual_revision: int) -> NoReturn:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "persona_revision_conflict",
+                "current_revision": actual_revision,
+            },
+        )
 
     def _reference_counts(self, persona_id: str) -> dict[str, int]:
         if self._store is None:

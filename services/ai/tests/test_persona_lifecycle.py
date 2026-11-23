@@ -185,6 +185,44 @@ class PersonaLifecycleTests(unittest.TestCase):
                 CreatePersonaRequest.model_validate(payload).slots[0].weight, boundary
             )
 
+    def test_two_engines_reject_a_race_after_the_initial_revision_check(self) -> None:
+        other_store = LocalJsonStore(self.root)
+        self.addCleanup(other_store.close)
+        other = PersonaEngine(other_store)
+        for operation in ("update", "delete"):
+            with self.subTest(operation=operation):
+                created = self.engine.create_persona(create_request())
+                self.assertEqual(other.require_persona(created.id).revision, 0)
+                self.assertIn(
+                    created.id, {persona.id for persona in other.list_personas()}
+                )
+                method = "save_item_cas" if operation == "update" else "delete_item_cas"
+                original = getattr(self.store, method)
+
+                def win_first(*args, **kwargs):
+                    other.update_persona(
+                        created.id, update_request(created, summary="Winner")
+                    )
+                    return original(*args, **kwargs)
+
+                with patch.object(self.store, method, side_effect=win_first):
+                    with self.assertRaises(HTTPException) as caught:
+                        if operation == "update":
+                            self.engine.update_persona(
+                                created.id, update_request(created, summary="Loser")
+                            )
+                        else:
+                            self.engine.delete_persona(created.id, expected_revision=0)
+                self.assertEqual(caught.exception.status_code, 409)
+                self.assertEqual(caught.exception.detail["current_revision"], 1)
+                self.assertEqual(
+                    self.engine.require_persona(created.id).summary, "Winner"
+                )
+                other.delete_persona(created.id, expected_revision=1)
+                with self.assertRaises(HTTPException) as missing:
+                    self.engine.require_persona(created.id)
+                self.assertEqual(missing.exception.status_code, 404)
+
     def test_unsafe_legacy_item_id_is_rejected_before_database_write(self) -> None:
         persona = self.engine.create_persona(create_request())
         with self.assertRaisesRegex(ValueError, "local_store_item_id_unsafe"):
