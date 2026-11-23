@@ -115,6 +115,7 @@ export function usePersonaWorkspaceController() {
     updatePersonaAssistInput,
     markPersonaDraftSaved,
     initializePersonaFromLibrary,
+    restoredNavigationDraft,
   } = personaEditor;
 
   const {
@@ -332,6 +333,8 @@ export function usePersonaWorkspaceController() {
     if (cardActionPending === "generate_long_text") {
       return "正在从长文本提取人格卡片";
     }
+    if (restoredNavigationDraft && isDraftDirty)
+      return "已恢复站内离开前未保存的人格草稿";
     if (selectedPersona) {
       const dirtySuffix = isDraftDirty ? " · 有未保存修改" : "";
       return isReadonlyPersona
@@ -346,6 +349,7 @@ export function usePersonaWorkspaceController() {
     cardActionPending,
     isDraftDirty,
     isReadonlyPersona,
+    restoredNavigationDraft,
     savingPersona,
     selectedPersona,
     slotAssistIndex,

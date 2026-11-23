@@ -3,6 +3,7 @@
 import {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -20,6 +21,16 @@ import {
   type PersonaDraft,
 } from "../lib/persona-draft";
 
+type PersonaNavigationDraft = {
+  id: string;
+  baseRevision: number | null;
+  draft: PersonaDraft;
+  baseline: string;
+};
+// Same-document history traversal cannot reliably be cancelled. Keep one draft
+// in the browser document, never in a cross-tab store or the server.
+let navigationDraft: PersonaNavigationDraft | null = null;
+
 export function usePersonaDraft(
   {
     getPersonasSnapshot,
@@ -34,6 +45,8 @@ export function usePersonaDraft(
 ) {
   const [selectedPersonaId, setSelectedPersonaId] = useState("");
   const selectedPersonaIdRef = useRef("");
+  const baseRevisionRef = useRef<number | null>(null);
+  const [restoredNavigationDraft, setRestoredNavigationDraft] = useState(false);
   const draftRevisionRef = useRef(0);
   const draftEpochRef = useRef(0);
   const ownerRef = useRef<object | null>(null);
@@ -53,7 +66,7 @@ export function usePersonaDraft(
   }, []);
   const readNavigationWarning = useCallback(
     () => ({
-      message: "当前人格有未保存修改。离开页面会丢弃这些修改。",
+      message: "当前人格有未保存修改。站内离开后仍可返回继续编辑；关闭或刷新会丢失。",
       isCurrent: captureDraftIntent(),
     }),
     [captureDraftIntent],
@@ -70,6 +83,36 @@ export function usePersonaDraft(
   const isDraftDirty = useMemo(
     () => personaDraftFingerprint(draft) !== draftBaselineFingerprint,
     [draft, draftBaselineFingerprint],
+  );
+
+  useLayoutEffect(() => {
+    if (!navigationDraft) return;
+    const saved = navigationDraft;
+    navigationDraft = null;
+    selectedPersonaIdRef.current = saved.id;
+    baseRevisionRef.current = saved.baseRevision;
+    draftRevisionRef.current++;
+    setSelectedPersonaId(saved.id);
+    setDraft(saved.draft);
+    setDraftBaselineFingerprint(saved.baseline);
+    setRestoredNavigationDraft(true);
+  }, []);
+  const navigationSnapshot = useRef<PersonaNavigationDraft | null>(null);
+  useLayoutEffect(() => {
+    navigationSnapshot.current = isDraftDirty
+      ? {
+          id: selectedPersonaId,
+          baseRevision: baseRevisionRef.current,
+          draft,
+          baseline: draftBaselineFingerprint,
+        }
+      : null;
+  });
+  useLayoutEffect(
+    () => () => {
+      navigationDraft = navigationSnapshot.current;
+    },
+    [],
   );
 
   function currentPersonaSubject(): string {
@@ -91,13 +134,17 @@ export function usePersonaDraft(
 
   function replacePersonaDraft(next: PersonaDraft, markClean: boolean): void {
     draftEpochRef.current++;
+    setRestoredNavigationDraft(false);
     updatePersonaDraft(next);
     if (markClean) {
       setDraftBaselineFingerprint(personaDraftFingerprint(next));
     }
   }
 
-  function selectPersonaDraft(personaId: string): void {
+  function selectPersonaDraft(
+    personaId: string,
+    baseRevision: number | null = null,
+  ): void {
     const normalizedPersonaId = personaId.trim();
     if (selectedPersonaIdRef.current !== normalizedPersonaId) {
       draftEpochRef.current++;
@@ -105,6 +152,7 @@ export function usePersonaDraft(
       onSelectionChange();
     }
     selectedPersonaIdRef.current = normalizedPersonaId;
+    baseRevisionRef.current = baseRevision;
     setSelectedPersonaId(normalizedPersonaId);
   }
 
@@ -153,7 +201,7 @@ export function usePersonaDraft(
     const nextDraft = nextPersona
       ? personaToDraft(nextPersona)
       : { ...EMPTY_PERSONA_DRAFT };
-    selectPersonaDraft(normalizedPersonaId);
+    selectPersonaDraft(normalizedPersonaId, nextPersona?.revision ?? null);
     replacePersonaDraft(nextDraft, true);
     onPromptDismiss();
     return true;
@@ -189,7 +237,7 @@ export function usePersonaDraft(
     // Initial data may arrive after the user started a new draft or imported one.
     if (!persona || selectedPersonaIdRef.current || draftRevisionRef.current !== 0)
       return;
-    selectPersonaDraft(persona.id);
+    selectPersonaDraft(persona.id, persona.revision);
     replacePersonaDraft(personaToDraft(persona), true);
   }
   return {
@@ -198,6 +246,8 @@ export function usePersonaDraft(
       diagnosticFlow.current = null;
     },
     getDraftEpoch: () => draftEpochRef.current,
+    getBasePersonaRevision: () => baseRevisionRef.current,
+    restoredNavigationDraft,
     selectedPersonaId,
     draft,
     isDraftDirty,

@@ -58,12 +58,13 @@ export function usePersonaPersistence(
     const target = library.personas.find(
       (persona) => persona.id === editor.getSelectedPersonaId(),
     );
+    const baseRevision = editor.getBasePersonaRevision();
     if (mode === "update") {
       if (!editor.getSelectedPersonaId()) {
         setSaveError("请先选择要更新的人格。");
         return;
       }
-      if (!target) {
+      if (!target || baseRevision === null) {
         setSaveError("当前人格不存在，请刷新人格库后重试。");
         return;
       }
@@ -88,7 +89,7 @@ export function usePersonaPersistence(
           ? await library.createPersona(payload, diagnostic)
           : await library.updatePersona(
               target!.id,
-              { ...payload, expectedRevision: target!.revision },
+              { ...payload, expectedRevision: baseRevision! },
               diagnostic,
             );
       if (!active.current) return;
@@ -98,7 +99,7 @@ export function usePersonaPersistence(
           current.subjectId === scope.subjectId &&
           current.draftRevision === scope.draftRevision
         ) {
-          if (mode === "create") editor.selectPersonaDraft(committed.id);
+          editor.selectPersonaDraft(committed.id, committed.revision);
           editor.replacePersonaDraft(personaToDraft(committed), true);
           onPromptDismiss();
         } else if (
@@ -106,7 +107,7 @@ export function usePersonaPersistence(
           editor.getSelectedPersonaId() === committed.id
         ) {
           // Only continuing edits to the same draft inherit the committed base.
-          if (mode === "create") editor.selectPersonaDraft(committed.id);
+          editor.selectPersonaDraft(committed.id, committed.revision);
           editor.markPersonaDraftSaved(personaToDraft(committed));
         }
       }
@@ -163,6 +164,7 @@ export function usePersonaPersistence(
         setLoadError("当前人格已不存在，请选择其他人格。");
         return;
       }
+      editor.selectPersonaDraft(reloaded.id, reloaded.revision);
       editor.replacePersonaDraft(personaToDraft(reloaded), true);
       onPromptDismiss();
       setPersonaLibraryMessage(`已重新载入人格「${reloaded.name}」。`);
@@ -250,7 +252,7 @@ export function usePersonaPersistence(
           retained = true;
         } else {
           const next = latest[0];
-          editor.selectPersonaDraft(next?.id ?? "");
+          editor.selectPersonaDraft(next?.id ?? "", next?.revision ?? null);
           editor.replacePersonaDraft(
             next ? personaToDraft(next) : { ...EMPTY_PERSONA_DRAFT },
             true,
