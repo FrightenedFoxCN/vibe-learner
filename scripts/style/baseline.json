@@ -1,6 +1,6 @@
 {
   "schemaVersion": "style-baseline-v1",
-  "capturedCommit": "a10c4729e6449d83209b6f1c0b004c58fa3c4d73",
+  "capturedCommit": "ad047ce14cc2bbe639777c19c5c835e5c7687bc5",
   "lint": [
     {
       "path": "apps/web/components/persona/persona-workspace-view.tsx",
@@ -384,7 +384,6 @@
     "apps/web/app/model-usage/page.tsx": "b0ed9a6e16034217bd02a0bf991e2a8a8ef877407e55b3405fd3ed4d3c75a5f2",
     "apps/web/components/async-feedback.tsx": "049302203ca9e0f77cbbf71eb6dbf80d1d00952f1c47711081f73af5707f3336",
     "apps/web/components/brand-mark.tsx": "0ab7d823b41986e47f51f7f910aeeeeddf22866c15e16395cc3cef8e6c29fdbc",
-    "apps/web/components/character-renderer.tsx": "99b99728f016b481d700cee842efde9f075dec4b36421a950e4e2fb7da65fe74",
     "apps/web/components/character-shell.tsx": "ab78dd81aa4d5ce48a37ade228b72e9c16d45382aade4fbe82eb1dd5022febb8",
     "apps/web/components/debug-overlay.tsx": "d727cfe6702242f5ffe940e533d0b29b826b757c340ba69f705aeac8061e2b99",
     "apps/web/components/debug-provider.tsx": "a95ae158ef23dadc96820af027be29fa119761343df430f0a34284f638ac6cb4",
@@ -474,7 +473,6 @@
     "apps/web/lib/runtime-settings-decode.ts": "6dc44181d5568597c51a951b2213d51eb70d26b7d94d2f9e3b7dd1b51fde36c5",
     "apps/web/lib/scene-editor-model.ts": "8fbec962204b43a477ef70c64160161591db65c6858508157484e2712eb27c87",
     "apps/web/lib/scene-import-structure.ts": "b61174ebb2f49a2c9bca0f47a87e1da8a969a744a0a1e433137b2f6966b3b9df",
-    "apps/web/lib/scene-profile.ts": "0b50bf141a4b9a85717f2741b3c6f625215f0a485b7bdfe6c29690a3c68c0c55",
     "apps/web/lib/settings-save-coordinator.ts": "dc5f77bb7d997bdd6803e043b6a54ae6bb247c4e8119502481b9a4053a378973",
     "apps/web/lib/stream-decode.ts": "238e0bc24a6e9b4480deda034d79a012c664b7c583fa5298e6765bb9decdd89f",
     "apps/web/lib/strict-response-decode.ts": "7de4cff2e9c1893611e78778927d483125f9d58dc4090af0c825085435f321ba",
@@ -488,10 +486,6 @@
     "apps/web/lib/tavern-workspace-ports.ts": "660b724a20fa3933f9cf658adefff393573a4b0ced0147311698136817ce8573",
     "apps/web/lib/tavern-workspace-state.ts": "366e171342ed7bcabb5d2ad2aed82747a6b01ddfbd70838a15a05b84c9c42f81",
     "apps/web/lib/view-preferences.ts": "84b7a5f76f1260977e2d455b8326af9ac5ca02372dd20723eb1f7957901dca4f",
-    "apps/web/next.config.mjs": "d72efb6bab92fe484591e49d49120e625d633e4ce4ec8ec767d1d93d98d350a3",
-    "apps/web/playwright.diagnostics.config.ts": "9e69b8d4f791b3822ded2bbbe2875b93f659648ad07fd6b51332075bb4388cde",
-    "apps/web/playwright.scene-independent.config.ts": "5d6dcdc9156a92f5bd671ae00eb5c126c933a2c2faf06e89afee0b9bded0095a",
-    "apps/web/scripts/harness-stage-decode.ts": "c75e1aba89c532c66e11782ce31552e75aae16c07e6ce9a2c5a7b4a78f3deba1",
     "packages/shared/src/character.ts": "5e35f325f7e2afe084dbc67d42e8f0d5b10a1e71cff4d354c8f5fd129fa77585",
     "packages/shared/src/diagnostic-export.ts": "02cd3fae97b70c294d9e62e1a1387c9d3edf2abbe9c81af1996f9eebac47a3f4",
     "packages/shared/src/diagnostic.ts": "8cfbf1c9cdc4ee22a80deb21a0905ddb0c9d233a824016af10245f28a4ac4ab4",

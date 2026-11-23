@@ -28,8 +28,8 @@
   - 将 KaTeX 与 react-pdf TextLayer 样式从全局下沉至富文本组件与 `projected-pdf-viewer.tsx`；下沉后仍须位于 `vendor` 层（以含 `@import … layer(vendor)` 的样式入口引入），不得退回未分层的 JS `import`。
   - 将 `rich-text-message.tsx` 改为 `next/dynamic` 按需加载 `rich-text-message-client.tsx`，加载期以纯文本兜底渲染，避免流式消息闪烁与布局跳动。
   - 将 `/study`、`/plan` 加入 `scripts/performance/web-bundle.mjs` 的测量路由并重录基线；统一脚本默认端口（13417）与 `docs/performance-budgets.md` 示例端口（3417）。完成后运行 `npm run bench:web-bundle` 验证首屏 gzip 体积显著下降且满足基线门禁。
-- [ ] **P1-FE-03 依赖与死代码清理**
-  - **前置决策**：删除 Playwright 后前端仅剩 1 个单元测试，Phase 2/3 无 UI 回归网。须先决定保留最小截图/冒烟测试，或以书面人工验收清单替代。
+- [x] **P1-FE-03 依赖与死代码清理**
+  - 用 [前端人工验收清单](docs/frontend-manual-acceptance.md) 替代不可运行的 Playwright 配置，保留自动化不变量测试。
   - 将 `rehype-katex` 从根 `package.json` 移入 `apps/web/package.json`，并显式声明当前仅靠依赖提升解析的 `katex`；移除未使用的 `rehype-mathjax`、`@testing-library/react`、`jsdom`。
   - 先删除 15 个指向不存在目录 `tests/browser` 的 `apps/web/playwright*.config.ts`，再移除仅被其引用的 `@playwright/test`（若前置决策保留浏览器测试则相应调整）。
   - 删除 3 个零引用死文件：`apps/web/components/character-renderer.tsx`、`apps/web/lib/scene-profile.ts`、`apps/web/scripts/harness-stage-decode.ts`，并运行 `npm run style:baseline` 清除其在 `scripts/style/baseline.json` 中的残留条目；评估清理 `NEXT_PUBLIC_TAVERN_ROOM_PROFILING`（`next.config.mjs` 与 `tavern-workspace.tsx`）残留分支。

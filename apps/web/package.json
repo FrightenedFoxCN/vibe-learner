@@ -15,6 +15,7 @@
     "@tauri-apps/api": "^2.8.0",
     "@tauri-apps/plugin-stronghold": "^2.3.1",
     "@vibe-learner/shared": "0.3.8",
+    "katex": "^0.16.45",
     "mermaid": "^11.14.0",
     "next": "16.2.3",
     "pdfjs-dist": "^5.4.296",
@@ -22,18 +23,15 @@
     "react-dom": "19.2.0",
     "react-markdown": "^10.1.0",
     "react-pdf": "^10.4.1",
-    "rehype-mathjax": "^7.1.0",
+    "rehype-katex": "^7.0.1",
     "remark-gfm": "^4.0.1",
     "remark-math": "^6.0.0"
   },
   "devDependencies": {
-    "@playwright/test": "^1.63.0",
     "@tailwindcss/postcss": "4.1.13",
-    "@testing-library/react": "^16.3.3",
     "@types/node": "24.8.1",
     "@types/react": "19.2.2",
     "@types/react-dom": "19.2.2",
-    "jsdom": "^30.0.1",
     "tailwindcss": "4.1.13",
     "tsx": "^4.23.13",
     "typescript": "^6.0.2"

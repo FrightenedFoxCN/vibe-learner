@@ -39,6 +39,7 @@
 | --- | --- |
 | [前端页面边界与分层](frontend-learning-workspace.md) | 路由分组、Provider 作用域、页面/Controller/Reducer/Data Lib 职责划分 |
 | [前端设计基线](frontend-design-baseline.md) | 视觉方向、尺寸间距、颜色 Token、组件规范、响应式与可访问性 |
+| [前端人工验收](frontend-manual-acceptance.md) | 本地浏览器冒烟与按域回归清单 |
 | [页面命名与术语](page-vocabulary.md) | 标准页面名、区块命名、命名规则与核心数据术语 |
 
 ## 接口、诊断、性能与打包

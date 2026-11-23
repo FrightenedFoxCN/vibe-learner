@@ -1,5 +1,5 @@
 "use client";
-import { Profiler, useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { useTavernWorkspaceController } from "../hooks/use-tavern-workspace-controller";
 import {
   defaultTavernWorkspacePorts,
@@ -152,39 +152,7 @@ export function TavernWorkspace({
         className={`tavern-workspace-grid ${activeRoom ? "has-room" : "empty-room"}`}
       >
         <div className="tavern-left-rail">
-          {process.env.NEXT_PUBLIC_TAVERN_ROOM_PROFILING === "1" ? (
-            <Profiler
-              id="TavernSessionPanel"
-              onRender={(
-                id,
-                phase,
-                actualDuration,
-                baseDuration,
-                startTime,
-                commitTime,
-              ) => {
-                const target = window as Window & {
-                  __tavernRoomProfileSamples?: unknown[];
-                };
-                const samples = (target.__tavernRoomProfileSamples ??= []);
-                samples.push({
-                  id,
-                  phase,
-                  actualDuration,
-                  baseDuration,
-                  startTime,
-                  commitTime,
-                  roomIds: roomButtons.map((room) => room.id),
-                  loadingMore: loadingMoreRooms,
-                });
-                if (samples.length > 2000) samples.splice(0, samples.length - 2000);
-              }}
-            >
-              {sessionPanel}
-            </Profiler>
-          ) : (
-            sessionPanel
-          )}
+          {sessionPanel}
           {showSetup ? (
             <TavernSetupPanel
               storage={storage}

@@ -32,9 +32,6 @@
     "gen:api-reference": "cd services/ai && UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python ../../scripts/gen_api_reference.py",
     "check:api-reference": "cd services/ai && UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python ../../scripts/gen_api_reference.py --check"
   },
-  "dependencies": {
-    "rehype-katex": "^7.0.1"
-  },
   "engines": {
     "node": ">=26 <27"
   },
