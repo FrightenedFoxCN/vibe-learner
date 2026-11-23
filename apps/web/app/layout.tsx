@@ -1,4 +1,3 @@
-import "react-pdf/dist/Page/TextLayer.css";
 import "./globals.css";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
@@ -13,7 +12,7 @@ import { RuntimeSettingsProvider } from "../components/runtime-settings-provider
 
 export const metadata: Metadata = {
   title: "Vibe Learner",
-  description: "本地优先的学习工作台。"
+  description: "本地优先的学习工作台。",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

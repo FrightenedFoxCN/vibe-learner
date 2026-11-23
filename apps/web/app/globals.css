@@ -1,6 +1,13 @@
-@import "katex/dist/katex.min.css";
-@layer theme, base, components, utilities;
+/*
+ * Cascade layers: third-party CSS lives in `vendor`, below every first-party
+ * layer, so overrides in `base` / `components` always win regardless of
+ * selector specificity. Unlayered CSS would beat all layers — never import
+ * vendor CSS without a layer.
+ */
+@layer theme, vendor, base, components, utilities;
 @import "tailwindcss/theme.css" layer(theme);
+@import "katex/dist/katex.min.css" layer(vendor);
+@import "react-pdf/dist/Page/TextLayer.css" layer(vendor);
 @import "tailwindcss/utilities.css" layer(utilities);
 
 :root {
