@@ -1,5 +1,7 @@
 "use client";
 
+import styles from "./plan-revision.module.css";
+
 import { useEffect, useRef, useState } from "react";
 import type { LearningPlan, PlanRevision } from "@vibe-learner/shared";
 import {
@@ -233,18 +235,18 @@ export function PlanRevisionPanel({
       : [];
   return (
     <details
-      className="plan-revision-panel"
+      className={styles.panel}
       open={open}
       onToggle={(event) => setOpen(event.currentTarget.open)}
     >
       <summary>
         修订计划 <span>版本 {plan.revision}</span>
       </summary>
-      <section aria-label="计划修订" aria-busy={busy} className="plan-revision-content">
-        <p className="plan-revision-intro">
+      <section aria-label="计划修订" aria-busy={busy} className={styles.content}>
+        <p className={styles.intro}>
           可调整标题、概览、今日任务及现有排期的顺序与重点。教材章节和学习记录会保留。
         </p>
-        <label className="plan-revision-field">
+        <label className={styles.field}>
           修订要求
           <textarea
             value={instruction}
@@ -253,18 +255,18 @@ export function PlanRevisionPanel({
             placeholder="例如：先复习基础，再加强例题练习"
           />
         </label>
-        <div className="plan-revision-actions">
+        <div className={styles.actions}>
           <button
             type="button"
-            className="plan-revision-primary"
+            className={styles.primary}
             disabled={busy || unresolved || !instruction.trim()}
             onClick={() => void generate()}
           >
             生成修订预览
           </button>
         </div>
-        <div className="plan-revision-rollback">
-          <label className="plan-revision-field">
+        <div className={styles.rollback}>
+          <label className={styles.field}>
             历史版本{" "}
             <select
               value={rollback}
@@ -282,14 +284,14 @@ export function PlanRevisionPanel({
           </label>
           <button
             type="button"
-            className="plan-revision-secondary"
+            className={styles.secondary}
             disabled={busy || unresolved || rollback === ""}
             onClick={() => void generate(Number(rollback))}
           >
             预览回滚
           </button>
         </div>
-        <p className="plan-revision-hint">
+        <p className={styles.hint}>
           回滚会建立新版本，仅恢复计划内容和顺序，保留当前进度。
         </p>
         <p role="status" aria-live="polite">
@@ -298,7 +300,7 @@ export function PlanRevisionPanel({
         {!!requestId && (
           <button
             type="button"
-            className="plan-revision-secondary"
+            className={styles.secondary}
             disabled={busy}
             onClick={() => void query()}
           >
@@ -308,7 +310,7 @@ export function PlanRevisionPanel({
         {missingRecord && (
           <button
             type="button"
-            className="plan-revision-secondary"
+            className={styles.secondary}
             disabled={busy}
             onClick={() => {
               try {
@@ -329,11 +331,11 @@ export function PlanRevisionPanel({
         )}
         {proposal && (
           <>
-            <p className="plan-revision-explanation">{proposal.explanation}</p>
-            <p className="plan-revision-meta">
+            <p className={styles.explanation}>{proposal.explanation}</p>
+            <p className={styles.meta}>
               基于版本 {record!.baseRevision}；当前版本 {plan.revision}。
             </p>
-            <div className="plan-revision-table-wrap">
+            <div className={styles.tableWrap}>
               <table>
                 <caption>修订差异</caption>
                 <thead>
@@ -359,10 +361,10 @@ export function PlanRevisionPanel({
           </>
         )}
         {record?.status === "ready" && (
-          <div className="plan-revision-decision-actions">
+          <div className={styles.decisionActions}>
             <button
               type="button"
-              className="plan-revision-primary"
+              className={styles.primary}
               disabled={busy || outcomeUnknown || plan.revision !== record.baseRevision}
               onClick={() => void decide("accept")}
             >
@@ -370,7 +372,7 @@ export function PlanRevisionPanel({
             </button>
             <button
               type="button"
-              className="plan-revision-secondary"
+              className={styles.secondary}
               disabled={busy || outcomeUnknown}
               onClick={() => void decide("reject")}
             >
@@ -386,7 +388,7 @@ export function PlanRevisionPanel({
         )}
         <button
           type="button"
-          className="plan-revision-secondary"
+          className={styles.secondary}
           disabled={busy}
           onClick={() => void refresh.current()}
         >

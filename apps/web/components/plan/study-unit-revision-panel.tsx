@@ -1,5 +1,7 @@
 "use client";
 
+import styles from "./plan-revision.module.css";
+
 import { useEffect, useRef, useState } from "react";
 import type {
   DocumentRecord,
@@ -164,13 +166,9 @@ export function StudyUnitRevisionPanel({
     !!base &&
     (!document || document.id !== base.id || document.revision !== base.revision);
   return (
-    <details className="plan-revision-panel" open>
+    <details className={styles.panel} open>
       <summary>教材单元修订预览</summary>
-      <section
-        className="plan-revision-content"
-        aria-label="教材单元修订"
-        aria-busy={busy}
-      >
+      <section className={styles.content} aria-label="教材单元修订" aria-busy={busy}>
         {record && <p role="status">{copy[record.status]}</p>}
         {base && (
           <p>
@@ -182,7 +180,7 @@ export function StudyUnitRevisionPanel({
           <p>{record.preview.suggestions.rationale}</p>
         )}
         {!!rows.length && (
-          <div className="plan-revision-table-wrap">
+          <div className={styles.tableWrap}>
             <table>
               <caption>标题、PDF 物理页范围、分类与保留差异</caption>
               <thead>
@@ -205,10 +203,10 @@ export function StudyUnitRevisionPanel({
           </div>
         )}
         {record?.status === "ready" && (
-          <div className="plan-revision-decision-actions">
+          <div className={styles.decisionActions}>
             <button
               type="button"
-              className="plan-revision-primary"
+              className={styles.primary}
               disabled={busy || unknown || stale}
               onClick={() => void run("accept")}
             >
@@ -216,7 +214,7 @@ export function StudyUnitRevisionPanel({
             </button>
             <button
               type="button"
-              className="plan-revision-secondary"
+              className={styles.secondary}
               disabled={busy || unknown}
               onClick={() => void run("reject")}
             >
@@ -230,7 +228,7 @@ export function StudyUnitRevisionPanel({
         {notice && <p role="status">{notice}</p>}
         <button
           type="button"
-          className="plan-revision-secondary"
+          className={styles.secondary}
           disabled={busy}
           onClick={() => void run()}
         >

@@ -1,5 +1,7 @@
 "use client";
 
+import styles from "./plan-revision.module.css";
+
 import { useEffect, useRef, useState } from "react";
 import type { DocumentCheckpoint, DocumentRecord } from "@vibe-learner/shared";
 import { getDocumentCheckpoint, processDocument } from "../../lib/data/documents";
@@ -138,7 +140,7 @@ export function DocumentCheckpointPanel({
   if (!record && !notice) return null;
   return (
     <section
-      className="plan-revision-panel plan-revision-content"
+      className={`${styles.panel} ${styles.content}`}
       aria-label="教材处理保存进度"
       aria-busy={busy}
     >

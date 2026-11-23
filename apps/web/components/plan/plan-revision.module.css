@@ -1,0 +1,176 @@
+@layer components {
+  /* Plan revision uses the shared page tokens and button hierarchy. Keep the
+   * proposal table readable without introducing a second visual language. */
+  .panel {
+    border: 1px solid var(--border);
+    background: var(--bg);
+  }
+  .panel > summary {
+    min-height: 52px;
+    padding: 0 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    list-style: none;
+    color: var(--ink);
+    font-size: 15px;
+    font-weight: 700;
+  }
+  .panel > summary::-webkit-details-marker {
+    display: none;
+  }
+  .panel > summary::before {
+    content: "＋";
+    width: 18px;
+    color: var(--accent);
+    font-weight: 400;
+  }
+  .panel[open] > summary::before {
+    content: "−";
+  }
+  .panel > summary span {
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .content {
+    display: grid;
+    gap: 12px;
+    padding: 0 16px 16px;
+  }
+  .content > p {
+    margin: 0;
+    color: var(--ink-2);
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  .intro {
+    padding-top: 2px;
+  }
+  .field {
+    display: grid;
+    gap: 5px;
+    color: var(--ink-2);
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .field textarea,
+  .field select {
+    width: 100%;
+    min-height: 44px;
+    border: 1px solid var(--border);
+    border-radius: 0;
+    padding: 9px 10px;
+    background: var(--bg);
+    color: var(--ink);
+  }
+  .field textarea {
+    min-height: 96px;
+    resize: vertical;
+    line-height: 1.6;
+  }
+  .field textarea:focus,
+  .field select:focus {
+    border-color: var(--accent);
+    outline: 2px solid color-mix(in srgb, var(--accent) 18%, transparent);
+    outline-offset: 0;
+  }
+  .actions,
+  .rollback,
+  .decisionActions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: end;
+  }
+  .rollback .field {
+    flex: 1 1 240px;
+  }
+  .primary,
+  .secondary {
+    min-height: 44px;
+    padding: 8px 14px;
+    border: 1px solid var(--border-strong);
+    border-radius: 0;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .primary {
+    border-color: var(--accent);
+    background: var(--accent);
+    color: var(--bg);
+  }
+  .secondary {
+    background: var(--bg);
+    color: var(--ink-2);
+  }
+  .primary:hover:not(:disabled) {
+    background: var(--accent-hover);
+  }
+  .secondary:hover:not(:disabled) {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-soft);
+  }
+  .primary:disabled,
+  .secondary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  .content > .hint,
+  .content > .meta {
+    color: var(--muted);
+    font-size: 12px;
+  }
+  .content [role="status"] {
+    min-height: 24px;
+    color: var(--muted);
+  }
+  .content [role="alert"] {
+    padding: 10px;
+    border: 1px solid color-mix(in srgb, var(--negative) 35%, var(--border));
+    background: color-mix(in srgb, var(--negative) 5%, var(--bg));
+    color: var(--negative);
+  }
+  .explanation {
+    padding: 10px;
+    border-left: 3px solid var(--accent);
+    background: var(--accent-soft);
+  }
+  .tableWrap {
+    overflow-x: auto;
+    border: 1px solid var(--border);
+  }
+  .tableWrap table {
+    width: 100%;
+    min-width: 620px;
+    table-layout: fixed;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+  .tableWrap caption {
+    padding: 10px;
+    text-align: left;
+    color: var(--ink);
+    font-weight: 700;
+  }
+  .tableWrap th,
+  .tableWrap td {
+    padding: 10px;
+    border-top: 1px solid var(--border);
+    vertical-align: top;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    text-align: left;
+  }
+  .tableWrap th {
+    color: var(--ink-2);
+    background: var(--panel);
+    font-weight: 600;
+  }
+  .tableWrap td:last-child {
+    color: var(--accent);
+  }
+}

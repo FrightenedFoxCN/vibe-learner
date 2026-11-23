@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
+import styles from "./learning-workspace.module.css";
 
 import { DocumentCheckpointPanel } from "./document-checkpoint-panel";
 import { DocumentSetup } from "./document-setup";
@@ -110,24 +111,23 @@ export function LearningWorkspace() {
     });
   };
   const pageStyle = {
-    ...styles.page,
-    ["--plan-heading-offset" as string]: `${planHeadingHeight}px`,
+    "--plan-heading-offset": `${planHeadingHeight}px`,
   } as CSSProperties;
 
   return (
-    <main className="with-app-nav" style={pageStyle}>
+    <main className={`with-app-nav ${styles.page}`} style={pageStyle}>
       <TopNav currentPath="/plan" />
 
-      <div ref={headingRef} style={styles.heading}>
-        <div style={styles.headingRow}>
-          <h1 style={styles.pageTitle}>计划生成</h1>
+      <div ref={headingRef} className={styles.heading}>
+        <div className={styles.headingRow}>
+          <h1 className={styles.pageTitle}>计划生成</h1>
           <ProviderTruth scope="plan" />
-          {notice ? <div style={styles.notice}>{notice}</div> : null}
+          {notice ? <div className={styles.notice}>{notice}</div> : null}
         </div>
       </div>
 
-      <div className="plan-content-grid">
-        <div className="plan-setup-shell" style={styles.planSetupShell}>
+      <div className={styles.contentGrid}>
+        <div className={styles.planSetupShell}>
           <DocumentSetup
             personas={personas}
             selectedPersonaId={selectedPersona.id}
@@ -156,7 +156,7 @@ export function LearningWorkspace() {
           />
         </div>
 
-        <div className="plan-main-column" style={styles.planColumn}>
+        <div className={styles.planColumn}>
           <DocumentCheckpointPanel
             documentId={processStreamDocumentId}
             status={processStreamStatus}
@@ -225,60 +225,3 @@ export function LearningWorkspace() {
     </main>
   );
 }
-
-const styles: Record<string, CSSProperties> = {
-  page: {
-    minHeight: "100vh",
-    maxWidth: 1600,
-    margin: "0 auto",
-    padding: "0 28px 48px",
-    display: "grid",
-    gap: 0,
-    alignContent: "start",
-  },
-  heading: {
-    display: "grid",
-    gap: 6,
-    position: "sticky",
-    top: 0,
-    zIndex: 15,
-    paddingTop: 20,
-    marginBottom: 18,
-    paddingBottom: 16,
-    borderBottom: "1px solid color-mix(in srgb, var(--border) 76%, white)",
-    background: "color-mix(in srgb, white 92%, var(--bg))",
-  },
-  headingRow: {
-    display: "flex",
-    alignItems: "center",
-    gap: 12,
-    flexWrap: "wrap",
-  },
-  pageTitle: {
-    margin: 0,
-    fontSize: 20,
-    fontWeight: 700,
-    color: "var(--ink)",
-    lineHeight: 1.2,
-  },
-  notice: {
-    width: "fit-content",
-    maxWidth: "100%",
-    minHeight: 24,
-    padding: "0 8px",
-    border: "none",
-    background: "color-mix(in srgb, white 72%, var(--accent-soft))",
-    color: "var(--ink-2)",
-    fontSize: 12,
-    lineHeight: 1,
-    display: "inline-flex",
-    alignItems: "center",
-  },
-  planSetupShell: {
-    minWidth: 0,
-  },
-  planColumn: {
-    display: "grid",
-    gap: 14,
-  },
-};

@@ -1,0 +1,383 @@
+@layer components {
+  .wrap {
+    position: fixed;
+    top: var(--plan-heading-offset, 72px);
+    left: max(
+      calc((100vw - 1600px) / 2 + var(--app-nav-width) + 24px),
+      calc(var(--app-nav-width) + 24px)
+    );
+    width: min(336px, calc(100vw - var(--app-nav-width) - 56px));
+    max-height: calc(100vh - var(--plan-heading-offset, 72px) - 20px);
+    overflow-y: auto;
+    align-self: start;
+
+    display: grid;
+    gap: 16px;
+    padding-top: 14px;
+    padding-right: 4px;
+  }
+
+  .sectionHead {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    min-height: 24px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid color-mix(in srgb, var(--border) 76%, var(--bg));
+  }
+
+  .sectionTitle {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .sectionActions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .card {
+    display: grid;
+    gap: 14px;
+    padding: 0;
+    border: none;
+    background: transparent;
+  }
+
+  .formSection {
+    display: grid;
+    gap: 12px;
+  }
+
+  .formSectionSeparated {
+    padding-top: 14px;
+    border-top: 1px solid color-mix(in srgb, var(--border) 68%, var(--bg));
+  }
+
+  .form {
+    display: grid;
+    gap: 12px;
+  }
+
+  .field {
+    display: grid;
+    gap: 7px;
+  }
+
+  .fieldLabel {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .textarea {
+    width: 100%;
+    min-height: 96px;
+    border: 1px solid color-mix(in srgb, var(--border) 76%, var(--bg));
+    padding: 10px 12px;
+    background: color-mix(in srgb, var(--bg) 72%, var(--panel));
+    resize: vertical;
+    font-size: 14px;
+    line-height: 1.65;
+    color: var(--ink);
+  }
+
+  .fileButton {
+    min-height: 38px;
+    border: 1px solid color-mix(in srgb, var(--border) 76%, var(--bg));
+    padding: 0 12px;
+    background: color-mix(in srgb, var(--bg) 72%, var(--panel));
+    color: var(--ink);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .select {
+    width: 100%;
+    height: 38px;
+    border: 1px solid color-mix(in srgb, var(--border) 76%, var(--bg));
+    padding: 0 10px;
+    background: color-mix(in srgb, var(--bg) 72%, var(--panel));
+    color: var(--ink);
+    font-size: 14px;
+  }
+
+  .primaryButton {
+    border: none;
+    min-height: 32px;
+    padding: 0 12px;
+    background: var(--accent);
+    color: var(--bg);
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 11px;
+    justify-self: start;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .secondaryButton {
+    border: none;
+    min-height: 36px;
+    padding: 0 14px;
+    background: color-mix(in srgb, var(--bg) 84%, var(--negative) 16%);
+    color: var(--negative);
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 12px;
+    justify-self: start;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .warningCard {
+    display: grid;
+    gap: 6px;
+    padding: 12px 14px;
+    border: none;
+    background: color-mix(in srgb, var(--bg) 84%, var(--negative) 16%);
+  }
+
+  .warningTitle {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--negative);
+  }
+
+  .warningText {
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--ink-2);
+  }
+
+  .warningLink {
+    width: fit-content;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent);
+  }
+
+  .progressSection {
+    display: grid;
+    gap: 10px;
+    padding-top: 16px;
+    border-top: 1px solid color-mix(in srgb, var(--border) 68%, var(--bg));
+  }
+
+  .progressHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .progressHeaderMeta {
+    display: grid;
+    gap: 2px;
+  }
+
+  .progressTitle {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--ink);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+  }
+
+  .progressStats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .progressStat {
+    padding: 5px 8px;
+    border: none;
+    background: color-mix(in srgb, var(--bg) 68%, var(--panel));
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .progressNotice {
+    padding: 8px 10px;
+    border: none;
+    background: color-mix(in srgb, var(--bg) 68%, var(--panel));
+    color: var(--ink);
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  .questionNotice {
+    display: grid;
+    gap: 8px;
+  }
+
+  .questionNoticeItem {
+    display: grid;
+    gap: 4px;
+    padding: 10px 12px;
+    border: none;
+    background: color-mix(in srgb, var(--bg) 68%, var(--panel));
+    font-size: 13px;
+    color: var(--ink);
+    line-height: 1.6;
+  }
+
+  .questionNoticeLabel {
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+  }
+
+  .questionNoticeReason {
+    color: var(--muted);
+  }
+
+  .roundList {
+    display: grid;
+    gap: 8px;
+  }
+
+  .roundCard {
+    display: grid;
+    gap: 6px;
+    padding: 10px 12px;
+    border: none;
+    background: color-mix(in srgb, var(--bg) 68%, var(--panel));
+  }
+
+  .roundHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .roundTitle {
+    font-size: 13px;
+    color: var(--ink);
+  }
+
+  .roundMeta {
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .roundError {
+    font-size: 12px;
+    color: var(--negative);
+  }
+
+  .roundToolList {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .roundToolTag {
+    padding: 4px 8px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--muted);
+    font-size: 12px;
+  }
+
+  .foldSection {
+    display: grid;
+    gap: 10px;
+  }
+
+  .foldButton {
+    min-height: 30px;
+    width: fit-content;
+    border: 1px solid color-mix(in srgb, var(--accent) 18%, var(--border));
+    padding: 0 10px;
+    background: var(--bg);
+    color: var(--accent);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .primaryButton:disabled,
+  .secondaryButton:disabled,
+  .fileButton:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  .progressStat[data-status="completed"],
+  .progressStat[data-status="running"] {
+    color: var(--accent);
+    border-color: color-mix(in srgb, var(--accent) 28%, var(--border));
+  }
+
+  .progressStat[data-status="completed"] {
+    background: color-mix(in srgb, var(--bg) 88%, var(--accent-soft));
+  }
+
+  .progressStat[data-status="error"],
+  .progressStat[data-status="failed"] {
+    color: var(--negative);
+    border-color: color-mix(in srgb, var(--negative) 24%, transparent);
+    background: color-mix(in srgb, var(--negative) 6%, transparent);
+  }
+
+  .progressStat[data-status="cancelled"] {
+    --plan-warning: oklch(48% 0.11 72);
+    color: var(--plan-warning);
+    border-color: color-mix(in srgb, var(--plan-warning) 24%, transparent);
+    background: color-mix(in srgb, var(--plan-warning) 6%, transparent);
+  }
+
+  .roundStatus.progressStat {
+    padding: 3px 8px;
+  }
+
+  .roundStatus.progressStat[data-status="running"] {
+    border-color: color-mix(in srgb, var(--border) 72%, var(--bg));
+  }
+
+  .fileSelection {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    gap: 10px;
+  }
+
+  .fileName {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--ink-2);
+    font-size: 13px;
+  }
+  @media (max-width: 1200px) {
+    .wrap {
+      position: static;
+      width: auto;
+      max-height: none;
+      overflow: visible;
+      left: auto;
+      top: auto;
+    }
+  }
+}

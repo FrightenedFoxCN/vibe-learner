@@ -1,5 +1,7 @@
 "use client";
 
+import styles from "./plan-revision.module.css";
+
 import { useEffect, useState } from "react";
 import type { DocumentPageNumbering, LearningPlan } from "@vibe-learner/shared";
 import { getDocumentPageNumbering } from "../../lib/data/documents";
@@ -33,10 +35,7 @@ export function PlanPageScope({ plan }: { plan: LearningPlan }) {
   }, [plan.id, plan.documentId, key]);
   if (!explicit.length) return null;
   return (
-    <section
-      className="plan-revision-panel plan-revision-content"
-      aria-label="计划页码范围"
-    >
+    <section className={`${styles.panel} ${styles.content}`} aria-label="计划页码范围">
       <h2>PDF 物理页范围：{formatPhysicalPdfRanges(explicit)}</h2>
       <p>
         这是创建计划时保存的限定范围；所有排期锚点、内容切片和取证均使用从 1 开始的 PDF

@@ -1,0 +1,76 @@
+@layer components {
+  .page {
+    min-height: 100vh;
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: 0 28px 48px;
+    display: grid;
+    gap: 0;
+    align-content: start;
+  }
+
+  .heading {
+    display: grid;
+    gap: 6px;
+    position: sticky;
+    top: 0;
+    z-index: 15;
+    padding-top: 20px;
+    margin-bottom: 18px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid color-mix(in srgb, var(--border) 76%, var(--bg));
+    background: color-mix(in srgb, var(--bg) 92%, var(--bg));
+  }
+
+  .headingRow {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .pageTitle {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--ink);
+    line-height: 1.2;
+  }
+
+  .notice {
+    width: fit-content;
+    max-width: 100%;
+    min-height: 24px;
+    padding: 0 8px;
+    border: none;
+    background: color-mix(in srgb, var(--bg) 72%, var(--accent-soft));
+    color: var(--ink-2);
+    font-size: 12px;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .planSetupShell {
+    min-width: 0;
+  }
+
+  .planColumn {
+    min-width: 0;
+    display: grid;
+    gap: 14px;
+  }
+
+  .contentGrid {
+    display: grid;
+    grid-template-columns: minmax(296px, 336px) minmax(0, 1fr);
+    align-items: start;
+    gap: 22px;
+  }
+
+  @media (max-width: 1200px) {
+    .contentGrid {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+}

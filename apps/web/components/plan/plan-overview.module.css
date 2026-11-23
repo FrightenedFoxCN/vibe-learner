@@ -1,0 +1,517 @@
+@layer components {
+  .wrap {
+    display: grid;
+    gap: 14px;
+  }
+
+  .headerRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid color-mix(in srgb, var(--border) 76%, var(--bg));
+  }
+
+  .headerMeta {
+    display: flex;
+    align-items: center;
+  }
+
+  .titleBlock {
+    padding-top: 4px;
+    display: grid;
+    gap: 8px;
+  }
+
+  .titleRow {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .titleActions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .title {
+    margin: 0;
+    font-size: clamp(1.32rem, 1.95vw, 1.72rem);
+    line-height: 1.18;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.02em;
+  }
+
+  .titleInput {
+    width: 100%;
+    min-height: 42px;
+    border: 1px solid color-mix(in srgb, var(--border-strong) 82%, var(--bg));
+    padding: 8px 10px;
+    background: color-mix(in srgb, var(--bg) 74%, var(--panel));
+    color: var(--ink);
+    font-size: 15px;
+    font-weight: 600;
+  }
+
+  .badge {
+    min-height: 20px;
+    padding: 0 6px;
+    border: none;
+    background: color-mix(in srgb, var(--bg) 70%, var(--panel));
+    font-size: 10px;
+    color: var(--ink-2);
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .overview {
+    margin: 0;
+    color: var(--ink-2);
+    font-size: 15px;
+    line-height: 1.6;
+    max-width: 72ch;
+  }
+
+  .metaStrip {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .metaChip {
+    min-height: auto;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    font-size: 11px;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .todayTaskCard {
+    display: grid;
+    gap: 8px;
+    padding: 12px 14px;
+    border: 1px solid color-mix(in srgb, var(--border) 72%, var(--bg));
+    background: color-mix(in srgb, var(--bg) 84%, var(--panel));
+  }
+
+  .todayTaskList {
+    display: grid;
+    gap: 6px;
+    margin: 0;
+    padding-left: 22px;
+  }
+
+  .todayTask {
+    color: var(--ink-2);
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  .primaryButton {
+    border: none;
+    min-height: 34px;
+    padding: 0 16px;
+    background: var(--accent);
+    color: var(--bg);
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 12px;
+  }
+
+  .ghostButton {
+    min-height: 34px;
+    border: none;
+    padding: 0 12px;
+    background: color-mix(in srgb, var(--bg) 70%, var(--panel));
+    color: var(--ink-2);
+    font-size: 12px;
+    cursor: pointer;
+  }
+
+  .inlineButton {
+    min-height: 30px;
+    width: fit-content;
+    border: none;
+    padding: 0 10px;
+    background: color-mix(in srgb, var(--bg) 70%, var(--panel));
+    color: var(--ink-2);
+    font-size: 11px;
+    cursor: pointer;
+  }
+
+  .progressCard {
+    display: grid;
+    gap: 12px;
+    padding: 18px;
+    border: 1px solid color-mix(in srgb, var(--border) 72%, var(--bg));
+    background: color-mix(in srgb, var(--bg) 84%, var(--panel));
+  }
+
+  .progressHead {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .sectionHead {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .sectionHeadMeta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .sectionLabel {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+  }
+
+  .count {
+    font-size: 10px;
+    color: var(--muted);
+  }
+
+  .progressPercent {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--accent);
+  }
+
+  .progressBarTrack {
+    height: 8px;
+    background: color-mix(in srgb, var(--accent-soft) 35%, var(--bg));
+    overflow: hidden;
+  }
+
+  .progressBarFill {
+    height: 100%;
+    background: var(--accent);
+  }
+
+  .progressStats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .progressStat {
+    padding: 4px 8px;
+    border: none;
+    background: color-mix(in srgb, var(--bg) 70%, var(--panel));
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .scheduleList {
+    display: grid;
+    gap: 0;
+    border-top: 1px solid color-mix(in srgb, var(--border) 72%, var(--bg));
+  }
+
+  .startNotice {
+    margin: 0;
+    padding-top: 12px;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.55;
+  }
+
+  .scheduleItem {
+    display: grid;
+    gap: 6px;
+    padding: 12px 0;
+    border-bottom: 1px solid color-mix(in srgb, var(--border) 72%, var(--bg));
+  }
+
+  .scheduleHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .scheduleHeaderActions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .scheduleTitleBlock {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .scheduleIndex {
+    color: var(--accent);
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .scheduleToggle {
+    min-height: 42px;
+    border: none;
+    border-bottom: 1px solid color-mix(in srgb, var(--border) 72%, var(--bg));
+    padding: 0;
+    background: transparent;
+    color: var(--muted);
+    font-size: 12px;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .scheduleTitle {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+
+  .scheduleMeta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .scheduleMetaItem {
+    padding: 3px 7px;
+    background: color-mix(in srgb, var(--bg) 70%, var(--panel));
+    color: var(--muted);
+    font-size: 11px;
+  }
+
+  .scheduleTaskBlock {
+    display: grid;
+    grid-template-columns: 64px minmax(0, 1fr);
+    gap: 8px;
+    align-items: start;
+  }
+
+  .scheduleTaskLabel {
+    padding-top: 2px;
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  .scheduleFocus {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--ink-2);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    user-select: text;
+  }
+
+  .questionCard {
+    display: grid;
+    gap: 10px;
+    padding: 18px;
+    border: 1px solid color-mix(in srgb, var(--border) 72%, var(--bg));
+    background: color-mix(in srgb, var(--bg) 84%, var(--panel));
+  }
+
+  .questionList {
+    display: grid;
+    gap: 0;
+  }
+
+  .questionItem {
+    display: grid;
+    gap: 8px;
+    padding: 12px 0;
+    border-bottom: 1px solid color-mix(in srgb, var(--border) 68%, var(--bg));
+    background: transparent;
+  }
+
+  .questionHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .questionTitle {
+    font-size: 14px;
+    color: var(--ink);
+  }
+
+  .questionReason {
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--muted);
+  }
+
+  .focusTextarea {
+    width: 100%;
+    min-height: 112px;
+    border: 1px solid color-mix(in srgb, var(--border-strong) 82%, var(--bg));
+    padding: 10px 12px;
+    background: color-mix(in srgb, var(--bg) 74%, var(--panel));
+    color: var(--ink);
+    font-size: 14px;
+    line-height: 1.6;
+    resize: vertical;
+  }
+
+  .subsectionList {
+    display: grid;
+    gap: 6px;
+    padding-top: 2px;
+    padding-left: 14px;
+    border-left: 1px solid color-mix(in srgb, var(--border) 62%, var(--bg));
+  }
+
+  .subsectionTag {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 32px;
+    padding: 0 10px;
+    border: none;
+    background: color-mix(in srgb, var(--bg) 72%, var(--panel));
+    color: var(--ink-2);
+    text-decoration: none;
+  }
+
+  .subsectionName {
+    min-width: 0;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--ink);
+  }
+
+  .subsectionPage {
+    font-size: 10px;
+    color: var(--muted);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .reviewDetails {
+    margin-top: 4px;
+    border-top: 1px dashed color-mix(in srgb, var(--border) 72%, var(--bg));
+    padding-top: 8px;
+  }
+
+  .reviewSummary {
+    width: fit-content;
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .reviewBody {
+    display: grid;
+    justify-items: start;
+    gap: 8px;
+    margin-top: 10px;
+  }
+
+  .reviewLabel {
+    display: grid;
+    gap: 5px;
+    width: 100%;
+    color: var(--ink-2);
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .reviewTextarea {
+    width: 100%;
+    min-height: 72px;
+    box-sizing: border-box;
+    border: 1px solid var(--border);
+    padding: 8px 10px;
+    background: var(--bg);
+    color: var(--ink);
+    font-size: 13px;
+    line-height: 1.6;
+    resize: vertical;
+  }
+
+  .reviewList {
+    display: grid;
+    gap: 8px;
+    width: 100%;
+    margin: 0;
+    padding-left: 20px;
+  }
+
+  .reviewEntry {
+    display: grid;
+    gap: 2px;
+    color: var(--ink-2);
+    font-size: 12px;
+    line-height: 1.55;
+  }
+
+  .reviewMeta {
+    color: var(--muted);
+    font-size: 10px;
+  }
+
+  .reviewEmpty {
+    margin: 0;
+    color: var(--muted);
+    font-size: 12px;
+  }
+
+  .emptyState {
+    padding-top: 4px;
+  }
+
+  .titleActions .primaryButton:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  .statusBadge {
+    padding: 3px 8px;
+    background: color-mix(in srgb, var(--bg) 72%, var(--panel));
+    color: var(--muted);
+    font-size: 10px;
+  }
+
+  .statusBadge[data-status="completed"] {
+    color: var(--accent);
+    background: color-mix(in srgb, var(--accent-soft) 72%, var(--bg));
+  }
+
+  .statusBadge[data-status="in_progress"] {
+    --plan-warning: oklch(48% 0.11 72);
+    color: var(--plan-warning);
+    background: color-mix(in srgb, var(--plan-warning) 10%, transparent);
+  }
+
+  .statusBadge[data-status="blocked"] {
+    color: var(--negative);
+    background: color-mix(in srgb, var(--negative) 10%, transparent);
+  }
+}
