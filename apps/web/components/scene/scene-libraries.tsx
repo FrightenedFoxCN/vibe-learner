@@ -92,7 +92,9 @@ export function ReusableNodeLibrary({
                     className={css.sidebarButton}
                     type="button"
                     disabled={reusableActionPendingId === item.nodeId}
-                    onClick={() => void deleteReusableNode(item.nodeId)}
+                    onClick={(event) =>
+                      void deleteReusableNode(item, event.currentTarget)
+                    }
                     title={
                       reusableActionPendingId === item.nodeId
                         ? "删除中"

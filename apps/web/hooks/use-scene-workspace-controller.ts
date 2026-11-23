@@ -411,8 +411,24 @@ export function useSceneWorkspaceController() {
     );
   }
 
-  async function deleteReusableNode(nodeId: string) {
-    await runReusableAction(nodeId, "", () => deleteReusableSceneNode(nodeId));
+  async function deleteReusableNode(
+    item: ReusableSceneNodePayload,
+    trigger: HTMLElement,
+  ) {
+    const approved = await confirm({
+      title: "删除复用节点？",
+      message: `将从复用节点库移除「${item.title}」，已插入的节点不受影响。`,
+      confirmLabel: "删除节点",
+      danger: true,
+      trigger,
+      fallbackFocus: () => pageHeadingRef.current,
+    });
+    if (!approved || !draftView.current.active) return;
+    await runReusableAction(item.nodeId, "已删除复用节点。", async () => {
+      await deleteReusableSceneNode(item.nodeId);
+      if (draftView.current.active && document.activeElement === document.body)
+        pageHeadingRef.current?.focus({ preventScroll: true });
+    });
   }
 
   function insertReusableNode(item: ReusableSceneNodePayload) {
@@ -587,17 +603,25 @@ export function useSceneWorkspaceController() {
       markSubmitted();
       setSceneIoMessage(`已保存场景“${created.sceneName}”。`);
     } catch (error) {
-      if (boundScene && isApiHttpError(error) && (error.status === 409 || error.status === 404)) {
+      if (
+        boundScene &&
+        isApiHttpError(error) &&
+        (error.status === 409 || error.status === 404)
+      ) {
         if (getSceneBinding() !== boundScene) return;
         try {
           const latest = await refreshSceneLibraryItem(boundScene.sceneId);
           if (latest && getSceneBinding() !== boundScene) return;
-          setSceneIoError(latest
-            ? "场景已在其他操作中更新，当前草稿仍在。可从场景库载入最新版本，或将草稿另存为新场景。"
-            : "原场景已不存在，当前草稿仍在。可另存为新场景。");
+          setSceneIoError(
+            latest
+              ? "场景已在其他操作中更新，当前草稿仍在。可从场景库载入最新版本，或将草稿另存为新场景。"
+              : "原场景已不存在，当前草稿仍在。可另存为新场景。",
+          );
         } catch {
           if (getSceneBinding() === boundScene)
-            setSceneIoError("场景版本已变化，且未能读取最新版本。当前草稿仍在，可另存为新场景。");
+            setSceneIoError(
+              "场景版本已变化，且未能读取最新版本。当前草稿仍在，可另存为新场景。",
+            );
         }
       } else {
         setSceneIoError("保存到场景库失败，请稍后重试。");
