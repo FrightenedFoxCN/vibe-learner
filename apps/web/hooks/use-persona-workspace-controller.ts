@@ -768,14 +768,26 @@ export function usePersonaWorkspaceController() {
     );
   }
 
-  async function handleDeletePersonaCard(cardId: string) {
-    setCardError("");
-    setCardMessage("");
+  async function handleDeletePersonaCard(cardId: string, trigger: HTMLElement) {
+    const card = personaCards.find((item) => item.id === cardId);
+    if (!card || cardDeleteOwnerRef.current) return;
     const owner = {};
     cardDeleteOwnerRef.current = owner;
-    setCardDeletePendingId(cardId);
     try {
+      const approved = await confirm({
+        title: "删除人格卡片？",
+        message: `将从卡片库移除「${card.title}」，已插入的插槽不受影响。`,
+        confirmLabel: "删除卡片",
+        danger: true,
+        trigger,
+        fallbackFocus: () => document.getElementById("persona-draft-name"),
+      });
+      if (!approved || cardDeleteOwnerRef.current !== owner) return;
+      setCardError("");
+      setCardMessage("");
+      setCardDeletePendingId(cardId);
       await deletePersonaCard(cardId);
+      if (cardDeleteOwnerRef.current === owner) setCardMessage("已删除人格卡片。");
     } catch (error) {
       if (cardDeleteOwnerRef.current === owner) setCardError(String(error));
     } finally {

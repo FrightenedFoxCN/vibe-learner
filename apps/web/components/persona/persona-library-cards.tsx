@@ -25,7 +25,7 @@ export function PersonaCardView({
   onDragStart: (id: string) => void;
   onDragEnd: () => void;
   onInsert: (card: PersonaCard) => void;
-  onDelete: (id: string) => void;
+  onDelete: (id: string, trigger: HTMLElement) => void;
 }) {
   return (
     <article
@@ -76,7 +76,7 @@ export function PersonaCardView({
             className={styles.sidebarIconButton}
             type="button"
             disabled={deletePending}
-            onClick={() => void onDelete(card.id)}
+            onClick={(event) => void onDelete(card.id, event.currentTarget)}
             title={deletePending ? "删除中" : "删除"}
             aria-label={deletePending ? "删除中" : "删除"}
           >
