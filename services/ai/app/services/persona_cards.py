@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
 from uuid import uuid4
 
 from fastapi import HTTPException
@@ -8,6 +7,7 @@ from fastapi import HTTPException
 from app.models.api import CreatePersonaCardRequest
 from app.models.domain import PersonaCardRecord
 from app.services.local_store import LocalJsonStore
+from app.core.clock import utc_now_iso as _now_iso
 
 
 class PersonaCardLibraryService:
@@ -16,7 +16,9 @@ class PersonaCardLibraryService:
 
     def list_cards(self) -> list[PersonaCardRecord]:
         cards = self._store.load_category_items("persona_cards", PersonaCardRecord)
-        return sorted(cards, key=lambda item: (item.updated_at, item.created_at), reverse=True)
+        return sorted(
+            cards, key=lambda item: (item.updated_at, item.created_at), reverse=True
+        )
 
     def require_card(self, card_id: str) -> PersonaCardRecord:
         card = self._store.load_item("persona_cards", card_id, PersonaCardRecord)
@@ -42,13 +44,15 @@ class PersonaCardLibraryService:
         self._store.save_item("persona_cards", card_id, record)
         return record
 
-    def create_many(self, items: list[CreatePersonaCardRequest]) -> list[PersonaCardRecord]:
-        return [self.create_card(item) for item in items if item.content.strip() and item.title.strip()]
+    def create_many(
+        self, items: list[CreatePersonaCardRequest]
+    ) -> list[PersonaCardRecord]:
+        return [
+            self.create_card(item)
+            for item in items
+            if item.content.strip() and item.title.strip()
+        ]
 
     def delete_card(self, card_id: str) -> None:
         self.require_card(card_id)
         self._store.delete_item("persona_cards", card_id)
-
-
-def _now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat()

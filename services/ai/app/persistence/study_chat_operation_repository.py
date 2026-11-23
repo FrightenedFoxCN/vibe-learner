@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from pathlib import Path
 from uuid import uuid4
 
@@ -829,7 +829,3 @@ def _timestamp_older_than(value: str, *, seconds: int, now: str) -> bool:
         ) <= datetime.fromisoformat(now)
     except ValueError:
         return True
-
-
-def _now() -> str:
-    return datetime.now(timezone.utc).isoformat()

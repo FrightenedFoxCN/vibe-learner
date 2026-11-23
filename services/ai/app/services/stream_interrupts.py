@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
 from threading import Event, Lock
 from uuid import uuid4
 
 from fastapi import HTTPException
+from app.core.clock import utc_now_iso as _now
 
 
 class StreamInterruptedError(Exception):
@@ -81,11 +81,9 @@ class StreamInterruptRegistry:
             raise HTTPException(status_code=404, detail="stream_not_found")
         return handle
 
-    def cancel(self, *, stream_id: str, reason: str = "user_requested") -> StreamInterruptHandle:
+    def cancel(
+        self, *, stream_id: str, reason: str = "user_requested"
+    ) -> StreamInterruptHandle:
         handle = self.require(stream_id)
         handle.cancel(reason=reason)
         return handle
-
-
-def _now() -> str:
-    return datetime.now(timezone.utc).isoformat()

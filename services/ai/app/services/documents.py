@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
 import base64
 
 from pathlib import Path
@@ -74,6 +73,7 @@ from app.services.harness_runtime import (
     HarnessOperationRuntime,
     HarnessRuntimePreparedOutput,
 )
+from app.core.clock import utc_now_iso as _now
 
 logger = get_logger("vibe_learner.documents")
 
@@ -783,10 +783,6 @@ class DocumentService:
         if not any(document.id == document_id for document in documents):
             return
         self.store.mirror_document_projection(documents, debug_report)
-
-
-def _now() -> str:
-    return datetime.now(timezone.utc).isoformat()
 
 
 def _emit_progress(

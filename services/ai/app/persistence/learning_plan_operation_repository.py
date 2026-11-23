@@ -74,6 +74,7 @@ from app.persistence.models import (
 )
 from app.models.study_unit_revision import StudyUnitRevisionPreviewV1
 from app.persistence.study_unit_revision_repository import StudyUnitRevisionRepository
+from app.core.clock import utc_now_iso as _now
 
 
 class LearningPlanOperationRepository:
@@ -904,10 +905,6 @@ def _from_row(row: LearningPlanOperationRow) -> LearningPlanOperationRecord:
             "completed_at": row.completed_at,
         }
     )
-
-
-def _now() -> str:
-    return datetime.now(timezone.utc).isoformat()
 
 
 class LearningPlanOperationError(RuntimeError):

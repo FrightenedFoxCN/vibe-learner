@@ -117,6 +117,7 @@ from app.services.tavern_v3 import (
     serialize_tavern_protected_snapshot,
     snapshot_ref_from_registration,
 )
+from app.core.clock import utc_now_iso_micro as _now
 
 
 TAVERN_STEP_LEASE_SECONDS = 120
@@ -1750,10 +1751,6 @@ class _StepLeaseHeartbeat:
     def ensure_active(self) -> None:
         if not self.should_continue():
             raise TavernStepClaimConflict(self.step_index, "lease_lost")
-
-
-def _now() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="microseconds")
 
 
 def _tavern_actor_message_id(harness_operation_id: str, trace_slot: int) -> str:

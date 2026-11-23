@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
 from typing import Literal
 from uuid import uuid4
 
@@ -16,6 +15,7 @@ from app.models.stream import (
     StreamTerminalEvidenceV1,
 )
 from app.services.local_store import LocalJsonStore
+from app.core.clock import utc_now_iso as _now
 
 DOCUMENT_PROCESS_STREAM_CATEGORY = "document_process_stream"
 LEARNING_PLAN_STREAM_CATEGORY = "learning_plan_stream"
@@ -94,9 +94,7 @@ class StreamReportRecorder:
             created_at=now,
         )
         retained_events = (
-            self.report.events[-(self.max_events - 1) :]
-            if self.max_events > 1
-            else []
+            self.report.events[-(self.max_events - 1) :] if self.max_events > 1 else []
         )
         next_events = [*retained_events, next_event]
         status: Literal["running", "completed", "error", "cancelled"] = "running"
@@ -144,7 +142,3 @@ class StreamReportRecorder:
 
     def _persist(self) -> None:
         self.store.save_item(self.category, self.document_id, self.report)
-
-
-def _now() -> str:
-    return datetime.now(timezone.utc).isoformat()

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
 from uuid import uuid4
 
 from fastapi import HTTPException
@@ -8,6 +7,7 @@ from fastapi import HTTPException
 from app.models.domain import SceneLibraryRecord
 from app.models.scene import build_scene_profile, validate_committed_scene_tree
 from app.services.local_store import LocalJsonStore, LocalStoreRevisionConflict
+from app.core.clock import utc_now_iso as _now_iso
 
 
 class SceneLibraryService:
@@ -17,7 +17,9 @@ class SceneLibraryService:
     def list_scenes(self) -> list[SceneLibraryRecord]:
         scenes = self._store.load_category_items("scene_library", SceneLibraryRecord)
         scenes = [self._migrate_scene_summary(scene) for scene in scenes]
-        return sorted(scenes, key=lambda item: (item.updated_at, item.created_at), reverse=True)
+        return sorted(
+            scenes, key=lambda item: (item.updated_at, item.created_at), reverse=True
+        )
 
     def require_scene(self, scene_id: str) -> SceneLibraryRecord:
         scene = self._store.load_item("scene_library", scene_id, SceneLibraryRecord)
@@ -37,7 +39,9 @@ class SceneLibraryService:
         expected_revision: int,
     ) -> SceneLibraryRecord:
         target_scene_id = scene_id or f"scene-{uuid4().hex[:10]}"
-        existing = self._store.load_item("scene_library", target_scene_id, SceneLibraryRecord)
+        existing = self._store.load_item(
+            "scene_library", target_scene_id, SceneLibraryRecord
+        )
         if scene_id is not None and existing is None:
             raise HTTPException(status_code=404, detail="scene_not_found")
         if scene_id is None and expected_revision != 0:
@@ -77,7 +81,9 @@ class SceneLibraryService:
                 model=SceneLibraryRecord,
             )
         except LocalStoreRevisionConflict as exc:
-            raise HTTPException(status_code=409, detail="scene_revision_conflict") from exc
+            raise HTTPException(
+                status_code=409, detail="scene_revision_conflict"
+            ) from exc
 
     def delete_scene(self, scene_id: str) -> None:
         if self._store.load_item("scene_library", scene_id, SceneLibraryRecord) is None:
@@ -88,7 +94,3 @@ class SceneLibraryService:
         if scene.scene_summary.strip() or scene.scene_profile is None:
             return scene
         return scene.model_copy(update={"scene_summary": scene.scene_profile.summary})
-
-
-def _now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat()

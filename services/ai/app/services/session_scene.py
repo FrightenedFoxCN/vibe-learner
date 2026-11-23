@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any
 from uuid import uuid4
 
@@ -20,6 +19,7 @@ from app.models.tool_manifest import resolve_tool_manifest_entry
 from app.services.local_store import LocalJsonStore
 from app.services.study_chat_effects import scene_state_digest
 from app.services.tool_provider_projection import provider_function_for_entry
+from app.core.clock import utc_now_iso as _now_iso
 
 if TYPE_CHECKING:
     from app.services.study_chat_effects import StudyChatEffectCollector
@@ -61,7 +61,9 @@ class SessionSceneToolRuntime:
         selected = _find_layer(record.scene_layers, record.selected_layer_id)
         selected_layer = selected[0] if selected else None
         selected_path = selected[1] if selected else []
-        object_names = ", ".join(obj.name for obj in (selected_layer.objects[:4] if selected_layer else []))
+        object_names = ", ".join(
+            obj.name for obj in (selected_layer.objects[:4] if selected_layer else [])
+        )
         return (
             f"场景名：{record.scene_name or '未命名场景'}\n"
             f"场景摘要：{record.scene_summary or '无'}\n"
@@ -179,7 +181,9 @@ class SessionSceneToolRuntime:
             scene_layers=next_layers,
             selected_layer_id=new_layer.id,
         )
-        path = proposed.scene_profile.selected_path if proposed.scene_profile else [title]
+        path = (
+            proposed.scene_profile.selected_path if proposed.scene_profile else [title]
+        )
         return _prepared_scene_result(
             tool_name="add_scene",
             record=proposed,
@@ -202,7 +206,11 @@ class SessionSceneToolRuntime:
             tool_name="move_to_scene",
             selected_layer_id=scene_id,
         )
-        path = proposed.scene_profile.selected_path if proposed.scene_profile else selected[1]
+        path = (
+            proposed.scene_profile.selected_path
+            if proposed.scene_profile
+            else selected[1]
+        )
         return _prepared_scene_result(
             tool_name="move_to_scene",
             record=proposed,
@@ -218,8 +226,7 @@ class SessionSceneToolRuntime:
             raise HTTPException(status_code=400, detail="scene_object_name_required")
         record = self._current_record()
         target_scene_id = (
-            str(arguments.get("scene_id") or "").strip()
-            or record.selected_layer_id
+            str(arguments.get("scene_id") or "").strip() or record.selected_layer_id
         )
         if not target_scene_id:
             raise HTTPException(status_code=400, detail="scene_target_required")
@@ -378,8 +385,14 @@ class SessionSceneService:
         if scene_profile is None:
             return None
         scene_layers = [node.model_copy(deep=True) for node in scene_profile.scene_tree]
-        selected_layer_id = scene_profile.scene_id.strip() or (scene_layers[0].id if scene_layers else "")
-        scene_name = scene_profile.scene_name.strip() or scene_profile.title.strip() or "未命名场景"
+        selected_layer_id = scene_profile.scene_id.strip() or (
+            scene_layers[0].id if scene_layers else ""
+        )
+        scene_name = (
+            scene_profile.scene_name.strip()
+            or scene_profile.title.strip()
+            or "未命名场景"
+        )
         scene_summary = scene_profile.summary.strip()
         record = SessionSceneRecord(
             scene_instance_id=f"session-scene-{uuid4().hex[:10]}",
@@ -412,7 +425,9 @@ class SessionSceneService:
         *,
         persist_profile_sync: bool = True,
     ) -> SessionSceneRecord:
-        record = self._store.load_item("session_scenes", scene_instance_id, SessionSceneRecord)
+        record = self._store.load_item(
+            "session_scenes", scene_instance_id, SessionSceneRecord
+        )
         if record is None:
             raise HTTPException(status_code=404, detail="session_scene_not_found")
         if record.scene_profile is None:
@@ -475,7 +490,11 @@ class SessionSceneService:
             scene_layers=next_layers,
             selected_layer_id=new_layer.id,
         )
-        path = updated.scene_profile.selected_path if updated.scene_profile else [new_layer.title]
+        path = (
+            updated.scene_profile.selected_path
+            if updated.scene_profile
+            else [new_layer.title]
+        )
         return {
             "ok": True,
             "tool_name": "add_scene",
@@ -483,7 +502,9 @@ class SessionSceneService:
             "added_scene_id": new_layer.id,
             "selected_scene_id": updated.selected_layer_id,
             "selected_scene_path": path,
-            "scene_profile": updated.scene_profile.model_dump(mode="json") if updated.scene_profile else None,
+            "scene_profile": updated.scene_profile.model_dump(mode="json")
+            if updated.scene_profile
+            else None,
             "summary": f"已新增场景“{new_layer.title}”，并切换到 {' / '.join(path) or new_layer.title}。",
         }
 
@@ -495,14 +516,20 @@ class SessionSceneService:
         if selected is None:
             raise HTTPException(status_code=404, detail="scene_not_found_in_session")
         updated = self._replace_record(record, selected_layer_id=scene_id)
-        path = updated.scene_profile.selected_path if updated.scene_profile else selected[1]
+        path = (
+            updated.scene_profile.selected_path
+            if updated.scene_profile
+            else selected[1]
+        )
         return {
             "ok": True,
             "tool_name": "move_to_scene",
             "scene_instance_id": updated.scene_instance_id,
             "selected_scene_id": scene_id,
             "selected_scene_path": path,
-            "scene_profile": updated.scene_profile.model_dump(mode="json") if updated.scene_profile else None,
+            "scene_profile": updated.scene_profile.model_dump(mode="json")
+            if updated.scene_profile
+            else None,
             "summary": f"已切换到场景 {' / '.join(path) or scene_id}。",
         }
 
@@ -532,7 +559,9 @@ class SessionSceneService:
         )
         if not _append_object(next_layers, target_scene_id, added_object):
             raise HTTPException(status_code=404, detail="scene_not_found_in_session")
-        updated = self._replace_record(record, scene_layers=next_layers, selected_layer_id=target_scene_id)
+        updated = self._replace_record(
+            record, scene_layers=next_layers, selected_layer_id=target_scene_id
+        )
         path = updated.scene_profile.selected_path if updated.scene_profile else []
         return {
             "ok": True,
@@ -541,7 +570,9 @@ class SessionSceneService:
             "object_id": added_object.id,
             "selected_scene_id": updated.selected_layer_id,
             "selected_scene_path": path,
-            "scene_profile": updated.scene_profile.model_dump(mode="json") if updated.scene_profile else None,
+            "scene_profile": updated.scene_profile.model_dump(mode="json")
+            if updated.scene_profile
+            else None,
             "summary": f"已在 {' / '.join(path) or '当前场景'} 中加入物体“{added_object.name}”。",
         }
 
@@ -566,11 +597,15 @@ class SessionSceneService:
             "scene_instance_id": updated.scene_instance_id,
             "object_id": updated_object.id,
             "object_name": updated_object.name,
-            "scene_profile": updated.scene_profile.model_dump(mode="json") if updated.scene_profile else None,
+            "scene_profile": updated.scene_profile.model_dump(mode="json")
+            if updated.scene_profile
+            else None,
             "summary": f"已更新物体“{updated_object.name}”的描述。",
         }
 
-    def delete_object(self, scene_instance_id: str, *, object_id: str) -> dict[str, Any]:
+    def delete_object(
+        self, scene_instance_id: str, *, object_id: str
+    ) -> dict[str, Any]:
         if not object_id:
             raise HTTPException(status_code=400, detail="scene_object_id_required")
         record = self.require_scene(scene_instance_id)
@@ -584,7 +619,9 @@ class SessionSceneService:
             "tool_name": "delete_object",
             "scene_instance_id": updated.scene_instance_id,
             "object_id": object_id,
-            "scene_profile": updated.scene_profile.model_dump(mode="json") if updated.scene_profile else None,
+            "scene_profile": updated.scene_profile.model_dump(mode="json")
+            if updated.scene_profile
+            else None,
             "summary": f"已删除物体“{deleted_name}”。",
         }
 
@@ -595,8 +632,16 @@ class SessionSceneService:
         scene_layers: list[SceneLayerStateRecord] | None = None,
         selected_layer_id: str | None = None,
     ) -> SessionSceneRecord:
-        next_layers = scene_layers if scene_layers is not None else [node.model_copy(deep=True) for node in record.scene_layers]
-        next_selected_layer_id = selected_layer_id if selected_layer_id is not None else record.selected_layer_id
+        next_layers = (
+            scene_layers
+            if scene_layers is not None
+            else [node.model_copy(deep=True) for node in record.scene_layers]
+        )
+        next_selected_layer_id = (
+            selected_layer_id
+            if selected_layer_id is not None
+            else record.selected_layer_id
+        )
         next_record = record.model_copy(
             update={
                 "updated_at": _now_iso(),
@@ -700,7 +745,9 @@ def summarize_chat_tool_result(result: dict[str, Any]) -> str:
     return str(result.get("tool_name") or "工具")
 
 
-def extract_scene_profile_from_tool_results(tool_results: list[dict[str, Any]]) -> SceneProfileRecord | None:
+def extract_scene_profile_from_tool_results(
+    tool_results: list[dict[str, Any]],
+) -> SceneProfileRecord | None:
     for result in reversed(tool_results):
         raw_profile = result.get("scene_profile")
         if isinstance(raw_profile, dict):
@@ -739,7 +786,9 @@ def _build_scene_profile(
     if selected is not None:
         selected_layer, selected_path = selected
     elif scene_layers:
-        selected_layer, selected_path = _find_layer(scene_layers, scene_layers[0].id) or (scene_layers[0], [scene_layers[0].title])
+        selected_layer, selected_path = _find_layer(
+            scene_layers, scene_layers[0].id
+        ) or (scene_layers[0], [scene_layers[0].title])
     else:
         selected_layer, selected_path = (
             SceneLayerStateRecord(
@@ -761,7 +810,9 @@ def _build_scene_profile(
         scene_name=scene_name,
         scene_id=selected_layer.id,
         title=selected_layer.title,
-        summary=scene_summary or selected_layer.summary or f"场景路径：{' > '.join(selected_path)}",
+        summary=scene_summary
+        or selected_layer.summary
+        or f"场景路径：{' > '.join(selected_path)}",
         tags=tags,
         selected_path=selected_path,
         focus_object_names=focus_objects,
@@ -862,7 +913,3 @@ def _count_objects(scene_layers: list[SceneLayerStateRecord]) -> int:
         total += len(layer.objects)
         total += _count_objects(layer.children)
     return total
-
-
-def _now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat()

@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
 from typing import Any
 
 from app.models.domain import ModelToolConfigRecord
 from app.models.harness import HarnessStage, HarnessWorkflow
 from app.models.tool_manifest import resolve_tool_manifest_entry
 from app.services.local_store import LocalJsonStore
+from app.core.clock import utc_now_iso as _now_iso
 
 PLAN_STAGE = "plan_generation"
 CHAT_STAGE = "study_chat"
@@ -214,8 +214,16 @@ TOOL_CATALOG = {
         name: {
             **metadata,
             "description": resolve_tool_manifest_entry(
-                workflow=(HarnessWorkflow.PLANNING if stage == PLAN_STAGE else HarnessWorkflow.STUDY_CHAT),
-                offered_in_stage=(HarnessStage.PLAN_GENERATION if stage == PLAN_STAGE else HarnessStage.STUDY_CHAT_REPLY),
+                workflow=(
+                    HarnessWorkflow.PLANNING
+                    if stage == PLAN_STAGE
+                    else HarnessWorkflow.STUDY_CHAT
+                ),
+                offered_in_stage=(
+                    HarnessStage.PLAN_GENERATION
+                    if stage == PLAN_STAGE
+                    else HarnessStage.STUDY_CHAT_REPLY
+                ),
                 transport_name=name,
             ).display.provider_description,
         }
@@ -273,7 +281,9 @@ class ModelToolConfigService:
                         "description": meta["description"],
                         "category": meta["category"],
                         "category_label": meta["category_label"],
-                        "enabled": self.is_enabled(stage_name=stage_name, tool_name=tool_name),
+                        "enabled": self.is_enabled(
+                            stage_name=stage_name, tool_name=tool_name
+                        ),
                     }
                 )
             stage_meta = STAGE_META.get(stage_name, {})
@@ -318,7 +328,9 @@ class ModelToolConfigService:
         return self._record
 
     def _load_or_default(self) -> ModelToolConfigRecord:
-        existing = self._store.load_item("model_tool_config", "default", ModelToolConfigRecord)
+        existing = self._store.load_item(
+            "model_tool_config", "default", ModelToolConfigRecord
+        )
         if existing is not None:
             return existing
         record = ModelToolConfigRecord(
@@ -328,7 +340,3 @@ class ModelToolConfigService:
         )
         self._store.save_item("model_tool_config", "default", record)
         return record
-
-
-def _now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat()

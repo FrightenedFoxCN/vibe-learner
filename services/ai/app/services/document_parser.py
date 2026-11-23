@@ -4,7 +4,6 @@ import re
 import time
 from collections import Counter
 from dataclasses import dataclass
-from datetime import datetime, timezone
 from difflib import SequenceMatcher
 from pathlib import Path
 from typing import Callable, Iterable
@@ -29,6 +28,7 @@ from app.models.domain import (
     ParseWarning,
 )
 from app.services.ocr_engine import OcrPageResult, OnnxtrOcrEngine
+from app.core.clock import utc_now_iso as _now
 
 HEADING_PATTERNS = [
     re.compile(r"^(chapter|section|part|appendix)\s+\d+", re.IGNORECASE),
@@ -1590,10 +1590,6 @@ def _unique_preserving_order(items: Iterable[object]) -> list[str]:
         seen.add(text)
         ordered.append(text)
     return ordered
-
-
-def _now() -> str:
-    return datetime.now(timezone.utc).isoformat()
 
 
 def _emit_progress(

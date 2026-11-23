@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
 import json
 from typing import Callable
 from uuid import uuid4
@@ -73,6 +72,7 @@ from app.services.harness_runtime import (
 )
 from app.models.pdf_page_scope import PhysicalPageScopeViolation
 from app.models.study_unit_revision import StudyUnitRevisionPreviewV1
+from app.core.clock import utc_now_iso as _now
 
 
 class LearningPlanService:
@@ -1043,10 +1043,6 @@ class LearningPlanService:
             source_section_ids=list(chapter.source_section_ids),
             content_slices=next_slices,
         )
-
-
-def _now() -> str:
-    return datetime.now(timezone.utc).isoformat()
 
 
 def _emit_progress(

@@ -34,6 +34,7 @@ from app.persistence.study_session_repository import (
 )
 from app.models.study_question import StudyQuestionAttemptResponseV1
 from app.services.local_store import LocalJsonStore
+from app.core.clock import utc_now_iso as _now
 
 
 class StudySessionService:
@@ -615,10 +616,6 @@ class StudySessionService:
             item.canceled_at = effective_canceled_at
             changed = True
         return changed
-
-
-def _now() -> str:
-    return datetime.now(timezone.utc).isoformat()
 
 
 def _affinity_level(score: int) -> str:

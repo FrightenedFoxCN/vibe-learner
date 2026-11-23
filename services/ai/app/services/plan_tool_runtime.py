@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
 from typing import Any, Callable
 from uuid import uuid4
 
@@ -39,6 +38,7 @@ from app.services.tool_provider_projection import (
     project_validated_tool_result,
     provider_function_for_entry,
 )
+from app.core.clock import utc_now_iso as _now
 
 
 @dataclass(frozen=True)
@@ -825,10 +825,6 @@ def _build_study_unit_revision_summary(
     if rationale:
         summary += f"；原因：{rationale}"
     return summary
-
-
-def _now() -> str:
-    return datetime.now(timezone.utc).isoformat()
 
 
 def _emit_progress(

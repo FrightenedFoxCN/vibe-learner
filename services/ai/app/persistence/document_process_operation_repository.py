@@ -60,6 +60,7 @@ from app.persistence.models import (
     DocumentProcessOperationRow,
     DocumentRow,
 )
+from app.core.clock import utc_now_iso as _now
 
 
 class DocumentProcessOperationRepository:
@@ -756,10 +757,6 @@ def _validate_read_back(
         )
     if debug_digest != record.debug_digest:
         raise DocumentProcessReadBackError(record.operation_id, "debug_digest_mismatch")
-
-
-def _now() -> str:
-    return datetime.now(timezone.utc).isoformat()
 
 
 class DocumentProcessError(RuntimeError):

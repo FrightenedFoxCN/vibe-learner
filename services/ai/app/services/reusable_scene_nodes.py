@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
 from uuid import uuid4
 
 from fastapi import HTTPException
@@ -8,6 +7,7 @@ from fastapi import HTTPException
 from app.models.api import CreateReusableSceneNodeRequest
 from app.models.domain import ReusableSceneNodeRecord
 from app.services.local_store import LocalJsonStore
+from app.core.clock import utc_now_iso as _now_iso
 
 
 class ReusableSceneNodeLibraryService:
@@ -15,18 +15,28 @@ class ReusableSceneNodeLibraryService:
         self._store = store
 
     def list_nodes(self) -> list[ReusableSceneNodeRecord]:
-        items = self._store.load_category_items("reusable_scene_nodes", ReusableSceneNodeRecord)
-        return sorted(items, key=lambda item: (item.updated_at, item.created_at), reverse=True)
+        items = self._store.load_category_items(
+            "reusable_scene_nodes", ReusableSceneNodeRecord
+        )
+        return sorted(
+            items, key=lambda item: (item.updated_at, item.created_at), reverse=True
+        )
 
     def require_node(self, node_id: str) -> ReusableSceneNodeRecord:
-        item = self._store.load_item("reusable_scene_nodes", node_id, ReusableSceneNodeRecord)
+        item = self._store.load_item(
+            "reusable_scene_nodes", node_id, ReusableSceneNodeRecord
+        )
         if item is None:
             raise HTTPException(status_code=404, detail="reusable_scene_node_not_found")
         return item
 
-    def create_node(self, payload: CreateReusableSceneNodeRequest) -> ReusableSceneNodeRecord:
+    def create_node(
+        self, payload: CreateReusableSceneNodeRequest
+    ) -> ReusableSceneNodeRecord:
         if payload.node_type not in {"layer", "object"}:
-            raise HTTPException(status_code=400, detail="invalid_reusable_scene_node_type")
+            raise HTTPException(
+                status_code=400, detail="invalid_reusable_scene_node_type"
+            )
         if payload.node_type == "layer" and payload.layer_node is None:
             raise HTTPException(status_code=400, detail="missing_reusable_layer_node")
         if payload.node_type == "object" and payload.object_node is None:
@@ -54,7 +64,3 @@ class ReusableSceneNodeLibraryService:
     def delete_node(self, node_id: str) -> None:
         self.require_node(node_id)
         self._store.delete_item("reusable_scene_nodes", node_id)
-
-
-def _now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat()

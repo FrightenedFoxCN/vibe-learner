@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
 from typing import Any, Callable
 
 from app.models.domain import (
@@ -23,7 +22,7 @@ from app.core.model_runtime_limits import (
     PLANNING_MAX_TOOL_ROUNDS,
     PLANNING_MAX_UNOFFERED_TOOL_RETRIES,
 )
-
+from app.core.clock import utc_now_iso as _now
 
 
 @dataclass(frozen=True)
@@ -95,8 +94,7 @@ class OpenAIPlanRunner:
                 "response_format": {"type": "json_object"},
             }
             tools_offered = (
-                tool_runtime.has_tools()
-                and _tool_round_count(trace) < max_tool_rounds
+                tool_runtime.has_tools() and _tool_round_count(trace) < max_tool_rounds
             )
             if tools_offered:
                 payload["tools"] = tool_runtime.openai_tools()
@@ -135,7 +133,10 @@ class OpenAIPlanRunner:
                     }
                 )
                 current_messages.append(
-                    {"role": "user", "content": prompt_template.require("finalize_after_tool_round")}
+                    {
+                        "role": "user",
+                        "content": prompt_template.require("finalize_after_tool_round"),
+                    }
                 )
                 round_index += 1
                 continue
@@ -184,7 +185,9 @@ class OpenAIPlanRunner:
                             argument_contract_version=execution.argument_contract_version,
                             result_contract_version=execution.result_contract_version,
                             result_summary=execution.trace_summary,
-                            result_json=json.dumps(execution.trace_result, ensure_ascii=False),
+                            result_json=json.dumps(
+                                execution.trace_result, ensure_ascii=False
+                            ),
                         )
                     )
                     current_messages.append(
@@ -192,7 +195,9 @@ class OpenAIPlanRunner:
                             "role": "tool",
                             "tool_call_id": execution.tool_call_id,
                             "name": execution.tool_name,
-                            "content": json.dumps(execution.provider_result, ensure_ascii=False),
+                            "content": json.dumps(
+                                execution.provider_result, ensure_ascii=False
+                            ),
                         }
                     )
                     if execution.follow_up_messages:
@@ -423,10 +428,6 @@ def _call_interrupt(callback: Callable[[], None] | None) -> None:
     callback()
 
 
-def _now() -> str:
-    return datetime.now(timezone.utc).isoformat()
-
-
 def _trace_has_tool_calls(trace: PlanGenerationTraceRecord) -> bool:
     return any(round_record.tool_calls for round_record in trace.rounds)
 
@@ -468,16 +469,10 @@ def _looks_coarse_grained(study_units: list[Any]) -> bool:
     if not study_units:
         return False
     plannable = [
-        unit
-        for unit in study_units
-        if bool(getattr(unit, "include_in_plan", True))
+        unit for unit in study_units if bool(getattr(unit, "include_in_plan", True))
     ] or study_units
     max_span = max(
-        (
-            int(getattr(unit, "page_end", 0))
-            - int(getattr(unit, "page_start", 0))
-            + 1
-        )
+        (int(getattr(unit, "page_end", 0)) - int(getattr(unit, "page_start", 0)) + 1)
         for unit in plannable
     )
     return len(plannable) <= 2 and max_span >= 80

@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 from contextvars import ContextVar
-from datetime import datetime, timezone
 from uuid import uuid4
 
 from app.models.domain import ModelRecoveryRecord
+from app.core.clock import utc_now_iso as _now
 
 _MODEL_RECOVERY_STATE: ContextVar[list[ModelRecoveryRecord] | None] = ContextVar(
     "vibe_learner_model_recovery_state",
@@ -47,7 +47,3 @@ def consume_model_recovery_state() -> list[ModelRecoveryRecord]:
     current = get_model_recovery_state()
     _MODEL_RECOVERY_STATE.set([])
     return current
-
-
-def _now() -> str:
-    return datetime.now(timezone.utc).isoformat()
