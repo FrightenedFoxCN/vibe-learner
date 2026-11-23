@@ -16,7 +16,7 @@ export function useTavernWorkspaceController(
   const queries = useTavernRoomQueries(state, ports);
   useTavernRunRecovery(state, ports, queries);
   const mutations = useTavernMutations(state, ports, queries);
-  const { setTargetPersonaIds, setVisibleError } = state;
+  const { setTargetPersonaIds, setVisibleError, roomRunsUnknown } = state;
   const handleTargetToggle = useCallback(
     (personaId: string) => {
       setTargetPersonaIds((current) => {
@@ -105,6 +105,8 @@ export function useTavernWorkspaceController(
     loadMoreRooms,
     handleLoadOlder,
     ...mutations,
+    roomRunsUnknown,
+    roomReadNotice: state.roomReadNotice,
     handleTargetToggle,
     storage: ports.storage,
   };

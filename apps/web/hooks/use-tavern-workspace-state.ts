@@ -33,6 +33,11 @@ export function useTavernWorkspaceState() {
   const [messages, setMessages] = useState<TavernMessage[]>([]);
   const [runs, setRuns] = useState<TavernRun[]>([]);
   const [recoveryChains, setRecoveryChains] = useState<TavernRunRecoveryChain[]>([]);
+  const [roomReadStatus, setRoomReadStatus] = useState({
+    roomId: "",
+    runsKnown: true,
+    notice: "",
+  });
   const [targetPersonaIds, setTargetPersonaIds] = useState<string[]>([]);
   const [generatingPersonaIds, setGeneratingPersonaIds] = useState<string[]>([]);
   const [showSetup, setShowSetup] = useState(false);
@@ -70,6 +75,10 @@ export function useTavernWorkspaceState() {
   }, []);
   const activeRoom = detail?.room ?? null;
   const roomIsActive = activeRoom?.status === "active";
+  const roomReadNotice =
+    roomReadStatus.roomId === activeRoom?.id ? roomReadStatus.notice : "";
+  const roomRunsUnknown =
+    roomReadStatus.roomId === activeRoom?.id && !roomReadStatus.runsKnown;
   const roomBusy = busyAction === "room" || busyAction === "bootstrap";
   const mutationBusy = busyAction !== null && !roomBusy;
   const runPending = hasActiveTavernRun(runs);
@@ -151,6 +160,9 @@ export function useTavernWorkspaceState() {
     setRuns,
     recoveryChains,
     setRecoveryChains,
+    setRoomReadStatus,
+    roomReadNotice,
+    roomRunsUnknown,
     targetPersonaIds,
     setTargetPersonaIds,
     generatingPersonaIds,

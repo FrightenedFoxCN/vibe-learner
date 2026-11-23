@@ -41,6 +41,8 @@ export function TavernWorkspace({
     rawError,
     activeRoom,
     roomIsActive,
+    roomRunsUnknown,
+    roomReadNotice,
     roomBusy,
     mutationBusy,
     runPending,
@@ -129,9 +131,9 @@ export function TavernWorkspace({
 
       <TavernHeader
         room={activeRoom}
-        notice={notice}
+        notice={[notice, roomReadNotice].filter(Boolean).join(" · ")}
         busy={roomBusy || mutationBusy || loadingOlder}
-        runPending={runPending}
+        runPending={runPending || roomRunsUnknown}
         onCreate={() => {
           setShowSetup(true);
           setSetupFocusRequest((current) => current + 1);
@@ -183,9 +185,12 @@ export function TavernWorkspace({
                 busyAction === "retry" ||
                 busyAction === "cancel" ||
                 runPending ||
+                roomRunsUnknown ||
                 loadingOlder
               }
-              recoveryBusy={mutationBusy || runPending || loadingOlder}
+              recoveryBusy={
+                mutationBusy || runPending || roomRunsUnknown || loadingOlder
+              }
               retrying={busyAction === "retry"}
               canCancel={runPending}
               canceling={busyAction === "cancel"}
@@ -206,7 +211,7 @@ export function TavernWorkspace({
               recoveryChains={recoveryChains}
               participants={detail?.participants ?? []}
               roomActive={Boolean(roomIsActive)}
-              busy={mutationBusy || runPending || loadingOlder}
+              busy={mutationBusy || runPending || roomRunsUnknown || loadingOlder}
               onRetry={(run) => void handleRetry(run)}
             />
           </div>
