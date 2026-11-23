@@ -1,12 +1,13 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, type CSSProperties } from "react";
+import { useEffect } from "react";
 import { useDocumentDebugData } from "../../hooks/use-document-debug-data";
 import { PageDebugPanel } from "./page-debug-panel";
 import { useCurrentPageDebugSnapshot } from "./page-debug-context";
 import { useLearningDebugSnapshot } from "./debug-provider";
 import { StudyDebugPanels } from "./study-debug-panels";
+import styles from "./debug-overlay-body.module.css";
 
 const DocumentDebugPanels = dynamic(
   () => import("./document-debug-panels").then((module) => module.DocumentDebugPanels),
@@ -57,7 +58,7 @@ export function DebugOverlayBody({
       ) : (
         <>
           <button
-            style={styles.secondaryButton}
+            className={styles.secondaryButton}
             aria-expanded={pageEvents}
             onClick={onTogglePageEvents}
           >
@@ -103,33 +104,10 @@ export function DebugOverlayBody({
               details={pageSnapshot.details}
             />
           ) : (
-            <div style={styles.emptyState}>暂无调试面板。</div>
+            <div className={styles.emptyState}>暂无调试面板。</div>
           )}
         </>
       )}
     </>
   );
 }
-
-const styles: Record<string, CSSProperties> = {
-  secondaryButton: {
-    minWidth: 44,
-    minHeight: 44,
-    padding: "0 12px",
-    border: "1px solid var(--border)",
-    borderRadius: 10,
-    background: "white",
-    color: "var(--ink)",
-    fontSize: 13,
-    fontWeight: 600,
-    cursor: "pointer",
-  },
-  emptyState: {
-    border: "1px dashed var(--border)",
-    borderRadius: 16,
-    padding: "18px 16px",
-    fontSize: 13,
-    color: "var(--muted)",
-    background: "var(--bg)",
-  },
-};

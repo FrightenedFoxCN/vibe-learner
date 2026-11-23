@@ -1,0 +1,28 @@
+@layer theme, vendor, base, components, utilities;
+
+@layer components {
+  .button {
+    padding: 8px 12px;
+    min-height: 44px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg);
+  }
+
+  .audit {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .invocation {
+    padding: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .invocationData {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    max-height: 300px;
+    overflow: auto;
+  }
+}

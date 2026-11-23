@@ -1,15 +1,9 @@
 "use client";
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { DiagnosticStorageV1 } from "@vibe-learner/shared";
 import { queryDiagnosticStorage } from "../../lib/diagnostic-storage";
+import styles from "./diagnostic-storage-panel.module.css";
 
-const button: CSSProperties = {
-  padding: "8px 12px",
-  minHeight: 44,
-  border: "1px solid var(--border)",
-  borderRadius: 8,
-  background: "var(--bg)",
-};
 const mib = (bytes: number) => `${(bytes / 1024 / 1024).toFixed(2)} MiB`;
 export function DiagnosticStorageObservation({
   value,
@@ -17,20 +11,13 @@ export function DiagnosticStorageObservation({
   value: DiagnosticStorageV1;
 }) {
   return (
-    <div style={{ overflowWrap: "anywhere" }}>
+    <div className={styles.observations}>
       <p>
         观察时间 {value.observed_at}
         。文件大小分别读取，计数仅覆盖当前进程；未包括文件系统分配/元数据、外部写入和
         VACUUM 临时文件，尚不证明整个安装目录满足磁盘上限。
       </p>
-      <article
-        style={{
-          padding: 12,
-          border: "1px solid var(--border)",
-          borderRadius: 12,
-          marginBottom: 8,
-        }}
-      >
+      <article className={styles.observationRow}>
         <h4>诊断目录合计</h4>
         <p>
           {value.directory.budget_state === "over_observed_limit"
@@ -72,15 +59,7 @@ export function DiagnosticStorageObservation({
         )}
       </article>
       {value.databases.map((row) => (
-        <article
-          key={row.name}
-          style={{
-            padding: 12,
-            border: "1px solid var(--border)",
-            borderRadius: 12,
-            marginBottom: 8,
-          }}
-        >
+        <article key={row.name} className={styles.observationRow}>
           <h4>{row.name === "events" ? "事件数据库" : "Harness 索引数据库"}</h4>
           <p>
             {row.status === "over_observed_limit"
@@ -125,9 +104,7 @@ export function DiagnosticStorageObservation({
           )}
         </article>
       ))}
-      <article
-        style={{ padding: 12, border: "1px solid var(--border)", borderRadius: 12 }}
-      >
+      <article className={styles.observationCard}>
         <h4>桌面暂存队列</h4>
         <p>
           {value.desktop_spool.status === "observed"
@@ -199,7 +176,7 @@ export function DiagnosticStoragePanel() {
     <section aria-label="诊断存储状态">
       <h3>诊断存储状态</h3>
       <p>本安装的空间与维护观察，不使用事件筛选条件。</p>
-      <button style={button} onClick={load} disabled={loading}>
+      <button className={styles.button} onClick={load} disabled={loading}>
         刷新存储状态
       </button>
       {loading && <p role="status">正在读取空间状态…</p>}

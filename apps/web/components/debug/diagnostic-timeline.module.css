@@ -1,0 +1,65 @@
+@layer theme, vendor, base, components, utilities;
+
+@layer components {
+  .pre {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    font-size: 12px;
+    max-height: 320px;
+    overflow: auto;
+  }
+
+  .card {
+    padding: 12px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    min-width: 0;
+  }
+
+  .button {
+    padding: 8px 12px;
+    min-height: 44px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg);
+  }
+
+  .breakAnywhere {
+    overflow-wrap: anywhere;
+  }
+
+  .resultList {
+    display: grid;
+    gap: 8px;
+  }
+
+  .modeSelect {
+    min-height: 44px;
+  }
+
+  .filterForm {
+    display: grid;
+    gap: 8px;
+    grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr));
+  }
+
+  .filterField {
+    display: grid;
+    gap: 4px;
+    min-width: 0;
+  }
+
+  .filterInput {
+    width: 100%;
+    min-width: 0;
+    min-height: 44px;
+    box-sizing: border-box;
+  }
+
+  .filterActions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+}

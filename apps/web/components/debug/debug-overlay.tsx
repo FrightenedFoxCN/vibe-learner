@@ -2,7 +2,6 @@
 
 import dynamic from "next/dynamic";
 import { usePathname } from "next/navigation";
-import type { CSSProperties } from "react";
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 
 import { useRuntimeSettings } from "../layout/runtime-settings-provider";
@@ -12,6 +11,7 @@ import {
   readStoredBoolean,
   writeStoredBoolean,
 } from "../../lib/view-preferences";
+import styles from "./debug-overlay.module.css";
 
 const DebugOverlayBody = dynamic(
   () => import("./debug-overlay-body").then((module) => module.DebugOverlayBody),
@@ -169,46 +169,46 @@ export function DebugOverlay() {
       {visible ? (
         <button
           type="button"
-          style={styles.scrim}
+          className={styles.scrim}
           onClick={closeOverlay}
           aria-label="关闭调试浮窗背景遮罩"
           tabIndex={-1}
         />
       ) : null}
 
-      <div style={styles.root} hidden={!showDebugInfo}>
+      <div className={styles.root} hidden={!showDebugInfo}>
         <button
           type="button"
-          style={open ? { ...styles.fab, ...styles.hiddenFab } : styles.fab}
+          className={styles.fab}
           onClick={(event) => openOverlay(event.currentTarget)}
           aria-hidden={open ? "true" : undefined}
           tabIndex={open ? -1 : undefined}
         >
-          <span style={styles.fabLabel}>Debug</span>
-          <span style={styles.fabMeta}>{getFabMeta(pathname)}</span>
+          <span className={styles.fabLabel}>Debug</span>
+          <span className={styles.fabMeta}>{getFabMeta(pathname)}</span>
         </button>
 
         {visible || bodyReady ? (
           <section
             ref={dialogRef}
             hidden={!visible}
-            style={visible ? styles.overlay : { display: "none" }}
+            className={styles.overlay}
             role="dialog"
             aria-modal="true"
             aria-labelledby={titleId}
             tabIndex={-1}
           >
-            <header style={styles.overlayHeader}>
-              <div style={styles.headerCopy}>
-                <span id={titleId} style={styles.title}>
+            <header className={styles.overlayHeader}>
+              <div className={styles.headerCopy}>
+                <span id={titleId} className={styles.title}>
                   {title}
                 </span>
               </div>
-              <div style={styles.headerActions}>
+              <div className={styles.headerActions}>
                 {pathname === "/plan" ? (
                   <button
                     type="button"
-                    style={styles.secondaryButton}
+                    className={styles.secondaryButton}
                     disabled={!bodyReady}
                     onClick={() => setRefreshRevision((value) => value + 1)}
                   >
@@ -218,7 +218,7 @@ export function DebugOverlay() {
                 <button
                   ref={collapseButtonRef}
                   type="button"
-                  style={styles.primaryButton}
+                  className={styles.primaryButton}
                   onClick={closeOverlay}
                 >
                   收起
@@ -226,28 +226,23 @@ export function DebugOverlay() {
               </div>
             </header>
 
-            <nav
-              aria-label="Debug 视图"
-              style={{ display: "flex", gap: 8, padding: 12 }}
-            >
+            <nav aria-label="Debug 视图" className={styles.viewSelector}>
               <button
-                style={view === "page" ? styles.primaryButton : styles.secondaryButton}
+                className={styles.viewButton}
                 aria-pressed={view === "page"}
                 onClick={() => setView("page")}
               >
                 当前页面
               </button>
               <button
-                style={
-                  view === "global" ? styles.primaryButton : styles.secondaryButton
-                }
+                className={styles.viewButton}
                 aria-pressed={view === "global"}
                 onClick={() => setView("global")}
               >
                 全局诊断
               </button>
             </nav>
-            <div style={styles.overlayBody}>
+            <div className={styles.overlayBody}>
               <DebugOverlayBody
                 open={visible}
                 pathname={pathname}
@@ -264,114 +259,6 @@ export function DebugOverlay() {
     </>
   );
 }
-
-const styles: Record<string, CSSProperties> = {
-  root: {
-    position: "fixed",
-    right: 20,
-    bottom: 20,
-    zIndex: 90,
-  },
-  scrim: {
-    position: "fixed",
-    inset: 0,
-    border: "none",
-    background: "rgba(13, 32, 40, 0.18)",
-    zIndex: 85,
-    cursor: "pointer",
-  },
-  fab: {
-    display: "grid",
-    gap: 2,
-    minWidth: 88,
-    minHeight: 44,
-    padding: "12px 14px",
-    border: "1px solid color-mix(in srgb, var(--accent) 28%, var(--border))",
-    borderRadius: 16,
-    background: "color-mix(in srgb, white 86%, var(--accent-soft))",
-    boxShadow: "0 10px 28px rgba(13, 32, 40, 0.12)",
-    color: "var(--ink)",
-    cursor: "pointer",
-  },
-  hiddenFab: {
-    display: "none",
-  },
-  fabLabel: {
-    fontSize: 13,
-    fontWeight: 700,
-  },
-  fabMeta: {
-    fontSize: 11,
-    color: "var(--muted)",
-    textTransform: "uppercase",
-    letterSpacing: "0.08em",
-  },
-  overlay: {
-    width: "min(92vw, 680px)",
-    maxHeight: "min(78vh, 860px)",
-    display: "grid",
-    gridTemplateRows: "auto auto minmax(0, 1fr)",
-    border: "1px solid var(--border)",
-    borderRadius: 20,
-    background: "color-mix(in srgb, white 94%, var(--panel))",
-    boxShadow: "0 18px 48px rgba(13, 32, 40, 0.18)",
-    overflow: "hidden",
-    backdropFilter: "blur(10px)",
-  },
-  overlayHeader: {
-    display: "flex",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-    gap: 12,
-    padding: "16px 18px",
-    borderBottom: "1px solid var(--border)",
-    background: "color-mix(in srgb, white 72%, var(--accent-soft))",
-    flexWrap: "wrap",
-  },
-  headerCopy: {
-    display: "grid",
-    gap: 4,
-    minWidth: 0,
-  },
-  title: {
-    fontSize: 16,
-    fontWeight: 800,
-    color: "var(--ink)",
-  },
-  headerActions: {
-    display: "flex",
-    gap: 8,
-    alignItems: "center",
-  },
-  primaryButton: {
-    minWidth: 44,
-    minHeight: 44,
-    padding: "0 12px",
-    border: "1px solid var(--accent)",
-    borderRadius: 10,
-    background: "var(--accent)",
-    color: "white",
-    fontSize: 13,
-    fontWeight: 600,
-    cursor: "pointer",
-  },
-  secondaryButton: {
-    minWidth: 44,
-    minHeight: 44,
-    padding: "0 12px",
-    border: "1px solid var(--border)",
-    borderRadius: 10,
-    background: "white",
-    color: "var(--ink)",
-    fontSize: 13,
-    fontWeight: 600,
-    cursor: "pointer",
-  },
-  overlayBody: {
-    overflowY: "auto",
-    padding: 16,
-  },
-};
 
 const FOCUSABLE_SELECTOR = [
   "a[href]",

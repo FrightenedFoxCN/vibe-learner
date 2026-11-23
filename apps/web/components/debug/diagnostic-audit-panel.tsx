@@ -1,18 +1,11 @@
 "use client";
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { DiagnosticEventFilters, DiagnosticExportV1 } from "@vibe-learner/shared";
 import { queryDiagnosticExport } from "../../lib/diagnostic-export";
 import { DiagnosticQueryError } from "../../lib/diagnostic-query";
 import { DiagnosticStorageObservation } from "./diagnostic-storage-panel";
 import { exportJson } from "../../lib/export-json";
-
-const button: CSSProperties = {
-  padding: "8px 12px",
-  minHeight: 44,
-  border: "1px solid var(--border)",
-  borderRadius: 8,
-  background: "var(--bg)",
-};
+import styles from "./diagnostic-audit-panel.module.css";
 
 export function DiagnosticAuditPanel({ filters }: { filters: DiagnosticEventFilters }) {
   const [result, setResult] = useState<DiagnosticExportV1 | null>(null);
@@ -70,20 +63,17 @@ export function DiagnosticAuditPanel({ filters }: { filters: DiagnosticEventFilt
     }
   }
   return (
-    <section
-      aria-label="诊断统计与导出"
-      style={{ minWidth: 0, overflowWrap: "anywhere" }}
-    >
+    <section aria-label="诊断统计与导出" className={styles.audit}>
       <h3>诊断统计与导出</h3>
       <p>
         使用已应用的筛选条件创建快照。统计按模型、配置和组件版本分组；父子耗时不相加，缺失值保持未知。
       </p>
-      <button style={button} disabled={loading || saving} onClick={load}>
+      <button className={styles.button} disabled={loading || saving} onClick={load}>
         {loading ? "正在生成诊断快照…" : "生成诊断快照"}
       </button>
       {loading && (
         <button
-          style={button}
+          className={styles.button}
           onClick={() => {
             active.current?.abort();
             active.current = null;
@@ -103,7 +93,7 @@ export function DiagnosticAuditPanel({ filters }: { filters: DiagnosticEventFilt
             {result.operation_links.length}；Harness 索引 {result.index.length}
             ；指标样本 {result.audit.observations.length}。
           </p>
-          <button style={button} disabled={saving || loading} onClick={save}>
+          <button className={styles.button} disabled={saving || loading} onClick={save}>
             {saving ? "正在保存诊断包…" : "下载诊断包"}
           </button>
           <p>
@@ -141,10 +131,7 @@ export function DiagnosticAuditPanel({ filters }: { filters: DiagnosticEventFilt
             使用各组已测量样本，包含失败耗时。
           </p>
           {result.audit.groups.slice(0, 100).map((group, i) => (
-            <details
-              key={i}
-              style={{ padding: 8, borderBottom: "1px solid var(--border)" }}
-            >
+            <details key={i} className={styles.invocation}>
               <summary>
                 {group.key.workflow ?? "流程未知"} / {group.key.stage ?? "阶段未知"} ·{" "}
                 {group.key.kind} · {group.key.model ?? "模型未知或不适用"} ·{" "}
@@ -165,14 +152,7 @@ export function DiagnosticAuditPanel({ filters }: { filters: DiagnosticEventFilt
                 {group.total_token_sample_count} 个用量样本）。用量仅在 provider attempt
                 组累加。
               </p>
-              <pre
-                style={{
-                  whiteSpace: "pre-wrap",
-                  overflowWrap: "anywhere",
-                  maxHeight: 300,
-                  overflow: "auto",
-                }}
-              >
+              <pre className={styles.invocationData}>
                 {JSON.stringify(
                   { configuration: group.key, gaps: group.gaps },
                   null,

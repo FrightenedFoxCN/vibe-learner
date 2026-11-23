@@ -10,7 +10,7 @@ import type {
 } from "@vibe-learner/shared";
 import { formatTimestamp } from "../../lib/format";
 import { formatOcrStatus } from "../../lib/ocr-status";
-import type { CSSProperties } from "react";
+import styles from "./document-debug-panels.module.css";
 
 type LiveStreamEvent = {
   stage: string;
@@ -87,27 +87,27 @@ export function DocumentDebugPanels({
   const visiblePages = debugRecord?.pages.slice(0, 10) ?? [];
 
   return (
-    <div style={styles.stack}>
-      <section style={styles.card}>
-        <div style={styles.cardHeader}>
-          <div style={styles.headerCopy}>
-            <span style={styles.cardTitle}>调试总览</span>
-            <span style={styles.caption}>{document.title}</span>
+    <div className={styles.stack}>
+      <section className={styles.card}>
+        <div className={styles.cardHeader}>
+          <div className={styles.headerCopy}>
+            <span className={styles.cardTitle}>调试总览</span>
+            <span className={styles.caption}>{document.title}</span>
           </div>
-          <div style={styles.badgeRow}>
-            {loading ? <span style={styles.badge}>刷新中</span> : null}
-            <span style={styles.badge}>status: {document.status}</span>
-            <span style={styles.badge}>
+          <div className={styles.badgeRow}>
+            {loading ? <span className={styles.badge}>刷新中</span> : null}
+            <span className={styles.badge}>status: {document.status}</span>
+            <span className={styles.badge}>
               debug: {document.debugReady ? "ready" : "pending"}
             </span>
           </div>
         </div>
-        {error ? <p style={styles.error}>{error}</p> : null}
-        <div style={styles.statusStrip}>
+        {error ? <p className={styles.error}>{error}</p> : null}
+        <div className={styles.statusStrip}>
           <StatusPill label="process" status={displayProcessStatus} />
           <StatusPill label="plan" status={displayPlanStatus} />
         </div>
-        <div style={styles.summaryGrid}>
+        <div className={styles.summaryGrid}>
           <SummaryItem
             label="Pages"
             value={String(debugRecord?.pageCount ?? document.pageCount)}
@@ -134,8 +134,8 @@ export function DocumentDebugPanels({
         </div>
       </section>
 
-      <details style={styles.card} open>
-        <summary style={styles.summary}>流式处理反馈</summary>
+      <details className={styles.card} open>
+        <summary className={styles.summary}>流式处理反馈</summary>
         <StreamPanel
           status={displayProcessStatus}
           events={displayProcessEvents}
@@ -144,8 +144,8 @@ export function DocumentDebugPanels({
         />
       </details>
 
-      <details style={styles.card} open>
-        <summary style={styles.summary}>流式生成学习计划</summary>
+      <details className={styles.card} open>
+        <summary className={styles.summary}>流式生成学习计划</summary>
         <StreamPanel
           status={displayPlanStatus}
           events={displayPlanEvents}
@@ -154,15 +154,15 @@ export function DocumentDebugPanels({
         />
       </details>
 
-      <details style={styles.card}>
-        <summary style={styles.summary}>章节猜测</summary>
+      <details className={styles.card}>
+        <summary className={styles.summary}>章节猜测</summary>
         {debugRecordError ? <PanelError message={debugRecordError} /> : null}
         {debugRecord?.sections.length ? (
-          <div style={styles.list}>
+          <div className={styles.list}>
             {debugRecord.sections.map((section) => (
-              <div key={section.id} style={styles.itemCard}>
+              <div key={section.id} className={styles.itemCard}>
                 <strong>{section.title || section.id}</strong>
-                <span style={styles.caption}>
+                <span className={styles.caption}>
                   L{section.level} · p.{section.pageStart}–{section.pageEnd}
                 </span>
               </div>
@@ -173,19 +173,19 @@ export function DocumentDebugPanels({
         )}
       </details>
 
-      <details style={styles.card}>
-        <summary style={styles.summary}>学习编排清洗结果</summary>
+      <details className={styles.card}>
+        <summary className={styles.summary}>学习编排清洗结果</summary>
         {debugRecordError ? <PanelError message={debugRecordError} /> : null}
         {debugRecord?.studyUnits.length ? (
-          <div style={styles.list}>
+          <div className={styles.list}>
             {debugRecord.studyUnits.map((unit) => (
-              <div key={unit.id} style={styles.itemCard}>
+              <div key={unit.id} className={styles.itemCard}>
                 <strong>{unit.title}</strong>
-                <span style={styles.caption}>
+                <span className={styles.caption}>
                   p.{unit.pageStart}–{unit.pageEnd} · {unit.unitKind}
                   {unit.includeInPlan ? "" : " · skipped"}
                 </span>
-                <span style={styles.bodyText}>
+                <span className={styles.bodyText}>
                   {truncateText(unit.summary || "-", 220)}
                 </span>
               </div>
@@ -196,21 +196,21 @@ export function DocumentDebugPanels({
         )}
       </details>
 
-      <details style={styles.card}>
-        <summary style={styles.summary}>计划输入目录</summary>
+      <details className={styles.card}>
+        <summary className={styles.summary}>计划输入目录</summary>
         {planningContextError ? <PanelError message={planningContextError} /> : null}
         {planningContext?.courseOutline.length ? (
-          <div style={styles.list}>
+          <div className={styles.list}>
             {planningContext.courseOutline.map((node) => (
-              <div key={node.sectionId} style={styles.itemCard}>
+              <div key={node.sectionId} className={styles.itemCard}>
                 <strong>{node.title || node.sectionId}</strong>
-                <span style={styles.caption}>
+                <span className={styles.caption}>
                   L{node.level} · p.{node.pageStart}–{node.pageEnd}
                 </span>
                 {node.children.length ? (
-                  <div style={styles.tagRow}>
+                  <div className={styles.tagRow}>
                     {node.children.map((child) => (
-                      <span key={child.sectionId} style={styles.tag}>
+                      <span key={child.sectionId} className={styles.tag}>
                         {child.title}
                       </span>
                     ))}
@@ -224,47 +224,49 @@ export function DocumentDebugPanels({
         )}
       </details>
 
-      <details style={styles.card}>
-        <summary style={styles.summary}>计划工具与章节详情</summary>
+      <details className={styles.card}>
+        <summary className={styles.summary}>计划工具与章节详情</summary>
         {planningContext ||
         modelToolConfig ||
         planningContextError ||
         modelToolConfigError ? (
-          <div style={styles.sectionStack}>
-            <div style={styles.subSection}>
-              <span style={styles.subTitle}>当前可用工具</span>
+          <div className={styles.sectionStack}>
+            <div className={styles.subSection}>
+              <span className={styles.subTitle}>当前可用工具</span>
               {planningContextError ? (
                 <PanelError message={planningContextError} />
               ) : null}
               {planningContext?.availableTools.length ? (
-                <div style={styles.tagRow}>
+                <div className={styles.tagRow}>
                   {planningContext.availableTools.map((tool) => (
-                    <span key={tool.name} style={styles.tag}>
+                    <span key={tool.name} className={styles.tag}>
                       {tool.name}
                     </span>
                   ))}
                 </div>
               ) : null}
             </div>
-            <div style={styles.subSection}>
-              <span style={styles.subTitle}>模型工具开关</span>
+            <div className={styles.subSection}>
+              <span className={styles.subTitle}>模型工具开关</span>
               {modelToolConfigError ? (
                 <PanelError message={modelToolConfigError} />
               ) : null}
               {modelToolConfig?.stages.length ? (
-                <div style={styles.list}>
+                <div className={styles.list}>
                   {modelToolConfig.stages.map((stage) => (
-                    <div key={stage.name} style={styles.itemCard}>
+                    <div key={stage.name} className={styles.itemCard}>
                       <strong>{stage.label}</strong>
-                      <span style={styles.caption}>
+                      <span className={styles.caption}>
                         {stage.stageEnabled ? "runtime on" : "runtime off"} ·{" "}
                         {stage.name}
                       </span>
-                      <div style={styles.tagRow}>
+                      <div className={styles.tagRow}>
                         {stage.tools.map((tool) => (
                           <span
                             key={tool.name}
-                            style={tool.effectiveEnabled ? styles.tag : styles.tagMuted}
+                            className={
+                              tool.effectiveEnabled ? styles.tag : styles.tagMuted
+                            }
                           >
                             {tool.label}
                           </span>
@@ -275,36 +277,39 @@ export function DocumentDebugPanels({
                 </div>
               ) : null}
             </div>
-            <div style={styles.subSection}>
-              <span style={styles.subTitle}>Study Unit Detail</span>
+            <div className={styles.subSection}>
+              <span className={styles.subTitle}>Study Unit Detail</span>
               {planningContextError ? (
                 <PanelError message={planningContextError} />
               ) : null}
               {planningContext?.studyUnits.length ? (
-                <div style={styles.list}>
+                <div className={styles.list}>
                   {planningContext.studyUnits.map((unit) => {
                     const detail = planningContext.detailMap[unit.unitId];
                     return (
-                      <div key={unit.unitId} style={styles.itemCard}>
+                      <div key={unit.unitId} className={styles.itemCard}>
                         <strong>{unit.title}</strong>
-                        <span style={styles.caption}>
+                        <span className={styles.caption}>
                           p.{unit.pageStart}–{unit.pageEnd} · detail chunks:{" "}
                           {detail?.chunkCount ?? 0}
                         </span>
-                        <span style={styles.bodyText}>
+                        <span className={styles.bodyText}>
                           {truncateText(unit.summary || "-", 180)}
                         </span>
                         {detail?.subsectionTitles.length ? (
-                          <div style={styles.tagRow}>
+                          <div className={styles.tagRow}>
                             {detail.subsectionTitles.map((title, index) => (
-                              <span key={`${unit.unitId}:${index}`} style={styles.tag}>
+                              <span
+                                key={`${unit.unitId}:${index}`}
+                                className={styles.tag}
+                              >
                                 {title}
                               </span>
                             ))}
                           </div>
                         ) : null}
                         {detail?.chunkExcerpts.length ? (
-                          <pre style={styles.preCompact}>
+                          <pre className={styles.preCompact}>
                             {truncateText(detail.chunkExcerpts[0]?.content ?? "", 500)}
                           </pre>
                         ) : null}
@@ -320,14 +325,14 @@ export function DocumentDebugPanels({
         )}
       </details>
 
-      <details style={styles.card}>
-        <summary style={styles.summary}>计划模型 Trace</summary>
+      <details className={styles.card}>
+        <summary className={styles.summary}>计划模型 Trace</summary>
         {planningTraceError ? <PanelError message={planningTraceError} /> : null}
         {planningTrace?.trace?.rounds.length ? (
-          <div style={styles.list}>
-            <div style={styles.itemCard}>
+          <div className={styles.list}>
+            <div className={styles.itemCard}>
               <strong>{planningTrace.trace.model || "unknown model"}</strong>
-              <span style={styles.caption}>
+              <span className={styles.caption}>
                 rounds: {planningTrace.summary.roundCount} · tool calls:{" "}
                 {planningTrace.summary.toolCallCount} · recoveries:{" "}
                 {planningTrace.trace.rounds.reduce(
@@ -339,44 +344,44 @@ export function DocumentDebugPanels({
             {planningTrace.trace.rounds.map((round) => (
               <div
                 key={`${round.roundIndex}:${round.finishReason}`}
-                style={styles.itemCard}
+                className={styles.itemCard}
               >
                 <strong>Round {round.roundIndex + 1}</strong>
-                <span style={styles.caption}>
+                <span className={styles.caption}>
                   {round.finishReason || "no finish reason"} · {round.elapsedMs} ms ·
                   timeout {round.timeoutSeconds}s
                 </span>
                 {round.thinking ? (
-                  <pre style={styles.preCompact}>
+                  <pre className={styles.preCompact}>
                     {truncateText(round.thinking, 900)}
                   </pre>
                 ) : null}
                 {round.assistantContent ? (
-                  <pre style={styles.preCompact}>
+                  <pre className={styles.preCompact}>
                     {truncateText(round.assistantContent, 900)}
                   </pre>
                 ) : null}
                 {round.recoveries?.length ? (
-                  <div style={styles.tagRow}>
+                  <div className={styles.tagRow}>
                     {round.recoveries.map((recovery) => (
-                      <span key={recovery.recoveryId} style={styles.tag}>
+                      <span key={recovery.recoveryId} className={styles.tag}>
                         {recovery.reason} · {recovery.strategy} · x{recovery.attempts}
                       </span>
                     ))}
                   </div>
                 ) : null}
                 {round.toolCalls.length ? (
-                  <div style={styles.list}>
+                  <div className={styles.list}>
                     {round.toolCalls.map((toolCall) => (
-                      <div key={toolCall.toolCallId} style={styles.toolCallCard}>
+                      <div key={toolCall.toolCallId} className={styles.toolCallCard}>
                         <strong>{toolCall.toolName}</strong>
-                        <span style={styles.caption}>
+                        <span className={styles.caption}>
                           {toolCall.resultSummary || "无结果摘要"}
                         </span>
-                        <pre style={styles.preCompact}>
+                        <pre className={styles.preCompact}>
                           {truncateText(toolCall.argumentsJson, 500)}
                         </pre>
-                        <pre style={styles.preCompact}>
+                        <pre className={styles.preCompact}>
                           {truncateText(toolCall.resultJson, 500)}
                         </pre>
                       </div>
@@ -391,17 +396,17 @@ export function DocumentDebugPanels({
         )}
       </details>
 
-      <details style={styles.card}>
-        <summary style={styles.summary}>解析告警</summary>
+      <details className={styles.card}>
+        <summary className={styles.summary}>解析告警</summary>
         {debugRecord?.warnings.length ? (
-          <div style={styles.list}>
+          <div className={styles.list}>
             {debugRecord.warnings.map((warning, index) => (
-              <div key={`${warning.code}:${index}`} style={styles.itemCard}>
+              <div key={`${warning.code}:${index}`} className={styles.itemCard}>
                 <strong>{warning.code}</strong>
-                <span style={styles.caption}>
+                <span className={styles.caption}>
                   {warning.pageNumber ? `page ${warning.pageNumber}` : "document level"}
                 </span>
-                <span style={styles.bodyText}>{warning.message}</span>
+                <span className={styles.bodyText}>{warning.message}</span>
               </div>
             ))}
           </div>
@@ -410,17 +415,17 @@ export function DocumentDebugPanels({
         )}
       </details>
 
-      <details style={styles.card}>
-        <summary style={styles.summary}>切块结果</summary>
+      <details className={styles.card}>
+        <summary className={styles.summary}>切块结果</summary>
         {visibleChunks.length ? (
-          <div style={styles.list}>
+          <div className={styles.list}>
             {visibleChunks.map((chunk) => (
-              <div key={chunk.id} style={styles.itemCard}>
+              <div key={chunk.id} className={styles.itemCard}>
                 <strong>{chunk.sectionId || chunk.id}</strong>
-                <span style={styles.caption}>
+                <span className={styles.caption}>
                   p.{chunk.pageStart}–{chunk.pageEnd} · {chunk.charCount} chars
                 </span>
-                <pre style={styles.preCompact}>
+                <pre className={styles.preCompact}>
                   {truncateText(chunk.textPreview || chunk.content, 420)}
                 </pre>
               </div>
@@ -431,27 +436,27 @@ export function DocumentDebugPanels({
         )}
       </details>
 
-      <details style={styles.card}>
-        <summary style={styles.summary}>逐页抽取</summary>
+      <details className={styles.card}>
+        <summary className={styles.summary}>逐页抽取</summary>
         {visiblePages.length ? (
-          <div style={styles.list}>
+          <div className={styles.list}>
             {visiblePages.map((page) => (
-              <div key={page.pageNumber} style={styles.itemCard}>
+              <div key={page.pageNumber} className={styles.itemCard}>
                 <strong>Page {page.pageNumber}</strong>
-                <span style={styles.caption}>
+                <span className={styles.caption}>
                   {page.charCount} chars · {page.wordCount} words ·{" "}
                   {page.extractionSource}
                 </span>
                 {page.headingCandidates.length ? (
-                  <div style={styles.tagRow}>
+                  <div className={styles.tagRow}>
                     {page.headingCandidates.slice(0, 4).map((candidate, index) => (
-                      <span key={`${page.pageNumber}:${index}`} style={styles.tag}>
+                      <span key={`${page.pageNumber}:${index}`} className={styles.tag}>
                         {candidate.text}
                       </span>
                     ))}
                   </div>
                 ) : null}
-                <pre style={styles.preCompact}>
+                <pre className={styles.preCompact}>
                   {truncateText(page.textPreview || "[empty]", 420)}
                 </pre>
               </div>
@@ -486,26 +491,28 @@ function StreamPanel({
     .find((event) => event.stage === "stream_error");
   const streamError = error || extractEventError(streamErrorEvent?.payload);
   return (
-    <div style={styles.sectionStack}>
+    <div className={styles.sectionStack}>
       {streamError ? <PanelError message={streamError} /> : null}
-      <div style={styles.statusRow}>
+      <div className={styles.statusRow}>
         <StatusPill label="status" status={status} />
-        <span style={styles.caption}>
+        <span className={styles.caption}>
           latest: {visibleEvents[0]?.stage ?? "none"} · total: {events.length}
         </span>
       </div>
       {visibleEvents.length ? (
-        <div style={styles.list}>
+        <div className={styles.list}>
           {visibleEvents.map((event, index) => (
-            <div key={`${event.stage}:${index}`} style={styles.itemCard}>
+            <div key={`${event.stage}:${index}`} className={styles.itemCard}>
               <strong>{event.stage}</strong>
-              <span style={styles.caption}>
+              <span className={styles.caption}>
                 {formatTimestamp(event.createdAt, {
                   style: "debug",
                   empty: "实时事件",
                 })}
               </span>
-              <pre style={styles.preCompact}>{truncateJson(event.payload, 500)}</pre>
+              <pre className={styles.preCompact}>
+                {truncateJson(event.payload, 500)}
+              </pre>
             </div>
           ))}
         </div>
@@ -518,8 +525,8 @@ function StreamPanel({
 
 function SummaryItem({ label, value }: { label: string; value: string }) {
   return (
-    <div style={styles.summaryItem}>
-      <span style={styles.caption}>{label}</span>
+    <div className={styles.summaryItem}>
+      <span className={styles.caption}>{label}</span>
       <strong>{value}</strong>
     </div>
   );
@@ -527,18 +534,18 @@ function SummaryItem({ label, value }: { label: string; value: string }) {
 
 function StatusPill({ label, status }: { label: string; status: string }) {
   return (
-    <span style={{ ...styles.badge, ...statusBadgeStyle(status) }}>
+    <span className={styles.badge} data-status={status}>
       {label}: {status}
     </span>
   );
 }
 
 function DebugEmptyState({ message }: { message: string }) {
-  return <p style={styles.empty}>{message}</p>;
+  return <p className={styles.empty}>{message}</p>;
 }
 
 function PanelError({ message }: { message: string }) {
-  return <div style={styles.errorPanel}>{message}</div>;
+  return <div className={styles.errorPanel}>{message}</div>;
 }
 
 function truncateJson(value: Record<string, unknown>, maxLength: number) {
@@ -564,212 +571,4 @@ function truncateText(value: string, maxLength: number) {
     return value;
   }
   return `${value.slice(0, Math.max(0, maxLength - 1)).trimEnd()}…`;
-}
-
-const styles: Record<string, CSSProperties> = {
-  stack: {
-    display: "grid",
-    gap: 12,
-  },
-  card: {
-    border: "1px solid var(--border)",
-    background:
-      "linear-gradient(180deg, color-mix(in srgb, white 76%, var(--accent-soft)) 0%, var(--bg) 72%)",
-    borderRadius: 16,
-    padding: "14px 16px",
-  },
-  cardHeader: {
-    display: "flex",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-    gap: 12,
-    flexWrap: "wrap",
-  },
-  headerCopy: {
-    display: "grid",
-    gap: 4,
-  },
-  cardTitle: {
-    fontSize: 15,
-    fontWeight: 700,
-    color: "var(--ink)",
-  },
-  badgeRow: {
-    display: "flex",
-    gap: 8,
-    flexWrap: "wrap",
-  },
-  badge: {
-    fontSize: 11,
-    fontWeight: 600,
-    padding: "4px 8px",
-    borderRadius: 999,
-    background: "var(--accent-soft)",
-    color: "var(--accent)",
-  },
-  statusStrip: {
-    display: "flex",
-    gap: 8,
-    flexWrap: "wrap",
-    alignItems: "center",
-    marginTop: 12,
-  },
-  metaText: {
-    fontSize: 11,
-    color: "var(--muted)",
-  },
-  liveText: {
-    fontSize: 11,
-    fontWeight: 700,
-    color: "var(--accent)",
-  },
-  summaryGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))",
-    gap: 10,
-    marginTop: 14,
-  },
-  summaryItem: {
-    display: "grid",
-    gap: 4,
-    padding: "10px 12px",
-    borderRadius: 12,
-    background: "var(--panel)",
-  },
-  summary: {
-    cursor: "pointer",
-    fontSize: 14,
-    fontWeight: 700,
-    color: "var(--ink)",
-  },
-  sectionStack: {
-    display: "grid",
-    gap: 12,
-    marginTop: 12,
-  },
-  subSection: {
-    display: "grid",
-    gap: 8,
-  },
-  subTitle: {
-    fontSize: 12,
-    fontWeight: 700,
-    color: "var(--ink-2)",
-    textTransform: "uppercase",
-    letterSpacing: "0.06em",
-  },
-  list: {
-    display: "grid",
-    gap: 10,
-    marginTop: 12,
-  },
-  itemCard: {
-    display: "grid",
-    gap: 6,
-    padding: "12px 14px",
-    borderRadius: 12,
-    background: "var(--panel)",
-  },
-  toolCallCard: {
-    display: "grid",
-    gap: 6,
-    padding: "10px 12px",
-    borderRadius: 10,
-    background: "color-mix(in srgb, var(--panel) 82%, white)",
-  },
-  tagRow: {
-    display: "flex",
-    gap: 8,
-    flexWrap: "wrap",
-  },
-  tag: {
-    fontSize: 11,
-    padding: "4px 8px",
-    borderRadius: 999,
-    background: "white",
-    border: "1px solid var(--border)",
-    color: "var(--ink-2)",
-  },
-  tagMuted: {
-    fontSize: 11,
-    padding: "4px 8px",
-    borderRadius: 999,
-    background: "var(--panel-strong)",
-    border: "1px solid var(--border)",
-    color: "var(--muted)",
-  },
-  statusRow: {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 8,
-    flexWrap: "wrap",
-  },
-  preCompact: {
-    margin: 0,
-    padding: "10px 12px",
-    borderRadius: 10,
-    background: "white",
-    border: "1px solid var(--border)",
-    whiteSpace: "pre-wrap",
-    overflowX: "auto",
-    fontSize: 11,
-    lineHeight: 1.6,
-    fontFamily: "var(--font-mono)",
-  },
-  caption: {
-    fontSize: 12,
-    color: "var(--muted)",
-  },
-  bodyText: {
-    fontSize: 13,
-    color: "var(--ink-2)",
-    lineHeight: 1.6,
-  },
-  empty: {
-    margin: "12px 0 0",
-    fontSize: 13,
-    color: "var(--muted)",
-  },
-  errorPanel: {
-    marginTop: 12,
-    padding: "10px 12px",
-    borderRadius: 12,
-    border: "1px solid color-mix(in srgb, var(--negative) 24%, var(--border))",
-    background: "color-mix(in srgb, var(--negative) 10%, white)",
-    color: "var(--negative)",
-    fontSize: 13,
-    lineHeight: 1.6,
-    whiteSpace: "pre-wrap",
-  },
-  error: {
-    margin: "12px 0 0",
-    fontSize: 13,
-    color: "var(--negative)",
-  },
-};
-
-function statusBadgeStyle(status: string): CSSProperties {
-  if (status === "completed") {
-    return {
-      background: "color-mix(in srgb, var(--positive, #0f9d58) 16%, white)",
-      color: "var(--positive, #0f9d58)",
-    };
-  }
-  if (status === "running") {
-    return {
-      background: "color-mix(in srgb, var(--accent) 16%, white)",
-      color: "var(--accent)",
-    };
-  }
-  if (status === "error") {
-    return {
-      background: "color-mix(in srgb, var(--negative) 12%, white)",
-      color: "var(--negative)",
-    };
-  }
-  return {
-    background: "var(--accent-soft)",
-    color: "var(--accent)",
-  };
 }

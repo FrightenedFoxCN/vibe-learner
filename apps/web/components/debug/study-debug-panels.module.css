@@ -1,0 +1,143 @@
+@layer theme, vendor, base, components, utilities;
+
+@layer components {
+  .stack {
+    display: grid;
+    gap: 12px;
+  }
+
+  .card {
+    border: 1px solid var(--border);
+    background: var(--bg);
+    border-radius: 16px;
+    padding: 14px 16px;
+  }
+
+  .sectionHead {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .headerCopy {
+    display: grid;
+    gap: 4px;
+  }
+
+  .title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--ink);
+  }
+
+  .badge {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 8px;
+    border-radius: 999px;
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+
+  .metaGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 10px;
+    margin-top: 14px;
+  }
+
+  .metaItem {
+    display: grid;
+    gap: 4px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: var(--panel);
+  }
+
+  .metaValue {
+    font-size: 13px;
+    color: var(--ink-2);
+    word-break: break-word;
+  }
+
+  .detailBlock {
+    margin-top: 12px;
+  }
+
+  .sceneCard {
+    display: grid;
+    gap: 4px;
+    margin-top: 12px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: var(--panel);
+  }
+
+  .summary {
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--ink);
+  }
+
+  .list {
+    display: grid;
+    gap: 10px;
+    margin-top: 12px;
+  }
+
+  .itemCard {
+    display: grid;
+    gap: 6px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: var(--panel);
+  }
+
+  .tagRow {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .tag {
+    font-size: 11px;
+    padding: 4px 8px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: white;
+    color: var(--ink-2);
+  }
+
+  .pre {
+    margin: 12px 0 0;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    white-space: pre-wrap;
+    overflow-x: auto;
+    font-size: 11px;
+    line-height: 1.6;
+    font-family: var(--font-mono);
+  }
+
+  .caption {
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .bodyText {
+    font-size: 13px;
+    color: var(--ink-2);
+    line-height: 1.6;
+  }
+
+  .empty {
+    margin: 12px 0 0;
+    font-size: 13px;
+    color: var(--muted);
+  }
+}
