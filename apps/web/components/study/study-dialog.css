@@ -1,0 +1,327 @@
+@layer components {
+  .study-dialog-workspace {
+    min-height: 100vh;
+    width: 100%;
+    max-width: none;
+    padding: 0 28px 48px;
+    display: grid;
+    gap: 0;
+    align-content: start;
+  }
+
+  .study-dialog-empty-dock {
+    position: fixed;
+    right: 0;
+    top: calc(var(--study-heading-offset, 112px) + 20px);
+    z-index: 20;
+    max-width: 220px;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    background: color-mix(in srgb, var(--bg) 96%, transparent);
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.6;
+  }
+
+  .study-dialog-heading {
+    display: grid;
+    gap: 8px;
+    position: sticky;
+    top: 0;
+    z-index: 15;
+    width: 100%;
+    padding-top: 20px;
+    margin-bottom: 16px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid color-mix(in srgb, var(--border) 76%, var(--bg));
+    background: var(--bg);
+  }
+
+  .study-dialog-heading-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .study-dialog-page-title {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--ink);
+    line-height: 1.2;
+  }
+
+  .study-dialog-notice {
+    width: fit-content;
+    max-width: 100%;
+    min-height: 24px;
+    padding: 0 8px;
+    border: none;
+    background: color-mix(in srgb, var(--bg) 72%, var(--accent-soft));
+    color: var(--ink-2);
+    font-size: 12px;
+    line-height: 1.4;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .study-dialog-notice-label {
+    color: var(--muted);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .study-dialog-main-stage {
+    min-width: 0;
+    width: 100%;
+    max-width: none;
+  }
+
+  .study-dialog-no-plan-state {
+    min-height: 240px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 18px;
+    padding: 28px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    text-align: center;
+  }
+
+  .study-dialog-no-plan-copy {
+    display: grid;
+    gap: 8px;
+    max-width: 520px;
+  }
+
+  .study-dialog-no-plan-title {
+    margin: 0;
+    color: var(--ink);
+    font-size: 20px;
+  }
+
+  .study-dialog-no-plan-description {
+    margin: 0;
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.7;
+  }
+
+  .study-dialog-no-plan-action {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 18px;
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: var(--bg);
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .study-dialog-preview-window {
+    position: fixed;
+    top: calc(var(--study-heading-offset, 112px) - 6px);
+    right: 0;
+    bottom: auto;
+    z-index: 35;
+    display: flex;
+    flex-direction: column;
+    width: min(400px, calc(100vw - 36px));
+    height: min(82vh, calc(100vh - var(--study-heading-offset, 112px) - 20px));
+    border: 1px solid var(--border);
+    background: color-mix(in srgb, var(--bg) 98%, transparent);
+    box-shadow: 0 16px 40px color-mix(in srgb, var(--ink) 12%, transparent);
+    overflow: hidden;
+  }
+
+  .study-dialog-pdf-header {
+    display: grid;
+    gap: 6px;
+    padding: 9px 10px;
+    border-bottom: 1px solid var(--border);
+    background: var(--panel);
+  }
+
+  .study-dialog-pdf-header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .study-dialog-pdf-header-meta {
+    display: grid;
+    gap: 0;
+    min-width: 0;
+    flex: 1;
+  }
+
+  .study-dialog-pdf-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: nowrap;
+    justify-content: flex-end;
+    flex-shrink: 0;
+  }
+
+  .study-dialog-pdf-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .study-dialog-pdf-icon-btn {
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--ink);
+    width: 30px;
+    height: 30px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+
+  .study-dialog-pdf-icon-link {
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--ink);
+    width: 30px;
+    height: 30px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .study-dialog-pdf-icon-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  .study-dialog-preview-stage {
+    width: 100%;
+    flex: 1;
+    min-height: 0;
+    background: var(--panel);
+    overflow: hidden;
+    padding: 8px;
+  }
+
+  .study-dialog-preview-canvas {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background: var(--bg);
+    border: 1px solid color-mix(in srgb, var(--ink) 8%, transparent);
+    overflow: hidden;
+  }
+
+  .study-dialog-preview-meta-float {
+    position: absolute;
+    right: 10px;
+    bottom: 10px;
+    z-index: 9;
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    pointer-events: none;
+  }
+
+  .study-dialog-preview-meta-chip {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+    padding: 0 8px;
+    background: color-mix(in srgb, var(--bg) 92%, transparent);
+    border: 1px solid color-mix(in srgb, var(--border-strong) 48%, transparent);
+    box-shadow: 0 10px 24px color-mix(in srgb, var(--ink) 10%, transparent);
+    backdrop-filter: blur(10px);
+    color: var(--ink-2);
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  .study-dialog-preview-meta-chip-button {
+    cursor: pointer;
+    pointer-events: auto;
+  }
+
+  .study-dialog-preview-empty-state {
+    min-height: 280px;
+    display: grid;
+    place-items: center;
+    color: var(--muted);
+    font-size: 13px;
+  }
+
+  .study-dialog-preview-dock {
+    position: fixed;
+    right: 0;
+    top: calc(var(--study-heading-offset, 112px) - 6px);
+    transform: none;
+    z-index: 35;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--ink);
+    min-height: 0;
+    width: auto;
+    height: 38px;
+    padding: 0 14px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 12px 28px color-mix(in srgb, var(--ink) 10%, transparent);
+  }
+
+  .study-dialog-preview-window,
+  .study-dialog-preview-dock {
+    transition:
+      transform 180ms ease,
+      box-shadow 180ms ease;
+  }
+
+  .study-dialog-preview-window:hover,
+  .study-dialog-preview-dock:hover {
+    box-shadow: 0 22px 54px color-mix(in srgb, var(--ink) 22%, transparent);
+  }
+
+  @media (max-width: 1080px) {
+    .study-dialog-preview-window {
+      top: 56px;
+      width: min(420px, calc(100vw - 24px));
+      height: min(70vh, calc(100vh - 108px));
+    }
+  }
+
+  @media (max-width: 760px) {
+    .study-dialog-workspace {
+      padding-bottom: 8px;
+    }
+
+    .study-dialog-preview-window {
+      top: calc(var(--mobile-nav-height) + 6px);
+      width: min(92vw, 360px);
+      height: min(66vh, calc(100vh - var(--mobile-nav-height) - 32px));
+    }
+
+    .study-dialog-preview-dock {
+      top: calc(var(--mobile-nav-height) + 4px);
+    }
+  }
+}

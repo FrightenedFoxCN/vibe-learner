@@ -1,0 +1,213 @@
+@layer components {
+  .study-pdf-viewer-wrap {
+    min-height: 100%;
+    height: 100%;
+  }
+
+  .study-pdf-viewer-viewport {
+    position: relative;
+    min-height: 0;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .study-pdf-viewer-floating-bar {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 8;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    padding: 6px 8px;
+    border-radius: 14px;
+    background: color-mix(in srgb, var(--bg) 92%, transparent);
+    border: 1px solid color-mix(in srgb, var(--border-strong) 48%, transparent);
+    box-shadow: 0 10px 24px color-mix(in srgb, var(--ink) 10%, transparent);
+    backdrop-filter: blur(10px);
+    pointer-events: auto;
+  }
+
+  .study-pdf-viewer-icon-button {
+    border-width: 1px;
+    border-style: solid;
+    border-color: color-mix(in srgb, var(--border-strong) 64%, transparent);
+    background: color-mix(in srgb, var(--panel) 96%, transparent);
+    color: var(--ink-2);
+    width: 28px;
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    cursor: pointer;
+  }
+
+  .study-pdf-viewer-icon-button-active {
+    border-color: color-mix(in srgb, var(--accent) 36%, transparent);
+    background: color-mix(in srgb, var(--accent) 12%, transparent);
+    color: var(--accent);
+  }
+
+  .study-pdf-viewer-icon-action-button {
+    border-color: var(--accent);
+    background: var(--accent);
+    color: var(--bg);
+  }
+
+  .study-pdf-viewer-selection-badge {
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    padding: 0 10px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--ink) 5%, transparent);
+    color: var(--ink-2);
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .study-pdf-viewer-page-shell {
+    position: relative;
+    width: fit-content;
+    max-width: 100%;
+    margin: 0 auto;
+    user-select: text;
+  }
+
+  .study-pdf-viewer-page-shell-region-mode {
+    user-select: none;
+  }
+
+  .study-pdf-viewer-overlay-stage {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  .study-pdf-viewer-overlay-box {
+    position: absolute;
+    border-width: 2px;
+    border-style: solid;
+    --study-overlay-paint: var(--study-overlay-color, #facc15);
+    border-color: var(--study-overlay-paint);
+    background: color-mix(in srgb, var(--study-overlay-paint) 12.55%, transparent);
+    border-radius: 6px;
+    box-sizing: border-box;
+  }
+
+  .study-pdf-viewer-overlay-label {
+    background: var(--study-overlay-paint);
+    position: absolute;
+    left: 0;
+    top: -24px;
+    max-width: 220px;
+    color: var(--ink);
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.2;
+    padding: 4px 6px;
+    border-radius: 999px;
+    box-shadow: 0 6px 16px color-mix(in srgb, var(--ink) 12%, transparent);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .study-pdf-viewer-selection-box {
+    position: absolute;
+    background: color-mix(in srgb, var(--accent) 18%, transparent);
+    border: 1px solid color-mix(in srgb, var(--accent) 34%, transparent);
+    border-radius: 4px;
+    box-sizing: border-box;
+  }
+
+  .study-pdf-viewer-region-box {
+    position: absolute;
+    border: 2px solid var(--accent);
+    background: color-mix(in srgb, var(--accent) 12%, transparent);
+    border-radius: 8px;
+    box-sizing: border-box;
+  }
+
+  .study-pdf-viewer-region-capture-layer {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    pointer-events: auto;
+    cursor: crosshair;
+    touch-action: none;
+    background: transparent;
+  }
+
+  .study-pdf-viewer-region-draft-box {
+    position: absolute;
+    border: 2px dashed var(--accent);
+    background: color-mix(in srgb, var(--accent) 10%, transparent);
+    border-radius: 8px;
+    box-sizing: border-box;
+  }
+
+  .study-pdf-viewer-error-state {
+    min-height: 320px;
+    display: grid;
+    place-items: center;
+    color: var(--negative);
+    font-size: 13px;
+    text-align: center;
+    padding: 16px;
+  }
+
+  .study-pdf-viewer-status-layer {
+    position: absolute;
+    inset: 0;
+    z-index: 6;
+    display: grid;
+    place-content: center;
+    justify-items: center;
+    gap: 12px;
+    padding: 24px;
+    background: var(--surface);
+    color: var(--muted);
+    font-size: 13px;
+    text-align: center;
+  }
+
+  .study-pdf-viewer-retry-button {
+    min-height: 40px;
+    padding: 0 16px;
+    border: 1px solid var(--border-strong);
+    border-radius: 999px;
+    background: var(--bg);
+    color: var(--ink);
+    cursor: pointer;
+  }
+
+  /* react-pdf sets canvas height inline; the scaled canvas must keep its aspect ratio. */
+  .study-pdf-preview-document {
+    display: flex;
+    justify-content: center;
+  }
+
+  .study-pdf-preview-page {
+    display: inline-block;
+  }
+
+  .study-pdf-preview-page .react-pdf__Page__canvas {
+    display: block;
+    max-width: 100%;
+    height: auto !important;
+  }
+
+  .study-pdf-preview-page--region .react-pdf__Page__textContent,
+  .study-pdf-preview-page--region .react-pdf__Page__annotations {
+    pointer-events: none;
+    user-select: none;
+  }
+
+  .study-pdf-preview-page .react-pdf__Page__textContent ::selection {
+    background: color-mix(in srgb, var(--accent) 22%, transparent);
+  }
+}

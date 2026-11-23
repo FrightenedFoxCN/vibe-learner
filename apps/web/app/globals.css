@@ -242,71 +242,6 @@
     cursor: not-allowed;
   }
 
-  /* Study dialog layout */
-  .study-console-layout {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 300px;
-    gap: 18px !important;
-    align-items: start;
-  }
-
-  .study-transcript,
-  .study-composer {
-    width: min(100%, 1040px);
-  }
-
-  /* Secondary help inside Study Dialog follows the same compact, neutral disclosure
-   * treatment as other reliability/details blocks. The composer remains the primary
-   * action surface, so this never competes with the textarea or send controls. */
-  .study-memory-help {
-    border: 1px solid var(--border);
-    background: var(--panel);
-    color: var(--ink-2);
-  }
-
-  .study-memory-help > summary {
-    min-height: 36px;
-    padding: 8px 10px;
-    display: flex;
-    align-items: center;
-    cursor: pointer;
-    color: var(--ink-2);
-    font-size: 12px;
-    font-weight: 600;
-    list-style: none;
-  }
-
-  .study-memory-help > summary::-webkit-details-marker { display: none; }
-  .study-memory-help > summary::before { content: "＋"; width: 18px; color: var(--accent); }
-  .study-memory-help[open] > summary::before { content: "−"; }
-  .study-memory-help > p { margin: 0; padding: 0 10px 8px; font-size: 12px; line-height: 1.6; }
-  .study-memory-help-code {
-    margin: 0 10px 10px;
-    padding: 9px 10px;
-    overflow-x: auto;
-    border: 1px solid var(--border);
-    background: var(--bg);
-    color: var(--ink);
-    font: 11px/1.6 var(--font-mono);
-  }
-
-  /* Plan revision uses the shared page tokens and button hierarchy. Keep the
-   * proposal table readable without introducing a second visual language. */
-  .study-console-companion-card {
-    display: grid;
-    grid-template-columns: minmax(260px, 1.15fr) minmax(280px, 0.85fr);
-  }
-
-  .study-dialog-pdf-window,
-  .study-dialog-pdf-dock {
-    transition: transform 180ms ease, box-shadow 180ms ease;
-  }
-
-  .study-dialog-pdf-window:hover,
-  .study-dialog-pdf-dock:hover {
-    box-shadow: 0 22px 54px rgba(13, 32, 40, 0.22);
-  }
-
   .study-markdown-root {
     min-width: 0;
   }
@@ -330,52 +265,7 @@
     padding: 6px 0;
   }
 
-  .pdf-preview-document {
-    display: flex;
-    justify-content: center;
-  }
-
-  .pdf-preview-page {
-    display: inline-block;
-  }
-
-  .pdf-preview-page .react-pdf__Page__canvas {
-    display: block;
-    max-width: 100%;
-    height: auto !important;
-  }
-
-  .pdf-preview-page--region .react-pdf__Page__textContent,
-  .pdf-preview-page--region .react-pdf__Page__annotations {
-    pointer-events: none !important;
-    user-select: none !important;
-  }
-
-  .pdf-preview-page .react-pdf__Page__textContent ::selection {
-    background: rgba(14, 165, 233, 0.22);
-  }
-
   /* ─── Breakpoints ─── */
-
-  /* Medium (≤ 1080px): collapse 2-col layouts */
-  @media (max-width: 1080px) {
-    .study-console-layout {
-      grid-template-columns: minmax(0, 1fr) !important;
-    }
-
-    .study-console-companion-card {
-      grid-template-columns: minmax(0, 1fr) !important;
-    }
-
-    .study-dialog-pdf-window {
-      top: 56px !important;
-      right: 0 !important;
-      left: auto !important;
-      bottom: auto !important;
-      width: min(420px, calc(100vw - 24px)) !important;
-      height: min(70vh, calc(100vh - 108px)) !important;
-    }
-  }
 
   /* Small-medium (≤ 800px): 1-col home grid */
   @media (max-width: 800px) {
@@ -419,25 +309,6 @@
     .app-side-nav.is-mobile-open .app-nav-links { display: block; }
     .app-nav-link, .app-nav-link--active { min-width: 44px; min-height: 44px; white-space: normal; }
 
-    .study-dialog-page {
-      padding: 12px 16px 8px !important;
-    }
-
-    .study-dialog-pdf-window {
-      top: calc(var(--mobile-nav-height) + 6px) !important;
-      right: 0 !important;
-      left: auto !important;
-      bottom: auto !important;
-      width: min(92vw, 360px) !important;
-      height: min(66vh, calc(100vh - var(--mobile-nav-height) - 32px)) !important;
-    }
-
-    .study-dialog-pdf-dock {
-      right: 0 !important;
-      left: auto !important;
-      top: calc(var(--mobile-nav-height) + 4px) !important;
-      bottom: auto !important;
-    }
 
   }
 

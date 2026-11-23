@@ -1,4 +1,3 @@
-import type { CSSProperties } from "react";
 import type {
   PersonaProfile,
   SessionAffinityState,
@@ -33,15 +32,21 @@ export function CharacterShell({
   const teachingLabel = teachingMethodSlot?.content || persona.summary;
 
   return (
-    <div style={{ ...styles.wrap, ...(isEmbedded ? styles.wrapEmbedded : {}) }}>
+    <div
+      className={
+        isEmbedded
+          ? "study-character-wrap study-character-wrap-embedded"
+          : "study-character-wrap"
+      }
+    >
       {!isEmbedded ? (
-        <div style={styles.header}>
-          <span style={styles.name}>{persona.name}</span>
-          <span style={styles.meta}>{teachingLabel}</span>
+        <div className="study-character-header">
+          <span className="study-character-name">{persona.name}</span>
+          <span className="study-character-meta">{teachingLabel}</span>
         </div>
       ) : null}
 
-      <div style={styles.infoList}>
+      <div className="study-character-info-list">
         <InfoRow
           label="角色状态"
           value={currentEvent ? "表演状态已就绪" : pending ? "等待表演状态" : "待开始"}
@@ -61,9 +66,9 @@ export function CharacterShell({
         <InfoRow label="续接" value={formatFollowUpState(nextFollowUp)} />
       </div>
       {affinityState?.summary ? (
-        <div style={styles.noteRow}>
-          <span style={styles.noteKey}>观察</span>
-          <p style={styles.noteText}>{affinityState.summary}</p>
+        <div className="study-character-note-row">
+          <span className="study-character-note-key">观察</span>
+          <p className="study-character-note-text">{affinityState.summary}</p>
         </div>
       ) : null}
     </div>
@@ -72,9 +77,9 @@ export function CharacterShell({
 
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
-    <div style={styles.infoRow}>
-      <span style={styles.infoLabel}>{label}</span>
-      <span style={styles.infoValue}>{value}</span>
+    <div className="study-character-info-row">
+      <span className="study-character-info-label">{label}</span>
+      <span className="study-character-info-value">{value}</span>
     </div>
   );
 }
@@ -132,76 +137,3 @@ function formatTurnCount(value: number) {
   }
   return `${value} 轮`;
 }
-
-const styles: Record<string, CSSProperties> = {
-  wrap: {
-    paddingTop: 4,
-    display: "grid",
-    gap: 10,
-    minWidth: 0,
-    maxWidth: "100%",
-    overflow: "hidden",
-  },
-  wrapEmbedded: {
-    paddingTop: 0,
-  },
-  header: {
-    display: "flex",
-    alignItems: "baseline",
-    gap: 10,
-    flexWrap: "wrap",
-  },
-  name: {
-    fontSize: 15,
-    fontWeight: 700,
-    color: "var(--ink)",
-  },
-  meta: {
-    fontSize: 12,
-    color: "var(--muted)",
-  },
-  infoList: {
-    display: "grid",
-    gap: 6,
-    minWidth: 0,
-  },
-  infoRow: {
-    display: "grid",
-    gridTemplateColumns: "56px minmax(0, 1fr)",
-    gap: 8,
-    alignItems: "start",
-    minWidth: 0,
-  },
-  infoLabel: {
-    fontSize: 11,
-    fontWeight: 600,
-    color: "var(--muted)",
-    paddingTop: 1,
-  },
-  infoValue: {
-    fontSize: 12,
-    color: "var(--ink)",
-    lineHeight: 1.5,
-    wordBreak: "break-word",
-  },
-  noteRow: {
-    display: "grid",
-    gridTemplateColumns: "56px minmax(0, 1fr)",
-    gap: 8,
-    alignItems: "start",
-    minWidth: 0,
-  },
-  noteKey: {
-    fontSize: 11,
-    fontWeight: 600,
-    color: "var(--muted)",
-    paddingTop: 1,
-  },
-  noteText: {
-    margin: 0,
-    fontSize: 12,
-    lineHeight: 1.5,
-    color: "var(--ink)",
-    wordBreak: "break-word",
-  },
-};

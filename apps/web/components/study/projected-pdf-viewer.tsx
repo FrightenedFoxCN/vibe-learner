@@ -1,7 +1,6 @@
 "use client";
 
 import type {
-  CSSProperties,
   PointerEvent as ReactPointerEvent,
   WheelEvent as ReactWheelEvent,
 } from "react";
@@ -10,6 +9,8 @@ import { Document, Page, pdfjs } from "react-pdf";
 import type { PdfRect, ProjectedPdfOverlay } from "@vibe-learner/shared";
 
 import { MaterialIcon } from "../ui/material-icon";
+import type { StudyOverlayStyle } from "./study-overlay-style";
+import "./study-pdf-viewer.css";
 import "./projected-pdf-viewer-vendor.css";
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
@@ -241,15 +242,20 @@ export function ProjectedPdfViewer({
   };
 
   return (
-    <div style={styles.wrap}>
-      <div style={styles.viewport} ref={viewportRef} onWheel={handleWheel}>
-        <div style={styles.floatingBar}>
+    <div className="study-pdf-viewer-wrap">
+      <div
+        className="study-pdf-viewer-viewport"
+        ref={viewportRef}
+        onWheel={handleWheel}
+      >
+        <div className="study-pdf-viewer-floating-bar">
           <button
             type="button"
-            style={{
-              ...styles.iconButton,
-              ...(!isRegionMode ? styles.iconButtonActive : {}),
-            }}
+            className={
+              !isRegionMode
+                ? "study-pdf-viewer-icon-button study-pdf-viewer-icon-button-active"
+                : "study-pdf-viewer-icon-button"
+            }
             onClick={() => {
               setIsRegionMode(false);
               clearInteractionState();
@@ -261,10 +267,11 @@ export function ProjectedPdfViewer({
           </button>
           <button
             type="button"
-            style={{
-              ...styles.iconButton,
-              ...(isRegionMode ? styles.iconButtonActive : {}),
-            }}
+            className={
+              isRegionMode
+                ? "study-pdf-viewer-icon-button study-pdf-viewer-icon-button-active"
+                : "study-pdf-viewer-icon-button"
+            }
             onClick={() => {
               setIsRegionMode(true);
               clearInteractionState();
@@ -275,13 +282,17 @@ export function ProjectedPdfViewer({
             <MaterialIcon name="crop_free" size={15} />
           </button>
 
-          {textSelection ? <span style={styles.selectionBadge}>已选文段</span> : null}
-          {selectedRegion ? <span style={styles.selectionBadge}>已框选</span> : null}
+          {textSelection ? (
+            <span className="study-pdf-viewer-selection-badge">已选文段</span>
+          ) : null}
+          {selectedRegion ? (
+            <span className="study-pdf-viewer-selection-badge">已框选</span>
+          ) : null}
 
           {textSelection ? (
             <button
               type="button"
-              style={{ ...styles.iconButton, ...styles.iconActionButton }}
+              className="study-pdf-viewer-icon-button study-pdf-viewer-icon-action-button"
               onClick={insertTextReference}
               title="插入引用"
               aria-label="插入引用"
@@ -292,7 +303,7 @@ export function ProjectedPdfViewer({
           {selectedRegion ? (
             <button
               type="button"
-              style={{ ...styles.iconButton, ...styles.iconActionButton }}
+              className="study-pdf-viewer-icon-button study-pdf-viewer-icon-action-button"
               onClick={insertRegionReference}
               title="插入选区"
               aria-label="插入选区"
@@ -303,7 +314,7 @@ export function ProjectedPdfViewer({
           {textSelection || selectedRegion || draftRegion ? (
             <button
               type="button"
-              style={styles.iconButton}
+              className="study-pdf-viewer-icon-button"
               onClick={clearInteractionState}
               title="清除"
               aria-label="清除"
@@ -316,7 +327,7 @@ export function ProjectedPdfViewer({
         {fileUrl ? (
           <Document
             key={`${fileUrl}:${retryToken}`}
-            className="pdf-preview-document"
+            className="study-pdf-preview-document"
             file={fileUrl}
             loading={null}
             error={null}
@@ -334,17 +345,18 @@ export function ProjectedPdfViewer({
             <div
               ref={pageShellRef}
               data-pdf-viewer-id={viewerId}
-              style={{
-                ...styles.pageShell,
-                ...(isRegionMode ? styles.pageShellRegionMode : {}),
-              }}
+              className={
+                isRegionMode
+                  ? "study-pdf-viewer-page-shell study-pdf-viewer-page-shell-region-mode"
+                  : "study-pdf-viewer-page-shell"
+              }
               onMouseUp={handleMouseUp}
             >
               <Page
                 className={
                   isRegionMode
-                    ? "pdf-preview-page pdf-preview-page--region"
-                    : "pdf-preview-page"
+                    ? "study-pdf-preview-page study-pdf-preview-page--region"
+                    : "study-pdf-preview-page"
                 }
                 pageNumber={pageNumber}
                 height={pageHeight || undefined}
@@ -358,29 +370,25 @@ export function ProjectedPdfViewer({
                 }
               />
 
-              <div style={styles.overlayStage}>
+              <div className="study-pdf-viewer-overlay-stage">
                 {overlays.map((overlay) =>
                   overlay.rects.map((rect, index) => (
                     <div
                       key={`${overlay.id}:${index}`}
-                      style={{
-                        ...styles.overlayBox,
-                        left: `${rect.x * 100}%`,
-                        top: `${rect.y * 100}%`,
-                        width: `${rect.width * 100}%`,
-                        height: `${rect.height * 100}%`,
-                        borderColor: overlay.color ?? "#FACC15",
-                        background: `${overlay.color ?? "#FACC15"}20`,
-                      }}
+                      className="study-pdf-viewer-overlay-box"
+                      style={
+                        {
+                          left: `${rect.x * 100}%`,
+                          top: `${rect.y * 100}%`,
+                          width: `${rect.width * 100}%`,
+                          height: `${rect.height * 100}%`,
+                          "--study-overlay-color": overlay.color,
+                        } as StudyOverlayStyle
+                      }
                       title={overlay.label || overlay.quoteText || overlay.kind}
                     >
                       {index === 0 && (overlay.label || overlay.quoteText) ? (
-                        <span
-                          style={{
-                            ...styles.overlayLabel,
-                            background: overlay.color ?? "#FACC15",
-                          }}
-                        >
+                        <span className="study-pdf-viewer-overlay-label">
                           {overlay.label || overlay.quoteText}
                         </span>
                       ) : null}
@@ -391,8 +399,8 @@ export function ProjectedPdfViewer({
                 {textSelection?.rects.map((rect, index) => (
                   <div
                     key={`text-selection:${index}`}
+                    className="study-pdf-viewer-selection-box"
                     style={{
-                      ...styles.selectionBox,
                       left: `${rect.x * 100}%`,
                       top: `${rect.y * 100}%`,
                       width: `${rect.width * 100}%`,
@@ -403,8 +411,8 @@ export function ProjectedPdfViewer({
 
                 {selectedRegion ? (
                   <div
+                    className="study-pdf-viewer-region-box"
                     style={{
-                      ...styles.regionBox,
                       left: `${selectedRegion.x * 100}%`,
                       top: `${selectedRegion.y * 100}%`,
                       width: `${selectedRegion.width * 100}%`,
@@ -415,7 +423,7 @@ export function ProjectedPdfViewer({
 
                 {isRegionMode ? (
                   <div
-                    style={styles.regionCaptureLayer}
+                    className="study-pdf-viewer-region-capture-layer"
                     onPointerDown={handlePointerDown}
                     onPointerMove={handlePointerMove}
                     onPointerUp={finishRegionSelection}
@@ -423,8 +431,8 @@ export function ProjectedPdfViewer({
                   >
                     {draftRegion ? (
                       <div
+                        className="study-pdf-viewer-region-draft-box"
                         style={{
-                          ...styles.regionDraftBox,
                           left: `${draftRegion.x * 100}%`,
                           top: `${draftRegion.y * 100}%`,
                           width: `${draftRegion.width * 100}%`,
@@ -438,17 +446,21 @@ export function ProjectedPdfViewer({
             </div>
           </Document>
         ) : (
-          <div style={styles.errorState}>当前没有可预览的 PDF。</div>
+          <div className="study-pdf-viewer-error-state">当前没有可预览的 PDF。</div>
         )}
         {fileUrl && loadState.phase !== "ready" ? (
           <div
-            style={styles.statusLayer}
+            className="study-pdf-viewer-status-layer"
             role={loadState.phase === "error" ? "alert" : "status"}
             aria-live="polite"
           >
             <span>{loadState.message}</span>
             {loadState.phase === "error" ? (
-              <button type="button" style={styles.retryButton} onClick={retryPreview}>
+              <button
+                type="button"
+                className="study-pdf-viewer-retry-button"
+                onClick={retryPreview}
+              >
                 重新加载
               </button>
             ) : null}
@@ -489,177 +501,3 @@ function buildRect(
 function clamp01(value: number) {
   return Math.max(0, Math.min(1, value));
 }
-
-const styles: Record<string, CSSProperties> = {
-  wrap: {
-    minHeight: "100%",
-    height: "100%",
-  },
-  viewport: {
-    position: "relative",
-    minHeight: 0,
-    height: "100%",
-    overflow: "hidden",
-  },
-  floatingBar: {
-    position: "absolute",
-    top: 10,
-    right: 10,
-    zIndex: 8,
-    display: "flex",
-    alignItems: "center",
-    gap: 8,
-    flexWrap: "wrap",
-    justifyContent: "flex-end",
-    padding: "6px 8px",
-    borderRadius: 14,
-    background: "rgba(255, 255, 255, 0.92)",
-    border: "1px solid rgba(148, 163, 184, 0.24)",
-    boxShadow: "0 10px 24px rgba(15, 23, 42, 0.10)",
-    backdropFilter: "blur(10px)",
-    pointerEvents: "auto",
-  },
-  iconButton: {
-    borderWidth: 1,
-    borderStyle: "solid",
-    borderColor: "rgba(148, 163, 184, 0.32)",
-    background: "rgba(248, 250, 252, 0.96)",
-    color: "var(--ink-2)",
-    width: 28,
-    height: 28,
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 999,
-    cursor: "pointer",
-  },
-  iconButtonActive: {
-    borderColor: "rgba(14, 165, 233, 0.36)",
-    background: "rgba(14, 165, 233, 0.12)",
-    color: "#0369a1",
-  },
-  iconActionButton: {
-    borderColor: "var(--accent)",
-    background: "var(--accent)",
-    color: "white",
-  },
-  selectionBadge: {
-    height: 28,
-    display: "inline-flex",
-    alignItems: "center",
-    padding: "0 10px",
-    borderRadius: 999,
-    background: "rgba(15, 23, 42, 0.05)",
-    color: "var(--ink-2)",
-    fontSize: 12,
-    fontWeight: 600,
-  },
-  pageShell: {
-    position: "relative",
-    width: "fit-content",
-    maxWidth: "100%",
-    margin: "0 auto",
-    userSelect: "text",
-  },
-  pageShellRegionMode: {
-    userSelect: "none",
-  },
-  overlayStage: {
-    position: "absolute",
-    inset: 0,
-    pointerEvents: "none",
-  },
-  overlayBox: {
-    position: "absolute",
-    borderWidth: 2,
-    borderStyle: "solid",
-    borderColor: "#FACC15",
-    borderRadius: 6,
-    boxSizing: "border-box",
-  },
-  overlayLabel: {
-    position: "absolute",
-    left: 0,
-    top: -24,
-    maxWidth: 220,
-    color: "#0f172a",
-    fontSize: 11,
-    fontWeight: 700,
-    lineHeight: 1.2,
-    padding: "4px 6px",
-    borderRadius: 999,
-    boxShadow: "0 6px 16px rgba(15, 23, 42, 0.12)",
-    whiteSpace: "nowrap",
-    overflow: "hidden",
-    textOverflow: "ellipsis",
-  },
-  selectionBox: {
-    position: "absolute",
-    background: "rgba(14, 165, 233, 0.18)",
-    border: "1px solid rgba(14, 165, 233, 0.34)",
-    borderRadius: 4,
-    boxSizing: "border-box",
-  },
-  regionBox: {
-    position: "absolute",
-    border: "2px solid #0ea5e9",
-    background: "rgba(14, 165, 233, 0.12)",
-    borderRadius: 8,
-    boxSizing: "border-box",
-  },
-  regionCaptureLayer: {
-    position: "absolute",
-    inset: 0,
-    zIndex: 2,
-    pointerEvents: "auto",
-    cursor: "crosshair",
-    touchAction: "none",
-    background: "transparent",
-  },
-  regionDraftBox: {
-    position: "absolute",
-    border: "2px dashed #0ea5e9",
-    background: "rgba(14, 165, 233, 0.10)",
-    borderRadius: 8,
-    boxSizing: "border-box",
-  },
-  loadingState: {
-    minHeight: 320,
-    display: "grid",
-    placeItems: "center",
-    color: "var(--muted)",
-    fontSize: 13,
-  },
-  errorState: {
-    minHeight: 320,
-    display: "grid",
-    placeItems: "center",
-    color: "var(--negative)",
-    fontSize: 13,
-    textAlign: "center",
-    padding: 16,
-  },
-  statusLayer: {
-    position: "absolute",
-    inset: 0,
-    zIndex: 6,
-    display: "grid",
-    placeContent: "center",
-    justifyItems: "center",
-    gap: 12,
-    padding: 24,
-    background: "var(--surface)",
-    color: "var(--muted)",
-    fontSize: 13,
-    textAlign: "center",
-  },
-  retryButton: {
-    minHeight: 40,
-    padding: "0 16px",
-    border: "1px solid var(--border-strong)",
-    borderRadius: 999,
-    background: "white",
-    color: "var(--ink)",
-    cursor: "pointer",
-  },
-};
