@@ -126,11 +126,11 @@ npm run check
 ```
 
 > Full test suites were removed from this repository; what survives is the core
-> Harness invariant baseline only. Run `npm run test:baseline` (62 backend invariant
-> tests + 11 frontend async-fence tests, under 5s) or its halves `test:invariants`
-> and `test:invariants:web`. `npm run check` runs that baseline alongside style and
-> type gates. Do not reintroduce other `test:*` scripts unless a real entry point
-> exists.
+> invariant baseline: Harness lifecycle plus Tavern scheduling/recovery and Persona
+> lifecycle/slot-rewrite. Run `npm run test:baseline` (129 backend invariant tests +
+> 11 frontend async-fence tests, about 15s) or its halves `test:invariants` and
+> `test:invariants:web`. `npm run check` runs that baseline alongside style and type
+> gates. Do not reintroduce other `test:*` scripts unless a real entry point exists.
 
 ## Configuration Notes
 
