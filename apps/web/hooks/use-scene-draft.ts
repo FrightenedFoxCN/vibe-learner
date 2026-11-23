@@ -29,7 +29,13 @@ import {
 
 export interface SceneDraftStorage {
   read: () => unknown;
-  write: (payload: SceneImportPayload & { version: number; savedAt: string }) => void;
+  write: (
+    payload: SceneImportPayload & {
+      version: number;
+      savedAt: string;
+      draftDirty: boolean;
+    },
+  ) => void;
 }
 export interface SceneDraftClock {
   schedule: (callback: () => void, delay: number) => unknown;
@@ -47,6 +53,10 @@ const clock: SceneDraftClock = {
   schedule: (callback, delay) => setTimeout(callback, delay),
   cancel: (handle) => clearTimeout(handle as ReturnType<typeof setTimeout>),
 };
+
+function fingerprint(name: string, summary: string, layers: SceneLayer[]) {
+  return JSON.stringify([name, summary, layers]);
+}
 
 export function useSceneDraft(
   {
@@ -68,6 +78,12 @@ export function useSceneDraft(
   const [sceneSummary, setSceneSummary] = useState(
     "从世界整体的学术框架出发，逐层建立观察者在微观教室中的完整感受。这个示例展示了如何从宏观规则层层推导到具体互动对象。",
   );
+  const contentFingerprint = useMemo(
+    () => fingerprint(sceneName, sceneSummary, sceneLayers),
+    [sceneName, sceneSummary, sceneLayers],
+  );
+  const [baseline, markSaved] = useState(contentFingerprint);
+  const isSceneDraftDirty = contentFingerprint !== baseline;
   const [selectedLayerId, setSelectedLayerId] = useState(INITIAL_SCENE[0]?.id ?? "");
   const [collapsedLayerIds, setCollapsedLayerIds] = useState<string[]>(() =>
     collectLayerIds(INITIAL_SCENE).filter(
@@ -178,7 +194,13 @@ export function useSceneDraft(
     message: string,
     subjectId = "scene-editor:local",
     preserveDiagnosticFlow = false,
+    markClean = false,
   ) {
+    if (markClean) {
+      markSaved(
+        fingerprint(imported.sceneName, imported.sceneSummary, imported.sceneLayers),
+      );
+    }
     if (!preserveDiagnosticFlow) diagnosticFlow.current = null;
     const knownIds = new Set(collectLayerIds(imported.sceneLayers));
     const nextSelectedLayerId =
@@ -211,7 +233,9 @@ export function useSceneDraft(
     selectSceneObject(selectedObjectIdRef.current === objectId ? "" : objectId);
   }
   const [hydrated, setHydrated] = useState(false);
-  const pendingRef = useRef<SceneImportPayload | null>(null);
+  const pendingRef = useRef<(SceneImportPayload & { draftDirty: boolean }) | null>(
+    null,
+  );
   const flushDraft = useCallback(() => {
     const pending = pendingRef.current;
     if (!pending) return;
@@ -225,7 +249,17 @@ export function useSceneDraft(
   const restoreDraft = useEffectEvent(() => {
     try {
       const raw = storage.read();
-      if (raw) applySceneImport(parseSceneImportPayload(raw), "已加载本地保存场景。");
+      if (raw) {
+        const explicitlyClean =
+          typeof raw === "object" && "draftDirty" in raw && raw.draftDirty === false;
+        applySceneImport(
+          parseSceneImportPayload(raw),
+          "已加载本地保存场景。",
+          undefined,
+          false,
+          explicitlyClean,
+        );
+      }
     } catch {
       onNotice("本地保存内容解析失败，已忽略。");
     }
@@ -247,11 +281,13 @@ export function useSceneDraft(
       sceneLayers,
       selectedLayerId: sceneSelectionLayerId,
       collapsedLayerIds,
+      draftDirty: isSceneDraftDirty,
     };
     const timer = scheduler.schedule(flushDraft, 700);
     return () => scheduler.cancel(timer);
   }, [
     hydrated,
+    isSceneDraftDirty,
     sceneLayers,
     sceneName,
     sceneSummary,
@@ -261,6 +297,9 @@ export function useSceneDraft(
     flushDraft,
   ]);
   return {
+    contentFingerprint,
+    isSceneDraftDirty,
+    markSaved,
     sceneLayers,
     sceneName,
     setSceneName,

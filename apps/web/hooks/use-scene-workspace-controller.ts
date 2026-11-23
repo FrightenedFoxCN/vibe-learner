@@ -21,7 +21,8 @@ import {
 import { useSceneLibrary } from "./use-scene-library";
 import { useSceneDraft } from "./use-scene-draft";
 import { useSceneGeneration } from "./use-scene-generation";
-import { importJsonDraft } from "../lib/bounded-json-import";
+import { readBoundedJsonImport } from "../lib/bounded-json-import";
+import { observeLocalAction } from "../lib/diagnostic-actions";
 import { exportJson } from "../lib/export-json";
 import { usePageDebugSnapshot } from "../components/debug/page-debug-context";
 import { useSceneRewrite } from "./use-scene-rewrite";
@@ -65,6 +66,9 @@ export function useSceneWorkspaceController() {
   }
   const [reusableSearchQuery, setReusableSearchQuery] = useState("");
   const {
+    contentFingerprint,
+    isSceneDraftDirty,
+    markSaved,
     sceneLayers,
     sceneName,
     setSceneName,
@@ -149,6 +153,42 @@ export function useSceneWorkspaceController() {
   const importInputRef = useRef<HTMLInputElement | null>(null);
   const sceneImportFenceRef = useRef(new AsyncResultFence());
   useEffect(() => () => sceneImportFenceRef.current.invalidate(), []);
+  const draftView = useRef({
+    active: false,
+    dirty: false,
+    candidate: generatedSceneCandidate,
+  });
+  useLayoutEffect(() => {
+    draftView.current = {
+      active: true,
+      dirty: isSceneDraftDirty,
+      candidate: generatedSceneCandidate,
+    };
+    return () => {
+      draftView.current.active = false;
+    };
+  }, [isSceneDraftDirty, generatedSceneCandidate]);
+
+  async function confirmReplaceSceneDraft(action: string, trigger?: HTMLElement) {
+    const before = currentSceneAsyncScope("scene-replacement");
+    const approved =
+      !draftView.current.dirty ||
+      (await confirm({
+        title: "替换当前场景草稿？",
+        message: `${action}会丢弃当前场景草稿。可先另存为新场景或导出 JSON。`,
+        confirmLabel: "替换草稿",
+        danger: true,
+        trigger,
+        fallbackFocus: () => pageHeadingRef.current,
+      }));
+    const after = currentSceneAsyncScope("scene-replacement");
+    return (
+      approved &&
+      draftView.current.active &&
+      after.subjectId === before.subjectId &&
+      after.draftRevision === before.draftRevision
+    );
+  }
 
   const [collapsedSidebarSections, setCollapsedSidebarSections] = useState<string[]>([
     "reuse",
@@ -515,6 +555,16 @@ export function useSceneWorkspaceController() {
         collapsedLayerIds,
       };
       const diagnostic = beginDiagnosticAction();
+      const draftScope = currentSceneAsyncScope("scene-save");
+      const markSubmitted = () => {
+        const current = currentSceneAsyncScope("scene-save");
+        if (
+          draftView.current.active &&
+          current.subjectId === draftScope.subjectId &&
+          current.draftRevision === draftScope.draftRevision
+        )
+          markSaved(contentFingerprint);
+      };
       const boundScene = getSceneBinding();
       if (mode === "upsert" && boundScene) {
         const updated = await updateSceneLibraryItem(
@@ -525,10 +575,12 @@ export function useSceneWorkspaceController() {
           },
           diagnostic,
         );
+        markSubmitted();
         setSceneIoMessage(`已更新已保存场景“${updated.sceneName}”。`);
         return;
       }
       const created = await createSceneLibraryItem(payload, diagnostic);
+      markSubmitted();
       setSceneIoMessage(`已保存场景“${created.sceneName}”。`);
     } catch {
       setSceneIoError("保存到场景库失败，请稍后重试。");
@@ -537,7 +589,7 @@ export function useSceneWorkspaceController() {
     }
   }
 
-  async function loadSavedScene(sceneId: string) {
+  async function loadSavedScene(sceneId: string, trigger?: HTMLElement) {
     const target = savedScenes.find((item) => item.sceneId === sceneId);
     if (!target) {
       return;
@@ -551,10 +603,13 @@ export function useSceneWorkspaceController() {
         selectedLayerId: target.selectedLayerId,
         collapsedLayerIds: target.collapsedLayerIds,
       });
+      if (!(await confirmReplaceSceneDraft("载入已保存场景", trigger))) return;
       applySceneImport(
         imported,
         `已载入场景“${target.sceneName}”。`,
         `scene-library:${target.sceneId}`,
+        false,
+        true,
       );
       bindScene(target);
     } catch {
@@ -636,18 +691,32 @@ export function useSceneWorkspaceController() {
       currentSceneAsyncScope(fieldTarget),
     );
     try {
-      await importJsonDraft(
-        file,
-        "scene",
-        (raw) => parseSceneImportPayload(raw, true),
-        (value) =>
-          applyAsyncResult({
-            fence: sceneImportFenceRef.current,
-            ticket,
-            currentScope: currentSceneAsyncScope(fieldTarget),
-            value,
-            apply: (next) => applySceneImport(next, "场景导入成功。"),
-          }) === "apply",
+      await observeLocalAction(
+        "json_import_scene_draft",
+        async (context) => {
+          const value = parseSceneImportPayload(
+            await readBoundedJsonImport(file, "scene", context),
+            true,
+          );
+          if (
+            sceneImportFenceRef.current.decide(
+              ticket,
+              currentSceneAsyncScope(fieldTarget),
+            ) !== "apply" ||
+            !(await confirmReplaceSceneDraft("导入文件"))
+          )
+            return false;
+          return (
+            applyAsyncResult({
+              fence: sceneImportFenceRef.current,
+              ticket,
+              currentScope: currentSceneAsyncScope(fieldTarget),
+              value,
+              apply: (next) => applySceneImport(next, "场景导入成功。"),
+            }) === "apply"
+          );
+        },
+        { cancelled: (applied) => !applied },
       );
     } catch {
       if (
@@ -665,10 +734,13 @@ export function useSceneWorkspaceController() {
     }
   }
 
-  function applyGeneratedSceneCandidateToEditor() {
-    if (!generatedSceneCandidate) {
+  async function applyGeneratedSceneCandidateToEditor(trigger: HTMLElement) {
+    if (
+      !generatedSceneCandidate ||
+      !(await confirmReplaceSceneDraft("应用生成结果", trigger)) ||
+      draftView.current.candidate !== generatedSceneCandidate
+    )
       return;
-    }
     applySceneImport(
       generatedSceneCandidate,
       "已将生成场景树应用到当前编辑区。",

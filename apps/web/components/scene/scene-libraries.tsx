@@ -180,7 +180,9 @@ export function SavedSceneLibrary({
                 <button
                   type="button"
                   className="grid min-h-11 cursor-pointer gap-1 border-0 bg-transparent p-0 text-left"
-                  onClick={() => void loadSavedScene(item.sceneId)}
+                  onClick={(event) =>
+                    void loadSavedScene(item.sceneId, event.currentTarget)
+                  }
                 >
                   <div className="flex items-baseline justify-between gap-2.5">
                     <strong className="text-[13px] text-ink">{item.sceneName}</strong>
@@ -200,7 +202,9 @@ export function SavedSceneLibrary({
                   <button
                     className={css.sidebarButton}
                     type="button"
-                    onClick={() => void loadSavedScene(item.sceneId)}
+                    onClick={(event) =>
+                      void loadSavedScene(item.sceneId, event.currentTarget)
+                    }
                     title="载入场景"
                     aria-label="载入场景"
                   >

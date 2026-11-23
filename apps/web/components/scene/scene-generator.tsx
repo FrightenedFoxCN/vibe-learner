@@ -173,7 +173,9 @@ export function SceneGenerator({
             <button
               className={css.sidebarButton}
               type="button"
-              onClick={applyGeneratedSceneCandidateToEditor}
+              onClick={(event) =>
+                void applyGeneratedSceneCandidateToEditor(event.currentTarget)
+              }
               title="应用到编辑区"
               aria-label="应用到编辑区"
             >
