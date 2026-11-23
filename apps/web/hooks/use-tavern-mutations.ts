@@ -12,6 +12,7 @@ import {
   mergeTavernMessages,
 } from "../lib/tavern-workspace-state";
 
+import { reconcileCanceledTavernDraft } from "../lib/tavern-canceled-draft";
 import { recordError } from "../lib/tavern-client-errors";
 import { forgetRejectedTavernTurn } from "../lib/tavern-rejected-turn";
 import type {
@@ -506,6 +507,12 @@ export function useTavernMutations(
     foregroundOperationIdRef.current = operation.id;
     let canceled = false;
     let cancelConfirmed = false;
+    const reconcileDraft = (run: TavernRun) => {
+      const draft = readTavernRoomDraft(roomId);
+      const next = reconcileCanceledTavernDraft(draft, run);
+      if (next.draft !== draft) writeTavernRoomDraft(roomId, next.draft);
+      return next.clearComposer;
+    };
     setBusyAction("cancel");
     setNotice("正在取消接收本轮结果…");
     setVisibleError("");
@@ -517,12 +524,11 @@ export function useTavernMutations(
         requestedRoomIdRef.current !== roomId
       )
         return false;
-      if (!syncTurnResult(result)) return false;
-      writeTavernRoomDraft(roomId, { message: "", guidance: "" });
+      if (!syncTurnResult(result) || result.run.status !== "canceled") return false;
       setGeneratingPersonaIds([]);
       canceled = true;
       cancelConfirmed = true;
-      return true;
+      return reconcileDraft(result.run);
     } catch (error) {
       if (!operationIsCurrent(operation)) return false;
       setRawError(String(error));
@@ -534,7 +540,7 @@ export function useTavernMutations(
         const recoveredRun = recovered?.runs.find((run) => run.id === pendingRun.id);
         if (recoveredRun?.status === "canceled") {
           cancelConfirmed = true;
-          writeTavernRoomDraft(roomId, { message: "", guidance: "" });
+          reconcileDraft(recoveredRun);
           setGeneratingPersonaIds([]);
           setVisibleError("");
         } else if (!canceled) {
@@ -557,6 +563,7 @@ export function useTavernMutations(
     runs,
     syncTurnResult,
     cancelTavernRun,
+    readTavernRoomDraft,
     writeTavernRoomDraft,
     foregroundOperationIdRef,
     setBusyAction,

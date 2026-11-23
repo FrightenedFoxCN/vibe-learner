@@ -44,6 +44,7 @@ export function InteractionComposer({
       | { kind: "continue"; anchorMessageId: string },
     guidance: string,
   ) => Promise<boolean>;
+  // True means a confirmed cancel consumed this composer's submitted draft.
   onCancel: () => Promise<boolean>;
   onRetry: (run: TavernRun) => void;
 }) {
