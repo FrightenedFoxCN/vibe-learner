@@ -128,10 +128,11 @@ export async function listStudySessions(input: {
 export async function getStudySession(
   sessionId: string,
   context?: DiagnosticContext,
+  signal?: AbortSignal,
 ): Promise<StudySessionRecord> {
   const diagnosticResponse = await request(
     `${AI_BASE_URL()}/study-sessions/${sessionId}`,
-    undefined,
+    signal ? { signal } : undefined,
     context,
   );
   const payload = await readJson<unknown>(diagnosticResponse);
@@ -176,11 +177,13 @@ export async function updateStudySessionStudyUnit(input: {
 
 export async function cancelStudySessionFollowUps(input: {
   sessionId: string;
+  signal?: AbortSignal;
 }): Promise<StudySessionRecord> {
   const diagnosticResponse = await request(
     `${AI_BASE_URL()}/study-sessions/${input.sessionId}/follow-ups/cancel`,
     {
       method: "POST",
+      signal: input.signal,
     },
   );
   const payload = await readJson<unknown>(diagnosticResponse);

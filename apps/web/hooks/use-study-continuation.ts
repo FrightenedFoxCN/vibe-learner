@@ -3,7 +3,15 @@
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 import type { StudySessionRecord } from "@vibe-learner/shared";
 import { StudyAsyncViewFence } from "../lib/async-result-fence";
-import { cancelStudySessionFollowUps } from "../lib/data/study-sessions";
+import {
+  cancelStudySessionFollowUps,
+  getStudySession,
+} from "../lib/data/study-sessions";
+import { readBackFollowUpCancellation } from "../lib/study-follow-up-cancel";
+import {
+  STUDY_QUERY_WAIT_MS,
+  withStudyRequestDeadline,
+} from "../lib/study-request-deadline";
 import {
   readInterruptedDialogueSessionId,
   writeInterruptedDialogueSessionId,
@@ -36,6 +44,7 @@ interface ContinuationOptions {
 }
 export interface StudyContinuationPort {
   cancelStudySessionFollowUps: typeof cancelStudySessionFollowUps;
+  getStudySession: typeof getStudySession;
   readInterruptedDialogueSessionId: typeof readInterruptedDialogueSessionId;
   writeInterruptedDialogueSessionId: typeof writeInterruptedDialogueSessionId;
   appendDeferredInteractiveCallback: typeof appendDeferredInteractiveCallback;
@@ -48,6 +57,7 @@ export interface StudyContinuationPort {
 }
 const defaultPort: StudyContinuationPort = {
   cancelStudySessionFollowUps,
+  getStudySession,
   readInterruptedDialogueSessionId,
   writeInterruptedDialogueSessionId,
   appendDeferredInteractiveCallback,
@@ -75,6 +85,8 @@ export function useStudyContinuation(
   const followUps = useRef(new Set<string>());
   const timers = useRef(new Map<string, number>());
   const interrupting = useRef(false);
+  const withheldFollowUps = useRef(new Map<string, ReadonlySet<string>>());
+  const [timerGeneration, setTimerGeneration] = useState(0);
   const begin = () => setPendingCount((count) => count + 1);
   const finish = () => {
     if (mounted.current) setPendingCount((count) => count - 1);
@@ -299,10 +311,15 @@ export function useStudyContinuation(
       timers.current.delete(key);
     });
     interrupting.current = true;
+    const targetIds = new Set(pending.map((item) => item.id));
+    withheldFollowUps.current.set(session.id, targetIds);
     begin();
     const revision = latest.current.view.viewRevision;
     try {
-      const next = await port.cancelStudySessionFollowUps({ sessionId: session.id });
+      const next = await withStudyRequestDeadline(STUDY_QUERY_WAIT_MS, (signal) =>
+        port.cancelStudySessionFollowUps({ sessionId: session.id, signal }),
+      );
+      withheldFollowUps.current.delete(session.id);
       if (!current(session, revision)) return false;
       if (latest.current.view.session!.revision <= next.revision)
         latest.current.onSession(next);
@@ -310,18 +327,45 @@ export function useStudyContinuation(
       latest.current.onNotice("已打断当前自动续接；之后提交答案不会立即续聊。");
       return true;
     } catch (error) {
-      if (current(session, revision))
-        latest.current.onNotice(
-          resolveStudySessionErrorNotice(
-            error,
-            `打断自动续接失败：${String(error)}`,
-            "update",
-          ),
-        );
+      const readBack = await readBackFollowUpCancellation(session, targetIds, () =>
+        withStudyRequestDeadline(STUDY_QUERY_WAIT_MS, (signal) =>
+          port.getStudySession(session.id, undefined, signal),
+        ),
+      );
+      if (current(session, revision)) {
+        const visible = latest.current.view.session!;
+        if (
+          readBack.state === "unknown" ||
+          readBack.session.revision < visible.revision
+        ) {
+          latest.current.onNotice(
+            "无法确认是否已打断。相关续接暂不自动发送，请再次举手重试。",
+          );
+        } else {
+          withheldFollowUps.current.delete(session.id);
+          if (readBack.session.revision > visible.revision)
+            latest.current.onSession(readBack.session);
+          if (readBack.state === "stopped") {
+            pause(session.id);
+            latest.current.onNotice("已确认原续接不再等待；之后提交答案不会立即续聊。");
+            return true;
+          }
+          latest.current.onNotice(
+            resolveStudySessionErrorNotice(
+              error,
+              "打断未完成，已恢复仍待执行的自动续接。",
+              "update",
+            ),
+          );
+        }
+      } else if (readBack.state !== "unknown") {
+        withheldFollowUps.current.delete(session.id);
+      }
       logWorkspaceError("workflow:study_follow_up:interrupt_error", error);
       return false;
     } finally {
       interrupting.current = false;
+      if (mounted.current) setTimerGeneration((generation) => generation + 1);
       finish();
     }
   }
@@ -341,7 +385,12 @@ export function useStudyContinuation(
       if (!session || isDialogueInterruptedForSession(session.id)) return;
       pending.forEach((item) => {
         const key = `${session.id}:${item.id}`;
-        if (timers.current.has(key) || followUps.current.has(key)) return;
+        if (
+          timers.current.has(key) ||
+          followUps.current.has(key) ||
+          withheldFollowUps.current.get(session.id)?.has(item.id)
+        )
+          return;
         const due = Date.parse(item.dueAt || "");
         const timer = port.setTimeout(
           () => {
@@ -351,6 +400,7 @@ export function useStudyContinuation(
               !live ||
               !current(session) ||
               isDialogueInterruptedForSession(live.id) ||
+              withheldFollowUps.current.get(live.id)?.has(item.id) ||
               port.hasPendingOperation(live.id) ||
               followUps.current.has(key)
             )
@@ -402,7 +452,7 @@ export function useStudyContinuation(
   useEffect(() => {
     // A failed timer waits for authoritative Session refresh; busy transitions do not poll it repeatedly.
     reconcileFollowUpTimers(options.session);
-  }, [options.session, pausedSession]);
+  }, [options.session, pausedSession, timerGeneration]);
 
   return {
     triggerSessionPrelude,
