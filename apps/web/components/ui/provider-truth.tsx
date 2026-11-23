@@ -73,16 +73,19 @@ function ProviderMarker({
   description: string;
   tone: keyof typeof toneStyles;
 }) {
-  const toneStyle = toneStyles[tone];
+  const appearance = toneStyles[tone];
   return (
     <span
-      style={{ ...styles.marker, ...toneStyle.marker }}
+      className={`inline-flex min-h-6 min-w-0 max-w-full shrink-0 items-center gap-1.5 overflow-hidden rounded-full border px-2 py-0.5 text-[13px] leading-[1.3] font-semibold ${appearance.marker}`}
       role="status"
       aria-label={description}
       title={description}
     >
-      <span style={{ ...styles.dot, ...toneStyle.dot }} aria-hidden="true" />
-      <span style={styles.label}>{label}</span>
+      <span
+        className={`size-1.5 shrink-0 rounded-full ${appearance.dot}`}
+        aria-hidden="true"
+      />
+      <span className="min-w-0 truncate">{label}</span>
     </span>
   );
 }
@@ -118,66 +121,15 @@ function resolveConnection(settings: RuntimeSettings, scope: ProviderScope) {
   };
 }
 
-const styles = {
-  marker: {
-    display: "inline-flex",
-    alignItems: "center",
-    gap: 6,
-    minHeight: 24,
-    minWidth: 0,
-    maxWidth: "100%",
-    padding: "2px 8px",
-    border: "1px solid var(--border)",
-    borderRadius: 999,
-    color: "var(--ink-2)",
-    background: "var(--panel)",
-    fontSize: 13,
-    fontWeight: 600,
-    lineHeight: 1.3,
-    flexShrink: 0,
-    overflow: "hidden",
-  },
-  dot: {
-    width: 6,
-    height: 6,
-    borderRadius: 999,
-    flex: "0 0 auto",
-  },
-  label: {
-    minWidth: 0,
-    overflow: "hidden",
-    textOverflow: "ellipsis",
-    whiteSpace: "nowrap",
-  },
-};
-
 const toneStyles = {
-  neutral: {
-    marker: {},
-    dot: { background: "var(--muted)" },
-  },
-  mock: {
-    marker: {
-      borderColor: "#d8b763",
-      background: "#fff8e1",
-      color: "#725b16",
-    },
-    dot: { background: "#a16d00" },
-  },
+  neutral: { marker: "border-border bg-panel text-ink-2", dot: "bg-muted" },
+  mock: { marker: "border-border-strong bg-panel-strong text-ink-2", dot: "bg-ink-2" },
   real: {
-    marker: {
-      borderColor: "color-mix(in srgb, var(--positive) 35%, var(--border))",
-      background: "color-mix(in srgb, var(--positive) 7%, var(--panel))",
-      color: "var(--positive)",
-    },
-    dot: { background: "var(--positive)" },
+    marker: "border-positive/35 bg-positive/5 text-positive",
+    dot: "bg-positive",
   },
   warning: {
-    marker: {
-      borderColor: "color-mix(in srgb, var(--negative) 35%, var(--border))",
-      background: "color-mix(in srgb, var(--negative) 6%, var(--panel))",
-      color: "var(--negative)",
-    },
-    dot: { background: "var(--negative)" },
+    marker: "border-negative/35 bg-negative/5 text-negative",
+    dot: "bg-negative",
   },
 } as const;

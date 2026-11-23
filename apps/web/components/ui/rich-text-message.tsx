@@ -4,28 +4,26 @@ import dynamic from "next/dynamic";
 import { Suspense, type CSSProperties } from "react";
 
 const RichTextMessageRenderer = dynamic(() => import("./rich-text-message-client"));
-const pendingTextStyle: CSSProperties = {
-  whiteSpace: "pre-wrap",
-  overflowWrap: "anywhere",
-};
 
 interface RichTextMessageProps {
   content: string;
   style?: CSSProperties;
+  className?: string;
   inline?: boolean;
 }
 
 export function RichTextMessage({
   content,
   style,
+  className,
   inline = false,
 }: RichTextMessageProps) {
   const WrapperTag = inline ? "span" : "div";
   return (
-    <WrapperTag style={style}>
+    <WrapperTag style={style} className={className}>
       <Suspense
         fallback={
-          <WrapperTag className="study-markdown-root" style={pendingTextStyle}>
+          <WrapperTag className="study-markdown-root whitespace-pre-wrap wrap-anywhere">
             {content}
           </WrapperTag>
         }
