@@ -320,13 +320,14 @@ class ModelToolConfigService:
             stage_settings[tool_name] = enabled
             next_stage_map[stage_name] = stage_settings
 
-        self._record = ModelToolConfigRecord(
+        next_record = ModelToolConfigRecord(
             config_id="default",
             updated_at=_now_iso(),
             stage_tool_enabled=next_stage_map,
         )
-        self._store.save_item("model_tool_config", "default", self._record)
-        return self._record
+        self._store.save_item("model_tool_config", "default", next_record)
+        self._record = next_record
+        return next_record
 
     def _load_or_default(self) -> ModelToolConfigRecord:
         existing = self._store.load_item(

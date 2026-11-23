@@ -292,7 +292,7 @@ class RuntimeSettingsService:
         if not isinstance(show_debug_info, bool):
             raise ValueError("invalid_show_debug_info")
 
-        self._record = RuntimeSettingsRecord(
+        next_record = RuntimeSettingsRecord(
             config_id="default",
             updated_at=_now_iso(),
             plan_provider=plan_provider,
@@ -322,8 +322,9 @@ class RuntimeSettingsService:
             openai_plan_fallback_disable_tools=openai_plan_fallback_disable_tools,
             show_debug_info=show_debug_info,
         )
-        self._store.save_item("runtime_settings", "default", self._record)
-        return self._record
+        self._store.save_item("runtime_settings", "default", next_record)
+        self._record = next_record
+        return next_record
 
     def apply_session_secrets(self, updates: dict[str, Any]) -> None:
         next_state = dict(self._session_secrets)
