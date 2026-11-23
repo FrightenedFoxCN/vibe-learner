@@ -137,7 +137,6 @@ export function SavedSceneLibrary({
     toggleSidebarSection,
     savedScenes,
     selectedSavedSceneId,
-    setSelectedSavedSceneId,
     loadSavedScene,
     deleteSavedScene,
   } = controller;
@@ -181,7 +180,7 @@ export function SavedSceneLibrary({
                 <button
                   type="button"
                   className="grid min-h-11 cursor-pointer gap-1 border-0 bg-transparent p-0 text-left"
-                  onClick={() => setSelectedSavedSceneId(item.sceneId)}
+                  onClick={() => void loadSavedScene(item.sceneId)}
                 >
                   <div className="flex items-baseline justify-between gap-2.5">
                     <strong className="text-[13px] text-ink">{item.sceneName}</strong>
@@ -206,16 +205,6 @@ export function SavedSceneLibrary({
                     aria-label="载入场景"
                   >
                     <MaterialIcon name="file_open" size={14} />
-                  </button>
-                  <button
-                    className={css.sidebarButton}
-                    data-primary={isSelected}
-                    type="button"
-                    onClick={() => setSelectedSavedSceneId(item.sceneId)}
-                    title={isSelected ? "当前更新目标" : "作为更新目标"}
-                    aria-label={isSelected ? "当前更新目标" : "作为更新目标"}
-                  >
-                    <MaterialIcon name="check_circle" size={14} />
                   </button>
                   <details className="mt-2 border-t border-border pt-1">
                     <summary className="min-h-8 cursor-pointer py-1.5 text-xs/[1.5] text-muted">

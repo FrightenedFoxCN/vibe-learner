@@ -68,22 +68,18 @@ export function useSceneLibrary(port: SceneLibraryPort = api) {
     port.listReusableSceneNodes,
     (item) => item.nodeId,
   );
-  const [selectedSavedSceneId, setSelectedId] = useState("");
-  const selection = useRef({ id: "", revision: 0 });
+  const [boundSceneId, setBoundSceneId] = useState("");
+  const binding = useRef<{ sceneId: string; revision: number } | null>(null);
+  const bindingEpoch = useRef(0);
   const pending = useRef(new Set<string>());
   const [reusableActionPendingId, setReusableActionPendingId] = useState("");
   const [reusableMessage, setReusableMessage] = useState("");
   const [reusableError, setReusableError] = useState("");
   const reusableRequest = useRef(0);
-  useEffect(() => {
-    if (!selection.current.id && selection.current.revision === 0 && scenes.items[0]) {
-      selection.current.id = scenes.items[0].sceneId;
-      setSelectedId(selection.current.id);
-    }
-  }, [scenes.items]);
-  function setSelectedSavedSceneId(id: string) {
-    selection.current = { id, revision: selection.current.revision + 1 };
-    setSelectedId(id);
+  function bindScene(target: typeof binding.current) {
+    binding.current = target;
+    bindingEpoch.current += 1;
+    setBoundSceneId(target?.sceneId ?? "");
   }
   async function mutate<T>(key: string, operation: () => Promise<T>): Promise<T> {
     if (!scenes.active.current) throw new Error("scene_library_unmounted");
@@ -97,11 +93,10 @@ export function useSceneLibrary(port: SceneLibraryPort = api) {
   }
   const createSceneLibraryItem: typeof api.createSceneLibraryItem = (input, context) =>
     mutate("scene:create", async () => {
-      const revision = selection.current.revision;
+      const epoch = bindingEpoch.current;
       const created = await port.createSceneLibraryItem(input, context);
       scenes.apply(created.sceneId, created);
-      if (scenes.active.current && selection.current.revision === revision)
-        setSelectedSavedSceneId(created.sceneId);
+      if (scenes.active.current && bindingEpoch.current === epoch) bindScene(created);
       return created;
     });
   const updateSceneLibraryItem: typeof api.updateSceneLibraryItem = (
@@ -110,8 +105,10 @@ export function useSceneLibrary(port: SceneLibraryPort = api) {
     context,
   ) =>
     mutate(`scene:${id}`, async () => {
+      const epoch = bindingEpoch.current;
       const updated = await port.updateSceneLibraryItem(id, input, context);
       scenes.apply(updated.sceneId, updated);
+      if (scenes.active.current && bindingEpoch.current === epoch) bindScene(updated);
       return updated;
     });
   function deleteSceneLibraryItem(
@@ -131,7 +128,7 @@ export function useSceneLibrary(port: SceneLibraryPort = api) {
       if (!scenes.active.current) return false;
       beforeRemove();
       scenes.apply(id, null);
-      if (selection.current.id === id) setSelectedSavedSceneId("");
+      if (binding.current?.sceneId === id) bindScene(null);
       return true;
     });
   }
@@ -173,8 +170,9 @@ export function useSceneLibrary(port: SceneLibraryPort = api) {
     savedScenes: scenes.items,
     reusableNodes: nodes.items,
     libraryError: [scenes.error, nodes.error].filter(Boolean).join("；"),
-    selectedSavedSceneId,
-    setSelectedSavedSceneId,
+    selectedSavedSceneId: boundSceneId,
+    getSceneBinding: () => binding.current,
+    bindScene,
     createSceneLibraryItem,
     updateSceneLibraryItem,
     deleteSceneLibraryItem,

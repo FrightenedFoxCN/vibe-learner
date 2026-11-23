@@ -34,7 +34,8 @@ export function useSceneWorkspaceController() {
     savedScenes,
     reusableNodes,
     selectedSavedSceneId,
-    setSelectedSavedSceneId,
+    getSceneBinding,
+    bindScene,
     createSceneLibraryItem,
     updateSceneLibraryItem,
     deleteSceneLibraryItem,
@@ -93,6 +94,7 @@ export function useSceneWorkspaceController() {
   } = useSceneDraft({
     onSelectionChange: () => invalidateRewrite(),
     onImported: () => {
+      bindScene(null);
       resetSceneGeneration();
       resetRewrite();
     },
@@ -513,19 +515,13 @@ export function useSceneWorkspaceController() {
         collapsedLayerIds,
       };
       const diagnostic = beginDiagnosticAction();
-      if (mode === "upsert" && selectedSavedSceneId) {
-        const selectedSavedScene = savedScenes.find(
-          (item) => item.sceneId === selectedSavedSceneId,
-        );
-        if (!selectedSavedScene) {
-          setSceneIoError("当前保存版本已不存在，请刷新场景库后重试。");
-          return;
-        }
+      const boundScene = getSceneBinding();
+      if (mode === "upsert" && boundScene) {
         const updated = await updateSceneLibraryItem(
-          selectedSavedSceneId,
+          boundScene.sceneId,
           {
             ...payload,
-            expectedRevision: selectedSavedScene.revision,
+            expectedRevision: boundScene.revision,
           },
           diagnostic,
         );
@@ -560,7 +556,7 @@ export function useSceneWorkspaceController() {
         `已载入场景“${target.sceneName}”。`,
         `scene-library:${target.sceneId}`,
       );
-      setSelectedSavedSceneId(target.sceneId);
+      bindScene(target);
     } catch {
       setSceneIoError(`载入场景“${target.sceneName}”时数据格式异常。`);
     } finally {
@@ -719,7 +715,6 @@ export function useSceneWorkspaceController() {
   return {
     savedScenes,
     selectedSavedSceneId,
-    setSelectedSavedSceneId,
     libraryError,
     reusableActionPendingId,
     reusableError,
