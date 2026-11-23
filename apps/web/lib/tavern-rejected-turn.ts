@@ -15,7 +15,7 @@ export function forgetRejectedTavernTurn(
     pending?.key !== requestKey ||
     status !== 409 ||
     detail?.code !== "tavern_revision_conflict" ||
-    detail.runId !== ""
+    detail.runId !== undefined
   )
     return draft;
   return { message: draft.message, guidance: draft.guidance };
