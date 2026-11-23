@@ -160,6 +160,8 @@ class LearningPlanOperationRepository:
                     base_document = DocumentRecord.model_validate(
                         payload_of(document_row)
                     )
+                    if base_document.chunk_count == 0:
+                        raise LearningPlanDocumentNoExtractableText(document_id)
                     validate_physical_input(
                         request.planning_intent, base_document.page_count
                     )
@@ -908,6 +910,10 @@ class LearningPlanOperationError(RuntimeError):
 
 
 class LearningPlanDocumentNotFound(LearningPlanOperationError):
+    pass
+
+
+class LearningPlanDocumentNoExtractableText(LearningPlanOperationError):
     pass
 
 

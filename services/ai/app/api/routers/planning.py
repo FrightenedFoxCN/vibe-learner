@@ -15,7 +15,7 @@ from fastapi.responses import StreamingResponse
 from app.core.diagnostics import reference_resource
 from app.core.bootstrap import Container
 from app.api.dependencies import get_container
-from fastapi import Depends
+from fastapi import Depends, HTTPException
 from app.models.api import (
     LearningPlanCreateRequest,
     LearningPlanListResponse,
@@ -396,7 +396,12 @@ def create_learning_plan_stream(
                     "stream_error",
                     {
                         "document_id": payload.document_id,
-                        "detail": str(exc),
+                        "detail": _stringify_error(exc),
+                        **(
+                            {"status_code": exc.status_code}
+                            if isinstance(exc, HTTPException)
+                            else {}
+                        ),
                     },
                     terminal_evidence=_stream_failure_evidence(
                         operation_id=domain_operation_id,

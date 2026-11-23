@@ -75,6 +75,7 @@ import { PLAN_GENERATED_NOTICE } from "../lib/learning-workspace-copy";
 import { parsePhysicalPdfRanges, physicalPageIntent } from "../lib/planning-page-scope";
 import { ACTIVE_PLAN_GENERATION_KEY } from "../lib/app-navigation";
 import { withOutputLanguage } from "../lib/output-language";
+import { documentPlanningTextBlockReason } from "../lib/document-planning-readiness";
 
 export interface GeneratePlanInput {
   mode: "document" | "goal_only";
@@ -438,7 +439,7 @@ export function usePlanGeneration(
         });
         options.onDocument(nextDocument);
         processingCompletedRef.current = true;
-        options.onNotice("教材解析完成，正在生成计划。");
+        options.onNotice("教材解析完成。");
       } else {
         setProcessStreamDocumentId("");
         setPlanStreamDocumentId("");
@@ -456,6 +457,13 @@ export function usePlanGeneration(
         throw new Error(
           `限定范围超出 PDF 的 ${nextDocument.pageCount} 个物理页；未发起计划生成。`,
         );
+      if (nextDocument) {
+        const textBlockReason = documentPlanningTextBlockReason(nextDocument);
+        if (textBlockReason) {
+          options.onNotice(textBlockReason);
+          return;
+        }
+      }
       const planClientRequestId = createStudyChatRequestId("learning-plan");
       const identity = {
         clientRequestId: planClientRequestId,

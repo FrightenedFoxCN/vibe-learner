@@ -1,3 +1,5 @@
+import { documentPlanningTextBlockReason } from "../../lib/document-planning-readiness";
+
 export interface StreamEventItem {
   stage: string;
   payload: Record<string, unknown>;
@@ -166,6 +168,15 @@ export function summarizeProcessProgress(events: StreamEventItem[]) {
       phase = event.payload.used_ocr ? "OCR 回退识别" : "提取页面文本";
     if (event.stage === "margin_patterns_detected") phase = "清理页眉页脚";
     if (event.stage === "study_units_built") phase = "整理学习单元";
+    if (
+      event.stage === "document_processing_completed" &&
+      event.payload.chunk_count === 0
+    ) {
+      warning = documentPlanningTextBlockReason({
+        chunkCount: 0,
+        ocrStatus: event.payload.ocr_status === "unavailable" ? "unavailable" : null,
+      });
+    }
     if (
       event.stage === "ocr_failed" ||
       event.payload.extraction_source === "ocr_failed"

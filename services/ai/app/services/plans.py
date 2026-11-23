@@ -42,6 +42,7 @@ from app.models.planning import (
 from app.persistence.learning_plan_operation_repository import (
     LearningPlanAdmissionRace,
     LearningPlanAlreadyActive,
+    LearningPlanDocumentNoExtractableText,
     LearningPlanDocumentNotFound,
     LearningPlanOperationError,
     LearningPlanOperationRepository,
@@ -144,6 +145,8 @@ class LearningPlanService:
             ) from exc
         except LearningPlanDocumentNotFound as exc:
             raise HTTPException(status_code=404, detail="document_not_found") from exc
+        except LearningPlanDocumentNoExtractableText as exc:
+            raise HTTPException(422, "document_no_extractable_text") from exc
         except LearningPlanStaleDocument as exc:
             raise HTTPException(
                 status_code=409, detail="learning_plan_stale_document"
