@@ -12,6 +12,7 @@ import {
   mergeTavernMessages,
 } from "../lib/tavern-workspace-state";
 
+import { confirmTavernCancellation } from "../lib/tavern-cancel-confirmation";
 import { reconcileCanceledTavernDraft } from "../lib/tavern-canceled-draft";
 import { recordError } from "../lib/tavern-client-errors";
 import { forgetRejectedTavernTurn } from "../lib/tavern-rejected-turn";
@@ -505,52 +506,50 @@ export function useTavernMutations(
     const operation = beginMutation("cancel", roomId, true);
     if (!operation) return false;
     foregroundOperationIdRef.current = operation.id;
-    let canceled = false;
-    let cancelConfirmed = false;
-    const reconcileDraft = (run: TavernRun) => {
-      const draft = readTavernRoomDraft(roomId);
-      const next = reconcileCanceledTavernDraft(draft, run);
-      if (next.draft !== draft) writeTavernRoomDraft(roomId, next.draft);
-      return next.clearComposer;
-    };
+    const isCurrent = () =>
+      operationIsCurrent(operation) &&
+      activeRoomIdRef.current === roomId &&
+      requestedRoomIdRef.current === roomId;
     setBusyAction("cancel");
     setNotice("正在取消接收本轮结果…");
     setVisibleError("");
     try {
-      const result = await cancelTavernRun(roomId, pendingRun.id, operation.diagnostic);
-      if (
-        !operationIsCurrent(operation) ||
-        activeRoomIdRef.current !== roomId ||
-        requestedRoomIdRef.current !== roomId
-      )
+      const confirmed = await confirmTavernCancellation({
+        runId: pendingRun.id,
+        isCurrent,
+        cancel: async () => {
+          const result = await cancelTavernRun(
+            roomId,
+            pendingRun.id,
+            operation.diagnostic,
+          );
+          if (
+            !isCurrent() ||
+            result.run.id !== pendingRun.id ||
+            result.run.status !== "canceled"
+          )
+            return;
+          syncTurnResult(result);
+          return result.run;
+        },
+        readRuns: async () => (await refreshRoom(operation.diagnostic))?.runs,
+        onCancelError: (error) => setRawError(String(error)),
+      });
+      if (!isCurrent()) return false;
+      if (!confirmed) {
+        setVisibleError(TAVERN_COPY.cancelUnconfirmed);
         return false;
-      if (!syncTurnResult(result) || result.run.status !== "canceled") return false;
-      setGeneratingPersonaIds([]);
-      canceled = true;
-      cancelConfirmed = true;
-      return reconcileDraft(result.run);
-    } catch (error) {
-      if (!operationIsCurrent(operation)) return false;
-      setRawError(String(error));
-      return false;
-    } finally {
-      if (operationIsCurrent(operation)) {
-        const recovered = await refreshRoom(operation.diagnostic);
-        if (!operationIsCurrent(operation)) return false;
-        const recoveredRun = recovered?.runs.find((run) => run.id === pendingRun.id);
-        if (recoveredRun?.status === "canceled") {
-          cancelConfirmed = true;
-          reconcileDraft(recoveredRun);
-          setGeneratingPersonaIds([]);
-          setVisibleError("");
-        } else if (!canceled) {
-          setVisibleError(TAVERN_COPY.cancelUnconfirmed);
-        }
-        releaseForegroundOperation(operation);
-        if (finishMutation(operation) && cancelConfirmed) {
-          setNotice(TAVERN_COPY.canceled);
-        }
       }
+      const draft = readTavernRoomDraft(roomId);
+      const next = reconcileCanceledTavernDraft(draft, confirmed);
+      if (next.draft !== draft) writeTavernRoomDraft(roomId, next.draft);
+      setGeneratingPersonaIds([]);
+      setVisibleError("");
+      setNotice(TAVERN_COPY.canceled);
+      return next.clearComposer;
+    } finally {
+      releaseForegroundOperation(operation);
+      finishMutation(operation);
     }
   }, [
     activeRoom,
