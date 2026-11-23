@@ -6,4 +6,4 @@ export {
   getPersonaAssets,
   listPersonas,
   updatePersona,
-} from "../api";
+} from "../api/persona";

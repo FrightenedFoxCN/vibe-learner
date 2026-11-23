@@ -20,7 +20,7 @@ import {
   type RefObject,
 } from "react";
 
-import { type SceneLibraryItemPayload } from "../lib/api";
+import { type SceneLibraryItemPayload } from "../lib/data/scenes";
 import { AppLink } from "../lib/app-navigation";
 import { RUN_STATUS_LABELS, STEP_STATUS_LABELS, TAVERN_COPY } from "../lib/tavern-copy";
 import {

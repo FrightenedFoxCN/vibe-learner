@@ -12,6 +12,6 @@ export {
   updateDocumentStudyUnitTitle,
   uploadDocument,
   uploadAndProcessDocument,
-} from "../api";
+} from "../api/documents";
 
-export type { DocumentStudyUnitUpdatePayload } from "../api";
+export type { DocumentStudyUnitUpdatePayload } from "../api/documents";

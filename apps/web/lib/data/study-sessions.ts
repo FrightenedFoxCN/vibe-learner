@@ -4,14 +4,15 @@ export {
   getStudyChatOperation,
   getStudySession,
   listStudySessions,
-  resolveStudyPlanConfirmation,
   sendStudyMessage,
   submitStudyQuestionAttempt,
   updateStudySessionStudyUnit,
-} from "../api";
+} from "../api/study";
 
 export type {
   StudyChatExchangeResponse,
   StudyChatOperationResponse,
-  StudyPlanConfirmationDecisionResponse,
-} from "../api";
+} from "../api/study";
+
+export { resolveStudyPlanConfirmation } from "../api/planning";
+export type { StudyPlanConfirmationDecisionResponse } from "../api/planning";

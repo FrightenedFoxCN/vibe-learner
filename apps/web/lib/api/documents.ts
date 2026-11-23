@@ -16,27 +16,24 @@ import type {
   StreamEvent,
   StreamReport,
 } from "@vibe-learner/shared";
-import { compactPreviewString } from "../preview";
+import { compactPreviewString, compactPreviewValue } from "../preview";
 import {
+  decodeDocumentDebugRecord,
   decodeDocumentList,
   decodeDocumentRecord,
   DocumentDecodeError,
 } from "../document-decode";
-import { decodeDocumentStudyUnitUpdate } from "../planning-decode";
-import { StrictStreamStateMachine } from "../stream-decode";
-
 import {
-  AI_BASE_URL,
-  request,
-  readJson,
-  consumeDiagnosticStream,
-  formatStreamErrorPayload,
-  normalizeDocument,
-  normalizeDebugRecord,
-  normalizePlanningContext,
-  normalizePlanningTraceResponse,
-  normalizeStreamReport,
-} from "./_shared";
+  decodeDocumentStudyUnitUpdate,
+  decodeDocumentPlanningContext,
+  decodeDocumentPlanningTraceResponse,
+  decodeLearningPlan,
+  PlanningDecodeError,
+} from "../planning-decode";
+import { decodeStreamReport, StrictStreamStateMachine } from "../stream-decode";
+
+import { AI_BASE_URL, request, readJson } from "./_shared";
+import { consumeDiagnosticStream, formatStreamErrorPayload } from "./stream";
 
 export interface DocumentStudyUnitUpdatePayload {
   document: DocumentRecord;
@@ -208,6 +205,8 @@ export async function processDocumentStream(
   });
   const terminal = await consumeDiagnosticStream(
     response,
+    (error) =>
+      error instanceof DocumentDecodeError || error instanceof PlanningDecodeError,
     response.body,
     machine,
     (event) => {
@@ -310,4 +309,116 @@ export async function getDocumentCheckpoint(documentId: string, operationId?: st
     () => decodeDocumentCheckpoint(raw, documentId, operationId),
     "document-checkpoint-response-v1",
   );
+}
+
+function normalizeDocument(
+  document: unknown,
+  expectedDocumentId?: string,
+): DocumentRecord {
+  const decoded = decodeDocumentRecord(document, expectedDocumentId);
+  return {
+    ...decoded,
+    previewExcerpt: compactPreviewString(decoded.previewExcerpt, 240),
+  };
+}
+
+function normalizeDebugRecord(
+  record: unknown,
+  expectedDocumentId?: string,
+): DocumentDebugRecord {
+  const decoded = decodeDocumentDebugRecord(record, expectedDocumentId);
+  return {
+    ...decoded,
+    pages: decoded.pages.map((page) => ({
+      ...page,
+      textPreview: compactPreviewString(page.textPreview, 320),
+    })),
+    chunks: decoded.chunks.map((chunk) => ({
+      ...chunk,
+      textPreview: compactPreviewString(chunk.textPreview, 240),
+      content: compactPreviewString(chunk.content, 600),
+    })),
+  };
+}
+
+function normalizePlanningContext(
+  record: unknown,
+  expectedDocumentId?: string,
+): DocumentPlanningContext {
+  const decoded = decodeDocumentPlanningContext(record, expectedDocumentId);
+  return {
+    ...decoded,
+    detailMap: Object.fromEntries(
+      Object.entries(decoded.detailMap).map(([unitId, detail]) => [
+        unitId,
+        {
+          ...detail,
+          chunkExcerpts: detail.chunkExcerpts.map((chunk) => ({
+            ...chunk,
+            content: compactPreviewString(chunk.content, 600),
+          })),
+        },
+      ]),
+    ),
+  };
+}
+
+function normalizePlanningTraceResponse(
+  record: unknown,
+  expectedDocumentId?: string,
+): DocumentPlanningTraceResponse {
+  const decoded = decodeDocumentPlanningTraceResponse(record, expectedDocumentId);
+  if (!decoded.trace) return decoded;
+  return {
+    ...decoded,
+    trace: {
+      ...decoded.trace,
+      rounds: decoded.trace.rounds.map((round) => ({
+        ...round,
+        assistantContent: compactPreviewString(round.assistantContent, 800),
+        thinking: compactPreviewString(round.thinking, 800),
+        toolCalls: round.toolCalls.map((toolCall) => ({
+          ...toolCall,
+          argumentsJson: compactPreviewString(toolCall.argumentsJson, 800),
+          resultJson: compactPreviewString(toolCall.resultJson, 800),
+        })),
+      })),
+    },
+  };
+}
+
+function normalizeStreamReport(
+  record: unknown,
+  expectedDocumentId: string,
+  expectedStreamKind: "document_process" | "learning_plan",
+): StreamReport {
+  const decoded = decodeStreamReport(record, {
+    expectedDocumentId,
+    expectedStreamKind,
+  });
+  for (const event of decoded.events) {
+    if (event.stage !== "stream_completed" || event.committedProjection === null) {
+      continue;
+    }
+    if (expectedStreamKind === "document_process") {
+      normalizeDocument(event.committedProjection, expectedDocumentId);
+    } else {
+      decodeLearningPlan(event.committedProjection, {
+        expectedPlanId: event.terminalEvidence?.resourceId ?? undefined,
+        expectedDocumentId,
+        path: "stream_report.committed_projection",
+      });
+    }
+  }
+  return {
+    ...decoded,
+    events: decoded.events.map((event) => ({
+      ...event,
+      payload: compactPreviewValue(event.payload) as Record<string, unknown>,
+      committedProjection:
+        event.committedProjection === null
+          ? null
+          : (compactPreviewValue(event.committedProjection) as Record<string, unknown>),
+    })),
+  };
 }

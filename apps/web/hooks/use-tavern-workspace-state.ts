@@ -10,7 +10,7 @@ import type {
 } from "@vibe-learner/shared";
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { type SceneLibraryItemPayload } from "../lib/api";
+import { type SceneLibraryItemPayload } from "../lib/data/scenes";
 import {
   authoritativeFacilitatedRecovery,
   hasActiveTavernRun,

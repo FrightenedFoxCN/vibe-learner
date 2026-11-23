@@ -1,4 +1,6 @@
 import {
+  createDiagnosticId,
+  diagnosticContext,
   diagnosticDecode,
   DiagnosticContext as DiagnosticContext,
 } from "../diagnostics";
@@ -16,6 +18,7 @@ import type {
 } from "@vibe-learner/shared";
 import { ApiHttpError } from "../http-error";
 import {
+  isTavernTerminalReplayDirective,
   normalizeTavernRoomDetail,
   normalizeTavernRoomList,
   normalizeTavernRunList,
@@ -24,14 +27,8 @@ import {
   normalizeTavernErrorDetail,
 } from "../tavern-decode";
 
-import {
-  serializeSceneProfile,
-  AI_BASE_URL,
-  request,
-  readJson,
-  requestTavernMutationWithRecovery,
-  serializeTavernTurnInput,
-} from "./_shared";
+import { AI_BASE_URL, request, readJson } from "./_shared";
+import { serializeSceneProfile } from "./scene-serialize";
 
 export function decodeTavernHttpError(error: unknown): TavernErrorDetail | null {
   if (!(error instanceof ApiHttpError)) return null;
@@ -278,4 +275,41 @@ export async function cancelTavernRun(
   return diagnosticDecode(diagnosticResponse, () =>
     normalizeTavernTurnResult(payload, roomId),
   );
+}
+
+async function requestTavernMutationWithRecovery(
+  input: string,
+  init: RequestInit,
+  context = diagnosticContext(createDiagnosticId()),
+): Promise<Response> {
+  try {
+    const response = await request(input, init, context);
+    if (!response.ok) await readJson<unknown>(response);
+    return response;
+  } catch (error) {
+    const detail = decodeTavernHttpError(error);
+    if (
+      !(error instanceof ApiHttpError) ||
+      !isTavernTerminalReplayDirective(error.status, detail)
+    ) {
+      throw error;
+    }
+    // The server has already committed terminal evidence. Replaying the exact
+    // request key is query-only recovery and must not invoke the model again.
+    return await request(input, init, context);
+  }
+}
+
+function serializeTavernTurnInput(input: TavernTurnInput) {
+  return {
+    input:
+      input.input.kind === "user_message"
+        ? { kind: "user_message", content: input.input.content }
+        : { kind: "continue", anchor_message_id: input.input.anchorMessageId },
+    mode: input.mode,
+    target_persona_ids: input.targetPersonaIds,
+    guidance: input.guidance ?? "",
+    idempotency_key: input.idempotencyKey,
+    expected_room_revision: input.expectedRoomRevision,
+  };
 }

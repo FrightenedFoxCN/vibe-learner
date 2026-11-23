@@ -8,6 +8,7 @@ import type {
   PersonaCard,
   PersonaCardGenerationMode,
   PersonaProfile,
+  PersonaSlot,
   UpdatePersonaInput,
 } from "@vibe-learner/shared";
 import {
@@ -21,14 +22,7 @@ import {
   decodePersonaSlotAssistOutput,
 } from "../persona-scene-decode";
 
-import {
-  AI_BASE_URL,
-  request,
-  readJson,
-  serializeSlot,
-  serializePersonaCardInput,
-  serializePersonaInput,
-} from "./_shared";
+import { AI_BASE_URL, request, readJson } from "./_shared";
 
 export interface PersonaAssets {
   personaId: string;
@@ -278,4 +272,46 @@ export async function assistPersonaSlot(
   return diagnosticDecode(diagnosticResponse, () =>
     decodePersonaSlotAssistOutput(payload, input.slot),
   );
+}
+
+function serializeSlot(slot: PersonaSlot) {
+  return {
+    kind: slot.kind,
+    label: slot.label,
+    content: slot.content,
+    weight: slot.weight ?? 1,
+    locked: slot.locked ?? false,
+    sort_order: slot.sortOrder ?? 0,
+  };
+}
+
+function serializePersonaCardInput(input: CreatePersonaCardInput) {
+  return {
+    title: input.title,
+    kind: input.kind,
+    label: input.label,
+    content: input.content,
+    tags: input.tags ?? [],
+    search_keywords: input.searchKeywords ?? "自定义",
+    source: input.source ?? "manual",
+    source_note: input.sourceNote ?? "",
+  };
+}
+
+function serializePersonaInput(input: CreatePersonaInput | UpdatePersonaInput) {
+  return {
+    name: input.name,
+    summary: input.summary,
+    relationship: input.relationship,
+    learner_address: input.learnerAddress,
+    system_prompt: input.systemPrompt,
+    reference_hints: input.referenceHints ?? [],
+    slots: input.slots.map(serializeSlot),
+    available_emotions: input.availableEmotions,
+    available_actions: input.availableActions,
+    default_speech_style: input.defaultSpeechStyle,
+    ...("expectedRevision" in input
+      ? { expected_revision: input.expectedRevision }
+      : {}),
+  };
 }

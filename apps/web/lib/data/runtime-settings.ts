@@ -4,4 +4,4 @@ export {
   getRuntimeSettings,
   probeRuntimeOpenAIModels,
   updateRuntimeSettings,
-} from "../api";
+} from "../api/system";

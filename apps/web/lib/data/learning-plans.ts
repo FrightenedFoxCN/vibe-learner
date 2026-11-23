@@ -1,7 +1,10 @@
 export {
   answerLearningPlanQuestion,
-  cancelStreamRun,
   createLearningPlan,
+  createPlanRevision,
+  decidePlanRevision,
+  getPlanRevision,
+  listPlanRevisions,
   createLearningPlanStream,
   getStudyUnitRevision,
   decideStudyUnitRevision,
@@ -9,4 +12,6 @@ export {
   listLearningPlans,
   updateLearningPlanProgress,
   updateLearningPlanTitle,
-} from "../api";
+} from "../api/planning";
+
+export { cancelStreamRun } from "../api/misc";

@@ -157,3 +157,51 @@ export async function getModelUsageStats(): Promise<TokenUsageStats> {
     SETTINGS_RESPONSE_CONTRACTS.modelUsage,
   );
 }
+
+export async function applyRuntimeSessionSecrets(
+  patch: {
+    openaiApiKey?: string;
+    openaiPlanApiKey?: string;
+    openaiSettingApiKey?: string;
+    openaiChatApiKey?: string;
+  },
+  context?: DiagnosticContext,
+): Promise<RuntimeSettings> {
+  const diagnosticResponse = await request(
+    `${AI_BASE_URL()}/runtime-settings/session-secrets`,
+    {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        openai_api_key: patch.openaiApiKey,
+        openai_plan_api_key: patch.openaiPlanApiKey,
+        openai_setting_api_key: patch.openaiSettingApiKey,
+        openai_chat_api_key: patch.openaiChatApiKey,
+      }),
+    },
+    context,
+  );
+  const payload = await readJson<unknown>(diagnosticResponse);
+  return diagnosticDecode(
+    diagnosticResponse,
+    () => decodeRuntimeSettings(payload),
+    SETTINGS_RESPONSE_CONTRACTS.runtimeSettings,
+  );
+}
+
+export async function clearRuntimeSessionSecrets(): Promise<RuntimeSettings> {
+  const diagnosticResponse = await request(
+    `${AI_BASE_URL()}/runtime-settings/session-secrets`,
+    {
+      method: "DELETE",
+    },
+  );
+  const payload = await readJson<unknown>(diagnosticResponse);
+  return diagnosticDecode(
+    diagnosticResponse,
+    () => decodeRuntimeSettings(payload),
+    SETTINGS_RESPONSE_CONTRACTS.runtimeSettings,
+  );
+}

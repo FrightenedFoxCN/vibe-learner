@@ -9,28 +9,24 @@ import {
   diagnosticDecode,
   DiagnosticContext as DiagnosticContext,
 } from "../diagnostics";
-import { SETTINGS_RESPONSE_CONTRACTS } from "@vibe-learner/shared/settings-response-contracts";
-import { decodeRuntimeSettings } from "../runtime-settings-decode";
-import type {
-  RuntimeSettings,
-  StudyChatResponse,
-  StudySessionRecord,
-} from "@vibe-learner/shared";
-import { decodeStudySession, decodeStudySessionList } from "../study-session-decode";
-import { StudyChatOperationReceipt as StudyChatOperationReceipt } from "../study-chat-operation-decode";
+import { studyDiagnosticContext } from "../study-diagnostic-context";
+import type { StudyChatResponse, StudySessionRecord } from "@vibe-learner/shared";
+import {
+  decodeStudyChatExchange,
+  decodeStudySession,
+  decodeStudySessionList,
+} from "../study-session-decode";
+import {
+  decodeStudyChatOperationReceipt,
+  type StudyChatOperationReceipt,
+} from "../study-chat-operation-decode";
 import {
   decodeStudyQuestionAttemptResponse,
   type StudyQuestionAttemptResponse,
 } from "../study-question-attempt";
 
-import {
-  serializeSceneProfile,
-  AI_BASE_URL,
-  request,
-  readJson,
-  sendStudyMessageRequest,
-  getStudyChatOperationRequest,
-} from "./_shared";
+import { AI_BASE_URL, request, readJson } from "./_shared";
+import { serializeSceneProfile } from "./scene-serialize";
 
 export interface StudyChatExchangeResponse extends StudyChatResponse {
   session: StudySessionRecord;
@@ -42,54 +38,6 @@ export type StudyChatOperationResponse =
 export interface StudyQuestionAttemptCommitResult {
   attempt: StudyQuestionAttemptResponse;
   session: StudySessionRecord;
-}
-
-export async function applyRuntimeSessionSecrets(
-  patch: {
-    openaiApiKey?: string;
-    openaiPlanApiKey?: string;
-    openaiSettingApiKey?: string;
-    openaiChatApiKey?: string;
-  },
-  context?: DiagnosticContext,
-): Promise<RuntimeSettings> {
-  const diagnosticResponse = await request(
-    `${AI_BASE_URL()}/runtime-settings/session-secrets`,
-    {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        openai_api_key: patch.openaiApiKey,
-        openai_plan_api_key: patch.openaiPlanApiKey,
-        openai_setting_api_key: patch.openaiSettingApiKey,
-        openai_chat_api_key: patch.openaiChatApiKey,
-      }),
-    },
-    context,
-  );
-  const payload = await readJson<unknown>(diagnosticResponse);
-  return diagnosticDecode(
-    diagnosticResponse,
-    () => decodeRuntimeSettings(payload),
-    SETTINGS_RESPONSE_CONTRACTS.runtimeSettings,
-  );
-}
-
-export async function clearRuntimeSessionSecrets(): Promise<RuntimeSettings> {
-  const diagnosticResponse = await request(
-    `${AI_BASE_URL()}/runtime-settings/session-secrets`,
-    {
-      method: "DELETE",
-    },
-  );
-  const payload = await readJson<unknown>(diagnosticResponse);
-  return diagnosticDecode(
-    diagnosticResponse,
-    () => decodeRuntimeSettings(payload),
-    SETTINGS_RESPONSE_CONTRACTS.runtimeSettings,
-  );
 }
 
 export async function createStudySession(
@@ -308,4 +256,113 @@ export async function submitStudyQuestionAttempt(
   );
   const session = await getStudySession(input.sessionId, context);
   return { attempt, session };
+}
+
+async function sendStudyMessageRequest(
+  input: Parameters<typeof sendStudyMessage>[0],
+  signal: AbortSignal,
+): Promise<StudyChatOperationResponse> {
+  const context = studyDiagnosticContext(
+    input.sessionId,
+    input.clientRequestId,
+    input.diagnosticFlowId,
+  );
+  const hasAttachments = Boolean(input.attachments?.length);
+  const response = hasAttachments
+    ? await request(
+        `${AI_BASE_URL()}/study-sessions/${input.sessionId}/chat-with-attachments`,
+        {
+          method: "POST",
+          signal,
+          body: (() => {
+            const form = new FormData();
+            form.set("message", input.message);
+            form.set("client_request_id", input.clientRequestId);
+            form.set(
+              "expected_session_revision",
+              String(input.expectedSessionRevision),
+            );
+            form.set("message_kind", input.messageKind ?? "learner");
+            form.set("follow_up_id", input.followUpId ?? "");
+            form.set("hidden_message_prefix", input.hiddenMessagePrefix ?? "");
+            if (input.outputLanguage !== undefined)
+              form.set("output_language", input.outputLanguage);
+            (input.attachments ?? []).forEach((file) => {
+              form.append("files", file);
+            });
+            return form;
+          })(),
+        },
+        context,
+      )
+    : await request(
+        `${AI_BASE_URL()}/study-sessions/${input.sessionId}/chat`,
+        {
+          method: "POST",
+          signal,
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            client_request_id: input.clientRequestId,
+            expected_session_revision: input.expectedSessionRevision,
+            message: input.message,
+            message_kind: input.messageKind ?? "learner",
+            follow_up_id: input.followUpId ?? "",
+            hidden_message_prefix: input.hiddenMessagePrefix ?? "",
+            ...(input.outputLanguage !== undefined
+              ? { output_language: input.outputLanguage }
+              : {}),
+          }),
+        },
+        context,
+      );
+  const diagnosticResponse = response;
+  const payload = await readJson<unknown>(diagnosticResponse);
+  return diagnosticDecode(diagnosticResponse, () =>
+    decodeStudyChatOperationResponse(payload, {
+      sessionId: input.sessionId,
+      clientRequestId: input.clientRequestId,
+    }),
+  );
+}
+
+async function getStudyChatOperationRequest(
+  input: Parameters<typeof getStudyChatOperation>[0],
+  signal: AbortSignal,
+): Promise<StudyChatOperationResponse> {
+  const diagnosticResponse = await request(
+    `${AI_BASE_URL()}/study-sessions/${encodeURIComponent(input.sessionId)}/chat-operations/${encodeURIComponent(input.clientRequestId)}`,
+    {
+      cache: "no-store",
+      signal,
+      headers: { "Cache-Control": "no-cache" },
+    },
+    studyDiagnosticContext(
+      input.sessionId,
+      input.clientRequestId,
+      input.diagnosticFlowId,
+    ),
+  );
+  const payload = await readJson<unknown>(diagnosticResponse);
+  return diagnosticDecode(diagnosticResponse, () =>
+    decodeStudyChatOperationResponse(payload, input),
+  );
+}
+
+function decodeStudyChatOperationResponse(
+  payload: unknown,
+  expected: { sessionId: string; clientRequestId: string },
+): StudyChatOperationResponse {
+  return decodeStudyChatOperationReceipt(payload, {
+    path: "study_chat_operation",
+    expectedSessionId: expected.sessionId,
+    expectedClientRequestId: expected.clientRequestId,
+    decodeResult: (raw, path, evidence) =>
+      decodeStudyChatExchange(raw, {
+        path,
+        expectedSessionId: expected.sessionId,
+        evidence,
+      }),
+  });
 }

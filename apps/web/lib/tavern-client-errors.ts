@@ -1,4 +1,4 @@
-import { decodeTavernHttpError } from "./api";
+import { decodeTavernHttpError } from "./data/tavern";
 import { tavernFailureNotice } from "./tavern-copy";
 
 export function recordError(

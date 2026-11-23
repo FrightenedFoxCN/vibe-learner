@@ -10,11 +10,11 @@ export {
   listSceneLibrary,
   updateSceneLibraryItem,
   updateSceneSetupState,
-} from "../api";
+} from "../api/scene";
 
 export type {
   ReusableSceneNodePayload,
   SceneLibraryItemPayload,
   SceneSetupStatePayload,
   SceneTreeGenerateResult,
-} from "../api";
+} from "../api/scene";

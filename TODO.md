@@ -18,7 +18,7 @@
 
 ### Phase 1：首屏解耦与工程卫生（P1）
 
-- [ ] **P1-FE-01 切断 API 聚合桶与循环依赖**
+- [x] **P1-FE-01 切断 API 聚合桶与循环依赖**
   - 拆分 `apps/web/lib/api/_shared.ts` 中对 `./tavern`、`./study` 及各域解码器的反向循环依赖，仅保留与域无关的传输/错误/序列化原语。
   - 将全部 10 个 `apps/web/lib/data/*.ts` 改为直接导入对应 `apps/web/lib/api/*.ts`，不再经过汇总桶 `apps/web/lib/api.ts`。
   - 将仍引用旧 barrel 的 4 处文件迁移至 `lib/data/*`：`plan-revision-panel.tsx`、`tavern-workspace-panels.tsx`、`use-tavern-workspace-state.ts`、`use-tavern-run-recovery.ts`。

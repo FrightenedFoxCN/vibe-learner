@@ -3,4 +3,4 @@ export {
   deletePersonaCard,
   generatePersonaCards,
   listPersonaCards,
-} from "../api";
+} from "../api/persona";

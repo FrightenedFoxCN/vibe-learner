@@ -11,20 +11,17 @@ import type {
   StudySessionRecord,
 } from "@vibe-learner/shared";
 import { decodeStudyPlanConfirmationDecisionResponse } from "../study-session-decode";
-import { PlanningDecodeError, decodeLearningPlanList } from "../planning-decode";
+import {
+  PlanningDecodeError,
+  decodeLearningPlan,
+  decodeLearningPlanList,
+} from "../planning-decode";
+import { DocumentDecodeError } from "../document-decode";
 import { StrictStreamStateMachine } from "../stream-decode";
 
-import {
-  serializeSceneProfile,
-  AI_BASE_URL,
-  request,
-  readJson,
-  consumeDiagnosticStream,
-  formatStreamErrorPayload,
-  normalizePlan,
-  createLearningPlanRequestId,
-  serializePlanningIntent,
-} from "./_shared";
+import { AI_BASE_URL, request, readJson } from "./_shared";
+import { serializeSceneProfile } from "./scene-serialize";
+import { consumeDiagnosticStream, formatStreamErrorPayload } from "./stream";
 
 export interface StudyPlanConfirmationDecisionResponse {
   session: StudySessionRecord;
@@ -52,7 +49,7 @@ export async function createLearningPlan(goal: LearningGoal): Promise<LearningPl
   });
   const payload = await readJson<unknown>(diagnosticResponse);
   return diagnosticDecode(diagnosticResponse, () =>
-    normalizePlan(payload, {
+    decodeLearningPlan(payload, {
       expectedDocumentId: goal.documentId ?? "",
       requireHarnessTrace: true,
     }),
@@ -85,7 +82,7 @@ export async function updateLearningPlanTitle(
   );
   const payload = await readJson<unknown>(diagnosticResponse);
   return diagnosticDecode(diagnosticResponse, () =>
-    normalizePlan(payload, { expectedPlanId: planId }),
+    decodeLearningPlan(payload, { expectedPlanId: planId }),
   );
 }
 
@@ -113,7 +110,7 @@ export async function updateLearningPlanProgress(input: {
   );
   const payload = await readJson<unknown>(diagnosticResponse);
   return diagnosticDecode(diagnosticResponse, () =>
-    normalizePlan(payload, { expectedPlanId: input.planId }),
+    decodeLearningPlan(payload, { expectedPlanId: input.planId }),
   );
 }
 
@@ -138,7 +135,7 @@ export async function answerLearningPlanQuestion(input: {
   );
   const payload = await readJson<unknown>(diagnosticResponse);
   return diagnosticDecode(diagnosticResponse, () =>
-    normalizePlan(payload, { expectedPlanId: input.planId }),
+    decodeLearningPlan(payload, { expectedPlanId: input.planId }),
   );
 }
 
@@ -199,11 +196,13 @@ export async function createLearningPlanStream(
   });
   const terminal = await consumeDiagnosticStream(
     response,
+    (error) =>
+      error instanceof PlanningDecodeError || error instanceof DocumentDecodeError,
     response.body,
     machine,
     (event) => {
       if (event.stage === "stream_completed") {
-        finalPlan = normalizePlan(event.committedProjection, {
+        finalPlan = decodeLearningPlan(event.committedProjection, {
           expectedPlanId: event.terminalEvidence?.resourceId ?? undefined,
           expectedDocumentId,
           path: "stream.committed_projection",
@@ -253,7 +252,7 @@ export async function resolveStudyPlanConfirmation(input: {
       expectedConfirmationId: input.confirmationId,
       expectedDecision: input.decision,
       decodePlan: (rawPlan, path, expectedPlanId, expectedDocumentId) =>
-        normalizePlan(rawPlan, {
+        decodeLearningPlan(rawPlan, {
           path,
           expectedPlanId,
           expectedDocumentId,
@@ -366,4 +365,38 @@ export async function decideStudyUnitRevision(
       throw new PlanningDecodeError("study_unit_revision", "identity_mismatch");
     return value;
   });
+}
+
+function createLearningPlanRequestId(): string {
+  const suffix =
+    typeof globalThis.crypto?.randomUUID === "function"
+      ? globalThis.crypto.randomUUID()
+      : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`;
+  return `learning-plan-${suffix}`;
+}
+
+function serializePlanningIntent(
+  intent: LearningGoal["planningIntent"],
+): object | undefined {
+  if (!intent) return undefined;
+  const serializeValue = <T, U>(
+    item: { status: "unknown"; value: null } | { status: "user_explicit"; value: T },
+    map: (value: T) => U,
+  ) =>
+    item.status === "unknown"
+      ? { status: "unknown", value: null }
+      : { status: "user_explicit", value: map(item.value) };
+  return {
+    schema_version: intent.schemaVersion,
+    pdf_page_ranges: serializeValue(intent.pdfPageRanges, (ranges) =>
+      ranges.map((range) => ({
+        page_start: range.pageStart,
+        page_end: range.pageEnd,
+      })),
+    ),
+    outline_targets: serializeValue(intent.outlineTargets, (targets) => targets),
+    session_count: serializeValue(intent.sessionCount, (value) => value),
+    minutes_per_session: serializeValue(intent.minutesPerSession, (value) => value),
+    output_language: serializeValue(intent.outputLanguage, (value) => value),
+  };
 }

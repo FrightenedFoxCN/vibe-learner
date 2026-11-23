@@ -12,7 +12,8 @@ import {
   decodeSceneTreeGenerateResult,
 } from "../persona-scene-decode";
 
-import { serializeSceneTree, AI_BASE_URL, request, readJson } from "./_shared";
+import { AI_BASE_URL, request, readJson } from "./_shared";
+import { serializeSceneTree } from "./scene-serialize";
 
 export interface SceneTreeGenerateResult {
   mode: "keywords" | "long_text";

@@ -3,7 +3,7 @@
 import type { TavernRun } from "@vibe-learner/shared";
 import { useCallback, useEffect } from "react";
 
-import { decodeTavernHttpError } from "../lib/api";
+import { decodeTavernHttpError } from "../lib/data/tavern";
 import { createDiagnosticId, diagnosticContext } from "../lib/diagnostics";
 import { RUN_STATUS_LABELS } from "../lib/tavern-copy";
 import { reconcileTavernRuns } from "../lib/tavern-workspace-state";

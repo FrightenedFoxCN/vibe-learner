@@ -1,6 +1,7 @@
 export {
   createTavernRoom,
   cancelTavernRun,
+  decodeTavernHttpError,
   getTavernRoom,
   getTavernRunRecovery,
   listTavernRooms,
@@ -9,4 +10,4 @@ export {
   resumeTavernRun,
   runTavernTurn,
   updateTavernRoom,
-} from "../api";
+} from "../api/tavern";

@@ -1,4 +1,4 @@
 export {
   getModelToolConfig,
   updateModelToolConfig,
-} from "../api";
+} from "../api/system";
