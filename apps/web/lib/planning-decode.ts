@@ -922,7 +922,8 @@ function validatePlanStudyUnitIdentity(
   }
 
   if (studyUnits.length === 0) return;
-  const syntheticDocumentId = studyUnits[0]?.documentId ?? "";
+  // Guarded above: the first unit exists, so no optional-chaining default is needed.
+  const syntheticDocumentId = studyUnits[0].documentId;
   if (!/^goal-only:[^:\s]+$/.test(syntheticDocumentId)) {
     throw new PlanningDecodeError(
       `${path}[0].document_id`,
