@@ -19,11 +19,6 @@ from app.services.document_input_validation import validate_pdf_page_count
 from app.core.execution_budget import check_execution_budget
 from app.services.document_stage_metrics import measure_parser_stage
 
-from app.core.harness_component_versions import (
-    DOCUMENT_CHUNK_BUILDER_CONTRACT_VERSION,
-    DOCUMENT_PAGE_EXTRACTOR_CONTRACT_VERSION,
-    DOCUMENT_SECTION_DETECTOR_CONTRACT_VERSION,
-)
 from app.core.logging import get_logger
 from app.models.domain import (
     DocumentChunkRecord,

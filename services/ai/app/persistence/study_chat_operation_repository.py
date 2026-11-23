@@ -5,18 +5,16 @@ from pathlib import Path
 from uuid import uuid4
 
 from sqlalchemy import select, update
-from sqlalchemy.exc import IntegrityError, OperationalError
+from sqlalchemy.exc import IntegrityError
 
 from app.models.study_chat_operation import (
     STUDY_CHAT_FINGERPRINT_CONTRACT_VERSION,
     STUDY_CHAT_REQUEST_SCHEMA_VERSION,
-    STUDY_CHAT_RESPONSE_SCHEMA_VERSION,
     StudyChatOperationRecord,
     StudyChatOperationReceipt,
     StudyChatOperationRequestPayload,
     StudyChatOperationStatus,
     study_chat_request_fingerprint,
-    study_chat_response_digest,
 )
 from app.models.harness import HarnessTraceV3
 from app.models.study_chat_effect import (

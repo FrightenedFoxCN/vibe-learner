@@ -1,6 +1,6 @@
 {
   "schemaVersion": "style-baseline-v1",
-  "capturedCommit": "b26dd7ed63e927254c267582ed16896ce3a5a3b6",
+  "capturedCommit": "f710a5fdb9420407f977c9f017122e32803446f1",
   "lint": [
     {
       "path": "apps/web/components/persona/persona-workspace-view.tsx",
@@ -40,50 +40,8 @@
     {
       "path": "apps/web/components/study-dialog-page.tsx",
       "rule": "react-hooks/exhaustive-deps",
-      "message": "React Hook useEffect has a missing dependency: 'activeDocument?.sections'. Either include it or remove the dependency array.",
-      "sourceDigest": "25b72312de67d09a09b3d1c0675db7f3b80148d6418174adae420d640832886d",
-      "count": 1
-    },
-    {
-      "path": "apps/web/components/study-dialog-page.tsx",
-      "rule": "react-hooks/exhaustive-deps",
-      "message": "React Hook useEffect has a missing dependency: 'activeDocument'. Either include it or remove the dependency array.",
-      "sourceDigest": "c8b3b55f7ff8bb4aec7f5f88678bf742c8e4ea8ed7c207e84308e2f8482f6c08",
-      "count": 1
-    },
-    {
-      "path": "apps/web/components/study-dialog-page.tsx",
-      "rule": "react-hooks/exhaustive-deps",
       "message": "React Hook useEffect has a missing dependency: 'projectedPdf'. Either include it or remove the dependency array.",
       "sourceDigest": "5af9a6419d927d6274a4150d9c0f167a9addc9eb6b28a0f7382528227c7df710",
-      "count": 1
-    },
-    {
-      "path": "apps/web/components/study-dialog-page.tsx",
-      "rule": "react-hooks/exhaustive-deps",
-      "message": "React Hook useEffect has a missing dependency: 'studySession'. Either include it or remove the dependency array.",
-      "sourceDigest": "5af9a6419d927d6274a4150d9c0f167a9addc9eb6b28a0f7382528227c7df710",
-      "count": 1
-    },
-    {
-      "path": "apps/web/components/study-dialog-page.tsx",
-      "rule": "react-hooks/exhaustive-deps",
-      "message": "The 'scheduleOptions' logical expression could make the dependencies of useCallback Hook (at line 144) change on every render. To fix this, wrap the initialization of 'scheduleOptions' in its own useMemo() Hook.",
-      "sourceDigest": "110a3e216be478dffa82ed48520a06553c46b5ac8f3920d4bb0d46e712c7d746",
-      "count": 1
-    },
-    {
-      "path": "apps/web/components/study-dialog-page.tsx",
-      "rule": "react-hooks/exhaustive-deps",
-      "message": "The 'scheduleOptions' logical expression could make the dependencies of useCallback Hook (at line 467) change on every render. To fix this, wrap the initialization of 'scheduleOptions' in its own useMemo() Hook.",
-      "sourceDigest": "110a3e216be478dffa82ed48520a06553c46b5ac8f3920d4bb0d46e712c7d746",
-      "count": 1
-    },
-    {
-      "path": "apps/web/components/study-dialog-page.tsx",
-      "rule": "react-hooks/exhaustive-deps",
-      "message": "The 'scheduleOptions' logical expression could make the dependencies of useEffect Hook (at line 281) change on every render. To fix this, wrap the initialization of 'scheduleOptions' in its own useMemo() Hook.",
-      "sourceDigest": "110a3e216be478dffa82ed48520a06553c46b5ac8f3920d4bb0d46e712c7d746",
       "count": 1
     },
     {
@@ -138,13 +96,6 @@
     {
       "path": "apps/web/hooks/use-learning-workspace-controller.ts",
       "rule": "react-hooks/exhaustive-deps",
-      "message": "React Hook useEffect has missing dependencies: 'refreshPersonaLibrary', 'refreshSceneLibrary', and 'syncWorkspaceSnapshot'. Either include them or remove the dependency array.",
-      "sourceDigest": "27c7e19d1e112eeabf093062e0e24babd319cebac309a618f8cf7a9aa324b972",
-      "count": 1
-    },
-    {
-      "path": "apps/web/hooks/use-learning-workspace-controller.ts",
-      "rule": "react-hooks/exhaustive-deps",
       "message": "The ref value 'studyViewFenceRef.current' will likely have changed by the time this effect cleanup function runs. If this ref points to a node rendered by React, copy 'studyViewFenceRef.current' to a variable inside the effect, and use that variable in the cleanup function.",
       "sourceDigest": "874678c8ba4e63d33311d93cdc48b1d17fa58b54c09cebeb654abd8b1af27d45",
       "count": 1
@@ -154,13 +105,6 @@
       "rule": "react-hooks/exhaustive-deps",
       "message": "The ref value 'assistFenceRef.current' will likely have changed by the time this effect cleanup function runs. If this ref points to a node rendered by React, copy 'assistFenceRef.current' to a variable inside the effect, and use that variable in the cleanup function.",
       "sourceDigest": "a3245a4548ed1324f368969a3b36f89460c05d533baec6dc2f2a96b3b713a6fb",
-      "count": 1
-    },
-    {
-      "path": "apps/web/hooks/use-persona-card-generation.ts",
-      "rule": "react-hooks/exhaustive-deps",
-      "message": "The ref value 'cardGenerationFenceRef.current' will likely have changed by the time this effect cleanup function runs. If this ref points to a node rendered by React, copy 'cardGenerationFenceRef.current' to a variable inside the effect, and use that variable in the cleanup function.",
-      "sourceDigest": "c518e65079fc355c4dcf3e367389bdd6a3549b9a2b0e31ca18c51971f313ffdc",
       "count": 1
     },
     {
@@ -262,13 +206,6 @@
       "count": 1
     },
     {
-      "path": "apps/web/hooks/use-study-chat-recovery.ts",
-      "rule": "react-hooks/exhaustive-deps",
-      "message": "React Hook useEffect has missing dependencies: 'applyStudyChatOperation', 'beginStudyResponseTicket', 'clearPendingStudyOperation', 'isCurrentStudyResponseTicket', 'port', 'readPendingStudyOperation', 'session', and 'view'. Either include them or remove the dependency array.",
-      "sourceDigest": "cdea0db1f1738f1c160ddf6c75e969f0625192befeb42fcba38f162015c02673",
-      "count": 1
-    },
-    {
       "path": "apps/web/hooks/use-study-continuation.ts",
       "rule": "react-hooks/exhaustive-deps",
       "message": "React Hook useEffect has a missing dependency: 'port'. Either include it or remove the dependency array.",
@@ -321,20 +258,6 @@
       "path": "apps/web/hooks/use-tavern-mutations.ts",
       "rule": "react-hooks/exhaustive-deps",
       "message": "React Hook useCallback has missing dependencies: 'activeRoomIdRef', 'mountedRef', 'mutationOperationRef', 'mutationOperationVersionRef', 'olderLoadRoomRef', and 'requestedRoomIdRef'. Either include them or remove the dependency array.",
-      "sourceDigest": "8e6b7aa7ca0afec733bbd787ac70ced5a712be92c245a4c02b677251830ebe01",
-      "count": 1
-    },
-    {
-      "path": "apps/web/hooks/use-tavern-mutations.ts",
-      "rule": "react-hooks/exhaustive-deps",
-      "message": "React Hook useCallback has missing dependencies: 'foregroundOperationIdRef' and 'foregroundRunRef'. Either include them or remove the dependency array.",
-      "sourceDigest": "8e6b7aa7ca0afec733bbd787ac70ced5a712be92c245a4c02b677251830ebe01",
-      "count": 1
-    },
-    {
-      "path": "apps/web/hooks/use-tavern-mutations.ts",
-      "rule": "react-hooks/exhaustive-deps",
-      "message": "React Hook useCallback has missing dependencies: 'mountedRef' and 'mutationOperationRef'. Either include them or remove the dependency array.",
       "sourceDigest": "8e6b7aa7ca0afec733bbd787ac70ced5a712be92c245a4c02b677251830ebe01",
       "count": 1
     },
@@ -430,34 +353,6 @@
       "count": 1
     },
     {
-      "path": "apps/web/hooks/use-workspace-libraries.ts",
-      "rule": "react-hooks/exhaustive-deps",
-      "message": "React Hook useEffect has missing dependencies: 'refreshPersonaLibrary' and 'refreshSceneLibrary'. Either include them or remove the dependency array.",
-      "sourceDigest": "27c7e19d1e112eeabf093062e0e24babd319cebac309a618f8cf7a9aa324b972",
-      "count": 1
-    },
-    {
-      "path": "apps/web/hooks/use-workspace-libraries.ts",
-      "rule": "react-hooks/exhaustive-deps",
-      "message": "The ref value 'personaSequence.current' will likely have changed by the time this effect cleanup function runs. If this ref points to a node rendered by React, copy 'personaSequence.current' to a variable inside the effect, and use that variable in the cleanup function.",
-      "sourceDigest": "b2334fcab13ec7d3b1e75d7dafdedbb643eea279bcc372a5758b71109e6339ea",
-      "count": 1
-    },
-    {
-      "path": "apps/web/hooks/use-workspace-libraries.ts",
-      "rule": "react-hooks/exhaustive-deps",
-      "message": "The ref value 'sceneSequence.current' will likely have changed by the time this effect cleanup function runs. If this ref points to a node rendered by React, copy 'sceneSequence.current' to a variable inside the effect, and use that variable in the cleanup function.",
-      "sourceDigest": "b2334fcab13ec7d3b1e75d7dafdedbb643eea279bcc372a5758b71109e6339ea",
-      "count": 1
-    },
-    {
-      "path": "apps/web/lib/harness-trace-decode.ts",
-      "rule": "@typescript-eslint/no-unused-vars",
-      "message": "'HarnessWorkflow' is defined but never used. Allowed unused vars must match /^_/u.",
-      "sourceDigest": "4ce610d5fc42487ef1fffeda752392dddc18e41aa5bd13eddf4adbad284567ed",
-      "count": 1
-    },
-    {
       "path": "apps/web/lib/learning-workspace-state.ts",
       "rule": "@typescript-eslint/no-unused-vars",
       "message": "'findLearningPlan' is defined but never used. Allowed unused vars must match /^_/u.",
@@ -476,622 +371,6 @@
       "rule": "@typescript-eslint/no-unused-vars",
       "message": "'TavernRoomSummary' is defined but never used. Allowed unused vars must match /^_/u.",
       "sourceDigest": "ae184daf1c8c64ee0d2d6c862bb04eed202e5e1e48d59209a6b09be0242ee4b6",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/core/bootstrap.py",
-      "rule": "F401",
-      "message": "`pathlib.Path` imported but unused",
-      "sourceDigest": "6d69f2ac09017b8a49d050ab336e953b8fa02ae08c24396916ea7ea42418e627",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/models/api.py",
-      "rule": "F401",
-      "message": "`app.models.domain.InteractiveQuestionOption` imported but unused",
-      "sourceDigest": "b1b0f99b32ec1f4440b80b34ceddca3c9da27576c65f8e290e04342533c31d3f",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/models/api.py",
-      "rule": "F401",
-      "message": "`app.models.domain.LearningPlanRecord` imported but unused",
-      "sourceDigest": "ba3f8825fde8e56f70bd396a0460e470ebdd626dc66fb4c351136a0fcb220f98",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/models/api.py",
-      "rule": "F401",
-      "message": "`app.models.domain.PlanningQuestionRecord` imported but unused",
-      "sourceDigest": "e2f1ec54959b23e0874652e3a701796389dfb9eb49462eb6e9ab2743c5c42cba",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/models/api.py",
-      "rule": "F401",
-      "message": "`app.models.domain.PlanProgressEventRecord` imported but unused",
-      "sourceDigest": "ac9380e388214a5b066e2d6272caaa2c13d057a2f41c8592f2ae68fa175b56c8",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/models/api.py",
-      "rule": "F401",
-      "message": "`app.models.domain.PlanProgressSummaryRecord` imported but unused",
-      "sourceDigest": "9595dd5f7a366cd16bcdcdb14145e7507f928a2c4e83a3853d072e8955f91c2f",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/models/domain.py",
-      "rule": "F401",
-      "message": "`app.models.study_question.StudyQuestionOptionV1` imported but unused",
-      "sourceDigest": "a36428e916dd330b6fcbf0743a7a55e9f534d46a2ee217a98bce556942275e08",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/models/harness_recovery_migration.py",
-      "rule": "F401",
-      "message": "`pydantic.model_validator` imported but unused",
-      "sourceDigest": "e0068d06a59fd12a0f56d94c3c73edc7aabbfc94185b2222dc8a87a9dd06d904",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/models/harness_runtime.py",
-      "rule": "F401",
-      "message": "`datetime.datetime` imported but unused",
-      "sourceDigest": "246d66ffbac9c10d5911e86d92ccf4027b7003be3e114fcbf57a21093c82e739",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/models/harness.py",
-      "rule": "F401",
-      "message": "`app.core.harness_component_versions.STUDY_CHAT_COMMIT_CONTRACT_VERSION` imported but unused",
-      "sourceDigest": "b48ce682e2723bbec50c82645a4ea8de6464ad6b63fc768e2d8e9119ed8d4dc8",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/models/harness.py",
-      "rule": "F401",
-      "message": "`app.core.harness_component_versions.TAVERN_ACTOR_REPLY_CONTRACT_VERSION` imported but unused",
-      "sourceDigest": "71cb82ff733aa56d78787f6bcb8543fe812fe28f03f5ab0dbbd846542a075c90",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/persistence/harness_artifact_repository.py",
-      "rule": "F401",
-      "message": "`app.models.harness_artifact_access.HARNESS_ARTIFACT_CONTRACT_REGISTRATION_SCHEMA_VERSION` imported but unused",
-      "sourceDigest": "d6ce7e313ac6415fabc63f04178fc91376e97719185b98dba8d81b320b3ebcab",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/persistence/harness_artifact_repository.py",
-      "rule": "F401",
-      "message": "`app.models.harness_artifact_access.HARNESS_ARTIFACT_GRANT_SCHEMA_VERSION` imported but unused",
-      "sourceDigest": "29ba5ae46979ba2fc5c43548581a3589fde07c9d2cbd483cb02e911d42b248e0",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/persistence/harness_artifact_repository.py",
-      "rule": "F401",
-      "message": "`app.models.harness_artifact_access.HARNESS_ARTIFACT_PRINCIPAL_SCHEMA_VERSION` imported but unused",
-      "sourceDigest": "da8df20fca69f9a1a601797dd2b30f7935135f97a042ade0961943860833b256",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/persistence/harness_artifact_repository.py",
-      "rule": "F401",
-      "message": "`app.models.harness_artifact_access.HARNESS_ARTIFACT_RESOLUTION_AUDIT_SCHEMA_VERSION` imported but unused",
-      "sourceDigest": "0e0ea9bc189aa5bc63c32aeb47183f10d155b1346b14f75b4ccb704b1c60c899",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/persistence/study_chat_operation_repository.py",
-      "rule": "F401",
-      "message": "`app.models.study_chat_operation.study_chat_response_digest` imported but unused",
-      "sourceDigest": "259e8185e6f31801619fd92446add335ccd7aa9f8d4080b7aff6d3bf874b8880",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/persistence/study_chat_operation_repository.py",
-      "rule": "F401",
-      "message": "`app.models.study_chat_operation.STUDY_CHAT_RESPONSE_SCHEMA_VERSION` imported but unused",
-      "sourceDigest": "3cd1257423ba75aeea9ad6f777671b54eb8ef918c0a6da98f48671b78bb6cc50",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/persistence/study_chat_operation_repository.py",
-      "rule": "F401",
-      "message": "`sqlalchemy.exc.OperationalError` imported but unused",
-      "sourceDigest": "1e40855a0b79fcf9e73e4ac53654af14d4532e97b194f6de5552f7e1579e2d0d",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/services/document_parser.py",
-      "rule": "F401",
-      "message": "`app.core.harness_component_versions.DOCUMENT_CHUNK_BUILDER_CONTRACT_VERSION` imported but unused",
-      "sourceDigest": "07c4d62af26e73f94aaf78b1e1b9acc5b9af47a37ef5eac63353c98cac504d03",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/services/document_parser.py",
-      "rule": "F401",
-      "message": "`app.core.harness_component_versions.DOCUMENT_PAGE_EXTRACTOR_CONTRACT_VERSION` imported but unused",
-      "sourceDigest": "7c719c5cff027c38f22c27a423f5f2c41fe012563be1ee7a9d4e4610f37d693d",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/services/document_parser.py",
-      "rule": "F401",
-      "message": "`app.core.harness_component_versions.DOCUMENT_SECTION_DETECTOR_CONTRACT_VERSION` imported but unused",
-      "sourceDigest": "640d67c79222e5aee4bb62d14b622392078a101cb7b70cfa8041ad8ff20a0ad8",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/services/documents.py",
-      "rule": "F841",
-      "message": "Local variable `ocr_trace` is assigned to but never used",
-      "sourceDigest": "beae8db038a2a71d555eccfb094557ba734d35edb3e8dafd741abb1afea68978",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/services/harness_context.py",
-      "rule": "F401",
-      "message": "`app.models.harness_operation.new_harness_operation_id` imported but unused",
-      "sourceDigest": "d28818ef4bdc5c155350303515f4c8c9d604fba5c38eb15671a645b0e2dad070",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/services/harness_context.py",
-      "rule": "F401",
-      "message": "`app.models.harness.HarnessComponentName` imported but unused",
-      "sourceDigest": "cc04adda00a27d5db052c79e0fcdb19da61491ff6485e8e70393dceb870cea11",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/services/model_provider.py",
-      "rule": "F401",
-      "message": "`app.models.domain.ChatToolCallTraceRecord` imported but unused",
-      "sourceDigest": "94a7c57116887d68fbe2f696904c0de2ddddae0bffe224ffc886698c603cefe8",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/services/model_provider.py",
-      "rule": "F401",
-      "message": "`app.models.domain.PlanGenerationTraceRecord` imported but unused",
-      "sourceDigest": "930bdff3111f49ff78207f423fba34a6828490988c192021919b5d2193d61c75",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/services/model_provider.py",
-      "rule": "F401",
-      "message": "`app.models.domain.RichTextBlockRecord` imported but unused",
-      "sourceDigest": "6f90de78d85179658dde9ac30bb12fecff5287d829ad32fadafd6c05ba93c58e",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/services/model_provider.py",
-      "rule": "F401",
-      "message": "`app.models.harness.HarnessStage` imported but unused",
-      "sourceDigest": "462edaa9b27ccd109ef04cd5bfaf150bfc5765545d368f5975edde5323266d5d",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/services/model_provider.py",
-      "rule": "F401",
-      "message": "`app.models.harness.HarnessWorkflow` imported but unused",
-      "sourceDigest": "462edaa9b27ccd109ef04cd5bfaf150bfc5765545d368f5975edde5323266d5d",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/services/model_provider.py",
-      "rule": "F401",
-      "message": "`app.models.persona_generation.PersonaCardBatchContentProposalV1` imported but unused",
-      "sourceDigest": "e44021f4db25266510429fbec2b37feafcbdde5e0a4e2799dd1fb8ddafaf75cf",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/services/model_provider.py",
-      "rule": "F401",
-      "message": "`app.models.persona_generation.PersonaSlotContentProposalV1` imported but unused",
-      "sourceDigest": "b2b2834dfaac0ec903172be7a18de381ce964931b901e569d073c43dccc98505",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/services/model_provider.py",
-      "rule": "F401",
-      "message": "`app.models.scene.decode_scene_tree_proposal` imported but unused",
-      "sourceDigest": "879af963cd8a2078bcf0f3637fad80663ced2290fe7168f81be22065869c30c9",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/services/model_provider.py",
-      "rule": "F401",
-      "message": "`app.models.scene.project_scene_tree_proposal` imported but unused",
-      "sourceDigest": "f6be6cff2c068e17c44c5ad6f000096888241f599c3ae59b5cfb7e9a68b0856a",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/services/model_provider.py",
-      "rule": "F401",
-      "message": "`app.models.study_chat_reply.StudyChatReplyProposalV1` imported but unused",
-      "sourceDigest": "9a512a8cd3611628374e1a44bb03f14f61783caffd7047c604f071e815990579",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/services/model_provider.py",
-      "rule": "F401",
-      "message": "`app.models.study_question.StudyQuestionProposalV1` imported but unused",
-      "sourceDigest": "03c0b067b9b2f373509e62b5bd1a7ef60ba2afa672f51c83842297c4c4fba536",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/services/model_provider.py",
-      "rule": "F401",
-      "message": "`app.models.tool_manifest.resolve_tool_manifest_entry` imported but unused",
-      "sourceDigest": "e1a9ed0e3ad8bd22077a0cab42c742f4e1a155ccc708ee23f32ec243fdc86688",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/services/model_provider.py",
-      "rule": "F401",
-      "message": "`app.services.model_recovery.record_model_recovery` imported but unused",
-      "sourceDigest": "b650d3a8f24b98842ee7e3fa50b279a2e0035e5e21453ae2bab53e174b69f57a",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/services/model_provider.py",
-      "rule": "F401",
-      "message": "`app.services.model_tool_config.CHAT_STAGE` imported but unused",
-      "sourceDigest": "b4738ebb49b3703246dbd59a5b815655f701b53a45dd2a1719dc2a8c25658958",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/services/model_provider.py",
-      "rule": "F401",
-      "message": "`app.services.model_tool_config.PLAN_STAGE` imported but unused",
-      "sourceDigest": "b4738ebb49b3703246dbd59a5b815655f701b53a45dd2a1719dc2a8c25658958",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/services/model_provider.py",
-      "rule": "F401",
-      "message": "`app.services.model_tool_config.TOOL_CATALOG` imported but unused",
-      "sourceDigest": "b4738ebb49b3703246dbd59a5b815655f701b53a45dd2a1719dc2a8c25658958",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/services/model_provider.py",
-      "rule": "F401",
-      "message": "`app.services.persona_runtime.render_persona_runtime_instruction` imported but unused",
-      "sourceDigest": "daf0ded8c85808d03df6a55386e6675c9d983a7eaef096289a2536841b35c02a",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/services/model_provider.py",
-      "rule": "F401",
-      "message": "`app.services.plan_prompt.build_learning_plan_context` imported but unused",
-      "sourceDigest": "8777a3a37f68489365a44945658912c4799802281198cbc31ca620dcc5789ce7",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/services/model_provider.py",
-      "rule": "F401",
-      "message": "`app.services.plan_prompt.build_learning_plan_messages` imported but unused",
-      "sourceDigest": "2728b5c52b4ca4a8cd1bf518466aad0ab65561246ced8bb81a62ceceb59d9c21",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/services/model_provider.py",
-      "rule": "F401",
-      "message": "`app.services.plan_prompt.read_page_range_content` imported but unused",
-      "sourceDigest": "26aa6983e674ef83395216582b63522c20aa72b697f81abe09cbd5a22c8001f6",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/services/model_provider.py",
-      "rule": "F401",
-      "message": "`app.services.plan_prompt.read_page_range_images` imported but unused",
-      "sourceDigest": "463abb8a17e15140ca0536ecf3ba6481b41d1399e81ef9c8986188eb97d21517",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/services/model_provider.py",
-      "rule": "F401",
-      "message": "`app.services.prompt_loader.load_prompt_template` imported but unused",
-      "sourceDigest": "c6cd5411bb5ff9202c16957bc14059b025bef4f85719d03068161b66e7f7ef25",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/services/model_provider.py",
-      "rule": "F401",
-      "message": "`app.services.provider_callbacks._emit_progress` imported but unused",
-      "sourceDigest": "616524123d3bf2f51766cf23886d68e6a04fdb87a752e3f0bc0fd839b6d72a2d",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/services/model_provider.py",
-      "rule": "F401",
-      "message": "`app.services.provider_payload._escape_invalid_backslashes_in_json_strings` imported but unused",
-      "sourceDigest": "41da989bdac1b233a30645ef248021c7d61cf916ec9261ae524ca10ddb4affce",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/services/model_provider.py",
-      "rule": "F401",
-      "message": "`app.services.provider_payload._extract_choice_content` imported but unused",
-      "sourceDigest": "41da989bdac1b233a30645ef248021c7d61cf916ec9261ae524ca10ddb4affce",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/services/model_provider.py",
-      "rule": "F401",
-      "message": "`app.services.provider_payload._extract_json_payload` imported but unused",
-      "sourceDigest": "41da989bdac1b233a30645ef248021c7d61cf916ec9261ae524ca10ddb4affce",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/services/model_provider.py",
-      "rule": "F401",
-      "message": "`app.services.provider_planning._decode_learning_plan_proposal` imported but unused",
-      "sourceDigest": "d3576ac84658584a4d5afad118e22a4af9f0e519d16b9cb802fa51930af4da7a",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/services/model_provider.py",
-      "rule": "F401",
-      "message": "`app.services.provider_planning._validate_learning_plan_proposal_refs` imported but unused",
-      "sourceDigest": "0e366afe66038154e883076b72e159663936d6d6767b412010676926b9e4444f",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/services/model_provider.py",
-      "rule": "F401",
-      "message": "`app.services.provider_planning.PlanningProposalDecodeError` imported but unused",
-      "sourceDigest": "d3576ac84658584a4d5afad118e22a4af9f0e519d16b9cb802fa51930af4da7a",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/services/model_provider.py",
-      "rule": "F401",
-      "message": "`app.services.provider_study._chat_tools_disabled_for_round` imported but unused",
-      "sourceDigest": "951a027e3b14f1faf2335fc98c7ebd426380a51a72cfb3914b1daf24aa8473f5",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/services/model_provider.py",
-      "rule": "F401",
-      "message": "`app.services.provider_study._chat_tools` imported but unused",
-      "sourceDigest": "420ba71287f2382cce7aceba41658a7258cb2ff6c04885be47f1f7f0e284ce54",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/services/model_provider.py",
-      "rule": "F401",
-      "message": "`app.services.provider_study._decode_study_chat_reply_proposal` imported but unused",
-      "sourceDigest": "19988dcad86f3fb2944b16fc146089136462662c7edcaad95d70ae3a83f17445",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/services/model_provider.py",
-      "rule": "F401",
-      "message": "`app.services.provider_study._execute_chat_tool_call` imported but unused",
-      "sourceDigest": "b476b2d033b8a0e298cefabb9d3a4d8f84c1b288dfffdf68cffa8986eff1b8e0",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/services/model_provider.py",
-      "rule": "F401",
-      "message": "`app.services.provider_study._extract_choice_diagnostics` imported but unused",
-      "sourceDigest": "1788a57f4ff26743ca7da12870d49e60025b363223b656c6e311cfb9f96aa877",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/services/model_provider.py",
-      "rule": "F401",
-      "message": "`app.services.provider_study._parse_chat_model_reply` imported but unused",
-      "sourceDigest": "fbc1bf7ac6fd2c9f070a5fff39e80fa9ad0903824b625c27fe73cd759ec37374",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/services/model_provider.py",
-      "rule": "F401",
-      "message": "`app.services.provider_study.CHAT_JSON_SCHEMA` imported but unused",
-      "sourceDigest": "465ad4b940fe54e0c28668692250b075a7d7814143bb49b5573af4796070b486",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/services/model_provider.py",
-      "rule": "F401",
-      "message": "`app.services.provider_transport._coerce_int` imported but unused",
-      "sourceDigest": "27b2517b0ecd2b141ad69922f09f2915e96f9bf9c5595e5bc116ec51188a6128",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/services/model_provider.py",
-      "rule": "F401",
-      "message": "`app.services.session_scene.extract_scene_profile_from_tool_results` imported but unused",
-      "sourceDigest": "217df2e6525aea8a5f6d7d355ece4f474d774c31401843a561bce34de152981b",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/services/model_provider.py",
-      "rule": "F401",
-      "message": "`app.services.session_scene.SCENE_TOOL_NAMES` imported but unused",
-      "sourceDigest": "7de7570a926b5cb2be912978770610e4a5dc4bec19dc4226472640099a3c67d7",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/services/model_provider.py",
-      "rule": "F401",
-      "message": "`app.services.session_scene.serialize_chat_tool_trace_item` imported but unused",
-      "sourceDigest": "73fbb515845fdafaf8d3a43fab3dabbda8c1a9e3b6140a81a9a98632d436127f",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/services/model_provider.py",
-      "rule": "F401",
-      "message": "`app.services.tool_provider_projection.adapt_tool_runtime_result` imported but unused",
-      "sourceDigest": "4f3b11cb6beedc23d71584b032391aaabc77aaf65b29776c276fcc19e125b6fc",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/services/model_provider.py",
-      "rule": "F401",
-      "message": "`app.services.tool_provider_projection.build_versioned_tool_error` imported but unused",
-      "sourceDigest": "9cce4a604586be3927f235d6fba6cad966f0872d0e421fe49ba16356455fadce",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/services/model_provider.py",
-      "rule": "F401",
-      "message": "`app.services.tool_provider_projection.decode_provider_tool_call` imported but unused",
-      "sourceDigest": "17b0dfb95a096f64409dfc7eef09eb8ab6bf3a01fa7f1d4ee85249e9697e1bd2",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/services/model_provider.py",
-      "rule": "F401",
-      "message": "`app.services.tool_provider_projection.project_tool_arguments_for_observability` imported but unused",
-      "sourceDigest": "442c0d469af4280c9a48a84fc9dd386a4fcad6143f9b8042b60c89adc7684ac4",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/services/model_provider.py",
-      "rule": "F401",
-      "message": "`app.services.tool_provider_projection.project_validated_tool_result` imported but unused",
-      "sourceDigest": "f01906c8f6f91bfef49157fa082f11fc6272e092a035746927f8876dc7f19e97",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/services/model_provider.py",
-      "rule": "F401",
-      "message": "`app.services.tool_provider_projection.provider_function_for_entry` imported but unused",
-      "sourceDigest": "fa0001b47939cc81c299cb672798f5fce96544b0cc7197021c5bc0fd5baf7332",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/services/model_provider.py",
-      "rule": "F401",
-      "message": "`app.services.tool_provider_projection.ProviderToolCallDecodeError` imported but unused",
-      "sourceDigest": "4c935da004802900ddd1f1d5c9c50dc8251fab39c9e3d69585db1e71e0f9dcb5",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/services/model_provider.py",
-      "rule": "F401",
-      "message": "`app.services.tool_provider_projection.ToolContractViolation` imported but unused",
-      "sourceDigest": "3f145661613f04d6e1b2872191c92ac070f1db078f2b697aa89418184ef80534",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/services/model_provider.py",
-      "rule": "F401",
-      "message": "`app.services.tool_provider_projection.ToolExecutionBudgetTracker` imported but unused",
-      "sourceDigest": "e0c0331be17afdb342967533927df1c375a1959b980d04228e4688b1a05fc36a",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/services/model_provider.py",
-      "rule": "F401",
-      "message": "`fastapi.HTTPException` imported but unused",
-      "sourceDigest": "9222888d1eb2e46ff5168af3f883237a02324b16850668b0e8bb16b749c1445b",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/services/model_provider.py",
-      "rule": "F401",
-      "message": "`pydantic.ValidationError` imported but unused",
-      "sourceDigest": "7d30185ce5569921406db764db9b5a1a06a1b7ce4abbf1caaeeaeb0fc031962e",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/services/persona_runtime.py",
-      "rule": "F401",
-      "message": "`app.core.harness_component_versions.TAVERN_PERSONA_COMPILER_CONTRACT_VERSION` imported but unused",
-      "sourceDigest": "d0df84e54de448253c0d18db33c6f04963b503dbba1c0513ef76e2d6758079fa",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/services/persona.py",
-      "rule": "F401",
-      "message": "`app.models.domain.persona_slot_content` imported but unused",
-      "sourceDigest": "104d32053cded04b3c662ba6b5f01e13b73d933e2b4b4bef7583b4529b86b852",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/services/persona.py",
-      "rule": "F401",
-      "message": "`app.models.domain.persona_slot_list` imported but unused",
-      "sourceDigest": "71335fe9792f9babdf7dc054e8d68966df6ce6ecfebbdbcad85e1f4ec073b9b2",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/services/persona.py",
-      "rule": "F841",
-      "message": "Local variable `summary_text` is assigned to but never used",
-      "sourceDigest": "11c9a2f466ca80ca6149b6d5834661ffc728badb2768396a1fe741202a2115b8",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/services/plan_tool_runtime.py",
-      "rule": "F401",
-      "message": "`app.core.harness_component_versions.PLANNING_TOOL_RUNTIME_CONTRACT_VERSION` imported but unused",
-      "sourceDigest": "f7359c065fa5cb1d3eb196060fdaf10d2312f0d554bcfe8f82db16c04359f218",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/services/plan_tool_runtime.py",
-      "rule": "F401",
-      "message": "`app.core.harness_component_versions.PLANNING_TOOLSET_CONTRACT_VERSION` imported but unused",
-      "sourceDigest": "b4094a0ca7eb961cb33eaca204f6dbf3d58ba826ebaa5716a750335e2067a157",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/services/plans.py",
-      "rule": "F401",
-      "message": "`app.models.domain.PlanningQuestionRecord` imported but unused",
-      "sourceDigest": "e2f1ec54959b23e0874652e3a701796389dfb9eb49462eb6e9ab2743c5c42cba",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/services/plans.py",
-      "rule": "F401",
-      "message": "`app.models.domain.PlanProgressSummaryRecord` imported but unused",
-      "sourceDigest": "9595dd5f7a366cd16bcdcdb14145e7507f928a2c4e83a3853d072e8955f91c2f",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/services/plans.py",
-      "rule": "F401",
-      "message": "`app.models.domain.StudyUnitProgressRecord` imported but unused",
-      "sourceDigest": "73439811cd8b7ddf096ec14b0d2ae11340263ba7bfc7d9c06408a77b04502d76",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/services/tavern_harness.py",
-      "rule": "F401",
-      "message": "`app.models.tavern_integrity.persona_prompt_hash` imported but unused",
-      "sourceDigest": "902a47875a6c16461e6497cfc263ecd8f48c17c9d8469e7fdfa8ae4db120f36d",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/services/tavern_v3.py",
-      "rule": "F401",
-      "message": "`app.models.harness.HarnessArtifactType` imported but unused",
-      "sourceDigest": "ef4c5442200d9de473898abb9026796d1062b8f0e1ef5fb02909b89a14d2964b",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/services/tavern.py",
-      "rule": "F401",
-      "message": "`app.core.harness_component_versions.TAVERN_SCHEDULER_CONTRACT_VERSION` imported but unused",
-      "sourceDigest": "b6750e81353bdb1128fb9e34f5740a5510e8662cada4f67de399601653cd9b8c",
-      "count": 1
-    },
-    {
-      "path": "services/ai/app/services/tavern.py",
-      "rule": "F401",
-      "message": "`app.models.tavern.TavernContinueInput` imported but unused",
-      "sourceDigest": "de5210bae56cd07c5c475c8eb6d48344d7d9569ababbee10c10369914f0c3cba",
       "count": 1
     },
     {
@@ -1389,9 +668,7 @@
     "apps/web/app/apple-icon.tsx": "d24cfa6025752235106823968edc45aafbdc7e2cb7b5e5f9284daccda1675576",
     "apps/web/app/icon.tsx": "52c1b34499f6390d8a18b0ee816b6372d444415e63d200413ac8bbeed46236cf",
     "apps/web/app/layout.tsx": "6a593a5d128da3fa171a7d9d8a88389a62a7ecd8336aa1e113edf59e207de9c0",
-    "apps/web/app/manual/page.tsx": "5b146a0103e651cf3d7664a3aa1c93fc31bda57bb89e58ae06609d267b72ec46",
     "apps/web/app/model-usage/page.tsx": "b0ed9a6e16034217bd02a0bf991e2a8a8ef877407e55b3405fd3ed4d3c75a5f2",
-    "apps/web/app/sensory-tools/page.tsx": "32042bbc97ee2ea544e4b95ead6b6079aec46ee009f5a427fdf49fc68b3ce494",
     "apps/web/components/async-feedback.tsx": "049302203ca9e0f77cbbf71eb6dbf80d1d00952f1c47711081f73af5707f3336",
     "apps/web/components/brand-mark.tsx": "0ab7d823b41986e47f51f7f910aeeeeddf22866c15e16395cc3cef8e6c29fdbc",
     "apps/web/components/character-renderer.tsx": "99b99728f016b481d700cee842efde9f075dec4b36421a950e4e2fb7da65fe74",
@@ -1405,17 +682,14 @@
     "apps/web/components/diagnostic-storage-panel.tsx": "c2e4a91d91090df9af55dfa5109b581fa65b46e9c52b82ede85d0bd1a225c7b8",
     "apps/web/components/diagnostic-timeline.tsx": "7a1d51903878547cc134514b928fda3d0e9e30f01626f1ae0a566d8ee9f13e9f",
     "apps/web/components/document-debug-panels.tsx": "47b4f46b79fc9bc5ba1a8ee7c7dc73dd8b6a701ec1cf0d1b3ddf0c9879a38d9a",
-    "apps/web/components/document-setup.tsx": "7c3f0a82462439f2ad36e18e8482e63dee4b6af8b0abc67da633ec1d018b5df1",
     "apps/web/components/learning-page-cache-provider.tsx": "9759a1031489606cc0c0e689075136ed886045a285993d9323b89d4f291a90a5",
     "apps/web/components/learning-workspace-provider.tsx": "d7755f2a45f0a0cb7a664ea3205dbc3a839a82971a60a9bb6e3fb1812de1d547",
-    "apps/web/components/learning-workspace.tsx": "726ea4dbb5fda5654de6b7b27b1374c110c893dd49997e06064284a417254f7b",
     "apps/web/components/material-icon.tsx": "47b071aa1b0116f84f99e7b2970192780be38f5cd6f90026763f84dc5db21912",
     "apps/web/components/owned-debug-snapshot.tsx": "1fdf6d0c8d20b2ee370b4d92a297144f0307cc69f737b20d8b719c06b3ae5b8a",
     "apps/web/components/page-debug-panel.tsx": "1ff11ffc9dd25068ede6927cb40d35d56c94604b8a249e0fa09d93c528ed37c5",
     "apps/web/components/persona-selector.tsx": "2a5915deb211a5b44a43bd936745e6ee40f0c781c5b62cf520a8b7454d3fda1c",
     "apps/web/components/persona/persona-library-cards.tsx": "e866e7eff92f3965eabb1ae1bf02666c63c810be57ce483e7e9eb30c9d3ff8a9",
     "apps/web/components/persona/persona-workspace-styles.ts": "b429644900c22e1dd58e2347e2aedb28cdd1c0e3c5746b64f8375dadea5d6175",
-    "apps/web/components/persona/persona-workspace-view.tsx": "f92eec15ed93cb35b5d8b73daac0d6c47aacdffd016be51bd65772b679fc6ce6",
     "apps/web/components/plan-history.tsx": "b9ebfadf90c82fd9c9c44ba0b182892da80c7ae99c8ede0253b11336effe444b",
     "apps/web/components/plan-overview.tsx": "97bad5118543598d671eeffbd540f0d82a0e1436f9fde812543ba5a5f04cdf48",
     "apps/web/components/plan-revision-panel.tsx": "28cd4459cc1585fd86dad8b135d60dfb696fe1548ef40a49c29eb3d2dd29bc28",
@@ -1425,33 +699,22 @@
     "apps/web/components/rich-text-message.tsx": "39e4902d6766f089d36a3ea57b602d6ac8844d6f6896dfad2546b282006cb895",
     "apps/web/components/runtime-settings-provider.tsx": "0f4eade56668df8854f1001282945f3d03189164346981ab4f330cc1ae7ec338",
     "apps/web/components/scene/scene-delete-dialog.tsx": "5deda2eca3bd9e312cb788c32bc2bb3000bd7be2cbc9f38558ac903bc52ea84a",
-    "apps/web/components/scene/scene-proposal-preview.tsx": "49d9f2c1cc128a5e7ddb04a7ca001aa804a1ccd852b9bd447669d287af66e57f",
     "apps/web/components/scene/scene-tree-components.tsx": "10ccb78eb8fddf29c1c40deaa34e5a25bb502c6e2f1e0a097166d4eb651d4431",
-    "apps/web/components/scene/scene-workspace-styles.ts": "440b1e102a6d327f52aa5b532a8d438e06737afac34b33db1e0d4d0fe6cd8af4",
-    "apps/web/components/scene/scene-workspace-view.tsx": "c0f5c4fd07f0665c4eec2f54c33f7210950abe6a616bd5d1c3e057a1256fcea8",
     "apps/web/components/settings/settings-debug-snapshot.ts": "36bf8aaa2575e67d19e5c6ffa163275f6403041f28f26864d69c6a886a0a23fd",
     "apps/web/components/settings/settings-page.tsx": "423e7acbebca95b1406ee5809c2f03d53602c53c5ed227133f1e84887154a174",
     "apps/web/components/settings/settings-sections.tsx": "b48e1fd6c4ea139d1eb71ffb10d96042ebe7f753ea88f97963f72dde8dd576c8",
     "apps/web/components/settings/settings-styles.ts": "1da44acfadf746bca884857b8703a44af34caff8f3ff2b51bf3e4ee997569877",
     "apps/web/components/settings/settings-utils.ts": "d6f072dd0bbc784a025af9e127363964401281b4f539b2dc3005aff56e621e48",
     "apps/web/components/settings/use-settings-controller.ts": "17a8d7b5ccace5bddff0355ee93ee8a17f6f66de97ba68a587987c8d9445cb32",
-    "apps/web/components/study-console.tsx": "7fdfb5633dea04d84686faf2fbd2b8a944123a69a4310e054b3cd000247b827f",
     "apps/web/components/study-debug-panels.tsx": "02631d5a165b2caa3645a6258d211d49ac8fffcc10aa42cd11079eb551bfc931",
-    "apps/web/components/study-dialog-page.tsx": "f141ea88b66fcaea3102de5254bde64a6b1e24a7fe6a4bcb529c391a0e198904",
     "apps/web/components/study-unit-revision-panel.tsx": "7f0762970fa05ab61709e45fd2bbcaf9cd7639613442902f86e63b2f04d4cde6",
-    "apps/web/components/tavern-workspace-panels.tsx": "94937d05abde6dab2e97e1d0eeea6fd210eb38049a5c91e07713f4e1756ac68a",
-    "apps/web/components/tavern-workspace.tsx": "cb38783419174901dcaaec1de8d04e5556980edf36d4646541fdb0b98236a3cc",
     "apps/web/components/top-nav.tsx": "4ff12ecced295190cbb24f79defea50eb368d25417506a2946753dfb7a4ceecd",
     "apps/web/hooks/use-diagnostic-pages.ts": "f338e60e0ae9fcd07af4338ce9d54b6dbdc4625eb9561a63252adcf96d3a8d93",
     "apps/web/hooks/use-document-debug-data.ts": "05ddbce3a022b17f38c0018286456107a63c0b5390e4e2ee860e0411f96df1c2",
-    "apps/web/hooks/use-learning-workspace-controller.ts": "736b6133188e6b31783c74cc0dece87314d1ebd5f2f451ae7317eb5c7f3f062b",
     "apps/web/hooks/use-persona-assist.ts": "caecacdb3fb9619dff4a57e67be5e838104f3b6400c7585e674bf2d76b5d0592",
-    "apps/web/hooks/use-persona-card-generation.ts": "c0a1673982a50172562f706ac46e675dbb71c054a6a158948c1786fd5bc16316",
     "apps/web/hooks/use-persona-draft.ts": "e3a8d9d7db85d0ef297a6569eb8c5f996e61de94ffcb693e941ffaea98e878d6",
     "apps/web/hooks/use-persona-library.ts": "1172bec8f7139445487163229e05e977d8801bc32507a7120e837642a72348d7",
     "apps/web/hooks/use-persona-persistence.ts": "677ad56ec625c988689bf29b1bb5a431bd61c4ef222e7cec4726d75feae238d8",
-    "apps/web/hooks/use-persona-workspace-controller.ts": "69f0b79e9c8f254c25bdae2199c20b4f92f1ceefc7ff94f9200886218744bd30",
-    "apps/web/hooks/use-plan-generation.ts": "5eef38425bb3b1c2c7674062b7204ef0942bb431c6955c2c22e0b9ebcf39c7b1",
     "apps/web/hooks/use-plan-mutations.ts": "c007cd92d638b7a1c821c36e177c2f573ee84bf778dadf4f0243d37f056b9d2c",
     "apps/web/hooks/use-scene-draft.ts": "077e741a50049707a29877698faa4bc79902166becad4b8faa2f2eb87e247ace",
     "apps/web/hooks/use-scene-generation.ts": "7e3023429f8d7230610e52b483b82df2da823662a8658786a8c3185813f9d5a0",
@@ -1459,18 +722,8 @@
     "apps/web/hooks/use-scene-rewrite.ts": "84bb014b428ead077f679ee2c15fe8eb70d4d34de4eb02563a9340c332fd51d2",
     "apps/web/hooks/use-scene-workspace-controller.ts": "66c677bfc5d3dc39fafe2e5b854cdd735065ae1a900e30cf6cd7c073691b5a03",
     "apps/web/hooks/use-settings-save.ts": "e499fc63213d206061b904518b7e3af2f943e289e45fd3419af71ecbfcb6e596",
-    "apps/web/hooks/use-study-chat-recovery.ts": "768ceaf3117506878c3fd3a42590f2a6496da942cccbd35852d2a37e5e34aa84",
-    "apps/web/hooks/use-study-commit-actions.ts": "f34fb4c519e47cdcc1ea7b15594c62b00e2d3bb54cee59eaad4a7f1524e53e97",
     "apps/web/hooks/use-study-continuation.ts": "98922c60510c2c609f7ea153ec1ff519f273b75eff3fa32a0a4851c61e5d7ddc",
-    "apps/web/hooks/use-study-messages.ts": "77808d0a833e1fbf8835d9598d68fabdb5f438f9d2edbd091e08af98ea114e7b",
-    "apps/web/hooks/use-study-session-navigation.ts": "36cbbbc683e6721671786bd7eee9f78a1c171229e39a39019ff5b8655e84a4c6",
-    "apps/web/hooks/use-tavern-mutations.ts": "a04a4030b52907e821a9d9dbe1f26711c01e96fedf4420e38a12fb57a85257f5",
     "apps/web/hooks/use-tavern-room-queries.ts": "5dc8f68e92a928bb669895eaa8cafb45e025101c1a0335306565365aaf9b4147",
-    "apps/web/hooks/use-tavern-run-recovery.ts": "1ea7a19c99778ab6787cb24f3567282503ce78ea93d9b15aea6cd1372d369a58",
-    "apps/web/hooks/use-tavern-workspace-controller.ts": "8d343bc39b4c5d4c36d357e44f83983bd4c6cec0348f46a356a9f4b52f56722a",
-    "apps/web/hooks/use-tavern-workspace-state.ts": "38129b64761b95067da689d3517635f5c254b9d2178544d71aba72878498e49e",
-    "apps/web/hooks/use-workspace-libraries.ts": "70b720030c99b5aab821c6f3a781064e1e36805b75c28a20c0dc0ab0d8ac067a",
-    "apps/web/lib/api.ts": "4aa647e23278450804124716d7a12c0a5fb09b8d217206b493fd1cc52f561820",
     "apps/web/lib/app-navigation.tsx": "6f8733442effda252c6b34cc204c6889234580ce56ef86cd4b00eff8b8f10fed",
     "apps/web/lib/async-result-fence.ts": "1e717a84a35f511f1077960cff14032444b5feef3f5544315fa9006741444511",
     "apps/web/lib/bounded-json-import.ts": "fc79485f8cef71cda4169b381e106a6273e1aa0ec3ab1f2ecb094e35925d002f",
@@ -1485,11 +738,9 @@
     "apps/web/lib/document-decode.ts": "b9c70b7dba4a601f793a8975ddc546f980ee4767f5fa1b09d187d71287f80b42",
     "apps/web/lib/export-json.ts": "76f0d687ec17d503eb2058d51e7787ebccc2a1ece27ee4165463936b07dc1757",
     "apps/web/lib/generation-error-copy.ts": "e8078870f92b1db437269fc47005e0dbc34493f0858511f6a1b2d5b234ecafb2",
-    "apps/web/lib/harness-trace-decode.ts": "02297adebe606134982b3cc8046edfad745490d74a781c4f7cf389adc4bf0ce2",
     "apps/web/lib/http-error.ts": "f7df37abc5416302ff076f5fe5c5f630195f60c33cb7ba41c897d5519188dc78",
     "apps/web/lib/learning-workspace-copy.ts": "7f7b52a8bf6248c583fe06a8490c9dbf75cec4da15d05080dcf2f3e645205af5",
     "apps/web/lib/learning-workspace-model.ts": "9d62b5f9562a109bfce0f404bc54e3697cad0277a04410c11814fcc8e604139a",
-    "apps/web/lib/learning-workspace-page-cache.ts": "f2bcc4b8b52c8d008558bb61d04287963d93a2553241b41b4cb7b6748e765f48",
     "apps/web/lib/learning-workspace-reducer.ts": "178038bd012f662dbc1ab32cbf8ba1f9be1a13f43d515a6863f86d115e11d32c",
     "apps/web/lib/learning-workspace-state.ts": "e36d4d0161917e6014b5a0a15600a3e1cd3a7b597e910d8c738add3a572775e0",
     "apps/web/lib/mock-data.ts": "9771b504ebaf57e1b97ce51808e66412aefdfc16685aa4a7f6ed0cdcf91bae9d",
@@ -1504,7 +755,6 @@
     "apps/web/lib/persona-scene-decode.ts": "fb492782005cd34a3cca85656d77d9f3dc89339c54aa24c2449f7fc8080c905c",
     "apps/web/lib/plan-panel-data.ts": "61f577dd765870f7539245c432c5823da8ff6a7a1e7632a5859226d7182a7d52",
     "apps/web/lib/plan-revision-decode.ts": "c688e94bfc0964b4004f6be08f99445f80e01b544f64c3854b38e4e94d60e9fb",
-    "apps/web/lib/planning-decode.ts": "7ab810989660fc6376144da3e7032bffab65508659e244b57a726e43ccc2f802",
     "apps/web/lib/preview.ts": "3b0827cedeb18289252a248c65079cae7f24b437e08e99f32eb8ee69881eecd8",
     "apps/web/lib/rich-text-normalize.ts": "9c8d2483a580b0d298a532d6471343629015b4c607768892cdadb5e4388932d0",
     "apps/web/lib/runtime-config.ts": "579183d672331362b71a424578739e0f2b785eccedfb05ebe98396567dede3d8",
@@ -1519,16 +769,12 @@
     "apps/web/lib/study-continuation-messages.ts": "651769132944b6b9369f64beed626e8846384ec309fa9a3d9c0b05c9206df978",
     "apps/web/lib/study-diagnostic-context.ts": "899698eb6e587f4cc49dc3b4c42a81c740d4bc5a1a8182f480f462cb00adab1d",
     "apps/web/lib/study-dialogue-interruption.ts": "991d322474465f100e039fdbbbcf0c7308e6e759f4e9686dc551a431f1e0877a",
-    "apps/web/lib/study-operation-state.ts": "acdaaafef124599942b55761021a23b7229562d0bd8bbe1e9b0cbfa8e5170173",
     "apps/web/lib/study-question-attempt.ts": "5483b4d203313710399cf76b4ff3d501383dcb6a94339845d4ab4d24cb52f77c",
-    "apps/web/lib/study-session-decode.ts": "8c82c0087c6a253b5d6f9bff0682204c609f6a8124543715a8fbf4c17debb093",
     "apps/web/lib/study-unit-revision-decode.ts": "f0338213593c836a79c7f34b437de9135a70855ad1fa30ccd42d05ee041e6310",
-    "apps/web/lib/tavern-copy.ts": "67dc880891b60672816260c39521d4399a78e79b9fbb71b15fab6b417d0211ec",
     "apps/web/lib/tavern-decode.ts": "e0fe26a3a62cedcda0db9ce6f4bd91a7a9b9e33d529832e31738f814b46f7642",
     "apps/web/lib/tavern-workspace-ports.ts": "660b724a20fa3933f9cf658adefff393573a4b0ced0147311698136817ce8573",
     "apps/web/lib/tavern-workspace-state.ts": "366e171342ed7bcabb5d2ad2aed82747a6b01ddfbd70838a15a05b84c9c42f81",
     "apps/web/lib/view-preferences.ts": "84b7a5f76f1260977e2d455b8326af9ac5ca02372dd20723eb1f7957901dca4f",
-    "apps/web/lib/workspace-snapshot-loader.ts": "2067c78bd5def104997e393f439ed3d0ab332f9a590b6b238aa8f571e15a7cd2",
     "apps/web/next.config.mjs": "d72efb6bab92fe484591e49d49120e625d633e4ce4ec8ec767d1d93d98d350a3",
     "apps/web/playwright.diagnostics.config.ts": "9e69b8d4f791b3822ded2bbbe2875b93f659648ad07fd6b51332075bb4388cde",
     "apps/web/playwright.scene-independent.config.ts": "5d6dcdc9156a92f5bd671ae00eb5c126c933a2c2faf06e89afee0b9bded0095a",
@@ -1539,9 +785,6 @@
     "packages/shared/src/harness-artifact-access.ts": "7492ea26990effcd042700f24b66d60e5e1e6417869e08e97bd957b558dfcb6c",
     "packages/shared/src/harness-effect.ts": "1b53c3488340a2244477d8e3236adcd801195156a9bca7160b96807ac2167842",
     "packages/shared/src/harness-eval.ts": "4d807f2a9e62518edbed7a92a0027248aff4851a3a927089fded15f5e8c0d376",
-    "packages/shared/src/harness-manifest.ts": "9e79b988b0849ed602ad931baa2567bb9c561e864cc3133b5cddc6de32916bd8",
-    "packages/shared/src/harness.ts": "9a5d3de0685df042995e895faa4b184291b6b419009f82ea6e571094ae9f1034",
-    "packages/shared/src/learning.ts": "2a81debb153ba7c1e30b33bc2c21a78ebc0d83cf8b7a22eaf73fef82591b2808",
     "packages/shared/src/persona.ts": "be4cd482e08a0453ef1c11b48c15dc9bae92deab493b0068f9a389e2070af898",
     "packages/shared/src/plan-revision.ts": "f36dcc653632925044f9de8b1dbb7b604d207428a5718f4fcb32921bd9a51ba2",
     "packages/shared/src/tavern.ts": "8e9bb59ed8ae4d04b09714b837dacb46f39397ef80b631b3edbce153b819fbff",
@@ -1560,10 +803,7 @@
     "services/ai/app/api/dependencies.py": "c756178cc4c1d73ea3caa2dc90a6128a362d6add347c889337ade9599bcb8c39",
     "services/ai/app/api/diagnostic_middleware.py": "401f92b7e5feb28b9e6e49ac65f257bda13e35ddd7b1cd4c67a2b1b936a51bba",
     "services/ai/app/api/diagnostic_routes.py": "61a4c5b5c307ba2614e7e09a1ef4fd9d134f2f597f0fb2cf2565c0f3ef99ee83",
-    "services/ai/app/api/routes.py": "f8236f9b2ab130ea056c0d308347f56056b641c4e0978ea3725734093f3c4689",
     "services/ai/app/api/tavern_routes.py": "09b0cac2b443884960b89943e26855cdad1218e11053f511951b411b553cdc38",
-    "services/ai/app/app_factory.py": "0a3f1d6e3bb00b0749dc9299afbebc57b0bf44f378371d1c1f2af43195a9bcd2",
-    "services/ai/app/core/bootstrap.py": "297539005e0e02f78f92d6cafc9cfa52be69ec2fdb95fae831af2b758adb9b01",
     "services/ai/app/core/diagnostic_disk.py": "e860b447bc57a63ec20940b049c977190bb6e8e4fbcdc623a5c000a3a4115423",
     "services/ai/app/core/diagnostic_provider.py": "60e224c768af778e0b65a794e4585ddf72250ffd0bb7a0637fd5300f97b6ca59",
     "services/ai/app/core/diagnostic_quota.py": "cb5a3643510625fd70edd8bc2da30762e17376937eb56bdb9d61b41ae0ca9b93",
@@ -1574,10 +814,8 @@
     "services/ai/app/core/diagnostic_writer_coverage.py": "dfe5b9fd8e8f1bfb819dbac3e5b5563f36fed259b8b4bde4e29be224377f9c03",
     "services/ai/app/core/diagnostics.py": "f02253e02c2f6560badec32dbadf6fdae98a51cac1e92882171461ce7683522a",
     "services/ai/app/core/execution_budget.py": "022f8ae6af22f8cad76b7c69fe595a26387c581394ce74c889a11886d6648ad3",
-    "services/ai/app/core/harness_component_versions.py": "b04b3555c467618475d84591e8c11a56e29861c069f6579482c832198d5d69eb",
     "services/ai/app/core/logging.py": "6d7614b7cce74a1b41c570e70d7d370a8084f28ca3232e6e09da9f52da77f85a",
     "services/ai/app/core/settings.py": "e9f1639f294110512afd0bfe5067a9194b5a4c3bcb5d81bb76b4c9b74fa0fdc3",
-    "services/ai/app/models/api.py": "0af7b324c2bcd33b6aec553acae62494826c3f29ba0b1a86a12dd505a59b7a1e",
     "services/ai/app/models/diagnostic.py": "d80fb90fea4719f7db73d74b063f1b99d30e5a815a1375593a60259d3e563b9b",
     "services/ai/app/models/diagnostic_audit.py": "558122845aa6e67a7dfa21441f90b682736c8751153076767f4da1f9257bbec2",
     "services/ai/app/models/diagnostic_desktop.py": "f31963aa5e749466a368488278848752caca3363f2f6842116de73b312f2df45",
@@ -1589,29 +827,19 @@
     "services/ai/app/models/diagnostic_tool.py": "4d821da067d084316df72a18edfeae09a7abbe7a847bae80233f1ba4c58dfd30",
     "services/ai/app/models/document_layout.py": "e958a7737393d94af20a5beed7a4fe35a37a363952a25ecc66b08977fc5e8dca",
     "services/ai/app/models/document_process_operation.py": "488e40da3b4990c3d3bb1ff2c787477aeba2dbea0f1eb6c590d4ab5a55488d2a",
-    "services/ai/app/models/document_processing.py": "8f77102928e8c637070a8e1092adaab299e2f7c5ae9bb490d50c84c7e7719a4d",
-    "services/ai/app/models/domain.py": "79d6516b691540deb6970df06d54fe73783f71a5de7a6fbe3f545f6be05cdc67",
-    "services/ai/app/models/harness.py": "52e3df43a5e5f0edb8d25095d8372a063c309b5b389b4ead797347e5fbdd149f",
     "services/ai/app/models/harness_artifact_access.py": "d9bc8a439bda4d43b3b4ca66fdf76fc1c75f0b79057f1db2a5e76141eed4aca3",
     "services/ai/app/models/harness_effect.py": "631dfb1a851c7d61afd1ac15ebb51bb35116a333fd9103584733623e258f14df",
     "services/ai/app/models/harness_eval.py": "9a05b7f73261f2c0699941cce97ebbf885599ce8c167830033eaae86b2393853",
     "services/ai/app/models/harness_eval_baseline.py": "90ff95120104ed8a4c2958c602ce5cdf6b2fc827131509347ecc06e790a986aa",
-    "services/ai/app/models/harness_manifest.py": "f812e0379d65a2a48075727c7a2def15bbe4da62dcbeca9cba30858663af7222",
     "services/ai/app/models/harness_operation.py": "3289c2762e10c68171fe6aec0be96b436bcf8eced6618501c1d470f2e382a7c7",
     "services/ai/app/models/harness_performance.py": "23a01d57b1fbbef0da80cae43fab2270c7acdd790d314f79d6dc7db5ecf13be9",
-    "services/ai/app/models/harness_recovery_migration.py": "bb387754b7f8bba720d5fddc1b3c83d3e25bf5fc3e923aed6bcef62eb5291f3d",
-    "services/ai/app/models/harness_runtime.py": "f625407fe1d9290dc7d98f475344805a1662a125ae73487b1d0b3016b332f425",
     "services/ai/app/models/harness_runtime_commit.py": "2364ccad09f0ded251d3fc6ebe498e0287b037c97242ec100007c3a135af107b",
     "services/ai/app/models/persona_generation.py": "1415afbace50d1297143b2c680629379406d96d7dc2e34ca893ba82a33d0d347",
     "services/ai/app/models/plan_progress.py": "0c3756f84e90c7338d8cef8499adf52dcc2c5226a2a69ba2894f3ff0587bfa70",
-    "services/ai/app/models/plan_revision.py": "2030358a7a124b19b2f6b607f072b9725f647f5fec6c9dee95fc6c6f5da18f9e",
-    "services/ai/app/models/planning.py": "9cc2e5accf6a1396f295daf22591c66aecf01024642aa68e3ee00d86a83da88c",
-    "services/ai/app/models/planning_runtime.py": "535def50acb177884cdbdf91aeaed5707c2641464550bc5b56b34270ca86abe4",
     "services/ai/app/models/scene.py": "9314b28685fbb94a18502130b374f6545d83377c35c7811d91bab127a2904004",
     "services/ai/app/models/stream.py": "0ed3638c9827fa1bf39e8db5477c70891ec9ad3c414d0023742050480f4b4cb0",
     "services/ai/app/models/study_chat_commit.py": "8cb1399c90919c7a6612731d07f3a8d1a112c2fe3e098dfd2e4038d4a2b53b9f",
     "services/ai/app/models/study_chat_effect.py": "37bfe1fd1f41c3de4a02ff539c4f62a3dfed51be8152a32086c0bd2c71116d8a",
-    "services/ai/app/models/study_chat_operation.py": "234e60c3ffc0e30c89c866f059e50c60391d4d57a53f34d11b60a536f9dbca7a",
     "services/ai/app/models/study_chat_reply.py": "5c021304741983cd4f0b756c8cba94917e485f1b3ffe643f03ea02bb9be1fbd8",
     "services/ai/app/models/study_chat_tool_contracts.py": "9a846297b3f69b3f372bd8a9b2357bb33c4832544ba15023db0ccc2ca3ba49fa",
     "services/ai/app/models/study_question.py": "89946078d96c6a526e73bfa719a1f4dc0ecc661e1e13ad6e16abce2e6622bb21",
@@ -1619,22 +847,14 @@
     "services/ai/app/models/tavern_commit.py": "ff88ea1df33e05428c67b2472b1464c0f2f4d69db762166e8e1f64bf0459b2f6",
     "services/ai/app/models/tool_manifest.py": "bc3339baa1c895fa055a7773787bd28a65e1bab4d4c8b1b089b5c024416de17d",
     "services/ai/app/persistence/database.py": "4c104184c23f6e56671352e6d94292d92134b0e095e174a56143cde843eaa3dc",
-    "services/ai/app/persistence/document_process_operation_repository.py": "80b5015bf54b1a04bc5ffdf6a82e6acc561aa65aa0c002c53958a4f327fda180",
     "services/ai/app/persistence/document_repository.py": "4f5ebc933229ab88d5962f596de6ba5983d8671b54e2283a532263b37f8c1d63",
-    "services/ai/app/persistence/harness_artifact_repository.py": "4475105eff4629f8b47ddc95c387db69681e62e2da4771ed5812522b9cc373eb",
     "services/ai/app/persistence/harness_effect_repository.py": "7fdac094f74bd332d27627e1307eb37d10599bfe18fcdf883def9a73329b7c09",
     "services/ai/app/persistence/harness_operation_repository.py": "873ae60d6d2f36b136f47c3b5bd194e723d9d3ad2902cf42403c7fa6f4bd64b2",
-    "services/ai/app/persistence/harness_runtime_repository.py": "68a72485be752ce7055e5b76a68a77a4949c5ca718428983034566189112d22a",
     "services/ai/app/persistence/harness_workflow_operation_repository.py": "226fc472319a148a1fc07c5cc492bf68992bc22cb3c0ea11739a57ee55939e62",
-    "services/ai/app/persistence/learning_plan_operation_repository.py": "909eda6ae3192c7bda83e1cdef933bcc2537d4e0decb2af0be533c1ec710a40f",
     "services/ai/app/persistence/learning_plan_repository.py": "77ebfc6e682a44f7fd73a79103212f6e7491967702c18558fc2cd0559e3cc1c2",
     "services/ai/app/persistence/migrate_local_data.py": "0d77f1d3ad32d71aeba61cda1563db0b5262419ec7790cf0fc928495bad94730",
-    "services/ai/app/persistence/models.py": "ebcad3a27832c0669e276fef97d02fcf6e01729368262923c1c45a1300beeb20",
     "services/ai/app/persistence/plan_revision_repository.py": "b6f63e01ca8fbc32aff7c9efaab446e344118c47dd1b23fa804557a5e393f44c",
-    "services/ai/app/persistence/study_chat_operation_repository.py": "3bb6e931e10ee0b42b478887564696501edcf03e9344f13147ebb2a6d188c50a",
-    "services/ai/app/persistence/study_session_repository.py": "cc042bc182d4df8c74b73c3f83db0119ea1c38dcf956d0c1bda0ec023222ca46",
     "services/ai/app/persistence/tavern_invariant_scanner.py": "7b26c7b88302ae0f698d9f1e20d916dd018cb9118bade0f09e50d8e3cd55578d",
-    "services/ai/app/persistence/tavern_repository.py": "c3bb4840b320def52441f93176e644ee4b96e61882eedc056a8c5c8535fbf8d4",
     "services/ai/app/persistence/transaction_validation.py": "6ecbef6ad1a517831c58f23b2da197e26eb2e41c718d444bbfba4505d6cab6ab",
     "services/ai/app/services/diagnostic_audit.py": "38c3d48fd4f9c378cf72d85cc046c8b3b15e4478df3ca612fd7cd0ab356458e9",
     "services/ai/app/services/diagnostic_benchmark.py": "b0abb02d247bff3f60c6b70658579efd6c32ccccef9c4af862c48417b493f9a7",
@@ -1643,13 +863,9 @@
     "services/ai/app/services/diagnostic_export.py": "882cb49aa1cf9620c225687880b6625173612aca9cc65cc17a63c7c7ebe71053",
     "services/ai/app/services/diagnostic_index.py": "560fe5e3ebcccbdc26bab53eca821f44b5714e2f3c696a800c6c50a76255b591",
     "services/ai/app/services/diagnostic_storage.py": "52586f5d742c3ea79c056fbc06cff345e4c8df2a31b37f374304d274271d2ee7",
-    "services/ai/app/services/document_harness_adapter.py": "fea065cfdadc4ddbea463b83f4ede06ba8ee6fb6e549ba655b7c7d013647a849",
     "services/ai/app/services/document_layout.py": "3047a5614d3fb923a738ed6249266bcbbd3e6aeb901dc649011476791b8f8ea3",
-    "services/ai/app/services/document_parser.py": "c314660f25e86634f4a5a157a3074218e0b1f875b43e46ee86e7f997791d1ca6",
     "services/ai/app/services/document_stage_metrics.py": "b1d40349ba41e78e69e3af874fa07a4da7dcb57e9d0314b2ffd7306a21ef2fe8",
-    "services/ai/app/services/documents.py": "7ab579e88d22788baa17f174730d52b089679f2316d7cf6a82b73b360411b62f",
     "services/ai/app/services/harness_broad_adoption.py": "eb74cb6b4e9e82c3149370212a864eb4c518afb230f4b5f496f2a56950b6dd01",
-    "services/ai/app/services/harness_context.py": "3ba683d08755453f75023ee602f57182dc9bf17ba60a7855f1e920d1e21ba720",
     "services/ai/app/services/harness_domain_port.py": "9933bafaf1a986011149a85d7b5777c85c29a64260db0189e9838d00e5c89413",
     "services/ai/app/services/harness_effect_scanner.py": "6061e09ef7d95d082040b2b5626b2332782c17ae7c287596cdeb646c37c46002",
     "services/ai/app/services/harness_performance_benchmark.py": "52953a165b38c260cdc6dc6eea249fbefb46d904dce061286f777ce2902da004",
@@ -1658,34 +874,25 @@
     "services/ai/app/services/learning_plan_chat_runtime.py": "50d54a6a37b0358c973fc5ece58c49b9a21dd84b567b73b5f1143609c3d63fb4",
     "services/ai/app/services/local_store.py": "6a2065599176202512295f7a8493909af97b9d396c548f6cca2e8e39752d9bea",
     "services/ai/app/services/memory_excerpt.py": "46651e61257bc365eec39626034f0ea9763075cbd56fa0c3f08d0c8b68b11c44",
-    "services/ai/app/services/model_provider.py": "e90533c6493d006bf26e56b0fdafe8dde18dbfa1e247b9f33790d684fbdc3728",
     "services/ai/app/services/model_tool_config.py": "f6e95d06ad459b3639e9e24de9a2ebb3d0831f9e5bbf7dc5fa56b0a6d3adc4e7",
     "services/ai/app/services/ocr_engine.py": "a7af354393e6b0f113e200a17c6a94b3ca68df780ded92e9ed0266b0a77b620d",
     "services/ai/app/services/openai_plan_runner.py": "46bfcec0920ff459c54fb6287751da8b7eba30b8fe36f594e3acaa836aae1bee",
     "services/ai/app/services/pedagogy.py": "ce4c88ef22cc601c97dd3f49b8b6f735fd86fdb25fa58d42ae2714cb18a6bfa0",
     "services/ai/app/services/performance.py": "0f0cefd5725d739d5a182ae0dc1917c643f61e416c36476ce490cfab2dec4922",
-    "services/ai/app/services/persona.py": "4872c253e552dc328e80eb7633e00a5b1dbe217c1ff06a9e6fb8b19de7ffeb4d",
     "services/ai/app/services/persona_cards.py": "3329358fb44d4de9f0e09f877f5e23aca9b9dae661d945d81dc7aa513aab19b6",
-    "services/ai/app/services/persona_runtime.py": "3f909293f5d450683e1d3e10e546a404f3b107dcf24502abeaeeb850217d5128",
     "services/ai/app/services/plan_prompt.py": "08b7039a9c2ee2e3fab527d129b07e2484e23b5c1e97cd19473e32eabf2ebf5e",
     "services/ai/app/services/plan_revision.py": "ed197f3b0ed7e5440e747b9021bef11c2022a70597c0b9a78c116a74d2500f0b",
-    "services/ai/app/services/plan_tool_runtime.py": "0ff0cacb0ec0880a20ae298ebf88eb7a438a04174475b78264a768111207688f",
     "services/ai/app/services/planning_chapter_validation.py": "f13de906c6b25ba7a0a06a56261f344d190f22823f5c90915d7e54e7c78408b6",
     "services/ai/app/services/planning_harness_adapter.py": "4fde53076b683cff68dc003ce5e6e9a82b2c42379959909ccb7e319a2c01907a",
     "services/ai/app/services/planning_intent.py": "8926dec034e7295115f04ebd09798ac1c9d51fd428283888317440f5a54e8989",
-    "services/ai/app/services/plans.py": "f31859832ddbcc5130968aa8e584a3a658df9a04c9f266c2cebdc77ae9ae1022",
     "services/ai/app/services/provider_callbacks.py": "cbbcbf48b30d2fa0a78c64275c611a21b74193916b4e6e25a64735b79ba7a103",
-    "services/ai/app/services/provider_capabilities.py": "fdadbddc98082713654b083004771e60f5d59f2bce5b2ff5baf78ed0f3c60952",
     "services/ai/app/services/provider_embedding.py": "ad02e64a7e0f3dbdfc126910f0ec1d67345ca1af116729a62178c65f2e19b01f",
     "services/ai/app/services/provider_image.py": "ea6500551b43a14bdd2d98623a3ad6805ff68fa0465b19bc59ba6c43aa3a913c",
     "services/ai/app/services/provider_payload.py": "976a7e713695ae263b662ae353ba577f3af8bd683c41e314cad6a86b1c1c975e",
-    "services/ai/app/services/provider_planning.py": "4a83f710e230f1bb5f11af4499f2ff847faa58864ac17a374a6b2854cb998d8d",
-    "services/ai/app/services/provider_sdk.py": "3bb2493badd8e564cc2a6bfa678ff0da554dc8f03704d7920622d63190d9f475",
     "services/ai/app/services/provider_settings.py": "d0b9d73e77fe4d6a0914fd9d409b79faf3a8b6aff693aee701289cdd550de00a",
     "services/ai/app/services/provider_snapshot.py": "c2fd4ee6af2fed16d84a349eb7d7b6fb1fda3afda854ab10689852ed3ad3ca89",
     "services/ai/app/services/provider_study.py": "51ce5a8a539b69f762c2bea84fcacfc575239836095116f22b7007d259fcb535",
     "services/ai/app/services/provider_tavern.py": "e62468f441735c77f53770f7c563fc9a6219de4893a2221b4272ef3ab4820442",
-    "services/ai/app/services/provider_transport.py": "57998e975771b79a867a0cd0dcb0c284e8bb77b4d5d83ea94c832c93bcdce70d",
     "services/ai/app/services/reusable_scene_nodes.py": "691bb0fff1c0fa4d29ff57a69581e3c54a4904f41783853901aef27d6e3f061c",
     "services/ai/app/services/runtime_model_probe.py": "d079f786ad95bba244ec9eb2040c11f18c472a64d77e07b7ec0add1ba3c00ab0",
     "services/ai/app/services/runtime_settings.py": "937654ca26c188242f2f116859cbed5f39dd34323f3853df4a07c80216b64b61",
@@ -1696,21 +903,13 @@
     "services/ai/app/services/stream_interrupts.py": "01f88f41745b0e5ab95d6709c06b65aa8caa030bdaf62c664e3c37aaab740a0d",
     "services/ai/app/services/stream_reports.py": "1b5dbfc22dcb155746f92de4c38acdf2a941a049adf6b468d27cc34ed4907e9b",
     "services/ai/app/services/study_arrangement.py": "663ea6a6c5727b587a35830a6602cfa3eb50cd66be041cd8851a83c394799333",
-    "services/ai/app/services/study_chat_application.py": "246b9898d9116ed8bbe2173efb63b19cd650bdae42f91fbf5ed7218f4513e355",
     "services/ai/app/services/study_chat_attachments.py": "61028abe68b550b88ea72ea247a54096059585fa14842689b7834af3f11c360c",
-    "services/ai/app/services/study_chat_context.py": "7cf76179e1c2a54f94c179e54d4b7d1d9a532b6e20f2f0d5a9513b3504cc7037",
     "services/ai/app/services/study_chat_effects.py": "eb8c3dd297e9c16042862d29da82f1c23067534c6d63c9368c7ac6982babc411",
-    "services/ai/app/services/study_chat_errors.py": "4b435e9c65bb8345b19616be26e3b93dcbb8fa4acab9b1e4f143b6aa768941c7",
     "services/ai/app/services/study_chat_preflight.py": "a1863664cb500bb1807ddda6e6d3e26c4ac55966f8fc331f1d65bab63ee87a07",
     "services/ai/app/services/study_grounding.py": "e9da073f5f37123fe3ecea9cb253b26fbd461c59000152a79a29da887844bb07",
     "services/ai/app/services/study_memory.py": "2ccba02fc73083d79995566a51f0b00062b5d835d56edd79d0aad3cb30ff7c06",
     "services/ai/app/services/study_session_prompt.py": "359bffe078d7e15d3bd35d075002c525260249380bd2507a9f1f91217998878f",
-    "services/ai/app/services/study_sessions.py": "ec83e08dc13364bb274f46dd751454dc9e4a4207fdbe34732b878abcf86f4977",
-    "services/ai/app/services/study_v3.py": "ec615b5b5ce079b321a7c2965b3b7242e213af97398b8b32016d32028f249b89",
-    "services/ai/app/services/tavern.py": "5e86ae7e69e51f96eaf32e377977b08a7f338f27c850604080b3d2049a8e0c70",
-    "services/ai/app/services/tavern_harness.py": "8359abb3a687434aa331a03f25df4891dd52e541d8b50601ce0db33bafee06ad",
     "services/ai/app/services/tavern_prompt.py": "487de9de7a65a1205737f6a51091a79f60b2b2f8f2dedd35768a9d4d09c58fc2",
-    "services/ai/app/services/tavern_v3.py": "ee8fd14872bcaf23ab84d0a63bcaa1c9aaf90ca711d8428b3c0cc3a329076233",
     "services/ai/app/services/token_usage.py": "deb93ec1e0ac9f6c081f0ca685adfba4fc3d0fc280ba91e27fd91cd69abc98bc",
     "services/ai/app/services/tool_provider_projection.py": "7f850db2213ceb153e6b6b78c185c33a7d59f88719edc09380cfa7ead737ee37",
     "services/ai/app/sidecar.py": "f3222b36733801a214c910a1cab895887dbf50bc7715a1ce29755fda99944aae",

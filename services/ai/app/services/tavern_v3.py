@@ -1,4 +1,5 @@
 """Small, production-safe v3 context helpers for Tavern actor stages."""
+
 from __future__ import annotations
 
 from typing import Callable, ClassVar, Literal
@@ -7,7 +8,6 @@ import json
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 
 from app.models.harness import (
-    HarnessArtifactType,
     HarnessContractRef,
     HarnessResourceRefV3,
     HarnessSnapshotRefV3,
@@ -35,7 +35,11 @@ from app.services.harness_runtime import (
 )
 from app.services.tavern_harness import TavernActorHarness, TavernHarnessViolation
 from app.services.tavern_prompt import TavernPromptBudgetReport
-from app.models.tavern import TavernActorReply, TavernParticipantRecord, TavernMessageRecord
+from app.models.tavern import (
+    TavernActorReply,
+    TavernParticipantRecord,
+    TavernMessageRecord,
+)
 from app.models.harness_artifact_access import (
     HarnessArtifactPermission,
     HarnessArtifactResolveRequestV1,
@@ -43,7 +47,10 @@ from app.models.harness_artifact_access import (
     HarnessArtifactRegistrationV1,
 )
 from app.persistence.harness_artifact_repository import HarnessArtifactRepository
-from app.services.harness_runtime import HarnessRuntimeArtifactResolver, HarnessRuntimeResolvedArtifact
+from app.services.harness_runtime import (
+    HarnessRuntimeArtifactResolver,
+    HarnessRuntimeResolvedArtifact,
+)
 
 
 class TavernActorInputManifest(HarnessSafeManifest):
@@ -172,7 +179,9 @@ class TavernActorProtectedSnapshotV2(BaseModel):
             ):
                 raise ValueError("tavern_snapshot_reply_anchor_persona_mismatch")
             if self.reply_anchor not in self.recent_messages:
-                raise ValueError("tavern_snapshot_persona_anchor_missing_from_transcript")
+                raise ValueError(
+                    "tavern_snapshot_persona_anchor_missing_from_transcript"
+                )
             derived_target_id = (
                 self.reply_anchor.persona_id
                 if self.reply_anchor.persona_id != self.actor.persona_id
@@ -182,10 +191,7 @@ class TavernActorProtectedSnapshotV2(BaseModel):
             derived_target_id = ""
         if self.required_target_id != derived_target_id:
             raise ValueError("tavern_snapshot_required_target_binding_mismatch")
-        if (
-            self.required_target_id
-            and self.required_target_id not in participant_ids
-        ):
+        if self.required_target_id and self.required_target_id not in participant_ids:
             raise ValueError("tavern_snapshot_required_target_missing")
         if self.turn_kind == "user_message" and self.step_index == 0:
             if (
@@ -218,26 +224,34 @@ class TavernHarnessArtifactResolver(HarnessRuntimeArtifactResolver):
             grant_id = self.grants.get(ref.artifact_id)
             if not grant_id:
                 raise PermissionError("harness_artifact_grant_missing")
-            requests.append(HarnessArtifactResolveRequestV1(
-                grant_id=grant_id,
-                harness_operation_id=operation_binding.harness_operation_id,
-                artifact_id=ref.artifact_id,
-                artifact_type=ref.artifact_type,
-                artifact_contract=ref.contract,
-                permission=HarnessArtifactPermission.READ,
-            ))
+            requests.append(
+                HarnessArtifactResolveRequestV1(
+                    grant_id=grant_id,
+                    harness_operation_id=operation_binding.harness_operation_id,
+                    artifact_id=ref.artifact_id,
+                    artifact_type=ref.artifact_type,
+                    artifact_contract=ref.contract,
+                    permission=HarnessArtifactPermission.READ,
+                )
+            )
         if not requests:
             return ()
         for result in self.repository.resolve_batch(requests).results:
             if result.status != HarnessArtifactResolutionStatus.RESOLVED:
-                raise PermissionError(f"harness_artifact_resolution_{result.status.value}")
+                raise PermissionError(
+                    f"harness_artifact_resolution_{result.status.value}"
+                )
             assert result.content is not None and result.payload_digest is not None
-            resolved.append(HarnessRuntimeResolvedArtifact(
-                artifact_id=result.artifact_id,
-                payload_digest=result.payload_digest,
-                payload=result.content,
-            ))
+            resolved.append(
+                HarnessRuntimeResolvedArtifact(
+                    artifact_id=result.artifact_id,
+                    payload_digest=result.payload_digest,
+                    payload=result.content,
+                )
+            )
         return tuple(resolved)
+
+
 TAVERN_PROTECTED_SNAPSHOT_CONTRACT = HarnessContractRef(
     name="TavernActorProtectedSnapshot",
     version="tavern-actor-protected-snapshot-v2",
@@ -291,7 +305,10 @@ def require_authorized_message_suffix(
         not isinstance(item, TavernMessageRecord) for item in candidate_messages
     ):
         raise ValueError("tavern_snapshot_validation_messages_invalid")
-    if candidate_messages and candidate_messages != authorized_messages[-len(candidate_messages):]:
+    if (
+        candidate_messages
+        and candidate_messages != authorized_messages[-len(candidate_messages) :]
+    ):
         raise ValueError("tavern_snapshot_validation_messages_not_suffix")
     return list(candidate_messages)
 
@@ -330,7 +347,8 @@ def build_tavern_actor_context(
         ),
         subject_refs=(
             HarnessResourceRefV3(
-                resource_type="tavern_room", resource_id=detail.room.id,
+                resource_type="tavern_room",
+                resource_id=detail.room.id,
                 revision=detail.room.revision,
             ),
         ),
@@ -397,14 +415,11 @@ def build_tavern_actor_stage_adapter(
             or snapshot.actor.prompt_hash != expected_step_prompt_hash
         ):
             raise ValueError("tavern_snapshot_step_prompt_hash_mismatch")
-        if (
-            not snapshot.run_context_digest
-            or not any(
-                ref.resource_type == "tavern_room"
-                and ref.resource_id == snapshot.room.id
-                and ref.revision == snapshot.room.revision
-                for ref in context.subject_refs
-            )
+        if not snapshot.run_context_digest or not any(
+            ref.resource_type == "tavern_room"
+            and ref.resource_id == snapshot.room.id
+            and ref.revision == snapshot.room.revision
+            for ref in context.subject_refs
         ):
             raise ValueError("tavern_snapshot_room_binding_mismatch")
         raw, validation_messages, prompt_budget_report = generate(
@@ -446,9 +461,7 @@ def build_tavern_actor_stage_adapter(
                 recent_messages=validation_messages,
                 user_message=snapshot.user_message,
                 guidance=snapshot.guidance,
-                allowed_target_ids=[
-                    item.persona_id for item in snapshot.participants
-                ],
+                allowed_target_ids=[item.persona_id for item in snapshot.participants],
                 required_target_id=snapshot.required_target_id,
                 policy=snapshot.room.harness_policy,
             )
@@ -499,11 +512,16 @@ def build_tavern_actor_stage_adapter(
         )
 
     def decode(raw):
-        return raw if isinstance(raw, TavernActorReply) else TavernActorReply.model_validate(raw)
+        return (
+            raw
+            if isinstance(raw, TavernActorReply)
+            else TavernActorReply.model_validate(raw)
+        )
 
     return HarnessRuntimeStageAdapter(
         adapter_contract=HarnessContractRef(
-            name="TavernActorWorkflowAdapter", version="tavern-actor-workflow-adapter-v2"
+            name="TavernActorWorkflowAdapter",
+            version="tavern-actor-workflow-adapter-v2",
         ),
         trace_contract=HarnessContractRef(
             name="TavernActorReply", version="tavern-actor-reply-v2"

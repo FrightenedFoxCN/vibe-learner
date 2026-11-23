@@ -13,7 +13,6 @@ from app.models.harness import (
     HARNESS_CONTEXT_DIGEST_CONTRACT_V1,
     HARNESS_COMPONENT_REGISTRATIONS,
     HarnessArtifactType,
-    HarnessComponentName,
     HarnessContextEnvelopeV3,
     HarnessContractRef,
     HarnessResourceRefV3,
@@ -28,7 +27,6 @@ from app.models.harness import (
 )
 from app.models.harness_operation import (
     HarnessOperationBindingV1,
-    new_harness_operation_id,
 )
 from app.models.harness_manifest import (
     require_executable_workflow_manifest_entry,
@@ -122,8 +120,7 @@ def build_harness_context(
         "operation_id": operation_binding.harness_operation_id,
         "input_contract": input_contract.model_dump(mode="json", exclude_none=False),
         "subject_refs": [
-            item.model_dump(mode="json", exclude_none=False)
-            for item in sorted_subjects
+            item.model_dump(mode="json", exclude_none=False) for item in sorted_subjects
         ],
         "component_versions": [
             item.model_dump(mode="json", exclude_none=False)
@@ -197,7 +194,11 @@ def _reject_aliases_or_custom_serializers(model_type: type[BaseModel]) -> None:
     for field in model_type.model_fields.values():
         if any(
             value is not None
-            for value in (field.alias, field.validation_alias, field.serialization_alias)
+            for value in (
+                field.alias,
+                field.validation_alias,
+                field.serialization_alias,
+            )
         ):
             raise ValueError("harness_safe_manifest_alias_forbidden")
     decorators = model_type.__pydantic_decorators__
@@ -301,10 +302,14 @@ def _reject_permissive_json_objects(node: object) -> None:
         if not node:
             raise ValueError("harness_safe_manifest_any_forbidden")
         if "title" in node and not any(
-            key in node for key in ("type", "$ref", "anyOf", "oneOf", "allOf", "enum", "const")
+            key in node
+            for key in ("type", "$ref", "anyOf", "oneOf", "allOf", "enum", "const")
         ):
             raise ValueError("harness_safe_manifest_any_forbidden")
-        if node.get("type") == "object" and node.get("additionalProperties") is not False:
+        if (
+            node.get("type") == "object"
+            and node.get("additionalProperties") is not False
+        ):
             raise ValueError("harness_safe_manifest_permissive_object_forbidden")
         if node.get("uniqueItems") is True:
             raise ValueError("harness_safe_manifest_unordered_collection_forbidden")

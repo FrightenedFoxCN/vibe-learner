@@ -18,7 +18,6 @@ from app.models.domain import (
     PersonaProfile,
     PlanningIntentV1,
     PlanningQuestionRecord,
-    PlanGenerationTraceRecord,
     StudyUnitRecord,
 )
 from app.models.planning import LearningPlanProposalV2, LearningPlanProposalV3
@@ -449,16 +448,3 @@ def _decode_learning_plan_proposal(
         }:
             reason = invariant
         raise PlanningProposalDecodeError(path=path, reason=reason) from exc
-
-
-def _merge_plan_generation_traces(
-    *,
-    first: PlanGenerationTraceRecord,
-    second: PlanGenerationTraceRecord,
-) -> PlanGenerationTraceRecord:
-    offset = len(first.rounds)
-    repaired_rounds = [
-        item.model_copy(update={"round_index": offset + index})
-        for index, item in enumerate(second.rounds)
-    ]
-    return first.model_copy(update={"rounds": [*first.rounds, *repaired_rounds]})

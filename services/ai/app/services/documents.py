@@ -521,7 +521,7 @@ class DocumentService:
                 raise RuntimeError(
                     chunk_trace.error_code or "document_chunk_building_stage_failed"
                 )
-            ocr_trace = self.harness_service.emit_ocr_stage_evidence(
+            self.harness_service.emit_ocr_stage_evidence(
                 document_id=document.id,
                 input_manifest=DocumentStageInputManifest(
                     document_id=document.id,

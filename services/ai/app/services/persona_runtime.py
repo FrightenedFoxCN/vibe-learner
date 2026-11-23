@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from app.core.harness_component_versions import TAVERN_PERSONA_COMPILER_CONTRACT_VERSION
 from app.models.domain import PersonaProfile, PersonaSlot, persona_sorted_slots
 
 
@@ -34,7 +33,8 @@ def render_tavern_persona_instruction(persona: PersonaProfile) -> str:
                 f"- 默认表达风格：{persona.default_speech_style or '自然'}",
             ]
         ),
-        "人格插槽：\n" + ("\n".join(slot_lines) if slot_lines else "- 当前没有额外人格插槽。"),
+        "人格插槽：\n"
+        + ("\n".join(slot_lines) if slot_lines else "- 当前没有额外人格插槽。"),
         "\n".join(
             [
                 "身份边界：",
@@ -48,7 +48,10 @@ def render_tavern_persona_instruction(persona: PersonaProfile) -> str:
     if persona.reference_hints:
         sections.append(
             "风格灵感（仅用于语气和轮廓，不等于拥有原作记忆）：\n"
-            + "\n".join(f"- {item}" for item in _normalize_reference_hints(persona.reference_hints))
+            + "\n".join(
+                f"- {item}"
+                for item in _normalize_reference_hints(persona.reference_hints)
+            )
         )
     if persona.system_prompt.strip():
         sections.append(
@@ -95,15 +98,19 @@ def render_persona_runtime_instruction_from_parts(
                 "- 保持人格风格，但不要让角色表演压过知识解释或证据依据。",
             ]
         ),
-        "人格插槽展开：\n" + ("\n".join(slot_lines) if slot_lines else "- 当前未配置额外人格插槽。"),
+        "人格插槽展开：\n"
+        + ("\n".join(slot_lines) if slot_lines else "- 当前未配置额外人格插槽。"),
         f"默认表达风格：{resolved_style}。",
     ]
 
     if resolved_reference_hints:
         sections.append(
-            "灵感来源提示：\n" + "\n".join(f"- {hint}" for hint in resolved_reference_hints)
+            "灵感来源提示：\n"
+            + "\n".join(f"- {hint}" for hint in resolved_reference_hints)
         )
-    if any(_looks_like_fiction_reference_hint(hint) for hint in resolved_reference_hints):
+    if any(
+        _looks_like_fiction_reference_hint(hint) for hint in resolved_reference_hints
+    ):
         sections.append(
             "\n".join(
                 [

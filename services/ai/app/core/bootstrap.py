@@ -1,4 +1,3 @@
-from pathlib import Path
 from threading import RLock
 
 from app.services.document_parser import DocumentParser
@@ -10,7 +9,9 @@ from app.persistence.harness_effect_repository import HarnessEffectJournalReposi
 from app.services.harness_effect_scanner import scan_harness_effect_journal
 from app.services.study_v3 import StudyV3SnapshotService
 from app.persistence.harness_runtime_repository import HarnessRuntimeRepository
-from app.persistence.harness_workflow_operation_repository import HarnessWorkflowOperationRepository
+from app.persistence.harness_workflow_operation_repository import (
+    HarnessWorkflowOperationRepository,
+)
 from app.services.harness_runtime import HarnessOperationRuntime
 from app.services.harness_broad_adoption import (
     HarnessProposalRuntimeService,
@@ -31,7 +32,11 @@ from app.persistence.study_unit_revision_repository import StudyUnitRevisionRepo
 from app.services.persona_cards import PersonaCardLibraryService
 from app.services.persona import PersonaEngine
 from app.services.reusable_scene_nodes import ReusableSceneNodeLibraryService
-from app.services.model_tool_config import CHAT_STAGE, PLAN_STAGE, ModelToolConfigService
+from app.services.model_tool_config import (
+    CHAT_STAGE,
+    PLAN_STAGE,
+    ModelToolConfigService,
+)
 from app.services.runtime_settings import RuntimeSettingsService
 from app.services.scene_library import SceneLibraryService
 from app.services.scene_setup import SceneSetupService
@@ -65,13 +70,17 @@ class Container:
         self.database = Database(self.base_settings.database_url)
         self.database.create_schema()
         self.harness_artifact_repository = HarnessArtifactRepository(self.database)
-        self.harness_workflow_operations = HarnessWorkflowOperationRepository(self.database)
+        self.harness_workflow_operations = HarnessWorkflowOperationRepository(
+            self.database
+        )
         self.harness_proposal_runtime = HarnessProposalRuntimeService(
             self.database,
             self.harness_artifact_repository,
             self.harness_workflow_operations,
         )
-        self.study_v3_snapshot_service = StudyV3SnapshotService(self.harness_artifact_repository)
+        self.study_v3_snapshot_service = StudyV3SnapshotService(
+            self.harness_artifact_repository
+        )
         self.harness_runtime = HarnessOperationRuntime(
             repository=HarnessRuntimeRepository(self.database)
         )
@@ -85,6 +94,7 @@ class Container:
             onnxtr_model_dir=self.base_settings.onnxtr_model_dir,
         )
         from app.services.document_layout import DocumentLayoutService
+
         self.document_layout_service = DocumentLayoutService(
             engine=self.base_settings.document_layout_engine,
             python_executable=self.base_settings.document_layout_python,
@@ -93,7 +103,10 @@ class Container:
             runtime_temp_root=self.storage.ensure_runtime_temp_root(),
             timeout_seconds=self.base_settings.document_layout_timeout_seconds,
         )
-        if self.base_settings.auto_migrate_local_data and self.store.count_bucket("documents") == 0:
+        if (
+            self.base_settings.auto_migrate_local_data
+            and self.store.count_bucket("documents") == 0
+        ):
             migrate_from_legacy_store(
                 LegacyLocalJsonStore(data_root),
                 self.store,
@@ -101,15 +114,21 @@ class Container:
                 data_root,
             )
         self.model_tool_config_service = ModelToolConfigService(self.store)
-        self.runtime_settings_service = RuntimeSettingsService(self.store, self.base_settings)
+        self.runtime_settings_service = RuntimeSettingsService(
+            self.store, self.base_settings
+        )
         self.token_usage_service = TokenUsageService(self.database)
         self.stream_interrupt_registry = StreamInterruptRegistry()
         self.scene_setup_service = SceneSetupService(self.store)
         self.scene_library_service = SceneLibraryService(self.store)
-        self.reusable_scene_node_library_service = ReusableSceneNodeLibraryService(self.store)
+        self.reusable_scene_node_library_service = ReusableSceneNodeLibraryService(
+            self.store
+        )
         self.persona_card_library_service = PersonaCardLibraryService(self.store)
         self.session_scene_service = SessionSceneService(self.store)
-        self.model_provider = self._build_model_provider(self.runtime_settings_service.effective_settings())
+        self.model_provider = self._build_model_provider(
+            self.runtime_settings_service.effective_settings()
+        )
         self.performance_mapper = PerformanceMapper()
         self.persona_engine = PersonaEngine(
             self.store,
@@ -123,7 +142,9 @@ class Container:
             harness_service=self.harness_proposal_runtime,
         )
         self.study_unit_revision_service = StudyUnitRevisionService(
-            StudyUnitRevisionRepository(self.database), self.harness_proposal_runtime, self.store,
+            StudyUnitRevisionRepository(self.database),
+            self.harness_proposal_runtime,
+            self.store,
         )
         self.plan_service = LearningPlanService(
             self.store,
@@ -163,7 +184,9 @@ class Container:
             raise RuntimeError("container_closed")
         if self._started:
             return
-        recovered_workflow_operations = self.harness_workflow_operations.recover_abandoned_operations()
+        recovered_workflow_operations = (
+            self.harness_workflow_operations.recover_abandoned_operations()
+        )
         if recovered_workflow_operations:
             logger.warning(
                 "bootstrap.harness_workflow_operations recovered=%s",
@@ -189,26 +212,31 @@ class Container:
         # Settings replacement must not switch a running chat's provider.
         with self._provider_lock:
             from copy import copy
-            from app.services.study_chat_application import StudyChatApplication, StudyChatDependencies
+            from app.services.study_chat_application import (
+                StudyChatApplication,
+                StudyChatDependencies,
+            )
 
             provider = self.model_provider
             orchestrator = copy(self.pedagogy_orchestrator)
             if hasattr(orchestrator, "model_provider"):
                 orchestrator.model_provider = provider
-            return StudyChatApplication(StudyChatDependencies(
-                study_chat_operation_repository=self.study_chat_operation_repository,
-                study_session_repository=self.study_session_repository,
-                study_session_service=self.study_session_service,
-                store=self.store,
-                model_provider=provider,
-                runtime_settings=self.runtime_settings_service.effective_settings(),
-                persona_engine=self.persona_engine,
-                plan_service=self.plan_service,
-                document_service=self.document_service,
-                session_scene_service=self.session_scene_service,
-                pedagogy_orchestrator=orchestrator,
-                document_layout_service=self.document_layout_service,
-            ))
+            return StudyChatApplication(
+                StudyChatDependencies(
+                    study_chat_operation_repository=self.study_chat_operation_repository,
+                    study_session_repository=self.study_session_repository,
+                    study_session_service=self.study_session_service,
+                    store=self.store,
+                    model_provider=provider,
+                    runtime_settings=self.runtime_settings_service.effective_settings(),
+                    persona_engine=self.persona_engine,
+                    plan_service=self.plan_service,
+                    document_service=self.document_service,
+                    session_scene_service=self.session_scene_service,
+                    pedagogy_orchestrator=orchestrator,
+                    document_layout_service=self.document_layout_service,
+                )
+            )
 
     def update_runtime_settings(self, updates: dict[str, object]) -> None:
         with self._provider_lock:
@@ -290,10 +318,14 @@ class Container:
                 fallback_plan_model=settings.openai_plan_fallback_model,
                 fallback_disable_tools=settings.openai_plan_fallback_disable_tools,
                 plan_disabled_tools_provider=(
-                    lambda: self.model_tool_config_service.disabled_tools_for_stage(PLAN_STAGE)
+                    lambda: self.model_tool_config_service.disabled_tools_for_stage(
+                        PLAN_STAGE
+                    )
                 ),
                 chat_disabled_tools_provider=(
-                    lambda: self.model_tool_config_service.disabled_tools_for_stage(CHAT_STAGE)
+                    lambda: self.model_tool_config_service.disabled_tools_for_stage(
+                        CHAT_STAGE
+                    )
                 ),
                 token_usage_service=self.token_usage_service,
             )

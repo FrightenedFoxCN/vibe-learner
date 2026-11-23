@@ -20,7 +20,6 @@ from app.core.model_runtime_limits import (
 
 from app.models.study_question import (
     StudyInteractiveQuestionRecordV2 as InteractiveQuestion,
-    StudyQuestionOptionV1 as InteractiveQuestionOption,
 )
 
 

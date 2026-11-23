@@ -14,8 +14,6 @@ from app.models.domain import (
     PersonaSlot,
     StudySessionRecord,
     persona_narrative_mode_label,
-    persona_slot_content,
-    persona_slot_list,
     persona_sorted_slots,
 )
 from app.services.local_store import LocalJsonStore
@@ -49,7 +47,9 @@ class PersonaEngine:
     def list_personas(self) -> list[PersonaProfile]:
         with self._lock:
             personas = list(self._personas.values())
-        return sorted(personas, key=lambda item: (item.source != "builtin", item.name.lower()))
+        return sorted(
+            personas, key=lambda item: (item.source != "builtin", item.name.lower())
+        )
 
     def require_persona(self, persona_id: str) -> PersonaProfile:
         with self._lock:
@@ -63,12 +63,16 @@ class PersonaEngine:
             persona_id = self._allocate_persona_id()
             available_emotions = [
                 emotion.strip()
-                for emotion in (payload.available_emotions or self._default_available_emotions())
+                for emotion in (
+                    payload.available_emotions or self._default_available_emotions()
+                )
                 if emotion.strip()
             ]
             available_actions = [
                 action.strip()
-                for action in (payload.available_actions or self._default_available_actions())
+                for action in (
+                    payload.available_actions or self._default_available_actions()
+                )
                 if action.strip()
             ]
             persona = PersonaProfile(
@@ -80,11 +84,16 @@ class PersonaEngine:
                 relationship=payload.relationship.strip(),
                 learner_address=payload.learner_address.strip(),
                 system_prompt=payload.system_prompt.strip(),
-                reference_hints=[hint.strip() for hint in payload.reference_hints if hint.strip()],
+                reference_hints=[
+                    hint.strip() for hint in payload.reference_hints if hint.strip()
+                ],
                 slots=payload.slots,
-                available_emotions=available_emotions or self._default_available_emotions(),
-                available_actions=available_actions or self._default_available_actions(),
-                default_speech_style=(payload.default_speech_style or "warm").strip() or "warm",
+                available_emotions=available_emotions
+                or self._default_available_emotions(),
+                available_actions=available_actions
+                or self._default_available_actions(),
+                default_speech_style=(payload.default_speech_style or "warm").strip()
+                or "warm",
             )
             # Persist first so a failed database commit cannot leak into the
             # process-authoritative view.
@@ -92,7 +101,9 @@ class PersonaEngine:
             self._personas[persona.id] = persona
             return persona
 
-    def update_persona(self, persona_id: str, payload: UpdatePersonaRequest) -> PersonaProfile:
+    def update_persona(
+        self, persona_id: str, payload: UpdatePersonaRequest
+    ) -> PersonaProfile:
         with self._lock:
             current = self._personas.get(persona_id)
             if current is None:
@@ -102,7 +113,9 @@ class PersonaEngine:
             self._require_expected_revision(current, payload.expected_revision)
             available_emotions = [
                 emotion.strip()
-                for emotion in (payload.available_emotions or current.available_emotions)
+                for emotion in (
+                    payload.available_emotions or current.available_emotions
+                )
                 if emotion.strip()
             ]
             available_actions = [
@@ -119,11 +132,17 @@ class PersonaEngine:
                 relationship=payload.relationship.strip(),
                 learner_address=payload.learner_address.strip(),
                 system_prompt=payload.system_prompt.strip(),
-                reference_hints=[hint.strip() for hint in payload.reference_hints if hint.strip()],
+                reference_hints=[
+                    hint.strip() for hint in payload.reference_hints if hint.strip()
+                ],
                 slots=payload.slots,
-                available_emotions=available_emotions or self._default_available_emotions(),
-                available_actions=available_actions or self._default_available_actions(),
-                default_speech_style=(payload.default_speech_style or current.default_speech_style).strip()
+                available_emotions=available_emotions
+                or self._default_available_emotions(),
+                available_actions=available_actions
+                or self._default_available_actions(),
+                default_speech_style=(
+                    payload.default_speech_style or current.default_speech_style
+                ).strip()
                 or current.default_speech_style,
             )
             self._save_persona(updated)
@@ -160,7 +179,9 @@ class PersonaEngine:
                 return candidate
 
     @staticmethod
-    def _require_expected_revision(current: PersonaProfile, expected_revision: int) -> None:
+    def _require_expected_revision(
+        current: PersonaProfile, expected_revision: int
+    ) -> None:
         if current.revision != expected_revision:
             raise HTTPException(
                 status_code=409,
@@ -197,7 +218,9 @@ class PersonaEngine:
             ),
             "scene_instances": sum(
                 1
-                for scene in self._store.load_category_items("session_scenes", SessionSceneRecord)
+                for scene in self._store.load_category_items(
+                    "session_scenes", SessionSceneRecord
+                )
                 if scene.persona_id == persona_id
             ),
             "tavern_rooms": (
@@ -215,12 +238,24 @@ class PersonaEngine:
         slots: list[PersonaSlot],
     ) -> dict[str, object]:
         ordered_slots = persona_sorted_slots(slots)
-        worldview = next((s.content for s in ordered_slots if s.kind == "worldview"), "")
-        past_exp = next((s.content for s in ordered_slots if s.kind == "past_experiences"), "")
-        teaching_method = next((s.content for s in ordered_slots if s.kind == "teaching_method"), "")
-        narrative_mode = next((s.content for s in ordered_slots if s.kind == "narrative_mode"), "稳态导学")
-        encouragement_style = next((s.content for s in ordered_slots if s.kind == "encouragement_style"), "")
-        correction_style = next((s.content for s in ordered_slots if s.kind == "correction_style"), "")
+        worldview = next(
+            (s.content for s in ordered_slots if s.kind == "worldview"), ""
+        )
+        past_exp = next(
+            (s.content for s in ordered_slots if s.kind == "past_experiences"), ""
+        )
+        teaching_method = next(
+            (s.content for s in ordered_slots if s.kind == "teaching_method"), ""
+        )
+        narrative_mode = next(
+            (s.content for s in ordered_slots if s.kind == "narrative_mode"), "稳态导学"
+        )
+        encouragement_style = next(
+            (s.content for s in ordered_slots if s.kind == "encouragement_style"), ""
+        )
+        correction_style = next(
+            (s.content for s in ordered_slots if s.kind == "correction_style"), ""
+        )
 
         style_text = teaching_method.strip() or "结构化讲解"
         narrative_text = persona_narrative_mode_label(narrative_mode)
@@ -249,7 +284,10 @@ class PersonaEngine:
         updated_slots: list[PersonaSlot] = []
         narrative_inserted = False
         for slot in ordered_slots:
-            if slot.kind in ("worldview", "past_experiences") and not narrative_inserted:
+            if (
+                slot.kind in ("worldview", "past_experiences")
+                and not narrative_inserted
+            ):
                 updated_slots.append(
                     PersonaSlot(
                         kind=slot.kind,
@@ -267,7 +305,12 @@ class PersonaEngine:
                 updated_slots.append(slot)
         if not narrative_inserted:
             updated_slots.append(
-                PersonaSlot(kind="worldview", label="世界观起点", content=narrative_content, sort_order=10)
+                PersonaSlot(
+                    kind="worldview",
+                    label="世界观起点",
+                    content=narrative_content,
+                    sort_order=10,
+                )
             )
 
         prompt = (
@@ -291,7 +334,6 @@ class PersonaEngine:
         rewrite_strength: float,
     ) -> PersonaSlot:
         identity_name = name.strip() or "这位教师"
-        summary_text = summary.strip() or "围绕章节核心概念组织学习路径"
         base = slot.content.strip()
         strength = max(0.0, min(1.0, rewrite_strength))
 
@@ -324,7 +366,11 @@ class PersonaEngine:
             return slot.model_copy(deep=True)
         if base and strength < 0.45:
             supplement = f"润色补充：{rewritten}"
-            content = base if supplement in base or base == rewritten else f"{base}\n\n{supplement}"
+            content = (
+                base
+                if supplement in base or base == rewritten
+                else f"{base}\n\n{supplement}"
+            )
         else:
             content = rewritten
         return PersonaSlot(
@@ -347,11 +393,29 @@ class PersonaEngine:
                 learner_address="同学",
                 system_prompt="优先保持讲解清晰、贴合章节，并通过温和反馈推动学习者继续前进。",
                 slots=[
-                    PersonaSlot(kind="worldview", label="世界观起点", content="来自学院图书馆塔楼，擅长把复杂章节拆成可执行的小台阶。"),
-                    PersonaSlot(kind="teaching_method", label="教学方法", content="结构化、引导式推进"),
-                    PersonaSlot(kind="narrative_mode", label="叙事模式", content="稳态导学"),
-                    PersonaSlot(kind="encouragement_style", label="鼓励策略", content="强调小步成功与可见进展"),
-                    PersonaSlot(kind="correction_style", label="纠错策略", content="准确指出问题，同时保持温和语气"),
+                    PersonaSlot(
+                        kind="worldview",
+                        label="世界观起点",
+                        content="来自学院图书馆塔楼，擅长把复杂章节拆成可执行的小台阶。",
+                    ),
+                    PersonaSlot(
+                        kind="teaching_method",
+                        label="教学方法",
+                        content="结构化、引导式推进",
+                    ),
+                    PersonaSlot(
+                        kind="narrative_mode", label="叙事模式", content="稳态导学"
+                    ),
+                    PersonaSlot(
+                        kind="encouragement_style",
+                        label="鼓励策略",
+                        content="强调小步成功与可见进展",
+                    ),
+                    PersonaSlot(
+                        kind="correction_style",
+                        label="纠错策略",
+                        content="准确指出问题，同时保持温和语气",
+                    ),
                 ],
                 available_emotions=["calm", "encouraging", "serious"],
                 available_actions=["idle", "nod", "point", "pause"],
@@ -366,11 +430,29 @@ class PersonaEngine:
                 learner_address="伙伴",
                 system_prompt="把章节讲解和轻剧情陪伴结合起来，保持活力、节奏感和明确推进。",
                 slots=[
-                    PersonaSlot(kind="past_experiences", label="过往经历", content="前冒险队记录官，习惯把知识点编进轻剧情，保持学习节奏感。"),
-                    PersonaSlot(kind="teaching_method", label="教学方法", content="剧情引导、激励式推进"),
-                    PersonaSlot(kind="narrative_mode", label="叙事模式", content="轻剧情陪伴"),
-                    PersonaSlot(kind="encouragement_style", label="鼓励策略", content="把学习进展包装成阶段闯关"),
-                    PersonaSlot(kind="correction_style", label="纠错策略", content="用有节奏的转向提示带回正确路径"),
+                    PersonaSlot(
+                        kind="past_experiences",
+                        label="过往经历",
+                        content="前冒险队记录官，习惯把知识点编进轻剧情，保持学习节奏感。",
+                    ),
+                    PersonaSlot(
+                        kind="teaching_method",
+                        label="教学方法",
+                        content="剧情引导、激励式推进",
+                    ),
+                    PersonaSlot(
+                        kind="narrative_mode", label="叙事模式", content="轻剧情陪伴"
+                    ),
+                    PersonaSlot(
+                        kind="encouragement_style",
+                        label="鼓励策略",
+                        content="把学习进展包装成阶段闯关",
+                    ),
+                    PersonaSlot(
+                        kind="correction_style",
+                        label="纠错策略",
+                        content="用有节奏的转向提示带回正确路径",
+                    ),
                 ],
                 available_emotions=["playful", "encouraging", "excited", "concerned"],
                 available_actions=["idle", "lean_in", "smile", "write"],

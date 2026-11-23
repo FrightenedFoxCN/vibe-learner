@@ -39,19 +39,12 @@ from app.services.provider_settings import (
 from app.services.provider_study import (
     RemoteStudyProvider,
     CHAT_JSON_SCHEMA as CHAT_JSON_SCHEMA,
-    _chat_tools,
-    _chat_tools_disabled_for_round,
-    _decode_study_chat_reply_proposal,
-    _execute_chat_tool_call,
-    _extract_choice_diagnostics,
-    _parse_chat_model_reply,
 )
-from app.services.provider_callbacks import _call_interrupt, _emit_progress
+from app.services.provider_callbacks import _call_interrupt
 from app.services.provider_planning import (
     RemotePlanningProvider,
     PlanningProposalDecodeError as PlanningProposalDecodeError,
     _decode_learning_plan_proposal as _decode_learning_plan_proposal,
-    _validate_learning_plan_proposal_refs,
 )
 from app.services.provider_payload import (
     _extract_choice_content as _extract_choice_content,
@@ -68,8 +61,6 @@ import re
 from typing import Callable
 from typing import Any
 
-from fastapi import HTTPException
-from pydantic import ValidationError
 
 from app.core.logging import get_logger
 from app.core.model_runtime_limits import (
@@ -85,17 +76,13 @@ from app.core.model_runtime_limits import (
     FEATURE_PROBE_TAVERN_MAX_TOKENS,
     FEATURE_PROBE_TOOL_MAX_TOKENS,
 )
-from app.models.harness import HarnessStage, HarnessWorkflow
 from app.models.domain import (
-    ChatToolCallTraceRecord,
     DocumentDebugRecord,
     LearningGoalInput,
     LearningPlanRecord,
-    PlanGenerationTraceRecord,
     PlanningQuestionRecord,
     PersonaProfile,
     PersonaSlot,
-    RichTextBlockRecord,
     SceneLayerStateRecord,
     SceneObjectStateRecord,
     SceneProfileRecord,
@@ -109,11 +96,6 @@ from app.models.planning import (
     PlanContentSliceProposalV1,
     PlanScheduleChapterProposalV1,
 )
-from app.models.scene import (
-    decode_scene_tree_proposal,
-    project_scene_tree_proposal,
-)
-from app.models.study_chat_reply import StudyChatReplyProposalV1
 from app.models.study_chat_operation import StudyChatMessageKind
 from app.models.tavern import (
     TavernActorReply,
@@ -122,40 +104,8 @@ from app.models.tavern import (
 )
 from app.models.study_question import (
     STUDY_QUESTION_TOOL_TRACE_PRIVATE_FIELDS,
-    StudyQuestionProposalV1,
 )
-from app.models.tool_manifest import resolve_tool_manifest_entry
-from app.services.model_tool_config import CHAT_STAGE, PLAN_STAGE, TOOL_CATALOG
-from app.services.model_recovery import record_model_recovery
-from app.models.persona_generation import (
-    PersonaCardBatchContentProposalV1,
-    PersonaSlotContentProposalV1,
-)
-from app.services.persona_runtime import render_persona_runtime_instruction
 from app.services.token_usage import TokenUsageService
-from app.services.tool_provider_projection import (
-    ProviderToolCallDecodeError,
-    ToolContractViolation,
-    ToolExecutionBudgetTracker,
-    adapt_tool_runtime_result,
-    build_versioned_tool_error,
-    decode_provider_tool_call,
-    project_tool_arguments_for_observability,
-    project_validated_tool_result,
-    provider_function_for_entry,
-)
-from app.services.plan_prompt import (
-    build_learning_plan_context,
-    build_learning_plan_messages,
-    read_page_range_content,
-    read_page_range_images,
-)
-from app.services.prompt_loader import load_prompt_template
-from app.services.session_scene import (
-    SCENE_TOOL_NAMES,
-    extract_scene_profile_from_tool_results,
-    serialize_chat_tool_trace_item,
-)
 
 
 logger = get_logger("vibe_learner.model_provider")

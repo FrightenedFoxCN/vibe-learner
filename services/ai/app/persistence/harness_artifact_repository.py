@@ -13,11 +13,7 @@ from sqlalchemy.orm import Session
 
 from app.models.harness import HarnessArtifactType, HarnessContractRef
 from app.models.harness_artifact_access import (
-    HARNESS_ARTIFACT_CONTRACT_REGISTRATION_SCHEMA_VERSION,
-    HARNESS_ARTIFACT_GRANT_SCHEMA_VERSION,
-    HARNESS_ARTIFACT_PRINCIPAL_SCHEMA_VERSION,
     HARNESS_ARTIFACT_REGISTRATION_SCHEMA_VERSION,
-    HARNESS_ARTIFACT_RESOLUTION_AUDIT_SCHEMA_VERSION,
     HarnessArtifactAccessOutcome,
     HarnessArtifactBatchResolutionV1,
     HarnessArtifactContractRegistrationV1,
@@ -341,7 +337,9 @@ class HarnessArtifactRepository:
         _utc_wire(resolved_at)
         # All authorization (including operation binding and scope) happens
         # before querying the protected row/payload below.
-        with (self.database.session() if _session is None else nullcontext(_session)) as session:
+        with (
+            self.database.session() if _session is None else nullcontext(_session)
+        ) as session:
             grant_row = session.get(HarnessArtifactGrantRow, request.grant_id)
             principal_row = session.get(HarnessArtifactPrincipalRow, _INSTALLATION_SLOT)
             if grant_row is None:
@@ -438,7 +436,10 @@ class HarnessArtifactRepository:
                     principal=principal,
                     authorization_outcome=audit.outcome,
                 )
-            if artifact.expires_at is not None and _from_wire(artifact.expires_at) <= resolved_at:
+            if (
+                artifact.expires_at is not None
+                and _from_wire(artifact.expires_at) <= resolved_at
+            ):
                 return self._terminal(
                     session,
                     request,
@@ -449,7 +450,10 @@ class HarnessArtifactRepository:
                     authorization_outcome=audit.outcome,
                 )
             actual_digest = hashlib.sha256(artifact.payload).hexdigest()
-            if artifact.digest_algorithm != "sha256" or actual_digest != artifact.payload_digest:
+            if (
+                artifact.digest_algorithm != "sha256"
+                or actual_digest != artifact.payload_digest
+            ):
                 return self._terminal(
                     session,
                     request,
@@ -499,7 +503,10 @@ class HarnessArtifactRepository:
         # own authorization before touching protected content, in input order.
         with self.database.session() as session:
             return HarnessArtifactBatchResolutionV1(
-                results=tuple(self.resolve(item, now=resolved_at, _session=session) for item in request_tuple)
+                results=tuple(
+                    self.resolve(item, now=resolved_at, _session=session)
+                    for item in request_tuple
+                )
             )
 
     def list_resolution_audits(self) -> tuple[HarnessArtifactResolutionAuditV1, ...]:
@@ -512,7 +519,9 @@ class HarnessArtifactRepository:
             ).all()
             return tuple(self._audit_from_row(row) for row in rows)
 
-    def _grant_from_rows(self, session, row: HarnessArtifactGrantRow) -> HarnessArtifactGrantV1:
+    def _grant_from_rows(
+        self, session, row: HarnessArtifactGrantRow
+    ) -> HarnessArtifactGrantV1:
         scopes = session.scalars(
             select(HarnessArtifactGrantScopeRow)
             .where(HarnessArtifactGrantScopeRow.grant_id == row.grant_id)
@@ -541,8 +550,12 @@ class HarnessArtifactRepository:
                 )
                 for item in scopes
             ),
-            issued_at=datetime.fromisoformat(row.issued_at.removesuffix("Z") + "+00:00"),
-            expires_at=datetime.fromisoformat(row.expires_at.removesuffix("Z") + "+00:00"),
+            issued_at=datetime.fromisoformat(
+                row.issued_at.removesuffix("Z") + "+00:00"
+            ),
+            expires_at=datetime.fromisoformat(
+                row.expires_at.removesuffix("Z") + "+00:00"
+            ),
             revoked_at=(
                 datetime.fromisoformat(row.revoked_at.removesuffix("Z") + "+00:00")
                 if row.revoked_at
@@ -606,31 +619,35 @@ class HarnessArtifactRepository:
             resolution_status=status,
             evaluated_at=evaluated_at,
         )
-        session.add(HarnessArtifactAccessAuditRow(
-            audit_id=audit.audit_id,
-            grant_id=audit.grant_id,
-            harness_operation_id=audit.harness_operation_id,
-            grant_harness_operation_id=audit.grant_harness_operation_id,
-            presented_principal_id=audit.presented_principal_id,
-            grant_subject_id=audit.grant_subject_id,
-            artifact_id=audit.artifact_id,
-            artifact_type=audit.artifact_type.value,
-            contract_name=audit.artifact_contract.name,
-            contract_version=audit.artifact_contract.version,
-            permission=audit.permission.value,
-            authorization_outcome=(
-                audit.authorization_outcome.value
-                if audit.authorization_outcome is not None
-                else None
-            ),
-            resolution_status=audit.resolution_status.value,
-            schema_name=audit.schema_name,
-            schema_version=audit.schema_version,
-            evaluated_at=_utc_wire(audit.evaluated_at),
-        ))
+        session.add(
+            HarnessArtifactAccessAuditRow(
+                audit_id=audit.audit_id,
+                grant_id=audit.grant_id,
+                harness_operation_id=audit.harness_operation_id,
+                grant_harness_operation_id=audit.grant_harness_operation_id,
+                presented_principal_id=audit.presented_principal_id,
+                grant_subject_id=audit.grant_subject_id,
+                artifact_id=audit.artifact_id,
+                artifact_type=audit.artifact_type.value,
+                contract_name=audit.artifact_contract.name,
+                contract_version=audit.artifact_contract.version,
+                permission=audit.permission.value,
+                authorization_outcome=(
+                    audit.authorization_outcome.value
+                    if audit.authorization_outcome is not None
+                    else None
+                ),
+                resolution_status=audit.resolution_status.value,
+                schema_name=audit.schema_name,
+                schema_version=audit.schema_version,
+                evaluated_at=_utc_wire(audit.evaluated_at),
+            )
+        )
 
     @staticmethod
-    def _principal_from_row(row: HarnessArtifactPrincipalRow) -> HarnessArtifactPrincipalV1:
+    def _principal_from_row(
+        row: HarnessArtifactPrincipalRow,
+    ) -> HarnessArtifactPrincipalV1:
         return HarnessArtifactPrincipalV1(
             schema_name=row.schema_name,
             schema_version=row.schema_version,

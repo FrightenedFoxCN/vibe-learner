@@ -9,10 +9,6 @@ from uuid import uuid4
 from pydantic import ValidationError
 
 from app.core.diagnostic_tool import observe_tool_call
-from app.core.harness_component_versions import (
-    PLANNING_TOOL_RUNTIME_CONTRACT_VERSION,
-    PLANNING_TOOLSET_CONTRACT_VERSION,
-)
 from app.models.domain import (
     DocumentDebugRecord,
     PlanningIntentV1,
@@ -87,7 +83,9 @@ class PlanToolExecution:
 
 
 class PlanToolRuntime:
-    def __init__(self, *, context: PlanToolRuntimeContext, disabled_tools: set[str] | None = None) -> None:
+    def __init__(
+        self, *, context: PlanToolRuntimeContext, disabled_tools: set[str] | None = None
+    ) -> None:
         self.context = context
         disabled = disabled_tools or set()
         self._definitions = {
@@ -117,7 +115,9 @@ class PlanToolRuntime:
         return [
             {
                 "name": definition.name,
-                "description": _planning_manifest_entry(definition.name).display.provider_description,
+                "description": _planning_manifest_entry(
+                    definition.name
+                ).display.provider_description,
             }
             for definition in self._definitions.values()
         ]
@@ -130,9 +130,13 @@ class PlanToolRuntime:
             for definition in self._definitions.values()
         ]
 
-    @observe_tool_call(HarnessWorkflow.PLANNING, HarnessStage.PLAN_GENERATION, method=True)
+    @observe_tool_call(
+        HarnessWorkflow.PLANNING, HarnessStage.PLAN_GENERATION, method=True
+    )
     def execute_tool_call(self, tool_call: dict[str, Any]) -> PlanToolExecution:
-        tool_call_id = tool_call.get("id") if isinstance(tool_call.get("id"), str) else ""
+        tool_call_id = (
+            tool_call.get("id") if isinstance(tool_call.get("id"), str) else ""
+        )
         try:
             decoded = decode_provider_tool_call(
                 tool_call,
@@ -141,7 +145,11 @@ class PlanToolRuntime:
             )
         except ProviderToolCallDecodeError as error:
             function_payload = tool_call.get("function")
-            raw_name = function_payload.get("name") if isinstance(function_payload, dict) else ""
+            raw_name = (
+                function_payload.get("name")
+                if isinstance(function_payload, dict)
+                else ""
+            )
             error_path = list(error.path)
             if len(error_path) > 2 and error_path[:2] == [
                 "function",
@@ -178,7 +186,9 @@ class PlanToolRuntime:
                 detail=error.detail,
                 entry=entry,
             )
-        result = definition.execute(decoded.arguments.model_dump(mode="python"), self.context)
+        result = definition.execute(
+            decoded.arguments.model_dump(mode="python"), self.context
+        )
         validated_result = adapt_tool_runtime_result(entry, result.payload)
         canonical = validated_result.model_dump(mode="json")
         return PlanToolExecution(
@@ -241,7 +251,12 @@ def get_learning_plan_tool_specs(
     document_path: str | None = None,
     multimodal_enabled: bool = False,
 ) -> list[dict[str, str]]:
-    if study_units is None and detail_map is None and debug_report is None and document_path is None:
+    if (
+        study_units is None
+        and detail_map is None
+        and debug_report is None
+        and document_path is None
+    ):
         return [
             {
                 "name": definition.name,
@@ -311,9 +326,10 @@ def _registered_plan_tools() -> list[PlanToolDefinition]:
         raise RuntimeError("planning_tool_availability_manifest_mismatch")
     for definition in definitions:
         catalog_description = TOOL_CATALOG[PLAN_STAGE][definition.name]["description"]
-        if catalog_description != _planning_manifest_entry(
-            definition.name
-        ).display.provider_description:
+        if (
+            catalog_description
+            != _planning_manifest_entry(definition.name).display.provider_description
+        ):
             raise RuntimeError("planning_tool_description_manifest_mismatch")
     return definitions
 
@@ -402,7 +418,9 @@ def _execute_ask_planning_question(
         follow_up_text.append("若暂时无法等待回答，可先按以下保守假设继续：")
         follow_up_text.extend(f"- {item}" for item in assumptions)
     else:
-        follow_up_text.append("若暂时无法等待回答，可先按保守假设继续，并在 today_tasks 中保留一个确认项。")
+        follow_up_text.append(
+            "若暂时无法等待回答，可先按保守假设继续，并在 today_tasks 中保留一个确认项。"
+        )
     return PlanToolResult(
         payload={
             "ok": True,
@@ -427,7 +445,9 @@ def _execute_estimate_plan_completion(
     context: PlanToolRuntimeContext,
 ) -> PlanToolResult:
     focus = str(arguments.get("focus") or "").strip()
-    plannable_units = [unit for unit in context.study_units if unit.include_in_plan] or list(context.study_units)
+    plannable_units = [
+        unit for unit in context.study_units if unit.include_in_plan
+    ] or list(context.study_units)
     if not plannable_units:
         return PlanToolResult(
             payload={
@@ -464,7 +484,15 @@ def _execute_estimate_plan_completion(
             25,
             min(
                 96,
-                round((0.42 + (detail_coverage_ratio * 0.28) + (richness_ratio * 0.22) - span_penalty) * 100),
+                round(
+                    (
+                        0.42
+                        + (detail_coverage_ratio * 0.28)
+                        + (richness_ratio * 0.22)
+                        - span_penalty
+                    )
+                    * 100
+                ),
             ),
         )
     )
@@ -488,7 +516,9 @@ def _execute_estimate_plan_completion(
     if focus:
         recommendations.insert(0, f"当前重点：{focus}。")
     if not recommendations:
-        recommendations.append("学习单元结构元数据较充分；仍需依据原文和学习目标核对计划的事实、活动与时长。")
+        recommendations.append(
+            "学习单元结构元数据较充分；仍需依据原文和学习目标核对计划的事实、活动与时长。"
+        )
     return PlanToolResult(
         payload={
             "ok": True,
@@ -544,17 +574,33 @@ def _execute_revise_study_units(
         )
         suggestions = StudyUnitSuggestionsV1.model_validate(arguments)
     except ValueError as exc:
-        reason = "study_unit_suggestions_invalid" if isinstance(exc, ValidationError) else str(exc)
+        reason = (
+            "study_unit_suggestions_invalid"
+            if isinstance(exc, ValidationError)
+            else str(exc)
+        )
         return PlanToolResult(
             payload={
                 "ok": False,
                 "error": "invalid_study_unit_revision",
                 "detail": reason,
-                **({"recovery": {
-                    "kind": "non_overlapping_physical_pages",
-                    "document_page_count": debug_report.page_count,
-                }} if reason.endswith(("_overlaps_previous", "_page_out_of_range", "_invalid_page_range"))
-                    and debug_report.page_count > 0 else {}),
+                **(
+                    {
+                        "recovery": {
+                            "kind": "non_overlapping_physical_pages",
+                            "document_page_count": debug_report.page_count,
+                        }
+                    }
+                    if reason.endswith(
+                        (
+                            "_overlaps_previous",
+                            "_page_out_of_range",
+                            "_invalid_page_range",
+                        )
+                    )
+                    and debug_report.page_count > 0
+                    else {}
+                ),
             },
             trace_summary=f"学习单元修订建议无效：{reason}",
             follow_up_messages=[],
@@ -568,7 +614,9 @@ def _execute_revise_study_units(
             "requires_confirmation": True,
             "rationale": str(arguments.get("rationale") or ""),
             "study_unit_count": len(revised_units),
-            "plannable_count": len([unit for unit in revised_units if unit.include_in_plan]),
+            "plannable_count": len(
+                [unit for unit in revised_units if unit.include_in_plan]
+            ),
             "study_units": [
                 {
                     "unit_id": unit.id,
@@ -584,10 +632,12 @@ def _execute_revise_study_units(
             revised_units=revised_units,
             rationale=str(arguments.get("rationale") or ""),
         ),
-        follow_up_messages=[{
-            "role": "user",
-            "content": "单元修订仅已保存为待确认提案。当前教材和工具上下文没有变化；最终计划的 unit_index 必须继续引用初始 study_units，不能使用提案单元。用户确认后才会应用修订。",
-        }],
+        follow_up_messages=[
+            {
+                "role": "user",
+                "content": "单元修订仅已保存为待确认提案。当前教材和工具上下文没有变化；最终计划的 unit_index 必须继续引用初始 study_units，不能使用提案单元。用户确认后才会应用修订。",
+            }
+        ],
     )
 
 
@@ -624,8 +674,7 @@ def _execute_read_page_range_content(
                 page_end=page_end,
                 max_chars=max_chars,
                 require_containment=(
-                    context.planning_intent.pdf_page_ranges.status
-                    == "user_explicit"
+                    context.planning_intent.pdf_page_ranges.status == "user_explicit"
                 ),
             ),
         },
@@ -661,11 +710,14 @@ def _validate_revised_study_units(
             raise ValueError(f"study_unit_{index}_overlaps_previous")
         previous_end = page_end
         include_in_plan = bool(raw_unit.get("include_in_plan", True))
-        summary = str(raw_unit.get("summary") or f"覆盖第 {page_start}-{page_end} 页的学习单元。").strip()
+        summary = str(
+            raw_unit.get("summary") or f"覆盖第 {page_start}-{page_end} 页的学习单元。"
+        ).strip()
         source_section_ids = [
             str(section.id)
             for section in raw_sections
-            if getattr(section, "page_start", 0) <= page_end and getattr(section, "page_end", 0) >= page_start
+            if getattr(section, "page_start", 0) <= page_end
+            and getattr(section, "page_end", 0) >= page_start
         ]
         normalized.append(
             StudyUnitRecord(

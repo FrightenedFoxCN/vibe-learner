@@ -19,7 +19,7 @@ from app.models.tavern import (
     TavernMessageRecord,
     TavernParticipantRecord,
 )
-from app.models.tavern_integrity import persona_prompt_hash, tavern_payload_digest
+from app.models.tavern_integrity import tavern_payload_digest
 from app.services.tavern_prompt import (
     TAVERN_ACTOR_PROMPT_VERSION,
     TAVERN_PROMPT_BUDGET_VERSION,
@@ -65,9 +65,7 @@ _IDENTITY_IGNORABLE_RANGES = (
 _IDENTITY_HTML_ENTITY_PATTERN = re.compile(
     r"&(?:#[xX][0-9A-Fa-f]+|#[0-9]+|[A-Za-z][A-Za-z0-9]+);"
 )
-_COMMONMARK_ESCAPABLE_PUNCTUATION = frozenset(
-    "!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~"
-)
+_COMMONMARK_ESCAPABLE_PUNCTUATION = frozenset("!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~")
 
 
 @dataclass(frozen=True)
@@ -276,8 +274,12 @@ class TavernActorHarness:
             HarnessCheckRecord(
                 name="reply_length",
                 status=length_status,
-                code="reply_too_long" if length_status == HarnessCheckStatus.WARNING else "",
-                message="回复长度已限制。" if length_status == HarnessCheckStatus.WARNING else "回复长度有效。",
+                code="reply_too_long"
+                if length_status == HarnessCheckStatus.WARNING
+                else "",
+                message="回复长度已限制。"
+                if length_status == HarnessCheckStatus.WARNING
+                else "回复长度有效。",
             )
         )
 
@@ -334,7 +336,11 @@ class TavernActorHarness:
         checks.append(
             HarnessCheckRecord(
                 name="non_empty_reply",
-                status=(HarnessCheckStatus.FAILED if empty_reply else HarnessCheckStatus.PASSED),
+                status=(
+                    HarnessCheckStatus.FAILED
+                    if empty_reply
+                    else HarnessCheckStatus.PASSED
+                ),
                 code="empty_reply_after_repair" if empty_reply else "",
                 message="修复后回复为空。" if empty_reply else "回复包含可展示内容。",
             )
@@ -365,7 +371,8 @@ class TavernActorHarness:
             text=repaired_text,
             mood=reply.mood,
             action=reply.action or "微微颔首，目光停在对话者身上",
-            speech_style=reply.speech_style or actor.persona_snapshot.default_speech_style,
+            speech_style=reply.speech_style
+            or actor.persona_snapshot.default_speech_style,
             delivery_cue=reply.delivery_cue,
             state_commentary=reply.state_commentary,
             addressed_participant_ids=repaired_targets,
@@ -424,9 +431,7 @@ class TavernActorHarness:
             HarnessCheckRecord(
                 name="prompt_budget",
                 status=(
-                    HarnessCheckStatus.WARNING
-                    if trimmed
-                    else HarnessCheckStatus.PASSED
+                    HarnessCheckStatus.WARNING if trimmed else HarnessCheckStatus.PASSED
                 ),
                 code=(
                     f"tavern_prompt_transcript_trimmed:{report.removed_message_count}"
@@ -669,7 +674,9 @@ def find_cross_speaker_impersonation(
         )
     if not candidates:
         return None
-    return min(candidates, key=lambda item: (item.start, -len(item.alias), item.persona_id))
+    return min(
+        candidates, key=lambda item: (item.start, -len(item.alias), item.persona_id)
+    )
 
 
 def _safe_persona_id_aliases(persona_id: str) -> tuple[str, ...]:
@@ -735,9 +742,7 @@ def _identity_display_projection(
         nonlocal pending_removed_start
         visible.append(character)
         original_offsets.append(
-            pending_removed_start
-            if pending_removed_start is not None
-            else source_index
+            pending_removed_start if pending_removed_start is not None else source_index
         )
         code_span_ids.append(code_span_id)
         pending_removed_start = None
@@ -835,8 +840,7 @@ def _commonmark_code_spans(value: str) -> dict[int, tuple[int, int, int]]:
                 break
             before_is_tick = closing > 0 and value[closing - 1] == "`"
             after_is_tick = (
-                closing + run_length < len(value)
-                and value[closing + run_length] == "`"
+                closing + run_length < len(value) and value[closing + run_length] == "`"
             )
             if not before_is_tick and not after_is_tick:
                 spans[index] = (
@@ -865,7 +869,10 @@ def _commonmark_emphasis_delimiters(
         for index in range(content_start - 1, span_end)
     }
     delimiters: set[int] = set()
-    masked = "".join("\n" if index in excluded else character for index, character in enumerate(value))
+    masked = "".join(
+        "\n" if index in excluded else character
+        for index, character in enumerate(value)
+    )
     for character, maximum in (("*", 3), ("_", 3), ("~", 2)):
         pattern = re.compile(
             rf"(?<!\\)(?P<open>{re.escape(character)}{{1,{maximum}}})"
@@ -873,18 +880,20 @@ def _commonmark_emphasis_delimiters(
         )
         for match in pattern.finditer(masked):
             opening = match.start("open")
-            closing = match.start("open") + len(match.group("open")) + len(
-                match.group("body")
+            closing = (
+                match.start("open")
+                + len(match.group("open"))
+                + len(match.group("body"))
             )
             if character == "_":
                 before = value[opening - 1] if opening > 0 else ""
-                after_open = value[match.end("open")] if match.end("open") < len(value) else ""
+                after_open = (
+                    value[match.end("open")] if match.end("open") < len(value) else ""
+                )
                 before_close = value[closing - 1] if closing > 0 else ""
                 after_close_index = closing + len(match.group("open"))
                 after_close = (
-                    value[after_close_index]
-                    if after_close_index < len(value)
-                    else ""
+                    value[after_close_index] if after_close_index < len(value) else ""
                 )
                 if before.isalnum() and after_open.isalnum():
                     continue
@@ -969,8 +978,7 @@ def _identity_match_is_one_code_span(
 def _is_identity_ignorable(character: str) -> bool:
     codepoint = ord(character)
     return codepoint in _IDENTITY_IGNORABLE_CODEPOINTS or any(
-        lower <= codepoint <= upper
-        for lower, upper in _IDENTITY_IGNORABLE_RANGES
+        lower <= codepoint <= upper for lower, upper in _IDENTITY_IGNORABLE_RANGES
     )
 
 
@@ -995,9 +1003,7 @@ def _identity_visible_index(visible_value: str, normalized_index: int) -> int:
     upper = len(visible_value)
     while lower < upper:
         midpoint = (lower + upper) // 2
-        prefix_length = len(
-            _normalize_identity_visible_text(visible_value[:midpoint])
-        )
+        prefix_length = len(_normalize_identity_visible_text(visible_value[:midpoint]))
         if prefix_length > normalized_index:
             upper = midpoint
         else:

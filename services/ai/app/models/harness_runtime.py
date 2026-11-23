@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import timedelta
 from enum import StrEnum
 import hashlib
 from typing import Literal
@@ -71,7 +71,9 @@ class HarnessRuntimeExecutionV1(_RuntimeModel):
     claim_count: int = Field(ge=0, le=3)
     lease_expires_at: AwareDatetime | None
     execution_started_at: AwareDatetime | None
-    attempt_records: list[HarnessAttemptRecord] = Field(default_factory=list, max_length=128)
+    attempt_records: list[HarnessAttemptRecord] = Field(
+        default_factory=list, max_length=128
+    )
     checks: list[HarnessCheckV2] = Field(default_factory=list, max_length=256)
     terminal_trace: HarnessTraceV3 | None
     created_at: AwareDatetime
@@ -185,9 +187,9 @@ class HarnessRuntimeRecoveryDecisionV1(_RuntimeModel):
 
     @model_validator(mode="after")
     def validate_decision(self) -> "HarnessRuntimeRecoveryDecisionV1":
-        if (
-            self.disposition == HarnessRuntimeRecoveryDisposition.ALREADY_TERMINAL
-        ) != (self.terminal_trace_digest is not None):
+        if (self.disposition == HarnessRuntimeRecoveryDisposition.ALREADY_TERMINAL) != (
+            self.terminal_trace_digest is not None
+        ):
             raise ValueError("harness_runtime_recovery_terminal_digest_mismatch")
         return self
 
@@ -215,6 +217,4 @@ def expected_harness_runtime_attempt_id(trace_id: str, attempt_index: int) -> st
 
 
 def harness_runtime_terminal_trace_digest(trace: HarnessTraceV3) -> str:
-    return canonical_harness_digest(
-        trace.model_dump(mode="json", exclude_none=False)
-    )
+    return canonical_harness_digest(trace.model_dump(mode="json", exclude_none=False))

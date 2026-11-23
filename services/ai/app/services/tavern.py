@@ -15,7 +15,6 @@ from fastapi import HTTPException
 from app.core.harness_component_versions import (
     TAVERN_MESSAGE_COMMITTED_PROJECTION_CONTRACT_NAME,
     TAVERN_MESSAGE_COMMITTED_PROJECTION_CONTRACT_VERSION,
-    TAVERN_SCHEDULER_CONTRACT_VERSION,
 )
 from app.models.harness import (
     HarnessArtifactType,
@@ -45,7 +44,6 @@ from app.models.tavern import (
     TavernAuthorKind,
     TavernActorReply,
     TavernInteractionMode,
-    TavernContinueInput,
     TavernMessageRecord,
     TavernParticipantRecord,
     TavernRoomDetail,
@@ -98,10 +96,10 @@ from app.services.model_recovery import (
 )
 from app.services.provider_capabilities import TavernModelCapability
 from app.services.persona import PersonaEngine
+from app.models.tavern_integrity import persona_prompt_hash
 from app.services.tavern_harness import (
     TavernActorHarness,
     TavernHarnessViolation,
-    persona_prompt_hash,
     tavern_payload_digest,
 )
 from app.services.tavern_prompt import (
