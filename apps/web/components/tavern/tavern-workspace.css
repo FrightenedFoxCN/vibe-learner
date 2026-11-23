@@ -1,0 +1,907 @@
+@layer components {
+  .tavern-page {
+    width: 100%;
+    max-width: 1680px;
+    min-height: 100vh;
+    margin: 0 auto;
+    padding: 24px 24px 40px;
+    display: grid;
+    gap: 16px;
+    align-content: start;
+  }
+
+  :where(.tavern-page) .tavern-header {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 20px 22px;
+    border: 1px solid var(--border);
+    background:
+      radial-gradient(
+        circle at 92% 12%,
+        color-mix(in srgb, var(--accent-soft) 82%, transparent) 0,
+        transparent 28%
+      ),
+      var(--bg);
+  }
+
+  :where(.tavern-page) .tavern-header h1,
+  :where(.tavern-page) .tavern-panel h2 {
+    margin: 0;
+    color: var(--ink);
+    letter-spacing: -0.02em;
+  }
+
+  :where(.tavern-page) .tavern-header h1 {
+    font-size: clamp(22px, 2.5vw, 32px);
+    line-height: 1.15;
+  }
+
+  :where(.tavern-page) .tavern-eyebrow,
+  :where(.tavern-page) .tavern-kicker {
+    margin: 0 0 4px;
+    color: var(--accent);
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.13em;
+    line-height: 1.4;
+    text-transform: uppercase;
+  }
+
+  :where(.tavern-page) .tavern-header-status {
+    margin: 8px 0 0;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 7px;
+    color: var(--muted);
+    font-size: 12px;
+  }
+
+  :where(.tavern-page) .tavern-status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 999px;
+    background: var(--positive);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--positive) 14%, transparent);
+  }
+
+  :where(.tavern-page) .tavern-status-dot.archived,
+  :where(.tavern-page) .tavern-status-dot.empty {
+    background: var(--muted);
+    box-shadow: none;
+  }
+
+  :where(.tavern-page) .tavern-header-actions,
+  :where(.tavern-page) .tavern-composer-actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  :where(.tavern-page) .tavern-button,
+  :where(.tavern-page) .tavern-text-button,
+  :where(.tavern-page) .tavern-load-older {
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--ink-2);
+    cursor: pointer;
+    transition:
+      color 120ms,
+      border-color 120ms,
+      background 120ms,
+      transform 120ms;
+  }
+
+  :where(.tavern-page) .tavern-button {
+    min-height: 36px;
+    padding: 7px 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  :where(.tavern-page) .tavern-button:hover:not(:disabled),
+  :where(.tavern-page) .tavern-load-older:hover:not(:disabled) {
+    border-color: var(--border-strong);
+    transform: translateY(-1px);
+  }
+
+  :where(.tavern-page) .tavern-button.primary {
+    border-color: var(--accent);
+    background: var(--accent);
+    color: var(--bg);
+  }
+
+  :where(.tavern-page) .tavern-button.primary:hover:not(:disabled) {
+    border-color: var(--accent-hover);
+    background: var(--accent-hover);
+  }
+
+  :where(.tavern-page) .tavern-button.full {
+    width: 100%;
+  }
+
+  :where(.tavern-page) .tavern-button:disabled,
+  :where(.tavern-page) .tavern-text-button:disabled,
+  :where(.tavern-page) .tavern-load-older:disabled {
+    cursor: not-allowed;
+    opacity: 0.52;
+    transform: none;
+  }
+
+  :where(.tavern-page) .tavern-text-button {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 6px 8px;
+    border: 0;
+    color: var(--accent);
+    font-size: 12px;
+  }
+
+  :where(.tavern-page) .tavern-workspace-grid {
+    min-width: 0;
+    display: grid;
+    grid-template-columns: minmax(210px, 260px) minmax(400px, 1fr) minmax(260px, 330px);
+    align-items: start;
+    gap: 14px;
+  }
+
+  :where(.tavern-page) .tavern-workspace-grid.empty-room {
+    grid-template-columns: minmax(210px, 260px) minmax(400px, 1fr);
+  }
+
+  :where(.tavern-page) .tavern-left-rail,
+  :where(.tavern-page) .tavern-right-rail {
+    min-width: 0;
+    display: grid;
+    gap: 14px;
+  }
+
+  :where(.tavern-page) .tavern-left-rail {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  :where(.tavern-page) .tavern-conversation-panel {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  :where(.tavern-page) .tavern-right-rail {
+    grid-column: 3;
+    grid-row: 1;
+  }
+
+  :where(.tavern-page) .tavern-panel {
+    min-width: 0;
+    border: 1px solid var(--border);
+    background: var(--bg);
+  }
+
+  :where(.tavern-page) .tavern-panel-heading {
+    min-height: 59px;
+    padding: 13px 14px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  :where(.tavern-page) .tavern-panel h2 {
+    font-size: 15px;
+    line-height: 1.25;
+  }
+
+  :where(.tavern-page) .tavern-count {
+    flex-shrink: 0;
+    padding: 3px 7px;
+    border: 1px solid var(--border);
+    background: var(--panel);
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    line-height: 1.35;
+  }
+
+  :where(.tavern-page) .tavern-room-list {
+    max-height: min(42vh, 420px);
+    overflow-y: auto;
+  }
+
+  :where(.tavern-page) .tavern-room-item {
+    width: 100%;
+    padding: 12px 14px;
+    border: 0;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg);
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
+    display: grid;
+    gap: 4px;
+  }
+
+  :where(.tavern-page) .tavern-room-item:last-child {
+    border-bottom: 0;
+  }
+
+  :where(.tavern-page) .tavern-room-item:hover,
+  :where(.tavern-page) .tavern-room-item.active {
+    background: var(--panel);
+  }
+
+  :where(.tavern-page) .tavern-room-item.active {
+    box-shadow: inset 3px 0 0 var(--accent);
+  }
+
+  :where(.tavern-page) .tavern-room-item-title {
+    overflow: hidden;
+    color: var(--ink);
+    font-size: 13px;
+    font-weight: 700;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  :where(.tavern-page) .tavern-room-item-meta {
+    overflow: hidden;
+    color: var(--muted);
+    font-size: 10px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  :where(.tavern-page) .tavern-room-page-status {
+    display: grid;
+    gap: 8px;
+    padding: 10px 12px;
+    border-top: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 11px;
+  }
+
+  :where(.tavern-page) .tavern-room-page-status p {
+    margin: 0;
+  }
+
+  :where(.tavern-page) .tavern-room-more {
+    width: 100%;
+  }
+
+  :where(.tavern-page) .tavern-empty-copy,
+  :where(.tavern-page) .tavern-panel-footnote,
+  :where(.tavern-page) .tavern-field-error,
+  :where(.tavern-page) .tavern-repair-note {
+    margin: 0;
+    color: var(--muted);
+    font-size: 11px;
+    line-height: 1.55;
+  }
+
+  :where(.tavern-page) .tavern-empty-copy {
+    padding: 16px 14px;
+  }
+
+  :where(.tavern-page) .tavern-panel-footnote {
+    padding: 10px 14px;
+    border-top: 1px solid var(--border);
+    background: color-mix(in srgb, var(--panel) 62%, var(--bg));
+  }
+
+  :where(.tavern-page) .tavern-field-error {
+    color: var(--negative);
+  }
+
+  :where(.tavern-page) .tavern-inline-link {
+    color: var(--accent);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  :where(.tavern-page) .tavern-setup-form {
+    padding: 14px;
+    display: grid;
+    gap: 13px;
+  }
+
+  :where(.tavern-page) .tavern-setup-form label,
+  :where(.tavern-page) .tavern-composer-label {
+    display: grid;
+    gap: 6px;
+    color: var(--ink-2);
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  :where(.tavern-page) .tavern-setup-form input,
+  :where(.tavern-page) .tavern-setup-form select,
+  :where(.tavern-page) .tavern-setup-form textarea,
+  :where(.tavern-page) .interaction-composer textarea {
+    width: 100%;
+    border: 1px solid var(--border);
+    border-radius: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-size: 12px;
+  }
+
+  :where(.tavern-page) .tavern-setup-form input,
+  :where(.tavern-page) .tavern-setup-form select {
+    height: 36px;
+    padding: 0 9px;
+  }
+
+  :where(.tavern-page) .tavern-setup-form textarea,
+  :where(.tavern-page) .interaction-composer textarea {
+    min-height: 64px;
+    padding: 9px;
+    line-height: 1.55;
+    resize: vertical;
+  }
+
+  :where(.tavern-page) .tavern-setup-form input:focus,
+  :where(.tavern-page) .tavern-setup-form select:focus,
+  :where(.tavern-page) .tavern-setup-form textarea:focus,
+  :where(.tavern-page) .interaction-composer textarea:focus {
+    border-color: var(--accent);
+    outline: none;
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 13%, transparent);
+  }
+
+  :where(.tavern-page) .tavern-setup-form fieldset {
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  :where(.tavern-page) .tavern-setup-form legend {
+    width: 100%;
+    margin-bottom: 7px;
+    display: flex;
+    justify-content: space-between;
+    color: var(--ink-2);
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  :where(.tavern-page) .tavern-persona-options {
+    max-height: 220px;
+    overflow-y: auto;
+    border: 1px solid var(--border);
+  }
+
+  :where(.tavern-page) .tavern-persona-options label {
+    min-width: 0;
+    padding: 8px 9px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    cursor: pointer;
+  }
+
+  :where(.tavern-page) .tavern-persona-options label:last-child {
+    border-bottom: 0;
+  }
+
+  :where(.tavern-page) .tavern-persona-options label.selected {
+    background: var(--accent-soft);
+  }
+
+  :where(.tavern-page) .tavern-persona-options label > span {
+    min-width: 0;
+    display: grid;
+    gap: 2px;
+  }
+
+  :where(.tavern-page) .tavern-persona-options strong,
+  :where(.tavern-page) .tavern-persona-options small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  :where(.tavern-page) .tavern-persona-options small {
+    color: var(--muted);
+    font-weight: 400;
+  }
+
+  :where(.tavern-page) .tavern-conversation-panel {
+    height: calc(100vh - 142px);
+    min-height: 560px;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  :where(.tavern-page) .tavern-transcript {
+    min-height: 0;
+    padding: 16px;
+    overflow-y: auto;
+    scroll-behavior: smooth;
+    overscroll-behavior: contain;
+    background:
+      linear-gradient(
+        90deg,
+        color-mix(in srgb, var(--panel) 46%, transparent) 1px,
+        transparent 1px
+      ),
+      linear-gradient(
+        color-mix(in srgb, var(--panel) 46%, transparent) 1px,
+        transparent 1px
+      ),
+      var(--bg);
+    background-size: 32px 32px;
+  }
+
+  :where(.tavern-page) .tavern-load-older {
+    width: max-content;
+    min-width: 44px;
+    min-height: 44px;
+    margin: 0 auto 14px;
+    padding: 6px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--muted);
+    font-size: 11px;
+  }
+
+  :where(.tavern-page) .tavern-history-start {
+    margin: 0 0 14px;
+    color: var(--muted);
+    font-size: 10px;
+    text-align: center;
+  }
+
+  :where(.tavern-page) .tavern-empty-state {
+    min-height: 360px;
+    display: grid;
+    place-content: center;
+    justify-items: center;
+    gap: 10px;
+    color: var(--muted);
+    text-align: center;
+  }
+
+  :where(.tavern-page) .tavern-empty-state p {
+    max-width: 280px;
+    margin: 0;
+    font-size: 13px;
+  }
+
+  :where(.tavern-page) .tavern-message {
+    width: min(78%, 680px);
+    margin: 0 auto 16px 0;
+    display: grid;
+    gap: 5px;
+  }
+
+  :where(.tavern-page) .tavern-message.user {
+    margin-right: 0;
+    margin-left: auto;
+  }
+
+  :where(.tavern-page) .tavern-message.director,
+  :where(.tavern-page) .tavern-message.system {
+    width: min(88%, 760px);
+    margin-right: auto;
+    margin-left: auto;
+  }
+
+  :where(.tavern-page) .tavern-message-meta {
+    padding: 0 3px;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    color: var(--muted);
+    font-size: 10px;
+  }
+
+  :where(.tavern-page) .tavern-message-meta strong {
+    color: var(--ink-2);
+    font-size: 11px;
+  }
+
+  :where(.tavern-page) .tavern-message-body {
+    padding: 12px 13px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--ink);
+    font-size: 13px;
+    line-height: 1.65;
+    overflow-wrap: anywhere;
+  }
+
+  :where(.tavern-page) .tavern-message.user .tavern-message-body {
+    border-color: color-mix(in srgb, var(--accent) 36%, var(--border));
+    background: var(--accent-soft);
+  }
+
+  :where(.tavern-page) .tavern-message.director .tavern-message-body,
+  :where(.tavern-page) .tavern-message.system .tavern-message-body {
+    border-style: dashed;
+    background: var(--panel);
+    color: var(--ink-2);
+  }
+
+  :where(.tavern-page) .tavern-message-action,
+  :where(.tavern-page) .tavern-message-addressed {
+    margin: 8px 0 0;
+    padding-top: 7px;
+    border-top: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
+    color: var(--muted);
+    font-size: 10px;
+    line-height: 1.5;
+  }
+
+  :where(.tavern-page) .tavern-message-addressed {
+    border-top: 0;
+    margin-top: 3px;
+    padding-top: 0;
+  }
+
+  :where(.tavern-page) .tavern-roster-list {
+    display: grid;
+  }
+
+  :where(.tavern-page) .tavern-roster-item {
+    min-width: 0;
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--border);
+    display: grid;
+    grid-template-columns: auto auto minmax(0, 1fr);
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+  }
+
+  :where(.tavern-page) .tavern-roster-item.selected {
+    background: color-mix(in srgb, var(--accent-soft) 74%, var(--bg));
+  }
+
+  :where(.tavern-page) .tavern-avatar {
+    width: 28px;
+    height: 28px;
+    border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--border));
+    border-radius: 999px;
+    background: var(--bg);
+    color: var(--accent);
+    display: grid;
+    place-items: center;
+    font-size: 11px;
+    font-weight: 800;
+  }
+
+  :where(.tavern-page) .tavern-roster-copy {
+    min-width: 0;
+    display: grid;
+    gap: 2px;
+  }
+
+  :where(.tavern-page) .tavern-roster-copy strong,
+  :where(.tavern-page) .tavern-roster-copy small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  :where(.tavern-page) .tavern-roster-copy strong {
+    color: var(--ink);
+    font-size: 12px;
+  }
+
+  :where(.tavern-page) .tavern-roster-copy small {
+    color: var(--muted);
+    font-size: 10px;
+  }
+
+  :where(.tavern-page) .tavern-roster-copy .state-generating,
+  :where(.tavern-page) .tavern-roster-copy .state-pending {
+    color: var(--accent);
+  }
+
+  :where(.tavern-page) .tavern-roster-copy .state-completed {
+    color: var(--positive);
+  }
+
+  :where(.tavern-page) .tavern-roster-copy .state-failed {
+    color: var(--negative);
+  }
+
+  :where(.tavern-page) .interaction-composer {
+    padding-bottom: 13px;
+  }
+
+  :where(.tavern-page) .tavern-recipient-preview {
+    margin: 0;
+    padding: 9px 13px;
+    border-bottom: 1px solid var(--border);
+    background: var(--panel);
+    color: var(--accent);
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1.45;
+  }
+
+  :where(.tavern-page) .tavern-recovery-callout {
+    margin: 12px 13px 0;
+    padding: 11px;
+    border: 1px solid color-mix(in srgb, var(--accent) 34%, var(--border));
+    background: color-mix(in srgb, var(--accent-soft) 58%, var(--bg));
+    display: grid;
+    gap: 9px;
+  }
+
+  :where(.tavern-page) .tavern-recovery-callout strong {
+    color: var(--ink);
+    font-size: 12px;
+  }
+
+  :where(.tavern-page) .tavern-recovery-callout p {
+    margin: 3px 0 0;
+    color: var(--ink-2);
+    font-size: 11px;
+    line-height: 1.55;
+  }
+
+  :where(.tavern-page) .tavern-composer-label {
+    margin: 12px 13px 0;
+  }
+
+  :where(.tavern-page) .tavern-composer-actions {
+    margin: 12px 13px 0;
+  }
+
+  :where(.tavern-page) .reliability-details > summary {
+    min-height: 59px;
+    padding: 12px 14px;
+    list-style: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  :where(.tavern-page) .reliability-details > summary::-webkit-details-marker {
+    display: none;
+  }
+
+  :where(.tavern-page) .reliability-details > summary > span:first-child {
+    display: grid;
+  }
+
+  :where(.tavern-page) .reliability-details > summary strong {
+    color: var(--ink);
+    font-size: 15px;
+  }
+
+  :where(.tavern-page) .tavern-reliability-content {
+    border-top: 1px solid var(--border);
+  }
+
+  :where(.tavern-page) .tavern-run-summary {
+    padding: 11px 13px;
+    border-bottom: 1px solid var(--border);
+    display: grid;
+    gap: 8px;
+  }
+
+  :where(.tavern-page) .tavern-run-summary:last-child {
+    border-bottom: 0;
+  }
+
+  :where(.tavern-page) .tavern-run-title-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  :where(.tavern-page) .tavern-run-title-row strong {
+    color: var(--ink);
+    font-size: 11px;
+  }
+
+  :where(.tavern-page) .tavern-run-title-row span {
+    color: var(--muted);
+    font-size: 9px;
+  }
+
+  :where(.tavern-page) .tavern-run-summary ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 4px;
+  }
+
+  :where(.tavern-page) .tavern-run-summary li {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+    color: var(--muted);
+    font-size: 10px;
+  }
+
+  :where(.tavern-page) .tavern-run-summary li span:first-child {
+    color: var(--ink-2);
+    font-weight: 700;
+  }
+
+  @media (max-width: 1200px) {
+    :where(.tavern-page) .tavern-workspace-grid {
+      grid-template-columns: minmax(190px, 230px) minmax(400px, 1fr);
+    }
+
+    :where(.tavern-page) .tavern-right-rail {
+      grid-column: 1 / -1;
+      grid-row: 2;
+      grid-template-columns: minmax(220px, 0.72fr) minmax(340px, 1.28fr);
+    }
+
+    :where(.tavern-page) .reliability-details {
+      grid-column: 1 / -1;
+    }
+  }
+
+  @media (max-width: 800px) {
+    :where(.tavern-page) .tavern-header {
+      align-items: flex-start;
+    }
+
+    :where(.tavern-page) .tavern-workspace-grid {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    :where(.tavern-page) .tavern-left-rail,
+    :where(.tavern-page) .tavern-right-rail {
+      grid-column: 1;
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    :where(.tavern-page) .tavern-left-rail {
+      grid-row: 3;
+    }
+
+    :where(.tavern-page) .tavern-right-rail {
+      grid-row: 2;
+    }
+
+    :where(.tavern-page) .tavern-conversation-panel {
+      grid-column: 1;
+      grid-row: 2;
+    }
+
+    :where(.tavern-page) .tavern-workspace-grid.has-room .tavern-right-rail {
+      grid-row: 1;
+    }
+
+    :where(.tavern-page) .tavern-workspace-grid.has-room .tavern-left-rail {
+      grid-row: 3;
+    }
+
+    :where(.tavern-page) .tavern-workspace-grid.empty-room .tavern-left-rail {
+      grid-row: 1;
+    }
+
+    :where(.tavern-page) .tavern-workspace-grid.empty-room .tavern-conversation-panel {
+      grid-row: 2;
+    }
+
+    :where(.tavern-page) .interaction-composer {
+      position: sticky;
+      z-index: 12;
+      bottom: 8px;
+      box-shadow: 0 -8px 24px color-mix(in srgb, var(--ink) 10%, transparent);
+    }
+
+    :where(.tavern-page) .participant-roster {
+      order: 2;
+    }
+
+    :where(.tavern-page) .reliability-details {
+      grid-column: auto;
+      order: 3;
+    }
+
+    :where(.tavern-page) .tavern-conversation-panel {
+      height: min(68vh, 720px);
+      min-height: 480px;
+    }
+
+    :where(.tavern-page) .tavern-workspace-grid.empty-room .tavern-conversation-panel {
+      height: auto;
+      min-height: 180px;
+    }
+  }
+
+  @media (max-width: 760px) {
+    .tavern-page {
+      gap: 12px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .tavern-page {
+      --app-mobile-page-inset: 10px;
+    }
+
+    :where(.tavern-page) .tavern-header {
+      padding: 15px;
+      display: grid;
+    }
+
+    :where(.tavern-page) .tavern-header-actions,
+    :where(.tavern-page) .tavern-composer-actions {
+      width: 100%;
+    }
+
+    :where(.tavern-page) .tavern-button {
+      min-height: 44px;
+    }
+
+    :where(.tavern-page) .tavern-setup-form input,
+    :where(.tavern-page) .tavern-setup-form select {
+      height: 44px;
+      min-height: 44px;
+    }
+
+    :where(.tavern-page) .tavern-composer-actions {
+      width: auto;
+    }
+
+    :where(.tavern-page) .tavern-header-actions .tavern-button,
+    :where(.tavern-page) .tavern-composer-actions .tavern-button {
+      flex: 1 1 130px;
+      min-height: 44px;
+    }
+
+    :where(.tavern-page) .tavern-conversation-panel {
+      height: 64vh;
+      min-height: 430px;
+    }
+
+    :where(.tavern-page) .tavern-workspace-grid.empty-room .tavern-conversation-panel {
+      height: auto;
+      min-height: 160px;
+    }
+
+    :where(.tavern-page) .tavern-transcript {
+      padding: 12px 9px;
+    }
+
+    :where(.tavern-page) .tavern-message,
+    :where(.tavern-page) .tavern-message.director,
+    :where(.tavern-page) .tavern-message.system {
+      width: 93%;
+    }
+
+    :where(.tavern-page) .tavern-message-meta {
+      align-items: flex-start;
+      flex-direction: column;
+      gap: 1px;
+    }
+
+    :where(.tavern-page) .tavern-message-body {
+      padding: 10px 11px;
+    }
+  }
+
+  /* Keep controls at least 44px even when a local rule sets a shorter height. */
+  .tavern-page :is(button, select, input:not([type="hidden"]), textarea) {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}

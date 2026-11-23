@@ -5,15 +5,14 @@ import {
   defaultTavernWorkspacePorts,
   type TavernWorkspacePorts,
 } from "../../lib/tavern-workspace-ports";
-import {
-  TavernHeader,
-  TavernSessionPanel,
-  TavernSetupPanel,
-  TavernConversationPanel,
-  ParticipantRoster,
-  InteractionComposer,
-  ReliabilityDetails,
-} from "./tavern-workspace-panels";
+import { TavernHeader } from "./tavern-header";
+import { TavernSessionPanel } from "./tavern-session-panel";
+import { TavernSetupPanel } from "./tavern-setup-panel";
+import { TavernConversationPanel } from "./tavern-conversation-panel";
+import { ParticipantRoster } from "./participant-roster";
+import { InteractionComposer } from "./interaction-composer";
+import { ReliabilityDetails } from "./reliability-details";
+import "./tavern-workspace.css";
 import { AsyncFeedback } from "../ui/async-feedback";
 import { usePageDebugSnapshot } from "../debug/page-debug-context";
 import { TopNav } from "../layout/top-nav";
