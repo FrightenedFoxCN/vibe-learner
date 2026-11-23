@@ -215,13 +215,18 @@ def _admit_and_run_study_chat(
     execute,
     dependencies: StudyChatDependencies,
 ) -> StudyChatOperationReceipt:
+    normalized_kind = (message_kind or "learner").strip() or "learner"
+    if normalized_kind == "learner" and not message.strip() and not any(
+        item.raw_bytes for item in (attachment_inputs or [])
+    ):
+        raise StudyChatApplicationError(status_code=422, detail="study_chat_message_or_attachment_required")
     try:
-        parse_verbatim_memory(message, (message_kind or "learner").strip() or "learner")
+        parse_verbatim_memory(message, normalized_kind)
     except ValueError as exc:
         raise StudyChatApplicationError(status_code=422, detail=str(exc)) from exc
     request_payload = StudyChatOperationRequestPayload(
         message=message,
-        message_kind=(message_kind or "learner").strip() or "learner",
+        message_kind=normalized_kind,
         follow_up_id=follow_up_id,
         hidden_message_prefix=hidden_message_prefix,
         expected_session_revision=expected_session_revision,

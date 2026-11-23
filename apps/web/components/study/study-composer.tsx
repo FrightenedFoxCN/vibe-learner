@@ -1,5 +1,6 @@
 import { useEffect, useRef, type Dispatch, type SetStateAction } from "react";
 import { outputLanguageError } from "../../lib/output-language";
+import { hasStudyLearnerInput } from "../../lib/study-chat-input";
 import { MaterialIcon } from "../ui/material-icon";
 import type { StudyConsoleProps } from "./study-console-types";
 import { StudyAttachmentPicker, StudyAttachmentDrafts } from "./study-attachments";
@@ -45,6 +46,7 @@ export function StudyComposer({
 }: StudyComposerProps) {
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const languageError = outputLanguageError(languagePreference);
+  const hasInput = hasStudyLearnerInput(message, attachments);
 
   useEffect(() => {
     if (!pendingComposerInsert?.id || !pendingComposerInsert.text) {
@@ -117,10 +119,11 @@ export function StudyComposer({
               disabled ||
               recoveryLocked ||
               refreshRequired ||
+              !hasInput ||
               Boolean(languageError)
             }
             onClick={async () => {
-              if (languageError) return;
+              if (languageError || !hasInput) return;
               const didSend = await onAsk(message, attachments, languagePreference);
               if (!didSend) {
                 return;
