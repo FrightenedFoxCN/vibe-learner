@@ -9,7 +9,7 @@
 | Web 根布局与全局 Debug Overlay | `apps/web/app/layout.tsx`、`apps/web/components/debug/debug-overlay.tsx` |
 | Web 导航首页 | `apps/web/app/page.tsx` |
 | 前端领域数据入口 | `apps/web/lib/data/*.ts`（说明见 [`apps/web/lib/data/README.md`](../apps/web/lib/data/README.md)） |
-| 前端域级 API 传输模块 | `apps/web/lib/api/_shared.ts`、`apps/web/lib/api/*.ts`（兼容汇总 `apps/web/lib/api.ts`） |
+| 前端域级 API 传输模块 | `apps/web/lib/api/_shared.ts`、`apps/web/lib/api/*.ts`（按域导入，无全域聚合入口） |
 | 后端应用工厂与容器引导 | `services/ai/app/app_factory.py`、`services/ai/app/core/bootstrap.py` |
 | 后端路由汇总与域路由 | `services/ai/app/api/routes.py`、`services/ai/app/api/routers/*.py`、`services/ai/app/api/tavern_routes.py`、`services/ai/app/api/diagnostic_routes.py` |
 | 外部输入归一化（coerce） | `services/ai/app/core/coerce.py` |
