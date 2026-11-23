@@ -34,7 +34,9 @@ MANAGED_CLEANUP_BUCKETS = [
 
 
 class StorageLifecycleService:
-    def __init__(self, store: LocalJsonStore, token_usage_service: TokenUsageService) -> None:
+    def __init__(
+        self, store: LocalJsonStore, token_usage_service: TokenUsageService
+    ) -> None:
         self._store = store
         self._token_usage_service = token_usage_service
 
@@ -52,7 +54,12 @@ class StorageLifecycleService:
                     "description": _bucket_description(bucket),
                 }
             )
-        for bucket in ("document_debug", "planning_trace", "document_process_stream", "learning_plan_stream"):
+        for bucket in (
+            "document_debug",
+            "planning_trace",
+            "document_process_stream",
+            "learning_plan_stream",
+        ):
             buckets.append(
                 {
                     "bucket": bucket,
@@ -105,12 +112,13 @@ class StorageLifecycleService:
         session_id: str = "",
     ) -> list[dict[str, object]]:
         normalized_buckets = [bucket.strip() for bucket in buckets if bucket.strip()]
-        if not normalized_buckets:
-            return []
-        cleaned: list[dict[str, object]] = []
+        # A rejected bucket list must not apply the valid prefix.
         for bucket in normalized_buckets:
             if bucket not in MANAGED_CLEANUP_BUCKETS:
                 raise ValueError(f"cleanup_bucket_not_supported:{bucket}")
+
+        cleaned: list[dict[str, object]] = []
+        for bucket in normalized_buckets:
             removed = 0
             if bucket == "token_usage":
                 removed = self._token_usage_service.clear()
@@ -127,7 +135,9 @@ class StorageLifecycleService:
 
     def _cleanup_chat_attachments(self, *, session_id: str) -> int:
         if session_id:
-            return self._store.storage.delete_tree(self._store.chat_attachment_root / session_id)
+            return self._store.storage.delete_tree(
+                self._store.chat_attachment_root / session_id
+            )
         return self._store.storage.clear_dir(self._store.chat_attachment_root)
 
     def list_orphaned_uploads(self) -> list[str]:
