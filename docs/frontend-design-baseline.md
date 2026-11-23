@@ -24,7 +24,7 @@
 
 ## 颜色与字体 Token
 
-统一使用 `apps/web/app/globals.css` 中定义的 CSS 变量，不在组件中硬编码十六进制颜色：
+统一使用 `apps/web/app/globals.css` 中定义的 CSS 变量及其 `@theme inline` 映射的 Tailwind CSS v4 语义类（如 `bg-bg`、`bg-panel`、`bg-panel-strong`、`border-border`、`text-ink`、`text-ink-2`、`text-muted`、`bg-accent`、`hover:bg-accent-hover`、`bg-accent-soft`、`text-positive`、`text-negative`、`font-sans`、`font-mono`），不在组件中硬编码十六进制颜色：
 
 - **表面**：`--bg`（画布）、`--panel`（普通面板）、`--panel-strong`（强调面板）
 - **边框**：`--border`、`--border-strong`
@@ -55,4 +55,4 @@
 2. 主/次/危险操作层级是否清晰，次级说明是否适当弱化？
 3. 视觉尺寸与触控热区是否分离处理（尤其是 checkbox 与图标按钮）？
 4. 390px 窄屏、键盘焦点、无障碍标签与异步状态提示是否完整？
-5. 样式是否归入清晰的 CSS 类/模块，而不是继续堆叠 inline `style={{}}`？
+5. 样式是否优先使用 Tailwind CSS v4 语义工具类（并配合 `@layer components`），而不是继续堆叠 inline `style={{}}` 或 TS 样式对象？
