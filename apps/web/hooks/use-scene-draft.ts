@@ -57,8 +57,13 @@ const clock: SceneDraftClock = {
   cancel: (handle) => clearTimeout(handle as ReturnType<typeof setTimeout>),
 };
 
-function fingerprint(name: string, summary: string, layers: SceneLayer[]) {
-  return JSON.stringify([name, summary, layers]);
+function fingerprint(
+  name: string,
+  summary: string,
+  layers: SceneLayer[],
+  selectedLayerId: string,
+) {
+  return JSON.stringify([name, summary, layers, selectedLayerId]);
 }
 
 export function useSceneDraft(
@@ -81,12 +86,6 @@ export function useSceneDraft(
   const [sceneSummary, setSceneSummary] = useState(
     "从世界整体的学术框架出发，逐层建立观察者在微观教室中的完整感受。这个示例展示了如何从宏观规则层层推导到具体互动对象。",
   );
-  const contentFingerprint = useMemo(
-    () => fingerprint(sceneName, sceneSummary, sceneLayers),
-    [sceneName, sceneSummary, sceneLayers],
-  );
-  const [baseline, markSaved] = useState(contentFingerprint);
-  const isSceneDraftDirty = contentFingerprint !== baseline;
   const [selectedLayerId, setSelectedLayerId] = useState(INITIAL_SCENE[0]?.id ?? "");
   const [collapsedLayerIds, setCollapsedLayerIds] = useState<string[]>(() =>
     collectLayerIds(INITIAL_SCENE).filter(
@@ -156,6 +155,12 @@ export function useSceneDraft(
   // Editor focus may be an object or collapsed; persisted scenes still need a layer.
   const sceneSelectionLayerId =
     selectedLayer?.id ?? selectedObjectTarget?.layer.id ?? sceneLayers[0]?.id ?? "";
+  const contentFingerprint = useMemo(
+    () => fingerprint(sceneName, sceneSummary, sceneLayers, sceneSelectionLayerId),
+    [sceneName, sceneSummary, sceneLayers, sceneSelectionLayerId],
+  );
+  const [baseline, markSaved] = useState<string | null>(contentFingerprint);
+  const isSceneDraftDirty = contentFingerprint !== baseline;
   const selectedPath = useMemo(
     () => findLayerPath(sceneLayers, selectedLayerId),
     [sceneLayers, selectedLayerId],
@@ -199,17 +204,22 @@ export function useSceneDraft(
     preserveDiagnosticFlow = false,
     markClean = false,
   ) {
-    if (markClean) {
-      markSaved(
-        fingerprint(imported.sceneName, imported.sceneSummary, imported.sceneLayers),
-      );
-    }
     if (!preserveDiagnosticFlow) diagnosticFlow.current = null;
     const knownIds = new Set(collectLayerIds(imported.sceneLayers));
     const nextSelectedLayerId =
       imported.selectedLayerId && knownIds.has(imported.selectedLayerId)
         ? imported.selectedLayerId
         : (imported.sceneLayers[0]?.id ?? "");
+    if (markClean) {
+      markSaved(
+        fingerprint(
+          imported.sceneName,
+          imported.sceneSummary,
+          imported.sceneLayers,
+          nextSelectedLayerId,
+        ),
+      );
+    }
     sceneDraftRevisionRef.current += 1;
     sceneSubjectIdRef.current = subjectId;
     selectedLayerIdRef.current = nextSelectedLayerId;
@@ -258,15 +268,17 @@ export function useSceneDraft(
     try {
       const raw = (storage === localStorage && unpersistedLocalScene) || storage.read();
       if (raw) {
-        const explicitlyClean =
-          typeof raw === "object" && "draftDirty" in raw && raw.draftDirty === false;
+        const draftDirty =
+          typeof raw === "object" && "draftDirty" in raw ? raw.draftDirty : undefined;
         applySceneImport(
           parseSceneImportPayload(raw),
           "已加载本地保存场景。",
           undefined,
           false,
-          explicitlyClean,
+          draftDirty === false,
         );
+        // An explicitly dirty snapshot does not carry its last saved baseline.
+        if (draftDirty === true) markSaved(null);
       }
     } catch {
       onNotice("本地保存内容解析失败，已忽略。");
