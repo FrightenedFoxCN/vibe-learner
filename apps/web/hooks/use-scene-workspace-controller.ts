@@ -279,10 +279,13 @@ export function useSceneWorkspaceController() {
     return () => window.removeEventListener("resize", syncLayout);
   }, []);
 
+  const shouldScrollSelectedLayerRef = useRef(false);
+
   useEffect(() => {
-    if (!selectedLayerId) {
+    if (!selectedLayerId || !shouldScrollSelectedLayerRef.current) {
       return;
     }
+    shouldScrollSelectedLayerRef.current = false;
     const editorId = `scene-node-editor-${selectedLayerId}`;
     const timer = window.setTimeout(() => {
       const nodeEditor = document.getElementById(editorId);
@@ -815,6 +818,9 @@ export function useSceneWorkspaceController() {
   }
 
   function toggleLayerEditor(layerId: string) {
+    if (selectedLayerId !== layerId) {
+      shouldScrollSelectedLayerRef.current = true;
+    }
     toggleLayerSelection(layerId);
   }
 
@@ -823,6 +829,9 @@ export function useSceneWorkspaceController() {
   }
 
   function handleSelectLayer(layerId: string) {
+    if (selectedLayerId !== layerId) {
+      shouldScrollSelectedLayerRef.current = true;
+    }
     selectSceneLayer(layerId);
   }
 

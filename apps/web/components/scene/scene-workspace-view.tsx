@@ -83,7 +83,7 @@ export function SceneWorkspaceView({
             role="region"
             aria-label="场景操作反馈"
             tabIndex={0}
-            className={`${css.notice} grid h-[104px] w-full min-w-0 shrink-0 content-start gap-1 overflow-y-auto px-2 py-1.5 text-xs/[1.4] text-ink-2`}
+            className={`${css.notice} grid min-h-8 max-h-24 w-full min-w-0 shrink-0 content-start gap-1 overflow-y-auto px-2.5 py-1.5 text-xs/[1.4] text-ink-2`}
           >
             <AsyncFeedback
               actionRef={actionTriggerRef}

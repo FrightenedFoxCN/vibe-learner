@@ -80,7 +80,7 @@
 - [x] **P1-UI-05 修复 `Plan Workspace` 表单样式割裂、按钮挤压与操作层级倒置**
   - 补齐 `document-setup-fields.tsx` 中 `PDF 物理页范围` 输入框与辅助说明的样式类名，统一 `.output-language-field` 与 `PersonaMiniCard` 为直角基线与一致表单节奏。
   - 修复 `Plan Overview` 中 `编辑题目` 按钮被压成竖排换行的问题，将排期项核心动作 `开始` 提升为主按钮、`完成` 退为次按钮，并将主要按钮与输入控件高度收敛至设计基线。
-- [ ] **P1-UI-06 修复 `Scene Setup` 固定 104px 空白提示条与移动端首屏自动滚走工具栏**
+- [x] **P1-UI-06 修复 `Scene Setup` 固定 104px 空白提示条与移动端首屏自动滚走工具栏**
   - 将 `scene-workspace-view.tsx` 顶部反馈条由固定 `h-[104px]` 改为内容自适应高度（`min-h-8 max-h-24`）。
   - 限制 `use-scene-workspace-controller.ts` 仅在用户主动切换节点时执行 `scrollIntoView`，避免移动端初次加载自动将树标题与工具按钮卷到顶栏之下。
 - [ ] **P1-UI-07 优化 `Study Dialog` 吸底输入透字、PDF 预览浮条与 `Study Notes` 编辑器响应式布局**
