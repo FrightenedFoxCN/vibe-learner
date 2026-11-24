@@ -105,7 +105,7 @@ export const CAPABILITY_AUDIT_CONFIGS: CapabilityAuditConfig[] = [
 
 export function buildRuntimeSettingsPatch(
   settings: RuntimeSettings,
-  options: { includeSecrets?: boolean } = {}
+  options: { includeSecrets?: boolean; baseline?: RuntimeSettings } = {}
 ): RuntimeSettingsPatch {
   const patch: RuntimeSettingsPatch = {
     planProvider: settings.planProvider,
@@ -139,6 +139,12 @@ export function buildRuntimeSettingsPatch(
     patch.openaiChatApiKey = settings.openaiChatApiKey;
   }
 
+  const baseline = options.baseline;
+  if (baseline) {
+    for (const key of Object.keys(patch) as (keyof RuntimeSettingsPatch)[]) {
+      if (Object.is(patch[key], baseline[key])) delete patch[key];
+    }
+  }
   return patch;
 }
 

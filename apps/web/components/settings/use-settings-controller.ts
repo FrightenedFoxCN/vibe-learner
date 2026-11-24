@@ -219,29 +219,50 @@ export function useSettingsController(): SettingsController {
     });
   }, [settings]);
 
+  // Follow the editor's submitted lineage while newer edits are queued. A
+  // receipt may also include fields changed by another client: those fields
+  // are not new intent in a queued snapshot made before the receipt.
+  const saveBaselineRef = useRef<RuntimeSettings | null>(null);
   const saveCoordinator = useSettingsSave(
     {
       serialize: serializeSettings,
       persist: async (snapshot: RuntimeSettings, context) => {
         const shouldUseVault = desktopSecurityRef.current.enabled;
-        const commit = () =>
-          updateRuntimeSettings(
-            buildRuntimeSettingsPatch(snapshot, { includeSecrets: !shouldUseVault }),
-            context,
-          );
-        if (!shouldUseVault) return commit();
+        const baseline = saveBaselineRef.current ?? undefined;
+        const patch = buildRuntimeSettingsPatch(snapshot, {
+          includeSecrets: !shouldUseVault,
+          baseline,
+        });
+        const commit = () => updateRuntimeSettings(patch, context);
+        const finish = (confirmed: RuntimeSettings) => {
+          const current = formRef.current.settings;
+          saveBaselineRef.current =
+            current && serializeSettings(current) === serializeSettings(snapshot)
+              ? confirmed
+              : snapshot;
+          return confirmed;
+        };
+        if (!shouldUseVault) return finish(await commit());
         const version = vaultVersionRef.current;
         return enqueueVaultOperation(async () => {
           if (version !== vaultVersionRef.current || vaultTransitionRef.current) {
             throw new Error("保险库状态正在变更，该次自动保存未应用。");
           }
-          if (
-            desktopSecurityRef.current.vaultState !== "unlocked" ||
-            !isDesktopVaultUnlocked()
-          ) {
-            return commit();
-          }
           const secrets = extractSecretPatch(snapshot);
+          const previousSecrets = baseline && extractSecretPatch(baseline);
+          const secretChanged =
+            !previousSecrets ||
+            (Object.keys(secrets) as (keyof typeof secrets)[]).some(
+              (key) => secrets[key] !== previousSecrets[key],
+            );
+          if (
+            !isDesktopVaultUnlocked() ||
+            desktopSecurityRef.current.vaultState !== "unlocked"
+          ) {
+            return finish(await commit());
+          }
+          if (!secretChanged)
+            return finish(mergeRuntimeSettingsWithSecrets(await commit(), secrets));
           const backendNext = await saveWithVault(
             {
               read: () => loadDesktopVaultSecrets(context),
@@ -251,7 +272,7 @@ export function useSettingsController(): SettingsController {
             },
             secrets,
           );
-          return mergeRuntimeSettingsWithSecrets(backendNext, secrets);
+          return finish(mergeRuntimeSettingsWithSecrets(backendNext, secrets));
         });
       },
       saved: (next, submittedKey) =>
@@ -278,6 +299,7 @@ export function useSettingsController(): SettingsController {
     if (next.runtimeSettings) runtimeSettings.replaceSettings(next.runtimeSettings);
     setLastSavedAt(next.lastSavedAt);
     if (next.baseline) {
+      saveBaselineRef.current = next.baseline;
       saveCoordinator.acceptSaved(next.baseline);
       setSavePhase("saved");
       setSaveError("");

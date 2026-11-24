@@ -68,6 +68,21 @@ const autosave = {
   settings: result,
 } as const;
 
+test("an edit based on an older form sends only changed fields", () => {
+  const baseline = { ...submitted, openaiChatTemperature: 0.35 };
+  const local = { ...baseline, openaiTimeoutSeconds: 75 };
+  assert.deepEqual(buildRuntimeSettingsPatch(local, { baseline }), {
+    openaiTimeoutSeconds: 75,
+  });
+  assert.deepEqual(
+    buildRuntimeSettingsPatch(
+      { ...local, openaiApiKey: "" },
+      { baseline, includeSecrets: false },
+    ),
+    { openaiTimeoutSeconds: 75 },
+  );
+});
+
 test("settings numeric input rejects blank, coercions, fractions for integers, and overflow", () => {
   const tokens = NUMERIC_SETTING_CONFIGS.openaiChatMaxTokens;
   const temperature = NUMERIC_SETTING_CONFIGS.openaiChatTemperature;
