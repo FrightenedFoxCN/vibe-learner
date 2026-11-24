@@ -21,6 +21,10 @@ export function CapabilityAuditCard({
   return (
     <SettingsPanel>
       <h2 className="m-0 text-lg font-semibold text-ink">能力对照与回填</h2>
+      <p className="m-0 text-xs text-muted">
+        能力信号来自 /models
+        的元数据或模型名推断，不是图片输入、联网搜索或生产运行预算的实测。刷新也可能发送最小聊天请求；回填只更改开关。
+      </p>
       <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,15.625rem),1fr))] gap-3">
         {CAPABILITY_AUDIT_CONFIGS.map((config) => {
           const modelName = String(settings[config.modelKey] || "");
@@ -66,7 +70,7 @@ export function CapabilityAuditCard({
               <div className="grid min-w-0 gap-1.5">
                 <div className="flex flex-wrap items-center gap-2">
                   <StatusBadge
-                    label={`检测结果：${formatCapabilityStatus(signal)}`}
+                    label={`能力信号：${formatCapabilityStatus(signal)}`}
                     tone={toneForStatus(signal.status)}
                   />
                   <StatusBadge
@@ -74,7 +78,7 @@ export function CapabilityAuditCard({
                     tone={signal.source === "metadata" ? "positive" : "muted"}
                   />
                   {mismatch ? (
-                    <StatusBadge label="开关与检测不一致" tone="negative" />
+                    <StatusBadge label="开关与能力信号不一致" tone="negative" />
                   ) : null}
                 </div>
                 {formatCapabilityDecisionNote(signal) ? (
@@ -106,13 +110,13 @@ export function CapabilityAuditCard({
                   disabled={probe.loading}
                   onClick={() => void controller.probeScope(config.scope)}
                 >
-                  {probe.loading ? "拉取中…" : "刷新能力"}
+                  {probe.loading ? "检查中…" : "刷新探针结果"}
                 </Button>
                 <Button
                   disabled={detectedValue === null}
                   onClick={() => controller.syncCapabilitySetting(config.scope)}
                 >
-                  {signal.source === "model_name" ? "按推断回填" : "按检测回填"}
+                  {signal.source === "model_name" ? "按推断回填" : "按元数据回填"}
                 </Button>
               </div>
             </section>

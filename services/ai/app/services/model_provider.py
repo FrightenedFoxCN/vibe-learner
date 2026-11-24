@@ -6,6 +6,7 @@ from app.services.mock_language import (
     mock_study_language,
 )
 
+from functools import partial
 from threading import Lock
 from app.services.provider_cancellation import ProviderCancellationCapability
 
@@ -184,7 +185,7 @@ def _feature_probe_failure_note(code: str) -> str:
     if code.endswith("_request_unsupported_params"):
         return "当前模型拒绝该功能的代表请求参数，请更换模型或调整显式兼容策略。"
     if code.endswith("_request_rate_limit"):
-        return "鉴权已到达上游，但代表请求受到额度或频率限制。"
+        return "代表请求受到额度或频率限制；这不是鉴权已通过的证据。"
     if code.endswith("_request_timeout"):
         return "代表请求超时；模型列表成功不代表当前功能可用。"
     if code.endswith("_request_network_error"):
@@ -887,37 +888,46 @@ class OpenAIModelProvider(ModelProvider):
             )
 
         for transport_features, payload, request_kind in transports:
-            _, adjustments = adapt_openai_compatible_payload(
-                payload,
-                model=text_at(payload, "model"),
-            )
+            model = text_at(payload, "model")
+            is_tavern = transport_features == ["tavern"]
+            request = self._request_openai_chat_completion
+            transport = "LiteLLM Chat Completions"
+            if is_tavern:
+                request, cancellation = self._tavern_chat_request()
+                if cancellation.local_transport:
+                    transport = "兼容 HTTP Chat Completions"
+            _, adjustments = adapt_openai_compatible_payload(payload, model=model)
+            if is_tavern:
+                scope = "严格 JSON Schema 参数"
+            elif request_kind == "setting":
+                scope = "JSON Object 参数（不联网）"
+            else:
+                scope = "函数工具声明与自动工具选择参数"
             failure: RuntimeError | None = None
-            readiness_note = "最小代表请求已沿当前 LiteLLM 调用路径成功返回。"
+            readiness_note = f"{transport} 的{scope}代表请求已返回；未校验输出内容。"
             try:
-                self._request_openai_chat_completion(
-                    payload,
-                    request_kind=request_kind,
-                    model=text_at(payload, "model"),
-                )
+                request(payload, request_kind=request_kind, model=model)
             except RuntimeError as exc:
                 if (
-                    transport_features == ["tavern"]
+                    is_tavern
                     and isinstance(exc, ModelRequestError)
                     and _should_fallback_tavern_schema_transport(exc)
                 ):
                     fallback_payload = dict(payload)
                     fallback_payload["response_format"] = {"type": "json_object"}
+                    adjustments = [*adjustments, "json_schema_to_json_object"]
+                    scope = "严格 JSON Schema 未通过，已尝试 JSON Object 回退"
                     try:
-                        self._request_openai_chat_completion(
-                            fallback_payload,
-                            request_kind=request_kind,
-                            model=text_at(payload, "model"),
+                        request(
+                            fallback_payload, request_kind=request_kind, model=model
                         )
                     except RuntimeError as fallback_exc:
                         failure = fallback_exc
                     else:
-                        adjustments = [*adjustments, "json_schema_to_json_object"]
-                        readiness_note = "严格 JSON Schema 被拒绝，但当前功能的 JSON Object 回退路径可调用。"
+                        readiness_note = (
+                            f"{transport} 的严格 JSON Schema 请求未通过，"
+                            "JSON Object 回退请求已返回；未校验输出内容。"
+                        )
                 else:
                     failure = exc
 
@@ -939,7 +949,7 @@ class OpenAIModelProvider(ModelProvider):
                         else "failed"
                     ),
                     "code": code,
-                    "note": _feature_probe_failure_note(code),
+                    "note": f"{transport} · {scope}：{_feature_probe_failure_note(code)}",
                     "parameter_adjustments": adjustments,
                 }
             for feature in transport_features:
@@ -1022,24 +1032,14 @@ class OpenAIModelProvider(ModelProvider):
         required_target_id: str = "",
         should_continue: Callable[[], bool] | None = None,
     ) -> TavernActorReply:
-        adapter = self._sdk_adapter()
-        request = self._request_openai_chat_completion
-        cancellation = adapter.tavern_cancellation_capability(self.chat_model)
+        request, cancellation = self._tavern_chat_request(
+            should_continue=should_continue
+        )
         logger.info(
             "model.tavern.transport adapter=%s local_transport_cancellation=%s",
             cancellation.adapter,
             cancellation.local_transport,
         )
-        request_is_default = (
-            getattr(request, "__func__", None)
-            is OpenAIModelProvider._request_openai_chat_completion
-        )
-        if cancellation.local_transport and request_is_default:
-            from functools import partial
-
-            request = partial(
-                adapter.request_tavern_completion, should_continue=should_continue
-            )
         return RemoteTavernProvider(
             chat_model=self.chat_model,
             chat_temperature=self.chat_temperature,
@@ -1057,6 +1057,24 @@ class OpenAIModelProvider(ModelProvider):
             required_target_id=required_target_id,
             should_continue=should_continue,
         )
+
+    def _tavern_chat_request(
+        self, *, should_continue: Callable[[], bool] | None = None
+    ) -> tuple[
+        Callable[..., tuple[dict[str, Any], int]], ProviderCancellationCapability
+    ]:
+        adapter = self._sdk_adapter()
+        request = self._request_openai_chat_completion
+        cancellation = adapter.tavern_cancellation_capability(self.chat_model)
+        if (
+            cancellation.local_transport
+            and getattr(request, "__func__", None)
+            is OpenAIModelProvider._request_openai_chat_completion
+        ):
+            request = partial(
+                adapter.request_tavern_completion, should_continue=should_continue
+            )
+        return request, cancellation
 
     def tavern_cancellation_capability(self) -> ProviderCancellationCapability:
         return self._sdk_adapter().tavern_cancellation_capability(self.chat_model)

@@ -191,15 +191,15 @@ function ScopeModelCard({
   const models = uniqueWithCurrent(probe.models, currentModel);
   const featureLabels: Array<[RuntimeFeatureProbeName, string]> =
     config.scope === "plan"
-      ? [["plan", "计划工具请求"]]
+      ? [["plan", "计划 · 函数工具参数"]]
       : config.scope === "setting"
         ? [
-            ["persona", "人格生成"],
-            ["scene", "场景生成"],
+            ["persona", "人格 · JSON Object（不联网）"],
+            ["scene", "场景 · JSON Object（不联网）"],
           ]
         : [
-            ["study", "学习对话"],
-            ["tavern", "酒馆严格输出"],
+            ["study", "学习对话 · 函数工具参数"],
+            ["tavern", "酒馆 · 结构化输出参数"],
           ];
   const modelListed = probe.models.includes(currentModel);
   const currentFeatureReadiness = featureLabels
@@ -273,7 +273,7 @@ function ScopeModelCard({
           disabled={probe.loading || desktopManagedSecrets}
           onClick={() => void controller.probeScope(config.scope)}
         >
-          {probe.loading ? "验证中…" : "验证模型与当前功能"}
+          {probe.loading ? "验证中…" : "检查模型列表与代表请求"}
         </Button>
         <span role="status" className="text-xs text-muted wrap-anywhere">
           {formatProbeHint(probe)}
@@ -331,7 +331,7 @@ function ScopeModelCard({
               !probe.lastCheckedAt
                 ? "鉴权：未验证"
                 : authenticationPassed
-                  ? "鉴权：已通过"
+                  ? "鉴权：至少一个探针请求成功"
                   : "鉴权：未确认"
             }
             tone={
@@ -344,7 +344,10 @@ function ScopeModelCard({
           />
         </div>
         <p className="m-0 text-xs text-muted">
-          代表请求只检查连接与请求兼容性，不验证工具实际执行或完整工作流输出。
+          模型列表来自
+          /models。代表请求使用少量合成文本，只检查标明的传输和请求参数是否返回；不验证工具执行、图片输入、生产联网（Responses
+          / Web Search）、取消行为、运行预算或输出质量。人格与场景共用一次不联网的 JSON
+          Object 请求。
         </p>
         {featureLabels.map(([feature, label]) => {
           const readiness = probe.featureReadiness[feature];

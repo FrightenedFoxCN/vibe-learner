@@ -210,7 +210,7 @@ def check_openai_models(
             plan_model=payload.model,
             setting_model=payload.model,
             chat_model=payload.model,
-            setting_web_search_enabled=False,
+            setting_web_search_enabled=False,  # Never issue a live web search here.
             timeout_seconds=timeout_seconds,
         )
         result["feature_readiness"] = probe_provider.probe_feature_readiness(
@@ -228,6 +228,8 @@ def get_model_usage_stats(
     *,
     container: Container = Depends(get_container),
 ) -> TokenUsageStatsResponse:
+    # /models evidence is independent of the representative Chat Completions
+    # requests below. The latter are synthetic, not production workflows.
     records = container.token_usage_service.load_all()
     records = [
         record
