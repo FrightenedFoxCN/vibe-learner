@@ -8,5 +8,10 @@
   "setting_max_tokens": { "min": 64, "max": 16384, "default": 900 },
   "chat_max_tokens": { "min": 64, "max": 16384, "default": 800 },
   "chat_history_messages": { "min": 1, "max": 40, "default": 8 },
-  "chat_tool_max_rounds": { "min": 1, "max": 12, "default": 4 }
+  "chat_tool_max_rounds": { "min": 1, "max": 12, "default": 4 },
+  "request_token_policy": {
+    "structured_generation_tokens": 8192,
+    "study_recovery_min_tokens": 1600,
+    "tavern_recovery_min_tokens": 900
+  }
 }

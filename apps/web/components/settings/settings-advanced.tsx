@@ -1,4 +1,5 @@
 import type { RuntimeSettings } from "@vibe-learner/shared";
+import { MODEL_REQUEST_TOKEN_POLICY } from "@vibe-learner/shared/model-runtime-config";
 import { Button } from "../ui/button";
 import { SettingsField, SettingsPanel, SettingsToggle } from "./settings-ui";
 import { SettingsNumericField } from "./settings-numeric-field";
@@ -28,12 +29,14 @@ export function AdvancedSettingsCard({
             <SettingsNumericField
               controller={controller}
               name="openaiSettingTemperature"
-              label="人格设定温度"
+              label="人格与场景设定温度"
+              hint={"支持温度的模型才会接收该参数。"}
             />
             <SettingsNumericField
               controller={controller}
               name="openaiChatTemperature"
-              label="学习对话温度"
+              label="学习对话与酒馆温度"
+              hint={"常规请求使用此值；语义恢复会降低温度。"}
             />
           </div>
 
@@ -41,12 +44,14 @@ export function AdvancedSettingsCard({
             <SettingsNumericField
               controller={controller}
               name="openaiSettingMaxTokens"
-              label="人格设定最大输出长度"
+              label="设定辅助常规输出预算（tokens）"
+              hint={`人格短辅助使用此值；人格、场景长结构生成至少保留 ${MODEL_REQUEST_TOKEN_POLICY.structuredGenerationTokens} tokens，恢复可能使用不同预算。`}
             />
             <SettingsNumericField
               controller={controller}
               name="openaiChatMaxTokens"
-              label="学习对话最大输出长度"
+              label="学习对话与酒馆常规输出预算（tokens）"
+              hint={`语义恢复的输出预算分别不低于 ${MODEL_REQUEST_TOKEN_POLICY.studyRecoveryMinTokens} / ${MODEL_REQUEST_TOKEN_POLICY.tavernRecoveryMinTokens} tokens。`}
             />
           </div>
 
@@ -54,12 +59,14 @@ export function AdvancedSettingsCard({
             <SettingsNumericField
               controller={controller}
               name="openaiChatHistoryMessages"
-              label="保留历史消息数"
+              label="学习对话初始历史条数"
+              hint={"按消息计数，不是对话轮数，也不删除历史。"}
             />
             <SettingsNumericField
               controller={controller}
               name="openaiChatToolMaxRounds"
-              label="工具调用最大轮次"
+              label="学习对话非豁免工具轮次上限"
+              hint={"不含豁免工具，也不是总模型请求次数。"}
             />
           </div>
 

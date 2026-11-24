@@ -169,7 +169,8 @@ export function ConnectionModelsCard({
       <SettingsNumericField
         controller={controller}
         name="openaiTimeoutSeconds"
-        label="请求超时时间（秒）"
+        label="单次 Provider 请求超时（秒）"
+        hint="实际超时还受工作流阶段限额和剩余时间约束。"
       />
     </SettingsPanel>
   );

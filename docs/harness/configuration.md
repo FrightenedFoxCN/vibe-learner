@@ -7,7 +7,7 @@
 3. 桌面模式下 API 密钥仅保存在内存会话密钥中，接口响应不回显明文；
 4. 数据库连接、存储目录、OCR 与版面引擎等基础设施配置始终以启动环境为准，不由运行时设置热切换。
 
-后端默认值、校验范围与恢复常量集中定义在 `services/ai/app/core/model_runtime_limits.py`；前端镜像位于 `packages/shared/src/model-runtime-config.ts`，两者通过 `packages/shared/fixtures/model-runtime-config-v1.json` 对齐，服务端返回值为运行时权威。
+浏览器可编辑参数的默认值与范围，以及界面展示的输出预算，统一定义在 `packages/shared/fixtures/model-runtime-config-v1.json`。修改后执行 `cd services/ai && uv run python ../../scripts/gen_model_runtime_config.py`，生成 Python 与 TypeScript 定义；`npm run check:contracts` 拒绝不同步的产物。服务端读回仍是当前运行时取值的权威。
 
 ## 可编辑模型配置
 
@@ -15,7 +15,7 @@
 | --- | --- | ---: | --- |
 | Setting 输出上限 | `OPENAI_SETTING_MAX_TOKENS` | 900 | 64–16384；用于 Persona 辅助编辑 |
 | Chat 输出上限 | `OPENAI_CHAT_MAX_TOKENS` | 800 | 64–16384；用于 Study 与 Tavern 常规回复 |
-| 对话历史窗口 | `OPENAI_CHAT_HISTORY_MESSAGES` | 8 | 1–40 |
+| Study 初始对话历史 | `OPENAI_CHAT_HISTORY_MESSAGES` | 8 | 1–40 条消息；不影响 Tavern 或存储保留 |
 | 受限工具轮次 | `OPENAI_CHAT_TOOL_MAX_ROUNDS` | 4 | 1–12；仅统计非豁免 Study 工具轮次 |
 | Provider 超时 | `OPENAI_TIMEOUT_SECONDS` | 30 s | 5–300 s；同时受 Harness per-call timeout 与剩余 wall time 收紧 |
 | Chat 温度 | `OPENAI_CHAT_TEMPERATURE` | 0.35 | 0–2 |
@@ -31,7 +31,7 @@ Planning、Setting 与 Chat 可分别覆盖 API Key、Base URL 与 Model；专�
 | Planning 生成与修复 | `max_tokens = 8192` |
 | Plan 修订 | `max_tokens = 8192` |
 | Persona / Scene 长结构生成 | `max(setting_max_tokens, 8192)`（用户最高可设至 16384） |
-| Persona 短辅助编辑 | `max_tokens = setting_max_tokens`；结构修复时至少 `+800` 或 `×1.5`，不低于用户配置 |
+| Persona 短辅助编辑 | 常规为 `setting_max_tokens`；Chat 结构修复为 `max(当前值, min(max(当前值 + 800, floor(当前值 × 1.5)), 8192))`；Responses 修复保留原输出上限 |
 | Study Chat | 常规为 `chat_max_tokens`；无工具语义恢复为 `max(chat_max_tokens, 1600)` |
 | Tavern 角色回复 | 常规为 `chat_max_tokens`；语义恢复为 `max(chat_max_tokens, 900)` |
 | Provider 能力探测 | tool 32、JSON 48、Tavern schema 48 |
