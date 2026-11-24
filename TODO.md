@@ -97,6 +97,18 @@
   - 统一各页 `H1` 标题字号梯度与圆角规范；将 `Sensory Tools` 的 39 处 `用途说明` `<summary>` 高度从 `32px` 提升至基线 `≥ 36px`。
   - 格式化 `Settings` 的 `最近保存` 时间戳（复用 `formatTimestamp`）；统一侧栏与首页/手册的「用户手册」命名；将 `Model Usage` 筛选器英文工程词（`Workflow` / `Operation`）汉化并对齐移动端筛选网格。
 
+#### P1（聊天与笔记 Markdown 数学渲染修复）
+
+- [ ] **P1-UI-11 保护代码块与数学公式区间并支持完整 LaTeX 定界符**
+  - 重写 `apps/web/lib/rich-text-normalize.ts`：先按词法扫描隔离围栏代码块、行内代码与数学区间再修复模型 prose 排版，彻底消除有序列表或标点后的 `-` / `*` / `1.` 撕裂数学公式与篡改代码块、压平嵌套列表的问题。
+  - 新增共享数学定界符规范化：将非代码区间的 `\(...\)` 与 `\[...\]` 转为 `remark-math` 可解析的 `$...$` / 多行 `$$...$$`，并将非表格/非行内场景的单行 `$$...$$` 规整为多行块级公式以触发 KaTeX `displayMode`；同步接入 `study-note-markdown-preview.tsx`。
+  - 新增 `apps/web/tests/rich-text-normalize.test.ts` 并纳入根 `package.json` 的 `test:invariants:web`。
+- [ ] **P1-UI-12 修复聊天富文本 `white-space: pre-wrap` 污染与 KaTeX 渲染隔离**
+  - 在 `apps/web/components/ui/rich-text-message.module.css` 将 `.root` 重置为 `white-space: normal` 并隔离 `.katex` 内部断词与空白行为，移除 `apps/web/components/study/study-console.css` 中 `.study-console-ai-message` 的 `white-space: pre-wrap`（保留 Suspense 纯文本兜底自身的 `whitespace-pre-wrap`），消除段落与公式间的异常空行断层。
+  - 在 `apps/web/components/ui/rich-text-message-client.tsx` 与 `study-note-markdown-preview.tsx` 为 `rehype-katex` 统一显式配置 `{ trust: false, strict: false }`。
+- [ ] **P1-UI-13 统一 `Study Dialog` 学习者消息的 Markdown 与数学公式渲染**
+  - 将 `apps/web/components/study/study-message-flow.tsx` 的学习者消息气泡改为使用 `RichTextMessage`（与 `TavernConversationPanel` 保持一致），并调整 `.study-console-user-message` 样式，确保学习者发送的数学公式正确渲染。
+
 ## 未排期研究
 
 每项研究在立项前须明确触发证据、假设、时间盒（time-box）、产出物以及采用/放弃标准：
