@@ -1,0 +1,40 @@
+name: Desktop Release Preflight
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-version:
+    name: Validate Candidate Versions
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Require a main branch dispatch
+        run: |
+          if [ "$GITHUB_REF" != "refs/heads/main" ]; then
+            echo "::error::Dispatch Desktop Release Preflight from main."
+            exit 1
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Test release validation
+        run: python -m unittest discover -s scripts/release
+
+      - name: Check manifest versions
+        run: python scripts/release/validate.py versions
+
+  build-preflight:
+    name: Build Release Candidate
+    needs: validate-version
+    uses: ./.github/workflows/desktop-build.yml
+    with:
+      artifact-suffix: preflight

@@ -55,28 +55,30 @@ VIBE_LEARNER_REQUIRE_OCR_MODELS=1 npm run build:desktop
 
 ## 4. CI 预览构建
 
-`.github/workflows/desktop-preview.yml` 在 `workflow_dispatch` 或涉及桌面端文件的 Pull Request 上触发，按 OS 矩阵构建并上传预览安装包 Artifact。
+[Desktop Preview](../.github/workflows/desktop-preview.yml) 可手动运行，也会在涉及桌面打包的 Pull Request 上触发。它和正式发布、发布前预检都调用[同一套构建矩阵](../.github/workflows/desktop-build.yml)：macOS ARM64 DMG、Windows x64 NSIS、Linux x64 AppImage。三个入口只用不同的 Artifact 后缀区分用途。
 
 **macOS 预览签名边界**：预览产物使用 Tauri 的 ad-hoc 签名（`-`）且关闭 hardened runtime（因 PyInstaller 单文件 Sidecar 运行时解压动态库，ad-hoc 外层签名启用 hardened runtime 会触发系统库校验拒绝）。CI 会挂载生成的 DMG 并强制验证 `codesign --verify --deep --strict`。ad-hoc 签名不等于 Developer ID 正式分发签名，也不满足默认 Gatekeeper 公证要求；正式公证分发需对 Sidecar 及解压出的全部原生依赖使用同一 Developer ID 团队签名后再开启 hardened runtime。
 
-## 5. GitHub Release 发布
+## 5. 发布前预检与 GitHub Release
 
-`.github/workflows/desktop-release.yml` 在推送匹配 `v*` 的标签时触发（亦可在 Actions UI 对已有标签手动重跑）：
+1. 将升版后的候选提交合入并推送到 `main`。更新根目录和三个 npm 工作区的清单、Python 的 `pyproject.toml`、Tauri 的 `tauri.conf.json` 和 `Cargo.toml`，并同步对应锁文件。
+2. 在 GitHub Actions 手动从 `main` 运行 [Desktop Release Preflight](../.github/workflows/desktop-preflight.yml)，或执行 `gh workflow run desktop-preflight.yml --ref main`。预检校验七处版本一致，然后实际构建三端安装包并验证 macOS 签名；只上传 Artifacts，不创建 Release。
+3. 等该次预检全部成功，核对运行页面展示的完整提交 SHA，再给**该次预检的提交**打标签。若要发布更新的提交，重新预检；PR Preview 不替代发布预检。
+4. 推送 `v*` 标签触发 [Desktop Release](../.github/workflows/desktop-release.yml)。它先验标签与七处版本一致，再通过 GitHub API 查同仓库、同 SHA 的成功预检。找不到或查询出错会阻断打包与发布。通过后执行 Web 门禁、按同一矩阵重新构建三端安装包，发布安装包和 `SHA256SUMS.txt`。
 
-1. 校验标签版本与全部 7 处版本清单严格一致：
-   - 根目录 `package.json`
-   - `apps/web/package.json`
-   - `apps/desktop/package.json`
-   - `packages/shared/package.json`
-   - `services/ai/pyproject.toml`
-   - `apps/desktop/src-tauri/tauri.conf.json`
-   - `apps/desktop/src-tauri/Cargo.toml`
-2. 版本不匹配在打包前立即失败；
-3. 执行门禁检查并构建三端安装包，创建 GitHub Release，上传安装包及 `SHA256SUMS.txt`。
-
-发布命令示例：
+发布命令示例（使用已成功预检的运行 ID 与候选版本）：
 
 ```bash
-git tag vX.Y.Z
-git push origin vX.Y.Z
+set -e
+run_id="<成功预检的运行 ID>"
+commit=$(gh run view "$run_id" --json headSha --jq .headSha)
+test "$(git rev-parse HEAD)" = "$commit"
+tag="vX.Y.Z"
+uv run --project services/ai python scripts/release/validate.py versions --tag="$tag"
+uv run --project services/ai python scripts/release/validate.py preflight \
+  "$(gh repo view --json nameWithOwner --jq .nameWithOwner)" "$commit"
+git tag -a "$tag" "$commit" -m "$tag"
+git push origin "refs/tags/$tag"
 ```
+
+以上命令从候选提交的本地工作区执行。已有标签的发布可在 Actions 中重跑；不要移动已经发布的标签。
