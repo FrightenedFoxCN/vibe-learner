@@ -14,14 +14,13 @@ const ProjectedImageViewer = dynamic(
 
 export function StudyPreviewPanel({
   preview,
-  hasPlan,
+  onClose,
 }: {
   preview: ReturnType<typeof useStudyPreview>;
-  hasPlan: boolean;
+  onClose: () => void;
 }) {
   const {
     previewState: effectivePreview,
-    isPdfPreviewOpen,
     previewPage,
     previewPageCount,
     previewTitle,
@@ -35,36 +34,30 @@ export function StudyPreviewPanel({
     updatePageCount,
     insertReference,
     jumpToPreviewPage,
-    setIsPdfPreviewOpen,
   } = preview;
 
   if (!effectivePreview) {
     return (
-      <div className="study-dialog-empty-dock">
-        {hasPlan
-          ? "当前计划未关联教材，可直接围绕章节目标展开对话。"
-          : "请先在计划页完成教材上传或目标计划生成。"}
-      </div>
-    );
-  }
-
-  if (!isPdfPreviewOpen) {
-    return (
-      <button
-        type="button"
-        className="study-dialog-preview-dock"
-        onClick={() => setIsPdfPreviewOpen(true)}
-        aria-label="打开材料预览"
-        title="打开材料预览"
+      <aside
+        id="study-material-panel"
+        className="study-dialog-preview-window study-dialog-preview-no-material"
+        aria-label="教材预览"
       >
-        <MaterialIcon name="menu_book" size={16} />
-        {isImage ? "图像" : `p.${previewPage}`}
-      </button>
+        <div className="study-dialog-pdf-header-top">
+          <h2 className="study-dialog-pdf-title">教材</h2>
+          <ClosePreview onClose={onClose} />
+        </div>
+        <p>当前会话没有可预览的教材或附件。</p>
+      </aside>
     );
   }
 
   return (
-    <aside className="study-dialog-preview-window">
+    <aside
+      id="study-material-panel"
+      className="study-dialog-preview-window"
+      aria-label="教材预览"
+    >
       <div className="study-dialog-pdf-header">
         <div className="study-dialog-pdf-header-top">
           <div className="study-dialog-pdf-header-meta">
@@ -103,15 +96,7 @@ export function StudyPreviewPanel({
             >
               <MaterialIcon name="chevron_right" size={16} />
             </button>
-            <button
-              type="button"
-              className="study-dialog-pdf-icon-btn"
-              onClick={() => setIsPdfPreviewOpen(false)}
-              title="收拢"
-              aria-label="收拢"
-            >
-              <MaterialIcon name="close" size={15} />
-            </button>
+            <ClosePreview onClose={onClose} />
           </div>
         </div>
       </div>
@@ -167,5 +152,19 @@ export function StudyPreviewPanel({
         )}
       </div>
     </aside>
+  );
+}
+
+function ClosePreview({ onClose }: { onClose: () => void }) {
+  return (
+    <button
+      type="button"
+      className="study-dialog-pdf-icon-btn"
+      onClick={onClose}
+      title="关闭教材预览"
+      aria-label="关闭教材预览"
+    >
+      <MaterialIcon name="close" size={15} />
+    </button>
   );
 }

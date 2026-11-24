@@ -19,3 +19,4 @@ export * from "./document-checkpoint";
 export * from "./document-input-limits";
 export * from "./output-language";
 export * from "./harness-context-history";
+export * from "./study-notes";

@@ -21,7 +21,7 @@
 - **`DocumentRecord.sections` 含义**：解析完成后，`DocumentRecord.sections` 是由可规划 Study Units 投影出的精简列表；原始解析章节树始终保存在 `DocumentDebugRecord.sections` 中。
 - **`section_id` 与 `study_unit_id` 分工**：原始 `section_id` 仅用于解析章节、切块与教材引用；会话、记忆与进度一律使用 `study_unit_id`。
 
-## 2. Study Chat、交互题与原文记忆
+## 2. Study Chat、交互题与笔记
 
 ### 持久化准入与并发
 
@@ -38,19 +38,9 @@
 - `POST /study-sessions/{id}/attempt` 仅接收 `turn_id`、`expected_session_revision`、`client_attempt_id` 与 `submitted_answer`，使用 `unicode-nfkc-casefold-whitespace-v1` 判分并在同一事务内提交结果与 `study_question_attempts` 回执（同键同规范输入幂等读回，异输入或跨 Session/过期 revision 失败关闭）。
 - 浏览器不展示本地预判结论：提交后必须读回持久化 Session，核验精确的 attempt/Session/Turn/revision/result 投影后才显示结果并据此触发自动续接。并发回答不同 Turn 时，过期低版本读回会被围栏拒绝。
 
-### 原文记忆指令
+### 用户笔记
 
-`POST /study-sessions/{id}/chat` 的学习者消息支持整条精确匹配的原文记忆指令：
-
-```text
-/remember-verbatim KEY
-正文内容
-/end-remember
-```
-
-- `KEY`：1–120 个 ASCII 字母、数字、下划线或短横线；
-- 正文：1–4,000 字符且首尾无空白；格式不合法直接返回 `422`；
-- 仅当模型提出匹配键的有效写入且在事务中原子提交后生效，普通消息不会隐式绑定原文记忆。
+Study Notes 以当前 Session ID 为边界，独立持久化、独立版本控制；写笔记不修改会话记忆或聊天回合，不需要模型。请在侧栏「笔记」中直接保存原文。已有会话记忆仍可按 key 复制为笔记，不会自动迁移或删除。接口与导入导出规则见 [Study Notes API 契约](api-contracts.md#study-notes)。
 
 ## 3. 输出语言策略
 

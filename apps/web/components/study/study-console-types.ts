@@ -6,12 +6,15 @@ import type {
   SessionFollowUp,
   SessionPlanConfirmation,
   StudyChatResponse,
+  StudyNoteReference,
   StudySessionRecord,
 } from "@vibe-learner/shared";
+import type { ReactNode } from "react";
 import type { StudyChatOperationStatus } from "../../lib/study-chat-operation-decode";
 import type { StudyConsolePageCache } from "../../lib/learning-workspace-page-cache";
 
 export interface StudyConsoleProps {
+  workspaceTools?: ReactNode;
   isPending: boolean;
   selectedPlanId: string;
   planOptions: Array<{ id: string; title: string }>;
@@ -33,6 +36,7 @@ export interface StudyConsoleProps {
   onContinueAfterQuestion?: (turnId: string) => boolean | Promise<boolean>;
   onChangeSchedule: (scheduleId: string) => void;
   onOpenCitation?: (citation: Citation) => void;
+  onOpenNoteReference?: (reference: StudyNoteReference) => void;
   onJumpToScheduleStart?: () => void;
   canJumpToScheduleStart?: boolean;
   onCompleteCurrentSchedule?: () => void | Promise<void>;

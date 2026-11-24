@@ -31,6 +31,7 @@ from app.models.domain import (
     RichTextBlockRecord,
 )
 from app.models.study_chat_reply import StudyChatReplyProposalV1
+from app.models.study_chat_tool_contracts import SearchStudyNotesResultV1
 from app.models.study_chat_operation import StudyChatMessageKind
 from app.models.study_question import StudyQuestionProposalV1
 from app.models.tool_manifest import resolve_tool_manifest_entry
@@ -827,7 +828,7 @@ def _execute_chat_tool_call(
         ]
     validated = adapt_tool_runtime_result(entry, raw_result)
     canonical = validated.model_dump(mode="json")
-    return {
+    execution = {
         "tool_call_id": decoded.transport_correlation_id,
         "tool_name": tool_name,
         "arguments_json": project_tool_arguments_for_observability(
@@ -854,6 +855,11 @@ def _execute_chat_tool_call(
             audience="public",
         ),
     }
+    if isinstance(validated, SearchStudyNotesResultV1):
+        # Only fully validated, successfully projected server hits may become
+        # optional references on the operation's eventual committed turn.
+        session_tool_runtime.record_successful_note_search(validated)
+    return execution
 
 
 def _chat_tool_image_parts(execution: dict[str, Any]) -> list[dict[str, Any]]:
@@ -1385,11 +1391,10 @@ def _parse_chat_model_reply(
                 _extract_choice_diagnostics(raw_payload)
             )
             logger.info(
-                "model.chat.parse_fallback using_plain_text finish_reason=%s reasoning_tokens=%s completion_tokens=%s content_preview=%s",
+                "model.chat.parse_fallback using_plain_text finish_reason=%s reasoning_tokens=%s completion_tokens=%s",
                 finish_reason,
                 reasoning_tokens,
                 completion_tokens,
-                content[:120],
             )
 
     interactive_question = _extract_interactive_question_payload(

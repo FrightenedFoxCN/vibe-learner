@@ -41,8 +41,6 @@ from app.services.study_chat_preflight import (
     StudyChatPreflightError,
     validate_study_chat_preclaim,
 )
-from app.models.study_chat_effect import StudyMemoryUpsertEffectProposalV1
-from app.services.study_grounding import parse_verbatim_memory
 from app.services.study_session_chat_runtime import StudySessionChatToolRuntime
 from app.services.study_v3 import (
     StudyChatInputManifest,
@@ -92,6 +90,7 @@ if TYPE_CHECKING:
         StudyChatOperationRepository,
     )
     from app.persistence.study_session_repository import StudySessionRepository
+    from app.persistence.study_note_repository import StudyNoteRepository
     from app.services.local_store import LocalJsonStore
     from app.services.model_provider import ModelProvider
     from app.services.study_sessions import StudySessionService
@@ -117,6 +116,7 @@ class StudyChatDependencies:
     session_scene_service: SessionSceneService
     pedagogy_orchestrator: PedagogyOrchestrator
     document_layout_service: DocumentLayoutService | None = None
+    study_note_repository: StudyNoteRepository | None = None
     attachments: StudyChatAttachmentService = field(
         default_factory=StudyChatAttachmentService
     )
@@ -224,10 +224,6 @@ def _admit_and_run_study_chat(
         raise StudyChatApplicationError(
             status_code=422, detail="study_chat_message_or_attachment_required"
         )
-    try:
-        parse_verbatim_memory(message, normalized_kind)
-    except ValueError as exc:
-        raise StudyChatApplicationError(status_code=422, detail=str(exc)) from exc
     request_payload = StudyChatOperationRequestPayload(
         message=message,
         message_kind=normalized_kind,
@@ -619,6 +615,11 @@ def _run_study_chat(
         model_provider=dependencies.model_provider,
         effect_collector=effect_collector,
         document_layout_service=dependencies.document_layout_service,
+        study_note_repository=(
+            dependencies.study_note_repository
+            if normalized_message_kind == "learner"
+            else None
+        ),
     )
     session_state_context = _resolve_session_state_context(
         session_tool_runtime=session_tool_runtime,
@@ -714,12 +715,7 @@ def _run_study_chat(
     def generate_study_reply(_context, artifacts):
         if set(artifacts) != {study_snapshot.artifact_id}:
             raise ValueError("study_snapshot_artifact_set_mismatch")
-        resolved = decode_study_snapshot(artifacts[study_snapshot.artifact_id])
-        source = parse_verbatim_memory(
-            resolved["dependencies"]["learner_message"],
-            resolved["dependencies"]["input"]["message_kind"],
-        )
-        session_tool_runtime.verbatim_memory_source = source
+        decode_study_snapshot(artifacts[study_snapshot.artifact_id])
         dependencies.study_chat_operation_repository.mark_provider_started(
             operation_id=operation_id,
             execution_token=execution_token,
@@ -734,14 +730,7 @@ def _run_study_chat(
                 study_unit_title=session.study_unit_title,
                 theme_hint=session.theme_hint,
                 active_plan=active_plan,
-                session_system_prompt=session_prompt
-                + (
-                    "\n当前学习者明确请求原文保存。调用 write_session_memory，key="
-                    + source.key
-                    + "；服务器从当前操作授权来源绑定原文。仅在工具成功后确认，禁止声称已提交。"
-                    if source is not None
-                    else ""
-                ),
+                session_system_prompt=session_prompt,
                 debug_report=debug_report,
                 document_path=(document.stored_path if document is not None else None),
                 previous_turns=session.turns,
@@ -777,29 +766,23 @@ def _run_study_chat(
                 checks,
                 strategy or "provider_bounded_recovery",
             ) from exc
-        if source is not None:
-            batch = effect_collector.prepared_batch()
-            writes = (
-                [
-                    effect.proposal
-                    for effect in batch.effects
-                    if isinstance(effect.proposal, StudyMemoryUpsertEffectProposalV1)
-                ]
-                if batch
-                else []
-            )
-            if (
-                not writes
-                or writes[-1].key != source.key
-                or writes[-1].content != source.content
-            ):
-                raise RuntimeError("verbatim_memory_effect_missing")
         result.citations = _merge_chat_citations(
             result.citations,
             session_tool_runtime.response_citations(),
         )
+        result.study_note_references = (
+            session_tool_runtime.response_study_note_references()
+        )
         result.model_recoveries = consume_model_recovery_state()
         return StudyChatRuntimeOutputV1(result=result)
+
+    def validate_study_reply(output):
+        if (
+            output.result.study_note_references
+            != session_tool_runtime.response_study_note_references()
+        ):
+            raise ValueError("study_chat_note_reference_evidence_mismatch")
+        return reply_adapter.validate(output)
 
     try:
         runtime_adapter = HarnessRuntimeStageAdapter(
@@ -813,7 +796,7 @@ def _run_study_chat(
             ),
             generate=generate_study_reply,
             decode=reply_adapter.decode,
-            validate=reply_adapter.validate,
+            validate=validate_study_reply,
         )
         runtime_prepared = study_runtime.prepare_output(
             request=HarnessRuntimeRequest(
@@ -862,7 +845,10 @@ def _run_study_chat(
         # StudyChatExchangeResponse so private grading material never crosses
         # the API boundary.
         return {
-            **response.model_dump(mode="json"),
+            **response.model_dump(mode="json", exclude={"study_note_references"}),
+            **committed_session.turns[-1].model_dump(
+                mode="json", include={"study_note_references"}
+            ),
             "session": committed_session.model_dump(mode="json"),
         }
 
@@ -872,13 +858,15 @@ def _run_study_chat(
         committed_turn_id,
         committed_sequence,
     ):
-        read_back_session, _read_back_turn = (
+        read_back_session, read_back_turn = (
             dependencies.study_session_repository.get_chat_commit_read_back_in_session(
                 db_session,
                 session_id=session_id,
                 turn_id=committed_turn_id,
             )
         )
+        if read_back_turn.study_note_references != response.study_note_references:
+            raise ValueError("study_chat_committed_note_reference_mismatch")
         projection = build_study_session_turn_committed_projection(
             operation_id=effect_operation_binding.harness_operation_id,
             session=read_back_session,

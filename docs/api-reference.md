@@ -4,7 +4,7 @@
 > 契约语义、版本与兼容说明见 [api-contracts.md](api-contracts.md)；
 > 改动路由后运行 `npm run gen:api-reference` 重新生成。
 
-共 19 个分组、99 个操作。
+共 19 个分组、107 个操作。
 
 ## diagnostics
 
@@ -721,6 +721,78 @@ Cancel Study Session Follow Ups
 参数：`session_id`（path，必填: string）
 
 响应：200 `StudySessionResponse`、422 `HTTPValidationError`
+
+### `GET /study-sessions/{session_id}/notes`
+
+List or search saved notes in a Study Session
+
+参数：`session_id`（path，必填: string）、`q`（query，可选: string）、`offset`（query，可选: integer）、`limit`（query，可选: integer）
+
+响应：200 `StudyNoteList`、422 `HTTPValidationError`
+
+### `POST /study-sessions/{session_id}/notes`
+
+Create a Study Note
+
+参数：`session_id`（path，必填: string）
+
+请求体（`application/json`）：`StudyNoteInput`
+
+响应：201 `StudyNote`、422 `HTTPValidationError`
+
+### `GET /study-sessions/{session_id}/notes/export`
+
+Download a versioned JSON archive of Study Notes
+
+参数：`session_id`（path，必填: string）、`after`（query，可选）、`limit`（query，可选: integer）
+
+响应：200 `StudyNoteArchiveV1`、422 `HTTPValidationError`
+
+### `POST /study-sessions/{session_id}/notes/import`
+
+Append Study Notes from a JSON archive
+
+参数：`session_id`（path，必填: string）
+
+请求体（`application/json`）：`StudyNoteArchiveV1`
+
+响应：201 `StudyNoteImportReceipt`、422 `HTTPValidationError`
+
+### `POST /study-sessions/{session_id}/notes/import-memory`
+
+Copy selected legacy session memory into Study Notes
+
+参数：`session_id`（path，必填: string）
+
+请求体（`application/json`）：`StudyNoteMemoryImport`
+
+响应：201 `StudyNoteImportReceipt`、422 `HTTPValidationError`
+
+### `DELETE /study-sessions/{session_id}/notes/{note_id}`
+
+Delete a saved Study Note at a known revision
+
+参数：`session_id`（path，必填: string）、`note_id`（path，必填: string）、`expected_revision`（query，必填: integer）
+
+响应：204、422 `HTTPValidationError`
+
+### `GET /study-sessions/{session_id}/notes/{note_id}`
+
+Read a saved Study Note
+
+参数：`session_id`（path，必填: string）、`note_id`（path，必填: string）
+
+响应：200 `StudyNote`、422 `HTTPValidationError`
+
+### `PATCH /study-sessions/{session_id}/notes/{note_id}`
+
+Replace editable Study Note fields at a known revision
+
+参数：`session_id`（path，必填: string）、`note_id`（path，必填: string）
+
+请求体（`application/json`）：`StudyNoteUpdate`
+
+响应：200 `StudyNote`、422 `HTTPValidationError`
 
 ### `POST /study-sessions/{session_id}/plan-confirmations/{confirmation_id}`
 

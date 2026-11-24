@@ -10,6 +10,7 @@ import { StudyConsoleSidebar } from "./study-console-sidebar";
 import "./study-console.css";
 
 export function StudyConsole({
+  workspaceTools,
   isPending,
   selectedPlanId,
   planOptions,
@@ -23,6 +24,7 @@ export function StudyConsole({
   onContinueAfterQuestion,
   onChangeSchedule,
   onOpenCitation,
+  onOpenNoteReference,
   onJumpToScheduleStart,
   canJumpToScheduleStart,
   onCompleteCurrentSchedule,
@@ -105,6 +107,7 @@ export function StudyConsole({
           turns={turns}
           session={session}
           onOpenCitation={onOpenCitation}
+          onOpenNoteReference={onOpenNoteReference}
           onAsk={onAsk}
           onSubmitQuestionAttempt={onSubmitQuestionAttempt}
           onContinueAfterQuestion={onContinueAfterQuestion}
@@ -161,33 +164,36 @@ export function StudyConsole({
           refreshRequired={refreshRequired}
         />
       </section>
-      <StudyConsoleSidebar
-        selectedPlanId={selectedPlanId}
-        planOptions={planOptions}
-        onSelectPlan={onSelectPlan}
-        onCreateSession={onCreateSession}
-        showCreateSession={showCreateSession}
-        selectedScheduleId={selectedScheduleId}
-        scheduleOptions={scheduleOptions}
-        onChangeSchedule={onChangeSchedule}
-        onJumpToScheduleStart={onJumpToScheduleStart}
-        canJumpToScheduleStart={canJumpToScheduleStart}
-        onCompleteCurrentSchedule={onCompleteCurrentSchedule}
-        canCompleteCurrentSchedule={canCompleteCurrentSchedule}
-        persona={persona}
-        sceneProfile={sceneProfile}
-        session={session}
-        affinityState={affinityState}
-        isPending={isPending}
-        disabled={disabled}
-        pendingFollowUps={pendingFollowUps}
-        turnCount={turns.length}
-        languagePreference={languagePreference}
-        setLanguagePreference={setLanguagePreference}
-        languageInputLocked={Boolean(
-          isPending || disabled || recoveryLocked || refreshRequired,
-        )}
-      />
+      <div className="study-console-rail">
+        {workspaceTools}
+        <StudyConsoleSidebar
+          selectedPlanId={selectedPlanId}
+          planOptions={planOptions}
+          onSelectPlan={onSelectPlan}
+          onCreateSession={onCreateSession}
+          showCreateSession={showCreateSession}
+          selectedScheduleId={selectedScheduleId}
+          scheduleOptions={scheduleOptions}
+          onChangeSchedule={onChangeSchedule}
+          onJumpToScheduleStart={onJumpToScheduleStart}
+          canJumpToScheduleStart={canJumpToScheduleStart}
+          onCompleteCurrentSchedule={onCompleteCurrentSchedule}
+          canCompleteCurrentSchedule={canCompleteCurrentSchedule}
+          persona={persona}
+          sceneProfile={sceneProfile}
+          session={session}
+          affinityState={affinityState}
+          isPending={isPending}
+          disabled={disabled}
+          pendingFollowUps={pendingFollowUps}
+          turnCount={turns.length}
+          languagePreference={languagePreference}
+          setLanguagePreference={setLanguagePreference}
+          languageInputLocked={Boolean(
+            isPending || disabled || recoveryLocked || refreshRequired,
+          )}
+        />
+      </div>
     </div>
   );
 }

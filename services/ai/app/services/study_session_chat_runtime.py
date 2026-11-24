@@ -4,17 +4,23 @@ from typing import Any
 
 from app.models.domain import Citation, LearnerAttachmentRecord
 from app.models.harness import HarnessStage, HarnessWorkflow
+from app.models.study_chat_note_references import (
+    STUDY_NOTE_REFERENCE_LIMIT,
+    StudyNoteReferenceV1,
+)
+from app.models.study_chat_tool_contracts import SearchStudyNotesResultV1
+from app.persistence.study_note_repository import StudyNoteRepository
 from app.models.tool_manifest import resolve_tool_manifest_entry
 from app.services.document_layout import DocumentLayoutService
 from app.services.plans import LearningPlanService
 from app.services.study_chat_effects import StudyChatEffectCollector
-from app.services.study_grounding import StudyVerbatimMemorySourceV1
 from app.services.study_sessions import StudySessionService
 from app.services.study_tools.affinity import AffinityTools
 from app.services.study_tools.context import StudyToolContext
 from app.services.study_tools.follow_up import FollowUpTools
 from app.services.study_tools.image_generation import ImageGenerationTools
 from app.services.study_tools.memory import SessionMemoryTools
+from app.services.study_tools.note_search import StudyNoteSearchTools
 from app.services.study_tools.plan_confirmation import PlanConfirmationTools
 from app.services.study_tools.projection_read import ProjectionReadTools
 from app.services.study_tools.projection_write import ProjectionWriteTools
@@ -25,6 +31,7 @@ from fastapi import HTTPException
 SESSION_CHAT_TOOL_NAMES = (
     "read_system_time",
     "read_session_memory",
+    "search_study_notes",
     "write_session_memory",
     "read_affinity_state",
     "update_affinity_state",
@@ -59,6 +66,7 @@ class StudySessionChatToolRuntime:
         model_provider: Any | None = None,
         effect_collector: StudyChatEffectCollector | None = None,
         document_layout_service: DocumentLayoutService | None = None,
+        study_note_repository: StudyNoteRepository | None = None,
     ) -> None:
         self._context = StudyToolContext(
             sessions=session_service,
@@ -71,7 +79,14 @@ class StudySessionChatToolRuntime:
             effects=effect_collector,
             layout_service=document_layout_service,
         )
+        self._note_search = (
+            StudyNoteSearchTools(study_note_repository, session_id)
+            if study_note_repository is not None
+            else None
+        )
+        self._note_references: dict[str, StudyNoteReferenceV1] = {}
         self._handlers = (
+            self._note_search,
             SessionMemoryTools(self._context),
             AffinityTools(self._context),
             FollowUpTools(self._context),
@@ -89,15 +104,9 @@ class StudySessionChatToolRuntime:
     def plan_id(self) -> str:
         return self._context.plan_id
 
-    @property
-    def verbatim_memory_source(self) -> StudyVerbatimMemorySourceV1 | None:
-        return self._context.verbatim_memory_source
-
-    @verbatim_memory_source.setter
-    def verbatim_memory_source(self, value: StudyVerbatimMemorySourceV1 | None) -> None:
-        self._context.verbatim_memory_source = value
-
     def has_tool(self, tool_name: str) -> bool:
+        if tool_name == "search_study_notes":
+            return self._note_search is not None
         if tool_name == "update_learning_plan" and not self._context.plan_id:
             return False
         if tool_name == "update_learning_plan_progress" and not self._context.plan_id:
@@ -177,6 +186,23 @@ class StudySessionChatToolRuntime:
 
     def response_citations(self) -> list[Citation]:
         return list(self._context.citations)
+
+    def record_successful_note_search(self, result: SearchStudyNotesResultV1) -> None:
+        # Only validated, successfully projected tool results can reach this path.
+        for hit in result.hits:
+            if len(self._note_references) >= STUDY_NOTE_REFERENCE_LIMIT:
+                break
+            self._note_references.setdefault(
+                hit.note_id,
+                StudyNoteReferenceV1(
+                    note_id=hit.note_id,
+                    note_revision=hit.note_revision,
+                    title=hit.title,
+                ),
+            )
+
+    def response_study_note_references(self) -> list[StudyNoteReferenceV1]:
+        return list(self._note_references.values())
 
     def available_tool_names(self) -> list[str]:
         return [name for name in SESSION_CHAT_TOOL_NAMES if self.has_tool(name)]

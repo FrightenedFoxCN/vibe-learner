@@ -508,6 +508,7 @@ class StudySessionRepository:
                     learner_attachments=learner_attachments,
                     assistant_reply=result.reply,
                     citations=result.citations,
+                    study_note_references=result.study_note_references,
                     character_events=result.character_events,
                     rich_blocks=result.rich_blocks,
                     interactive_question=result.interactive_question,

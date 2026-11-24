@@ -1,7 +1,21 @@
 @layer components {
+  .study-console-card {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+    gap: 16px;
+    min-width: 0;
+  }
+
+  .study-console-rail {
+    display: grid;
+    align-content: start;
+    gap: 12px;
+    min-width: 0;
+  }
+
   .study-console-chat-panel {
     display: grid;
-    grid-template-rows: auto auto auto auto;
     gap: 12px;
     min-width: 0;
     width: 100%;
@@ -57,10 +71,6 @@
 
   .study-console-sidebar {
     min-width: 0;
-    width: 300px;
-    max-width: 300px;
-    position: sticky;
-    top: calc(var(--study-heading-offset, 112px) + 18px);
   }
 
   .study-console-sidebar-stack {
@@ -721,7 +731,7 @@
   .study-console-empty-transcript-card {
     display: grid;
     gap: 8px;
-    min-height: 220px;
+    min-height: 100px;
     align-content: center;
     justify-items: start;
   }
@@ -737,54 +747,9 @@
   /* Secondary help inside Study Dialog follows the same compact, neutral disclosure
    * treatment as other reliability/details blocks. The composer remains the primary
    * action surface, so this never competes with the textarea or send controls. */
-  .study-console-memory-help {
-    border: 1px solid var(--border);
-    background: var(--panel);
-    color: var(--ink-2);
-  }
-
-  .study-console-memory-help > summary {
-    min-height: 36px;
-    padding: 8px 10px;
-    display: flex;
-    align-items: center;
-    cursor: pointer;
-    color: var(--ink-2);
-    font-size: 12px;
-    font-weight: 600;
-    list-style: none;
-  }
-
-  .study-console-memory-help > summary::-webkit-details-marker {
-    display: none;
-  }
-  .study-console-memory-help > summary::before {
-    content: "＋";
-    width: 18px;
-    color: var(--accent);
-  }
-  .study-console-memory-help[open] > summary::before {
-    content: "−";
-  }
-  .study-console-memory-help > p {
-    margin: 0;
-    padding: 0 10px 8px;
-    font-size: 12px;
-    line-height: 1.6;
-  }
-  .study-console-memory-help-code {
-    margin: 0 10px 10px;
-    padding: 9px 10px;
-    overflow-x: auto;
-    border: 1px solid var(--border);
-    background: var(--bg);
-    color: var(--ink);
-    font: 11px/1.6 var(--font-mono);
-  }
-
-  .study-console-transcript,
   .study-console-input-area {
-    width: min(100%, 1040px);
+    width: 100%;
+    min-width: 0;
   }
 
   .study-console-question-card,
@@ -823,9 +788,17 @@
     margin: 0;
   }
 
-  @media (max-width: 1080px) {
+  @media (min-width: 1081px) {
     .study-console-card {
-      grid-template-columns: minmax(0, 1fr);
+      grid-template-columns: minmax(0, 1fr) clamp(280px, 28%, 380px);
+    }
+
+    .study-console-rail {
+      position: sticky;
+      top: calc(var(--study-heading-offset, 112px) + 12px);
+      max-height: calc(100dvh - var(--study-heading-offset, 112px) - 24px);
+      overflow: auto;
+      scrollbar-gutter: stable;
     }
   }
 }

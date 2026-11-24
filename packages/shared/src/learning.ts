@@ -6,6 +6,7 @@ import type {
 } from "./settings-response-contracts";
 import type { CharacterStateEvent } from "./character";
 import type { HarnessTraceV3 } from "./harness";
+import type { StudyNoteReference } from "./study-notes";
 
 export interface PersonaSlotTraceEntry {
   kind: string;
@@ -614,6 +615,7 @@ export interface RichTextBlock {
 export interface StudyChatResponse {
   reply: string;
   citations: Citation[];
+  studyNoteReferences?: StudyNoteReference[];
   characterEvents: CharacterStateEvent[];
   richBlocks?: RichTextBlock[];
   interactiveQuestion?: InteractiveQuestion;
@@ -751,6 +753,7 @@ export interface DialogueTurnRecord {
   learnerAttachments?: LearnerAttachment[];
   assistantReply: string;
   citations: Citation[];
+  studyNoteReferences?: StudyNoteReference[];
   characterEvents: CharacterStateEvent[];
   richBlocks?: RichTextBlock[];
   interactiveQuestion?: InteractiveQuestion;

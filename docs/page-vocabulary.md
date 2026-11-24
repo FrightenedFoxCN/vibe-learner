@@ -33,6 +33,7 @@
 | `Plan Revision Panel` | `plan-revision-panel.tsx` | 计划修订预览、差异对照、回滚与确认 |
 | `Study Unit Revision Panel` | `study-unit-revision-panel.tsx` | 模型教材单元重划建议展示与接受/拒绝 |
 | `Study Console` | `study-console.tsx` | 章节对话消息流、输入框、附件、交互题与跳页控制 |
+| `Study Notes Panel` | `study-notes-panel.tsx` | 当前会话的笔记、搜索、编辑和 JSON 归档；打开聊天检索命中 |
 | `Character Shell` | `character-shell.tsx` | 右侧角色表现容器（内含 `Character Event Snapshot` 事件预览区） |
 
 ## 3. `Tavern Workspace` 区块名称

@@ -2,9 +2,14 @@ from __future__ import annotations
 
 from typing import Annotated, Literal, TypeAlias
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import AfterValidator, BaseModel, ConfigDict, Field, model_validator
 
 from app.models.document_layout import DocumentLayoutCandidateV1, DocumentLayoutLabel
+from app.models.study_chat_note_references import (
+    STUDY_NOTE_SEARCH_RESULT_LIMIT,
+    StudyNoteReferenceV1,
+)
+from app.models.study_notes import require_note_text
 
 
 STUDY_CHAT_TOOL_ARGUMENT_CONTRACT_VERSION = "study-chat-tool-arguments-v1"
@@ -62,6 +67,13 @@ class RetrieveMemoryContextArgumentsV1(StudyChatToolContractModel):
 class ReadSessionMemoryArgumentsV1(StudyChatToolContractModel):
     key: Annotated[str, Field(max_length=120)] = ""
     limit: int = Field(default=6, ge=1, le=12)
+
+
+class SearchStudyNotesArgumentsV1(StudyChatToolContractModel):
+    query: Annotated[
+        str, Field(min_length=1, max_length=120), AfterValidator(require_note_text)
+    ]
+    limit: int = Field(default=3, ge=1, le=STUDY_NOTE_SEARCH_RESULT_LIMIT)
 
 
 class WriteSessionMemoryArgumentsV1(StudyChatToolContractModel):
@@ -242,14 +254,18 @@ class DeleteObjectArgumentsV1(StudyChatToolContractModel):
 
 class StudyChatToolResultBaseV1(StudyChatToolContractModel):
     schema_name: Literal["study-chat-tool-result"] = "study-chat-tool-result"
-    schema_version: Literal["study-chat-tool-result-v1"] = STUDY_CHAT_TOOL_RESULT_CONTRACT_VERSION
+    schema_version: Literal["study-chat-tool-result-v1"] = (
+        STUDY_CHAT_TOOL_RESULT_CONTRACT_VERSION
+    )
     ok: Literal[True] = True
     summary: Annotated[str, Field(max_length=2_000)] = ""
 
 
 class StudyChatToolErrorResultV1(StudyChatToolContractModel):
     schema_name: Literal["study-chat-tool-result"] = "study-chat-tool-result"
-    schema_version: Literal["study-chat-tool-result-v1"] = STUDY_CHAT_TOOL_RESULT_CONTRACT_VERSION
+    schema_version: Literal["study-chat-tool-result-v1"] = (
+        STUDY_CHAT_TOOL_RESULT_CONTRACT_VERSION
+    )
     ok: Literal[False] = False
     tool_name: Annotated[str, Field(min_length=1, max_length=80)]
     error: Annotated[str, Field(min_length=1, max_length=128)]
@@ -311,6 +327,17 @@ class SessionMemoryItemResultV1(StudyChatToolContractModel):
 class ReadSessionMemoryResultV1(StudyChatToolResultBaseV1):
     tool_name: Literal["read_session_memory"] = "read_session_memory"
     memory_items: list[SessionMemoryItemResultV1] = Field(max_length=12)
+
+
+class StudyNoteSearchHitV1(StudyNoteReferenceV1):
+    excerpt: Annotated[str, Field(max_length=162)]
+
+
+class SearchStudyNotesResultV1(StudyChatToolResultBaseV1):
+    tool_name: Literal["search_study_notes"] = "search_study_notes"
+    content_is_untrusted: Literal[True] = True
+    hits: list[StudyNoteSearchHitV1] = Field(max_length=STUDY_NOTE_SEARCH_RESULT_LIMIT)
+    has_more: bool
 
 
 class PreparedEffectResultV1(StudyChatToolResultBaseV1):
@@ -379,7 +406,9 @@ class UpdateLearningPlanResultV1(PlanConfirmationResultV1):
 
 
 class UpdateLearningPlanProgressResultV1(PlanConfirmationResultV1):
-    tool_name: Literal["update_learning_plan_progress"] = "update_learning_plan_progress"
+    tool_name: Literal["update_learning_plan_progress"] = (
+        "update_learning_plan_progress"
+    )
 
 
 class ReadPageRangeContentResultV1(StudyChatToolResultBaseV1):
@@ -403,7 +432,9 @@ class ReadPageRangeImagesResultV1(StudyChatToolResultBaseV1):
 
 
 class ProjectionPreparedResultV1(PreparedEffectResultV1):
-    source_kind: Literal["attachment_pdf", "attachment_image", "generated_image", ""] = ""
+    source_kind: Literal[
+        "attachment_pdf", "attachment_image", "generated_image", ""
+    ] = ""
     source_id: Annotated[str, Field(max_length=160)] = ""
     page_number: int = Field(default=0, ge=0, le=100_000)
 
@@ -440,7 +471,9 @@ class ReadProjectedPdfImagesResultV1(ReadPageRangeImagesResultV1):
 
 
 class ReadProjectedPdfLayoutCandidatesResultV1(StudyChatToolResultBaseV1):
-    tool_name: Literal["read_projected_pdf_layout_candidates"] = "read_projected_pdf_layout_candidates"
+    tool_name: Literal["read_projected_pdf_layout_candidates"] = (
+        "read_projected_pdf_layout_candidates"
+    )
     source_kind: Literal["attachment_pdf"] = "attachment_pdf"
     source_id: Annotated[str, Field(min_length=1, max_length=160)]
     page_number: int = Field(ge=1, le=100_000)
@@ -463,7 +496,9 @@ class HighlightProjectedPdfTextResultV1(FocusProjectedPdfPageResultV1):
 
 
 class AnnotateProjectedPdfRegionResultV1(FocusProjectedPdfPageResultV1):
-    tool_name: Literal["annotate_projected_pdf_region"] = "annotate_projected_pdf_region"
+    tool_name: Literal["annotate_projected_pdf_region"] = (
+        "annotate_projected_pdf_region"
+    )
 
 
 class ClearProjectedPdfOverlaysResultV1(FocusProjectedPdfPageResultV1):
@@ -471,11 +506,15 @@ class ClearProjectedPdfOverlaysResultV1(FocusProjectedPdfPageResultV1):
 
 
 class AnnotateProjectedImageRegionResultV1(ProjectionPreparedResultV1):
-    tool_name: Literal["annotate_projected_image_region"] = "annotate_projected_image_region"
+    tool_name: Literal["annotate_projected_image_region"] = (
+        "annotate_projected_image_region"
+    )
 
 
 class ClearProjectedImageOverlaysResultV1(ProjectionPreparedResultV1):
-    tool_name: Literal["clear_projected_image_overlays"] = "clear_projected_image_overlays"
+    tool_name: Literal["clear_projected_image_overlays"] = (
+        "clear_projected_image_overlays"
+    )
 
 
 class SceneToolNodeV1(StudyChatToolContractModel):
@@ -539,6 +578,7 @@ StudyChatToolArguments: TypeAlias = (
     | AskFillBlankQuestionArgumentsV1
     | RetrieveMemoryContextArgumentsV1
     | ReadSessionMemoryArgumentsV1
+    | SearchStudyNotesArgumentsV1
     | WriteSessionMemoryArgumentsV1
     | ReadSystemTimeArgumentsV1
     | ScheduleSessionFollowUpArgumentsV1
@@ -575,6 +615,7 @@ STUDY_CHAT_TOOL_ARGUMENT_MODELS: dict[str, type[StudyChatToolContractModel]] = {
     "ask_fill_blank_question": AskFillBlankQuestionArgumentsV1,
     "retrieve_memory_context": RetrieveMemoryContextArgumentsV1,
     "read_session_memory": ReadSessionMemoryArgumentsV1,
+    "search_study_notes": SearchStudyNotesArgumentsV1,
     "write_session_memory": WriteSessionMemoryArgumentsV1,
     "read_system_time": ReadSystemTimeArgumentsV1,
     "schedule_session_follow_up": ScheduleSessionFollowUpArgumentsV1,
@@ -611,6 +652,7 @@ STUDY_CHAT_TOOL_RESULT_MODELS: dict[str, type[StudyChatToolContractModel]] = {
     "ask_fill_blank_question": AskFillBlankQuestionResultV1,
     "retrieve_memory_context": RetrieveMemoryContextResultV1,
     "read_session_memory": ReadSessionMemoryResultV1,
+    "search_study_notes": SearchStudyNotesResultV1,
     "write_session_memory": WriteSessionMemoryResultV1,
     "read_system_time": ReadSystemTimeResultV1,
     "schedule_session_follow_up": ScheduleSessionFollowUpResultV1,

@@ -17,6 +17,7 @@ from app.services.harness_broad_adoption import (
     HarnessProposalRuntimeService,
 )
 from app.persistence.storage import StorageManager
+from app.persistence.study_note_repository import StudyNoteRepository
 from app.persistence.study_session_repository import StudySessionRepository
 from app.persistence.study_chat_operation_repository import StudyChatOperationRepository
 from app.persistence.tavern_repository import TavernRepository
@@ -166,6 +167,7 @@ class Container:
             self.database,
             effect_journal=self.harness_effect_journal,
         )
+        self.study_note_repository = StudyNoteRepository(self.database)
         self.study_chat_operation_repository = StudyChatOperationRepository(
             self.database,
             chat_attachment_root=self.storage.chat_attachment_root,
@@ -235,6 +237,7 @@ class Container:
                 StudyChatDependencies(
                     study_chat_operation_repository=self.study_chat_operation_repository,
                     study_session_repository=self.study_session_repository,
+                    study_note_repository=self.study_note_repository,
                     study_session_service=self.study_session_service,
                     store=self.store,
                     model_provider=provider,

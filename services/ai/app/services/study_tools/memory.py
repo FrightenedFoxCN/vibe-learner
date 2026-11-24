@@ -37,12 +37,6 @@ class SessionMemoryTools:
         validated = WriteSessionMemoryArgumentsV1.model_validate(arguments)
         key = validated.key.strip()
         content = validated.content.strip()
-        if self.context.verbatim_memory_source is not None:
-            if validated.key != self.context.verbatim_memory_source.key:
-                raise HTTPException(
-                    status_code=422, detail="verbatim_memory_key_mismatch"
-                )
-            content = self.context.verbatim_memory_source.content
         if not key or not content:
             raise HTTPException(status_code=422, detail="session_memory_invalid")
         if self.context.effects is None:

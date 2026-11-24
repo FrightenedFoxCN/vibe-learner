@@ -18,6 +18,7 @@ from app.core.model_runtime_limits import (
     DEFAULT_SETTING_TEMPERATURE,
 )
 
+from app.models.study_chat_note_references import StudyNoteReferences
 from app.models.study_question import (
     StudyInteractiveQuestionRecordV2 as InteractiveQuestion,
 )
@@ -1008,6 +1009,9 @@ class LearnerAttachmentRecord(BaseModel):
 class StudyChatResult(BaseModel):
     reply: str
     citations: list[Citation]
+    study_note_references: StudyNoteReferences = Field(
+        default_factory=list, exclude_if=lambda references: not references
+    )
     character_events: list[CharacterStateEvent]
     rich_blocks: list[RichTextBlockRecord] = []
     interactive_question: InteractiveQuestion | None = None
@@ -1052,6 +1056,10 @@ class DialogueTurnRecord(BaseModel):
     learner_attachments: list[LearnerAttachmentRecord] = []
     assistant_reply: str
     citations: list[Citation]
+    # Omit empty evidence so the full-turn digest stays stable for old turns.
+    study_note_references: StudyNoteReferences = Field(
+        default_factory=list, exclude_if=lambda references: not references
+    )
     character_events: list[CharacterStateEvent]
     rich_blocks: list[RichTextBlockRecord] = []
     interactive_question: InteractiveQuestion | None = None

@@ -10,7 +10,6 @@ from app.models.domain import (
     LearnerAttachmentRecord,
     SessionProjectedPdfRecord,
 )
-from app.services.study_grounding import StudyVerbatimMemorySourceV1
 from fastapi import HTTPException
 
 if TYPE_CHECKING:
@@ -32,7 +31,6 @@ class StudyToolContext:
     effects: StudyChatEffectCollector | None
     layout_service: DocumentLayoutService | None
     citations: list[Citation] = field(default_factory=list)
-    verbatim_memory_source: StudyVerbatimMemorySourceV1 | None = None
 
     def require_pdf_attachment(self, attachment_id: str) -> LearnerAttachmentRecord:
         attachment = self.sessions.require_attachment(

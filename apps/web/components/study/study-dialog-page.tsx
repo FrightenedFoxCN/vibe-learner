@@ -1,6 +1,7 @@
 "use client";
 
 import type { CSSProperties } from "react";
+import type { Citation, StudyNoteReference } from "@vibe-learner/shared";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLearningWorkspace } from "../layout/learning-workspace-provider";
 import { ProviderTruth } from "../ui/provider-truth";
@@ -18,10 +19,18 @@ import type {
 } from "../../lib/learning-workspace-page-cache";
 import { useStudyPreview } from "./use-study-preview";
 import { StudyPreviewPanel } from "./study-preview-panel";
+import { StudyNotesPanel } from "./study-notes-panel";
+import type { StudyNotesOpenRequest } from "./use-study-notes";
+import type { StudyNoteDraft } from "../../lib/study-notes-view";
 import "./study-dialog.css";
 
 export function StudyDialogPage() {
   const headingRef = useRef<HTMLDivElement | null>(null);
+  const notesButtonRef = useRef<HTMLButtonElement | null>(null);
+  const materialButtonRef = useRef<HTMLButtonElement | null>(null);
+  const notesDrafts = useRef(new Map<string, StudyNoteDraft>());
+  const [notesOpen, setNotesOpen] = useState(false);
+  const [noteRequest, setNoteRequest] = useState<StudyNotesOpenRequest | null>(null);
   const {
     activePersona,
     activePlan,
@@ -78,6 +87,54 @@ export function StudyDialogPage() {
     handleOpenPdfPage,
     handleOpenCitation,
   } = preview;
+  const currentSessionId = studySession?.id;
+  const visibleNotes = isHydrated && notesOpen && Boolean(currentSessionId);
+  const visiblePreview = isHydrated && !visibleNotes && isPdfPreviewOpen;
+  const visiblePanelId = visibleNotes
+    ? "study-notes-panel"
+    : visiblePreview
+      ? "study-material-panel"
+      : null;
+
+  useEffect(() => {
+    if (visiblePanelId && window.matchMedia("(max-width: 1080px)").matches) {
+      document.getElementById(visiblePanelId)?.scrollIntoView({ block: "start" });
+    }
+  }, [visiblePanelId]);
+  const readNotesDraft = useCallback(
+    (sessionId: string) => notesDrafts.current.get(sessionId) ?? null,
+    [],
+  );
+  const storeNotesDraft = useCallback(
+    (sessionId: string, draft: StudyNoteDraft | null) => {
+      if (draft) notesDrafts.current.set(sessionId, draft);
+      else notesDrafts.current.delete(sessionId);
+    },
+    [],
+  );
+  const consumeNoteRequest = useCallback((request: StudyNotesOpenRequest) => {
+    setNoteRequest((current) => (current === request ? null : current));
+  }, []);
+  const openMaterialCitation = useCallback(
+    (citation: Citation) => {
+      setNotesOpen(false);
+      setNoteRequest(null);
+      handleOpenCitation(citation);
+    },
+    [handleOpenCitation],
+  );
+  const openNoteReference = useCallback(
+    (reference: StudyNoteReference) => {
+      if (!currentSessionId) return;
+      setNoteRequest({
+        sessionId: currentSessionId,
+        noteId: reference.noteId,
+        noteRevision: reference.noteRevision,
+      });
+      setNotesOpen(true);
+    },
+    [currentSessionId],
+  );
   const scheduleOptions = useMemo(
     () => activePlan?.schedule ?? [],
     [activePlan?.schedule],
@@ -192,6 +249,8 @@ export function StudyDialogPage() {
 
   const handleJumpToScheduleStart = useCallback(() => {
     if (scheduleStartPage > 0) {
+      setNotesOpen(false);
+      setNoteRequest(null);
       handleOpenPdfPage(scheduleStartPage);
     }
   }, [handleOpenPdfPage, scheduleStartPage]);
@@ -338,6 +397,41 @@ export function StudyDialogPage() {
         <div className="study-dialog-heading-row">
           <h1 className="study-dialog-page-title">章节对话</h1>
           <ProviderTruth scope="study" />
+          {isHydrated && (activePlan || currentSessionId) ? (
+            <div
+              className="study-tools-switcher"
+              role="group"
+              aria-label="章节对话侧栏"
+            >
+              <button
+                ref={materialButtonRef}
+                type="button"
+                aria-expanded={visiblePreview}
+                aria-controls={visiblePreview ? "study-material-panel" : undefined}
+                onClick={() => {
+                  setNotesOpen(false);
+                  setNoteRequest(null);
+                  preview.setIsPdfPreviewOpen(!visiblePreview);
+                }}
+              >
+                教材
+              </button>
+              {currentSessionId ? (
+                <button
+                  ref={notesButtonRef}
+                  type="button"
+                  aria-expanded={visibleNotes}
+                  aria-controls="study-notes-panel"
+                  onClick={() => {
+                    setNoteRequest(null);
+                    setNotesOpen((open) => !open);
+                  }}
+                >
+                  笔记
+                </button>
+              ) : null}
+            </div>
+          ) : null}
           {visiblePartialAdvance ? (
             <div role="status" className="study-dialog-notice">
               <span>本排期项已完成，但尚未确认下一项开始。你仍在当前排期项。</span>
@@ -380,6 +474,40 @@ export function StudyDialogPage() {
           </div>
         ) : (
           <StudyConsole
+            workspaceTools={
+              <>
+                {visiblePreview ? (
+                  <StudyPreviewPanel
+                    preview={preview}
+                    onClose={() => {
+                      preview.setIsPdfPreviewOpen(false);
+                      materialButtonRef.current?.focus();
+                    }}
+                  />
+                ) : null}
+                {isHydrated && currentSessionId ? (
+                  <StudyNotesPanel
+                    key={currentSessionId}
+                    sessionId={currentSessionId}
+                    visible={visibleNotes}
+                    openRequest={noteRequest}
+                    onOpenRequestHandled={consumeNoteRequest}
+                    memoryKeys={[
+                      ...new Set(
+                        (studySession?.sessionMemory ?? []).map((entry) => entry.key),
+                      ),
+                    ]}
+                    onClose={() => {
+                      setNotesOpen(false);
+                      setNoteRequest(null);
+                      notesButtonRef.current?.focus();
+                    }}
+                    readDraft={readNotesDraft}
+                    storeDraft={storeNotesDraft}
+                  />
+                ) : null}
+              </>
+            }
             isPending={isBusy}
             selectedPlanId={activePlan?.id ?? ""}
             planOptions={planHistoryItems.map((item) => ({
@@ -403,7 +531,8 @@ export function StudyDialogPage() {
             onSubmitQuestionAttempt={handleSubmitQuestionAttempt}
             onContinueAfterQuestion={continueAfterInteractiveQuestion}
             onChangeSchedule={handleScheduleChange}
-            onOpenCitation={handleOpenCitation}
+            onOpenCitation={openMaterialCitation}
+            onOpenNoteReference={openNoteReference}
             onJumpToScheduleStart={handleJumpToScheduleStart}
             onCompleteCurrentSchedule={() => {
               void handleCompleteCurrentSchedule();
@@ -448,10 +577,6 @@ export function StudyDialogPage() {
           />
         )}
       </section>
-
-      {isHydrated ? (
-        <StudyPreviewPanel preview={preview} hasPlan={Boolean(activePlan)} />
-      ) : null}
     </main>
   );
 }

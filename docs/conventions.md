@@ -16,7 +16,7 @@
 - **操作身份分配**：Harness 身份与领域操作准入在同一数据库事务内分配；不得从 provider `tool_call_id` 推导，不得为历史行捏造；若产品留存策略清理了领域行，不可变绑定记录保留为准入墓碑。
 - **受保护内容授权**：`HarnessSafeManifest` 仅对显式审查过的无敏感内容 DTO 计算摘要；用户输入、教材、Prompt、对话记录必须置于授权制品解析器之后。制品授权绑定服务端解析的本地安装主体（principal）与精确的 operation/artifact/contract/permission 范围，不是可传递的 bearer token；SHA-256 仅证明完整性，不证明保密性或可重放性；Python 为规范摘要权威。
 - **强类型持久效果**：每个持久效果通过单一已准入 Harness 操作与全局槽位（slot）获得稳定日志身份，绑定不可变的 adapter/contract/target，使用数据库时钟认领围栏，并在产出终态前要求精确读回或补偿证据；不支持读回的外部 Provider 效果保持 `uncertain`。
-- **统一工具清单**：版本化 `Tool Manifest` 是全部 6 个 Planning 工具与 32 个 Study 工具的唯一目录；Provider Schema、输入/结果适配器、脱敏 Trace 投影、调用上限与 Provider ID 关联必须与共享 golden fixture 保持一致。
+- **统一工具清单**：版本化 `Tool Manifest` 是全部 6 个 Planning 工具与 33 个 Study 工具的唯一目录；Provider Schema、输入/结果适配器、脱敏 Trace 投影、调用上限与 Provider ID 关联必须与共享 golden fixture 保持一致。
 - **运行时与历史兼容**：`HarnessOperationRuntime` 拥有持久化围栏的 v3 生命周期状态。v1/v2 历史证据保持只读兼容；历史恢复迁移仅做 fail-closed 投影，需要真实准入绑定与既有 v3 trace attempt。
 
 ## 3. 提案、提交与所有权

@@ -43,9 +43,10 @@
 | 职责 | 路径 |
 | --- | --- |
 | Study Chat 应用编排 | `services/ai/app/services/study_chat_application.py`、`services/ai/app/services/study_v3.py` |
-| 32 个 Study 工具与分派 | `services/ai/app/services/study_session_chat_runtime.py`、`services/ai/app/services/study_tools/` |
+| 33 个 Study 工具与分派 | `services/ai/app/services/study_session_chat_runtime.py`、`services/ai/app/services/study_tools/` |
 | 强类型效果与附件暂存 | `services/ai/app/models/study_chat_effect.py`、`services/ai/app/services/study_chat_effects.py`、`services/ai/app/services/study_chat_attachments.py` |
 | Session CAS 与操作持久化 | `services/ai/app/persistence/study_session_repository.py`、`services/ai/app/persistence/study_chat_operation_repository.py` |
+| Study Notes API 与侧栏 | `services/ai/app/api/routers/study_notes.py`、`services/ai/app/persistence/study_note_repository.py`、`apps/web/components/study/study-notes-panel.tsx` |
 | 交互题判分与前端解码 | `services/ai/app/models/study_question.py`、`apps/web/lib/study-question-attempt.ts`、`apps/web/lib/study-session-decode.ts` |
 | 浏览器恢复与等待上限 | `apps/web/hooks/use-study-chat-recovery.ts`、`apps/web/lib/study-request-deadline.ts`、`apps/web/lib/study-chat-operation-decode.ts` |
 

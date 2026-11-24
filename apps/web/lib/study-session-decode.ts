@@ -15,6 +15,7 @@ import type {
   SessionPlanConfirmation,
   SessionProjectedPdf,
   StudyChatResponse,
+  StudyNoteReference,
   StudySessionRecord,
 } from "@vibe-learner/shared";
 import { STUDY_CHAT_TRACE_TOOL_NAMES } from "../../../packages/shared/src/tool-manifest.ts";
@@ -1093,6 +1094,67 @@ function decodeMemoryTrace(raw: unknown, path: string) {
   });
 }
 
+export function decodeStudyNoteReferences(
+  raw: unknown,
+  path = "study_note_references",
+): StudyNoteReference[] {
+  if (!Array.isArray(raw) || raw.length > 10) {
+    throw new StudySessionDecodeError(
+      path,
+      "expected_at_most_10_study_note_references",
+    );
+  }
+  const references = decoder.array(raw, path, (item, itemPath) => {
+    const entry = decoder.record(item, itemPath);
+    if (
+      Object.keys(entry).some(
+        (key) => !["note_id", "note_revision", "title"].includes(key),
+      )
+    ) {
+      throw new StudySessionDecodeError(
+        itemPath,
+        "unexpected_study_note_reference_field",
+      );
+    }
+    const noteId = decoder.string(
+      decoder.field(entry, "note_id", itemPath),
+      itemPath + ".note_id",
+    );
+    if (noteId.length !== 32 || !/^[a-f0-9]{32}$/.test(noteId)) {
+      throw new StudySessionDecodeError(itemPath + ".note_id", "invalid_study_note_id");
+    }
+    const title = decoder.string(
+      decoder.field(entry, "title", itemPath),
+      itemPath + ".title",
+    );
+    if (
+      [...title].length > 160 ||
+      /^[\p{White_Space}\u001c-\u001f]*$/u.test(title) ||
+      /[\u0000\ud800-\udfff]/u.test(title)
+    ) {
+      throw new StudySessionDecodeError(
+        itemPath + ".title",
+        "invalid_study_note_title",
+      );
+    }
+    return {
+      noteId,
+      noteRevision: decoder.integer(
+        decoder.field(entry, "note_revision", itemPath),
+        itemPath + ".note_revision",
+        1,
+        2_147_483_647,
+      ),
+      title,
+    };
+  });
+  decoder.unique(
+    references.map((entry) => entry.noteId),
+    path,
+  );
+  return references;
+}
+
 interface DecodedChatFields extends StudyChatResponse {}
 
 function decodeChatFields(
@@ -1118,6 +1180,12 @@ function decodeChatFields(
       decoder.field(raw, "citations", path),
       `${path}.citations`,
     ),
+    studyNoteReferences: Object.hasOwn(raw, "study_note_references")
+      ? decodeStudyNoteReferences(
+          raw.study_note_references,
+          path + ".study_note_references",
+        )
+      : undefined,
     characterEvents: decodeCharacterEvents(
       decoder.field(raw, "character_events", path),
       `${path}.character_events`,
@@ -1180,6 +1248,9 @@ function decodeTurn(
     {
       reply: decoder.field(value, "assistant_reply", path),
       citations: decoder.field(value, "citations", path),
+      ...(Object.hasOwn(value, "study_note_references")
+        ? { study_note_references: value.study_note_references }
+        : {}),
       character_events: decoder.field(value, "character_events", path),
       rich_blocks: decoder.field(value, "rich_blocks", path),
       interactive_question: decoder.field(value, "interactive_question", path),
@@ -1208,6 +1279,7 @@ function decodeTurn(
     learnerAttachments: attachments,
     assistantReply: chat.reply,
     citations: chat.citations,
+    studyNoteReferences: chat.studyNoteReferences,
     characterEvents: chat.characterEvents,
     richBlocks: chat.richBlocks,
     interactiveQuestion: chat.interactiveQuestion,
@@ -2053,6 +2125,7 @@ export function decodeStudyChatExchange(
   const turnFields: DecodedChatFields = {
     reply: lastTurn.assistantReply,
     citations: lastTurn.citations,
+    studyNoteReferences: lastTurn.studyNoteReferences,
     characterEvents: lastTurn.characterEvents,
     richBlocks: lastTurn.richBlocks,
     interactiveQuestion: lastTurn.interactiveQuestion,

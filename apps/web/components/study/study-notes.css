@@ -1,0 +1,172 @@
+@layer components {
+  .study-tools-switcher,
+  .study-notes-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .study-tools-switcher button,
+  .study-notes-panel button {
+    min-height: 44px;
+    padding: 0 10px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--ink);
+    font: inherit;
+  }
+
+  .study-tools-switcher button[aria-expanded="true"],
+  .study-notes-panel button[aria-current="true"] {
+    background: var(--accent-soft);
+    border-color: var(--accent);
+  }
+
+  .study-notes-panel button.study-notes-primary {
+    color: var(--bg);
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+
+  .study-notes-panel button.study-notes-danger,
+  .study-notes-error {
+    color: var(--negative);
+  }
+
+  .study-notes-panel button:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  .study-notes-panel {
+    display: flex;
+    flex-direction: column;
+    align-self: start;
+    min-width: 0;
+    min-height: 0;
+    color: var(--ink);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    overflow-wrap: anywhere;
+  }
+
+  .study-notes-panel[hidden] {
+    display: none;
+  }
+
+  .study-notes-top {
+    padding: 8px 12px;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+    background: var(--panel);
+  }
+
+  .study-notes-top h2 {
+    font-size: 16px;
+    font-weight: 700;
+    margin: 0;
+  }
+
+  .study-notes-body,
+  .study-notes-editor,
+  .study-notes-tools[open] {
+    display: grid;
+    gap: 10px;
+    align-content: start;
+    min-width: 0;
+  }
+
+  .study-notes-body {
+    padding: 12px;
+    font-size: 14px;
+  }
+
+  .study-notes-panel :is(input:not([type="checkbox"]), textarea) {
+    width: 100%;
+    min-width: 0;
+    min-height: 44px;
+    padding: 8px;
+    color: var(--ink);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    font: inherit;
+  }
+
+  .study-notes-panel textarea {
+    min-height: 96px;
+    resize: vertical;
+  }
+
+  .study-notes-row input[type="search"] {
+    flex: 1 1 116px;
+    width: auto;
+  }
+
+  .study-notes-body > p,
+  .study-notes-editor > p {
+    margin: 0;
+  }
+
+  .study-notes-muted {
+    color: var(--muted);
+  }
+
+  .study-notes-list {
+    display: grid;
+    gap: 4px;
+    max-height: 208px;
+    overflow: auto;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .study-notes-list button {
+    display: grid;
+    gap: 4px;
+    width: 100%;
+    padding: 8px;
+    text-align: left;
+  }
+
+  .study-notes-list span {
+    color: var(--muted);
+    white-space: pre-wrap;
+  }
+
+  .study-notes-editor label,
+  .study-notes-tools label {
+    display: grid;
+    gap: 4px;
+  }
+
+  .study-notes-warning,
+  .study-notes-tools {
+    padding: 8px;
+    border: 1px solid var(--border);
+    background: var(--panel);
+  }
+
+  .study-notes-warning pre {
+    white-space: pre-wrap;
+    max-height: 128px;
+    overflow: auto;
+  }
+
+  .study-notes-tools summary {
+    line-height: 36px;
+    cursor: pointer;
+  }
+
+  .study-notes-legacy {
+    max-height: 132px;
+    overflow: auto;
+  }
+
+  .study-notes-legacy label {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+  }
+}

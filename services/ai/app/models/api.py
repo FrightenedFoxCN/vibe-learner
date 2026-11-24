@@ -49,6 +49,7 @@ from app.models.study_question import (
     StudyQuestionPromptResponseV1,
 )
 from app.models.study_chat_operation import StudyChatMessageKind
+from app.models.study_chat_note_references import StudyNoteReferences
 from app.models.scene import SceneCommittedSaveV1
 from app.models.harness import HarnessTraceV3
 
@@ -840,6 +841,9 @@ class StudyChatRequest(BaseModel):
 class StudyChatResponse(BaseModel):
     reply: str
     citations: list[Citation]
+    study_note_references: StudyNoteReferences = Field(
+        default_factory=list, exclude_if=lambda references: not references
+    )
     character_events: list[CharacterStateEvent]
     rich_blocks: list[dict[str, str]] = []
     interactive_question: StudyQuestionPromptResponseV1 | None = None

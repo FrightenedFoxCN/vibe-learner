@@ -457,6 +457,8 @@ def _adapt_study_runtime_success(
         "tool_name": name,
         "summary": text_at(raw, "summary"),
     }
+    if name == "search_study_notes":
+        return dict(raw)  # Runtime emits the strict V1 envelope, not a legacy payload.
     if name == "ask_multiple_choice_question":
         return {
             **base,
@@ -850,6 +852,7 @@ def _provider_result_projection(
     elif name in {
         "retrieve_memory_context",
         "read_session_memory",
+        "search_study_notes",
         "read_learning_plan_progress",
         "read_page_range_content",
         "read_projected_pdf_content",

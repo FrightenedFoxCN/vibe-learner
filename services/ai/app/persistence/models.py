@@ -811,6 +811,27 @@ class StudySessionRow(Base):
     payload: Mapped[dict[str, Any]] = mapped_column(JSON_PAYLOAD, default=dict)
 
 
+class StudyNoteRow(Base):
+    __tablename__ = "study_notes"
+    __table_args__ = (
+        CheckConstraint("revision >= 1", name="ck_study_notes_revision"),
+        Index("ix_study_notes_session_id_id", "session_id", "id"),
+        Index("ix_study_notes_session_recent", "session_id", "updated_at", "id"),
+    )
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    session_id: Mapped[str] = mapped_column(
+        String(64), ForeignKey("study_sessions.id", ondelete="CASCADE")
+    )
+    title: Mapped[str] = mapped_column(String(160))
+    content: Mapped[str] = mapped_column(Text)
+    search_title: Mapped[str] = mapped_column(Text)
+    search_content: Mapped[str] = mapped_column(Text)
+    revision: Mapped[int] = mapped_column(Integer)
+    created_at: Mapped[str] = mapped_column(String(64))
+    updated_at: Mapped[str] = mapped_column(String(64))
+
+
 class StudyQuestionAttemptRow(Base):
     __tablename__ = "study_question_attempts"
     __table_args__ = (

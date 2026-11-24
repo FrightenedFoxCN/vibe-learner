@@ -19,7 +19,7 @@
 | --- | --- |
 | [教材解析与入库链路](document-pipeline.md) | 上传输入上限、PDF/OCR 解析、Study Unit 清洗、断点续跑、印刷页对照与单元修订 |
 | [学习计划链路与契约](learning-plan.md) | Planning Context、6 个规划工具、Prompt 与文本契约、物理页范围、计划修订与可观测性 |
-| [学习会话与对话恢复](study-session.md) | 章节与排期术语、Session 作用域、交互题判分、原文记忆指令、输出语言与浏览器恢复协议 |
+| [学习会话与对话恢复](study-session.md) | 章节与排期术语、Session 作用域、交互题判分、用户笔记、输出语言与浏览器恢复协议 |
 | [Tavern 多角色互动](tavern.md) | 房间/参与者/消息/Run/Step 存储模型、调度顺序、子重试、租约恢复与传输取消 |
 | [场景编辑器（Scene Setup）](scene-setup.md) | 层级场景结构、提案与保存契约、可复用节点库与前端数据流 |
 | [模型运行时行为与边界](model-runtime.md) | Provider 路由与重试、记忆与引用、可选 PDF 版面候选、Persona/OCR/Tavern 运行约束 |

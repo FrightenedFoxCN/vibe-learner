@@ -66,6 +66,11 @@ _TOOL_UI_CATALOG: dict[str, dict[str, dict[str, str]]] = {
             "category": "memory",
             "category_label": "记忆工具",
         },
+        "search_study_notes": {
+            "label": "检索学习笔记",
+            "category": "session",
+            "category_label": "会话工具",
+        },
         "write_session_memory": {
             "label": "临时记忆写入",
             "category": "memory",

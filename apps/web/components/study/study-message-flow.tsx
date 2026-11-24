@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import type { StudyNoteReference } from "@vibe-learner/shared";
 import { orderStudySessionTurns } from "../../lib/study-session-decode";
 import { RichTextMessage } from "../ui/rich-text-message";
 import type { StudyConsoleProps } from "./study-console-types";
@@ -17,6 +18,7 @@ type StudyMessageFlowProps = Pick<
   | "turns"
   | "session"
   | "onOpenCitation"
+  | "onOpenNoteReference"
   | "onAsk"
   | "onSubmitQuestionAttempt"
   | "onContinueAfterQuestion"
@@ -38,6 +40,7 @@ export function StudyMessageFlow({
   turns,
   session,
   onOpenCitation,
+  onOpenNoteReference,
   onAsk,
   onSubmitQuestionAttempt,
   onContinueAfterQuestion,
@@ -100,6 +103,10 @@ export function StudyMessageFlow({
                     className="study-console-ai-message"
                   />
                   <CharacterEventDetails events={turn.characterEvents} />
+                  <SearchedNotes
+                    references={turn.studyNoteReferences}
+                    onOpen={onOpenNoteReference}
+                  />
                   {turn.interactiveQuestion ? (
                     <div className="study-console-question-wrap">
                       <StudyQuestionCard
@@ -166,6 +173,10 @@ export function StudyMessageFlow({
                   className="study-console-ai-message"
                 />
                 <CharacterEventDetails events={session.characterEvents} />
+                <SearchedNotes
+                  references={session.studyNoteReferences}
+                  onOpen={onOpenNoteReference}
+                />
                 {session.citations.length ? (
                   <div className="study-console-citations">
                     {session.citations.map((citation, index) => (
@@ -195,6 +206,32 @@ export function StudyMessageFlow({
           </p>
         </div>
       )}
+    </div>
+  );
+}
+
+function SearchedNotes({
+  references,
+  onOpen,
+}: {
+  references: StudyNoteReference[] | undefined;
+  onOpen: ((reference: StudyNoteReference) => void) | undefined;
+}) {
+  if (!references?.length) return null;
+  return (
+    <div className="study-console-citations" role="group" aria-label="检索到的笔记">
+      <span>检索到的笔记</span>
+      {references.map((reference) => (
+        <button
+          key={reference.noteId}
+          type="button"
+          className="study-console-citation"
+          onClick={() => onOpen?.(reference)}
+          disabled={!onOpen}
+        >
+          {reference.title}
+        </button>
+      ))}
     </div>
   );
 }

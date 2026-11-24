@@ -92,6 +92,16 @@
 - 交互题作答（`POST /study-sessions/{id}/attempt`）仅接收 `turn_id`、`expected_session_revision`、`client_attempt_id` 与 `submitted_answer`，返回 `study-question-attempt-response-v1`，浏览器随后通过 `GET /study-sessions/{id}` 读回持久化 Session 核验。
 - `PATCH /study-sessions/{id}` 至少需提供 `study_unit_id` 或 `scene_profile` 之一，否则返回 `400 update_payload_empty`。详见 [学习会话与对话恢复](study-session.md)。
 
+### Study Notes
+
+路径前缀：`/study-sessions/{session_id}/notes`。
+
+- **读写**：`POST` 创建、`GET /{note_id}` 读回、`PATCH /{note_id}` 替换完整可编辑字段（`title`、`content`）、`DELETE /{note_id}` 删除。标题最多 160 字符，正文最多 4,000 字符；二者不可为空白，但保存时不修剪。所有单条读写都验证会话归属。修改从请求体、删除从 query 接收 `expected_revision`；过期返回 `409` 和 `{code: "study_note_revision_conflict", current_revision}`。笔记版本独立于 Session 版本。
+- **列表与搜索**：`GET ?q=&offset=0&limit=30`；`q` 最多 120 字符，去除首尾空白后，对标题或正文做 Unicode 不区分大小写的字面子串匹配（不使用通配符或分词）。按 `(updated_at DESC, id DESC)` 排序，每页最多 100 条，返回正文片段和可空的 `next_offset`。
+- **JSON 归档**：`GET /export` 下载 `study-note-archive-v1` JSON。单页最多 200 条，`next_after` 非空时以其为 `after` 继续导出；跨页不是数据库快照，完整备份时请暂停编辑。每页可直接 `POST /import` 到目标会话，不接收外部 ID、版本或时间戳，也不使用导入文档里的游标。整批校验、整批提交，返回新笔记的 `note_ids`；重复导入会创建副本，不覆盖现有笔记。归档请求体上限 5 MiB，其它笔记写入上限 256 KiB。
+- **聊天检索引用**：成功的只读搜索可在已提交回合与对应聊天结果上返回可选 `study_note_references`（最多 10 条，每项为 `note_id`、`note_revision`、`title`）。它仅记录该操作检索到的已保存笔记，不是教材引用，也不包含搜索词、正文片段或 URL。
+- **旧记忆**：`POST /import-memory` 接收当前会话的 `{keys: [...]}`（最多 200 个），显式以原 key 为标题、原内容为正文复制到笔记，不清空或更改原记忆。存在缺失、歧义、重复 key 或不合法正文时拒绝整批。
+
 ### Tavern（`/tavern`）
 
 - **房间列表分页（`GET /tavern/rooms`）**：返回 `tavern-room-list-v1`，按 `(updated_at DESC, id DESC)` 稳定排序，`limit` 1–50（默认 30），`cursor` 经版本与完整性校验（篡改或失效返回 `400`）。

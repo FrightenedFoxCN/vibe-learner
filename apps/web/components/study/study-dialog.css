@@ -1,5 +1,6 @@
 @layer components {
   .study-dialog-workspace {
+    --study-sticky-top: 0px;
     min-height: 100vh;
     width: 100%;
     max-width: none;
@@ -9,27 +10,19 @@
     align-content: start;
   }
 
-  .study-dialog-empty-dock {
-    position: fixed;
-    right: 0;
-    top: calc(var(--study-heading-offset, 112px) + 20px);
-    z-index: 20;
-    max-width: 220px;
-    padding: 10px 12px;
-    border: 1px solid var(--border);
-    background: color-mix(in srgb, var(--bg) 96%, transparent);
-    color: var(--muted);
-    font-size: 12px;
-    line-height: 1.6;
+  .study-dialog-heading,
+  .study-dialog-main-stage {
+    width: 100%;
+    max-width: 1400px;
+    justify-self: center;
   }
 
   .study-dialog-heading {
     display: grid;
     gap: 8px;
     position: sticky;
-    top: 0;
+    top: var(--study-sticky-top);
     z-index: 15;
-    width: 100%;
     padding-top: 20px;
     margin-bottom: 16px;
     padding-bottom: 16px;
@@ -77,8 +70,13 @@
 
   .study-dialog-main-stage {
     min-width: 0;
-    width: 100%;
-    max-width: none;
+  }
+
+  .study-dialog-preview-window,
+  .study-notes-panel {
+    scroll-margin-top: calc(
+      var(--study-sticky-top) + var(--study-heading-offset, 112px) + 12px
+    );
   }
 
   .study-dialog-no-plan-state {
@@ -127,19 +125,29 @@
   }
 
   .study-dialog-preview-window {
-    position: fixed;
-    top: calc(var(--study-heading-offset, 112px) - 6px);
-    right: 0;
-    bottom: auto;
-    z-index: 35;
     display: flex;
     flex-direction: column;
-    width: min(400px, calc(100vw - 36px));
-    height: min(82vh, calc(100vh - var(--study-heading-offset, 112px) - 20px));
+    min-width: 0;
+    height: min(64dvh, 580px);
     border: 1px solid var(--border);
-    background: color-mix(in srgb, var(--bg) 98%, transparent);
-    box-shadow: 0 16px 40px color-mix(in srgb, var(--ink) 12%, transparent);
+    background: var(--bg);
     overflow: hidden;
+  }
+
+  .study-dialog-preview-no-material {
+    height: auto;
+    gap: 8px;
+    padding: 10px 12px;
+  }
+
+  .study-dialog-preview-no-material h2,
+  .study-dialog-preview-no-material p {
+    margin: 0;
+  }
+
+  .study-dialog-preview-no-material p {
+    color: var(--muted);
+    font-size: 14px;
   }
 
   .study-dialog-pdf-header {
@@ -168,9 +176,9 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
     justify-content: flex-end;
-    flex-shrink: 0;
+    flex: 0 0 auto;
   }
 
   .study-dialog-pdf-title {
@@ -267,61 +275,14 @@
     font-size: 13px;
   }
 
-  .study-dialog-preview-dock {
-    position: fixed;
-    right: 0;
-    top: calc(var(--study-heading-offset, 112px) - 6px);
-    transform: none;
-    z-index: 35;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    border: 1px solid var(--border);
-    background: var(--bg);
-    color: var(--ink);
-    min-height: 0;
-    width: auto;
-    height: 38px;
-    padding: 0 14px;
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-    box-shadow: 0 12px 28px color-mix(in srgb, var(--ink) 10%, transparent);
-  }
-
-  .study-dialog-preview-window,
-  .study-dialog-preview-dock {
-    transition:
-      transform 180ms ease,
-      box-shadow 180ms ease;
-  }
-
-  .study-dialog-preview-window:hover,
-  .study-dialog-preview-dock:hover {
-    box-shadow: 0 22px 54px color-mix(in srgb, var(--ink) 22%, transparent);
-  }
-
-  @media (max-width: 1080px) {
-    .study-dialog-preview-window {
-      top: 56px;
-      width: min(420px, calc(100vw - 24px));
-      height: min(70vh, calc(100vh - 108px));
-    }
-  }
-
   @media (max-width: 760px) {
     .study-dialog-workspace {
-      padding-bottom: 8px;
+      --study-sticky-top: var(--mobile-nav-height);
+      padding-bottom: 16px;
     }
 
-    .study-dialog-preview-window {
-      top: calc(var(--mobile-nav-height) + 6px);
-      width: min(92vw, 360px);
-      height: min(66vh, calc(100vh - var(--mobile-nav-height) - 32px));
-    }
-
-    .study-dialog-preview-dock {
-      top: calc(var(--mobile-nav-height) + 4px);
+    .study-dialog-preview-window:not(.study-dialog-preview-no-material) {
+      height: 55dvh;
     }
   }
 }

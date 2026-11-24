@@ -59,7 +59,7 @@ export function StudyConsoleSidebar({
     pendingFollowUps?.find((item) => item.status === "pending") ?? null;
 
   return (
-    <aside className="study-console-sidebar">
+    <aside className="study-console-sidebar" aria-label="学习会话设置">
       <div className="study-console-sidebar-stack">
         <div className="study-console-control-card">
           <div className="study-console-control-stack">
