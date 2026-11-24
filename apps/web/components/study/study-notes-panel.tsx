@@ -6,7 +6,10 @@ import {
   type ReactNode,
   type KeyboardEvent,
 } from "react";
-import { studyMarkdownFilename } from "../../lib/study-note-markdown";
+import {
+  studyMarkdownFilename,
+  studyMarkdownPlainExcerpt,
+} from "../../lib/study-note-markdown";
 import { StudyNoteMarkdownEditor } from "./study-note-markdown-editor";
 import { isStudyNoteDraftDirty, type StudyNoteDraft } from "../../lib/study-notes-view";
 import { useStudyNotes, type StudyNotesOpenRequest } from "./use-study-notes";
@@ -176,7 +179,7 @@ export function StudyNotesPanel(props: StudyNotesPanelProps) {
           )}
         </div>
       ) : null}
-      <div className="study-notes-row">
+      <div className="study-notes-row study-notes-editor-actions">
         <button
           type="submit"
           className="study-notes-primary"
@@ -197,7 +200,7 @@ export function StudyNotesPanel(props: StudyNotesPanelProps) {
         {draft.original ? (
           <button
             type="button"
-            className="study-notes-danger"
+            className="study-notes-danger study-notes-delete-action"
             disabled={disabled || Boolean(conflict) || draft.unconfirmed}
             onClick={notes.remove}
           >
@@ -274,7 +277,9 @@ export function StudyNotesPanel(props: StudyNotesPanelProps) {
                     onClick={() => void notes.openNote(item.id)}
                   >
                     <strong>{item.title}</strong>
-                    <span>{item.excerpt}</span>
+                    <span>
+                      {studyMarkdownPlainExcerpt(item.excerpt) || item.excerpt}
+                    </span>
                   </button>
                 </li>
               ))}

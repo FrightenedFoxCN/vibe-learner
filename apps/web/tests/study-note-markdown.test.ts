@@ -3,6 +3,7 @@ import { test } from "node:test";
 import {
   formatStudyMarkdown,
   studyMarkdownFilename,
+  studyMarkdownPlainExcerpt,
   type MarkdownAction,
 } from "../lib/study-note-markdown.ts";
 
@@ -53,4 +54,13 @@ test("links escape label punctuation and select their replacement URL", () => {
 test("the Markdown download name has one extension and no path delimiters", () => {
   assert.equal(studyMarkdownFilename("../教材:条件概率.MD"), "-教材-条件概率.md");
   assert.equal(studyMarkdownFilename("..."), "study-note.md");
+});
+
+test("plain excerpt strips common Markdown syntax while keeping readable text", () => {
+  assert.equal(
+    studyMarkdownPlainExcerpt(
+      "# 向量\n- [x] **线性组合** $c_1 v_1$ 与 [讲义](https://a)",
+    ),
+    "向量 线性组合 c_1 v_1 与 讲义",
+  );
 });

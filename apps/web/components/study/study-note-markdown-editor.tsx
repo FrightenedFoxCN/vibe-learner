@@ -46,7 +46,16 @@ export function StudyNoteMarkdownEditor({
   limit: number;
   onChange: (value: string) => void;
 }) {
-  const [mode, setMode] = useState<Mode>(expanded ? "split" : "source");
+  const [mode, setMode] = useState<Mode>(() => {
+    if (!expanded) return "source";
+    if (
+      typeof window !== "undefined" &&
+      window.matchMedia("(max-width: 759px)").matches
+    ) {
+      return "source";
+    }
+    return "split";
+  });
   const editor = useRef<HTMLTextAreaElement>(null);
   const statusId = useId();
   const count = Array.from(value).length;

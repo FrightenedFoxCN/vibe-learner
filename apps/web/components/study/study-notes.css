@@ -132,7 +132,21 @@
 
   .study-notes-list span {
     color: var(--muted);
-    white-space: pre-wrap;
+    font-size: 12px;
+    line-height: 1.5;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .study-notes-editor-actions {
+    padding-top: 4px;
+  }
+
+  .study-notes-delete-action {
+    margin-inline-start: auto;
+    border-color: color-mix(in srgb, var(--negative) 32%, var(--border));
   }
 
   .study-notes-editor label,
@@ -238,6 +252,18 @@
     font-variant-numeric: tabular-nums;
   }
 
+  .study-markdown-tools {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 2px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .study-markdown-tools button {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+
   .study-notes-panel .study-markdown-editor textarea {
     display: block;
     font: 13px / 1.65 var(--font-mono);
@@ -336,8 +362,26 @@
   }
 
   @media (min-width: 760px) {
+    .study-markdown-tools {
+      flex-wrap: wrap;
+      overflow-x: visible;
+      padding-bottom: 0;
+    }
+
     .study-markdown-split {
       grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    }
+  }
+
+  @media (max-width: 759px) {
+    .study-markdown-workspace[open] {
+      width: calc(100% - 16px);
+      height: calc(100dvh - 16px);
+    }
+
+    .study-markdown-workspace .study-markdown-preview,
+    .study-markdown-workspace .study-markdown-editor textarea:not([hidden]) {
+      height: clamp(220px, 48dvh, 480px);
     }
   }
 }

@@ -83,7 +83,7 @@
 - [x] **P1-UI-06 修复 `Scene Setup` 固定 104px 空白提示条与移动端首屏自动滚走工具栏**
   - 将 `scene-workspace-view.tsx` 顶部反馈条由固定 `h-[104px]` 改为内容自适应高度（`min-h-8 max-h-24`）。
   - 限制 `use-scene-workspace-controller.ts` 仅在用户主动切换节点时执行 `scrollIntoView`，避免移动端初次加载自动将树标题与工具按钮卷到顶栏之下。
-- [ ] **P1-UI-07 优化 `Study Dialog` 吸底输入透字、PDF 预览浮条与 `Study Notes` 编辑器响应式布局**
+- [x] **P1-UI-07 优化 `Study Dialog` 吸底输入透字、PDF 预览浮条与 `Study Notes` 编辑器响应式布局**
   - 为 `study-console.css` 吸底输入区使用不透明背景与顶部分割线，修复滚动消息透影；改善 PDF 顶栏图标按钮热区，避免浮条遮压教材标题区。
   - 优化新版 `Study Notes`：移动端全屏 `Markdown 编辑器` 默认使用 `源码` 模式并将格式工具栏改为单行横向滚动；桌面端将 `删除` 按钮与 `保存 / 下载 .md` 拉开间距防止误触；清理侧栏笔记列表摘要中的原始 Markdown 标记噪声。
 

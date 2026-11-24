@@ -158,3 +158,19 @@ export function studyMarkdownFilename(title: string): string {
     .replace(/\.md$/i, "");
   return (safe || "study-note") + ".md";
 }
+
+export function studyMarkdownPlainExcerpt(excerpt: string): string {
+  return excerpt
+    .replace(/^\s{0,3}#{1,6}\s+/gm, "")
+    .replace(/^\s*>\s?/gm, "")
+    .replace(/^\s*[-*+]\s+\[[ xX]\]\s+/gm, "")
+    .replace(/^\s*[-*+]\s+/gm, "")
+    .replace(/```[^\n]*/g, "")
+    .replace(/!\[([^\]]*)\]\([^)]*\)/g, "$1")
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
+    .replace(/(\*\*|__|~~|`)/g, "")
+    .replace(/\$\$([^$]+)\$\$/g, "$1")
+    .replace(/\$([^$\n]+)\$/g, "$1")
+    .replace(/\s+/g, " ")
+    .trim();
+}
