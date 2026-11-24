@@ -46,6 +46,7 @@ export interface StudyDialogPageCache {
   pdfPage: number;
   isPdfPreviewOpen: boolean;
   previewState: StudyDialogPreviewState | null;
+  selectedSchedulePlanId?: string;
   selectedScheduleId: string;
   selectedScheduleChapterId: string;
 }
@@ -128,6 +129,9 @@ export function loadLearningWorkspacePageCache(): LearningWorkspacePageCache {
             pdfPage: Number(parsed.studyDialog.pdfPage ?? 1),
             isPdfPreviewOpen: Boolean(parsed.studyDialog.isPdfPreviewOpen),
             previewState: normalizePreviewState(parsed.studyDialog.previewState),
+            selectedSchedulePlanId: String(
+              parsed.studyDialog.selectedSchedulePlanId ?? "",
+            ),
             selectedScheduleId: String(
               parsed.studyDialog.selectedScheduleId ??
                 parsed.studyDialog.selectedChapter ??
@@ -179,6 +183,7 @@ export function persistLearningWorkspacePageCache(
       pdfPage: cache.studyDialog.pdfPage,
       isPdfPreviewOpen: cache.studyDialog.isPdfPreviewOpen,
       previewState: cache.studyDialog.previewState,
+      selectedSchedulePlanId: cache.studyDialog.selectedSchedulePlanId,
       selectedScheduleId: cache.studyDialog.selectedScheduleId,
       selectedScheduleChapterId: cache.studyDialog.selectedScheduleChapterId,
     };

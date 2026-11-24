@@ -1,3 +1,26 @@
+export interface StudyScheduleSelection {
+  planId: string;
+  scheduleId: string;
+}
+
+export function resolveStudyScheduleSelection<T extends { id: string; unitId: string }>(
+  planId: string,
+  options: readonly T[],
+  selection: StudyScheduleSelection,
+  sessionUnitId?: string,
+): T | null {
+  return (
+    (planId && selection.planId === planId
+      ? options.find((item) => item.id === selection.scheduleId)
+      : undefined) ??
+    (sessionUnitId
+      ? options.find((item) => item.unitId === sessionUnitId)
+      : undefined) ??
+    options[0] ??
+    null
+  );
+}
+
 export interface StudyScheduleAdvance {
   planId: string;
   currentId: string;

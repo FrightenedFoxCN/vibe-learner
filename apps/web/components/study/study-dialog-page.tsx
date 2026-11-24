@@ -10,6 +10,8 @@ import { TopNav } from "../layout/top-nav";
 import { PLAN_SWITCH_NOTICE } from "../../lib/learning-workspace-copy";
 import {
   advanceStudySchedule,
+  resolveStudyScheduleSelection,
+  type StudyScheduleSelection,
   type StudyScheduleAdvance,
 } from "../../lib/study-schedule-advance";
 import { AppLink } from "../../lib/app-navigation";
@@ -63,16 +65,18 @@ export function StudyDialogPage() {
   const studyDialogCache = getPageCache("studyDialog");
   const studyConsoleCache = getPageCache("studyConsole");
 
-  const [selectedScheduleId, setSelectedScheduleId] = useState(
-    () => studyDialogCache?.selectedScheduleId ?? "",
+  const [scheduleSelection, setScheduleSelection] = useState<StudyScheduleSelection>(
+    () => ({
+      planId: studyDialogCache?.selectedSchedulePlanId ?? "",
+      scheduleId: studyDialogCache?.selectedScheduleId ?? "",
+    }),
   );
   const [requestedPlanId, setRequestedPlanId] = useState("");
-  const [requestedScheduleId, setRequestedScheduleId] = useState("");
+  const [requestedSchedule, setRequestedSchedule] =
+    useState<StudyScheduleSelection | null>(null);
   const [requestedPage, setRequestedPage] = useState(0);
   const [headingHeight, setHeadingHeight] = useState(112);
   const [isHydrated, setIsHydrated] = useState(false);
-  const handleSwitchSectionRef = useRef(handleSwitchSection);
-  handleSwitchSectionRef.current = handleSwitchSection;
 
   const preview = useStudyPreview({
     activeDocument,
@@ -139,10 +143,14 @@ export function StudyDialogPage() {
     () => activePlan?.schedule ?? [],
     [activePlan?.schedule],
   );
-  const currentSchedule =
-    scheduleOptions.find((item) => item.id === selectedScheduleId) ??
-    scheduleOptions[0] ??
-    null;
+  const activePlanId = activePlan?.id ?? "";
+  const planSession = studySession?.planId === activePlanId ? studySession : null;
+  const currentSchedule = resolveStudyScheduleSelection(
+    activePlanId,
+    scheduleOptions,
+    scheduleSelection,
+    planSession?.studyUnitId,
+  );
   const currentScheduleId = currentSchedule?.id ?? "";
   const activeSceneProfile =
     studySession?.sceneProfile ?? activePlan?.sceneProfile ?? null;
@@ -201,36 +209,37 @@ export function StudyDialogPage() {
   }, [activePlan?.id, currentScheduleId]);
 
   const navigateToSchedule = useCallback(
-    async (scheduleId: string) => {
-      setSelectedScheduleId(scheduleId);
+    async (scheduleId: string, openPage = true) => {
       const scheduleItem = scheduleOptions.find((item) => item.id === scheduleId);
-      if (!scheduleItem) return;
+      if (!activePlanId || !scheduleItem) return;
+      setScheduleSelection({ planId: activePlanId, scheduleId });
       const nextPage =
         scheduleItem.scheduleChapters[0]?.anchorPageStart ||
         resolveScheduleStartPage(scheduleId);
-      if (nextPage > 0) {
+      if (openPage && nextPage > 0) {
         handleOpenPdfPage(nextPage);
       }
       if (
-        studySession &&
+        planSession &&
         scheduleItem.unitId &&
-        scheduleItem.unitId !== studySession.studyUnitId
+        scheduleItem.unitId !== planSession.studyUnitId
       ) {
         await handleSwitchSection(scheduleItem.unitId);
       }
     },
     [
+      activePlanId,
       handleOpenPdfPage,
       handleSwitchSection,
+      planSession,
       resolveScheduleStartPage,
       scheduleOptions,
-      studySession,
     ],
   );
 
   const handleScheduleChange = useCallback(
     (scheduleId: string) => {
-      setRequestedScheduleId("");
+      setRequestedSchedule(null);
       void navigateToSchedule(scheduleId);
     },
     [navigateToSchedule],
@@ -241,7 +250,7 @@ export function StudyDialogPage() {
       // A manual choice supersedes a deep-link request that may still be
       // waiting for the plan history to load.
       setRequestedPlanId("");
-      setRequestedScheduleId("");
+      setRequestedSchedule(null);
       selectPlan(planId, PLAN_SWITCH_NOTICE);
     },
     [selectPlan],
@@ -302,8 +311,10 @@ export function StudyDialogPage() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     const params = new URLSearchParams(window.location.search);
-    setRequestedPlanId(params.get("plan") ?? "");
-    setRequestedScheduleId(params.get("schedule") ?? "");
+    const planId = params.get("plan") ?? "";
+    const scheduleId = params.get("schedule") ?? "";
+    setRequestedPlanId(planId);
+    if (scheduleId) setRequestedSchedule({ planId, scheduleId });
     setRequestedPage(Number(params.get("page") ?? "0"));
   }, []);
 
@@ -319,44 +330,31 @@ export function StudyDialogPage() {
   }, [activePlan?.id, planHistoryItems, requestedPlanId, selectPlan]);
 
   useEffect(() => {
-    if (!scheduleOptions.length) {
-      setSelectedScheduleId("");
+    if (!requestedSchedule || !activePlanId || requestedPlanId) return;
+    if (requestedSchedule.planId && requestedSchedule.planId !== activePlanId) return;
+    if (!scheduleOptions.some((item) => item.id === requestedSchedule.scheduleId))
       return;
-    }
-    if (
-      requestedScheduleId &&
-      scheduleOptions.some((item) => item.id === requestedScheduleId) &&
-      requestedScheduleId !== selectedScheduleId
-    ) {
-      setSelectedScheduleId(requestedScheduleId);
-      setRequestedScheduleId("");
-      return;
-    }
-    if (
-      !selectedScheduleId ||
-      !scheduleOptions.some((item) => item.id === selectedScheduleId)
-    ) {
-      setSelectedScheduleId(scheduleOptions[0]?.id ?? "");
-    }
-  }, [activePlan?.id, requestedScheduleId, scheduleOptions, selectedScheduleId]);
-
-  useEffect(() => {
-    if (!studySession || !currentStudyUnitId) return;
-    if (currentStudyUnitId !== studySession.studyUnitId) {
-      void handleSwitchSectionRef.current(currentStudyUnitId);
-    }
-  }, [currentStudyUnitId, studySession]);
+    setRequestedSchedule(null);
+    void navigateToSchedule(requestedSchedule.scheduleId, false);
+  }, [
+    activePlanId,
+    requestedPlanId,
+    requestedSchedule,
+    scheduleOptions,
+    navigateToSchedule,
+  ]);
 
   useEffect(() => {
     const nextCache: StudyDialogPageCache = {
       pdfPage,
       isPdfPreviewOpen,
       previewState,
-      selectedScheduleId: currentScheduleId,
+      selectedSchedulePlanId: scheduleSelection.planId,
+      selectedScheduleId: scheduleSelection.scheduleId,
       selectedScheduleChapterId: "",
     };
     setPageCache("studyDialog", nextCache);
-  }, [currentScheduleId, isPdfPreviewOpen, pdfPage, previewState, setPageCache]);
+  }, [scheduleSelection, isPdfPreviewOpen, pdfPage, previewState, setPageCache]);
 
   const pageStyle = {
     ["--study-heading-offset" as string]: `${headingHeight}px`,

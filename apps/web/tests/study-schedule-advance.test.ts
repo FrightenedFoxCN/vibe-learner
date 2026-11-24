@@ -1,6 +1,31 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { advanceStudySchedule } from "../lib/study-schedule-advance.ts";
+import {
+  advanceStudySchedule,
+  resolveStudyScheduleSelection,
+} from "../lib/study-schedule-advance.ts";
+
+test("a plan switch ignores another plan's same schedule ID and follows the loaded session", () => {
+  const options = [
+    { id: "schedule-1", unitId: "b-first" },
+    { id: "schedule-2", unitId: "b-second" },
+    { id: "schedule-3", unitId: "b-third" },
+  ];
+  const fromA = { planId: "a", scheduleId: "schedule-3" };
+  assert.equal(resolveStudyScheduleSelection("b", options, fromA), options[0]);
+  assert.equal(
+    resolveStudyScheduleSelection("b", options, fromA, "b-second"),
+    options[1],
+  );
+  assert.equal(
+    resolveStudyScheduleSelection("b", options, { ...fromA, planId: "b" }, "b-second"),
+    options[2],
+  );
+  assert.equal(
+    resolveStudyScheduleSelection("b", options, { ...fromA, planId: "" }, "b-second"),
+    options[1],
+  );
+});
 
 const advance = { planId: "plan", currentId: "one", nextId: "two" };
 
