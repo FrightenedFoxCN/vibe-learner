@@ -93,6 +93,7 @@ export function usePersonaWorkspaceController() {
   const personaEditor = usePersonaDraft(
     {
       getPersonasSnapshot: personaLibrary.getPersonasSnapshot,
+      isPersonaDeleting: (id) => isPersonaDeleting(id),
       onSelectionChange: () => {
         resetPersonaAssist();
         resetCardGeneration();
@@ -200,6 +201,7 @@ export function usePersonaWorkspaceController() {
     loadError,
     setLoadError,
     personaDeletePendingId,
+    isPersonaDeleting,
     personaLibraryMessage,
     setPersonaLibraryMessage,
     personaLibraryError,

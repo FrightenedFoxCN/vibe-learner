@@ -5,6 +5,7 @@ import type { ConfirmFn } from "../components/ui/confirm-provider";
 import type { PersonaProfile } from "@vibe-learner/shared";
 import type { PersonaDraftController } from "./use-persona-draft";
 import type { PersonaLibraryController } from "./use-persona-library";
+import { resolvePersonaDeleteDraft } from "../lib/persona-delete-draft";
 import {
   draftToCreatePersonaInput,
   EMPTY_PERSONA_DRAFT,
@@ -38,6 +39,8 @@ export function usePersonaPersistence(
   const active = useRef(true);
   const saveRunning = useRef(false);
   const deleteRunning = useRef(false);
+  const deletingId = useRef("");
+  const isPersonaDeleting = (id: string) => Boolean(id) && deletingId.current === id;
   const feedback = useRef({ sequence: 0 });
   useEffect(() => {
     const feedbackState = feedback.current;
@@ -60,6 +63,7 @@ export function usePersonaPersistence(
     );
     const baseRevision = editor.getBasePersonaRevision();
     if (mode === "update") {
+      if (isPersonaDeleting(editor.getSelectedPersonaId())) return;
       if (!editor.getSelectedPersonaId()) {
         setSaveError("请先选择要更新的人格。");
         return;
@@ -133,7 +137,7 @@ export function usePersonaPersistence(
 
   async function handleReloadSelectedPersona(trigger?: HTMLElement) {
     const id = editor.getSelectedPersonaId();
-    if (!active.current || !id) return;
+    if (!active.current || !id || isPersonaDeleting(id)) return;
     const epoch = editor.getDraftEpoch();
     const scope = editor.currentPersonaAsyncScope("persona-reload");
     const isCurrent = editor.captureDraftIntent();
@@ -141,7 +145,8 @@ export function usePersonaPersistence(
     if (
       !(await editor.confirmDiscardPersonaDraft("重新载入人格", trigger)) ||
       !isCurrent() ||
-      feedback.current.sequence !== previousFeedback
+      feedback.current.sequence !== previousFeedback ||
+      isPersonaDeleting(id)
     )
       return;
     const request = ++feedback.current.sequence;
@@ -180,10 +185,9 @@ export function usePersonaPersistence(
       setPersonaLibraryError("内置人格不能删除。");
       return;
     }
-    const warning =
-      editor.getSelectedPersonaId() === persona.id && editor.isDraftDirty
-        ? " 当前草稿的未保存修改也会丢失。"
-        : "";
+    const preserveEditedDraft =
+      editor.getSelectedPersonaId() === persona.id && editor.isDraftDirty;
+    const warning = preserveEditedDraft ? " 未保存的修改将保留为可另存的新草稿。" : "";
     const epoch = editor.getDraftEpoch();
     const scope = editor.currentPersonaAsyncScope("persona-delete");
     const isCurrent = editor.captureDraftIntent();
@@ -212,7 +216,7 @@ export function usePersonaPersistence(
         target.source === "builtin"
       )
         return;
-      await deleteConfirmedPersona(persona, epoch, scope, invoker);
+      await deleteConfirmedPersona(persona, epoch, scope, preserveEditedDraft, invoker);
     } finally {
       deleteRunning.current = false;
     }
@@ -222,54 +226,53 @@ export function usePersonaPersistence(
     persona: PersonaProfile,
     epoch: number,
     scope: ReturnType<PersonaDraftController["currentPersonaAsyncScope"]>,
+    preserveEditedDraft: boolean,
     trigger?: HTMLElement,
   ) {
     const request = ++feedback.current.sequence;
+    deletingId.current = persona.id;
     setPersonaDeletePendingId(persona.id);
     setPersonaLibraryError("");
     setPersonaLibraryMessage("");
     try {
       await library.deletePersona(persona.id, persona.revision);
-      let latest = library.getPersonasSnapshot();
-      let refreshError = "";
-      try {
-        latest = await library.listPersonas();
-      } catch (error) {
-        refreshError = String(error);
-      }
       if (!active.current) return;
-      let retained = false;
-      if (
-        editor.getDraftEpoch() === epoch &&
-        editor.getSelectedPersonaId() === persona.id
-      ) {
-        if (
+      const draftDecision = resolvePersonaDeleteDraft({
+        deletedId: persona.id,
+        selectedId: editor.getSelectedPersonaId(),
+        sameDraftEpoch: editor.getDraftEpoch() === epoch,
+        wasDirty: preserveEditedDraft,
+        revisionChanged:
           editor.currentPersonaAsyncScope("persona-delete").draftRevision !==
-          scope.draftRevision
-        ) {
-          editor.selectPersonaDraft("");
-          editor.markPersonaDraftSaved(EMPTY_PERSONA_DRAFT);
-          retained = true;
-        } else {
-          const next = latest[0];
-          editor.selectPersonaDraft(next?.id ?? "", next?.revision ?? null);
-          editor.replacePersonaDraft(
-            next ? personaToDraft(next) : { ...EMPTY_PERSONA_DRAFT },
-            true,
-          );
-          onPromptDismiss();
-        }
+          scope.draftRevision,
+      });
+      if (draftDecision === "detach-edited") {
+        editor.selectPersonaDraft("");
+        editor.markPersonaDraftSaved(EMPTY_PERSONA_DRAFT);
+      } else if (draftDecision === "load-fallback") {
+        const next = library.getPersonasSnapshot()[0];
+        editor.selectPersonaDraft(next?.id ?? "", next?.revision ?? null);
+        editor.replacePersonaDraft(
+          next ? personaToDraft(next) : { ...EMPTY_PERSONA_DRAFT },
+          true,
+        );
+        onPromptDismiss();
       }
       if (trigger && document.activeElement === document.body)
         document.getElementById("persona-draft-name")?.focus();
-      if (ownsFeedback(request))
-        setPersonaLibraryMessage(
-          `已删除人格「${persona.name}」。${retained ? "期间的编辑已保留为新草稿。" : ""}${refreshError ? `人格库刷新失败：${refreshError}` : ""}`,
-        );
+      const message = `已删除人格「${persona.name}」。${draftDecision === "detach-edited" ? "未保存的修改已保留为新草稿。" : ""}`;
+      if (ownsFeedback(request)) setPersonaLibraryMessage(message);
+      try {
+        await library.listPersonas();
+      } catch (error) {
+        if (ownsFeedback(request))
+          setPersonaLibraryMessage(`${message}人格库刷新失败：${String(error)}`);
+      }
     } catch (error) {
       if (ownsFeedback(request))
         setPersonaLibraryError(humanizePersonaDeleteError(error));
     } finally {
+      deletingId.current = "";
       if (active.current) setPersonaDeletePendingId("");
     }
   }
@@ -281,6 +284,7 @@ export function usePersonaPersistence(
     loadError,
     setLoadError,
     personaDeletePendingId,
+    isPersonaDeleting,
     personaLibraryMessage,
     setPersonaLibraryMessage,
     personaLibraryError,

@@ -14,6 +14,7 @@ import { useDraftNavigationGuard } from "../lib/app-navigation";
 import type { PersonaProfile } from "@vibe-learner/shared";
 import { diagnosticContext } from "../lib/diagnostics";
 import type { AsyncResultScope } from "../lib/async-result-fence";
+import { findLoadablePersona } from "../lib/persona-delete-draft";
 import {
   EMPTY_PERSONA_DRAFT,
   personaDraftFingerprint,
@@ -34,10 +35,12 @@ let navigationDraft: PersonaNavigationDraft | null = null;
 export function usePersonaDraft(
   {
     getPersonasSnapshot,
+    isPersonaDeleting,
     onSelectionChange,
     onPromptDismiss,
   }: {
     getPersonasSnapshot: () => PersonaProfile[];
+    isPersonaDeleting: (id: string) => boolean;
     onSelectionChange: () => void;
     onPromptDismiss: () => void;
   },
@@ -129,6 +132,7 @@ export function usePersonaDraft(
 
   function updatePersonaDraft(next: SetStateAction<PersonaDraft>): void {
     draftRevisionRef.current += 1;
+
     setDraft(next);
   }
 
@@ -180,17 +184,27 @@ export function usePersonaDraft(
     trigger?: HTMLElement,
   ): Promise<boolean> {
     const normalizedPersonaId = personaId.trim();
+    if (isPersonaDeleting(normalizedPersonaId)) return false;
     if (normalizedPersonaId === selectedPersonaIdRef.current) {
       return true;
     }
-    const target = getPersonasSnapshot().find(
-      (persona) => persona.id === normalizedPersonaId,
+    const target = findLoadablePersona(
+      normalizedPersonaId,
+      getPersonasSnapshot(),
+      isPersonaDeleting,
     );
+    if (normalizedPersonaId && !target) return false;
     const isCurrent = captureDraftIntent();
-    if (!(await confirmDiscardPersonaDraft(action, trigger)) || !isCurrent())
+    if (
+      !(await confirmDiscardPersonaDraft(action, trigger)) ||
+      !isCurrent() ||
+      isPersonaDeleting(normalizedPersonaId)
+    )
       return false;
-    const nextPersona = getPersonasSnapshot().find(
-      (persona) => persona.id === normalizedPersonaId,
+    const nextPersona = findLoadablePersona(
+      normalizedPersonaId,
+      getPersonasSnapshot(),
+      isPersonaDeleting,
     );
     if (
       normalizedPersonaId &&
@@ -209,6 +223,7 @@ export function usePersonaDraft(
 
   function updatePersonaAssistInput(update: () => void): void {
     draftRevisionRef.current += 1;
+
     update();
   }
 

@@ -12,6 +12,7 @@ export function PersonaBasicsPane({
     requestImportConfig,
     configImportInputRef,
     personas,
+    personaDeletePendingId,
     selectedPersonaId,
     draft,
     activatePersonaDraft,
@@ -72,7 +73,11 @@ export function PersonaBasicsPane({
             >
               <option value="">新建人格（未保存）</option>
               {personas.map((p) => (
-                <option key={p.id} value={p.id}>
+                <option
+                  key={p.id}
+                  value={p.id}
+                  disabled={personaDeletePendingId === p.id}
+                >
                   {p.name}（{p.source === "builtin" ? "内置" : "用户"}）
                 </option>
               ))}
@@ -269,6 +274,7 @@ function PersonaBasicsToolbar({
     isRewritePopoverOpen,
     setIsRewritePopoverOpen,
     savingPersona,
+    personaDeletePendingId,
     handleCreatePersona,
     handleUpdatePersona,
     handleReloadSelectedPersona,
@@ -278,6 +284,8 @@ function PersonaBasicsToolbar({
     handleNewPersonaDraft,
     handleDuplicatePersonaDraft,
   } = controller;
+  const deletingSelected =
+    Boolean(selectedPersonaId) && selectedPersonaId === personaDeletePendingId;
 
   return (
     <div className="relative flex min-h-6 flex-wrap items-center justify-between gap-3 pr-1 pb-2.5">
@@ -362,7 +370,7 @@ function PersonaBasicsToolbar({
         <button
           type="button"
           className={styles.basicActionButton}
-          disabled={!selectedPersona || savingPersona}
+          disabled={!selectedPersona || savingPersona || deletingSelected}
           onClick={(event) => void handleReloadSelectedPersona(event.currentTarget)}
           title={savingPersona ? "保存中" : "重新载入人格"}
           aria-label={savingPersona ? "保存中" : "重新载入人格"}
@@ -374,7 +382,7 @@ function PersonaBasicsToolbar({
           type="button"
           className={styles.basicActionButton}
           data-primary="true"
-          disabled={savingPersona || isReadonlyPersona}
+          disabled={savingPersona || isReadonlyPersona || deletingSelected}
           onClick={() =>
             void (selectedPersonaId ? handleUpdatePersona() : handleCreatePersona())
           }

@@ -128,6 +128,7 @@ export function PersonaProfileCard({
           type="button"
           className={styles.sidebarIconButton}
           data-primary={isSelected}
+          disabled={deletePending}
           onClick={() => onActivate(persona)}
           title={isSelected ? "编辑中" : "载入"}
           aria-label={isSelected ? "编辑中" : "载入"}
