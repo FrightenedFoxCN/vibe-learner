@@ -240,6 +240,10 @@ def process_document_stream(
         )
         event_queue.put(event.model_dump(mode="json"))
 
+    def before_commit() -> None:
+        if interrupt_handle.claim_terminal():
+            raise StreamInterruptedError("stream_interrupted")
+
     def run() -> None:
         try:
             document = container.document_service.process_document(
@@ -250,39 +254,39 @@ def process_document_stream(
                 else None,
                 progress_callback=report,
                 interrupt_check=interrupt_handle.raise_if_cancelled,
+                before_commit=before_commit,
                 operation_admitted_callback=remember_operation,
             )
-            if interrupt_handle.claim_terminal():
-                emit_cancelled()
-            else:
-                harness_trace = _require_domain_harness_trace(
-                    domain_operation_kind=HarnessDomainOperationKind.DOCUMENT_PROCESS,
-                    domain_operation_id=domain_operation_id,
-                    stage=HarnessStage.DOCUMENT_PARSE,
+            # A returned document is already committed.
+            interrupt_handle.mark_completed()
+            harness_trace = _require_domain_harness_trace(
+                domain_operation_kind=HarnessDomainOperationKind.DOCUMENT_PROCESS,
+                domain_operation_id=domain_operation_id,
+                stage=HarnessStage.DOCUMENT_PARSE,
+                container=container,
+            )
+            reference_resource("document", document.id)
+            document_commit_projection = document.model_dump(mode="json")
+            document_projection = {
+                **document_commit_projection,
+                "harness_trace": harness_trace.model_dump(
+                    mode="json", exclude_none=False
+                ),
+            }
+            event = recorder.emit(
+                "stream_completed",
+                {
+                    "document_id": document.id,
+                    "status": document.status,
+                },
+                terminal_evidence=_document_stream_committed_evidence(
+                    operation_id=domain_operation_id,
+                    document_payload=document_projection,
                     container=container,
-                )
-                reference_resource("document", document.id)
-                document_commit_projection = document.model_dump(mode="json")
-                document_projection = {
-                    **document_commit_projection,
-                    "harness_trace": harness_trace.model_dump(
-                        mode="json", exclude_none=False
-                    ),
-                }
-                event = recorder.emit(
-                    "stream_completed",
-                    {
-                        "document_id": document.id,
-                        "status": document.status,
-                    },
-                    terminal_evidence=_document_stream_committed_evidence(
-                        operation_id=domain_operation_id,
-                        document_payload=document_projection,
-                        container=container,
-                    ),
-                    committed_projection=document_projection,
-                )
-                event_queue.put(event.model_dump(mode="json"))
+                ),
+                committed_projection=document_projection,
+            )
+            event_queue.put(event.model_dump(mode="json"))
         except StreamInterruptedError:
             interrupt_handle.claim_terminal()
             emit_cancelled()

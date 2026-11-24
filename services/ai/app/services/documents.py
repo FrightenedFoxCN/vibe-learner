@@ -152,6 +152,7 @@ class DocumentService:
         resume_from_operation_id: str | None = None,
         progress_callback: Callable[[str, dict[str, object]], None] | None = None,
         interrupt_check: Callable[[], None] | None = None,
+        before_commit: Callable[[], None] | None = None,
         operation_admitted_callback: Callable[[str], None] | None = None,
     ) -> DocumentRecord:
         checkpoint_enabled = isinstance(self.parser, DocumentParser)
@@ -598,6 +599,7 @@ class DocumentService:
                 "partial",
             }:
                 raise RuntimeError(f"document_ocr_{debug_report.ocr_status}")
+            _call_interrupt(before_commit or interrupt_check)
             self.process_repository.commit_success(
                 operation_id=operation.operation_id,
                 document=document,
