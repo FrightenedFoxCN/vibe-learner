@@ -164,7 +164,7 @@ function PlanScheduleItem({
           ) : null}
           <button
             type="button"
-            className={styles.ghostButton}
+            className={styles.primaryButton}
             disabled={isBusy || item.status === "in_progress"}
             aria-label={`开始第 ${index + 1} 课：${item.title}`}
             onClick={() => {
@@ -187,7 +187,7 @@ function PlanScheduleItem({
           </button>
           <button
             type="button"
-            className={styles.primaryButton}
+            className={styles.ghostButton}
             disabled={isBusy || item.status === "completed"}
             aria-label={`完成第 ${index + 1} 课：${item.title}`}
             onClick={() => {

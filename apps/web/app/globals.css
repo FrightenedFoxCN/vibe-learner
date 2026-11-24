@@ -398,15 +398,16 @@
 
   .output-language-field {
     display: grid;
-    grid-template-columns: max-content minmax(0, 1fr);
-    gap: 6px 10px;
-    align-items: center;
+    gap: 7px;
     min-width: 0;
   }
 
   .output-language-field label {
-    color: var(--ink-2);
-    font-size: 12px;
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
   }
 
   .output-language-field select,
@@ -416,22 +417,18 @@
     min-height: 44px;
     padding: 8px 10px;
     border: 1px solid var(--border);
-    border-radius: 10px;
-    background: var(--surface, white);
+    border-radius: 0;
+    background: color-mix(in srgb, var(--bg) 72%, var(--panel));
     color: var(--ink);
-  }
-
-  .output-language-field input {
-    grid-column: 2;
+    font-size: 14px;
   }
 
   .output-language-field small,
   .output-language-field p {
-    grid-column: 1 / -1;
     margin: 0;
     font-size: 11px;
     line-height: 1.5;
-    color: var(--ink-2);
+    color: var(--muted);
   }
 
   .output-language-field [role="alert"] {

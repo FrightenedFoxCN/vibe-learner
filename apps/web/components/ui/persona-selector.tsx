@@ -69,7 +69,7 @@ function PersonaMiniCard({
 }) {
   return (
     <div
-      className={`grid rounded-[10px] border border-border bg-bg ${compact ? "gap-1.5 p-2.5" : "gap-2 p-3"}`}
+      className={`grid border border-border bg-bg ${compact ? "gap-1.5 p-2.5" : "gap-2 p-3"}`}
     >
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <span className="text-[13px] font-bold text-ink">{persona.name}</span>

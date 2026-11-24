@@ -33,8 +33,8 @@
   }
 
   .iconButton {
-    width: 30px;
-    height: 30px;
+    width: 44px;
+    height: 44px;
     border: none;
     padding: 0;
     background: color-mix(in srgb, var(--bg) 70%, var(--panel));
@@ -117,7 +117,7 @@
   }
 
   .itemButton {
-    min-height: 30px;
+    min-height: 44px;
     border: none;
     padding: 0 10px;
     background: color-mix(in srgb, var(--bg) 70%, var(--panel));
@@ -136,8 +136,8 @@
   }
 
   .itemDeleteButton {
-    width: 30px;
-    height: 30px;
+    width: 44px;
+    height: 44px;
     border: none;
     padding: 0;
     background: color-mix(in srgb, var(--bg) 84%, var(--negative) 16%);

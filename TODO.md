@@ -77,7 +77,7 @@
   - 为 `apps/web/components/model-usage/model-usage-tables.tsx` 按列数设置合理 `min-w-*` 并收敛 `wrap-anywhere`，确保 `390px` 窄屏下通过外层 `overflow-x-auto` 局部横向滚动而非将单元格挤成 2 字符竖条。
 - [x] **P1-UI-04 修复全局 `Debug Overlay` 浮钮遮挡核心操作**
   - 调整 `apps/web/components/debug/debug-overlay.module.css` 与相关底部布局策略，缩小/收紧浮钮并在移动端避让吸底输入区与右侧主操作按钮，防止遮挡 `Study Dialog` 发送按钮与 `Study Notes` 删除按钮。
-- [ ] **P1-UI-05 修复 `Plan Workspace` 表单样式割裂、按钮挤压与操作层级倒置**
+- [x] **P1-UI-05 修复 `Plan Workspace` 表单样式割裂、按钮挤压与操作层级倒置**
   - 补齐 `document-setup-fields.tsx` 中 `PDF 物理页范围` 输入框与辅助说明的样式类名，统一 `.output-language-field` 与 `PersonaMiniCard` 为直角基线与一致表单节奏。
   - 修复 `Plan Overview` 中 `编辑题目` 按钮被压成竖排换行的问题，将排期项核心动作 `开始` 提升为主按钮、`完成` 退为次按钮，并将主要按钮与输入控件高度收敛至设计基线。
 - [ ] **P1-UI-06 修复 `Scene Setup` 固定 104px 空白提示条与移动端首屏自动滚走工具栏**

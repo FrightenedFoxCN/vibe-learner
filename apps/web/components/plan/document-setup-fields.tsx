@@ -147,8 +147,14 @@ export function PlanGenerationFields({
         </div>
         {generationMode === "document" && (
           <div className={styles.field}>
-            <small>每份 PDF 最多 64 MiB、512 个物理页；超限请拆分或压缩后上传。</small>
-            {uploadError && <p role="alert">{uploadError}</p>}
+            <small className={styles.fieldHint}>
+              每份 PDF 最多 64 MiB、512 个物理页；超限请拆分或压缩后上传。
+            </small>
+            {uploadError && (
+              <p className={styles.fieldError} role="alert">
+                {uploadError}
+              </p>
+            )}
           </div>
         )}
         {generationMode === "document" && (
@@ -158,6 +164,7 @@ export function PlanGenerationFields({
             </label>
             <input
               id="plan-physical-pages"
+              className={styles.textInput}
               value={physicalPageRanges}
               maxLength={2000}
               onChange={(event) => setPhysicalPageRanges(event.target.value)}
@@ -165,11 +172,15 @@ export function PlanGenerationFields({
               aria-describedby="plan-physical-page-help"
               aria-invalid={Boolean(pageScopeError)}
             />
-            <small id="plan-physical-page-help">
+            <small id="plan-physical-page-help" className={styles.fieldHint}>
               按 PDF 阅读器从 1
               开始的页序填写；留空表示不限定。书上印刷的页码或罗马数字不能替代物理页。输入后，计划与取证工具只能使用指定页。
             </small>
-            {pageScopeError && <p role="alert">{pageScopeError}</p>}
+            {pageScopeError && (
+              <p className={styles.fieldError} role="alert">
+                {pageScopeError}
+              </p>
+            )}
           </div>
         )}
         <div className={styles.field}>
