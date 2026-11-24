@@ -162,7 +162,7 @@ def _session_scene_metadata(payload: dict[str, Any]) -> dict[str, Any]:
         "document_id": text_at(payload, "document_id"),
         "persona_id": text_at(payload, "persona_id"),
         "created_at": text_at(payload, "created_at"),
-        "updated_at": text_at(payload.get("updated_at") or payload, "created_at"),
+        "updated_at": text_at(payload, "updated_at") or text_at(payload, "created_at"),
     }
 
 
