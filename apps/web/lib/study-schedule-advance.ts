@@ -21,6 +21,16 @@ export function resolveStudyScheduleSelection<T extends { id: string; unitId: st
   );
 }
 
+export function studyEntryProgressIds(
+  schedule: readonly { id: string; status: string }[],
+  ids: readonly string[],
+): string[] {
+  const selected = new Set(ids);
+  return schedule
+    .filter((item) => selected.has(item.id) && item.status === "planned")
+    .map((item) => item.id);
+}
+
 export interface StudyScheduleAdvance {
   planId: string;
   currentId: string;
@@ -33,6 +43,7 @@ interface ScheduleAdvanceActions {
     scheduleIds: string[];
     status: "completed" | "in_progress";
   }) => Promise<boolean>;
+  readNextStatus: (nextId: string) => string | undefined;
   isCurrent: () => boolean;
   navigate: (nextId: string) => Promise<void>;
   onPartial: (advance: StudyScheduleAdvance | null) => void;
@@ -40,7 +51,7 @@ interface ScheduleAdvanceActions {
 
 export async function advanceStudySchedule(
   advance: StudyScheduleAdvance,
-  { update, isCurrent, navigate, onPartial }: ScheduleAdvanceActions,
+  { update, readNextStatus, isCurrent, navigate, onPartial }: ScheduleAdvanceActions,
   currentAlreadyCompleted = false,
 ): Promise<void> {
   const { planId, currentId, nextId } = advance;
@@ -52,11 +63,16 @@ export async function advanceStudySchedule(
     return;
   if (!isCurrent() || !nextId) return;
 
-  const started = await update({
-    planId,
-    scheduleIds: [nextId],
-    status: "in_progress",
-  });
+  const status = readNextStatus(nextId);
+  if (status === undefined) return;
+  // Opening an existing schedule is not a transition back to "in progress".
+  const started =
+    status !== "planned" ||
+    (await update({
+      planId,
+      scheduleIds: [nextId],
+      status: "in_progress",
+    }));
   if (!isCurrent()) return;
   onPartial(started ? null : advance);
   if (started) await navigate(nextId);

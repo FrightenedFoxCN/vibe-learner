@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   advanceStudySchedule,
   resolveStudyScheduleSelection,
+  studyEntryProgressIds,
 } from "../lib/study-schedule-advance.ts";
 
 test("a plan switch ignores another plan's same schedule ID and follows the loaded session", () => {
@@ -27,7 +28,29 @@ test("a plan switch ignores another plan's same schedule ID and follows the load
   );
 });
 
+test("opening a schedule only starts planned items", () => {
+  const schedule = ["completed", "in_progress", "planned", "blocked", "skipped"].map(
+    (status) => ({ id: status, status }),
+  );
+  assert.deepEqual(
+    studyEntryProgressIds(
+      schedule,
+      schedule.map((item) => item.id),
+    ),
+    ["planned"],
+  );
+});
+
 const advance = { planId: "plan", currentId: "one", nextId: "two" };
+
+test("advancing into a completed or previously started lesson opens it without rewriting progress", async () => {
+  for (const status of ["completed", "in_progress", "blocked", "skipped"]) {
+    const { actions, events } = fixture([true]);
+    actions.readNextStatus = () => status;
+    await advanceStudySchedule(advance, actions);
+    assert.deepEqual(events, [["one", "completed"], null, ["navigate", "two"]]);
+  }
+});
 
 function fixture(results: boolean[]) {
   const events: unknown[] = [];
@@ -36,6 +59,7 @@ function fixture(results: boolean[]) {
       events.push([scheduleIds[0], status]);
       return results.shift() ?? false;
     },
+    readNextStatus: () => "planned",
     isCurrent: () => true,
     navigate: async (id) => {
       events.push(["navigate", id]);

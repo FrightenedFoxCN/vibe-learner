@@ -137,6 +137,14 @@ function PlanScheduleItem({
   onUpdatePlanProgress,
   onStartStudyFromPlan,
 }: PlanScheduleItemProps) {
+  const studyAction =
+    item.status === "completed"
+      ? "复习"
+      : item.status === "in_progress"
+        ? "继续学习"
+        : item.status === "planned"
+          ? "开始"
+          : "打开";
   return (
     <div className={styles.scheduleItem} data-plan-schedule={item.id}>
       <div className={styles.scheduleHeader}>
@@ -165,8 +173,8 @@ function PlanScheduleItem({
           <button
             type="button"
             className={styles.primaryButton}
-            disabled={isBusy || item.status === "in_progress"}
-            aria-label={`开始第 ${index + 1} 课：${item.title}`}
+            disabled={isBusy}
+            aria-label={`${studyAction}第 ${index + 1} 课：${item.title}`}
             onClick={() => {
               const studyUnit = resolveStudyUnitById(plan, item.unitId);
               if (!studyUnit) {
@@ -183,7 +191,7 @@ function PlanScheduleItem({
               });
             }}
           >
-            开始
+            {studyAction}
           </button>
           <button
             type="button"

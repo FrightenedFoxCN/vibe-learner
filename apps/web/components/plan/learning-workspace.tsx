@@ -14,6 +14,7 @@ import { StudyUnitRevisionPanel } from "./study-unit-revision-panel";
 import { ProviderTruth } from "../ui/provider-truth";
 import { TopNav } from "../layout/top-nav";
 import { useAppNavigator } from "../../lib/app-navigation";
+import { studyEntryProgressIds } from "../../lib/study-schedule-advance";
 import { PLAN_SWITCH_NOTICE } from "../../lib/learning-workspace-copy";
 import type { PlanSetupPageCache } from "../../lib/learning-workspace-page-cache";
 import { useLearningWorkspace } from "../layout/learning-workspace-provider";
@@ -84,6 +85,14 @@ export function LearningWorkspace() {
     };
   }, []);
 
+  const entryScope = useRef<object | null>(null);
+  useEffect(() => {
+    entryScope.current = {};
+    return () => {
+      entryScope.current = null;
+    };
+  }, [activePlan?.id]);
+
   const handleStartStudyFromPlan = async (input: {
     studyUnitId: string;
     scheduleId: string;
@@ -95,19 +104,27 @@ export function LearningWorkspace() {
     if (!activePlan || !input.studyUnitId || revisionReadbackPending) {
       return;
     }
-    if (input.scheduleIds.length) {
-      await updatePlanProgress({
+    const scope = entryScope.current;
+    const item = activePlan.schedule.find((entry) => entry.id === input.scheduleId);
+    if (!scope || !item || item.unitId !== input.studyUnitId) return;
+    const scheduleIds = studyEntryProgressIds(activePlan.schedule, input.scheduleIds);
+    if (
+      scheduleIds.length &&
+      !(await updatePlanProgress({
         planId: activePlan.id,
-        scheduleIds: input.scheduleIds,
+        scheduleIds,
         status: "in_progress",
-      });
-    }
-    await triggerSessionPrelude({
+        expectedRevision: activePlan.revision,
+      }))
+    )
+      return;
+    if (entryScope.current !== scope) return;
+    const prepared = await triggerSessionPrelude({
       studyUnitId: input.studyUnitId,
       sectionTitle: input.chapter,
-      themeHint:
-        activePlan.schedule.find((item) => item.id === input.scheduleId)?.focus ?? "",
+      themeHint: item.focus,
     });
+    if (!prepared || entryScope.current !== scope) return;
     appNavigator.push("/study", {
       plan: activePlan.id,
       schedule: input.scheduleId,

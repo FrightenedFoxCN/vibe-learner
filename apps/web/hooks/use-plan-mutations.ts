@@ -10,6 +10,7 @@ import {
   updateLearningPlanTitle,
 } from "../lib/data/learning-plans";
 import { logWorkspaceError } from "../lib/learning-workspace-telemetry";
+import { studyEntryProgressIds } from "../lib/study-schedule-advance";
 
 export interface PlanMutationPort {
   updateLearningPlanTitle: typeof updateLearningPlanTitle;
@@ -86,6 +87,35 @@ export function usePlanMutations(
     }
   }
 
+  function applyProgress(
+    input: Parameters<PlanMutationPort["updateLearningPlanProgress"]>[0],
+  ) {
+    if (!input.planId || !input.scheduleIds.length || !input.status.trim())
+      return Promise.resolve(false);
+    const plan = current.current.plans?.find((item) => item.id === input.planId);
+    const starting = input.status === "in_progress";
+    if (starting && !plan) return Promise.resolve(false);
+    const scheduleIds =
+      starting && plan
+        ? studyEntryProgressIds(plan.schedule, input.scheduleIds)
+        : input.scheduleIds;
+    // A newer local receipt may have finished the item while the UI was opening it.
+    if (!scheduleIds.length) return Promise.resolve(true);
+    return mutate(
+      "plan:" + input.planId,
+      () =>
+        port.updateLearningPlanProgress({
+          ...input,
+          scheduleIds,
+          expectedRevision: input.expectedRevision ?? plan?.revision,
+        }),
+      (result) => current.current.onPlan(result),
+      "完成度已更新。",
+      "更新完成度失败",
+      "workflow:plan_progress_update:error",
+    );
+  }
+
   return {
     isMutating: pendingCount > 0,
     renamePlanTitle: (id: string, title: string) =>
@@ -141,25 +171,7 @@ export function usePlanMutations(
             "更新学习单元失败",
             "workflow:study_unit_title_update:error",
           ),
-    updatePlanProgress: (
-      input: Parameters<PlanMutationPort["updateLearningPlanProgress"]>[0],
-    ) =>
-      !input.planId || !input.scheduleIds.length || !input.status.trim()
-        ? Promise.resolve(false)
-        : mutate(
-            `plan:${input.planId}`,
-            () =>
-              port.updateLearningPlanProgress({
-                ...input,
-                expectedRevision: current.current.plans?.find(
-                  (plan) => plan.id === input.planId,
-                )?.revision,
-              }),
-            (plan) => current.current.onPlan(plan),
-            "完成度已更新。",
-            "更新完成度失败",
-            "workflow:plan_progress_update:error",
-          ),
+    updatePlanProgress: applyProgress,
     answerPlanQuestion: (
       input: Parameters<PlanMutationPort["answerLearningPlanQuestion"]>[0],
     ) =>

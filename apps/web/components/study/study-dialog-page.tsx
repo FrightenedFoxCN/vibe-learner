@@ -143,6 +143,8 @@ export function StudyDialogPage() {
     () => activePlan?.schedule ?? [],
     [activePlan?.schedule],
   );
+  const scheduleOptionsRef = useRef(scheduleOptions);
+  scheduleOptionsRef.current = scheduleOptions;
   const activePlanId = activePlan?.id ?? "";
   const planSession = studySession?.planId === activePlanId ? studySession : null;
   const currentSchedule = resolveStudyScheduleSelection(
@@ -366,6 +368,8 @@ export function StudyDialogPage() {
       advance,
       {
         update: updatePlanProgress,
+        readNextStatus: (nextId) =>
+          scheduleOptionsRef.current.find((item) => item.id === nextId)?.status,
         isCurrent: () => Boolean(scope && scheduleScope.current === scope),
         navigate: navigateToSchedule,
         onPartial: setPartialAdvance,
