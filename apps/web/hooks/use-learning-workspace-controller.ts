@@ -192,6 +192,12 @@ export function useLearningWorkspaceController({
     // the exact transition to the current plan selection and fence first.
     const transition = resolvePlanSelection(planSelectionRef.current, intent);
     if (!transition) return;
+    if (
+      intent.type === "generated" ||
+      intent.type === "update" ||
+      intent.type === "delete"
+    )
+      snapshotLoader.acceptWorkspaceWrite();
     planSelectionRef.current = transition.selection;
     if (transition.studyTarget) transitionStudyView(transition.studyTarget, true);
     dispatch({ type: "plan_transition", transition, ...updates });
@@ -275,8 +281,10 @@ export function useLearningWorkspaceController({
     },
     onFinished: () => dispatch({ type: "busy_finished" }),
     onNotice: (notice) => dispatch({ type: "notice_set", notice }),
-    onDocument: (document) =>
-      dispatch({ type: "generated_document_applied", document }),
+    onDocument: (document) => {
+      snapshotLoader.acceptWorkspaceWrite();
+      dispatch({ type: "generated_document_applied", document });
+    },
     onPlan: (plan) =>
       publishPlanSelection({ type: "generated", plan }, { generatedPlan: plan }),
   });

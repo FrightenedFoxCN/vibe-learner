@@ -15,6 +15,8 @@ import {
   type PlanSelectionIntent,
 } from "../lib/learning-workspace-state.ts";
 
+import { WorkspaceSnapshotLoader } from "../lib/workspace-snapshot-loader.ts";
+
 const plan = (id: string, createdAt: string) => ({ id, createdAt }) as LearningPlan;
 const first = plan("first", "2026-01-01");
 const second = plan("second", "2026-02-01");
@@ -25,6 +27,48 @@ const session = {
   planId: first.id,
 } as StudySessionRecord;
 const response = {} as StudyChatResponse;
+
+test("a pre-write snapshot cannot resurrect a deleted plan or hide its replacement", async () => {
+  const pending: Array<(plans: LearningPlan[]) => void> = [];
+  const loader = new WorkspaceSnapshotLoader({
+    listDocuments: async () => [],
+    listLearningPlans: () => new Promise((resolve) => pending.push(resolve)),
+    listPersonas: async () => [],
+  });
+  const { publish, render } = fixture();
+  let finishes = 0;
+  const observer = {
+    started() {},
+    loaded: ({ plans }: { plans: LearningPlan[] }) =>
+      publish({ type: "snapshot", plans, preferredPlanId: "" }),
+    failed(error: unknown) {
+      throw error;
+    },
+    finished() {
+      finishes++;
+    },
+  };
+  const readBeforeWrite = loader.load(false, observer);
+  publish({ type: "delete", planId: first.id });
+  publish({ type: "generated", plan: third });
+  loader.acceptWorkspaceWrite();
+  assert.equal(pending.length, 2);
+  const readAfterWrite = loader.loadOnFocus(observer);
+  pending[0]([first, second]);
+  await readBeforeWrite;
+  assert.deepEqual(
+    render().planHistory.map((item) => item.id),
+    [third.id, second.id],
+  );
+  assert.equal(finishes, 0);
+  pending[1]([third, second]);
+  await readAfterWrite;
+  assert.deepEqual(
+    render().planHistory.map((item) => item.id),
+    [third.id, second.id],
+  );
+  assert.equal(finishes, 1);
+});
 
 function fixture() {
   let visible = {

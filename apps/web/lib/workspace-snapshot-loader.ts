@@ -28,6 +28,7 @@ export class WorkspaceSnapshotLoader {
   private pending: {
     revision: number;
     includesPersonas: boolean;
+    observer: WorkspaceSnapshotObserver;
     completion: Promise<void>;
   } | null = null;
 
@@ -58,6 +59,14 @@ export class WorkspaceSnapshotLoader {
     this.personasLoaded = true;
   }
 
+  acceptWorkspaceWrite(): void {
+    // A read started before this write may contain an older revision or retain
+    // a deleted row. Replace the whole pending read rather than merging lists.
+    const pending = this.pending;
+    if (this.active && pending)
+      void this.load(pending.includesPersonas, pending.observer);
+  }
+
   // Focus signals do not require a new snapshot while an owned read is already
   // underway. Explicit refresh still calls load() and fences older projections.
   loadOnFocus(observer: WorkspaceSnapshotObserver): Promise<void> {
@@ -79,7 +88,7 @@ export class WorkspaceSnapshotLoader {
     ).finally(() => {
       if (this.pending?.revision === revision) this.pending = null;
     });
-    this.pending = { revision, includesPersonas: needsPersonas, completion };
+    this.pending = { revision, includesPersonas: needsPersonas, observer, completion };
     return completion;
   }
 
