@@ -79,7 +79,7 @@ export function AdvancedSettingsCard({
                 }
               />
             </SettingsField>
-            <SettingsField label="计划失败时的降级模型">
+            <SettingsField label="学习计划生成备用模型">
               <input
                 value={settings.openaiPlanFallbackModel}
                 onChange={(event) =>
@@ -88,8 +88,11 @@ export function AdvancedSettingsCard({
                     event.target.value,
                   )
                 }
-                placeholder="留空表示不启用"
+                placeholder="留空或与主模型相同则不启用"
               />
+              <span className="text-xs text-muted">
+                只有主模型最终返回空响应或用尽工具轮次，才尝试切换一次；备用模型沿用本次生成的剩余预算。鉴权、限流、预算不足、结果校验失败和计划修订不触发切换。
+              </span>
             </SettingsField>
           </div>
 
@@ -105,7 +108,7 @@ export function AdvancedSettingsCard({
                   )
                 }
               />
-              <span>降级模型禁用工具链</span>
+              <span>备用模型禁用工具链</span>
             </SettingsToggle>
           </div>
         </div>

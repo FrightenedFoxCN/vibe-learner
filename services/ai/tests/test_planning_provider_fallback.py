@@ -21,7 +21,28 @@ class PlanProviderFallbackTests(TestCase):
             "backup", ["plan_model_empty_response", "plan_model_tool_loop_exhausted"]
         )
 
-    def check_failure(self, fallback, errors):
+    def test_budget_and_transport_failures_do_not_switch_models(self):
+        for error, mapped_detail in (
+            ("harness_budget_attempt_count_exceeded", "plan_generation_failed"),
+            ("openai_plan_request_rate_limit", "plan_model_rate_limited"),
+            ("openai_plan_request_unsupported_params", "plan_model_unsupported_params"),
+        ):
+            with self.subTest(error=error):
+                self.check_failure(
+                    "backup",
+                    [error],
+                    mapped_detail=mapped_detail,
+                    status=LearningPlanOperationStatus.UNCERTAIN,
+                )
+
+    def check_failure(
+        self,
+        fallback,
+        errors,
+        *,
+        mapped_detail=None,
+        status=LearningPlanOperationStatus.NOT_COMMITTED,
+    ):
         runner = Mock()
         runner.run.side_effect = [RuntimeError(error) for error in errors]
         runner_factory = Mock(return_value=runner)
@@ -52,10 +73,13 @@ class PlanProviderFallbackTests(TestCase):
             [call.kwargs["model"] for call in runner_factory.call_args_list],
             ["primary", "backup"] if len(errors) > 1 else ["primary"],
         )
-        self.assertEqual(_map_plan_generation_error(error.exception).detail, errors[-1])
+        self.assertEqual(
+            _map_plan_generation_error(error.exception).detail,
+            mapped_detail or errors[-1],
+        )
         self.assertEqual(
             _learning_plan_failure_status(
                 error.exception, provider_started=True, candidate_built=False
             ),
-            LearningPlanOperationStatus.NOT_COMMITTED,
+            status,
         )

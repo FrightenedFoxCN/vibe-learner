@@ -16,6 +16,7 @@ from app.core.logging import get_logger
 from app.models.domain import PersonaSlot, persona_sorted_slots
 from app.models.scene import decode_scene_tree_proposal, project_scene_tree_proposal
 from app.services.model_recovery import record_model_recovery
+from app.services.provider_transport import ModelRequestError
 from app.models.persona_generation import (
     PersonaCardBatchContentProposalV1,
     PersonaSlotContentProposalV1,
@@ -915,9 +916,16 @@ def _render_scene_layer_count_hint(layer_count: int | None) -> str:
 
 
 def _should_fallback_setting_web_search(exc: RuntimeError) -> bool:
-    detail = str(exc).strip()
+    # An unsupported-parameter error can come from LiteLLM preflight (no HTTP
+    # status) or an upstream 400/422. Do not treat generic HTTP failures, or an
+    # auth/rate-limit response mentioning a parameter, as a compatibility issue.
+    if not isinstance(exc, ModelRequestError):
+        return False
+    detail = str(exc)
+    if detail == "openai_setting_request_unsupported_params":
+        return exc.status_code in {"", "unknown", "400", "422"}
     return (
-        detail.startswith("openai_setting_request_failed:400:")
-        or detail.startswith("openai_setting_request_failed:422:")
-        or detail.startswith("openai_setting_request_failed:500:")
+        detail.startswith("openai_setting_request_failed:")
+        and exc.upstream_code == "unsupported_params"
+        and exc.status_code in {"400", "422"}
     )
