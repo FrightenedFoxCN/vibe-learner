@@ -60,7 +60,13 @@ function useLibraryCollection<T>(
           : [item, ...current],
     );
   }
-  return { items, error, apply, active };
+  function applyRead(id: string, item: T) {
+    // A read can finish after a successful delete has written its tombstone.
+    if (!active.current || committed.current.get(id) === null) return null;
+    apply(id, item);
+    return item;
+  }
+  return { items, error, apply, applyRead, active };
 }
 
 export function useSceneLibrary(port: SceneLibraryPort = api) {
@@ -123,7 +129,7 @@ export function useSceneLibrary(port: SceneLibraryPort = api) {
       } catch (error) {
         if (!isApiHttpError(error)) throw error;
         if (error.status === 409) {
-          scenes.apply(id, await port.getSceneLibraryItem(id));
+          scenes.applyRead(id, await port.getSceneLibraryItem(id));
           return false;
         }
         if (error.status !== 404) throw error;
@@ -171,9 +177,7 @@ export function useSceneLibrary(port: SceneLibraryPort = api) {
   }
   async function refreshSceneLibraryItem(id: string) {
     try {
-      const latest = await port.getSceneLibraryItem(id);
-      scenes.apply(id, latest);
-      return latest;
+      return scenes.applyRead(id, await port.getSceneLibraryItem(id));
     } catch (error) {
       if (!isApiHttpError(error) || error.status !== 404) throw error;
       scenes.apply(id, null);
