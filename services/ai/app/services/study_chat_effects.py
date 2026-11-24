@@ -5,6 +5,8 @@ import json
 from datetime import datetime, timedelta
 from typing import TYPE_CHECKING
 
+from fastapi import HTTPException
+
 from app.models.domain import (
     SessionAffinityEventRecord,
     SessionAffinityStateRecord,
@@ -74,12 +76,14 @@ class StudyChatEffectCollector:
         session_id: str,
         plan_id: str | None,
         allowed_schedule_ids: set[str] | frozenset[str],
+        plan_revision: int | None = None,
         operation_binding: HarnessOperationBindingV1 | None = None,
         effect_journal: "HarnessEffectJournalRepository | None" = None,
     ) -> None:
         self.operation_id = operation_id
         self.session_id = session_id
         self.plan_id = text_or_empty(plan_id).strip()
+        self.plan_revision = plan_revision
         self.allowed_schedule_ids = frozenset(allowed_schedule_ids)
         if (operation_binding is None) != (effect_journal is None):
             raise ValueError("study_chat_effect_journal_binding_incomplete")
@@ -165,9 +169,13 @@ class StudyChatEffectCollector:
     def prepare_plan_confirmation(
         self,
         proposal: StudyPlanConfirmationEffectProposalV1,
+        *,
+        preview_plan_revision: int,
     ) -> StudyChatPreparedEffectV1:
-        if not self.plan_id:
+        if not self.plan_id or self.plan_revision is None:
             raise ValueError("study_plan_confirmation_plan_target_required")
+        if preview_plan_revision != self.plan_revision:
+            raise HTTPException(409, "study_plan_confirmation_plan_revision_conflict")
         if (
             proposal.action == StudyPlanConfirmationEffectAction.UPDATE_PLAN_PROGRESS
             and not set(proposal.schedule_ids).issubset(self.allowed_schedule_ids)
@@ -182,6 +190,7 @@ class StudyChatEffectCollector:
                 HarnessEffectTargetRefV1(
                     resource_type=HarnessResourceType.LEARNING_PLAN,
                     resource_id=self.plan_id,
+                    revision=self.plan_revision,
                 ),
             ],
         )
@@ -500,6 +509,7 @@ def validate_study_chat_committed_effect_read_back(
                 for item in record.plan_confirmations
                 if item.id == projection.confirmation_id
                 and item.plan_id == projection.plan_id
+                and item.base_plan_revision == projection.base_plan_revision
                 and item.action_type == projection.action.value
                 and item.status == projection.status
                 and item.created_at == projection.created_at
@@ -856,6 +866,13 @@ def _apply_prepared_effect(
     confirmation_id = _stable_id("plan-confirm", effect.effect_id)
     if any(item.id == confirmation_id for item in record.plan_confirmations):
         raise ValueError("study_plan_confirmation_identity_duplicate")
+    plan_target = next(
+        target
+        for target in effect.target_refs
+        if target.resource_type == HarnessResourceType.LEARNING_PLAN
+    )
+    if plan_target.revision is None:
+        raise ValueError("study_plan_confirmation_plan_revision_required")
     title, summary, preview_lines, payload = _confirmation_content(proposal)
     confirmation = SessionPlanConfirmationRecord(
         id=confirmation_id,
@@ -865,7 +882,8 @@ def _apply_prepared_effect(
             else "update_learning_plan_progress"
         ),
         action_type=proposal.action.value,
-        plan_id=text_or_empty(record.plan_id),
+        plan_id=plan_target.resource_id,
+        base_plan_revision=plan_target.revision,
         title=title,
         summary=summary,
         preview_lines=preview_lines,
@@ -883,6 +901,7 @@ def _apply_prepared_effect(
         confirmation_id=confirmation.id,
         action=proposal.action,
         plan_id=confirmation.plan_id,
+        base_plan_revision=confirmation.base_plan_revision,
         status="pending",
         created_at=confirmation.created_at,
     )

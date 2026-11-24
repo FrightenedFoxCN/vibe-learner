@@ -72,13 +72,13 @@ class StudyPlanConfirmationEffectProposalV1(HarnessEffectModel):
         if any(not item.strip() or len(item) > 160 for item in self.schedule_ids):
             raise ValueError("study_plan_confirmation_schedule_id_invalid")
         if self.action == StudyPlanConfirmationEffectAction.UPDATE_PLAN:
-            if not self.course_title.strip() or self.schedule_ids or self.schedule_status:
+            if (
+                not self.course_title.strip()
+                or self.schedule_ids
+                or self.schedule_status
+            ):
                 raise ValueError("study_plan_confirmation_update_plan_shape_invalid")
-        elif (
-            self.course_title
-            or not self.schedule_ids
-            or not self.schedule_status
-        ):
+        elif self.course_title or not self.schedule_ids or not self.schedule_status:
             raise ValueError("study_plan_confirmation_progress_shape_invalid")
         return self
 
@@ -155,11 +155,7 @@ class StudyFollowUpEffectProposalV1(HarnessEffectModel):
         if not normalized:
             raise ValueError("study_follow_up_not_normalized")
         if self.action == StudyFollowUpEffectAction.SCHEDULE:
-            if (
-                self.follow_up_id
-                or self.delay_seconds < 10
-                or not self.hidden_message
-            ):
+            if self.follow_up_id or self.delay_seconds < 10 or not self.hidden_message:
                 raise ValueError("study_follow_up_schedule_shape_invalid")
         elif self.action == StudyFollowUpEffectAction.COMPLETE:
             if (
@@ -217,7 +213,8 @@ class StudyProjectionEffectProposalV1(HarnessEffectModel):
     def validate_action_shape(self) -> "StudyProjectionEffectProposalV1":
         if self.action == StudyProjectionEffectAction.SET:
             if (
-                self.source_kind not in {
+                self.source_kind
+                not in {
                     "attachment_pdf",
                     "attachment_image",
                     "generated_image",
@@ -326,9 +323,7 @@ STUDY_MEMORY_UPSERT_ADAPTER = HARNESS_EFFECT_ADAPTER_POLICIES[
 STUDY_AFFINITY_DELTA_ADAPTER = HARNESS_EFFECT_ADAPTER_POLICIES[
     STUDY_AFFINITY_DELTA_ADAPTER_NAME
 ]
-STUDY_FOLLOW_UP_ADAPTER = HARNESS_EFFECT_ADAPTER_POLICIES[
-    STUDY_FOLLOW_UP_ADAPTER_NAME
-]
+STUDY_FOLLOW_UP_ADAPTER = HARNESS_EFFECT_ADAPTER_POLICIES[STUDY_FOLLOW_UP_ADAPTER_NAME]
 STUDY_PROJECTION_ADAPTER = HARNESS_EFFECT_ADAPTER_POLICIES[
     STUDY_PROJECTION_ADAPTER_NAME
 ]
@@ -362,9 +357,7 @@ STUDY_SCENE_REPLACE_PROPOSAL_CONTRACT = HarnessContractRef(
 )
 
 StudyChatPreparedEffectV1 = HarnessPreparedEffectV1[StudyChatEffectProposalV1]
-StudyChatPreparedEffectBatchV1 = HarnessPreparedEffectBatchV1[
-    StudyChatEffectProposalV1
-]
+StudyChatPreparedEffectBatchV1 = HarnessPreparedEffectBatchV1[StudyChatEffectProposalV1]
 
 
 class StudyPlanConfirmationCommittedProjectionV1(HarnessEffectModel):
@@ -383,6 +376,9 @@ class StudyPlanConfirmationCommittedProjectionV1(HarnessEffectModel):
     confirmation_id: str
     action: StudyPlanConfirmationEffectAction
     plan_id: str
+    base_plan_revision: int | None = Field(
+        default=None, ge=0, exclude_if=lambda value: value is None
+    )
     status: Literal["pending"] = "pending"
     created_at: str
 

@@ -6,7 +6,14 @@ import hashlib
 from types import MappingProxyType
 from typing import Generic, Literal, TypeVar
 
-from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import (
+    AwareDatetime,
+    BaseModel,
+    ConfigDict,
+    Field,
+    field_validator,
+    model_validator,
+)
 
 from app.models.harness import (
     HarnessContractRef,
@@ -167,7 +174,7 @@ HARNESS_EFFECT_ADAPTER_POLICIES = MappingProxyType(
             commit_policy=HarnessEffectCommitPolicy.DATABASE_TRANSACTION,
             compensation_policy=HarnessEffectCompensationPolicy.NOT_APPLICABLE,
             read_back_policy=HarnessEffectReadBackPolicy.EXACT_PROJECTION,
-        )
+        ),
     }
 )
 
@@ -186,6 +193,9 @@ def harness_effect_adapter_policy_registry_snapshot() -> dict[str, object]:
 class HarnessEffectTargetRefV1(HarnessEffectModel):
     resource_type: HarnessResourceType
     resource_id: str = Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9:._-]{0,159}$")
+    revision: int | None = Field(
+        default=None, ge=0, exclude_if=lambda value: value is None
+    )
 
 
 class HarnessProviderEffectIdentityV1(HarnessEffectModel):
@@ -226,7 +236,9 @@ class HarnessEffectJournalEntryV1(HarnessEffectModel):
     adapter: HarnessEffectAdapterRefV1
     proposal_contract: HarnessContractRef
     proposal_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
-    target_refs: tuple[HarnessEffectTargetRefV1, ...] = Field(min_length=1, max_length=8)
+    target_refs: tuple[HarnessEffectTargetRefV1, ...] = Field(
+        min_length=1, max_length=8
+    )
     state: HarnessEffectJournalState
     claim_owner: str = Field(default="", max_length=160)
     claim_count: int = Field(default=0, ge=0, le=3)
@@ -267,15 +279,26 @@ class HarnessEffectJournalEntryV1(HarnessEffectModel):
         if self.updated_at < self.prepared_at:
             raise ValueError("harness_effect_journal_timestamp_order_invalid")
         if self.state == HarnessEffectJournalState.PREPARED:
-            if self.claim_owner or self.claim_count or self.lease_expires_at is not None:
+            if (
+                self.claim_owner
+                or self.claim_count
+                or self.lease_expires_at is not None
+            ):
                 raise ValueError("harness_effect_prepared_claim_state_forbidden")
         elif self.state == HarnessEffectJournalState.CLAIMED:
-            if not self.claim_owner or self.claim_count < 1 or self.lease_expires_at is None:
+            if (
+                not self.claim_owner
+                or self.claim_count < 1
+                or self.lease_expires_at is None
+            ):
                 raise ValueError("harness_effect_claim_incomplete")
         elif self.state == HarnessEffectJournalState.TERMINAL:
             if self.terminal_evidence is None:
                 raise ValueError("harness_effect_terminal_evidence_required")
-        if self.state != HarnessEffectJournalState.TERMINAL and self.terminal_evidence is not None:
+        if (
+            self.state != HarnessEffectJournalState.TERMINAL
+            and self.terminal_evidence is not None
+        ):
             raise ValueError("harness_effect_terminal_evidence_premature")
         if self.provider_effect_identity is not None and (
             self.adapter.boundary_kind != HarnessEffectBoundaryKind.EXTERNAL_CALL
@@ -300,7 +323,9 @@ class HarnessEffectTerminalEvidenceV1(HarnessEffectModel):
     adapter: HarnessEffectAdapterRefV1
     proposal_contract: HarnessContractRef
     proposal_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
-    target_refs: tuple[HarnessEffectTargetRefV1, ...] = Field(min_length=1, max_length=8)
+    target_refs: tuple[HarnessEffectTargetRefV1, ...] = Field(
+        min_length=1, max_length=8
+    )
     outcome: HarnessEffectTerminalOutcome
     provider_effect_identity: HarnessProviderEffectIdentityV1 | None = None
     read_back_outcome: HarnessEffectReadBackOutcome
@@ -400,16 +425,12 @@ class HarnessEffectTerminalEvidenceV1(HarnessEffectModel):
         if self.read_back_outcome in {
             HarnessEffectReadBackOutcome.FAILED,
             HarnessEffectReadBackOutcome.VERIFIED,
-        } and (
-            self.read_back_started_at is None or self.read_back_at is None
-        ):
+        } and (self.read_back_started_at is None or self.read_back_at is None):
             raise ValueError("harness_effect_read_back_timestamp_required")
         if self.read_back_outcome in {
             HarnessEffectReadBackOutcome.NOT_ATTEMPTED,
             HarnessEffectReadBackOutcome.UNSUPPORTED,
-        } and (
-            self.read_back_started_at is not None or self.read_back_at is not None
-        ):
+        } and (self.read_back_started_at is not None or self.read_back_at is not None):
             raise ValueError("harness_effect_read_back_timestamp_forbidden")
         if self.compensation_outcome == HarnessEffectCompensationOutcome.NOT_APPLICABLE:
             if any(
@@ -445,7 +466,8 @@ class HarnessEffectTerminalEvidenceV1(HarnessEffectModel):
                 if self.provider_effect_identity is None:
                     raise ValueError("harness_effect_provider_identity_required")
                 if (
-                    self.adapter.read_back_policy == HarnessEffectReadBackPolicy.UNSUPPORTED
+                    self.adapter.read_back_policy
+                    == HarnessEffectReadBackPolicy.UNSUPPORTED
                     or not self.provider_effect_identity.read_back_supported
                 ):
                     raise ValueError("harness_effect_external_commit_unverifiable")
@@ -458,23 +480,31 @@ class HarnessEffectTerminalEvidenceV1(HarnessEffectModel):
             ):
                 raise ValueError("harness_effect_not_committed_evidence_invalid")
             if self.commit_started_at is None:
-                if self.compensation_outcome != HarnessEffectCompensationOutcome.NOT_APPLICABLE:
+                if (
+                    self.compensation_outcome
+                    != HarnessEffectCompensationOutcome.NOT_APPLICABLE
+                ):
                     raise ValueError("harness_effect_unstarted_compensation_forbidden")
             elif (
                 self.adapter.boundary_kind == HarnessEffectBoundaryKind.EXTERNAL_CALL
-                or self.compensation_outcome != HarnessEffectCompensationOutcome.SUCCEEDED
+                or self.compensation_outcome
+                != HarnessEffectCompensationOutcome.SUCCEEDED
             ):
                 raise ValueError("harness_effect_started_not_committed_unproven")
         else:
             if self.commit_started_at is None or not self.failure_code:
                 raise ValueError("harness_effect_uncertain_evidence_incomplete")
             if self.read_back_outcome == HarnessEffectReadBackOutcome.VERIFIED:
-                raise ValueError("harness_effect_uncertain_verified_read_back_forbidden")
+                raise ValueError(
+                    "harness_effect_uncertain_verified_read_back_forbidden"
+                )
         return self
 
     @property
     def evidence_digest(self) -> str:
-        return canonical_harness_digest(self.model_dump(mode="json", exclude_none=False))
+        return canonical_harness_digest(
+            self.model_dump(mode="json", exclude_none=False)
+        )
 
 
 def _validate_effect_identity(
@@ -515,7 +545,9 @@ class HarnessPreparedEffectV1(HarnessEffectModel, Generic[EffectProposalT]):
     proposal: EffectProposalT
 
     @model_validator(mode="after")
-    def reject_reads_and_permissive_proposals(self) -> "HarnessPreparedEffectV1[EffectProposalT]":
+    def reject_reads_and_permissive_proposals(
+        self,
+    ) -> "HarnessPreparedEffectV1[EffectProposalT]":
         if self.adapter.boundary_kind == HarnessEffectBoundaryKind.PURE_READ:
             raise ValueError("harness_prepared_effect_pure_read_forbidden")
         if not isinstance(self.proposal, BaseModel):
@@ -530,7 +562,9 @@ class HarnessPreparedEffectV1(HarnessEffectModel, Generic[EffectProposalT]):
 
 
 class HarnessPreparedEffectBatchV1(HarnessEffectModel, Generic[EffectProposalT]):
-    schema_name: Literal["HarnessPreparedEffectBatchV1"] = "HarnessPreparedEffectBatchV1"
+    schema_name: Literal["HarnessPreparedEffectBatchV1"] = (
+        "HarnessPreparedEffectBatchV1"
+    )
     schema_version: Literal[HARNESS_PREPARED_EFFECT_BATCH_SCHEMA_VERSION] = (
         HARNESS_PREPARED_EFFECT_BATCH_SCHEMA_VERSION
     )
@@ -542,7 +576,9 @@ class HarnessPreparedEffectBatchV1(HarnessEffectModel, Generic[EffectProposalT])
     )
 
     @model_validator(mode="after")
-    def validate_batch_identity_and_slots(self) -> "HarnessPreparedEffectBatchV1[EffectProposalT]":
+    def validate_batch_identity_and_slots(
+        self,
+    ) -> "HarnessPreparedEffectBatchV1[EffectProposalT]":
         if any(
             item.operation_id != self.operation_id
             or item.effect_batch_id != self.effect_batch_id

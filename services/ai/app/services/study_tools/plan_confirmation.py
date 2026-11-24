@@ -33,7 +33,8 @@ class PlanConfirmationTools:
                 action=StudyPlanConfirmationEffectAction.UPDATE_PLAN,
                 course_title=course_title,
                 note=note,
-            )
+            ),
+            preview_plan_revision=plan.revision,
         )
         return {
             "ok": True,
@@ -74,7 +75,8 @@ class PlanConfirmationTools:
                 schedule_ids=schedule_ids,
                 schedule_status=status,
                 note=note,
-            )
+            ),
+            preview_plan_revision=plan.revision,
         )
         return {
             "ok": True,

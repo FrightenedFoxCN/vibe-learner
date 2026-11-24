@@ -578,6 +578,9 @@ def _run_study_chat(
         operation_id=operation_id,
         session_id=session_id,
         plan_id=bound_session_plan.id if bound_session_plan is not None else None,
+        plan_revision=(
+            bound_session_plan.revision if bound_session_plan is not None else None
+        ),
         allowed_schedule_ids={item.id for item in bound_session_plan.schedule}
         if bound_session_plan is not None
         else set(),

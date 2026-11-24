@@ -1126,6 +1126,9 @@ class SessionPlanConfirmationRecord(BaseModel):
     tool_name: str
     action_type: str
     plan_id: str = ""
+    base_plan_revision: int | None = Field(
+        default=None, strict=True, ge=0, exclude_if=lambda value: value is None
+    )
     title: str
     summary: str = ""
     preview_lines: list[str] = Field(default_factory=list)

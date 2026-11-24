@@ -4,6 +4,8 @@ from threading import Barrier
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
+from fastapi import HTTPException
+
 from app.models.study_chat_operation import (
     StudyChatOperationRequestPayload,
     StudyChatOperationStatus,
@@ -17,25 +19,37 @@ from app.models.study_question import (
     project_study_question_proposal,
 )
 from app.persistence.database import Database
+from app.persistence.learning_plan_repository import LearningPlanRepository
 from app.persistence.study_chat_operation_repository import (
     StudyChatOperationAlreadyActive,
     StudyChatOperationAdmissionRace,
     StudyChatOperationRepository,
     StudyChatOperationRequestMismatch,
 )
-from app.persistence.models import StudyChatOperationRow, StudyQuestionAttemptRow
+from app.persistence.models import (
+    LearningPlanRevisionRow,
+    StudyChatOperationRow,
+    StudyQuestionAttemptRow,
+)
 from app.persistence.study_session_repository import StudySessionRepository
 from app.models.domain import (
     SceneProfileRecord,
     SessionFollowUpRecord,
+    SessionPlanConfirmationRecord,
     StudyChatResult,
     StudySessionRecord,
+    VersionedLearningPlanRecord,
 )
 from app.models.api import (
     StudyChatExchangeResponse,
     StudyChatOperationReceiptResponse,
 )
 from app.models.study_chat_operation import StudyChatOperationRecord
+from app.models.study_chat_effect import (
+    StudyPlanConfirmationEffectAction,
+    StudyPlanConfirmationEffectProposalV1,
+)
+from app.services.study_chat_effects import StudyChatEffectCollector
 from app.services.study_chat_preflight import (
     StudyChatPreflightError,
     validate_study_chat_preclaim,
@@ -537,6 +551,196 @@ class StudyChatOperationTests(unittest.TestCase):
                 session_id="session-operation",
                 client_request_id="request-question-0001",
             )
+
+    def seed_confirmation_session(self, *, confirmations=()):
+        repository = LearningPlanRepository(self.database)
+        plan = VersionedLearningPlanRecord(
+            id="plan-review",
+            document_id="doc",
+            persona_id="persona",
+            course_title="Baseline",
+            objective="Learn",
+            overview="Synthetic plan",
+            today_tasks=[],
+            created_at="2026-08-12T00:00:00+00:00",
+        )
+        repository.import_legacy([plan])
+        record = self.sessions.require("session-operation").model_copy(
+            update={
+                "id": "session-review",
+                "plan_id": plan.id,
+                "plan_confirmations": list(confirmations),
+            }
+        )
+        self.sessions.create(record)
+        return repository, plan, record
+
+    def commit_confirmation_turn(self, *, change_plan_during_chat):
+        repository, plan, record = self.seed_confirmation_session()
+        operation = self.operations.admit(
+            session_id=record.id,
+            client_request_id="request-review",
+            request_payload=self.payload(),
+        )
+        running, claimed = self.operations.claim(
+            operation_id=operation.operation_id, timeout_seconds=30
+        )
+        self.assertTrue(claimed)
+        self.operations.mark_provider_started(
+            operation_id=running.operation_id,
+            execution_token=running.execution_token,
+        )
+        collector = StudyChatEffectCollector(
+            operation_id=operation.operation_id,
+            session_id=record.id,
+            plan_id=plan.id,
+            plan_revision=plan.revision,
+            allowed_schedule_ids=set(),
+            operation_binding=self.operations.require_harness_operation(
+                operation.operation_id
+            ),
+            effect_journal=self.sessions.effect_journal,
+        )
+        proposal = StudyPlanConfirmationEffectProposalV1(
+            action=StudyPlanConfirmationEffectAction.UPDATE_PLAN,
+            course_title="Reviewed title",
+        )
+        with self.assertRaises(HTTPException) as stale_preview:
+            collector.prepare_plan_confirmation(
+                proposal, preview_plan_revision=plan.revision + 1
+            )
+        self.assertEqual(stale_preview.exception.status_code, 409)
+        self.assertEqual(
+            stale_preview.exception.detail,
+            "study_plan_confirmation_plan_revision_conflict",
+        )
+        collector.prepare_plan_confirmation(
+            proposal, preview_plan_revision=plan.revision
+        )
+        if change_plan_during_chat:
+            repository.mutate(
+                plan.id,
+                lambda current: current.model_copy(
+                    update={"course_title": "Newer edit"}
+                ),
+            )
+        result = StudyChatResult(
+            reply="Review this proposal", citations=[], character_events=[]
+        )
+        _, payload = self.sessions.commit_chat_operation_turn(
+            operation_id=running.operation_id,
+            execution_token=running.execution_token,
+            learner_message="hello",
+            learner_message_kind="learner",
+            learner_attachments=[],
+            result=result,
+            prepared_study_unit_id=None,
+            completed_follow_up_id="",
+            cancel_pending_follow_ups=False,
+            prepared_effect_batch=collector.prepared_batch(),
+            build_response_payload=lambda session: {
+                **result.model_dump(mode="json"),
+                "session": session.model_dump(mode="json"),
+            },
+        )
+        saved = self.sessions.require(record.id).plan_confirmations[0]
+        self.assertEqual(saved.base_plan_revision, plan.revision)
+        committed = payload["_committed_effect_batch"]["effects"][0]
+        self.assertEqual(committed["base_plan_revision"], plan.revision)
+        self.assertNotIn("base_plan_revision", proposal.model_dump(mode="json"))
+        return repository, plan, record, saved
+
+    @staticmethod
+    def apply_confirmation(plan, confirmation):
+        return plan.model_copy(
+            update={"course_title": confirmation.payload["course_title"]}
+        )
+
+    def test_checkout_confirmation_cas_rejects_stale_review_even_before_chat_commit(
+        self,
+    ):
+        repository, plan, record, saved = self.commit_confirmation_turn(
+            change_plan_during_chat=True
+        )
+        with self.assertRaises(HTTPException) as conflict:
+            repository.resolve_confirmation(
+                record.id,
+                saved.id,
+                "approve",
+                "",
+                record.updated_at,
+                self.apply_confirmation,
+            )
+        self.assertEqual(conflict.exception.status_code, 409)
+        self.assertEqual(
+            conflict.exception.detail, "plan_confirmation_revision_conflict"
+        )
+        self.assertEqual(
+            self.sessions.require(record.id).plan_confirmations[0].status, "pending"
+        )
+        current = repository.require(plan.id)
+        self.assertEqual((current.revision, current.course_title), (1, "Newer edit"))
+        with self.database.session() as session:
+            self.assertIsNone(session.get(LearningPlanRevisionRow, (plan.id, 2)))
+
+    def test_current_confirmation_advances_plan_once_and_replays(self):
+        repository, plan, record, saved = self.commit_confirmation_turn(
+            change_plan_during_chat=False
+        )
+        args = (
+            record.id,
+            saved.id,
+            "approve",
+            "",
+            record.updated_at,
+            self.apply_confirmation,
+        )
+        resolved, current = repository.resolve_confirmation(*args)
+        self.assertEqual(resolved.plan_confirmations[0].status, "approved")
+        self.assertEqual(
+            (current.revision, current.course_title), (1, "Reviewed title")
+        )
+        self.assertEqual(repository.resolve_confirmation(*args), (resolved, current))
+        self.assertEqual(repository.require(plan.id), current)
+
+    def test_legacy_pending_is_readable_and_rejectable_but_not_approvable(self):
+        legacy = SessionPlanConfirmationRecord(
+            id="legacy",
+            tool_name="update_learning_plan",
+            action_type="update_plan",
+            plan_id="plan-review",
+            title="Legacy pending",
+            payload={"course_title": "Old title"},
+            created_at="2026-08-12T00:00:00+00:00",
+        )
+        repository, plan, record = self.seed_confirmation_session(
+            confirmations=[legacy]
+        )
+        confirmation = self.sessions.require(record.id).plan_confirmations[0]
+        self.assertNotIn("base_plan_revision", confirmation.model_dump(mode="json"))
+        with self.assertRaises(HTTPException) as conflict:
+            repository.resolve_confirmation(
+                record.id,
+                legacy.id,
+                "approve",
+                "",
+                record.updated_at,
+                self.apply_confirmation,
+            )
+        self.assertEqual(
+            conflict.exception.detail, "plan_confirmation_baseline_unavailable"
+        )
+        resolved, updated = repository.resolve_confirmation(
+            record.id,
+            legacy.id,
+            "reject",
+            "",
+            record.updated_at,
+            self.apply_confirmation,
+        )
+        self.assertIsNone(updated)
+        self.assertEqual(resolved.plan_confirmations[0].status, "rejected")
+        self.assertEqual(repository.require(plan.id), plan)
 
 
 if __name__ == "__main__":
