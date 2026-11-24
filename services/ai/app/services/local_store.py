@@ -458,22 +458,20 @@ class LocalJsonStore:
         with self._db.session() as session:
             row = session.get(spec.entity, item_id)
             if row is None:
+                if category == "runtime_settings":
+                    return None
                 legacy_item = self._legacy.load_item(category, item_id, model)
                 if legacy_item is not None:
                     self.save_item(category, item_id, legacy_item)
                 return legacy_item
             return model.model_validate(row.payload or {})
 
-    def load_runtime_settings_payload(self) -> dict[str, Any] | None:
-        with self._db.session() as session:
-            row = session.get(RuntimeSettingsRow, "default")
-            if row is not None:
-                if not isinstance(row.payload, dict):
-                    raise ValueError("invalid_runtime_settings_record")
-                return row.payload
+    def load_legacy_runtime_settings_payload(self) -> dict[str, Any] | None:
         return self._legacy.load_runtime_settings_payload()
 
     def save_item(self, category: str, item_id: str, item: BaseModel) -> None:
+        if category == "runtime_settings":
+            raise ValueError("runtime_settings_requires_repository")
         self._legacy.validate_item_path(category, item_id)
         payload = item.model_dump(mode="json")
         if category in STREAM_CATEGORIES:
@@ -633,6 +631,8 @@ class LocalJsonStore:
             rows = session.scalars(self._ordered_select(spec)).all()
             if rows:
                 return [model.model_validate(row.payload or {}) for row in rows]
+        if category == "runtime_settings":
+            return []
         legacy_items = self._legacy.load_category_items(category, model)
         for item in legacy_items:
             item_id = str(getattr(item, spec.key_attr, ""))
@@ -641,6 +641,8 @@ class LocalJsonStore:
         return legacy_items
 
     def delete_item(self, category: str, item_id: str) -> None:
+        if category == "runtime_settings":
+            raise ValueError("runtime_settings_requires_repository")
         self._legacy.validate_item_path(category, item_id)
         if category in STREAM_CATEGORIES:
             with self._db.session() as session:
@@ -683,6 +685,8 @@ class LocalJsonStore:
             return len(session.scalars(select(spec.entity)).all())
 
     def clear_bucket(self, bucket: str, *, item_id: str | None = None) -> int:
+        if bucket == "runtime_settings":
+            raise ValueError("runtime_settings_requires_repository")
         removed = 0
         if bucket in LIST_SPECS:
             spec = LIST_SPECS[bucket]

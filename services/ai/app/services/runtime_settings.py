@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from dataclasses import replace
+from collections.abc import Callable
+from dataclasses import dataclass, replace
+from threading import RLock
 from typing import Any
 
-from app.core.clock import utc_now_iso as _now_iso
 from app.core.model_runtime_limits import DEFAULT_EMBEDDING_MODEL, DEFAULT_MODEL_NAME
 from app.core.runtime_settings_validation import (
     NUMERIC_FIELDS,
@@ -12,6 +13,7 @@ from app.core.runtime_settings_validation import (
 )
 from app.core.settings import Settings
 from app.models.domain import RuntimeSettingsRecord
+from app.persistence.runtime_settings_repository import RuntimeSettingsRepository
 from app.services.local_store import LocalJsonStore
 
 SECRET_FIELDS = (
@@ -41,85 +43,121 @@ _BOOL_FIELDS = {
 }
 
 
+@dataclass(frozen=True)
+class RuntimeSettingsVersion:
+    revision: int
+    session_generation: int
+
+
 class RuntimeSettingsService:
     def __init__(self, store: LocalJsonStore, base_settings: Settings) -> None:
-        self._store = store
         self._base_settings = base_settings
-        self._record = self._load_or_default()
+        self._repository = RuntimeSettingsRepository(store.database)
+        self._session_lock = RLock()
+        self._session_generation = 0
         self._session_secrets = {
             name: getattr(base_settings, name).strip()
             if base_settings.desktop_mode
             else ""
             for name in SECRET_FIELDS
         }
+        self._repository.initialize(
+            lambda current: self._initial_payload(
+                current, store.load_legacy_runtime_settings_payload
+            )
+        )
 
     def describe(self) -> dict[str, Any]:
-        record = self._record
-        secrets = self._effective_secret_values(record)
-        result = record.model_dump(exclude={"config_id"})
+        with self._session_lock:
+            record = self._repository.read()
+            secrets = self._effective_secret_values(record)
+        result = record.model_dump(exclude={"config_id", "revision"})
         for name in SECRET_FIELDS:
             result[f"{name}_configured"] = bool(secrets[name])
             if self._base_settings.desktop_mode:
                 result[name] = ""
         return result
 
-    def effective_settings(self) -> Settings:
-        record = self._record
-        return replace(
+    def effective_snapshot(self) -> tuple[RuntimeSettingsVersion, Settings]:
+        """Bind the DB revision and local secret generation to one effective view."""
+        with self._session_lock:
+            record = self._repository.read()
+            secrets = self._effective_secret_values(record)
+            version = RuntimeSettingsVersion(record.revision, self._session_generation)
+        settings = replace(
             self._base_settings,
-            **(
-                {name: getattr(record, name) for name in _RUNTIME_FIELDS}
-                | self._effective_secret_values(record)
-            ),
+            **({name: getattr(record, name) for name in _RUNTIME_FIELDS} | secrets),
         )
+        return version, settings
+
+    def effective_settings(self) -> Settings:
+        return self.effective_snapshot()[1]
 
     def update(self, updates: dict[str, Any]) -> RuntimeSettingsRecord:
         normalized = {
             name: _normalize_update(name, value) for name, value in updates.items()
         }
-        payload = self._record.model_dump() | normalized
         if self._base_settings.desktop_mode:
-            payload.update(dict.fromkeys(SECRET_FIELDS, ""))
-        else:
-            for field in SECRET_FIELDS[1:]:
-                payload[field] = payload[field] or payload["openai_api_key"]
-        next_record = RuntimeSettingsRecord.model_validate(
-            payload | {"updated_at": _now_iso()}
-        )
-        self._store.save_item("runtime_settings", "default", next_record)
-        self._record = next_record
-        return next_record
+            normalized = {
+                name: value
+                for name, value in normalized.items()
+                if name not in SECRET_FIELDS
+            }
+
+        def persist_scoped_keys(payload: dict[str, Any]) -> dict[str, Any]:
+            for name in SECRET_FIELDS[1:]:
+                if name in normalized:
+                    payload[name] = payload[name] or payload["openai_api_key"]
+            return payload
+
+        return self._repository.patch(normalized, transform=persist_scoped_keys)
 
     def apply_session_secrets(self, updates: dict[str, Any]) -> None:
-        self._session_secrets = self._session_secrets | {
+        normalized = {
             name: _normalize_update(name, updates[name])
             for name in SECRET_FIELDS
             if name in updates
         }
+        with self._session_lock:
+            self._set_session_secrets(self._session_secrets | normalized)
 
     def clear_session_secrets(self) -> None:
-        self._session_secrets = dict.fromkeys(SECRET_FIELDS, "")
+        with self._session_lock:
+            self._set_session_secrets(dict.fromkeys(SECRET_FIELDS, ""))
 
-    def _load_or_default(self) -> RuntimeSettingsRecord:
+    def _set_session_secrets(self, values: dict[str, str]) -> None:
+        if self._session_secrets != values:
+            self._session_secrets = values
+            self._session_generation += 1
+
+    def _initial_payload(
+        self,
+        current: dict[str, Any] | None,
+        read_legacy: Callable[[], dict[str, Any] | None],
+    ) -> dict[str, Any] | None:
+        if current is not None and "revision" in current:
+            record = RuntimeSettingsRecord.model_validate(current)
+            if self._base_settings.desktop_mode and any(
+                getattr(record, name) for name in SECRET_FIELDS
+            ):
+                return current | dict.fromkeys(SECRET_FIELDS, "")
+            return None
         base = {name: getattr(self._base_settings, name) for name in _RUNTIME_FIELDS}
-        raw = self._store.load_runtime_settings_payload()
+        raw = current if current is not None else read_legacy()
         payload = base | repair_legacy_runtime_numbers(raw or {})
         if self._base_settings.desktop_mode:
             payload.update(dict.fromkeys(SECRET_FIELDS, ""))
-        if raw is not None and all(
-            raw.get(name) == value for name, value in payload.items()
-        ):
-            return RuntimeSettingsRecord.model_validate(payload)
-        record = RuntimeSettingsRecord.model_validate(
-            payload | {"updated_at": _now_iso()}
-        )
-        self._store.save_item("runtime_settings", "default", record)
-        return record
+        return payload
 
     def _effective_secret_values(self, record: RuntimeSettingsRecord) -> dict[str, str]:
         session = self._session_secrets
         effective = {
-            name: session[name] or getattr(record, name).strip()
+            name: session[name]
+            or (
+                ""
+                if self._base_settings.desktop_mode
+                else getattr(record, name).strip()
+            )
             for name in SECRET_FIELDS
         }
         global_key = effective["openai_api_key"]

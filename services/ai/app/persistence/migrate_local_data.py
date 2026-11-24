@@ -19,7 +19,6 @@ from app.models.domain import (
     PersonaCardRecord,
     PersonaProfile,
     PlanGenerationTraceRecord,
-    RuntimeSettingsRecord,
     SceneLibraryRecord,
     SceneSetupStateRecord,
     SessionSceneRecord,
@@ -31,6 +30,7 @@ from app.models.stream import StreamReportRecord
 from app.persistence.database import Database
 from app.persistence.document_repository import DocumentRepository, document_from_row
 from app.persistence.models import DocumentDebugRow, DocumentRow, StudySessionRow
+from app.persistence.runtime_settings_repository import RuntimeSettingsRepository
 from app.persistence.storage import StorageManager
 from app.persistence.study_session_repository import StudySessionRepository
 from app.services.local_store import LegacyLocalJsonStore, LocalJsonStore
@@ -190,13 +190,15 @@ def migrate_from_legacy_store(
         if items:
             store.save_list(list_name, items)
 
-    if store.count_bucket("runtime_settings") == 0:
+    def import_runtime_settings(current):
+        if current is not None:
+            return None
         runtime_payload = legacy.load_runtime_settings_payload()
-        if runtime_payload is not None:
-            runtime_settings = RuntimeSettingsRecord.model_validate(
-                repair_legacy_runtime_numbers(runtime_payload)
-            )
-            store.save_item("runtime_settings", "default", runtime_settings)
+        if runtime_payload is None:
+            return None
+        return repair_legacy_runtime_numbers(runtime_payload)
+
+    RuntimeSettingsRepository(store.database).initialize(import_runtime_settings)
 
     for category, model in (
         ("document_debug", DocumentDebugRecord),

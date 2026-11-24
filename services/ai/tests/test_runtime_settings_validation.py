@@ -69,7 +69,11 @@ class RuntimeSettingsValidationTest(TestCase):
                             (UpdateRuntimeSettingsRequest, {field: value}),
                             (
                                 RuntimeSettingsRecord,
-                                {"updated_at": "synthetic", field: value},
+                                {
+                                    "updated_at": "synthetic",
+                                    "revision": 1,
+                                    field: value,
+                                },
                             ),
                             (RuntimeSettingsResponse, valid_response | {field: value}),
                         ):
@@ -93,8 +97,9 @@ class RuntimeSettingsValidationTest(TestCase):
 
     def test_database_legacy_repair_resets_only_invalid_numbers(self):
         initial = RuntimeSettingsRecord(
-            updated_at="old", openai_plan_model="custom"
+            updated_at="old", revision=1, openai_plan_model="custom"
         ).model_dump()
+        del initial["revision"]
         initial.update(
             openai_chat_temperature=float("nan"),
             openai_chat_max_tokens="800",

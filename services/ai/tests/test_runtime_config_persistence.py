@@ -1,6 +1,11 @@
+from pathlib import Path
+from tempfile import TemporaryDirectory
 from unittest import TestCase
 
+from sqlalchemy import event
+
 from app.core.settings import Settings
+from app.services.local_store import LocalJsonStore
 from app.services.model_tool_config import ModelToolConfigService
 from app.services.runtime_settings import RuntimeSettingsService
 
@@ -13,10 +18,6 @@ class FakeStore:
     def load_item(self, category, item_id, record_type):
         return self.records.get((category, item_id))
 
-    def load_runtime_settings_payload(self):
-        record = self.records.get(("runtime_settings", "default"))
-        return record.model_dump() if record is not None else None
-
     def save_item(self, category, item_id, record):
         if self.fail:
             raise OSError("synthetic write failure")
@@ -25,16 +26,25 @@ class FakeStore:
 
 class RuntimeConfigPersistenceTest(TestCase):
     def test_runtime_settings_only_publish_after_save(self):
-        store = FakeStore()
+        store = LocalJsonStore(Path(self.enterContext(TemporaryDirectory())))
+        self.addCleanup(store.close)
         base = Settings()
         settings = RuntimeSettingsService(store, base)
         previous = settings.describe()
-        store.fail = True
-        with self.assertRaises(OSError):
-            settings.update({"openai_plan_model": "synthetic-model"})
+
+        def fail_after_flush(session):
+            session.flush()
+            raise OSError("synthetic commit failure")
+
+        factory = store.database._session_factory
+        event.listen(factory, "before_commit", fail_after_flush)
+        try:
+            with self.assertRaises(OSError):
+                settings.update({"openai_plan_model": "synthetic-model"})
+        finally:
+            event.remove(factory, "before_commit", fail_after_flush)
         self.assertEqual(settings.describe(), previous)
         self.assertEqual(RuntimeSettingsService(store, base).describe(), previous)
-        store.fail = False
         settings.update({"openai_plan_model": "synthetic-model"})
         self.assertEqual(
             settings.effective_settings().openai_plan_model, "synthetic-model"

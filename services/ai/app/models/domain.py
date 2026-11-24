@@ -959,6 +959,7 @@ class RuntimeSettingsRecord(BaseModel):
     )
 
     config_id: Literal["default"] = "default"
+    revision: int = Field(ge=1)
     updated_at: str
     plan_provider: str = "mock"
     openai_api_key: str = ""
