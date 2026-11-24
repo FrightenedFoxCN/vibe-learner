@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useEffectEvent, useRef, useState } from "react";
 
 import type {
   DesktopVaultState,
@@ -29,9 +29,13 @@ import {
 import { enqueueVaultOperation, saveWithVault } from "../../lib/desktop-vault-workflow";
 import { getDesktopRuntimeConfig } from "../../lib/runtime-config";
 import {
+  resolveSettingsPublication,
+  type SettingsForm,
+  type SettingsPublication,
+} from "./settings-publication";
+import {
   AUTO_SAVE_DELAY_MS,
   buildProbeEndpointKey,
-  buildNumericDrafts,
   buildRuntimeSettingsPatch,
   CAPABILITY_AUDIT_CONFIGS,
   capabilitySignalToBoolean,
@@ -106,7 +110,6 @@ export function useSettingsController(): SettingsController {
     desktopRuntimeConfig?.isDesktop && isDesktopVaultAvailable(),
   );
 
-  const [settings, setSettings] = useState<RuntimeSettings | null>(null);
   const [advancedExpanded, setAdvancedExpanded] = useState(false);
   const [savePhase, setSavePhase] = useState<SettingsSavePhase>("idle");
   const [saveError, setSaveError] = useState("");
@@ -121,15 +124,19 @@ export function useSettingsController(): SettingsController {
     vaultPath: desktopRuntimeConfig?.vaultPath ?? "",
     startupError: desktopRuntimeConfig?.startupError ?? "",
   });
-  const [numericDrafts, setNumericDrafts] = useState<NumericDraftState>({
-    openaiTimeoutSeconds: "",
-    openaiSettingTemperature: "",
-    openaiChatTemperature: "",
-    openaiSettingMaxTokens: "",
-    openaiChatMaxTokens: "",
-    openaiChatHistoryMessages: "",
-    openaiChatToolMaxRounds: "",
+  const [form, setForm] = useState<SettingsForm>({
+    settings: null,
+    numericDrafts: {
+      openaiTimeoutSeconds: "",
+      openaiSettingTemperature: "",
+      openaiChatTemperature: "",
+      openaiSettingMaxTokens: "",
+      openaiChatMaxTokens: "",
+      openaiChatHistoryMessages: "",
+      openaiChatToolMaxRounds: "",
+    },
   });
+  const { settings, numericDrafts } = form;
   const [probeState, setProbeState] = useState<Record<ProbeScope, ScopeProbeState>>({
     global: { ...EMPTY_PROBE_STATE },
     plan: { ...EMPTY_PROBE_STATE },
@@ -138,16 +145,12 @@ export function useSettingsController(): SettingsController {
   });
 
   const initializedRef = useRef(false);
-  const settingsRef = useRef<RuntimeSettings | null>(null);
+  const formRef = useRef(form);
   const desktopSecurityRef = useRef(desktopSecurity);
   const vaultTransitionRef = useRef(false);
   const vaultVersionRef = useRef(0);
   const probeCacheRef = useRef<Map<string, CachedProbeResult>>(new Map());
   const activeProbeRef = useRef(new Map<string, symbol>());
-
-  useEffect(() => {
-    settingsRef.current = settings;
-  }, [settings]);
 
   useEffect(() => {
     desktopSecurityRef.current = desktopSecurity;
@@ -241,18 +244,8 @@ export function useSettingsController(): SettingsController {
           return mergeRuntimeSettingsWithSecrets(backendNext, secrets);
         });
       },
-      saved: (next, submittedKey) => {
-        setLastSavedAt(next.updatedAt);
-        runtimeSettings.replaceSettings(next);
-        if (
-          settingsRef.current &&
-          serializeSettings(settingsRef.current) === submittedKey
-        ) {
-          settingsRef.current = next;
-          setSettings(next);
-          setNumericDrafts(buildNumericDrafts(next));
-        }
-      },
+      saved: (next, submittedKey) =>
+        publishSettings({ kind: "autosave", settings: next, submittedKey }),
       status: (phase, error) => {
         setSavePhase(phase);
         if (phase !== "error" || error) setSaveError(error);
@@ -261,43 +254,61 @@ export function useSettingsController(): SettingsController {
     AUTO_SAVE_DELAY_MS,
   );
 
-  useEffect(() => {
-    if (initializedRef.current || !runtimeSettings.settings) {
-      return;
+  function publishForm(next: SettingsForm) {
+    // Async receipts must inspect the latest input, even before React commits.
+    formRef.current = next;
+    setForm(next);
+  }
+
+  function publishSettings(publication: SettingsPublication) {
+    const current = formRef.current;
+    const next = resolveSettingsPublication(current, publication);
+    if (next.form !== current) publishForm(next.form);
+    if (next.runtimeSettings) runtimeSettings.replaceSettings(next.runtimeSettings);
+    setLastSavedAt(next.lastSavedAt);
+    if (next.baseline) {
+      saveCoordinator.acceptSaved(next.baseline);
+      setSavePhase("saved");
+      setSaveError("");
     }
+  }
+
+  const initializeForm = useEffectEvent((next: RuntimeSettings) => {
+    if (initializedRef.current) return;
     initializedRef.current = true;
-    const nextSettings = runtimeSettings.settings;
-    settingsRef.current = nextSettings;
-    setSettings(nextSettings);
-    setNumericDrafts(buildNumericDrafts(nextSettings));
-    setLastSavedAt(nextSettings.updatedAt);
-    saveCoordinator.acceptSaved(nextSettings);
-    setSavePhase("saved");
-  }, [runtimeSettings.settings, saveCoordinator]);
+    publishSettings({ kind: "initial", settings: next });
+  });
+  useEffect(() => {
+    if (runtimeSettings.settings) initializeForm(runtimeSettings.settings);
+  }, [runtimeSettings.settings]);
 
   function setSettingField<K extends keyof RuntimeSettings>(
     key: K,
     value: RuntimeSettings[K],
   ) {
-    if (vaultTransitionRef.current) return;
+    const current = formRef.current;
+    if (vaultTransitionRef.current || !current.settings) return;
     setSaveError("");
-    setSettings((prev) => (prev ? { ...prev, [key]: value } : prev));
+    publishForm({ ...current, settings: { ...current.settings, [key]: value } });
   }
 
   function setNumericDraft(key: NumericSettingKey, value: string) {
-    setNumericDrafts((prev) => ({ ...prev, [key]: value }));
+    const current = formRef.current;
+    publishForm({
+      ...current,
+      numericDrafts: { ...current.numericDrafts, [key]: value },
+    });
   }
 
   function commitNumericSetting(key: NumericSettingKey) {
-    if (!settings) {
-      return;
-    }
+    const current = formRef.current;
+    if (!current.settings) return;
     const nextValue = parseNumericSetting(
-      numericDrafts[key],
+      current.numericDrafts[key],
       NUMERIC_SETTING_CONFIGS[key],
     );
-    setNumericDrafts((prev) => ({ ...prev, [key]: String(nextValue) }));
-    setSettingField(key, nextValue as RuntimeSettings[typeof key]);
+    setNumericDraft(key, String(nextValue));
+    setSettingField(key, nextValue);
   }
 
   async function probeScope(scope: ProbeScope) {
@@ -368,7 +379,7 @@ export function useSettingsController(): SettingsController {
       };
       probeCacheRef.current.set(endpointKey, nextCached);
       syncProbeScopesFromCache(
-        settingsRef.current ?? settings,
+        formRef.current.settings ?? settings,
         endpointKey,
         nextCached,
       );
@@ -384,7 +395,11 @@ export function useSettingsController(): SettingsController {
         sourceScope: scope,
       };
       probeCacheRef.current.set(endpointKey, failure);
-      syncProbeScopesFromCache(settingsRef.current ?? settings, endpointKey, failure);
+      syncProbeScopesFromCache(
+        formRef.current.settings ?? settings,
+        endpointKey,
+        failure,
+      );
     } finally {
       if (stillActive()) activeProbeRef.current.delete(endpointKey);
     }
@@ -440,14 +455,7 @@ export function useSettingsController(): SettingsController {
   }
 
   function publishVaultSettings(next: RuntimeSettings) {
-    settingsRef.current = next;
-    setSettings(next);
-    setNumericDrafts(buildNumericDrafts(next));
-    runtimeSettings.replaceSettings(next);
-    saveCoordinator.acceptSaved(next);
-    setLastSavedAt(next.updatedAt);
-    setSavePhase("saved");
-    setSaveError("");
+    publishSettings({ kind: "vault", settings: next });
   }
 
   function setVaultState(vaultState: DesktopVaultState) {
@@ -479,8 +487,9 @@ export function useSettingsController(): SettingsController {
         if (mode === "initialize") {
           await initializeDesktopVault(password);
           created = true;
-          const initial = settingsRef.current
-            ? extractSecretPatch(settingsRef.current)
+          const current = formRef.current.settings;
+          const initial = current
+            ? extractSecretPatch(current)
             : emptyDesktopVaultSecrets();
           await saveDesktopVaultSecrets(initial);
         } else {
@@ -560,10 +569,9 @@ export function useSettingsController(): SettingsController {
   }
 
   function retrySave() {
-    if (!settings || vaultTransitionRef.current) {
-      return;
-    }
-    saveCoordinator.retry(settings);
+    const current = formRef.current.settings;
+    if (!current || vaultTransitionRef.current) return;
+    saveCoordinator.retry(current);
   }
 
   return {
