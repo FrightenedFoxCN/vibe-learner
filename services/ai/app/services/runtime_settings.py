@@ -104,13 +104,9 @@ class RuntimeSettingsService:
                 if name not in SECRET_FIELDS
             }
 
-        def persist_scoped_keys(payload: dict[str, Any]) -> dict[str, Any]:
-            for name in SECRET_FIELDS[1:]:
-                if name in normalized:
-                    payload[name] = payload[name] or payload["openai_api_key"]
-            return payload
-
-        return self._repository.patch(normalized, transform=persist_scoped_keys)
+        # Empty scoped values are persisted as inheritance markers; only the
+        # effective view resolves them against the current global key.
+        return self._repository.patch(normalized)
 
     def apply_session_secrets(self, updates: dict[str, Any]) -> None:
         normalized = {

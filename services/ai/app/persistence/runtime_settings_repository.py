@@ -31,14 +31,12 @@ class RuntimeSettingsRepository:
     def initialize(self, build: Callable[[Payload | None], Payload | None]) -> None:
         self._mutate(build, return_existing=False)
 
-    def patch(
-        self, updates: Payload, *, transform: Callable[[Payload], Payload]
-    ) -> RuntimeSettingsRecord:
+    def patch(self, updates: Payload) -> RuntimeSettingsRecord:
         def merge(current: Payload | None) -> Payload | None:
             if current is None:
                 raise RuntimeError("runtime_settings_not_initialized")
             record = RuntimeSettingsRecord.model_validate(current)
-            next_payload = transform(record.model_dump() | updates)
+            next_payload = record.model_dump() | updates
             return None if next_payload == current else next_payload
 
         record = self._mutate(merge)

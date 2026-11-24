@@ -147,17 +147,13 @@ class Settings:
             ),
             openai_api_key=global_api_key,
             openai_base_url=global_base_url,
-            openai_plan_api_key=(
-                os.getenv("OPENAI_PLAN_API_KEY", "").strip() or global_api_key
-            ),
+            openai_plan_api_key=os.getenv("OPENAI_PLAN_API_KEY", "").strip(),
             openai_plan_base_url=os.getenv("OPENAI_PLAN_BASE_URL", "")
             .strip()
             .rstrip("/"),
             openai_plan_model=os.getenv("OPENAI_PLAN_MODEL", DEFAULT_MODEL_NAME).strip()
             or DEFAULT_MODEL_NAME,
-            openai_setting_api_key=(
-                os.getenv("OPENAI_SETTING_API_KEY", "").strip() or global_api_key
-            ),
+            openai_setting_api_key=os.getenv("OPENAI_SETTING_API_KEY", "").strip(),
             openai_setting_base_url=os.getenv("OPENAI_SETTING_BASE_URL", "")
             .strip()
             .rstrip("/"),
@@ -169,9 +165,7 @@ class Settings:
                 os.getenv("OPENAI_SETTING_WEB_SEARCH_ENABLED", "true"),
                 default=True,
             ),
-            openai_chat_api_key=(
-                os.getenv("OPENAI_CHAT_API_KEY", "").strip() or global_api_key
-            ),
+            openai_chat_api_key=os.getenv("OPENAI_CHAT_API_KEY", "").strip(),
             openai_chat_base_url=os.getenv("OPENAI_CHAT_BASE_URL", "")
             .strip()
             .rstrip("/"),
