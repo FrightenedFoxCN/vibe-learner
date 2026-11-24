@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type {
   Citation,
   DocumentRecord,
@@ -9,6 +9,7 @@ import type {
   StudyDialogPageCache,
   StudyDialogPreviewState,
 } from "../../lib/learning-workspace-page-cache";
+import { resolveStudyPreviewSync, type StudyPreviewInputs } from "./study-preview-sync";
 
 type StudyPreviewOptions = {
   activeDocument: DocumentRecord | null;
@@ -105,35 +106,61 @@ export function useStudyPreview({
     [activeDocument, studySession],
   );
 
-  useEffect(() => {
-    const firstPage = activeDocument?.sections[0]?.pageStart;
-    if (projectedPdf) return;
-    if (firstPage) {
-      setPdfPage(firstPage);
-      setPreviewState({
-        kind: "document",
-        sourceId: activeDocument.id,
-        title: activeDocument.title,
-        page: firstPage,
-        pageCount: activeDocument.pageCount,
-      });
-    }
-  }, [activeDocument, projectedPdf]);
+  const documentId = activeDocument?.id;
+  const documentTitle = activeDocument?.title;
+  const documentPageCount = activeDocument?.pageCount;
+  const documentFirstPage = activeDocument?.sections[0]?.pageStart;
+  const hasProjectedPdf = projectedPdf !== null;
+  const previousPreviewInputs = useRef<StudyPreviewInputs | null>(null);
 
   useEffect(() => {
-    if (!Number.isFinite(requestedPage) || requestedPage <= 0) return;
-    if (projectedPdf) return;
-    setPdfPage(requestedPage);
-    if (activeDocument) {
+    const inputs = {
+      documentId,
+      documentTitle,
+      documentPageCount,
+      documentFirstPage,
+      requestedPage,
+      hasProjectedPdf,
+    };
+    const sync = resolveStudyPreviewSync(previousPreviewInputs.current, inputs);
+    previousPreviewInputs.current = inputs;
+    if (!sync) return;
+
+    if (sync.kind === "metadata") {
+      setPreviewState((current) =>
+        current?.kind === "document" && current.sourceId === documentId
+          ? {
+              ...current,
+              title: sync.title ?? current.title,
+              pageCount: sync.pageCount ?? current.pageCount,
+            }
+          : current,
+      );
+      return;
+    }
+
+    setPdfPage(sync.page);
+    if (
+      documentId !== undefined &&
+      documentTitle !== undefined &&
+      documentPageCount !== undefined
+    ) {
       setPreviewState({
         kind: "document",
-        sourceId: activeDocument.id,
-        title: activeDocument.title,
-        page: requestedPage,
-        pageCount: activeDocument.pageCount,
+        sourceId: documentId,
+        title: documentTitle,
+        page: sync.page,
+        pageCount: documentPageCount,
       });
     }
-  }, [requestedPage, activeDocument, projectedPdf]);
+  }, [
+    documentId,
+    documentTitle,
+    documentPageCount,
+    documentFirstPage,
+    requestedPage,
+    hasProjectedPdf,
+  ]);
 
   const { imageUrl, pageNumber, pageCount, sourceId, sourceKind, title, updatedAt } =
     projectedPdf ?? {};
