@@ -1,14 +1,21 @@
 import type { PersonaCard, PersonaProfile } from "@vibe-learner/shared";
-import { mergeReferenceHints, type PersonaDraft } from "./persona-draft";
+import {
+  createPersonaDraftSlot,
+  mergeReferenceHints,
+  type PersonaDraft,
+} from "./persona-draft.ts";
 
 export function buildDraftWithInsertedCards(
   draft: PersonaDraft,
   cards: PersonaCard[],
   insertIndex?: number,
 ): { draft: PersonaDraft; insertedCount: number } {
-  const safeInsertIndex = Math.max(0, Math.min(insertIndex ?? draft.slots.length, draft.slots.length));
+  const safeInsertIndex = Math.max(
+    0,
+    Math.min(insertIndex ?? draft.slots.length, draft.slots.length),
+  );
   const existingKeys = new Set(
-    draft.slots.map((slot) => `${slot.kind}::${slot.label}::${slot.content.trim()}`)
+    draft.slots.map((slot) => `${slot.kind}::${slot.label}::${slot.content.trim()}`),
   );
   const appended = cards
     .filter((card) => {
@@ -19,14 +26,16 @@ export function buildDraftWithInsertedCards(
       existingKeys.add(key);
       return true;
     })
-    .map((card, index) => ({
-      kind: card.kind,
-      label: card.label,
-      content: card.content,
-      weight: 50,
-      locked: false,
-      sortOrder: (safeInsertIndex + index) * 10,
-    }));
+    .map((card, index) =>
+      createPersonaDraftSlot({
+        kind: card.kind,
+        label: card.label,
+        content: card.content,
+        weight: 50,
+        locked: false,
+        sortOrder: (safeInsertIndex + index) * 10,
+      }),
+    );
   if (!appended.length) {
     return { draft, insertedCount: 0 };
   }
@@ -81,7 +90,6 @@ export function matchesPersonaProfile(persona: PersonaProfile, query: string): b
 export function collectReferenceHintsFromCards(cards: PersonaCard[]): string[] {
   return mergeReferenceHints(
     [],
-    cards.map((card) => card.sourceNote)
+    cards.map((card) => card.sourceNote),
   );
 }
-

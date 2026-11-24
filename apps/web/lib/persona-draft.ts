@@ -1,7 +1,4 @@
-import {
-  CHARACTER_ACTIONS,
-  CHARACTER_EMOTIONS,
-} from "@vibe-learner/shared/character";
+import { CHARACTER_ACTIONS, CHARACTER_EMOTIONS } from "@vibe-learner/shared/character";
 import type {
   CharacterAction,
   CharacterEmotion,
@@ -11,6 +8,24 @@ import type {
   SpeechStyle,
 } from "@vibe-learner/shared";
 
+// Editor-local identity; never included in persistence, export, or AI input.
+export type PersonaDraftSlot = PersonaSlot & { draftSlotId: string };
+
+export function createPersonaDraftSlot(slot: PersonaSlot): PersonaDraftSlot {
+  return { ...slot, draftSlotId: crypto.randomUUID() };
+}
+
+export function personaSlotPayload({
+  kind,
+  label,
+  content,
+  weight,
+  locked,
+  sortOrder,
+}: PersonaSlot): PersonaSlot {
+  return { kind, label, content, weight, locked, sortOrder };
+}
+
 export interface PersonaDraft {
   name: string;
   summary: string;
@@ -18,7 +33,7 @@ export interface PersonaDraft {
   learnerAddress: string;
   systemPrompt: string;
   referenceHints: string[];
-  slots: PersonaSlot[];
+  slots: PersonaDraftSlot[];
   availableEmotionsText: string;
   availableActionsText: string;
   defaultSpeechStyle: SpeechStyle;
@@ -50,12 +65,14 @@ export function personaToDraft(persona: PersonaProfile): PersonaDraft {
     learnerAddress: persona.learnerAddress,
     systemPrompt: persona.systemPrompt,
     referenceHints: persona.referenceHints ?? [],
-    slots: (persona.slots ?? []).map((slot, index) => ({
-      ...slot,
-      weight: slot.weight ?? 50,
-      locked: slot.locked ?? false,
-      sortOrder: slot.sortOrder ?? index * 10,
-    })),
+    slots: (persona.slots ?? []).map((slot, index) =>
+      createPersonaDraftSlot({
+        ...slot,
+        weight: slot.weight ?? 50,
+        locked: slot.locked ?? false,
+        sortOrder: slot.sortOrder ?? index * 10,
+      }),
+    ),
     availableEmotionsText: persona.availableEmotions.join(", "),
     availableActionsText: persona.availableActions.join(", "),
     defaultSpeechStyle: persona.defaultSpeechStyle,
@@ -80,7 +97,6 @@ export function draftToCreatePersonaInput(draft: PersonaDraft): CreatePersonaInp
         return (right.weight ?? 50) - (left.weight ?? 50);
       })
       .map((slot, index) => ({
-        ...slot,
         kind: slot.kind.trim() || "custom",
         label: slot.label.trim(),
         content: slot.content.trim(),
@@ -102,13 +118,17 @@ export function createPersonaInputToDraft(snapshot: CreatePersonaInput): Persona
     learnerAddress: snapshot.learnerAddress,
     systemPrompt: snapshot.systemPrompt,
     referenceHints: mergeReferenceHints([], snapshot.referenceHints ?? []),
-    slots: (snapshot.slots ?? []).map((slot, index) => ({
-      ...slot,
-      weight: clampPersonaWeight(Number(slot.weight ?? 50)),
-      locked: slot.locked ?? false,
-      sortOrder: slot.sortOrder ?? index * 10,
-    })),
-    availableEmotionsText: (snapshot.availableEmotions ?? CHARACTER_EMOTIONS).join(", "),
+    slots: (snapshot.slots ?? []).map((slot, index) =>
+      createPersonaDraftSlot({
+        ...slot,
+        weight: clampPersonaWeight(Number(slot.weight ?? 50)),
+        locked: slot.locked ?? false,
+        sortOrder: slot.sortOrder ?? index * 10,
+      }),
+    ),
+    availableEmotionsText: (snapshot.availableEmotions ?? CHARACTER_EMOTIONS).join(
+      ", ",
+    ),
     availableActionsText: (snapshot.availableActions ?? CHARACTER_ACTIONS).join(", "),
     defaultSpeechStyle: snapshot.defaultSpeechStyle ?? "warm",
   };
@@ -127,19 +147,26 @@ export function duplicatePersonaDraft(draft: PersonaDraft): PersonaDraft {
 }
 
 export function mergePersonaAssistSlots(
-  currentSlots: PersonaSlot[],
+  currentSlots: PersonaDraftSlot[],
   suggestedSlots: PersonaSlot[],
-): PersonaSlot[] {
-  const unusedSuggestions = suggestedSlots.map((slot, index) => ({ slot, index, used: false }));
-  const merged = currentSlots.map((current, currentIndex) => {
-    const exact = unusedSuggestions.find((candidate) => (
-      !candidate.used &&
-      candidate.slot.kind === current.kind &&
-      candidate.slot.label.trim() === current.label.trim()
-    ));
-    const sameKind = exact ?? unusedSuggestions.find((candidate) => (
-      !candidate.used && candidate.slot.kind === current.kind
-    ));
+): PersonaDraftSlot[] {
+  const unusedSuggestions = suggestedSlots.map((slot, index) => ({
+    slot,
+    index,
+    used: false,
+  }));
+  const merged = currentSlots.map<PersonaDraftSlot>((current, currentIndex) => {
+    const exact = unusedSuggestions.find(
+      (candidate) =>
+        !candidate.used &&
+        candidate.slot.kind === current.kind &&
+        candidate.slot.label.trim() === current.label.trim(),
+    );
+    const sameKind =
+      exact ??
+      unusedSuggestions.find(
+        (candidate) => !candidate.used && candidate.slot.kind === current.kind,
+      );
     if (sameKind) {
       sameKind.used = true;
     }
@@ -153,6 +180,7 @@ export function mergePersonaAssistSlots(
     }
     return {
       ...sameKind.slot,
+      draftSlotId: current.draftSlotId,
       weight: current.weight ?? sameKind.slot.weight ?? 50,
       locked: false,
       sortOrder: current.sortOrder ?? sameKind.slot.sortOrder ?? currentIndex * 10,
@@ -161,18 +189,22 @@ export function mergePersonaAssistSlots(
 
   for (const candidate of unusedSuggestions) {
     if (!candidate.used) {
-      merged.push({
-        ...candidate.slot,
-        weight: candidate.slot.weight ?? 50,
-        locked: candidate.slot.locked ?? false,
-        sortOrder: merged.length * 10,
-      });
+      merged.push(
+        createPersonaDraftSlot({
+          ...candidate.slot,
+          weight: candidate.slot.weight ?? 50,
+          locked: candidate.slot.locked ?? false,
+          sortOrder: merged.length * 10,
+        }),
+      );
     }
   }
   return merged.map((slot, index) => ({ ...slot, sortOrder: index * 10 }));
 }
 
-export function clearPersonaDraftForGeneratedBackfill(draft: PersonaDraft): PersonaDraft {
+export function clearPersonaDraftForGeneratedBackfill(
+  draft: PersonaDraft,
+): PersonaDraft {
   return {
     ...draft,
     summary: "",
@@ -198,7 +230,9 @@ export function mergeReferenceHints(base: string[], incoming: string[]): string[
   return result;
 }
 
-export function normalizeImportedPersonaConfig(parsed: Record<string, unknown>): CreatePersonaInput {
+export function normalizeImportedPersonaConfig(
+  parsed: Record<string, unknown>,
+): CreatePersonaInput {
   const name = requireStringAlias(parsed, ["name"], "name", false).trim();
   if (!name) {
     throw new Error("缺少名称字段（name）");
@@ -272,11 +306,22 @@ function parseImportedSlots(raw: unknown): PersonaSlot[] {
       throw new Error(`slots[${index}] 必须是对象`);
     }
     const slot = rawSlot as Record<string, unknown>;
-    const kind = requireStringAlias(slot, ["kind"], `slots[${index}].kind`, true, "custom").trim();
+    const kind = requireStringAlias(
+      slot,
+      ["kind"],
+      `slots[${index}].kind`,
+      true,
+      "custom",
+    ).trim();
     if (!kind) {
       throw new Error(`slots[${index}].kind 不能为空`);
     }
-    const weight = parseFiniteNumberAlias(slot, ["weight"], `slots[${index}].weight`, 50);
+    const weight = parseFiniteNumberAlias(
+      slot,
+      ["weight"],
+      `slots[${index}].weight`,
+      50,
+    );
     if (weight < 0 || weight > 100) {
       throw new Error(`slots[${index}].weight 必须在 0–100 之间`);
     }
@@ -295,8 +340,19 @@ function parseImportedSlots(raw: unknown): PersonaSlot[] {
     }
     return {
       kind,
-      label: requireStringAlias(slot, ["label"], `slots[${index}].label`, true, kind).trim(),
-      content: requireStringAlias(slot, ["content"], `slots[${index}].content`, true).trim(),
+      label: requireStringAlias(
+        slot,
+        ["label"],
+        `slots[${index}].label`,
+        true,
+        kind,
+      ).trim(),
+      content: requireStringAlias(
+        slot,
+        ["content"],
+        `slots[${index}].content`,
+        true,
+      ).trim(),
       weight,
       locked: lockedRaw ?? false,
       sortOrder,
@@ -362,7 +418,10 @@ function readAlias(record: Record<string, unknown>, aliases: string[]): unknown 
 }
 
 function splitCsv(value: string): string[] {
-  return value.split(/[,，\n]/).map((item) => item.trim()).filter(Boolean);
+  return value
+    .split(/[,，\n]/)
+    .map((item) => item.trim())
+    .filter(Boolean);
 }
 
 function coercePersonaEmotions(value: string): CharacterEmotion[] {

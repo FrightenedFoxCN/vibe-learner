@@ -8,7 +8,12 @@ import {
   type AsyncResultScope,
   type AsyncResultTicket,
 } from "../lib/async-result-fence";
-import { mergePersonaAssistSlots, type PersonaDraft } from "../lib/persona-draft";
+import {
+  mergePersonaAssistSlots,
+  personaSlotPayload,
+  type PersonaDraft,
+} from "../lib/persona-draft";
+import { updateDraftSlot } from "../lib/persona-slot-edit";
 
 interface PersonaAssistPort {
   assistPersonaSlot: typeof assistPersonaSlot;
@@ -30,7 +35,10 @@ export function usePersonaAssist(
   port: PersonaAssistPort = defaultPort,
 ) {
   const [assistPending, setAssistPending] = useState(false);
-  const [slotAssistIndex, setSlotAssistIndex] = useState<number | null>(null);
+  const [slotAssistId, setSlotAssistId] = useState<string | null>(null);
+  const slotAssistIndex = draft.slots.findIndex(
+    (slot) => slot.draftSlotId === slotAssistId,
+  );
   const [assistError, setAssistError] = useState("");
   const [assistModelRecoveries, setAssistModelRecoveries] = useState<ModelRecovery[]>(
     [],
@@ -60,7 +68,7 @@ export function usePersonaAssist(
   function resetPersonaAssist() {
     assistFenceRef.current.invalidate();
     setAssistPending(false);
-    setSlotAssistIndex(null);
+    setSlotAssistId(null);
     setAssistError("");
     setAssistModelRecoveries([]);
     dismissSystemPromptSuggestion();
@@ -86,33 +94,32 @@ export function usePersonaAssist(
     setSystemPromptSuggestionSource("");
   }
 
-  async function handleAssistSlot(index: number) {
+  async function handleAssistSlot(slotId: string) {
     if (!mountedRef.current) return;
-    const targetSlot = draft.slots[index];
+    const targetSlot = draft.slots.find((slot) => slot.draftSlotId === slotId);
     if (!targetSlot) {
       return;
     }
     setAssistError("");
     setAssistModelRecoveries([]);
     setAssistPending(false);
-    setSlotAssistIndex(index);
-    const fieldTarget = `persona-slot:${index}`;
+    setSlotAssistId(slotId);
+    const fieldTarget = `persona-slot:${slotId}`;
     const ticket = assistFenceRef.current.begin(currentPersonaAsyncScope(fieldTarget));
     try {
       const result = await port.assistPersonaSlot({
         name: draft.name.trim(),
         summary: draft.summary.trim(),
-        slot: targetSlot,
+        slot: personaSlotPayload(targetSlot),
         rewriteStrength: Number((1 - retainRatio).toFixed(2)),
       });
       if (!canApply(ticket)) {
         return;
       }
-      updatePersonaDraft((prev) => {
-        const next = [...prev.slots];
-        next[index] = result.slot;
-        return { ...prev, slots: next };
-      });
+      updatePersonaDraft((prev) => ({
+        ...prev,
+        slots: updateDraftSlot(prev.slots, slotId, result.slot),
+      }));
       setAssistModelRecoveries(result.modelRecoveries ?? []);
     } catch (error) {
       if (canApply(ticket)) {
@@ -120,7 +127,7 @@ export function usePersonaAssist(
       }
     } finally {
       if (assistFenceRef.current.settle(ticket)) {
-        setSlotAssistIndex(null);
+        setSlotAssistId(null);
       }
     }
   }
@@ -129,7 +136,7 @@ export function usePersonaAssist(
     if (!mountedRef.current) return;
     setAssistError("");
     setAssistModelRecoveries([]);
-    setSlotAssistIndex(null);
+    setSlotAssistId(null);
     setAssistPending(true);
     onSettingStarted();
     const fieldTarget = "persona-setting";
@@ -138,18 +145,16 @@ export function usePersonaAssist(
       const result = await port.assistPersonaSetting({
         name: draft.name.trim(),
         summary: draft.summary.trim(),
-        slots: draft.slots,
+        slots: draft.slots.map(personaSlotPayload),
         rewriteStrength: Number((1 - retainRatio).toFixed(2)),
       });
       if (!canApply(ticket)) {
         return;
       }
-      updatePersonaDraft((prev) => ({
-        ...prev,
-        slots: result.slots.length
-          ? mergePersonaAssistSlots(prev.slots, result.slots)
-          : prev.slots,
-      }));
+      const mergedSlots = result.slots.length
+        ? mergePersonaAssistSlots(draft.slots, result.slots)
+        : null;
+      if (mergedSlots) updatePersonaDraft((prev) => ({ ...prev, slots: mergedSlots }));
       setPromptSuggestion(result.systemPromptSuggestion, "AI 辅助设定");
       setAssistModelRecoveries(result.modelRecoveries ?? []);
     } catch (error) {
@@ -165,7 +170,7 @@ export function usePersonaAssist(
 
   return {
     assistPending,
-    slotAssistIndex,
+    slotAssistIndex: slotAssistIndex === -1 ? null : slotAssistIndex,
     assistError,
     assistModelRecoveries,
     retainRatio,

@@ -1,4 +1,4 @@
-import { Fragment } from "react";
+import { Fragment, useRef } from "react";
 import {
   PERSONA_SLOT_KIND_LABELS,
   PERSONA_SLOT_KINDS,
@@ -21,9 +21,9 @@ export function PersonaSlotsPane({
     handleAssistSlot,
     draggingPersonaCardId,
     slotInsertIndex,
-    draggingSlotIndex,
-    expandedSlotIndex,
-    setExpandedSlotIndex,
+    draggingSlotId,
+    expandedSlotId,
+    setExpandedSlotId,
     movePulse,
     runtimePromptPreview,
     handleAddSlot,
@@ -39,6 +39,23 @@ export function PersonaSlotsPane({
     handleSlotInsertDrop,
     handleDragEnd,
   } = controller;
+  const addSlotRef = useRef<HTMLButtonElement>(null);
+
+  function removeSlot(slotId: string, trigger: HTMLElement) {
+    const card = trigger.closest<HTMLElement>("[data-persona-slot]");
+    if (card?.contains(document.activeElement)) {
+      const cards = Array.from(
+        card.parentElement?.querySelectorAll("[data-persona-slot]") ?? [],
+      );
+      const index = cards.indexOf(card);
+      const adjacent = cards[index + 1] ?? cards[index - 1];
+      (
+        adjacent?.querySelector<HTMLElement>("[data-persona-slot-toggle]") ??
+        addSlotRef.current
+      )?.focus({ preventScroll: true });
+    }
+    handleRemoveSlot(slotId);
+  }
 
   return (
     <div className={styles.slotsPane}>
@@ -70,6 +87,7 @@ export function PersonaSlotsPane({
           <button
             type="button"
             className={styles.ghostBtn}
+            ref={addSlotRef}
             onClick={() => handleAddSlot("custom")}
           >
             添加
@@ -80,31 +98,32 @@ export function PersonaSlotsPane({
         <div className="mx-auto grid w-full max-w-[760px] min-w-0">
           <div
             className={styles.slotDropArea}
-            data-active={slotInsertIndex !== null || draggingSlotIndex !== null}
+            data-active={slotInsertIndex !== null || draggingSlotId !== null}
           >
             <div className="grid">
               <div
                 className={styles.slotInsertMarker}
                 data-active={slotInsertIndex === 0}
                 onDragOver={(event) => {
-                  if (!draggingPersonaCardId && draggingSlotIndex === null) return;
+                  if (!draggingPersonaCardId && draggingSlotId === null) return;
                   event.preventDefault();
                   handleSlotInsertDragOver(0);
                 }}
                 onDrop={(event) => {
-                  if (!draggingPersonaCardId && draggingSlotIndex === null) return;
+                  if (!draggingPersonaCardId && draggingSlotId === null) return;
                   event.preventDefault();
                   handleSlotInsertDrop(0);
                 }}
               />
               {draft.slots.length ? (
                 draft.slots.map((slot, index) => (
-                  <Fragment key={`${slot.kind}:${slot.label}:${index}`}>
+                  <Fragment key={slot.draftSlotId}>
                     <div
                       className={styles.slotCard}
-                      data-dragging={draggingSlotIndex === index}
+                      data-persona-slot
+                      data-dragging={draggingSlotId === slot.draftSlotId}
                       data-move={
-                        movePulse?.index === index
+                        movePulse?.slotId === slot.draftSlotId
                           ? movePulse.direction === -1
                             ? "up"
                             : "down"
@@ -116,8 +135,8 @@ export function PersonaSlotsPane({
                       <div
                         className="grid min-w-0 cursor-pointer gap-1"
                         onClick={() =>
-                          setExpandedSlotIndex((prev) =>
-                            prev === index ? null : index,
+                          setExpandedSlotId((prev) =>
+                            prev === slot.draftSlotId ? null : slot.draftSlotId,
                           )
                         }
                       >
@@ -129,7 +148,7 @@ export function PersonaSlotsPane({
                             draggable
                             onDragStart={(e) => {
                               e.stopPropagation();
-                              handleDragStart(index);
+                              handleDragStart(slot.draftSlotId, index);
                             }}
                             onDragEnd={handleDragEnd}
                             onClick={(e) => e.stopPropagation()}
@@ -141,7 +160,7 @@ export function PersonaSlotsPane({
                             aria-label={`插槽 ${index + 1} 类型`}
                             value={slot.kind}
                             onChange={(e) =>
-                              handleUpdateSlot(index, "kind", e.target.value)
+                              handleUpdateSlot(slot.draftSlotId, "kind", e.target.value)
                             }
                             disabled={Boolean(slot.locked)}
                             onClick={(e) => e.stopPropagation()}
@@ -163,7 +182,11 @@ export function PersonaSlotsPane({
                             value={slot.label}
                             placeholder="显示标签"
                             onChange={(e) =>
-                              handleUpdateSlot(index, "label", e.target.value)
+                              handleUpdateSlot(
+                                slot.draftSlotId,
+                                "label",
+                                e.target.value,
+                              )
                             }
                             disabled={Boolean(slot.locked)}
                             onClick={(e) => e.stopPropagation()}
@@ -172,18 +195,19 @@ export function PersonaSlotsPane({
                             <button
                               type="button"
                               className="inline-flex size-6 shrink-0 cursor-pointer items-center justify-center border-none bg-transparent p-0 text-muted"
-                              aria-label={`${expandedSlotIndex === index ? "收起" : "展开"}插槽 ${slot.label || index + 1}`}
-                              aria-expanded={expandedSlotIndex === index}
+                              aria-label={`${expandedSlotId === slot.draftSlotId ? "收起" : "展开"}插槽 ${slot.label || index + 1}`}
+                              aria-expanded={expandedSlotId === slot.draftSlotId}
+                              data-persona-slot-toggle
                               onClick={(e) => {
                                 e.stopPropagation();
-                                setExpandedSlotIndex((prev) =>
-                                  prev === index ? null : index,
+                                setExpandedSlotId((prev) =>
+                                  prev === slot.draftSlotId ? null : slot.draftSlotId,
                                 );
                               }}
                             >
                               <MaterialIcon
                                 name={
-                                  expandedSlotIndex === index
+                                  expandedSlotId === slot.draftSlotId
                                     ? "expand_more"
                                     : "chevron_right"
                                 }
@@ -196,20 +220,20 @@ export function PersonaSlotsPane({
                               aria-label={`删除插槽 ${slot.label || index + 1}`}
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleRemoveSlot(index);
+                                removeSlot(slot.draftSlotId, e.currentTarget);
                               }}
                             >
                               <MaterialIcon name="close" size={16} />
                             </button>
                           </div>
                         </div>
-                        {expandedSlotIndex !== index ? (
+                        {expandedSlotId !== slot.draftSlotId ? (
                           <span className="block max-w-[56ch] min-w-0 truncate pl-6 text-[11px] text-muted">
                             {slot.content.slice(0, 56) || "—"}
                           </span>
                         ) : null}
                       </div>
-                      {expandedSlotIndex === index ? (
+                      {expandedSlotId === slot.draftSlotId ? (
                         <>
                           <textarea
                             className={styles.slotContent}
@@ -217,7 +241,11 @@ export function PersonaSlotsPane({
                             value={slot.content}
                             placeholder={`请填写"${PERSONA_SLOT_KIND_LABELS[slot.kind as PersonaSlotKind] ?? slot.kind}"的具体内容。`}
                             onChange={(e) =>
-                              handleUpdateSlot(index, "content", e.target.value)
+                              handleUpdateSlot(
+                                slot.draftSlotId,
+                                "content",
+                                e.target.value,
+                              )
                             }
                             disabled={Boolean(slot.locked)}
                           />
@@ -235,7 +263,7 @@ export function PersonaSlotsPane({
                               value={slot.weight ?? 50}
                               onChange={(e) =>
                                 handleUpdateSlot(
-                                  index,
+                                  slot.draftSlotId,
                                   "weight",
                                   Number(e.target.value),
                                 )
@@ -247,12 +275,12 @@ export function PersonaSlotsPane({
                             <IconGlyphButton
                               icon="arrow_upward"
                               label="上移"
-                              onClick={() => handleMoveSlot(index, -1)}
+                              onClick={() => handleMoveSlot(slot.draftSlotId, -1)}
                             />
                             <IconGlyphButton
                               icon="arrow_downward"
                               label="下移"
-                              onClick={() => handleMoveSlot(index, 1)}
+                              onClick={() => handleMoveSlot(slot.draftSlotId, 1)}
                             />
                             <button
                               type="button"
@@ -260,7 +288,11 @@ export function PersonaSlotsPane({
                               title={slot.locked ? "解锁" : "锁定"}
                               aria-label={slot.locked ? "解锁" : "锁定"}
                               onClick={() =>
-                                handleUpdateSlot(index, "locked", !slot.locked)
+                                handleUpdateSlot(
+                                  slot.draftSlotId,
+                                  "locked",
+                                  !slot.locked,
+                                )
                               }
                             >
                               <MaterialIcon
@@ -273,7 +305,7 @@ export function PersonaSlotsPane({
                               className={styles.iconBtn}
                               title="AI 重写"
                               aria-label="AI 重写"
-                              onClick={() => void handleAssistSlot(index)}
+                              onClick={() => void handleAssistSlot(slot.draftSlotId)}
                               disabled={
                                 assistPending ||
                                 slotAssistIndex === index ||
@@ -297,14 +329,12 @@ export function PersonaSlotsPane({
                       className={styles.slotInsertMarker}
                       data-active={slotInsertIndex === index + 1}
                       onDragOver={(event) => {
-                        if (!draggingPersonaCardId && draggingSlotIndex === null)
-                          return;
+                        if (!draggingPersonaCardId && draggingSlotId === null) return;
                         event.preventDefault();
                         handleSlotInsertDragOver(index + 1);
                       }}
                       onDrop={(event) => {
-                        if (!draggingPersonaCardId && draggingSlotIndex === null)
-                          return;
+                        if (!draggingPersonaCardId && draggingSlotId === null) return;
                         event.preventDefault();
                         handleSlotInsertDrop(index + 1);
                       }}

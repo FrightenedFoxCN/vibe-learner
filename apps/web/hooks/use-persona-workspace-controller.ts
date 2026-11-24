@@ -30,6 +30,7 @@ import { usePersonaCardGeneration } from "./use-persona-card-generation";
 import { matchesPersonaCard, matchesPersonaProfile } from "../lib/persona-editor-model";
 import {
   clampPersonaWeight,
+  createPersonaDraftSlot,
   createPersonaInputToDraft,
   draftToCreatePersonaInput,
   duplicatePersonaDraft,
@@ -37,6 +38,12 @@ import {
   normalizeImportedPersonaConfig,
   type PersonaDraft,
 } from "../lib/persona-draft";
+import {
+  reindexDraftSlots,
+  removeDraftSlot,
+  reorderDraftSlots,
+  updateDraftSlot,
+} from "../lib/persona-slot-edit";
 
 const DEFAULT_CONFIG_TEMPLATE: CreatePersonaInput = {
   name: "模板教师",
@@ -180,10 +187,10 @@ export function usePersonaWorkspaceController() {
   const [cardDeletePendingId, setCardDeletePendingId] = useState("");
   const [draggingPersonaCardId, setDraggingPersonaCardId] = useState("");
   const [slotInsertIndex, setSlotInsertIndex] = useState<number | null>(null);
-  const [draggingSlotIndex, setDraggingSlotIndex] = useState<number | null>(null);
-  const [expandedSlotIndex, setExpandedSlotIndex] = useState<number | null>(null);
+  const [draggingSlotId, setDraggingSlotId] = useState<string | null>(null);
+  const [expandedSlotId, setExpandedSlotId] = useState<string | null>(null);
   const [movePulse, setMovePulse] = useState<{
-    index: number;
+    slotId: string;
     direction: -1 | 1;
   } | null>(null);
 
@@ -434,19 +441,16 @@ export function usePersonaWorkspaceController() {
 
   function handleAddSlot(kind: PersonaSlotKind | string) {
     const label = PERSONA_SLOT_KIND_LABELS[kind as PersonaSlotKind] ?? kind;
+    const slot = createPersonaDraftSlot({
+      kind,
+      label,
+      content: "",
+      weight: 50,
+      locked: false,
+    });
     updatePersonaDraft((prev) => ({
       ...prev,
-      slots: [
-        ...prev.slots,
-        {
-          kind,
-          label,
-          content: "",
-          weight: 50,
-          locked: false,
-          sortOrder: prev.slots.length * 10,
-        },
-      ],
+      slots: [...prev.slots, { ...slot, sortOrder: prev.slots.length * 10 }],
     }));
   }
 
@@ -471,60 +475,59 @@ export function usePersonaWorkspaceController() {
         ?.focus({ preventScroll: true });
     }
     updatePersonaDraft((prev) => ({ ...prev, slots: [] }));
-    setExpandedSlotIndex(null);
-    setDraggingSlotIndex(null);
+    setExpandedSlotId(null);
+    setDraggingSlotId(null);
     setSlotInsertIndex(null);
   }
 
   function handleUpdateSlot(
-    index: number,
+    slotId: string,
     field: keyof PersonaSlot,
     value: PersonaSlot[keyof PersonaSlot],
   ) {
     if (assistError) clearAssistError();
-    updatePersonaDraft((prev) => {
-      const next = [...prev.slots];
-      let nextValue = value;
-      if (field === "weight") {
-        nextValue = clampPersonaWeight(Number(value));
-      }
-      next[index] = { ...next[index], [field]: nextValue };
-      if (field === "kind")
-        next[index].label = PERSONA_SLOT_KIND_LABELS[value as PersonaSlotKind] ?? value;
-      return { ...prev, slots: next };
-    });
-  }
-
-  function handleRemoveSlot(index: number) {
+    const changes = {
+      [field]: field === "weight" ? clampPersonaWeight(Number(value)) : value,
+      ...(field === "kind"
+        ? { label: PERSONA_SLOT_KIND_LABELS[value as PersonaSlotKind] ?? String(value) }
+        : {}),
+    };
     updatePersonaDraft((prev) => ({
       ...prev,
-      slots: prev.slots.filter((_, i) => i !== index),
+      slots: updateDraftSlot(prev.slots, slotId, changes),
     }));
   }
 
-  function handleMoveSlot(index: number, direction: -1 | 1) {
+  function handleRemoveSlot(slotId: string) {
+    updatePersonaDraft((prev) => ({
+      ...prev,
+      slots: removeDraftSlot(prev.slots, slotId),
+    }));
+    setExpandedSlotId((current) => (current === slotId ? null : current));
+    if (draggingSlotId === slotId) handleDragEnd();
+  }
+
+  function handleMoveSlot(slotId: string, direction: -1 | 1) {
+    const index = draft.slots.findIndex((slot) => slot.draftSlotId === slotId);
     const target = index + direction;
-    if (target < 0 || target >= draft.slots.length) {
-      return;
-    }
+    if (index < 0 || target < 0 || target >= draft.slots.length) return;
     updatePersonaDraft((prev) => {
-      const next = [...prev.slots];
-      const temp = next[index];
-      next[index] = next[target];
-      next[target] = temp;
+      const from = prev.slots.findIndex((slot) => slot.draftSlotId === slotId);
+      const to = from + direction;
+      if (from < 0 || to < 0 || to >= prev.slots.length) return prev;
       return {
         ...prev,
-        slots: next.map((slot, i) => ({ ...slot, sortOrder: i * 10 })),
+        slots: reorderDraftSlots(prev.slots, slotId, direction < 0 ? to : to + 1),
       };
     });
-    setMovePulse({ index: target, direction });
+    setMovePulse({ slotId, direction });
   }
 
   function handleSortSlotsByPriority() {
     updatePersonaDraft((prev) => ({
       ...prev,
-      slots: [...prev.slots]
-        .sort((a, b) => {
+      slots: reindexDraftSlots(
+        [...prev.slots].sort((a, b) => {
           const orderA = a.sortOrder ?? 0;
           const orderB = b.sortOrder ?? 0;
           if (orderA !== orderB) {
@@ -533,37 +536,20 @@ export function usePersonaWorkspaceController() {
           const weightA = a.weight ?? 50;
           const weightB = b.weight ?? 50;
           return weightB - weightA;
-        })
-        .map((slot, i) => ({ ...slot, sortOrder: i * 10 })),
+        }),
+      ),
     }));
   }
 
-  function reorderSlots(fromIndex: number, insertIndex: number) {
-    updatePersonaDraft((prev) => {
-      if (
-        fromIndex < 0 ||
-        insertIndex < 0 ||
-        fromIndex >= prev.slots.length ||
-        insertIndex > prev.slots.length
-      ) {
-        return prev;
-      }
-      const targetIndex = fromIndex < insertIndex ? insertIndex - 1 : insertIndex;
-      if (fromIndex === targetIndex) {
-        return prev;
-      }
-      const next = [...prev.slots];
-      const [moved] = next.splice(fromIndex, 1);
-      next.splice(targetIndex, 0, moved);
-      return {
-        ...prev,
-        slots: next.map((slot, i) => ({ ...slot, sortOrder: i * 10 })),
-      };
-    });
+  function reorderSlots(slotId: string, insertIndex: number) {
+    updatePersonaDraft((prev) => ({
+      ...prev,
+      slots: reorderDraftSlots(prev.slots, slotId, insertIndex),
+    }));
   }
 
-  function handleDragStart(index: number) {
-    setDraggingSlotIndex(index);
+  function handleDragStart(slotId: string, index: number) {
+    setDraggingSlotId(slotId);
     setSlotInsertIndex(index);
   }
 
@@ -584,7 +570,7 @@ export function usePersonaWorkspaceController() {
     event: ReactDragEvent<HTMLDivElement>,
     index: number,
   ) {
-    if (!draggingPersonaCardId && draggingSlotIndex === null) {
+    if (!draggingPersonaCardId && draggingSlotId === null) {
       return;
     }
     event.preventDefault();
@@ -592,7 +578,7 @@ export function usePersonaWorkspaceController() {
   }
 
   function handleSlotCardDrop(event: ReactDragEvent<HTMLDivElement>, index: number) {
-    if (!draggingPersonaCardId && draggingSlotIndex === null) {
+    if (!draggingPersonaCardId && draggingSlotId === null) {
       return;
     }
     event.preventDefault();
@@ -610,15 +596,15 @@ export function usePersonaWorkspaceController() {
       insertCardsIntoDraft([card], index);
       return;
     }
-    if (draggingSlotIndex !== null) {
-      reorderSlots(draggingSlotIndex, index);
+    if (draggingSlotId !== null) {
+      reorderSlots(draggingSlotId, index);
     }
-    setDraggingSlotIndex(null);
+    setDraggingSlotId(null);
     setSlotInsertIndex(null);
   }
 
   function handleDragEnd() {
-    setDraggingSlotIndex(null);
+    setDraggingSlotId(null);
     setSlotInsertIndex(null);
   }
 
@@ -861,9 +847,9 @@ export function usePersonaWorkspaceController() {
     cardDeletePendingId,
     draggingPersonaCardId,
     slotInsertIndex,
-    draggingSlotIndex,
-    expandedSlotIndex,
-    setExpandedSlotIndex,
+    draggingSlotId,
+    expandedSlotId,
+    setExpandedSlotId,
     movePulse,
     isCompactLayout,
     isRewritePopoverOpen,
