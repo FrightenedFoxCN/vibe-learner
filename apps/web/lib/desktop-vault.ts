@@ -1,17 +1,15 @@
 "use client";
 
-import {
-  DESKTOP_STARTUP_GUARD_SESSION_KEY,
-  requiresDesktopVaultCreation,
-} from "./desktop-startup";
+import type { Client, Stronghold } from "@tauri-apps/plugin-stronghold";
+import { requiresDesktopVaultCreation } from "./desktop-startup.ts";
+import { createDesktopVaultSession } from "./desktop-vault-state.ts";
 import { getDesktopRuntimeConfig } from "./runtime-config";
 
 import { observeLocalAction } from "./diagnostic-actions.ts";
 import type { DiagnosticContext } from "./diagnostics";
 
 const CLIENT_NAME = "vibe-learner-runtime";
-export const DESKTOP_VAULT_STATE_CHANGE_EVENT =
-  "vibe-learner:desktop-vault-state-change";
+const DESKTOP_VAULT_BOOTSTRAP_EVENT = "vibe-learner:desktop-vault-bootstrap";
 
 const SECRET_KEY_MAP = {
   openaiApiKey: "openai_api_key",
@@ -29,9 +27,24 @@ export interface DesktopVaultSecrets {
   openaiChatApiKey: string;
 }
 
-let activeStronghold: any = null;
-let activeClient: any = null;
-let activeVaultPath = "";
+const vault = createDesktopVaultSession<{ stronghold: Stronghold; client: Client }>(
+  () => {
+    const config = getDesktopRuntimeConfig();
+    return config?.isDesktop ? config.vaultState : null;
+  },
+);
+
+export const getDesktopVaultState = vault.getSnapshot;
+export const getServerDesktopVaultState = () => null;
+
+export function subscribeDesktopVaultState(listener: () => void) {
+  const unsubscribe = vault.subscribe(listener);
+  window.addEventListener(DESKTOP_VAULT_BOOTSTRAP_EVENT, listener);
+  return () => {
+    unsubscribe();
+    window.removeEventListener(DESKTOP_VAULT_BOOTSTRAP_EVENT, listener);
+  };
+}
 
 export function isDesktopVaultAvailable() {
   const config = getDesktopRuntimeConfig();
@@ -39,16 +52,11 @@ export function isDesktopVaultAvailable() {
 }
 
 export function isDesktopVaultUnlocked() {
-  return Boolean(activeStronghold && activeClient);
+  return getDesktopVaultState() === "unlocked";
 }
 
 export function isDesktopVaultCreationRequired() {
-  const config = getDesktopRuntimeConfig();
-  return requiresDesktopVaultCreation({
-    isDesktop: Boolean(config?.isDesktop),
-    vaultState: config?.vaultState,
-    vaultUnlocked: isDesktopVaultUnlocked(),
-  });
+  return requiresDesktopVaultCreation(getDesktopVaultState());
 }
 
 export async function initializeDesktopVault(
@@ -57,26 +65,9 @@ export async function initializeDesktopVault(
 ) {
   return observeLocalAction(
     "vault_create",
-    () => initializeDesktopVaultUnobserved(password),
+    async () => vault.activate(await loadStrongholdInstance(password), "initialize"),
     { context },
   );
-}
-
-async function initializeDesktopVaultUnobserved(password: string) {
-  const { stronghold, client } = await loadStrongholdInstance(password);
-  try {
-    await stronghold.save();
-  } catch (error) {
-    await stronghold.unload().catch(() => undefined);
-    throw error;
-  }
-  activeStronghold = stronghold;
-  activeClient = client;
-  activeVaultPath = stronghold.path;
-  if (typeof window !== "undefined") {
-    window.sessionStorage.setItem(DESKTOP_STARTUP_GUARD_SESSION_KEY, "1");
-  }
-  notifyDesktopVaultStateChange();
 }
 
 export async function unlockDesktopVault(
@@ -85,35 +76,13 @@ export async function unlockDesktopVault(
 ) {
   return observeLocalAction(
     "vault_unlock",
-    () => unlockDesktopVaultUnobserved(password),
+    async () => vault.activate(await loadStrongholdInstance(password), "unlock"),
     { context },
   );
 }
 
-async function unlockDesktopVaultUnobserved(password: string) {
-  const { stronghold, client } = await loadStrongholdInstance(password);
-  activeStronghold = stronghold;
-  activeClient = client;
-  activeVaultPath = stronghold.path;
-  notifyDesktopVaultStateChange();
-}
-
 export async function lockDesktopVault(context?: DiagnosticContext) {
-  return observeLocalAction("vault_lock", () => lockDesktopVaultUnobserved(), {
-    context,
-  });
-}
-
-async function lockDesktopVaultUnobserved() {
-  const stronghold = activeStronghold;
-  activeStronghold = null;
-  activeClient = null;
-  activeVaultPath = "";
-  try {
-    if (stronghold) await stronghold.unload();
-  } finally {
-    notifyDesktopVaultStateChange();
-  }
+  return observeLocalAction("vault_lock", () => vault.lock(), { context });
 }
 
 export async function loadDesktopVaultSecrets(
@@ -204,7 +173,7 @@ async function loadStrongholdInstance(password: string) {
   return { stronghold, client };
 }
 
-async function loadOrCreateClient(stronghold: any) {
+async function loadOrCreateClient(stronghold: Stronghold) {
   try {
     return await stronghold.loadClient(CLIENT_NAME);
   } catch {
@@ -213,13 +182,11 @@ async function loadOrCreateClient(stronghold: any) {
 }
 
 function requireUnlockedStore() {
-  if (!activeStronghold || !activeClient || !activeVaultPath) {
+  const session = vault.getSession();
+  if (!session) {
     throw new Error("desktop_vault_locked");
   }
-  return {
-    stronghold: activeStronghold,
-    store: activeClient.getStore(),
-  };
+  return { stronghold: session.stronghold, store: session.client.getStore() };
 }
 
 function encodeSecret(value: string) {
@@ -231,10 +198,4 @@ function decodeSecret(value: Uint8Array | null) {
     return "";
   }
   return new TextDecoder().decode(value);
-}
-
-function notifyDesktopVaultStateChange() {
-  if (typeof window !== "undefined") {
-    window.dispatchEvent(new Event(DESKTOP_VAULT_STATE_CHANGE_EVENT));
-  }
 }

@@ -1,16 +1,16 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 
 import { useAppNavigator } from "../../lib/app-navigation";
 import {
-  DESKTOP_STARTUP_GUARD_SESSION_KEY,
   DESKTOP_STARTUP_QUERY_KEY,
   DESKTOP_STARTUP_QUERY_VALUE,
+  requiresDesktopVaultCreation,
   resolveDesktopStartupRequirement,
 } from "../../lib/desktop-startup";
-import { isDesktopVaultCreationRequired } from "../../lib/desktop-vault";
+import { useDesktopVaultState } from "../../hooks/use-desktop-vault-state";
 import { getDesktopRuntimeConfig } from "../../lib/runtime-config";
 import { useRuntimeSettings } from "./runtime-settings-provider";
 
@@ -18,40 +18,22 @@ export function DesktopStartupGuard() {
   const pathname = usePathname();
   const appNavigator = useAppNavigator();
   const runtimeSettings = useRuntimeSettings();
+  const vaultState = useDesktopVaultState();
+  const checkedInitialSetup = useRef(false);
 
   useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
+    if (vaultState === null) return;
 
-    const desktopRuntimeConfig = getDesktopRuntimeConfig();
-    if (!desktopRuntimeConfig?.isDesktop) {
+    const needsCreation = requiresDesktopVaultCreation(vaultState);
+    // Creation is a standing requirement; unlock/key reminders are startup-only.
+    if (!needsCreation && (checkedInitialSetup.current || runtimeSettings.loading))
       return;
-    }
-
-    if (isDesktopVaultCreationRequired()) {
-      if (pathname !== "/settings") {
-        window.sessionStorage.setItem(DESKTOP_STARTUP_GUARD_SESSION_KEY, "1");
-        appNavigator.replace("/settings", {
-          [DESKTOP_STARTUP_QUERY_KEY]: DESKTOP_STARTUP_QUERY_VALUE,
-        });
-      }
-      return;
-    }
-
-    if (runtimeSettings.loading) {
-      return;
-    }
-
-    if (window.sessionStorage.getItem(DESKTOP_STARTUP_GUARD_SESSION_KEY) === "1") {
-      return;
-    }
-    window.sessionStorage.setItem(DESKTOP_STARTUP_GUARD_SESSION_KEY, "1");
+    checkedInitialSetup.current = true;
 
     const requirement = resolveDesktopStartupRequirement({
-      isDesktop: desktopRuntimeConfig.isDesktop,
-      startupError: desktopRuntimeConfig.startupError,
-      vaultState: desktopRuntimeConfig.vaultState,
+      isDesktop: true,
+      startupError: getDesktopRuntimeConfig()?.startupError,
+      vaultState,
       settings: runtimeSettings.settings,
     });
     if (!requirement || pathname === "/settings") {
@@ -61,7 +43,13 @@ export function DesktopStartupGuard() {
     appNavigator.replace("/settings", {
       [DESKTOP_STARTUP_QUERY_KEY]: DESKTOP_STARTUP_QUERY_VALUE,
     });
-  }, [appNavigator, pathname, runtimeSettings.loading, runtimeSettings.settings]);
+  }, [
+    appNavigator,
+    pathname,
+    runtimeSettings.loading,
+    runtimeSettings.settings,
+    vaultState,
+  ]);
 
   return null;
 }

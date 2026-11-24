@@ -1,17 +1,20 @@
 import type {
+  DesktopVaultState,
   DocumentRecord,
   DocumentSection,
   LearningPlan,
+  RuntimeSettings,
   SceneProfile,
 } from "@vibe-learner/shared";
 import type { SceneLibraryItemPayload } from "./data/scenes";
-import type { useRuntimeSettings } from "../components/layout/runtime-settings-provider";
-import type { getDesktopRuntimeConfig } from "./runtime-config";
 
 export function resolvePlanGenerationBlockedReason(input: {
-  runtimeSettings: ReturnType<typeof useRuntimeSettings>["settings"];
+  runtimeSettings: Pick<
+    RuntimeSettings,
+    "planProvider" | "openaiPlanApiKeyConfigured" | "openaiApiKeyConfigured"
+  > | null;
   runtimeSettingsLoading: boolean;
-  desktopRuntimeConfig: ReturnType<typeof getDesktopRuntimeConfig>;
+  desktopVaultState: DesktopVaultState | null;
 }) {
   if (input.runtimeSettingsLoading) {
     return "";
@@ -23,10 +26,11 @@ export function resolvePlanGenerationBlockedReason(input: {
   if (settings.openaiPlanApiKeyConfigured || settings.openaiApiKeyConfigured) {
     return "";
   }
-  if (input.desktopRuntimeConfig?.isDesktop) {
-    return input.desktopRuntimeConfig.vaultState !== "unlocked"
-      ? "当前计划提供器设为 LiteLLM，但桌面 Vault 尚未解锁；继续会静默回退到 mock。先去统一设置解锁 Vault。"
-      : "当前计划提供器设为 LiteLLM，但还没有可用的计划模型密钥。先去统一设置补齐连接信息。";
+  if (input.desktopVaultState === "unconfigured") {
+    return "当前计划提供器设为 LiteLLM，但尚未创建桌面 Vault。先去统一设置创建 Vault。";
+  }
+  if (input.desktopVaultState === "locked") {
+    return "当前计划提供器设为 LiteLLM，但桌面 Vault 尚未解锁；继续会静默回退到 mock。先去统一设置解锁 Vault。";
   }
   return "当前计划提供器设为 LiteLLM，但还没有可用的计划模型密钥。先去统一设置补齐连接信息。";
 }

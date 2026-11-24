@@ -5,10 +5,8 @@ import { useEffect, useRef, useState } from "react";
 import { BrandMark } from "./brand-mark";
 import { MaterialIcon, type MaterialIconName } from "../ui/material-icon";
 import { AppLink, type AppRoutePath } from "../../lib/app-navigation";
-import {
-  DESKTOP_VAULT_STATE_CHANGE_EVENT,
-  isDesktopVaultCreationRequired,
-} from "../../lib/desktop-vault";
+import { useDesktopVaultState } from "../../hooks/use-desktop-vault-state";
+import { requiresDesktopVaultCreation } from "../../lib/desktop-startup";
 import { useRuntimeSettings } from "./runtime-settings-provider";
 import {
   APP_NAV_COLLAPSED_STORAGE_KEY,
@@ -103,27 +101,10 @@ export function TopNav({ currentPath }: TopNavProps) {
     media.addEventListener("change", sync);
     return () => media.removeEventListener("change", sync);
   }, []);
-  const [vaultCreationRequired, setVaultCreationRequired] = useState(false);
+  const vaultCreationRequired = requiresDesktopVaultCreation(useDesktopVaultState());
 
   useEffect(() => {
     setCollapsed(readStoredBoolean(APP_NAV_COLLAPSED_STORAGE_KEY));
-  }, []);
-
-  useEffect(() => {
-    const syncVaultCreationRequirement = () => {
-      setVaultCreationRequired(isDesktopVaultCreationRequired());
-    };
-    syncVaultCreationRequirement();
-    window.addEventListener(
-      DESKTOP_VAULT_STATE_CHANGE_EVENT,
-      syncVaultCreationRequirement,
-    );
-    return () => {
-      window.removeEventListener(
-        DESKTOP_VAULT_STATE_CHANGE_EVENT,
-        syncVaultCreationRequirement,
-      );
-    };
   }, []);
 
   useEffect(() => {

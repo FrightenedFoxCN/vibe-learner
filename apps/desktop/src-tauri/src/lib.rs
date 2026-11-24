@@ -89,7 +89,6 @@ struct DesktopAppState {
     ai_base_url: String,
     storage_root: String,
     vault_path: String,
-    vault_state: &'static str,
     startup_error: String,
     _sidecar: Arc<Mutex<ManagedSidecar>>,
 }
@@ -144,18 +143,18 @@ fn runtime_config_from_state(state: &DesktopAppState) -> DesktopRuntimeConfig {
             _ => "unknown",
         },
         secret_storage_mode: "stronghold",
-        vault_state: current_vault_state(state),
+        vault_state: vault_state_on_disk(Path::new(&state.vault_path)),
         vault_path: state.vault_path.clone(),
         storage_root: state.storage_root.clone(),
         startup_error: state.startup_error.clone(),
     }
 }
 
-fn current_vault_state(state: &DesktopAppState) -> &'static str {
-    if state.vault_state == "unconfigured" && Path::new(&state.vault_path).exists() {
+fn vault_state_on_disk(path: &Path) -> &'static str {
+    if path.exists() {
         "locked"
     } else {
-        state.vault_state
+        "unconfigured"
     }
 }
 
@@ -163,7 +162,11 @@ fn runtime_config_script(state: &DesktopAppState) -> tauri::Result<String> {
     let payload = serde_json::to_string(&runtime_config_from_state(state))
         .map_err(|err| tauri::Error::Anyhow(err.into()))?;
     Ok(format!(
-        "window.__VIBE_LEARNER_DESKTOP_CONFIG__ = Object.freeze({payload});"
+        concat!(
+            "window.__VIBE_LEARNER_DESKTOP_CONFIG__ = Object.freeze({});",
+            "window.dispatchEvent(new Event('vibe-learner:desktop-vault-bootstrap'));"
+        ),
+        payload
     ))
 }
 
@@ -197,11 +200,6 @@ fn build_desktop_state(app: &tauri::AppHandle) -> Result<DesktopAppState, String
     let startup_started = Instant::now();
     diagnostics.emit(DesktopEvent::DesktopStarted, None, None);
     let vault_path = app_data_dir.join("vibe-learner.secrets.hold");
-    let vault_state = if vault_path.exists() {
-        "locked"
-    } else {
-        "unconfigured"
-    };
 
     let port = available_port().map_err(|err| format!("desktop_port_allocation_failed:{err}"))?;
     let ai_base_url = format!("http://127.0.0.1:{port}");
@@ -230,7 +228,6 @@ fn build_desktop_state(app: &tauri::AppHandle) -> Result<DesktopAppState, String
         ai_base_url,
         storage_root: storage_root.to_string_lossy().into_owned(),
         vault_path: vault_path.to_string_lossy().into_owned(),
-        vault_state,
         startup_error,
         _sidecar: Arc::new(Mutex::new(managed_sidecar)),
     })

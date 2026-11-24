@@ -14,6 +14,7 @@ import type {
   RuntimeSettings,
 } from "@vibe-learner/shared";
 import { useSettingsSave } from "../../hooks/use-settings-save";
+import { useDesktopVaultState } from "../../hooks/use-desktop-vault-state";
 import { useRuntimeSettings } from "../layout/runtime-settings-provider";
 import {
   applyRuntimeSessionSecrets,
@@ -118,24 +119,21 @@ export function useSettingsController(): SettingsController {
     settingsWriteHandoff.getServerSnapshot,
   );
   const desktopRuntimeConfig = getDesktopRuntimeConfig();
-  const desktopEnabled = Boolean(
-    desktopRuntimeConfig?.isDesktop && isDesktopVaultAvailable(),
-  );
+  const vaultState = useDesktopVaultState();
+  const desktopEnabled = vaultState !== null && isDesktopVaultAvailable();
 
   const [advancedExpanded, setAdvancedExpanded] = useState(false);
   const [savePhase, setSavePhase] = useState<SettingsSavePhase>("idle");
   const [saveError, setSaveError] = useState("");
   const [lastSavedAt, setLastSavedAt] = useState("");
-  const [desktopSecurity, setDesktopSecurity] = useState<DesktopSecurityState>({
+  const [vaultAction, setVaultAction] = useState({ busy: false, error: "" });
+  const desktopSecurity: DesktopSecurityState = {
+    ...vaultAction,
     enabled: desktopEnabled,
-    vaultState: isDesktopVaultUnlocked()
-      ? "unlocked"
-      : (desktopRuntimeConfig?.vaultState ?? "unconfigured"),
-    busy: false,
-    error: "",
+    vaultState: vaultState ?? "unconfigured",
     vaultPath: desktopRuntimeConfig?.vaultPath ?? "",
     startupError: desktopRuntimeConfig?.startupError ?? "",
-  });
+  };
   const [form, setForm] = useState<SettingsForm>({
     settings: null,
     numericDrafts: {
@@ -158,34 +156,10 @@ export function useSettingsController(): SettingsController {
 
   const initializedRef = useRef(false);
   const formRef = useRef(form);
-  const desktopSecurityRef = useRef(desktopSecurity);
   const vaultTransitionRef = useRef(false);
   const vaultVersionRef = useRef(0);
   const probeCacheRef = useRef<Map<string, CachedProbeResult>>(new Map());
   const activeProbeRef = useRef(new Map<string, symbol>());
-
-  useEffect(() => {
-    desktopSecurityRef.current = desktopSecurity;
-  }, [desktopSecurity]);
-
-  useEffect(() => {
-    setDesktopSecurity((prev) => ({
-      ...prev,
-      enabled: desktopEnabled,
-      vaultState: isDesktopVaultUnlocked()
-        ? "unlocked"
-        : prev.vaultState === "unlocked"
-          ? prev.vaultState
-          : (desktopRuntimeConfig?.vaultState ?? "unconfigured"),
-      vaultPath: desktopRuntimeConfig?.vaultPath ?? "",
-      startupError: desktopRuntimeConfig?.startupError ?? "",
-    }));
-  }, [
-    desktopEnabled,
-    desktopRuntimeConfig?.startupError,
-    desktopRuntimeConfig?.vaultPath,
-    desktopRuntimeConfig?.vaultState,
-  ]);
 
   useEffect(() => {
     if (!settings) {
@@ -227,7 +201,7 @@ export function useSettingsController(): SettingsController {
     {
       serialize: serializeSettings,
       persist: async (snapshot: RuntimeSettings, context) => {
-        const shouldUseVault = desktopSecurityRef.current.enabled;
+        const shouldUseVault = isDesktopVaultAvailable();
         const baseline = saveBaselineRef.current ?? undefined;
         const patch = buildRuntimeSettingsPatch(snapshot, {
           includeSecrets: !shouldUseVault,
@@ -255,10 +229,7 @@ export function useSettingsController(): SettingsController {
             (Object.keys(secrets) as (keyof typeof secrets)[]).some(
               (key) => secrets[key] !== previousSecrets[key],
             );
-          if (
-            !isDesktopVaultUnlocked() ||
-            desktopSecurityRef.current.vaultState !== "unlocked"
-          ) {
+          if (!isDesktopVaultUnlocked()) {
             return finish(await commit());
           }
           if (!secretChanged)
@@ -315,11 +286,6 @@ export function useSettingsController(): SettingsController {
     );
     if (!next) return;
     initializedRef.current = true;
-    setVaultState(
-      isDesktopVaultUnlocked()
-        ? "unlocked"
-        : (getDesktopRuntimeConfig()?.vaultState ?? "unconfigured"),
-    );
     publishSettings({ kind: "initial", settings: next });
   });
   useEffect(() => {
@@ -508,11 +474,6 @@ export function useSettingsController(): SettingsController {
     publishSettings({ kind: "vault", settings: next });
   }
 
-  function setVaultState(vaultState: DesktopVaultState) {
-    desktopSecurityRef.current = { ...desktopSecurityRef.current, vaultState };
-    setDesktopSecurity((prev) => ({ ...prev, vaultState }));
-  }
-
   async function runVaultTransition(operation: () => Promise<void>) {
     if (
       !desktopEnabled ||
@@ -523,14 +484,14 @@ export function useSettingsController(): SettingsController {
     vaultTransitionRef.current = true;
     vaultVersionRef.current++;
     saveCoordinator.discardPending();
-    setDesktopSecurity((prev) => ({ ...prev, busy: true, error: "" }));
+    setVaultAction({ busy: true, error: "" });
     const completion = enqueueVaultOperation(operation)
       .catch((error) => {
-        setDesktopSecurity((prev) => ({ ...prev, error: String(error) }));
+        setVaultAction((prev) => ({ ...prev, error: String(error) }));
       })
       .finally(() => {
         vaultTransitionRef.current = false;
-        setDesktopSecurity((prev) => ({ ...prev, busy: false }));
+        setVaultAction((prev) => ({ ...prev, busy: false }));
       });
     // A new editor cannot hydrate credentials mid-transition, even if this
     // page unmounts while the shared Vault queue is still running.
@@ -540,12 +501,10 @@ export function useSettingsController(): SettingsController {
 
   async function activateDesktopVault(password: string, mode: "initialize" | "unlock") {
     await runVaultTransition(async () => {
-      let created = false;
       let applyAttempted = false;
       try {
         if (mode === "initialize") {
           await initializeDesktopVault(password);
-          created = true;
           const current = formRef.current.settings;
           const initial = current
             ? extractSecretPatch(current)
@@ -558,7 +517,6 @@ export function useSettingsController(): SettingsController {
         applyAttempted = true;
         const next = await applyRuntimeSessionSecrets(secrets);
         publishVaultSettings(mergeRuntimeSettingsWithSecrets(next, secrets));
-        setVaultState("unlocked");
       } catch (error) {
         const failures: string[] = [];
         if (applyAttempted) {
@@ -576,7 +534,6 @@ export function useSettingsController(): SettingsController {
             failures.push("保险库未确认锁定");
           }
         }
-        if (created || mode === "unlock") setVaultState("locked");
         if (failures.length)
           throw new Error(failures.join("；") + "，请重试或重启应用。", {
             cause: error,
@@ -590,7 +547,6 @@ export function useSettingsController(): SettingsController {
     await runVaultTransition(async () => {
       const next = await clearRuntimeSessionSecrets();
       publishVaultSettings(maskRuntimeSecrets(next));
-      setVaultState("locked");
       try {
         await closeDesktopVault();
       } catch (error) {
@@ -606,14 +562,10 @@ export function useSettingsController(): SettingsController {
       const next = await clearRuntimeSessionSecrets();
       publishVaultSettings(maskRuntimeSecrets(next));
       try {
-        if (
-          desktopSecurityRef.current.vaultState === "unlocked" &&
-          isDesktopVaultUnlocked()
-        ) {
+        if (isDesktopVaultUnlocked()) {
           await clearDesktopVaultSecrets();
         }
       } catch (error) {
-        setVaultState("locked");
         try {
           await closeDesktopVault();
         } catch {

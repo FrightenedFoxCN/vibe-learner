@@ -200,12 +200,11 @@ export function AppLink({
   const router = useRouter();
   const confirm = useConfirm();
   const desktopSafe = isDesktopNavigationMode();
-  const vaultCreationRequired = isDesktopVaultCreationRequired();
   const href = buildAppHref(path, query, { desktopSafe });
 
   const handleClick = (event: MouseEvent<HTMLAnchorElement>) => {
     onClick?.(event);
-    if (vaultCreationRequired && path !== "/settings") {
+    if (resolveDesktopVaultNavigation(path) !== path) {
       event.preventDefault();
       return;
     }

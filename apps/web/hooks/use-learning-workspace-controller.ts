@@ -61,7 +61,7 @@ import {
 } from "../lib/learning-workspace-copy";
 import { resolveStudySessionErrorNotice } from "../lib/study-session-decode";
 import { logWorkspaceError } from "../lib/learning-workspace-telemetry";
-import { getDesktopRuntimeConfig } from "../lib/runtime-config";
+import { useDesktopVaultState } from "./use-desktop-vault-state";
 import { useRuntimeSettings } from "../components/layout/runtime-settings-provider";
 import { StudyAsyncViewFence } from "../lib/async-result-fence";
 
@@ -109,11 +109,11 @@ export function useLearningWorkspaceController({
       session: state.studySession,
     }),
   );
-  const desktopRuntimeConfig = getDesktopRuntimeConfig();
+  const desktopVaultState = useDesktopVaultState();
   const planGenerationBlockedReason = resolvePlanGenerationBlockedReason({
     runtimeSettings: runtimeSettings.settings,
     runtimeSettingsLoading: runtimeSettings.loading,
-    desktopRuntimeConfig,
+    desktopVaultState,
   });
 
   const selectedPersona =
