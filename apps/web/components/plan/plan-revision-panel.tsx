@@ -12,6 +12,7 @@ import {
 } from "../../lib/data/learning-plans";
 
 import { isApiHttpError } from "../../lib/http-error";
+import { planRevisionRecovery } from "../../lib/plan-revision-recovery";
 
 const copy: Record<PlanRevision["status"], string> = {
   generating: "正在生成修订预览，可离页后回来查询。",
@@ -31,10 +32,11 @@ export function PlanRevisionPanel({
   plan: LearningPlan;
   onRefresh: () => Promise<unknown>;
 }) {
-  const storageKey = `vibe-learner:plan-revision:v1:${plan.id}`;
+  const recovery = () => planRevisionRecovery(plan.id, localStorage, sessionStorage);
   const [instruction, setInstruction] = useState("");
   const [record, setRecord] = useState<PlanRevision | null>(null);
   const [requestId, setRequestId] = useState("");
+  const [recoverableIds, setRecoverableIds] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [outcomeUnknown, setOutcomeUnknown] = useState(false);
   const [missingRecord, setMissingRecord] = useState(false);
@@ -82,25 +84,35 @@ export function PlanRevisionPanel({
       if (mounted.current) setBusy(false);
     }
   }
+  function syncRecoverableIds() {
+    try {
+      setRecoverableIds(recovery().list());
+    } catch {
+      /* the current request can still be queried by its known ID */
+    }
+  }
   useEffect(() => {
     mounted.current = true;
     let saved = "";
     try {
-      saved = localStorage.getItem(storageKey) ?? "";
+      saved = recovery().current();
     } catch {
       /* unavailable storage is handled before admission */
     }
-    if (/^[A-Za-z0-9._:-]{1,80}$/.test(saved)) {
+    if (saved) {
       setRequestId(saved);
       setOpen(true);
       void query(saved);
     }
+    syncRecoverableIds();
+    window.addEventListener("storage", syncRecoverableIds);
     return () => {
       mounted.current = false;
+      window.removeEventListener("storage", syncRecoverableIds);
     };
     // The parent keys this component by immutable Plan ID.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [storageKey]);
+  }, [plan.id]);
   useEffect(() => {
     if (!open) return;
     let active = true;
@@ -121,16 +133,43 @@ export function PlanRevisionPanel({
     (outcomeUnknown ||
       !record ||
       ["generating", "ready", "applying"].includes(record.status));
+  function recover(id: string) {
+    if (!id || inFlight.current || unresolved) return;
+    try {
+      if (!recovery().select(id)) {
+        syncRecoverableIds();
+        setNotice("这条本地恢复记录已不可用。");
+        return;
+      }
+    } catch {
+      setNotice("无法选择本地恢复记录，请恢复本地存储后重试。");
+      return;
+    }
+    setRequestId(id);
+    setRecord(null);
+    setMissingRecord(false);
+    setOutcomeUnknown(false);
+    setNotice("正在查询修订结果…");
+    void query(id);
+  }
   async function generate(rollbackRevision?: number) {
     if (inFlight.current || unresolved) return;
     const id = crypto.randomUUID();
     // Retain identity before issuing a POST; an ambiguous response is query-only.
     try {
-      localStorage.setItem(storageKey, id);
+      recovery().remember(id);
     } catch {
       setNotice("无法保存恢复记录，请允许本地存储后再修订。");
       return;
     }
+    if (requestId) {
+      try {
+        recovery().clear(requestId);
+      } catch {
+        /* failure to prune the previous result cannot affect the saved new ID */
+      }
+    }
+    syncRecoverableIds();
     setRequestId(id);
     setRecord(null);
     setMissingRecord(false);
@@ -169,10 +208,11 @@ export function PlanRevisionPanel({
               ].includes(String(detail))));
         if (definite) {
           try {
-            localStorage.removeItem(storageKey);
+            recovery().clear(id);
           } catch {
             /* no admitted operation exists */
           }
+          syncRecoverableIds();
           setRequestId("");
           setRecord(null);
           setOutcomeUnknown(false);
@@ -297,6 +337,25 @@ export function PlanRevisionPanel({
         <p role="status" aria-live="polite">
           {notice}
         </p>
+        {!unresolved && recoverableIds.some((id) => id !== requestId) && (
+          <label className={styles.field}>
+            查询已有的本地修订
+            <select
+              value=""
+              disabled={busy}
+              onChange={(event) => recover(event.target.value)}
+            >
+              <option value="">选择恢复记录</option>
+              {recoverableIds
+                .filter((id) => id !== requestId)
+                .map((id) => (
+                  <option key={id} value={id}>
+                    {id}
+                  </option>
+                ))}
+            </select>
+          </label>
+        )}
         {!!requestId && (
           <button
             type="button"
@@ -314,11 +373,12 @@ export function PlanRevisionPanel({
             disabled={busy}
             onClick={() => {
               try {
-                localStorage.removeItem(storageKey);
+                recovery().clear(requestId);
               } catch {
                 setNotice("无法清除本地恢复记录，请恢复本地存储后重试。");
                 return;
               }
+              syncRecoverableIds();
               setRequestId("");
               setRecord(null);
               setOutcomeUnknown(false);
