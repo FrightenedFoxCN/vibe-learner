@@ -73,7 +73,7 @@ export function SceneWorkspaceView({
           <h1
             ref={pageHeadingRef}
             tabIndex={-1}
-            className="m-0 text-xl/[1.2] font-bold text-ink"
+            className="m-0 text-[22px]/[1.2] font-bold text-ink"
           >
             场景搭建
           </h1>

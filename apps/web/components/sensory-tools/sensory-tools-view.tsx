@@ -240,7 +240,7 @@ function SensoryStage({ row, controller }: { row: StageRow; controller: Controll
                     <div className="grid gap-1">
                       <div className="text-sm font-semibold text-ink">{tool.label}</div>
                       <details open={showDescriptions || undefined}>
-                        <summary className="min-h-8 cursor-pointer py-1.5 text-xs text-muted">
+                        <summary className="flex min-h-9 cursor-pointer items-center py-1.5 text-xs text-muted">
                           用途说明
                         </summary>
                         <p className="mx-0 my-1 text-xs leading-[1.6] text-muted">

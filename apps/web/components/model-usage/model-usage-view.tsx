@@ -12,7 +12,7 @@ import {
 } from "./model-usage-tables";
 import type { ModelUsageController } from "./use-model-usage-controller";
 
-const field = "grid min-w-0 grow basis-[150px] gap-1 text-[11px] text-muted";
+const field = "grid min-w-0 gap-1 text-[11px] text-muted";
 const control =
   "min-h-11 w-full min-w-0 border border-solid border-border bg-bg px-2.5 py-1.5 text-ink focus-visible:outline-2 focus-visible:outline-accent";
 
@@ -34,7 +34,7 @@ function UsageFilters({
 }: ModelUsageController["filters"]) {
   return (
     <section
-      className="mb-2 flex flex-wrap items-end gap-2.5 border border-solid border-border bg-panel p-3"
+      className="mb-2 grid grid-cols-1 items-end gap-2.5 border border-solid border-border bg-panel p-3 sm:grid-cols-2 lg:grid-cols-3"
       aria-label="用量筛选"
     >
       <label className={field}>
@@ -52,13 +52,13 @@ function UsageFilters({
         </select>
       </label>
       <label className={field}>
-        Workflow
+        工作流
         <select
           className={control}
           value={workflowFilter}
           onChange={(event) => onWorkflowChange(event.target.value)}
         >
-          <option value="">全部 workflow</option>
+          <option value="">全部工作流</option>
           {workflowOptions.map((value) => (
             <option key={value} value={value}>
               {workflowLabel(value)}
@@ -67,13 +67,13 @@ function UsageFilters({
         </select>
       </label>
       <label className={field}>
-        Operation
+        操作标识
         <select
           className={control}
           value={operationFilter}
           onChange={(event) => onOperationChange(event.target.value)}
         >
-          <option value="">全部 operation</option>
+          <option value="">全部操作</option>
           {operationOptions.map((value) => (
             <option key={value} value={value}>
               {value}
@@ -99,7 +99,7 @@ function UsageFilters({
           onChange={(event) => onDateToChange(event.target.value)}
         />
       </label>
-      <Button variant="primary" onClick={onExport}>
+      <Button variant="primary" className="w-full" onClick={onExport}>
         导出当前筛选 CSV
       </Button>
     </section>

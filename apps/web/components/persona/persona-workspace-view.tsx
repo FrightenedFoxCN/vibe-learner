@@ -85,7 +85,7 @@ function PersonaWorkspaceHeading({
   return (
     <div className={styles.heading}>
       <div className="flex flex-wrap items-center gap-3">
-        <h1 className="m-0 text-[20px] leading-[1.2] font-bold text-ink">人格色谱</h1>
+        <h1 className="m-0 text-[22px] leading-[1.2] font-bold text-ink">人格色谱</h1>
         <ProviderTruth scope="persona" />
         <AsyncFeedback
           actionRef={feedbackAction}

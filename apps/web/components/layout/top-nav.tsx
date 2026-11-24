@@ -54,7 +54,7 @@ const NAV_GROUPS: Array<{
     items: [
       { href: "/settings", label: "统一设置", icon: "settings" },
       { href: "/model-usage", label: "用量审计", icon: "bar_chart" },
-      { href: "/manual", label: "使用手册", icon: "menu_book" },
+      { href: "/manual", label: "用户手册", icon: "menu_book" },
     ],
   },
 ];

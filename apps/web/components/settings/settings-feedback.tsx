@@ -1,4 +1,5 @@
 import type { RuntimeSettings } from "@vibe-learner/shared";
+import { formatTimestamp } from "../../lib/format";
 import { Button } from "../ui/button";
 import { SettingsPanel, SettingsToggle, StatusBadge } from "./settings-ui";
 import type { SettingsController } from "./use-settings-controller";
@@ -37,8 +38,11 @@ export function AutoSaveStatusBar({ controller }: { controller: SettingsControll
         </span>
       </div>
       <div className="flex min-w-0 flex-wrap items-center gap-2.5">
-        <span className="text-xs text-muted">
-          最近保存：{controller.lastSavedAt || "-"}
+        <span className="text-xs text-muted tabular-nums">
+          最近保存：
+          {controller.lastSavedAt
+            ? formatTimestamp(controller.lastSavedAt, { style: "full" })
+            : "-"}
         </span>
         {controller.savePhase === "error" ? (
           <Button onClick={controller.retrySave}>重试保存</Button>
