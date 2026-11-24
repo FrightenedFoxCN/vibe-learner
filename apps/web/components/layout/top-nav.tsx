@@ -9,8 +9,10 @@ import {
   DESKTOP_VAULT_STATE_CHANGE_EVENT,
   isDesktopVaultCreationRequired,
 } from "../../lib/desktop-vault";
+import { useRuntimeSettings } from "./runtime-settings-provider";
 import {
   APP_NAV_COLLAPSED_STORAGE_KEY,
+  BROWSER_VIEW_TOGGLE_DEBUG_OVERLAY_EVENT,
   BROWSER_VIEW_TOGGLE_NAV_EVENT,
   readStoredBoolean,
   writeStoredBoolean,
@@ -60,6 +62,7 @@ const NAV_GROUPS: Array<{
 ];
 
 export function TopNav({ currentPath }: TopNavProps) {
+  const { showDebugInfo } = useRuntimeSettings();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const mobileToggle = useRef<HTMLButtonElement>(null);
@@ -187,6 +190,21 @@ export function TopNav({ currentPath }: TopNavProps) {
         <span>全部导航</span>
         <MaterialIcon name="expand_more" size={18} />
       </button>
+      {showDebugInfo ? (
+        <button
+          type="button"
+          className="app-nav-mobile-debug"
+          aria-label="打开调试浮窗"
+          onClick={() => {
+            setMobileOpen(false);
+            window.dispatchEvent(
+              new CustomEvent(BROWSER_VIEW_TOGGLE_DEBUG_OVERLAY_EVENT),
+            );
+          }}
+        >
+          Debug
+        </button>
+      ) : null}
       <nav
         ref={navigation}
         id="app-primary-links"

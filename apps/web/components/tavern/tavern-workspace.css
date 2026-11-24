@@ -862,8 +862,12 @@
 
     :where(.tavern-page) .tavern-header-actions {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       width: 100%;
+    }
+
+    :where(.tavern-page) .tavern-header-actions .tavern-button.primary {
+      grid-column: 1 / -1;
     }
 
     :where(.tavern-page) .tavern-composer-actions .tavern-button {

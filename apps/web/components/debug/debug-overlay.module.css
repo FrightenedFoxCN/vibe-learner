@@ -199,17 +199,6 @@
 
   @media (max-width: 760px) {
     .root[data-open="false"] {
-      top: calc(var(--mobile-nav-height) + 8px);
-      bottom: auto;
-      right: 12px;
-    }
-
-    .root[data-open="false"] .fab {
-      min-height: 44px;
-      padding: 0 10px;
-    }
-
-    .root[data-open="false"] .fabMeta {
       display: none;
     }
 

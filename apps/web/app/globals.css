@@ -174,7 +174,8 @@
     padding: 0 3px;
   }
   .app-nav-group-compact,
-  .app-nav-mobile-toggle {
+  .app-nav-mobile-toggle,
+  .app-nav-mobile-debug {
     display: none;
   }
   .app-nav-collapse-btn {
@@ -313,6 +314,22 @@
     }
     .app-nav-mobile-toggle > span:not(.app-nav-current) {
       flex-shrink: 0;
+    }
+    .app-nav-mobile-debug {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      min-width: 44px;
+      min-height: 44px;
+      padding: 0 8px;
+      border: 0;
+      border-left: 1px solid var(--border);
+      background: transparent;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
     }
     .app-nav-links {
       display: none;
