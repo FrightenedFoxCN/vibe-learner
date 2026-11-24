@@ -42,6 +42,8 @@
 
 Study Notes 以当前 Session ID 为边界，独立持久化、独立版本控制；写笔记不修改会话记忆或聊天回合，不需要模型。请在侧栏「笔记」中直接保存原文。已有会话记忆仍可按 key 复制为笔记，不会自动迁移或删除。接口与导入导出规则见 [Study Notes API 契约](api-contracts.md#study-notes)。
 
+侧栏支持 Markdown 源码与预览；「打开 Markdown 编辑器」可使用宽幅分栏实时预览、格式工具栏和 `⌘/Ctrl+S` 保存，`Esc` 返回侧栏并保留同一草稿。「下载 .md」导出当前正文源码，不保存草稿；JSON 仍用于笔记归档。正文上限仍为 4,000 字符。预览支持表格、任务列表、代码块及 LaTeX，不执行原始 HTML，也不自动读取嵌入图片。
+
 ## 3. 输出语言策略
 
 - **继承与覆盖**：新建 Study Session 默认继承关联 Learning Plan 的显式或模型解析语言；Study Dialog 的语言选择器可在下一条消息覆盖（提交 `output_language` 字段；省略保持当前偏好；显式传 `auto` 重置为自动模式）。
