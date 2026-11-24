@@ -33,14 +33,23 @@ export function UsageFeatureDot({
 
 export function StackedBarChart({ days }: { days: DayData[] }) {
   if (days.length === 0) {
-    return <div className="py-10 text-center text-[13px] text-muted">暂无数据</div>;
+    return (
+      <div className="min-w-0 border border-solid border-border px-4 py-10 text-center text-[13px] text-muted">
+        暂无数据
+      </div>
+    );
   }
 
   const maxTotal = Math.max(...days.map((d) => d.total), 1);
+  const topPad = 24;
+  const bottomPad = 42;
+  const yAxisWidth = 48;
   const chartHeight = 200;
-  const barWidth = Math.max(20, Math.min(48, Math.floor(600 / days.length) - 4));
-  const gutter = Math.max(4, Math.min(12, Math.floor(200 / days.length)));
-  const chartWidth = days.length * (barWidth + gutter) + gutter;
+  const baselineY = topPad + chartHeight;
+  const barWidth = Math.max(24, Math.min(52, Math.floor(600 / days.length) - 6));
+  const gutter = Math.max(8, Math.min(20, Math.floor(200 / days.length)));
+  const plotWidth = Math.max(days.length * (barWidth + gutter) + gutter, 280);
+  const chartWidth = yAxisWidth + plotWidth + 12;
 
   const uniqueFeatures = Array.from(
     new Set(days.flatMap((d) => d.segments.map((s) => s.feature))),
@@ -59,29 +68,41 @@ export function StackedBarChart({ days }: { days: DayData[] }) {
       <div className="overflow-x-auto">
         <svg
           width={chartWidth}
-          height={chartHeight + 40}
+          height={baselineY + bottomPad}
           role="img"
           aria-label="模型用量堆积柱状图"
+          className="block"
         >
-          {/* Y-axis gridlines */}
+          {/* Y-axis gridlines & tick labels */}
           {[0, 0.25, 0.5, 0.75, 1].map((ratio) => {
-            const y = chartHeight - ratio * chartHeight;
+            const y = baselineY - ratio * chartHeight;
+            const tickValue = Math.round(maxTotal * ratio);
             return (
-              <line
-                key={ratio}
-                x1={0}
-                y1={y}
-                x2={chartWidth}
-                y2={y}
-                stroke="var(--border)"
-                strokeWidth={1}
-              />
+              <g key={ratio}>
+                <line
+                  x1={yAxisWidth}
+                  y1={y}
+                  x2={chartWidth}
+                  y2={y}
+                  stroke="var(--border)"
+                  strokeWidth={1}
+                />
+                <text
+                  x={yAxisWidth - 6}
+                  y={y + 3}
+                  textAnchor="end"
+                  fontSize={10}
+                  fill="var(--muted)"
+                >
+                  {formatNumber(tickValue)}
+                </text>
+              </g>
             );
           })}
 
           {days.map((day, i) => {
-            const x = gutter + i * (barWidth + gutter);
-            let stackY = chartHeight;
+            const x = yAxisWidth + gutter + i * (barWidth + gutter);
+            let stackY = baselineY;
             const totalBarHeight = (day.total / maxTotal) * chartHeight;
 
             const rects = day.segments
@@ -112,13 +133,13 @@ export function StackedBarChart({ days }: { days: DayData[] }) {
               <g key={day.date}>
                 {rects}
                 {/* Total label above bar */}
-                {totalBarHeight > 12 && (
+                {day.total > 0 && (
                   <text
                     x={x + barWidth / 2}
-                    y={chartHeight - totalBarHeight - 3}
+                    y={baselineY - totalBarHeight - 6}
                     textAnchor="middle"
-                    fontSize={9}
-                    fill="var(--muted)"
+                    fontSize={10}
+                    fill="var(--ink-2)"
                   >
                     {formatNumber(day.total)}
                   </text>
@@ -126,11 +147,11 @@ export function StackedBarChart({ days }: { days: DayData[] }) {
                 {/* Date label below */}
                 <text
                   x={x + barWidth / 2}
-                  y={chartHeight + 14}
+                  y={baselineY + 16}
                   textAnchor="middle"
-                  fontSize={9}
+                  fontSize={10}
                   fill="var(--muted)"
-                  transform={`rotate(-30, ${x + barWidth / 2}, ${chartHeight + 14})`}
+                  transform={`rotate(-30, ${x + barWidth / 2}, ${baselineY + 16})`}
                 >
                   {day.date.slice(5)}
                 </text>

@@ -72,7 +72,7 @@
 - [x] **P1-UI-02 修复 `Tavern Workspace` 巨型复选框与移动端空态半宽塌陷**
   - 修正 `apps/web/components/tavern/tavern-workspace.css` 的 `44px` 兜底选择器，排除 `checkbox/radio` 本体而由外层 `label` 承载 `44px` 触控热区，遵守 [前端设计基线](docs/frontend-design-baseline.md) 的 `18px` 复选框视觉尺寸。
   - 在 `max-width: 800px` 断点中同步覆盖 `.tavern-workspace-grid.empty-room` 为单列，修复移动端空态左侧栏塌陷至半屏宽。
-- [ ] **P1-UI-03 修复 `Model Usage` 柱状图最高柱裁切与移动端表格挤碎**
+- [x] **P1-UI-03 修复 `Model Usage` 柱状图最高柱裁切与移动端表格挤碎**
   - 为 `apps/web/components/model-usage/model-usage-chart.tsx` 增加顶部数值留白、Y 轴刻度与完整列宽呈现，防止最高柱顶部标签画到 SVG 外被裁切。
   - 为 `apps/web/components/model-usage/model-usage-tables.tsx` 按列数设置合理 `min-w-*` 并收敛 `wrap-anywhere`，确保 `390px` 窄屏下通过外层 `overflow-x-auto` 局部横向滚动而非将单元格挤成 2 字符竖条。
 - [ ] **P1-UI-04 修复全局 `Debug Overlay` 浮钮遮挡核心操作**

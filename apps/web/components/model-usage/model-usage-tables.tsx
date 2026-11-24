@@ -34,16 +34,18 @@ const summaryTokenHeaders = ["输入 Token", "输出 Token", "合计"];
 function UsageTable({
   left,
   right,
+  minWidthClass = "min-w-[520px]",
   children,
 }: {
   left: string[];
   right: string[];
+  minWidthClass?: string;
   children: ReactNode;
 }) {
   return (
-    <div className="min-w-0 overflow-x-auto">
-      <table className="w-full border-collapse text-[13px]">
-        <thead>
+    <div className="min-w-0 overflow-x-auto border border-solid border-border">
+      <table className={`w-full ${minWidthClass} border-collapse text-[13px]`}>
+        <thead className="bg-panel">
           <tr>
             {left.map((label) => (
               <th
@@ -73,16 +75,22 @@ function UsageTable({
 
 function FeatureCell({ feature, children }: { feature: string; children?: ReactNode }) {
   return (
-    <td className={`${cell} wrap-anywhere`}>
-      <UsageFeatureDot feature={feature} />
-      {featureLabel(feature)}
+    <td className={`${cell} min-w-[120px]`}>
+      <span className="whitespace-nowrap">
+        <UsageFeatureDot feature={feature} />
+        {featureLabel(feature)}
+      </span>
       {children}
     </td>
   );
 }
 
 function ModelCell({ model }: { model: string }) {
-  return <td className={`${cell} font-mono text-[11px] wrap-anywhere`}>{model}</td>;
+  return (
+    <td className={`${cell} font-mono text-[11px] whitespace-nowrap text-ink-2`}>
+      {model}
+    </td>
+  );
 }
 
 function TokenCells({
@@ -92,13 +100,13 @@ function TokenCells({
 }) {
   return (
     <>
-      <td className={`${cell} text-right tabular-nums`}>
+      <td className={`${cell} text-right whitespace-nowrap tabular-nums`}>
         {formatNumber(row.promptTokens)}
       </td>
-      <td className={`${cell} text-right tabular-nums`}>
+      <td className={`${cell} text-right whitespace-nowrap tabular-nums`}>
         {formatNumber(row.completionTokens)}
       </td>
-      <td className={`${cell} text-right font-semibold tabular-nums`}>
+      <td className={`${cell} text-right font-semibold whitespace-nowrap tabular-nums`}>
         {formatNumber(row.totalTokens)}
       </td>
     </>
@@ -106,7 +114,11 @@ function TokenCells({
 }
 
 function EmptySummary() {
-  return <p className="py-3 text-[13px] text-muted">暂无数据</p>;
+  return (
+    <p className="m-0 border border-solid border-border px-4 py-6 text-center text-[13px] text-muted">
+      暂无数据
+    </p>
+  );
 }
 
 export function FeatureSummaryTable({ rows }: { rows: FeatureSummary[] }) {
@@ -115,7 +127,11 @@ export function FeatureSummaryTable({ rows }: { rows: FeatureSummary[] }) {
       {rows.length === 0 ? (
         <EmptySummary />
       ) : (
-        <UsageTable left={["功能"]} right={summaryTokenHeaders}>
+        <UsageTable
+          left={["功能"]}
+          right={summaryTokenHeaders}
+          minWidthClass="min-w-[440px]"
+        >
           {rows.map((row) => (
             <tr key={row.feature}>
               <FeatureCell feature={row.feature} />
@@ -137,6 +153,7 @@ export function FeatureModelSummaryTable({ rows }: { rows: FeatureModelSummary[]
         <UsageTable
           left={["功能", "模型"]}
           right={["调用次数", ...summaryTokenHeaders]}
+          minWidthClass="min-w-[600px]"
         >
           {rows.map((row) => (
             <tr key={`${row.feature}-${row.model}`}>
@@ -158,10 +175,14 @@ export function DailyBucketTable({ rows }: { rows: TokenUsageDailyBucket[] }) {
   if (rows.length === 0) return null;
   return (
     <UsageSection title="明细记录（按日期 × 功能 × 模型）">
-      <UsageTable left={["日期", "功能", "模型"]} right={tokenHeaders}>
+      <UsageTable
+        left={["日期", "功能", "模型"]}
+        right={tokenHeaders}
+        minWidthClass="min-w-[580px]"
+      >
         {rows.map((row, index) => (
           <tr key={`${row.date}-${row.feature}-${row.model}-${index}`}>
-            <td className={cell}>{row.date}</td>
+            <td className={`${cell} whitespace-nowrap tabular-nums`}>{row.date}</td>
             <FeatureCell feature={row.feature} />
             <ModelCell model={row.model} />
             <TokenCells row={row} />
@@ -184,17 +205,19 @@ export function CallRecordsTable({
   if (!hasRecords) return null;
   return (
     <UsageSection title="逐次调用明细">
-      <UsageTable left={["时间", "功能", "模型"]} right={tokenHeaders}>
+      <UsageTable
+        left={["时间", "功能", "模型"]}
+        right={tokenHeaders}
+        minWidthClass="min-w-[680px]"
+      >
         {visibleRecords.map((record) => (
           <tr key={record.id}>
-            <td className={cell}>
+            <td className={`${cell} whitespace-nowrap tabular-nums`}>
               {formatTimestamp(record.createdAt, { style: "full", timeZone })}
             </td>
             <FeatureCell feature={record.feature}>
-              <br />
-              <small>
-                {workflowLabel(record.workflow)} ·{" "}
-                {record.operationId || "无 operation"}
+              <small className="mt-0.5 block text-[11px] whitespace-nowrap text-muted">
+                {workflowLabel(record.workflow)} · {record.operationId || "无操作标识"}
               </small>
             </FeatureCell>
             <ModelCell model={record.model} />
