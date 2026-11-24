@@ -47,23 +47,25 @@ export function PersonaSlotsPane({
           人格插槽
         </span>
         <div className="inline-flex flex-wrap items-center gap-2">
-          <details className="secondary-actions">
-            <summary>批量操作</summary>
-            <button
-              type="button"
-              className={styles.ghostBtn}
-              onClick={(event) => void handleClearSlots(event.currentTarget)}
-              disabled={!draft.slots.length}
-            >
-              清空全部插槽
-            </button>
-            <button
-              type="button"
-              className={styles.ghostBtn}
-              onClick={handleSortSlotsByPriority}
-            >
-              按优先级整理
-            </button>
+          <details className={styles.batchMenu}>
+            <summary className={styles.batchSummary}>批量操作</summary>
+            <div className={styles.batchPopover}>
+              <button
+                type="button"
+                className={styles.ghostBtn}
+                onClick={handleSortSlotsByPriority}
+              >
+                按优先级整理
+              </button>
+              <button
+                type="button"
+                className={styles.ghostBtn}
+                onClick={(event) => void handleClearSlots(event.currentTarget)}
+                disabled={!draft.slots.length}
+              >
+                清空全部插槽
+              </button>
+            </div>
           </details>
           <button
             type="button"

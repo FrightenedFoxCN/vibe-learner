@@ -46,41 +46,45 @@ export function SceneTreePanel({
         </span>
         <div className="inline-flex flex-wrap items-center gap-2">
           <button
-            className={css.sidebarButton}
-            data-primary={Boolean(selectedSavedSceneId)}
+            className={css.toolbarButton}
+            data-primary="true"
             type="button"
             onClick={() => void saveLibraryScene("upsert")}
             title={selectedSavedSceneId ? "更新已保存场景" : "保存到场景库"}
             aria-label={selectedSavedSceneId ? "更新已保存场景" : "保存到场景库"}
           >
-            <MaterialIcon name="save" size={14} />
+            <MaterialIcon name="save" size={15} />
+            <span>{selectedSavedSceneId ? "更新" : "保存"}</span>
           </button>
           <button
-            className={css.sidebarButton}
+            className={css.toolbarButton}
             type="button"
             onClick={() => void saveLibraryScene("create")}
             title="另存为新场景"
             aria-label="另存为新场景"
           >
-            <MaterialIcon name="library_add" size={14} />
+            <MaterialIcon name="library_add" size={15} />
+            <span>另存</span>
           </button>
           <button
-            className={css.sidebarButton}
+            className={css.toolbarButton}
             type="button"
             onClick={requestImportScene}
             title="导入 JSON"
             aria-label="导入 JSON"
           >
-            <MaterialIcon name="upload_file" size={14} />
+            <MaterialIcon name="upload_file" size={15} />
+            <span>导入</span>
           </button>
           <button
-            className={css.sidebarButton}
+            className={css.toolbarButton}
             type="button"
             onClick={exportScene}
             title="导出 JSON"
             aria-label="导出 JSON"
           >
-            <MaterialIcon name="download" size={14} />
+            <MaterialIcon name="download" size={15} />
+            <span>导出</span>
           </button>
         </div>
       </div>

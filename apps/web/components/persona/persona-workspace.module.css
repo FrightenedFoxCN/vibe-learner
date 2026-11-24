@@ -188,9 +188,77 @@
     color: white;
   }
 
-  .basicIconButton:disabled {
+  .basicActionButton {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 0 9px;
+    border: 1px solid color-mix(in srgb, var(--border) 76%, white);
+    background: color-mix(in srgb, white 72%, var(--surface));
+    color: var(--ink);
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+
+  .basicActionButton[data-primary="true"] {
+    border-color: var(--accent);
+    background: var(--accent);
+    color: var(--bg);
+  }
+
+  .basicIconButton:disabled,
+  .basicActionButton:disabled {
     opacity: 0.45;
     cursor: not-allowed;
+  }
+
+  .readonlyBanner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-top: 4px;
+    padding: 8px 10px;
+    border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--border));
+    background: color-mix(in srgb, var(--bg) 78%, var(--accent-soft));
+    color: var(--ink-2);
+    font-size: 12px;
+  }
+
+  .batchMenu {
+    position: relative;
+  }
+
+  .batchSummary {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 10px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--ink-2);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .batchPopover {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    z-index: 20;
+    display: grid;
+    gap: 6px;
+    min-width: 148px;
+    padding: 8px;
+    border: 1px solid var(--border-strong);
+    background: var(--bg);
+    box-shadow: 0 8px 20px color-mix(in srgb, var(--ink) 12%, transparent);
   }
 
   .primaryBtn {

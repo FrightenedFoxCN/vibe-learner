@@ -28,6 +28,7 @@ export function PersonaBasicsPane({
     saveError,
     isReadonlyPersona,
     updateDraft,
+    handleDuplicatePersonaDraft,
     handleExportConfig,
     handleDownloadTemplate,
     handleImportConfig,
@@ -36,6 +37,18 @@ export function PersonaBasicsPane({
   return (
     <div className={styles.basicPane}>
       <PersonaBasicsToolbar controller={controller} />
+      {isReadonlyPersona ? (
+        <div className={styles.readonlyBanner} role="status">
+          <span>内置人格只读，不可直接覆盖保存。</span>
+          <button
+            type="button"
+            className={styles.ghostBtn}
+            onClick={handleDuplicatePersonaDraft}
+          >
+            复制为新人格
+          </button>
+        </div>
+      ) : null}
       <section className="flex min-h-0 flex-1 flex-col pt-3">
         <div className="flex min-h-0 flex-1 flex-col gap-3">
           <div className="grid gap-1">
@@ -226,11 +239,7 @@ export function PersonaBasicsPane({
           {saveError ? (
             <span className="text-[12px] text-negative">{saveError}</span>
           ) : null}
-          {isReadonlyPersona ? (
-            <span className="text-[12px] text-muted">
-              内置人格只读；点击复制按钮可保留当前设定并另存为新人格。
-            </span>
-          ) : null}
+
           {configMessage ? (
             <span role="status" className="text-[12px] text-muted">
               {configMessage}
@@ -279,7 +288,7 @@ function PersonaBasicsToolbar({
         <div ref={rewritePopoverRef} className="static inline-flex">
           <button
             type="button"
-            className={styles.basicIconButton}
+            className={styles.basicActionButton}
             disabled={assistPending}
             onClick={() => setIsRewritePopoverOpen((current) => !current)}
             title={assistPending ? "AI 重写中" : "AI 重写"}
@@ -287,8 +296,9 @@ function PersonaBasicsToolbar({
           >
             <MaterialIcon
               name={assistPending ? "hourglass_top" : "auto_awesome"}
-              size={16}
+              size={15}
             />
+            <span>重写</span>
           </button>
           {isRewritePopoverOpen ? (
             <div className={styles.rewritePopover}>
@@ -329,38 +339,41 @@ function PersonaBasicsToolbar({
         </div>
         <button
           type="button"
-          className={styles.basicIconButton}
-          data-primary="true"
+          className={styles.basicActionButton}
           disabled={savingPersona}
           onClick={(event) => void handleNewPersonaDraft(event.currentTarget)}
           title={savingPersona ? "保存中" : "新建人格草稿"}
           aria-label={savingPersona ? "保存中" : "新建人格草稿"}
         >
-          <MaterialIcon name="add_circle" size={18} />
+          <MaterialIcon name="add_circle" size={15} />
+          <span>新建</span>
         </button>
         <button
           type="button"
-          className={styles.basicIconButton}
+          className={styles.basicActionButton}
           disabled={!selectedPersona || savingPersona}
           onClick={handleDuplicatePersonaDraft}
           title={savingPersona ? "保存中" : "复制为新人格"}
           aria-label={savingPersona ? "保存中" : "复制为新人格"}
         >
-          <MaterialIcon name="library_add" size={16} />
+          <MaterialIcon name="library_add" size={15} />
+          <span>复制</span>
         </button>
         <button
           type="button"
-          className={styles.basicIconButton}
+          className={styles.basicActionButton}
           disabled={!selectedPersona || savingPersona}
           onClick={(event) => void handleReloadSelectedPersona(event.currentTarget)}
           title={savingPersona ? "保存中" : "重新载入人格"}
           aria-label={savingPersona ? "保存中" : "重新载入人格"}
         >
-          <MaterialIcon name="refresh" size={16} />
+          <MaterialIcon name="refresh" size={15} />
+          <span>重载</span>
         </button>
         <button
           type="button"
-          className={styles.basicIconButton}
+          className={styles.basicActionButton}
+          data-primary="true"
           disabled={savingPersona || isReadonlyPersona}
           onClick={() =>
             void (selectedPersonaId ? handleUpdatePersona() : handleCreatePersona())
@@ -370,7 +383,8 @@ function PersonaBasicsToolbar({
             savingPersona ? "保存中" : selectedPersonaId ? "更新人格" : "创建人格"
           }
         >
-          <MaterialIcon name="save" size={16} />
+          <MaterialIcon name="save" size={15} />
+          <span>{selectedPersonaId ? "保存" : "创建"}</span>
         </button>
       </div>
     </div>
