@@ -1,3 +1,4 @@
+import { useId } from "react";
 import type { RuntimeFeatureProbeName, RuntimeSettings } from "@vibe-learner/shared";
 import { Button } from "../ui/button";
 import { runtimeProviderStatus } from "../../lib/runtime-provider-status";
@@ -189,6 +190,7 @@ function ScopeModelCard({
   settings: RuntimeSettings;
 }) {
   const probe = controller.probeState[config.scope];
+  const modelListId = useId();
   const currentModel = String(settings[config.modelKey] || "");
   const models = uniqueWithCurrent(probe.models, currentModel);
   const featureLabels: Array<[RuntimeFeatureProbeName, string]> =
@@ -281,22 +283,32 @@ function ScopeModelCard({
           {formatProbeHint(probe)}
         </span>
       </div>
-      <SettingsField label="模型选择">
-        <select
-          value={String(settings[config.modelKey] || "")}
+      <SettingsField label="模型 ID">
+        <input
+          type="text"
+          value={currentModel}
+          list={modelListId}
+          aria-describedby={`${modelListId}-hint`}
+          autoComplete="off"
+          autoCapitalize="none"
+          spellCheck={false}
           onChange={(event) =>
-            controller.setSettingField(
-              config.modelKey,
-              event.target.value as RuntimeSettings[typeof config.modelKey],
-            )
+            controller.setSettingField(config.modelKey, event.target.value)
           }
-        >
-          {models.map((modelName) => (
-            <option key={modelName} value={modelName}>
-              {modelName}
-            </option>
+          onBlur={(event) => {
+            const model = event.currentTarget.value.trim();
+            if (model !== currentModel)
+              controller.setSettingField(config.modelKey, model);
+          }}
+        />
+        <datalist id={modelListId}>
+          {models.filter(Boolean).map((modelName) => (
+            <option key={modelName} value={modelName} />
           ))}
-        </select>
+        </datalist>
+        <span id={`${modelListId}-hint`} className="text-xs text-muted">
+          可从建议中选择，也可输入列表未显示的模型 ID。
+        </span>
       </SettingsField>
       <div className="grid min-w-0 gap-1.5">
         <div className="flex flex-wrap items-center gap-2">
