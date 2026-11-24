@@ -194,8 +194,8 @@
     border: 1px solid var(--border);
     background: var(--bg);
     color: var(--ink);
-    width: 30px;
-    height: 30px;
+    width: 40px;
+    height: 40px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -206,8 +206,8 @@
     border: 1px solid var(--border);
     background: var(--bg);
     color: var(--ink);
-    width: 30px;
-    height: 30px;
+    width: 40px;
+    height: 40px;
     display: inline-flex;
     align-items: center;
     justify-content: center;

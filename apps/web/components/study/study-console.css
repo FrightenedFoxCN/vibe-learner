@@ -166,7 +166,7 @@
 
   .study-console-select {
     width: 100%;
-    height: 36px;
+    min-height: 44px;
     border: 1px solid var(--border);
     padding: 0 10px;
     background: var(--bg);
@@ -178,7 +178,7 @@
 
   .study-console-ghost-btn {
     border: 1px solid var(--border);
-    height: 36px;
+    min-height: 44px;
     padding: 0 12px;
     background: var(--bg);
     color: var(--ink-2);
@@ -191,7 +191,7 @@
 
   .study-console-primary-btn {
     border: 1px solid var(--accent);
-    height: 36px;
+    min-height: 44px;
     padding: 0 14px;
     background: var(--accent);
     color: var(--bg);
@@ -209,7 +209,8 @@
     bottom: 0;
     z-index: 8;
     padding: 12px 0 18px;
-    background: color-mix(in srgb, var(--bg) 96%, transparent);
+    border-top: 1px solid var(--border);
+    background: var(--bg);
   }
 
   .study-console-input-stack {
@@ -219,7 +220,7 @@
   }
 
   .study-console-textarea {
-    height: 40px;
+    min-height: 44px;
     border: 1px solid var(--border);
     padding: 9px 10px;
     background: var(--bg);
@@ -238,8 +239,8 @@
   }
 
   .study-console-icon-tool-button {
-    width: 36px;
-    height: 36px;
+    width: 44px;
+    height: 44px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -289,8 +290,8 @@
 
   .study-console-icon-send-button {
     border: 1px solid var(--accent);
-    width: 36px;
-    height: 36px;
+    width: 44px;
+    height: 44px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -550,10 +551,13 @@
   }
 
   .study-console-event-summary {
+    display: inline-flex;
+    align-items: center;
+    min-height: 36px;
     cursor: pointer;
     width: fit-content;
     color: var(--muted);
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 600;
   }
 
@@ -720,12 +724,16 @@
 
   .study-console-citation {
     appearance: none;
-    padding: 2px 8px;
+    display: inline-flex;
+    align-items: center;
+    min-height: 40px;
+    padding: 4px 10px;
     border: 1px solid var(--border);
     font-size: 12px;
     color: var(--teal);
     background: transparent;
     cursor: pointer;
+    text-align: left;
   }
 
   .study-console-empty-transcript-card {
