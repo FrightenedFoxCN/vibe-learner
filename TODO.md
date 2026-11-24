@@ -61,6 +61,42 @@
   - 将手写校验的解码器迁移至 `strict-response-decode.ts` 原语：`study-chat-operation-decode.ts`（526 行）、`tavern-decode.ts`（758 行）、`study-question-attempt.ts`（`model-tools` / `model-usage` / `runtime-settings` 已经由 `model-response-decode.ts` 复用，无需处理）。
   - 围绕拆出的纯逻辑模块、格式化工具与核心解码器补充 `node --test` 单元测试并纳入 `test:invariants:web`。
 
+### Phase 4：前端浏览器审查 UI 与响应式优化（P1 / P2）
+
+> 依据真实浏览器多视口（桌面 `1440×900`、笔记本 `1280×800`、移动 `390×844`）空态与填充态截图审查结果整理，逐项修复并按模块独立提交；每批修改后以 `npm run check` 与浏览器复检闭环。
+
+#### P1（视觉损坏、交互遮挡与核心工作区体验）
+
+- [ ] **P1-UI-01 修复 `Character Shell` 样式表未导入**
+  - 在 `apps/web/components/study/character-shell.tsx` 引入已存在的 `study-character-shell.css`（位于 `@layer components`），修复 `Study Dialog` 右侧角色状态栏标签与数值粘连裸排问题。
+- [ ] **P1-UI-02 修复 `Tavern Workspace` 巨型复选框与移动端空态半宽塌陷**
+  - 修正 `apps/web/components/tavern/tavern-workspace.css` 的 `44px` 兜底选择器，排除 `checkbox/radio` 本体而由外层 `label` 承载 `44px` 触控热区，遵守 [前端设计基线](docs/frontend-design-baseline.md) 的 `18px` 复选框视觉尺寸。
+  - 在 `max-width: 800px` 断点中同步覆盖 `.tavern-workspace-grid.empty-room` 为单列，修复移动端空态左侧栏塌陷至半屏宽。
+- [ ] **P1-UI-03 修复 `Model Usage` 柱状图最高柱裁切与移动端表格挤碎**
+  - 为 `apps/web/components/model-usage/model-usage-chart.tsx` 增加顶部数值留白、Y 轴刻度与完整列宽呈现，防止最高柱顶部标签画到 SVG 外被裁切。
+  - 为 `apps/web/components/model-usage/model-usage-tables.tsx` 按列数设置合理 `min-w-*` 并收敛 `wrap-anywhere`，确保 `390px` 窄屏下通过外层 `overflow-x-auto` 局部横向滚动而非将单元格挤成 2 字符竖条。
+- [ ] **P1-UI-04 修复全局 `Debug Overlay` 浮钮遮挡核心操作**
+  - 调整 `apps/web/components/debug/debug-overlay.module.css` 与相关底部布局策略，缩小/收紧浮钮并在移动端避让吸底输入区与右侧主操作按钮，防止遮挡 `Study Dialog` 发送按钮与 `Study Notes` 删除按钮。
+- [ ] **P1-UI-05 修复 `Plan Workspace` 表单样式割裂、按钮挤压与操作层级倒置**
+  - 补齐 `document-setup-fields.tsx` 中 `PDF 物理页范围` 输入框与辅助说明的样式类名，统一 `.output-language-field` 与 `PersonaMiniCard` 为直角基线与一致表单节奏。
+  - 修复 `Plan Overview` 中 `编辑题目` 按钮被压成竖排换行的问题，将排期项核心动作 `开始` 提升为主按钮、`完成` 退为次按钮，并将主要按钮与输入控件高度收敛至设计基线。
+- [ ] **P1-UI-06 修复 `Scene Setup` 固定 104px 空白提示条与移动端首屏自动滚走工具栏**
+  - 将 `scene-workspace-view.tsx` 顶部反馈条由固定 `h-[104px]` 改为内容自适应高度（`min-h-8 max-h-24`）。
+  - 限制 `use-scene-workspace-controller.ts` 仅在用户主动切换节点时执行 `scrollIntoView`，避免移动端初次加载自动将树标题与工具按钮卷到顶栏之下。
+- [ ] **P1-UI-07 优化 `Study Dialog` 吸底输入透字、PDF 预览浮条与 `Study Notes` 编辑器响应式布局**
+  - 为 `study-console.css` 吸底输入区使用不透明背景与顶部分割线，修复滚动消息透影；改善 PDF 顶栏图标按钮热区，避免浮条遮压教材标题区。
+  - 优化新版 `Study Notes`：移动端全屏 `Markdown 编辑器` 默认使用 `源码` 模式并将格式工具栏改为单行横向滚动；桌面端将 `删除` 按钮与 `保存 / 下载 .md` 拉开间距防止误触；清理侧栏笔记列表摘要中的原始 Markdown 标记噪声。
+
+#### P2（跨页一致性、信息架构与细节打磨）
+
+- [ ] **P2-UI-08 优化 `Tavern Workspace` 移动端阅读顺序与视觉语言收口**
+  - 移动端进入已有房间时优先呈现 `Tavern Conversation Panel`，再承接输入与阵容；去除 `Tavern Header` 大面积径向渐变，并将英文工程眉标/修订文案收口为克制的中文展示。
+- [ ] **P2-UI-09 优化 `Persona Spectrum` / `Scene Setup` 工具栏辨识度与只读态区分**
+  - 为纯图标高频工具栏补充清晰可见短标签或分组语义，内置只读人格在表单顶部明确标示只读态与复制入口；修复 `persona-slots-pane.tsx` 标题栏中 `.secondary-actions` 顶部悬空横线与高度不齐问题。
+- [ ] **P2-UI-10 收口全站视觉基线与细节打磨**
+  - 统一各页 `H1` 标题字号梯度与圆角规范；将 `Sensory Tools` 的 39 处 `用途说明` `<summary>` 高度从 `32px` 提升至基线 `≥ 36px`。
+  - 格式化 `Settings` 的 `最近保存` 时间戳（复用 `formatTimestamp`）；统一侧栏与首页/手册的「用户手册」命名；将 `Model Usage` 筛选器英文工程词（`Workflow` / `Operation`）汉化并对齐移动端筛选网格。
+
 ## 未排期研究
 
 每项研究在立项前须明确触发证据、假设、时间盒（time-box）、产出物以及采用/放弃标准：
