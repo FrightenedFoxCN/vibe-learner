@@ -176,9 +176,11 @@ class DocumentService:
                 raise HTTPException(409, "document_checkpoint_input_changed")
             child = self.checkpoints.resume_child(resume_from_operation_id)
             if child:
-                if operation_admitted_callback is not None:
-                    operation_admitted_callback(child)
-                return self._resume_read_back(child)
+                return self._prepare_resume_replay(
+                    child,
+                    before_publish=before_commit or interrupt_check,
+                    operation_admitted_callback=operation_admitted_callback,
+                )
             if (
                 source_checkpoint.upload_digest,
                 source_checkpoint.configuration_digest,
@@ -191,9 +193,11 @@ class DocumentService:
                 resume_from_operation_id=resume_from_operation_id,
             )
         except DocumentProcessResumeExists as exc:
-            if operation_admitted_callback is not None:
-                operation_admitted_callback(exc.operation_id)
-            return self._resume_read_back(exc.operation_id)
+            return self._prepare_resume_replay(
+                exc.operation_id,
+                before_publish=before_commit or interrupt_check,
+                operation_admitted_callback=operation_admitted_callback,
+            )
         except DocumentProcessDocumentNotFound as exc:
             raise HTTPException(status_code=404, detail="document_not_found") from exc
         except DocumentProcessAlreadyActive as exc:
@@ -689,6 +693,20 @@ class DocumentService:
             debug_report.ocr_applied,
             len(debug_report.warnings),
         )
+        return document
+
+    def _prepare_resume_replay(
+        self,
+        operation_id: str,
+        *,
+        before_publish: Callable[[], None] | None,
+        operation_admitted_callback: Callable[[str], None] | None,
+    ) -> DocumentRecord:
+        document = self._resume_read_back(operation_id)
+        # Fence only this replay; a cancelled stream did not admit a new operation.
+        _call_interrupt(before_publish)
+        if operation_admitted_callback is not None:
+            operation_admitted_callback(operation_id)
         return document
 
     def _resume_read_back(self, operation_id: str) -> DocumentRecord:
