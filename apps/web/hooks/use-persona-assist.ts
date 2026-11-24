@@ -13,6 +13,10 @@ import {
   personaSlotPayload,
   type PersonaDraft,
 } from "../lib/persona-draft";
+import {
+  resolvePersonaPromptSuggestion,
+  type PersonaPromptSuggestion,
+} from "../lib/persona-prompt-suggestion";
 import { updateDraftSlot } from "../lib/persona-slot-edit";
 
 interface PersonaAssistPort {
@@ -25,11 +29,13 @@ export function usePersonaAssist(
     draft,
     updatePersonaDraft,
     currentPersonaAsyncScope,
+    captureDraftIntent,
     onSettingStarted,
   }: {
     draft: PersonaDraft;
     updatePersonaDraft: (update: SetStateAction<PersonaDraft>) => void;
     currentPersonaAsyncScope: (fieldTarget: string) => AsyncResultScope;
+    captureDraftIntent: () => () => boolean;
     onSettingStarted: () => void;
   },
   port: PersonaAssistPort = defaultPort,
@@ -44,8 +50,9 @@ export function usePersonaAssist(
     [],
   );
   const [retainRatio, setRetainRatio] = useState(0.7);
-  const [systemPromptSuggestion, setSystemPromptSuggestion] = useState("");
-  const [systemPromptSuggestionSource, setSystemPromptSuggestionSource] = useState("");
+  const [promptSuggestion, setPromptSuggestion] =
+    useState<PersonaPromptSuggestion | null>(null);
+  const promptSuggestionRef = useRef<PersonaPromptSuggestion | null>(null);
   const assistFenceRef = useRef(new AsyncResultFence());
   const mountedRef = useRef(true);
   const canApply = (ticket: AsyncResultTicket) =>
@@ -73,25 +80,28 @@ export function usePersonaAssist(
     setAssistModelRecoveries([]);
     dismissSystemPromptSuggestion();
   }
-  function setPromptSuggestion(value: string, source: string) {
+  function publishPromptSuggestion(value: string, source: string) {
     const trimmed = value.trim();
-    setSystemPromptSuggestion(trimmed);
-    setSystemPromptSuggestionSource(trimmed ? source : "");
+    const suggestion = trimmed
+      ? { value: trimmed, source, isCurrent: captureDraftIntent() }
+      : null;
+    promptSuggestionRef.current = suggestion;
+    setPromptSuggestion(suggestion);
   }
 
   function applySystemPromptSuggestion() {
-    if (!systemPromptSuggestion) {
-      return;
-    }
+    const value = resolvePersonaPromptSuggestion(
+      promptSuggestion,
+      promptSuggestionRef.current,
+    );
+    if (value === null) return;
     setAssistError("");
-    updatePersonaDraft((draft) => ({ ...draft, systemPrompt: systemPromptSuggestion }));
-    setSystemPromptSuggestion("");
-    setSystemPromptSuggestionSource("");
+    updatePersonaDraft((draft) => ({ ...draft, systemPrompt: value }));
   }
 
   function dismissSystemPromptSuggestion() {
-    setSystemPromptSuggestion("");
-    setSystemPromptSuggestionSource("");
+    promptSuggestionRef.current = null;
+    setPromptSuggestion(null);
   }
 
   async function handleAssistSlot(slotId: string) {
@@ -155,7 +165,7 @@ export function usePersonaAssist(
         ? mergePersonaAssistSlots(draft.slots, result.slots)
         : null;
       if (mergedSlots) updatePersonaDraft((prev) => ({ ...prev, slots: mergedSlots }));
-      setPromptSuggestion(result.systemPromptSuggestion, "AI 辅助设定");
+      publishPromptSuggestion(result.systemPromptSuggestion, "AI 辅助设定");
       setAssistModelRecoveries(result.modelRecoveries ?? []);
     } catch (error) {
       if (canApply(ticket)) {
@@ -175,8 +185,8 @@ export function usePersonaAssist(
     assistModelRecoveries,
     retainRatio,
     setRetainRatio,
-    systemPromptSuggestion,
-    systemPromptSuggestionSource,
+    systemPromptSuggestion: promptSuggestion?.value ?? "",
+    systemPromptSuggestionSource: promptSuggestion?.source ?? "",
     applySystemPromptSuggestion,
     dismissSystemPromptSuggestion,
     handleAssistSlot,

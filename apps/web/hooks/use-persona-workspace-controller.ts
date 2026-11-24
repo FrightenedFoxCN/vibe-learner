@@ -145,6 +145,7 @@ export function usePersonaWorkspaceController() {
     draft,
     updatePersonaDraft,
     currentPersonaAsyncScope,
+    captureDraftIntent,
     onSettingStarted: () => setIsRewritePopoverOpen(false),
   });
   const [configMessage, setConfigMessage] = useState("");

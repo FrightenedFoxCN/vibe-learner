@@ -132,7 +132,7 @@ export function usePersonaDraft(
 
   function updatePersonaDraft(next: SetStateAction<PersonaDraft>): void {
     draftRevisionRef.current += 1;
-
+    onPromptDismiss();
     setDraft(next);
   }
 
@@ -223,7 +223,7 @@ export function usePersonaDraft(
 
   function updatePersonaAssistInput(update: () => void): void {
     draftRevisionRef.current += 1;
-
+    onPromptDismiss();
     update();
   }
 
