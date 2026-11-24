@@ -1,4 +1,6 @@
+from copy import copy
 from threading import RLock
+from uuid import uuid4
 
 from app.services.document_parser import DocumentParser
 from app.core.logging import configure_logging, get_logger
@@ -36,12 +38,10 @@ from app.persistence.study_unit_revision_repository import StudyUnitRevisionRepo
 from app.services.persona_cards import PersonaCardLibraryService
 from app.services.persona import PersonaEngine
 from app.services.reusable_scene_nodes import ReusableSceneNodeLibraryService
-from app.services.model_tool_config import (
-    CHAT_STAGE,
-    PLAN_STAGE,
-    ModelToolConfigService,
-)
-from app.services.runtime_settings import RuntimeSettingsService
+from app.services.model_tool_config import ModelToolConfigService
+from app.services.runtime_settings import RuntimeSettingsService, RuntimeSettingsVersion
+from app.services.provider_capabilities import ModelProvider
+from app.models.harness import canonical_harness_digest
 from app.services.scene_library import SceneLibraryService
 from app.services.scene_setup import SceneSetupService
 from app.services.session_scene import SessionSceneService
@@ -60,6 +60,10 @@ class Container:
         configure_logging()
         self.base_settings = settings if settings is not None else Settings.from_env()
         self._provider_lock = RLock()
+        self._runtime_instance_id = uuid4().hex
+        self._provider_generation: (
+            tuple[RuntimeSettingsVersion, tuple[frozenset[str], frozenset[str]]] | None
+        ) = None
         self._started = False
         self._closed = False
         try:
@@ -137,9 +141,7 @@ class Container:
         )
         self.persona_card_library_service = PersonaCardLibraryService(self.store)
         self.session_scene_service = SessionSceneService(self.store)
-        self.model_provider = self._build_model_provider(
-            self.runtime_settings_service.effective_settings()
-        )
+        self._capture_model_configuration()
         self.performance_mapper = PerformanceMapper()
         self.persona_engine = PersonaEngine(
             self.store,
@@ -162,6 +164,7 @@ class Container:
             self.study_arrangement_service,
             self.model_provider,
             harness_service=self.harness_proposal_runtime,
+            capture_model=self.capture_model_provider,
         )
         self.study_session_repository = StudySessionRepository(
             self.database,
@@ -188,6 +191,7 @@ class Container:
             repository=self.tavern_repository,
             persona_engine=self.persona_engine,
             model_provider=self.model_provider,
+            capture_model=self._capture_tavern_model,
         )
 
     def start(self) -> None:
@@ -219,69 +223,105 @@ class Container:
         if database is not None:
             database.dispose()
 
-    def study_chat_application(self):
-        # Capture the operation's provider and settings together. Runtime
-        # Settings replacement must not switch a running chat's provider.
+    def _capture_model_configuration(
+        self,
+    ) -> tuple[ModelProvider, RuntimeSettingsVersion, Settings]:
         with self._provider_lock:
-            from copy import copy
-            from app.services.study_chat_application import (
-                StudyChatApplication,
-                StudyChatDependencies,
-            )
+            version, settings = self.runtime_settings_service.effective_snapshot()
+            tools = self.model_tool_config_service.disabled_tools_snapshot()
+            generation = (version, tools)
+            if generation != self._provider_generation:
+                self.model_provider = self._build_model_provider(settings, tools)
+                self._provider_generation = generation
+                # The shared service defaults must not retain credentials from an
+                # older generation after the last in-flight operation releases it.
+                for name in ("plan_service", "tavern_service", "pedagogy_orchestrator"):
+                    service = getattr(self, name, None)
+                    if hasattr(service, "model_provider"):
+                        service.model_provider = self.model_provider
+            return self.model_provider, version, settings
 
-            provider = self.model_provider
-            orchestrator = copy(self.pedagogy_orchestrator)
-            if hasattr(orchestrator, "model_provider"):
-                orchestrator.model_provider = provider
-            return StudyChatApplication(
-                StudyChatDependencies(
-                    study_chat_operation_repository=self.study_chat_operation_repository,
-                    study_session_repository=self.study_session_repository,
-                    study_note_repository=self.study_note_repository,
-                    study_session_service=self.study_session_service,
-                    store=self.store,
-                    model_provider=provider,
-                    runtime_settings=self.runtime_settings_service.effective_settings(),
-                    persona_engine=self.persona_engine,
-                    plan_service=self.plan_service,
-                    document_service=self.document_service,
-                    session_scene_service=self.session_scene_service,
-                    pedagogy_orchestrator=orchestrator,
-                    document_layout_service=self.document_layout_service,
-                )
+    def capture_model_provider(self) -> ModelProvider:
+        return self._capture_model_configuration()[0]
+
+    def _capture_tavern_model(self) -> tuple[ModelProvider, str]:
+        provider, version, settings = self._capture_model_configuration()
+        # The durable revision identifies the existing Web configuration row.
+        # Desktop or process-local credential generations are not reconstructible
+        # on other workers/restarts. Never hash credentials into the binding.
+        binding = canonical_harness_digest(
+            {
+                "schema": "tavern-model-configuration-v1",
+                "revision": version.revision,
+                "provider": type(provider).__name__,
+                "session_generation": version.session_generation,
+                "instance": (
+                    self._runtime_instance_id
+                    if settings.desktop_mode or version.session_generation
+                    else ""
+                ),
+            }
+        )
+        return provider, binding
+
+    def capture_pedagogy_orchestrator(self, provider: ModelProvider | None = None):
+        orchestrator = copy(self.pedagogy_orchestrator)
+        if hasattr(orchestrator, "model_provider"):
+            orchestrator.model_provider = (
+                provider if provider is not None else self.capture_model_provider()
             )
+        return orchestrator
+
+    def study_chat_application(self):
+        from app.services.study_chat_application import (
+            StudyChatApplication,
+            StudyChatDependencies,
+        )
+
+        provider, _, settings = self._capture_model_configuration()
+        return StudyChatApplication(
+            StudyChatDependencies(
+                study_chat_operation_repository=self.study_chat_operation_repository,
+                study_session_repository=self.study_session_repository,
+                study_note_repository=self.study_note_repository,
+                study_session_service=self.study_session_service,
+                store=self.store,
+                model_provider=provider,
+                runtime_settings=settings,
+                persona_engine=self.persona_engine,
+                plan_service=self.plan_service,
+                document_service=self.document_service,
+                session_scene_service=self.session_scene_service,
+                pedagogy_orchestrator=self.capture_pedagogy_orchestrator(provider),
+                document_layout_service=self.document_layout_service,
+            )
+        )
+
+    def update_model_tool_config(self, updates: list[dict[str, object]]) -> None:
+        with self._provider_lock:
+            self.model_tool_config_service.update(updates)
 
     def update_runtime_settings(self, updates: dict[str, object]) -> None:
         with self._provider_lock:
             self.runtime_settings_service.update(updates)
-            self.model_provider = self._build_model_provider(
-                self.runtime_settings_service.effective_settings()
-            )
-            self.plan_service.model_provider = self.model_provider
-            self.pedagogy_orchestrator.model_provider = self.model_provider
-            self.tavern_service.model_provider = self.model_provider
+            self._capture_model_configuration()
 
     def apply_runtime_session_secrets(self, updates: dict[str, object]) -> None:
         with self._provider_lock:
             self.runtime_settings_service.apply_session_secrets(updates)
-            self.model_provider = self._build_model_provider(
-                self.runtime_settings_service.effective_settings()
-            )
-            self.plan_service.model_provider = self.model_provider
-            self.pedagogy_orchestrator.model_provider = self.model_provider
-            self.tavern_service.model_provider = self.model_provider
+            self._capture_model_configuration()
 
     def clear_runtime_session_secrets(self) -> None:
         with self._provider_lock:
             self.runtime_settings_service.clear_session_secrets()
-            self.model_provider = self._build_model_provider(
-                self.runtime_settings_service.effective_settings()
-            )
-            self.plan_service.model_provider = self.model_provider
-            self.pedagogy_orchestrator.model_provider = self.model_provider
-            self.tavern_service.model_provider = self.model_provider
+            self._capture_model_configuration()
 
-    def _build_model_provider(self, settings: Settings):
+    def _build_model_provider(
+        self,
+        settings: Settings,
+        tools: tuple[frozenset[str], frozenset[str]],
+    ) -> ModelProvider:
+        plan_disabled_tools, chat_disabled_tools = tools
         if settings.plan_provider in {"openai", "litellm"}:
             if not settings.has_any_runtime_api_key():
                 logger.warning(
@@ -330,16 +370,10 @@ class Container:
                 multimodal_enabled=settings.openai_plan_model_multimodal,
                 fallback_plan_model=settings.openai_plan_fallback_model,
                 fallback_disable_tools=settings.openai_plan_fallback_disable_tools,
-                plan_disabled_tools_provider=(
-                    lambda: self.model_tool_config_service.disabled_tools_for_stage(
-                        PLAN_STAGE
-                    )
-                ),
-                chat_disabled_tools_provider=(
-                    lambda: self.model_tool_config_service.disabled_tools_for_stage(
-                        CHAT_STAGE
-                    )
-                ),
+                # The provider's public action snapshot also freezes SDK state,
+                # but these callbacks must not read policy again mid-workflow.
+                plan_disabled_tools_provider=lambda: set(plan_disabled_tools),
+                chat_disabled_tools_provider=lambda: set(chat_disabled_tools),
                 token_usage_service=self.token_usage_service,
             )
 

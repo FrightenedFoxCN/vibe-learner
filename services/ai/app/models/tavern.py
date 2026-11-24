@@ -131,12 +131,12 @@ class TavernMessageRecord(BaseModel):
     client_request_id: str = ""
     created_at: str
     harness_trace: HarnessTraceRecord | HarnessTraceV3 | None = None
-    commit_metadata: SkipJsonSchema[
-        TavernPersonaMessageCommitMetadataV1 | None
-    ] = Field(
-        default=None,
-        exclude=True,
-        repr=False,
+    commit_metadata: SkipJsonSchema[TavernPersonaMessageCommitMetadataV1 | None] = (
+        Field(
+            default=None,
+            exclude=True,
+            repr=False,
+        )
     )
 
 
@@ -161,6 +161,7 @@ class TavernRunRecord(BaseModel):
     idempotency_key: str
     request_digest: str = ""
     context_digest: str = ""
+    execution_config_binding: str = Field(default="", exclude=True)
     mode: TavernInteractionMode
     trigger_kind: TavernRunTriggerKind = TavernRunTriggerKind.USER_MESSAGE
     parent_run_id: str = ""
@@ -168,12 +169,16 @@ class TavernRunRecord(BaseModel):
     input_message_id: str | None = None
     anchor_message_id: str = ""
     scheduled_participant_ids: list[str] = Field(default_factory=list, max_length=4)
-    speaker_steps: list[TavernSpeakerStepRecord] = Field(default_factory=list, max_length=4)
+    speaker_steps: list[TavernSpeakerStepRecord] = Field(
+        default_factory=list, max_length=4
+    )
     guidance: str = ""
     status: TavernRunStatus = TavernRunStatus.PENDING
     expected_room_revision: int = Field(ge=0)
     generated_message_ids: list[str] = Field(default_factory=list)
-    harness_trace: list[HarnessTraceRecord | HarnessTraceV3] = Field(default_factory=list)
+    harness_trace: list[HarnessTraceRecord | HarnessTraceV3] = Field(
+        default_factory=list
+    )
     error_code: str = ""
     terminal_sequence: int = Field(default=0, ge=0)
     created_at: str
@@ -307,9 +312,7 @@ def build_tavern_persona_message_committed_projection(
         raise ValueError("tavern_commit_run_message_missing")
     if len(run.generated_message_ids) != len(set(run.generated_message_ids)):
         raise ValueError("tavern_commit_run_message_duplicate")
-    if len(run.scheduled_participant_ids) != len(
-        set(run.scheduled_participant_ids)
-    ):
+    if len(run.scheduled_participant_ids) != len(set(run.scheduled_participant_ids)):
         raise ValueError("tavern_commit_schedule_persona_duplicate")
     if any(item not in participant_map for item in run.scheduled_participant_ids):
         raise ValueError("tavern_commit_schedule_persona_not_in_room")
@@ -329,8 +332,7 @@ def build_tavern_persona_message_committed_projection(
         item.step_index != index
         or item.run_id != run.id
         or item.persona_id != run.scheduled_participant_ids[index]
-        or item.participant_prompt_hash
-        != participant_map[item.persona_id].prompt_hash
+        or item.participant_prompt_hash != participant_map[item.persona_id].prompt_hash
         for index, item in enumerate(run.speaker_steps)
     ):
         raise ValueError("tavern_commit_schedule_step_mismatch")
@@ -477,7 +479,10 @@ class TavernTurnRequest(BaseModel):
             field_name="target_persona_ids",
             allow_empty=True,
         )
-        if self.mode == TavernInteractionMode.DIRECT and len(self.target_persona_ids) != 1:
+        if (
+            self.mode == TavernInteractionMode.DIRECT
+            and len(self.target_persona_ids) != 1
+        ):
             raise ValueError("tavern_direct_mode_requires_one_target")
         if self.mode == TavernInteractionMode.FACILITATED and not (
             2 <= len(self.target_persona_ids) <= 4

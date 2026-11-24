@@ -46,7 +46,8 @@ erDiagram
 ### 租约、部分失败与子重试
 
 - **逐角色原子提交**：首角色失败记为 `failed`；后续角色失败记为 `partial`，保留前置已提交角色消息，将当前步标记为 `failed`、剩余步标记为 `blocked`。
-- **数据库时钟租约与接管**：每个生成中步骤持有数据库时钟租约与心跳；进程中断后可在租约过期时通过 `POST .../resume` 以新 fencing epoch 接管；单步最多 3 次认领（初始 + 2 次接管），耗尽后以 `tavern_run_claims_exhausted` 终结。
+- **数据库时钟租约与接管**：每个生成中步骤持有数据库时钟租约与心跳；进程中断后，配置绑定相同且租约过期时，可通过 `POST .../resume` 以新 fencing epoch 接管；单步最多 3 次认领（初始 + 2 次接管），耗尽后以 `tavern_run_claims_exhausted` 终结。
+- **同一 Run 的模型边界**：准入前捕获模型配置，整个执行段内多个说话步骤不会切换 Provider。Run 准入事务仅存服务端私有的不透明配置绑定，绑定数据库配置修订号；不记录或哈希密钥内容。Web 服务在相同持久配置版本下可跨进程恢复。修订号比较是保守的，保存任何新的运行时设置版本（包括仅修改调试显示）也不会重新解释旧的待定 Run；学习工具开关不参与 Tavern 绑定。桌面与进程级密钥世代不能在另一进程重建（即使之后清除密钥），不跨进程恢复。配置绑定不可用（例如热切换或升级前无绑定的待定 Run）时，恢复与同键重放返回 `409 tavern_run_model_configuration_unavailable`，不领取步骤或调用模型；可以显式取消，已提交消息仍保留。终态读取不受配置变化影响；子重试是新 Run，使用自己的当前配置。
 - **作用域子重试（`POST .../runs/{run_id}/retry`）**：仅接受终态 `failed` / `partial` 且尚未有直接子 Run 的源 Run，仅调度未完成的 `failed`/`blocked` 角色（不追加新用户消息，不重复已完成角色，首个子角色锚定上一条已提交角色消息）。若房间已归档，或修订号、末条序号、上下文摘要、阵容顺序或参与者 Prompt Hash 任一变化，返回 `409`。
 - **权威恢复视图**：`GET /tavern/rooms/{room_id}/run-recovery` 基于完整谱系返回每条根链路的权威 `leaf_run`、链路状态与可执行恢复动作（独立于有界 `GET .../runs` 最近窗口）。
 - **502 受控重放**：模型/Harness 失败在落库终态证据后返回 `502`，携带结构化 `{code, run_id, child_run_id, current_revision, recovery_action}`。浏览器**仅**在 `recovery_action === "replay_same_request"` 且带 `run_id` 时，以完全相同的 URL、Body、修订号与幂等键自动重放一次，读取已落库的 `200` 终态回执（不重新调用模型）。客户端始终依据 `run.status` 判定业务结果。

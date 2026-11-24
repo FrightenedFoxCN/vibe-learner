@@ -434,7 +434,7 @@ def generate_exercise(
     payload: ExerciseGenerateRequest, *, container: Container = Depends(get_container)
 ) -> ExerciseGenerateResponse:
     persona = container.persona_engine.require_persona(payload.persona_id)
-    response = container.pedagogy_orchestrator.generate_exercise(
+    response = container.capture_pedagogy_orchestrator().generate_exercise(
         persona=persona,
         section_id=payload.section_id,
         topic=payload.topic,
@@ -447,7 +447,7 @@ def grade_submission(
     payload: SubmissionGradeRequest, *, container: Container = Depends(get_container)
 ) -> SubmissionGradeResponse:
     persona = container.persona_engine.require_persona(payload.persona_id)
-    response = container.pedagogy_orchestrator.grade_submission(
+    response = container.capture_pedagogy_orchestrator().grade_submission(
         persona=persona,
         exercise_id=payload.exercise_id,
         answer=payload.answer,

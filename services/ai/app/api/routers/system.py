@@ -67,7 +67,7 @@ def get_model_tool_config(
     *, container: Container = Depends(get_container)
 ) -> ModelToolConfigResponse:
     described = container.model_tool_config_service.describe()
-    provider = container.model_provider
+    provider = container.capture_model_provider()
 
     stage_enabled: dict[str, tuple[bool, str]] = {
         "plan_generation": (True, ""),
@@ -129,7 +129,7 @@ def update_model_tool_config(
     container: Container = Depends(get_container),
 ) -> ModelToolConfigResponse:
     try:
-        container.model_tool_config_service.update(
+        container.update_model_tool_config(
             [toggle.model_dump(mode="json") for toggle in payload.toggles]
         )
     except ValueError as exc:
@@ -228,6 +228,8 @@ def check_openai_models(
         5,
         container.runtime_settings_service.effective_settings().openai_timeout_seconds,
     )
+    # /models evidence is independent of the representative Chat Completions
+    # requests below. The latter are synthetic, not production workflows.
     result = probe_openai_models(
         api_key=api_key,
         base_url=base_url,
@@ -258,8 +260,6 @@ def get_model_usage_stats(
     *,
     container: Container = Depends(get_container),
 ) -> TokenUsageStatsResponse:
-    # /models evidence is independent of the representative Chat Completions
-    # requests below. The latter are synthetic, not production workflows.
     records = container.token_usage_service.load_all()
     records = [
         record

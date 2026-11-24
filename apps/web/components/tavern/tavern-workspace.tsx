@@ -58,6 +58,7 @@ export function TavernWorkspace({
     handleTurn,
     handleCancelRun,
     recoveryProgress,
+    recoveryBlocked,
     retryPendingRun,
     handleRetry,
     handleTargetToggle,
@@ -176,7 +177,13 @@ export function TavernWorkspace({
 
         {activeRoom ? (
           <div className="tavern-right-rail">
-            {recoveryProgress ? (
+            {recoveryBlocked && busyAction === null ? (
+              <section className="tavern-panel" aria-label="中断互动恢复">
+                <p className="tavern-panel-footnote" role="status">
+                  无法用本轮开始时的模型配置继续。可取消本轮后开始新互动，已提交的消息会保留。
+                </p>
+              </section>
+            ) : !recoveryBlocked && recoveryProgress ? (
               <TavernPendingRecovery
                 progress={recoveryProgress}
                 busy={busyAction !== null || loadingOlder}

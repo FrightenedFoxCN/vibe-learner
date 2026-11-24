@@ -12,7 +12,26 @@ import { refreshTavernTranscript } from "../lib/tavern-transcript-refresh.ts";
 import {
   createTavernPendingRecoveryBudget,
   tavernAutomaticRecoveryDelay,
+  tavernPendingRecoveryBlocked,
 } from "../lib/tavern-pending-recovery.ts";
+
+test("pending recovery stops only for matching, explicitly blocked run evidence", () => {
+  const blocked = {
+    leafRun: { id: "run-a" },
+    chainStatus: "active",
+    recoveryAction: "none",
+  } as const;
+  assert.equal(tavernPendingRecoveryBlocked([blocked], "run-a"), true);
+  assert.equal(tavernPendingRecoveryBlocked([blocked], "run-b"), false);
+  assert.equal(tavernPendingRecoveryBlocked([], "run-a"), false);
+  assert.equal(
+    tavernPendingRecoveryBlocked(
+      [{ ...blocked, recoveryAction: "wait_and_resume" }],
+      "run-a",
+    ),
+    false,
+  );
+});
 
 const now = "2026-01-01T00:00:00Z";
 function page(

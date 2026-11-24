@@ -433,7 +433,7 @@ def get_document_planning_context(
             detail_map=planning_context["detail_map"],
             debug_report=report,
             document_path=document.stored_path,
-            multimodal_enabled=container.model_provider.supports_page_image_tools(),
+            multimodal_enabled=container.capture_model_provider().supports_page_image_tools(),
         ),
     }
     return _into_response(DocumentPlanningContextResponse, payload)

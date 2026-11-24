@@ -19,7 +19,7 @@ class ToolAuditTest(TestCase):
         for plan_enabled, chat_enabled in [(True, False), (False, True)]:
             container = SimpleNamespace(
                 model_tool_config_service=config,
-                model_provider=SimpleNamespace(
+                capture_model_provider=lambda: SimpleNamespace(
                     supports_page_image_tools=lambda: plan_enabled,
                     supports_chat_page_image_tools=lambda: chat_enabled,
                 ),

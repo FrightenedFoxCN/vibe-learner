@@ -399,7 +399,7 @@ def _plan_revision_service(container):
     return PlanRevisionService(
         PlanRevisionRepository(container.database),
         container.harness_proposal_runtime,
-        container.model_provider,
+        container.capture_model_provider(),
     )
 
 

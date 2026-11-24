@@ -187,6 +187,7 @@ def generate_scene_tree(
     payload: SceneTreeGenerateRequest, *, container: Container = Depends(get_container)
 ) -> SceneTreeGenerateResponse:
     reset_model_recovery_state()
+    provider = container.capture_model_provider()
     try:
 
         def generate_scene(protected: dict[str, object]) -> SceneGenerationProposalV1:
@@ -194,12 +195,12 @@ def generate_scene_tree(
             input_text = str(protected["input_text"])
             layer_count = protected.get("layer_count")
             if mode == "keywords":
-                result = container.model_provider.generate_scene_tree_from_keywords(
+                result = provider.generate_scene_tree_from_keywords(
                     keywords=input_text,
                     layer_count=layer_count if isinstance(layer_count, int) else None,
                 )
             else:
-                result = container.model_provider.generate_scene_tree_from_text(
+                result = provider.generate_scene_tree_from_text(
                     text=input_text,
                     layer_count=layer_count if isinstance(layer_count, int) else None,
                 )
@@ -343,6 +344,7 @@ def generate_persona_cards(
     container: Container = Depends(get_container),
 ) -> PersonaCardGenerateResponse:
     reset_model_recovery_state()
+    provider = container.capture_model_provider()
     try:
 
         def generate_cards(protected: dict[str, object]) -> PersonaGenerationProposalV1:
@@ -350,12 +352,12 @@ def generate_persona_cards(
             input_text = str(protected["input_text"])
             count = protected.get("count")
             if mode == "keywords":
-                result = container.model_provider.generate_persona_cards_from_keywords(
+                result = provider.generate_persona_cards_from_keywords(
                     keywords=input_text,
                     count=count if isinstance(count, int) else None,
                 )
             elif mode == "long_text":
-                result = container.model_provider.generate_persona_cards_from_text(
+                result = provider.generate_persona_cards_from_text(
                     text=input_text,
                     count=count if isinstance(count, int) else None,
                 )
@@ -436,6 +438,7 @@ def assist_persona_setting(
     container: Container = Depends(get_container),
 ) -> PersonaSettingAssistResponse:
     reset_model_recovery_state()
+    provider = container.capture_model_provider()
     try:
 
         def generate_setting(
@@ -446,14 +449,12 @@ def assist_persona_setting(
                 PersonaSlot.model_validate(item) for item in protected["slots"]
             ]
             try:
-                result = container.model_provider.assist_persona_setting(
+                used_model = str(getattr(provider, "setting_model", "mock"))
+                result = provider.assist_persona_setting(
                     name=str(protected["name"]),
                     summary=str(protected["summary"]),
                     slots=protected_slots,
                     rewrite_strength=float(protected["rewrite_strength"]),
-                )
-                used_model = str(
-                    getattr(container.model_provider, "setting_model", "mock")
                 )
             except RuntimeError as exc:
                 logger.warning(
@@ -531,20 +532,19 @@ def assist_persona_slot(
     payload: PersonaSlotAssistRequest, *, container: Container = Depends(get_container)
 ) -> PersonaSlotAssistResponse:
     reset_model_recovery_state()
+    provider = container.capture_model_provider()
     try:
 
         def generate_slot(protected: dict[str, object]) -> PersonaGenerationProposalV1:
             recovery_strategy = "none"
             protected_slot = PersonaSlot.model_validate(protected["slot"])
             try:
-                result = container.model_provider.assist_persona_slot(
+                used_model = str(getattr(provider, "setting_model", "mock"))
+                result = provider.assist_persona_slot(
                     name=str(protected["name"]),
                     summary=str(protected["summary"]),
                     slot=protected_slot,
                     rewrite_strength=float(protected["rewrite_strength"]),
-                )
-                used_model = str(
-                    getattr(container.model_provider, "setting_model", "mock")
                 )
             except RuntimeError as exc:
                 logger.warning(

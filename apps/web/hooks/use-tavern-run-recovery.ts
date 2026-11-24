@@ -8,6 +8,7 @@ import { RUN_STATUS_LABELS } from "../lib/tavern-copy";
 import {
   createTavernPendingRecoveryBudget,
   tavernAutomaticRecoveryDelay,
+  tavernPendingRecoveryBlocked,
   type TavernPendingRecoveryProgress,
 } from "../lib/tavern-pending-recovery";
 import type { TavernRecoveryPorts } from "../lib/tavern-workspace-ports";
@@ -23,6 +24,7 @@ export function useTavernRunRecovery(
     mountedRef,
     roomLoadVersion,
     runs,
+    recoveryChains,
     publishRoomSnapshot,
     busyAction,
     loadingOlder,
@@ -56,6 +58,7 @@ export function useTavernRunRecovery(
         snapshot.detail.room.status !== "active" ||
         requestedRoomIdRef.current !== roomId ||
         runId === foregroundRunRef.current ||
+        tavernPendingRecoveryBlocked(snapshot.recoveryChains, runId) ||
         !snapshot.runs.some((run) => run.id === runId && run.status === "pending")
       )
         return;
@@ -122,7 +125,10 @@ export function useTavernRunRecovery(
   const pendingRunId = runs.find((run) => run.status === "pending")?.id;
   const roomId = activeRoom?.status === "active" ? activeRoom.id : undefined;
   const recoveryProgress = pendingRunId ? progressByRun.get(pendingRunId) : undefined;
-  const automaticDelay = tavernAutomaticRecoveryDelay(recoveryProgress);
+  const recoveryBlocked = tavernPendingRecoveryBlocked(recoveryChains, pendingRunId);
+  const automaticDelay = recoveryBlocked
+    ? null
+    : tavernAutomaticRecoveryDelay(recoveryProgress);
   useEffect(() => {
     if (
       !roomId ||
@@ -220,5 +226,9 @@ export function useTavernRunRecovery(
     setRawError,
   ]);
 
-  return { recoveryProgress: roomId ? recoveryProgress : undefined, retryPendingRun };
+  return {
+    recoveryProgress: roomId ? recoveryProgress : undefined,
+    recoveryBlocked: Boolean(roomId && recoveryBlocked),
+    retryPendingRun,
+  };
 }

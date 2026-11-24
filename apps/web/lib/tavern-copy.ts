@@ -39,6 +39,8 @@ export const TAVERN_COPY = Object.freeze({
 const ERROR_COPY: Readonly<Record<string, string>> = Object.freeze({
   tavern_revision_conflict: "房间刚刚发生了更新，请刷新并确认内容后重试。",
   tavern_run_in_progress: "这个房间已有一轮互动正在生成，请稍后刷新。",
+  tavern_run_model_configuration_unavailable:
+    "本轮原有的模型配置已不可用。你可以取消本轮，再开始新互动；已保存的回应会保留。",
   tavern_continue_anchor_stale: "对话已出现更新；请基于最新一条消息继续。",
   tavern_retry_context_changed: "房间内容或角色设定已变化，不能继续旧恢复任务。",
   tavern_retry_already_created: "这次未完成互动已经创建过恢复任务，请刷新查看结果。",

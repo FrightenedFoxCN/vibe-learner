@@ -132,6 +132,7 @@ class TavernService:
         repository: TavernRepository,
         persona_engine: PersonaEngine,
         model_provider: TavernModelCapability,
+        capture_model: Callable[[], tuple[TavernModelCapability, str]] | None = None,
         step_lease_seconds: int = TAVERN_STEP_LEASE_SECONDS,
         max_step_claims: int = TAVERN_MAX_STEP_CLAIMS,
     ) -> None:
@@ -143,6 +144,7 @@ class TavernService:
         )
         self.persona_engine = persona_engine
         self.model_provider = model_provider
+        self._capture_model = capture_model
         self.actor_harness = TavernActorHarness()
         self.step_lease_seconds = max(1, min(900, step_lease_seconds))
         self.max_step_claims = max(1, min(5, max_step_claims))
@@ -249,6 +251,11 @@ class TavernService:
     ) -> list[TavernRunRecoveryChain]:
         self.require_room(room_id, limit=1)
         runs = self.repository.list_all_runs(room_id)
+        current_config_binding = (
+            self._capture_execution_model()[1]
+            if any(run.status == TavernRunStatus.PENDING for run in runs)
+            else None
+        )
         by_id = {run.id: run for run in runs}
         children: defaultdict[str, list[TavernRunRecord]] = defaultdict(list)
         roots: list[TavernRunRecord] = []
@@ -302,7 +309,11 @@ class TavernService:
             ]
             if leaf.status == TavernRunStatus.PENDING:
                 chain_status = TavernRunChainStatus.ACTIVE
-                action = TavernRecoveryAction.WAIT_AND_RESUME
+                action = (
+                    TavernRecoveryAction.WAIT_AND_RESUME
+                    if leaf.execution_config_binding == current_config_binding
+                    else TavernRecoveryAction.NONE
+                )
             elif leaf.status in {TavernRunStatus.PARTIAL, TavernRunStatus.FAILED}:
                 chain_status = TavernRunChainStatus.RECOVERABLE
                 action = TavernRecoveryAction.RETRY_LEAF
@@ -449,7 +460,9 @@ class TavernService:
             anchor_message_id = latest.id
             trigger_kind = TavernRunTriggerKind.CONTINUE
 
+        provider, config_binding = self._capture_execution_model()
         run = self._new_run(
+            execution_config_binding=config_binding,
             run_id=run_id,
             room_id=room_id,
             idempotency_key=payload.idempotency_key,
@@ -466,7 +479,9 @@ class TavernService:
         run, created = self._begin_run(run=run, user_message=user_message)
         if not created:
             return self._replay_run(run)
-        return self._execute_run(run=run)
+        return self._execute_run(
+            run=run, provider=provider, config_binding=config_binding
+        )
 
     def retry_run(
         self,
@@ -565,7 +580,9 @@ class TavernService:
         if root is None:
             raise HTTPException(status_code=409, detail="tavern_retry_root_missing")
         now = _now()
+        provider, config_binding = self._capture_execution_model()
         run = self._new_run(
+            execution_config_binding=config_binding,
             run_id=f"tavern-run-{uuid4().hex[:12]}",
             room_id=room_id,
             idempotency_key=payload.idempotency_key,
@@ -585,7 +602,9 @@ class TavernService:
         run, created = self._begin_run(run=run, user_message=None)
         if not created:
             return self._replay_run(run)
-        return self._execute_run(run=run)
+        return self._execute_run(
+            run=run, provider=provider, config_binding=config_binding
+        )
 
     def _new_run(
         self,
@@ -605,6 +624,7 @@ class TavernService:
         parent_run_id: str = "",
         root_run_id: str = "",
         input_message_id: str | None = None,
+        execution_config_binding: str = "",
     ) -> TavernRunRecord:
         steps = [
             TavernSpeakerStepRecord(
@@ -622,6 +642,7 @@ class TavernService:
             idempotency_key=idempotency_key,
             request_digest=request_digest,
             context_digest=context_digest,
+            execution_config_binding=execution_config_binding,
             mode=mode,
             trigger_kind=trigger_kind,
             parent_run_id=parent_run_id,
@@ -656,15 +677,24 @@ class TavernService:
             raise HTTPException(status_code=409, detail=str(exc)) from exc
         return (persisted if not created else run), created
 
+    def _capture_execution_model(self) -> tuple[TavernModelCapability, str]:
+        if self._capture_model is not None:
+            return self._capture_model()
+        return self.model_provider, ""
+
     def _execute_run(
         self,
         *,
         run: TavernRunRecord,
+        provider: TavernModelCapability,
+        config_binding: str,
     ) -> TavernTurnResponse:
         persisted = self.repository.get_run(run.id)
         if persisted is None:
             raise HTTPException(status_code=404, detail="tavern_run_not_found")
         run = persisted
+        if run.status != TavernRunStatus.PENDING:
+            return self._replay_run(run)
         root = self.repository.get_run(run.root_run_id or run.id)
         if root is None:
             raise HTTPException(status_code=409, detail="tavern_retry_root_missing")
@@ -687,6 +717,13 @@ class TavernService:
                 status_code=409,
                 detail=f"tavern_harness_operation_legacy_unbound:{run.id}",
             ) from exc
+        # Resume cannot reinterpret an already-admitted Run using current model
+        # settings. Leave the pending run readable and explicitly cancelable.
+        if run.execution_config_binding != config_binding:
+            raise HTTPException(
+                status_code=409,
+                detail=f"tavern_run_model_configuration_unavailable:{run.id}",
+            )
         # Run admission advances the Room revision. Re-read the frozen room
         # metadata/roster so every v3 subject reference names that authoritative
         # revision rather than the caller's pre-admission projection.
@@ -770,6 +807,7 @@ class TavernService:
                     execution_stage = "actor_generation"
                     generated, prepared_runtime, step_runtime = (
                         self._prepare_actor_v3_message(
+                            provider=provider,
                             run=run,
                             step_index=index,
                             trace_slot=(
@@ -1029,6 +1067,7 @@ class TavernService:
     def _prepare_actor_v3_message(
         self,
         *,
+        provider: TavernModelCapability,
         run: TavernRunRecord,
         step_index: int,
         trace_slot: int,
@@ -1150,6 +1189,7 @@ class TavernService:
                 bounded_messages[:] = deepcopy(preflight_messages)
                 provider_messages = deepcopy(preflight_messages)
                 reply = self._generate_actor_reply(
+                    provider=provider,
                     run=run,
                     actor=authorized_snapshot.actor.model_copy(deep=True),
                     detail=TavernRoomDetail(
@@ -1445,6 +1485,7 @@ class TavernService:
             )
             recent_messages = prompt_preflight.recent_messages
             raw_reply = self._generate_actor_reply(
+                provider=self._capture_execution_model()[0],
                 run=run,
                 actor=actor,
                 detail=detail,
@@ -1538,6 +1579,7 @@ class TavernService:
     def _generate_actor_reply(
         self,
         *,
+        provider: TavernModelCapability,
         run: TavernRunRecord,
         actor: TavernParticipantRecord,
         detail: TavernRoomDetail,
@@ -1548,7 +1590,7 @@ class TavernService:
         should_continue: Callable[[], bool] | None = None,
     ) -> TavernActorReply:
         """Single provider boundary, kept separate from semantic validation."""
-        return self.model_provider.generate_tavern_actor_reply(
+        return provider.generate_tavern_actor_reply(
             persona=actor.persona_snapshot,
             participants=detail.participants,
             scene_profile=detail.room.scene_profile,
@@ -1602,9 +1644,10 @@ class TavernService:
             raise HTTPException(
                 status_code=409, detail="tavern_run_participant_changed"
             )
+        provider, config_binding = self._capture_execution_model()
         try:
             return self._execute_run(
-                run=run,
+                run=run, provider=provider, config_binding=config_binding
             )
         except TavernStepClaimConflict as exc:
             raise HTTPException(

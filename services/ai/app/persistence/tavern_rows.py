@@ -174,6 +174,7 @@ def _run_from_row(
         idempotency_key=row.idempotency_key,
         request_digest=text_at(payload, "request_digest"),
         context_digest=text_at(payload, "context_digest"),
+        execution_config_binding=text_at(payload, "execution_config_binding"),
         mode=row.mode,
         trigger_kind=str(payload.get("trigger_kind") or "user_message"),
         parent_run_id=text_or_empty(row.parent_run_id),
@@ -226,6 +227,7 @@ def _apply_run_to_row(row: TavernRunRow, run: TavernRunRecord) -> None:
     row.payload = {
         "request_digest": run.request_digest,
         "context_digest": run.context_digest,
+        "execution_config_binding": run.execution_config_binding,
         "trigger_kind": run.trigger_kind.value,
         "root_run_id": run.root_run_id or run.id,
         "anchor_message_id": run.anchor_message_id,

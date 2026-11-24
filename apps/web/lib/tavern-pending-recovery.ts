@@ -1,3 +1,22 @@
+import type { TavernRunRecoveryChain } from "@vibe-learner/shared";
+
+export function tavernPendingRecoveryBlocked(
+  chains: readonly (Pick<TavernRunRecoveryChain, "chainStatus" | "recoveryAction"> & {
+    leafRun: { id: string };
+  })[],
+  runId: string | undefined,
+): boolean {
+  return Boolean(
+    runId &&
+    chains.some(
+      (chain) =>
+        chain.leafRun.id === runId &&
+        chain.chainStatus === "active" &&
+        chain.recoveryAction === "none",
+    ),
+  );
+}
+
 const AUTO_RECOVERY_DELAYS_MS = [2500, 5000, 10000] as const;
 
 type RecoveryMode = "automatic" | "manual";

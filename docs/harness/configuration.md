@@ -2,10 +2,11 @@
 
 ## 配置优先级
 
-1. 启动时 `Settings.from_env()` 读取 `services/ai/.env` 与进程环境变量；
-2. `RuntimeSettingsService` 从数据库 `runtime_settings` 载入可编辑设置，并在每次操作入口冻结一份配置快照，确保单次请求不会中途跨配置切换；
-3. 桌面模式下 API 密钥仅保存在内存会话密钥中，接口响应不回显明文；
-4. 数据库连接、存储目录、OCR 与版面引擎等基础设施配置始终以启动环境为准，不由运行时设置热切换。
+1. 启动时从进程环境变量及 `services/ai/.env` 读取基线（进程环境优先）。显式设置的数值必须通过统一契约，否则启动失败；迁移未版本化旧记录时，仅把无效数值字段恢复到规格默认值。
+2. 环境基线只初始化缺失的数据库运行配置。已有设置以数据库中已提交的版本为准；稀疏 PATCH 在数据库事务内合并本次字段，新操作读取已提交版本，不沿用其他进程的旧缓存。
+3. 操作开始时冻结 provider 与配置，不在操作中途重新读取。工具策略在捕获后同样冻结。Tavern 未完成的 Run 只在能确认原配置绑定时继续；已提交消息不受影响。
+4. 空的分域访问密钥保留为继承，并在运行时解析全局值；升级不会猜测历史非空值是否由旧版复制。桌面会话密钥只保存在内存，不进入持久配置快照或接口明文。
+5. 数据库连接、存储目录、OCR 与版面引擎等基础设施配置始终以启动环境为准，不由运行时设置热切换。
 
 浏览器可编辑参数的默认值与范围，以及界面展示的输出预算，统一定义在 `packages/shared/fixtures/model-runtime-config-v1.json`。修改后执行 `cd services/ai && uv run python ../../scripts/gen_model_runtime_config.py`，生成 Python 与 TypeScript 定义；`npm run check:contracts` 拒绝不同步的产物。服务端读回仍是当前运行时取值的权威。
 
@@ -45,8 +46,8 @@ LiteLLM 兼容适配层可按模型要求将 `max_tokens` 映射为 `max_complet
 | 工作流 | 逻辑请求上限 |
 | --- | --- |
 | Plan 修订 | 1 |
-| Planning 生成 | 单个 runner 最多 24 rounds（其中最多 1 个工具 round）；primary 失败可切换 1 次 fallback 模型，最终提案无法本地修复时可发起 1 次无工具 strict repair（理论上限 72，通常先受 180 秒 Harness wall-time 截断） |
-| Persona / Scene 生成 | 初始 1 次 + 结构修复 1 次；关键词搜索不兼容时可降级无网络 chat，最坏 3 次 |
+| Planning 生成 | 单个 runner 最多 24 rounds（其中最多 1 个工具 round）；主模型最终空响应或工具轮次耗尽时，可切换 1 次备用模型，最终提案无法本地修复时可发起 1 次无工具 strict repair（理论上限 72，通常先受 180 秒 Harness wall-time 截断） |
+| Persona / Scene 生成 | 初始 1 次 + 结构修复 1 次；关键词联网参数被明确拒绝时可降级无网络 Chat，最坏 3 次 |
 | Study Chat | 最多 `max(tool_max_rounds + 12, tool_max_rounds * 3)` 个生成 round（默认 16）+ 1 次无工具最终恢复（默认最多 17） |
 | Tavern 角色回复 | 初始 1 次 + JSON Schema 降级 `json_object` 1 次 + 语义修复 1 次，最多 3 次 |
 

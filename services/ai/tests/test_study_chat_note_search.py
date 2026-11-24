@@ -62,14 +62,21 @@ class StudyChatNoteSearchTests(TestCase):
         )
         self.container = self.client.app.state.container
         self.repository = self.container.study_note_repository
-        self.provider = self.container.model_provider
-        self.assertIsInstance(self.provider, OpenAIModelProvider)
-        # Keep the real provider's tool availability, parsing, and tool loop;
-        # stub only SDK/network boundaries.
+        # Provider generations rotate on changes to the tool policy. Keep the
+        # real parser and tool loop but stub every generation's network boundary.
         self.enterContext(
-            patch.object(self.provider, "_sdk_adapter", return_value=Mock())
+            patch.object(OpenAIModelProvider, "_sdk_adapter", return_value=Mock())
         )
-        self.enterContext(patch.object(self.provider, "embed_texts", return_value=[]))
+        self.enterContext(
+            patch.object(OpenAIModelProvider, "embed_texts", return_value=[])
+        )
+        self.enterContext(
+            patch.object(
+                OpenAIModelProvider,
+                "_request_openai_chat_completion",
+                side_effect=AssertionError("unexpected unstubbed provider call"),
+            )
+        )
         self.requests = []
 
     def new_session(self):
@@ -98,7 +105,9 @@ class StudyChatNoteSearchTests(TestCase):
             self.requests.append(deepcopy(payload))
             return next(remaining)
 
-        with patch.object(self.provider, "_request_openai_chat_completion", request):
+        provider = self.container.capture_model_provider()
+        self.assertIsInstance(provider, OpenAIModelProvider)
+        with patch.object(provider, "_request_openai_chat_completion", request):
             response = self.client.post(
                 f"/study-sessions/{session['id']}/chat",
                 json={

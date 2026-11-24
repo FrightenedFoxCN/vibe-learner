@@ -85,11 +85,13 @@ class LearningPlanService:
         model_provider: PlanningModelCapability,
         operation_repository: LearningPlanOperationRepository | None = None,
         harness_service: HarnessProposalRuntimeService | None = None,
+        capture_model: Callable[[], PlanningModelCapability] | None = None,
     ) -> None:
         self.store = store
         self.repository = LearningPlanRepository(store.database)
         self.arrangement_service = arrangement_service
         self.model_provider = model_provider
+        self._capture_model = capture_model
         self.operation_repository = (
             operation_repository or LearningPlanOperationRepository(store.database)
         )
@@ -110,6 +112,7 @@ class LearningPlanService:
         before_commit: Callable[[], None] | None = None,
         operation_admitted_callback: Callable[[str], None] | None = None,
     ) -> LearningPlanRecord:
+        provider = self._capture_model() if self._capture_model else self.model_provider
         client_request_id = client_request_id.strip() or f"plan-request-{uuid4().hex}"
         request = LearningPlanOperationRequestV1(
             client_request_id=client_request_id,
@@ -220,6 +223,7 @@ class LearningPlanService:
                 )
                 protected_persona = PersonaProfile.model_validate(protected["persona"])
                 result = self._build_plan_candidate(
+                    provider=provider,
                     goal=protected_goal,
                     document=protected_document,
                     persona_name=str(protected["persona_name"]),
@@ -393,6 +397,7 @@ class LearningPlanService:
     def _build_plan_candidate(
         self,
         *,
+        provider: PlanningModelCapability,
         goal: LearningGoalInput,
         document: DocumentRecord | None,
         persona_name: str,
@@ -523,7 +528,7 @@ class LearningPlanService:
             raise RuntimeError("planning_intent_invalid:scope_has_no_study_units")
         if provider_start_callback is not None:
             provider_start_callback()
-        model_plan = self.model_provider.generate_learning_plan(
+        model_plan = provider.generate_learning_plan(
             persona=persona,
             document_title=document_title,
             goal=goal,

@@ -253,7 +253,7 @@ STAGE_META: dict[str, dict[str, str]] = {
 class ModelToolConfigService:
     def __init__(self, store: LocalJsonStore) -> None:
         self._store = store
-        self._record = self._load_or_default()
+        self._load_or_default()
 
     def list_stage_names(self) -> list[str]:
         return list(TOOL_CATALOG.keys())
@@ -264,17 +264,27 @@ class ModelToolConfigService:
     def is_enabled(self, *, stage_name: str, tool_name: str) -> bool:
         if tool_name not in TOOL_CATALOG.get(stage_name, {}):
             return False
-        stage_settings = self._record.stage_tool_enabled.get(stage_name, {})
-        return bool(stage_settings.get(tool_name, True))
+        return tool_name not in self.disabled_tools_for_stage(stage_name)
+
+    @staticmethod
+    def _disabled_tools(record: ModelToolConfigRecord, stage: str) -> frozenset[str]:
+        enabled = record.stage_tool_enabled.get(stage, {})
+        return frozenset(
+            tool for tool in TOOL_CATALOG.get(stage, {}) if not enabled.get(tool, True)
+        )
 
     def disabled_tools_for_stage(self, stage_name: str) -> set[str]:
-        return {
-            tool_name
-            for tool_name in self.list_stage_tools(stage_name)
-            if not self.is_enabled(stage_name=stage_name, tool_name=tool_name)
-        }
+        return set(self._disabled_tools(self._load_or_default(), stage_name))
+
+    def disabled_tools_snapshot(self) -> tuple[frozenset[str], frozenset[str]]:
+        # One record governs both stages, including updates by another worker.
+        record = self._load_or_default()
+        return self._disabled_tools(record, PLAN_STAGE), self._disabled_tools(
+            record, CHAT_STAGE
+        )
 
     def describe(self) -> dict[str, Any]:
+        record = self._load_or_default()
         stages: list[dict[str, Any]] = []
         for stage_name in self.list_stage_names():
             stage_tools = TOOL_CATALOG.get(stage_name, {})
@@ -287,8 +297,8 @@ class ModelToolConfigService:
                         "description": meta["description"],
                         "category": meta["category"],
                         "category_label": meta["category_label"],
-                        "enabled": self.is_enabled(
-                            stage_name=stage_name, tool_name=tool_name
+                        "enabled": record.stage_tool_enabled.get(stage_name, {}).get(
+                            tool_name, True
                         ),
                     }
                 )
@@ -302,13 +312,14 @@ class ModelToolConfigService:
                 }
             )
         return {
-            "updated_at": self._record.updated_at,
+            "updated_at": record.updated_at,
             "stages": stages,
         }
 
     def update(self, updates: list[dict[str, Any]]) -> ModelToolConfigRecord:
+        record = self._load_or_default()
         next_stage_map = {
-            key: dict(value) for key, value in self._record.stage_tool_enabled.items()
+            key: dict(value) for key, value in record.stage_tool_enabled.items()
         }
 
         for item in updates:
@@ -331,7 +342,6 @@ class ModelToolConfigService:
             stage_tool_enabled=next_stage_map,
         )
         self._store.save_item("model_tool_config", "default", next_record)
-        self._record = next_record
         return next_record
 
     def _load_or_default(self) -> ModelToolConfigRecord:

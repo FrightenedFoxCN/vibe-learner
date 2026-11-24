@@ -59,6 +59,7 @@ def _structured_tavern_error(
             "tavern_run_in_progress",
             "tavern_run_canceled",
             "tavern_run_superseded",
+            "tavern_run_model_configuration_unavailable",
         }
         and len(parts) > 1
     ):
@@ -89,6 +90,7 @@ def _structured_tavern_error(
         "tavern_retry_context_changed",
         "tavern_retry_participant_changed",
         "tavern_run_context_changed",
+        "tavern_run_model_configuration_unavailable",
         "tavern_run_participant_changed",
         "tavern_participant_history_conflict",
         "tavern_room_not_active",
