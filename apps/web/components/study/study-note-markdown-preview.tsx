@@ -4,11 +4,13 @@ import ReactMarkdown from "react-markdown";
 import rehypeKatex from "rehype-katex";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
+import { normalizeMathDelimiters } from "../../lib/rich-text-normalize";
 import "../ui/rich-text-message-vendor.css";
 
 export default function StudyNoteMarkdownPreview({ source }: { source: string }) {
   if (!source.trim())
     return <p className="study-notes-muted">写下 Markdown，即可在这里预览。</p>;
+  const normalizedSource = normalizeMathDelimiters(source);
   return (
     <ReactMarkdown
       skipHtml
@@ -45,7 +47,7 @@ export default function StudyNoteMarkdownPreview({ source }: { source: string })
         ),
       }}
     >
-      {source}
+      {normalizedSource}
     </ReactMarkdown>
   );
 }

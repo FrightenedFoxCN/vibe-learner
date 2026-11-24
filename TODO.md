@@ -99,7 +99,7 @@
 
 #### P1（聊天与笔记 Markdown 数学渲染修复）
 
-- [ ] **P1-UI-11 保护代码块与数学公式区间并支持完整 LaTeX 定界符**
+- [x] **P1-UI-11 保护代码块与数学公式区间并支持完整 LaTeX 定界符**
   - 重写 `apps/web/lib/rich-text-normalize.ts`：先按词法扫描隔离围栏代码块、行内代码与数学区间再修复模型 prose 排版，彻底消除有序列表或标点后的 `-` / `*` / `1.` 撕裂数学公式与篡改代码块、压平嵌套列表的问题。
   - 新增共享数学定界符规范化：将非代码区间的 `\(...\)` 与 `\[...\]` 转为 `remark-math` 可解析的 `$...$` / 多行 `$$...$$`，并将非表格/非行内场景的单行 `$$...$$` 规整为多行块级公式以触发 KaTeX `displayMode`；同步接入 `study-note-markdown-preview.tsx`。
   - 新增 `apps/web/tests/rich-text-normalize.test.ts` 并纳入根 `package.json` 的 `test:invariants:web`。

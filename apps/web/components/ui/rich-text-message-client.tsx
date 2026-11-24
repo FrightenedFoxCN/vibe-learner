@@ -21,7 +21,7 @@ export default function RichTextMessageClient({
   content,
   inline = false,
 }: RichTextMessageClientProps) {
-  const normalizedContent = normalizeRichTextContent(content);
+  const normalizedContent = normalizeRichTextContent(content, { inline });
   const WrapperTag = inline ? "span" : "div";
 
   return (
