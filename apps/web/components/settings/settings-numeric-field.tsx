@@ -32,9 +32,10 @@ export function SettingsNumericField({
           setInvalidDraft(null);
           controller.setNumericDraft(name, event.target.value);
         }}
-        onBlur={() =>
-          setInvalidDraft(controller.commitNumericSetting(name) ? null : value)
-        }
+        onBlur={(event) => {
+          const draft = event.currentTarget.value;
+          setInvalidDraft(controller.commitNumericSetting(name) ? null : draft);
+        }}
       />
       <span id={id + "-hint"} className="text-xs text-muted">
         范围 {config.min}–{config.max}，默认 {config.default}。{hint}
