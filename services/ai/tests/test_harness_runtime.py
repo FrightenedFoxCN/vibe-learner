@@ -256,7 +256,7 @@ class HarnessRuntimeTests(unittest.TestCase):
         )
         check_execution_budget()  # The expired scope must not leak to a later operation.
 
-    def test_generation_call_timeout_uses_manifest_and_remaining_wall_time(
+    def test_generation_call_timeout_intersects_provider_and_harness_limits(
         self,
     ) -> None:
         from app.core.execution_budget import execution_call_timeout_seconds
@@ -265,9 +265,15 @@ class HarnessRuntimeTests(unittest.TestCase):
         observed_timeouts = []
 
         def generate(_context, _artifacts):
-            observed_timeouts.append(execution_call_timeout_seconds(30))
+            observed_timeouts.extend(
+                execution_call_timeout_seconds(settings_limit)
+                for settings_limit in (5, 30, 300)
+            )
             current[0] += timedelta(seconds=130)
-            observed_timeouts.append(execution_call_timeout_seconds(30))
+            observed_timeouts.extend(
+                execution_call_timeout_seconds(settings_limit)
+                for settings_limit in (5, 30, 300)
+            )
             return {"value": "valid"}
 
         base = self.fixture.adapter()
@@ -286,7 +292,8 @@ class HarnessRuntimeTests(unittest.TestCase):
             claim_owner="worker-a",
         )
 
-        self.assertEqual(observed_timeouts, [120, 50])
+        self.assertEqual(observed_timeouts, [5, 30, 120, 5, 30, 50])
+        self.assertEqual(execution_call_timeout_seconds(300), 300)
         assert result.terminal_trace is not None
         self.assertEqual(result.terminal_trace.status, HarnessStatus.PASSED)
 

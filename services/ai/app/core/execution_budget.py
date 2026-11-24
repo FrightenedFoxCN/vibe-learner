@@ -17,11 +17,10 @@ def check_execution_budget() -> None:
 
 
 def execution_call_timeout_seconds(default: int) -> int:
-    """Resolve the narrowest active Harness call timeout, or the runtime default."""
-    resolvers = _call_timeout_seconds.get()
-    if not resolvers:
-        return max(1, int(default))
-    return max(1, min(max(1, int(resolve())) for resolve in resolvers))
+    """Intersect the configured provider limit with every active Harness limit."""
+    limits = [max(1, int(default))]
+    limits.extend(max(1, int(resolve())) for resolve in _call_timeout_seconds.get())
+    return min(limits)
 
 
 @contextmanager
