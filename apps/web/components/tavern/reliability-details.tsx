@@ -42,10 +42,7 @@ export function ReliabilityDetails({
   return (
     <details className="tavern-panel reliability-details">
       <summary>
-        <span>
-          <span className="tavern-kicker">Reliability Details</span>
-          <strong>可靠性摘要</strong>
-        </span>
+        <strong>可靠性摘要</strong>
         <span
           className="tavern-count"
           aria-label={`${retryableRuns.length} 个待恢复项`}

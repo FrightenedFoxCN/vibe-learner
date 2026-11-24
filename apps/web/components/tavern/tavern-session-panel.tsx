@@ -29,10 +29,7 @@ export function TavernSessionPanel({
       aria-labelledby="tavern-session-title"
     >
       <div className="tavern-panel-heading">
-        <div>
-          <p className="tavern-kicker">Tavern Session Panel</p>
-          <h2 id="tavern-session-title">最近酒馆</h2>
-        </div>
+        <h2 id="tavern-session-title">最近酒馆</h2>
         <span className="tavern-count">{rooms.length}</span>
       </div>
       {rooms.length ? (

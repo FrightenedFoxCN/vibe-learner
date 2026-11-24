@@ -22,7 +22,6 @@ export function TavernHeader({
   return (
     <header className="tavern-header">
       <div>
-        <p className="tavern-eyebrow">Tavern Workspace</p>
         <h1>{room?.title || "角色酒馆"}</h1>
         <p className="tavern-header-status" role="status" aria-live="polite">
           <span
@@ -37,7 +36,7 @@ export function TavernHeader({
           />
           {busy ? "处理中 · " : ""}
           {notice}
-          {room ? ` · revision ${room.revision}` : ""}
+          {room ? ` · 版本 ${room.revision}` : ""}
           <ProviderTruth scope="tavern" />
         </p>
       </div>

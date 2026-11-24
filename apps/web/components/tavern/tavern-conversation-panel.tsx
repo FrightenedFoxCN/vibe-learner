@@ -115,10 +115,7 @@ export function TavernConversationPanel({
       aria-labelledby="tavern-conversation-title"
     >
       <div className="tavern-panel-heading conversation-heading">
-        <div>
-          <p className="tavern-kicker">Tavern Conversation Panel</p>
-          <h2 id="tavern-conversation-title">对话记录</h2>
-        </div>
+        <h2 id="tavern-conversation-title">对话记录</h2>
         <span className="tavern-count">
           {messages.length}/{messageCount}
         </span>

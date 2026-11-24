@@ -175,10 +175,7 @@ export function InteractionComposer({
       aria-labelledby="interaction-composer-title"
     >
       <div className="tavern-panel-heading">
-        <div>
-          <p className="tavern-kicker">Interaction Composer</p>
-          <h2 id="interaction-composer-title">发起互动</h2>
-        </div>
+        <h2 id="interaction-composer-title">发起互动</h2>
       </div>
       <p className="tavern-recipient-preview">
         {recipientNames.length

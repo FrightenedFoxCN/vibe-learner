@@ -89,7 +89,7 @@
 
 #### P2（跨页一致性、信息架构与细节打磨）
 
-- [ ] **P2-UI-08 优化 `Tavern Workspace` 移动端阅读顺序与视觉语言收口**
+- [x] **P2-UI-08 优化 `Tavern Workspace` 移动端阅读顺序与视觉语言收口**
   - 移动端进入已有房间时优先呈现 `Tavern Conversation Panel`，再承接输入与阵容；去除 `Tavern Header` 大面积径向渐变，并将英文工程眉标/修订文案收口为克制的中文展示。
 - [ ] **P2-UI-09 优化 `Persona Spectrum` / `Scene Setup` 工具栏辨识度与只读态区分**
   - 为纯图标高频工具栏补充清晰可见短标签或分组语义，内置只读人格在表单顶部明确标示只读态与复制入口；修复 `persona-slots-pane.tsx` 标题栏中 `.secondary-actions` 顶部悬空横线与高度不齐问题。

@@ -15,16 +15,10 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 20px;
-    padding: 20px 22px;
+    gap: 16px;
+    padding: 16px 20px;
     border: 1px solid var(--border);
-    background:
-      radial-gradient(
-        circle at 92% 12%,
-        color-mix(in srgb, var(--accent-soft) 82%, transparent) 0,
-        transparent 28%
-      ),
-      var(--bg);
+    background: var(--bg);
   }
 
   :where(.tavern-page) .tavern-header h1,
@@ -35,8 +29,8 @@
   }
 
   :where(.tavern-page) .tavern-header h1 {
-    font-size: clamp(22px, 2.5vw, 32px);
-    line-height: 1.15;
+    font-size: clamp(20px, 2vw, 24px);
+    line-height: 1.2;
   }
 
   :where(.tavern-page) .tavern-eyebrow,
@@ -186,8 +180,8 @@
   }
 
   :where(.tavern-page) .tavern-panel-heading {
-    min-height: 59px;
-    padding: 13px 14px;
+    min-height: 48px;
+    padding: 10px 14px;
     border-bottom: 1px solid var(--border);
     display: flex;
     align-items: center;
@@ -784,11 +778,15 @@
 
     :where(.tavern-page) .tavern-conversation-panel {
       grid-column: 1;
-      grid-row: 2;
+      grid-row: 1;
+    }
+
+    :where(.tavern-page) .tavern-workspace-grid.has-room .tavern-conversation-panel {
+      grid-row: 1;
     }
 
     :where(.tavern-page) .tavern-workspace-grid.has-room .tavern-right-rail {
-      grid-row: 1;
+      grid-row: 2;
     }
 
     :where(.tavern-page) .tavern-workspace-grid.has-room .tavern-left-rail {
@@ -804,10 +802,7 @@
     }
 
     :where(.tavern-page) .interaction-composer {
-      position: sticky;
-      z-index: 12;
-      bottom: 8px;
-      box-shadow: 0 -8px 24px color-mix(in srgb, var(--ink) 10%, transparent);
+      order: 1;
     }
 
     :where(.tavern-page) .participant-roster {
@@ -865,9 +860,14 @@
       width: auto;
     }
 
-    :where(.tavern-page) .tavern-header-actions .tavern-button,
+    :where(.tavern-page) .tavern-header-actions {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+      width: 100%;
+    }
+
     :where(.tavern-page) .tavern-composer-actions .tavern-button {
-      flex: 1 1 130px;
+      flex: 1 1 120px;
       min-height: 44px;
     }
 

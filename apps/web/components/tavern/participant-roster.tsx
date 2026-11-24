@@ -20,10 +20,7 @@ export function ParticipantRoster({
       aria-labelledby="participant-roster-title"
     >
       <div className="tavern-panel-heading">
-        <div>
-          <p className="tavern-kicker">Participant Roster</p>
-          <h2 id="participant-roster-title">角色与目标</h2>
-        </div>
+        <h2 id="participant-roster-title">角色与目标</h2>
         <span className="tavern-count">{selectedIds.length} 已选</span>
       </div>
       {states.length ? (

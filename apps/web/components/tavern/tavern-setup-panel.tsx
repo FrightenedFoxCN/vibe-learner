@@ -75,10 +75,7 @@ export function TavernSetupPanel({
       aria-labelledby="tavern-setup-title"
     >
       <div className="tavern-panel-heading">
-        <div>
-          <p className="tavern-kicker">Tavern Setup Panel</p>
-          <h2 id="tavern-setup-title">创建房间</h2>
-        </div>
+        <h2 id="tavern-setup-title">创建房间</h2>
         {onCancel ? (
           <button type="button" className="tavern-text-button" onClick={onCancel}>
             收起
