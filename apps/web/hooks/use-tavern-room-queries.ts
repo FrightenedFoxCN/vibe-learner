@@ -57,7 +57,6 @@ export function useTavernRoomQueries(
     roomLoadVersion,
     roomRefreshVersion,
     recoveryVersionRef,
-    resumeRunRef,
     mountedRef,
     requestedRoomIdRef,
     olderLoadRoomRef,
@@ -100,7 +99,6 @@ export function useTavernRoomQueries(
         loadVersion === roomLoadVersion.current &&
         requestedRoomIdRef.current === roomId;
       recoveryVersionRef.current += 1;
-      resumeRunRef.current = "";
       mutationOperationRef.current = null;
       mutationOperationVersionRef.current += 1;
       foregroundOperationIdRef.current = null;
@@ -160,7 +158,7 @@ export function useTavernRoomQueries(
           nextDetail.room.status === "archived"
             ? "已打开归档房间（只读）"
             : hasActiveTavernRun(nextRuns)
-              ? "检测到正在执行的互动，正在自动恢复"
+              ? "检测到尚未完成的互动"
               : "酒馆已就绪",
         );
         rememberActiveTavernRoomId(roomId);
@@ -199,7 +197,6 @@ export function useTavernRoomQueries(
       olderLoadRoomRef,
       recoveryVersionRef,
       requestedRoomIdRef,
-      resumeRunRef,
       roomLoadVersion,
       roomRefreshVersion,
       setBusyAction,
@@ -255,14 +252,17 @@ export function useTavernRoomQueries(
   );
 
   const refreshRoom = useCallback(
-    async (context = diagnosticContext(createDiagnosticId())) => {
+    async (
+      context = diagnosticContext(createDiagnosticId()),
+      { recoveryRead = false } = {},
+    ) => {
       if (!mountedRef.current || !activeRoom?.id) {
         return;
       }
       const roomId = activeRoom.id;
       const refreshVersion = ++roomRefreshVersion.current;
       const recoveryVersion = ++recoveryVersionRef.current;
-      const roomListRead = updateRooms(context);
+      const roomListRead = recoveryRead ? null : updateRooms(context);
       try {
         const snapshot = await readTavernRoomSnapshot({
           detail: getTavernRoom(
@@ -314,7 +314,7 @@ export function useTavernRoomQueries(
           nextDetail.room.status === "archived"
             ? "已同步归档房间"
             : latestRun?.status === "pending"
-              ? "检测到正在执行的互动，正在自动恢复"
+              ? "检测到尚未完成的互动"
               : latestRun
                 ? `已同步 · ${RUN_STATUS_LABELS[latestRun.status]}`
                 : "酒馆已就绪",
@@ -326,12 +326,16 @@ export function useTavernRoomQueries(
           requestedRoomIdRef.current === roomId &&
           refreshVersion === roomRefreshVersion.current
         ) {
-          recordError(
-            error,
-            "刷新失败，当前内容仍保留在页面上。",
-            setVisibleError,
-            setRawError,
-          );
+          if (recoveryRead) {
+            setRawError(String(error));
+          } else {
+            recordError(
+              error,
+              "刷新失败，当前内容仍保留在页面上。",
+              setVisibleError,
+              setRawError,
+            );
+          }
         }
         return null;
       } finally {

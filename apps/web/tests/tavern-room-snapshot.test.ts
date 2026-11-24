@@ -9,6 +9,10 @@ import {
   type TavernRoomSnapshotAction,
 } from "../lib/tavern-room-snapshot.ts";
 import { refreshTavernTranscript } from "../lib/tavern-transcript-refresh.ts";
+import {
+  createTavernPendingRecoveryBudget,
+  tavernAutomaticRecoveryDelay,
+} from "../lib/tavern-pending-recovery.ts";
 
 const now = "2026-01-01T00:00:00Z";
 function page(
@@ -244,6 +248,50 @@ test("terminal runs, newer details and newer recovery are not regressed", () => 
   });
   assert.equal(refresh.runsKnown, true);
   assert.equal(refresh.recoveryKnown, true);
+});
+
+test("pending resume has a per-run budget, backs off, and allows a manual attempt after exhaustion", () => {
+  const budget = createTavernPendingRecoveryBudget();
+  let progress;
+  for (const delay of [2500, 5000, 10000]) {
+    assert.equal(tavernAutomaticRecoveryDelay(progress), delay);
+    const started = budget.begin("a-run", "automatic");
+    assert.ok(started);
+    assert.equal(tavernAutomaticRecoveryDelay(started), null);
+    assert.equal(budget.begin("a-run", "automatic"), null);
+    assert.equal(budget.begin("a-run", "manual"), null);
+    // Failure/lease conflict/pending reply all consume exactly one attempt.
+    progress = budget.finish("a-run");
+  }
+  assert.equal(tavernAutomaticRecoveryDelay(progress), null);
+  assert.equal(budget.begin("a-run", "automatic"), null);
+  assert.equal(budget.begin("b-run", "automatic")?.automaticAttempts, 1);
+  assert.equal(budget.begin("a-run", "manual")?.automaticAttempts, 3);
+  assert.equal(tavernAutomaticRecoveryDelay(budget.finish("a-run")), null);
+  assert.equal(budget.begin("a-run", "automatic"), null);
+});
+
+test("a lost resume response is recovered by reading committed records, without duplicating the input", async () => {
+  const pending = run("a", "pending");
+  const before = open(first(), [pending]);
+  const after = page("a", 10, 11, 10);
+  const transcript = await refreshTavernTranscript(before.detail, after, () =>
+    assert.fail("the server tail already overlaps the committed transcript"),
+  );
+  const completed = apply(before, {
+    kind: "refresh",
+    detail: after,
+    initial: before.detail,
+    transcript,
+    runs: [run("a", "completed")],
+    recovery: [],
+    ownsRecovery: true,
+  });
+  assert.deepEqual(sequences(completed), [8, 9, 10, 11]);
+  assert.deepEqual(
+    completed.runs.map(({ id, status }) => [id, status]),
+    [[pending.id, "completed"]],
+  );
 });
 
 test("replaying creation of the visible room preserves unknown Run status and cursor", () => {

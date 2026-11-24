@@ -50,11 +50,9 @@ export function useTavernWorkspaceState() {
   const olderLoadRoomRef = useRef<string | null>(null);
   const mutationOperationRef = useRef<MutationOperation | null>(null);
   const mutationOperationVersionRef = useRef(0);
-  const resumeRunRef = useRef("");
   const foregroundRunRef = useRef("");
   const foregroundOperationIdRef = useRef<number | null>(null);
   const runPollVersionRef = useRef(0);
-  const resumeAttemptsRef = useRef(new Map<string, number>());
   const roomsRef = useRef<TavernRoomSummary[]>([]);
   const roomPageVersionRef = useRef(0);
   const loadingRoomCursorRef = useRef<string | null>(null);
@@ -179,11 +177,9 @@ export function useTavernWorkspaceState() {
     olderLoadRoomRef,
     mutationOperationRef,
     mutationOperationVersionRef,
-    resumeRunRef,
     foregroundRunRef,
     foregroundOperationIdRef,
     runPollVersionRef,
-    resumeAttemptsRef,
     roomsRef,
     roomPageVersionRef,
     loadingRoomCursorRef,

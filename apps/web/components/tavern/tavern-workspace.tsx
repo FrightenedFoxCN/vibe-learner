@@ -12,6 +12,7 @@ import { TavernConversationPanel } from "./tavern-conversation-panel";
 import { ParticipantRoster } from "./participant-roster";
 import { InteractionComposer } from "./interaction-composer";
 import { ReliabilityDetails } from "./reliability-details";
+import { TavernPendingRecovery } from "./tavern-pending-recovery";
 import "./tavern-workspace.css";
 import { AsyncFeedback } from "../ui/async-feedback";
 import { usePageDebugSnapshot } from "../debug/page-debug-context";
@@ -56,6 +57,8 @@ export function TavernWorkspace({
     handleArchiveToggle,
     handleTurn,
     handleCancelRun,
+    recoveryProgress,
+    retryPendingRun,
     handleRetry,
     handleTargetToggle,
     storage,
@@ -173,6 +176,13 @@ export function TavernWorkspace({
 
         {activeRoom ? (
           <div className="tavern-right-rail">
+            {recoveryProgress ? (
+              <TavernPendingRecovery
+                progress={recoveryProgress}
+                busy={busyAction !== null || loadingOlder}
+                onRetry={() => void retryPendingRun()}
+              />
+            ) : null}
             <InteractionComposer
               storage={storage}
               key={activeRoom.id}

@@ -1,13 +1,15 @@
 "use client";
 
-import type { TavernRun } from "@vibe-learner/shared";
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 
-import { decodeTavernHttpError } from "../lib/data/tavern";
 import { createDiagnosticId, diagnosticContext } from "../lib/diagnostics";
 import { RUN_STATUS_LABELS } from "../lib/tavern-copy";
 
-import { recordError } from "../lib/tavern-client-errors";
+import {
+  createTavernPendingRecoveryBudget,
+  tavernAutomaticRecoveryDelay,
+  type TavernPendingRecoveryProgress,
+} from "../lib/tavern-pending-recovery";
 import type { TavernRecoveryPorts } from "../lib/tavern-workspace-ports";
 import type { TavernRoomQueries } from "./use-tavern-room-queries";
 import type { TavernWorkspaceState } from "./use-tavern-workspace-state";
@@ -23,36 +25,44 @@ export function useTavernRunRecovery(
     runs,
     publishRoomSnapshot,
     busyAction,
+    loadingOlder,
     setNotice,
-    setVisibleError,
     setRawError,
     readRoomSnapshot,
     requestedRoomIdRef,
     mutationOperationRef,
     mutationOperationVersionRef,
-    resumeRunRef,
+    olderLoadRoomRef,
     foregroundRunRef,
     foregroundOperationIdRef,
     runPollVersionRef,
-    resumeAttemptsRef,
     activeRoom,
   } = state;
   const { listTavernRuns, resumeTavernRun } = ports.api;
   const { clock } = ports;
   const { refreshRoom, syncTurnResult } = queries;
+  const [budget] = useState(createTavernPendingRecoveryBudget);
+  const [progressByRun, setProgressByRun] = useState<
+    ReadonlyMap<string, TavernPendingRecoveryProgress>
+  >(() => new Map());
   const resumePendingRun = useCallback(
-    async (run: TavernRun) => {
-      const roomId = run.roomId;
+    async (roomId: string, runId: string, mode: "automatic" | "manual") => {
+      const snapshot = readRoomSnapshot();
       if (
         !mountedRef.current ||
         mutationOperationRef.current !== null ||
-        !roomId ||
-        resumeRunRef.current === run.id ||
-        readRoomSnapshot()?.detail.room.id !== roomId ||
-        requestedRoomIdRef.current !== roomId
-      ) {
+        olderLoadRoomRef.current !== null ||
+        snapshot?.detail.room.id !== roomId ||
+        snapshot.detail.room.status !== "active" ||
+        requestedRoomIdRef.current !== roomId ||
+        runId === foregroundRunRef.current ||
+        !snapshot.runs.some((run) => run.id === runId && run.status === "pending")
+      )
         return;
-      }
+
+      const progress = budget.begin(runId, mode);
+      if (!progress) return;
+      setProgressByRun((current) => new Map(current).set(runId, progress));
       const loadVersion = roomLoadVersion.current;
       const mutationVersion = mutationOperationVersionRef.current;
       const isCurrent = () =>
@@ -62,86 +72,86 @@ export function useTavernRunRecovery(
         mutationOperationRef.current === null &&
         readRoomSnapshot()?.detail.room.id === roomId &&
         requestedRoomIdRef.current === roomId;
-      resumeRunRef.current = run.id;
       const diagnostic = diagnosticContext(createDiagnosticId());
       try {
-        const result = await resumeTavernRun(roomId, run.id, diagnostic);
-        if (!isCurrent() || !syncTurnResult(result)) return;
-        resumeAttemptsRef.current.delete(run.id);
-        setNotice(
-          result.run.status === "completed"
-            ? "中断的互动已恢复"
-            : RUN_STATUS_LABELS[result.run.status],
-        );
-        setVisibleError("");
-      } catch (error) {
+        const result = await resumeTavernRun(roomId, runId, diagnostic);
         if (!isCurrent()) return;
-        if (decodeTavernHttpError(error)?.code === "tavern_run_in_progress") {
-          resumeAttemptsRef.current.set(
-            run.id,
-            Math.min(3, (resumeAttemptsRef.current.get(run.id) ?? 0) + 1),
-          );
-        } else if (
-          readRoomSnapshot()?.detail.room.id === roomId &&
-          requestedRoomIdRef.current === roomId
-        ) {
-          recordError(
-            error,
-            "自动恢复暂时失败；页面会继续保留已提交消息。",
-            setVisibleError,
-            setRawError,
+        if (result.run.id !== runId || result.run.roomId !== roomId) {
+          throw new Error("Tavern resume response does not match the requested run");
+        }
+        if (syncTurnResult(result)) {
+          setNotice(
+            result.run.status === "completed"
+              ? "中断的互动已恢复"
+              : RUN_STATUS_LABELS[result.run.status],
           );
         }
+      } catch (error) {
+        if (isCurrent()) setRawError(String(error));
       } finally {
-        if (loadVersion === roomLoadVersion.current && resumeRunRef.current === run.id)
-          resumeRunRef.current = "";
-        if (isCurrent()) await refreshRoom(diagnostic);
+        try {
+          // A failed transport can still have committed server-side. Read back
+          // before deciding whether this same run remains eligible for recovery.
+          if (isCurrent()) await refreshRoom(diagnostic, { recoveryRead: true });
+        } finally {
+          const finished = budget.finish(runId);
+          if (mountedRef.current) {
+            setProgressByRun((current) => new Map(current).set(runId, finished));
+          }
+        }
       }
     },
     [
+      budget,
       refreshRoom,
       syncTurnResult,
       resumeTavernRun,
       mountedRef,
       mutationOperationRef,
-      resumeRunRef,
+      olderLoadRoomRef,
+      foregroundRunRef,
       readRoomSnapshot,
       requestedRoomIdRef,
       roomLoadVersion,
       mutationOperationVersionRef,
-      resumeAttemptsRef,
       setNotice,
-      setVisibleError,
       setRawError,
     ],
   );
 
+  const pendingRunId = runs.find((run) => run.status === "pending")?.id;
+  const roomId = activeRoom?.status === "active" ? activeRoom.id : undefined;
+  const recoveryProgress = pendingRunId ? progressByRun.get(pendingRunId) : undefined;
+  const automaticDelay = tavernAutomaticRecoveryDelay(recoveryProgress);
   useEffect(() => {
-    const pendingRun = runs.find((run) => run.status === "pending");
     if (
-      !activeRoom ||
+      !roomId ||
+      !pendingRunId ||
       busyAction !== null ||
-      mutationOperationRef.current !== null ||
-      !pendingRun ||
-      pendingRun.id === foregroundRunRef.current
+      loadingOlder ||
+      automaticDelay === null
     )
       return;
-    const attempt = resumeAttemptsRef.current.get(pendingRun.id) ?? 0;
     const timer = clock.setTimeout(
-      () => void resumePendingRun(pendingRun),
-      Math.min(10000, 2500 * 2 ** attempt),
+      () => void resumePendingRun(roomId, pendingRunId, "automatic"),
+      automaticDelay,
     );
     return () => clock.clearTimeout(timer);
   }, [
-    activeRoom,
+    roomId,
+    pendingRunId,
     busyAction,
+    loadingOlder,
     resumePendingRun,
-    runs,
     clock,
-    mutationOperationRef,
-    foregroundRunRef,
-    resumeAttemptsRef,
+    automaticDelay,
+    recoveryProgress,
   ]);
+
+  const retryPendingRun = useCallback(() => {
+    if (!roomId || !pendingRunId || busyAction !== null || loadingOlder) return;
+    return resumePendingRun(roomId, pendingRunId, "manual");
+  }, [roomId, pendingRunId, busyAction, loadingOlder, resumePendingRun]);
 
   useEffect(() => {
     if (!activeRoom || (busyAction !== "turn" && busyAction !== "retry")) return;
@@ -209,4 +219,6 @@ export function useTavernRunRecovery(
     publishRoomSnapshot,
     setRawError,
   ]);
+
+  return { recoveryProgress: roomId ? recoveryProgress : undefined, retryPendingRun };
 }
