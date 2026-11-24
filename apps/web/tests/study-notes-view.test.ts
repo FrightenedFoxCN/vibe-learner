@@ -2,9 +2,12 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
   draftFromNote,
+  getStudyNoteSaveReceipts,
   isStudyNoteDraftDirty,
   rebaseStudyNoteDraft,
   StudyNotesView,
+  type StudyNoteDraft,
+  type StudyNoteSaveOutcome,
 } from "../lib/study-notes-view.ts";
 import {
   decodeStudyChatExchange,
@@ -42,6 +45,118 @@ test("late results cannot cross a session switch, re-entry, or newer targets", (
   assert.equal(returned.current(write), false);
   assert.equal(returned.current(newWrite), true);
   assert.equal(other.current(otherWrite), true);
+});
+
+function createSaveStore() {
+  const drafts = new Map<string, StudyNoteDraft>();
+  const read = (session: string) => drafts.get(session) ?? null;
+  const store = (session: string, draft: StudyNoteDraft | null) => {
+    if (draft) drafts.set(session, draft);
+    else drafts.delete(session);
+  };
+  const original = {
+    ...draftFromNote(note),
+    fields: { ...draftFromNote(note).fields, content: "Edit" },
+  };
+  const pending = { ...original, unconfirmed: true };
+  const saved = { ...note, revision: 3, content: "Canonical saved content" };
+  const receipts = getStudyNoteSaveReceipts(read);
+  receipts.begin(note.session_id, pending);
+  store(note.session_id, pending);
+  return { read, store, original, pending, saved, receipts };
+}
+
+function mountEditor(
+  receipts: ReturnType<typeof getStudyNoteSaveReceipts>,
+  sessionId: string,
+  initial: StudyNoteDraft | null,
+) {
+  const editor = {
+    draft: initial,
+    reloads: 0,
+    outcome: null as StudyNoteSaveOutcome | null,
+  };
+  const close = receipts.subscribe(
+    sessionId,
+    () => editor.draft,
+    (receipt, matchesEditor) => {
+      if (receipt.refreshList) editor.reloads++;
+      if (matchesEditor) {
+        editor.draft = receipt.nextDraft;
+        editor.outcome = receipt.outcome;
+      }
+    },
+  );
+  return { editor, close };
+}
+
+for (const settleBeforeSubscription of [false, true]) {
+  test(`A → B → A applies the saved baseline and reloads the list (settled before subscription: ${settleBeforeSubscription})`, () => {
+    const a = note.session_id;
+    const { receipts, read, store, original, pending, saved } = createSaveStore();
+    const first = mountEditor(receipts, a, pending);
+    first.close();
+    const b = mountEditor(receipts, "B", null);
+    const restored = read(a);
+    assert.equal(restored, pending);
+    assert.equal(receipts.pending(restored), true);
+    const settle = () =>
+      receipts.settle(pending, original, { kind: "saved", note: saved }, store);
+    if (settleBeforeSubscription) settle();
+    const returned = mountEditor(getStudyNoteSaveReceipts(read), a, restored);
+    if (!settleBeforeSubscription) settle();
+
+    assert.equal(read(a), null);
+    assert.equal(receipts.pending(pending), false);
+    assert.deepEqual(returned.editor.draft, draftFromNote(saved));
+    assert.equal(returned.editor.reloads, 1);
+    assert.equal(b.editor.reloads, 0);
+    assert.equal(first.editor.draft, pending);
+    assert.equal(first.editor.reloads, 0);
+    b.close();
+    returned.close();
+  });
+}
+
+test("a late save refreshes its list without replacing a newer draft or reaching a different page store", () => {
+  const { receipts, read, store, original, pending, saved } = createSaveStore();
+  const replacement = {
+    ...pending,
+    fields: { ...pending.fields, content: "Newer edit" },
+  };
+  store(note.session_id, replacement);
+  const returned = mountEditor(receipts, note.session_id, replacement);
+  const otherPage = createSaveStore();
+  const unrelated = mountEditor(otherPage.receipts, note.session_id, otherPage.pending);
+  receipts.settle(pending, original, { kind: "saved", note: saved }, store);
+
+  assert.equal(read(note.session_id), replacement);
+  assert.equal(returned.editor.draft, replacement);
+  assert.equal(returned.editor.outcome, null);
+  assert.equal(returned.editor.reloads, 1);
+  assert.equal(unrelated.editor.reloads, 0);
+  assert.equal(otherPage.read(note.session_id), otherPage.pending);
+  returned.close();
+  unrelated.close();
+});
+
+test("a rejected remounted save restores the editable draft and conflict; an uncertain save requires review", () => {
+  for (const outcome of [
+    { kind: "rejected", error: "Conflict", conflictRevision: 3 },
+    { kind: "unknown", error: "Review required" },
+  ] as const) {
+    const { receipts, read, store, original, pending } = createSaveStore();
+    const returned = mountEditor(receipts, note.session_id, pending);
+    receipts.settle(pending, original, outcome, store);
+    const expected = outcome.kind === "unknown" ? pending : original;
+
+    assert.equal(returned.editor.draft, expected);
+    assert.equal(read(note.session_id), expected);
+    assert.equal(receipts.pending(pending), false);
+    assert.deepEqual(returned.editor.outcome, outcome);
+    assert.equal(returned.editor.reloads, outcome.kind === "unknown" ? 1 : 0);
+    returned.close();
+  }
 });
 
 test("conflict comparison preserves local text and binds the accepted revision", () => {

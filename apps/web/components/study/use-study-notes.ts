@@ -8,10 +8,13 @@ import {
 import { isApiHttpError } from "../../lib/http-error";
 import {
   draftFromNote,
+  getStudyNoteSaveReceipts,
   isStudyNoteDraftDirty,
   rebaseStudyNoteDraft,
   StudyNotesView,
   type StudyNoteDraft,
+  type StudyNoteSaveFailure,
+  type StudyNoteSaveOutcome,
 } from "../../lib/study-notes-view";
 
 export interface StudyNotesOpenRequest {
@@ -39,6 +42,8 @@ export function useStudyNotes({
 }: Options) {
   const [view] = useState(() => new StudyNotesView(sessionId));
   const [draft, setDraft] = useState(() => readDraft(sessionId));
+  const editorDraft = useRef(draft);
+  const [saveReceipts] = useState(() => getStudyNoteSaveReceipts(readDraft));
   const [query, setQuery] = useState("");
   const [queryInput, setQueryInput] = useState("");
   const [listEpoch, setListEpoch] = useState(0);
@@ -59,15 +64,20 @@ export function useStudyNotes({
 
   useLayoutEffect(() => () => view.close(), [view]);
 
+  const updateEditor = useCallback((next: StudyNoteDraft | null) => {
+    editorDraft.current = next;
+    setDraft(next);
+  }, []);
+
   const updateDraft = useCallback(
     (next: StudyNoteDraft | null) => {
-      setDraft(next);
+      updateEditor(next);
       storeDraft(
         sessionId,
         next && (next.unconfirmed || isStudyNoteDraftDirty(next)) ? next : null,
       );
     },
-    [sessionId, storeDraft],
+    [sessionId, storeDraft, updateEditor],
   );
 
   const reload = useCallback(() => {
@@ -76,6 +86,34 @@ export function useStudyNotes({
     setListError("");
     setListEpoch((value) => value + 1);
   }, [view]);
+
+  useLayoutEffect(
+    () =>
+      saveReceipts.subscribe(
+        sessionId,
+        () => editorDraft.current,
+        (receipt, matchesEditor) => {
+          if (receipt.refreshList) reload();
+          if (!matchesEditor) return;
+          updateEditor(receipt.nextDraft);
+          const outcome = receipt.outcome;
+          if (outcome.kind === "saved") {
+            setConflict(null);
+            setError("");
+            setNotice("笔记已保存。");
+          } else {
+            setNotice("");
+            setError(outcome.error);
+            setConflict(
+              outcome.conflictRevision !== undefined
+                ? { revision: outcome.conflictRevision }
+                : null,
+            );
+          }
+        },
+      ),
+    [reload, saveReceipts, sessionId, updateEditor],
+  );
 
   const loadList = useCallback(
     async (offset: number) => {
@@ -204,20 +242,12 @@ export function useStudyNotes({
       reload();
     } catch (err) {
       if (!current()) return;
-      if (err instanceof StudyNoteRevisionConflictError) {
-        setConflict({ revision: err.current_revision });
-        setError("同一条笔记已有更新。草稿未被覆盖，请先比较最新版本。");
-      } else if (isApiHttpError(err) && err.status === 404) {
-        setError("笔记或会话已不存在。草稿仍可复制。");
-      } else if (
-        err instanceof InvalidStudyNotesArchiveError ||
-        (isApiHttpError(err) && err.status < 500)
-      ) {
-        setError("请求未通过校验，请检查笔记、归档格式或旧记忆键。");
-      } else {
-        setError("暂未确认写入结果。请查看已保存的列表，不要直接重试。");
-        reload();
+      const failure = describeWriteFailure(err);
+      if (failure.conflictRevision !== undefined) {
+        setConflict({ revision: failure.conflictRevision });
       }
+      setError(failure.error);
+      if (failure.kind === "unknown") reload();
     } finally {
       if (current()) {
         view.finish(token);
@@ -226,8 +256,10 @@ export function useStudyNotes({
     }
   }
 
-  function save() {
+  async function save() {
     if (
+      view.busy("write") ||
+      view.busy("detail") ||
       !draft ||
       draft.unconfirmed ||
       conflict ||
@@ -237,35 +269,30 @@ export function useStudyNotes({
     )
       return;
     const { original, fields } = draft;
-    void write(original?.id ?? "new", async (current) => {
-      const unconfirmed = { ...draft, unconfirmed: true };
-      updateDraft(unconfirmed);
-      try {
-        const note = original
-          ? await studyNotesData.replace(sessionId, original.id, {
-              ...fields,
-              expected_revision: original.revision,
-            })
-          : await studyNotesData.create(sessionId, fields);
-        // A late receipt can clear only its own originating draft.
-        if (readDraft(sessionId) === unconfirmed) storeDraft(sessionId, null);
-        if (current()) {
-          updateDraft(draftFromNote(note));
-          setConflict(null);
-        }
-      } catch (err) {
-        if (
-          isApiHttpError(err) &&
-          err.status < 500 &&
-          readDraft(sessionId) === unconfirmed
-        ) {
-          if (current()) updateDraft(draft);
-          else storeDraft(sessionId, draft);
-        }
-        throw err;
-      }
-      return "笔记已保存。";
-    });
+    const token = view.begin("write", original?.id ?? "new");
+    const pending = { ...draft, unconfirmed: true };
+    saveReceipts.begin(sessionId, pending);
+    updateDraft(pending);
+    setWriteBusy(true);
+    setError("");
+    setNotice("");
+    let outcome: StudyNoteSaveOutcome;
+    try {
+      const note = original
+        ? await studyNotesData.replace(sessionId, original.id, {
+            ...fields,
+            expected_revision: original.revision,
+          })
+        : await studyNotesData.create(sessionId, fields);
+      outcome = { kind: "saved", note };
+    } catch (err) {
+      outcome = describeWriteFailure(err);
+    }
+    saveReceipts.settle(pending, draft, outcome, storeDraft);
+    if (view.current(token)) {
+      view.finish(token);
+      setWriteBusy(false);
+    }
   }
 
   function remove() {
@@ -403,7 +430,8 @@ export function useStudyNotes({
         void loadList(list.next_offset);
     },
     openNote,
-    save,
+    save: () => void save(),
+    savePending: saveReceipts.pending(draft),
     remove,
     compareLatest,
     rebase,
@@ -413,11 +441,45 @@ export function useStudyNotes({
     newNote: () => switchEditor(draftFromNote(null)),
     discard: () => switchEditor(null),
     change: (field: "title" | "content", value: string) => {
-      if (draft && !view.busy("write") && !view.busy("detail"))
+      if (
+        draft &&
+        !view.busy("write") &&
+        !view.busy("detail") &&
+        !saveReceipts.pending(draft)
+      ) {
         updateDraft({ ...draft, fields: { ...draft.fields, [field]: value } });
+      }
     },
     confirmReviewed: () => {
-      if (draft && !view.busy("write")) updateDraft({ ...draft, unconfirmed: false });
+      if (draft && !view.busy("write") && !saveReceipts.pending(draft)) {
+        updateDraft({ ...draft, unconfirmed: false });
+      }
     },
+  };
+}
+
+function describeWriteFailure(err: unknown): StudyNoteSaveFailure {
+  if (err instanceof StudyNoteRevisionConflictError) {
+    return {
+      kind: "rejected",
+      conflictRevision: err.current_revision,
+      error: "同一条笔记已有更新。草稿未被覆盖，请先比较最新版本。",
+    };
+  }
+  if (isApiHttpError(err) && err.status === 404) {
+    return { kind: "rejected", error: "笔记或会话已不存在。草稿仍可复制。" };
+  }
+  if (
+    err instanceof InvalidStudyNotesArchiveError ||
+    (isApiHttpError(err) && err.status < 500)
+  ) {
+    return {
+      kind: "rejected",
+      error: "请求未通过校验，请检查笔记、归档格式或旧记忆键。",
+    };
+  }
+  return {
+    kind: "unknown",
+    error: "暂未确认写入结果。请查看已保存的列表，不要直接重试。",
   };
 }

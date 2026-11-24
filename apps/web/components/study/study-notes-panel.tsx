@@ -56,7 +56,7 @@ export function StudyNotesPanel(props: StudyNotesPanelProps) {
     focusExpandButton.current = true;
     setIsExpanded(false);
   }
-  const disabled = notes.detailBusy || notes.writeBusy;
+  const disabled = notes.detailBusy || notes.writeBusy || notes.savePending;
   const dirty = draft ? isStudyNoteDraftDirty(draft) : false;
   const tooLong =
     draft &&
@@ -116,7 +116,7 @@ export function StudyNotesPanel(props: StudyNotesPanelProps) {
         </p>
       ) : null}
       <p className="study-notes-muted" role="status">
-        {notes.writeBusy
+        {notes.writeBusy || notes.savePending
           ? "正在提交…"
           : dirty
             ? "未保存草稿"
@@ -146,7 +146,7 @@ export function StudyNotesPanel(props: StudyNotesPanelProps) {
           标题最多 160 字符，正文最多 4,000 字符。
         </p>
       ) : null}
-      {draft.unconfirmed && !notes.writeBusy ? (
+      {draft.unconfirmed && !notes.writeBusy && !notes.savePending ? (
         <div className="study-notes-warning">
           <p>上次保存结果未确认。请先核对已保存列表，避免写入重复笔记。</p>
           <button type="button" onClick={notes.confirmReviewed}>
