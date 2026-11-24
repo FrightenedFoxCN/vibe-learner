@@ -4,7 +4,11 @@ import type {
   PersonaProfile,
 } from "@vibe-learner/shared";
 
-import { resolveSelectedPlanId, sortLearningPlans } from "./plan-panel-data";
+import {
+  resolveSelectedPlanId,
+  sortLearningPlans,
+  upsertLearningPlan,
+} from "./plan-panel-data.ts";
 
 export interface WorkspaceSnapshot {
   personas?: PersonaProfile[];
@@ -12,38 +16,76 @@ export interface WorkspaceSnapshot {
   plans: LearningPlan[];
 }
 
-export interface WorkspaceSnapshotResolution {
-  documents: DocumentRecord[];
-  plans: LearningPlan[];
+export interface PlanSelection {
   selectedPlanId: string;
-  selectedPersonaId: string;
-  shouldResetStudySession: boolean;
+  planHistory: LearningPlan[];
 }
 
-export function resolveWorkspaceSnapshot(input: {
-  snapshot: WorkspaceSnapshot;
-  preferredPlanId: string;
-  currentSelectedPlanId: string;
-  currentSelectedPersonaId: string;
-}): WorkspaceSnapshotResolution {
-  const sortedPlans = sortLearningPlans(input.snapshot.plans);
-  const nextSelectedPlanId = resolveSelectedPlanId(sortedPlans, input.preferredPlanId);
-  const hasCurrentPersonaInSnapshot = input.snapshot.personas?.some(
-    (persona) => persona.id === input.currentSelectedPersonaId,
-  );
-  const nextSelectedPersonaId = input.currentSelectedPersonaId
-    ? input.snapshot.personas && !hasCurrentPersonaInSnapshot
-      ? (input.snapshot.personas[0]?.id ?? "")
-      : input.currentSelectedPersonaId
-    : (input.snapshot.personas?.[0]?.id ?? "");
+export type PlanSelectionIntent =
+  | { type: "snapshot"; plans: LearningPlan[]; preferredPlanId: string }
+  | { type: "select"; planId: string }
+  | { type: "delete"; planId: string }
+  | { type: "generate" }
+  | { type: "generated"; plan: LearningPlan }
+  | { type: "update"; plans: LearningPlan[] };
 
-  return {
-    documents: input.snapshot.documents,
-    plans: sortedPlans,
-    selectedPlanId: nextSelectedPlanId,
-    selectedPersonaId: nextSelectedPersonaId,
-    shouldResetStudySession: nextSelectedPlanId !== input.currentSelectedPlanId,
-  };
+export interface PlanSelectionTransition {
+  selection: PlanSelection;
+  studyTarget: string | null;
+}
+
+export function resolvePlanSelection(
+  current: PlanSelection,
+  intent: PlanSelectionIntent,
+): PlanSelectionTransition | null {
+  let { selectedPlanId, planHistory } = current;
+  switch (intent.type) {
+    case "snapshot":
+      planHistory = sortLearningPlans(intent.plans);
+      selectedPlanId = resolveSelectedPlanId(
+        planHistory,
+        selectedPlanId || intent.preferredPlanId,
+      );
+      break;
+    case "select":
+      if (
+        intent.planId === selectedPlanId ||
+        !planHistory.some((plan) => plan.id === intent.planId)
+      )
+        return null;
+      selectedPlanId = intent.planId;
+      break;
+    case "delete":
+      planHistory = planHistory.filter((plan) => plan.id !== intent.planId);
+      if (selectedPlanId === intent.planId) selectedPlanId = planHistory[0]?.id ?? "";
+      break;
+    case "generate":
+      selectedPlanId = "";
+      break;
+    case "generated":
+      planHistory = upsertLearningPlan(planHistory, intent.plan);
+      selectedPlanId = intent.plan.id;
+      break;
+    case "update":
+      for (const plan of intent.plans)
+        planHistory = upsertLearningPlan(planHistory, plan);
+      break;
+  }
+  const studyTarget =
+    intent.type === "generate"
+      ? "study-plan:generating"
+      : intent.type === "generated" || selectedPlanId !== current.selectedPlanId
+        ? `study-plan:${selectedPlanId || "none"}`
+        : null;
+  return { selection: { selectedPlanId, planHistory }, studyTarget };
+}
+
+export function resolveSnapshotPersonaId(
+  personas: PersonaProfile[] | undefined,
+  current: string,
+): string {
+  if (!personas || personas.some((persona) => persona.id === current)) return current;
+  return personas[0]?.id ?? "";
 }
 
 export function upsertDocumentRecord(

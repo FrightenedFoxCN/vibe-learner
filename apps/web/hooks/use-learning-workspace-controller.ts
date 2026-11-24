@@ -35,7 +35,9 @@ import {
   findLearningPlan,
 } from "../lib/plan-panel-data";
 import {
-  resolveWorkspaceSnapshot,
+  resolvePlanSelection,
+  resolveSnapshotPersonaId,
+  type PlanSelectionIntent,
   type WorkspaceSnapshot,
 } from "../lib/learning-workspace-state";
 import {
@@ -77,7 +79,11 @@ export function useLearningWorkspaceController({
   );
   const mountedRef = useRef(true);
   const selectedPersonaIdRef = useRef(state.selectedPersonaId);
-  const selectedPlanIdRef = useRef(state.selectedPlanId);
+  const planSelectionRef = useRef({
+    selectedPlanId: state.selectedPlanId,
+    planHistory: state.planHistory,
+  });
+  const getSelectedPlanId = () => planSelectionRef.current.selectedPlanId;
   const snapshotLoaderRef = useRef<WorkspaceSnapshotLoader | null>(null);
   if (snapshotLoaderRef.current === null) {
     snapshotLoaderRef.current = new WorkspaceSnapshotLoader({
@@ -89,7 +95,7 @@ export function useLearningWorkspaceController({
   const snapshotLoader = snapshotLoaderRef.current;
   const studyViewFenceRef = useRef(
     new StudyAsyncViewFence<StudySessionRecord>({
-      initialPlanId: initialPlan?.id,
+      initialPlanId: state.selectedPlanId,
       session: state.studySession,
     }),
   );
@@ -163,50 +169,50 @@ export function useLearningWorkspaceController({
 
   useEffect(() => {
     selectedPersonaIdRef.current = state.selectedPersonaId;
-    selectedPlanIdRef.current = state.selectedPlanId;
-  }, [state.selectedPersonaId, state.selectedPlanId]);
+  }, [state.selectedPersonaId]);
 
-  const syncStudyView = useEffectEvent((nextSession: StudySessionRecord | null) => {
-    const previousSession = studyViewFenceRef.current.session;
-    if (
-      previousSession?.id !== nextSession?.id ||
-      previousSession?.studyUnitId !== nextSession?.studyUnitId
-    ) {
-      transitionStudyView(
-        nextSession
-          ? `study-session:${nextSession.id}:unit:${nextSession.studyUnitId}`
-          : `study-plan:${selectedPlanIdRef.current || "none"}`,
-        nextSession === null,
-      );
-    }
-    studyViewFenceRef.current.session = nextSession;
-  });
+  const publishStudySession = (
+    studySession: StudySessionRecord | null,
+    clearResponse = false,
+  ) => {
+    if (studySession) activateStudySessionView(studySession);
+    else if (studyViewFenceRef.current.session)
+      transitionStudyView(`study-plan:${getSelectedPlanId() || "none"}`, true);
+    dispatch({ type: "study_session_set", studySession, clearResponse });
+  };
 
-  useEffect(() => {
-    syncStudyView(state.studySession);
-  }, [state.studySession]);
+  const publishPlanSelection = (
+    intent: PlanSelectionIntent,
+    updates: Omit<
+      Extract<Parameters<typeof dispatch>[0], { type: "plan_transition" }>,
+      "type" | "transition"
+    > = {},
+  ) => {
+    // Async results can continue before React renders the queued action. Apply
+    // the exact transition to the current plan selection and fence first.
+    const transition = resolvePlanSelection(planSelectionRef.current, intent);
+    if (!transition) return;
+    planSelectionRef.current = transition.selection;
+    if (transition.studyTarget) transitionStudyView(transition.studyTarget, true);
+    dispatch({ type: "plan_transition", transition, ...updates });
+  };
 
   const applyWorkspaceSnapshot = (
     snapshot: WorkspaceSnapshot,
     preferredPlanId: string,
   ) => {
-    const nextState = resolveWorkspaceSnapshot({
-      snapshot,
-      preferredPlanId,
-      currentSelectedPlanId: selectedPlanIdRef.current,
-      currentSelectedPersonaId: selectedPersonaIdRef.current,
-    });
-
-    if (nextState.shouldResetStudySession) {
-      selectedPlanIdRef.current = nextState.selectedPlanId;
-      transitionStudyView(`study-plan:${nextState.selectedPlanId || "none"}`, true);
-    }
-
-    dispatch({
-      type: "snapshot_applied",
-      personas: snapshot.personas,
-      resolution: nextState,
-    });
+    publishPlanSelection(
+      { type: "snapshot", plans: snapshot.plans, preferredPlanId },
+      {
+        snapshot: {
+          ...snapshot,
+          selectedPersonaId: resolveSnapshotPersonaId(
+            snapshot.personas,
+            selectedPersonaIdRef.current,
+          ),
+        },
+      },
+    );
   };
 
   const syncWorkspaceSnapshot = (options: {
@@ -219,10 +225,7 @@ export function useLearningWorkspaceController({
     const observer = {
       started: () => dispatch({ type: "snapshot_refresh_started" }),
       loaded: (snapshot: WorkspaceSnapshot) => {
-        applyWorkspaceSnapshot(
-          snapshot,
-          selectedPlanIdRef.current || options.preferredPlanId,
-        );
+        applyWorkspaceSnapshot(snapshot, options.preferredPlanId);
         if (options.successNotice)
           dispatch({ type: "notice_set", notice: options.successNotice });
       },
@@ -243,19 +246,8 @@ export function useLearningWorkspaceController({
       : snapshotLoader.load(options.includePersonas, observer);
   };
 
-  const selectPlan = (planId: string, noticeMessage?: string) => {
-    const nextPlan = findLearningPlan(state.planHistory, planId);
-    if (!nextPlan || nextPlan.id === state.selectedPlanId) {
-      return;
-    }
-    selectedPlanIdRef.current = nextPlan.id;
-    transitionStudyView(`study-plan:${nextPlan.id}`, true);
-    dispatch({
-      type: "plan_selected",
-      planId: nextPlan.id,
-      notice: noticeMessage,
-    });
-  };
+  const selectPlan = (planId: string, notice?: string) =>
+    publishPlanSelection({ type: "select", planId }, { notice });
 
   const {
     generatePlanWorkflow,
@@ -278,20 +270,15 @@ export function useLearningWorkspaceController({
     blockedReason: planGenerationBlockedReason,
     resolveSceneProfile: resolveActiveSceneProfile,
     onStarted: () => {
-      selectedPlanIdRef.current = "";
-      transitionStudyView("study-plan:generating", true);
-      dispatch({ type: "generation_started" });
+      publishPlanSelection({ type: "generate" });
       dispatch({ type: "busy_started" });
     },
     onFinished: () => dispatch({ type: "busy_finished" }),
     onNotice: (notice) => dispatch({ type: "notice_set", notice }),
     onDocument: (document) =>
       dispatch({ type: "generated_document_applied", document }),
-    onPlan: (plan) => {
-      selectedPlanIdRef.current = plan.id;
-      transitionStudyView(`study-plan:${plan.id}`, true);
-      dispatch({ type: "generated_plan_applied", plan });
-    },
+    onPlan: (plan) =>
+      publishPlanSelection({ type: "generated", plan }, { generatedPlan: plan }),
   });
 
   const {
@@ -304,33 +291,17 @@ export function useLearningWorkspaceController({
   } = usePlanMutations({
     plans: state.planHistory,
     documents: state.documents,
-    onPlan: (plan) => dispatch({ type: "plan_updated", plan }),
-    onDocumentAndPlans: (payload) =>
-      dispatch({ type: "document_and_plans_updated", ...payload }),
+    onPlan: (plan) => publishPlanSelection({ type: "update", plans: [plan] }),
+    onDocumentAndPlans: ({ document, plans }) =>
+      publishPlanSelection({ type: "update", plans }, { document }),
     onNotice: (notice) => dispatch({ type: "notice_set", notice }),
-    onDeleted: (planId) => {
-      const selected = selectedPlanIdRef.current;
-      const preferredPlanId =
-        selected === planId
-          ? (state.planHistory.find((plan) => plan.id !== planId)?.id ?? "")
-          : selected;
-      if (selected === planId) {
-        selectedPlanIdRef.current = preferredPlanId;
-        transitionStudyView(`study-plan:${preferredPlanId || "none"}`, true);
-      }
-      dispatch({ type: "plan_deleted", planId, preferredPlanId });
-    },
+    onDeleted: (planId) => publishPlanSelection({ type: "delete", planId }),
   });
 
   const applyChatExchange = (
     next: StudyChatResponse & { session: StudySessionRecord },
   ) => {
-    activateStudySessionView(next.session);
-    dispatch({
-      type: "study_session_set",
-      studySession: next.session,
-      clearResponse: false,
-    });
+    publishStudySession(next.session);
     dispatch({
       type: "response_set",
       response: next,
@@ -350,15 +321,12 @@ export function useLearningWorkspaceController({
   } = useStudyChatRecovery({
     session: state.studySession,
     view: studyViewFenceRef.current,
-    getSelectedPlanId: () => selectedPlanIdRef.current,
+    getSelectedPlanId,
     onExchange: applyChatExchange,
     onDialogueInterruptionChanged: () => continuation.syncDialogueInterruption(),
-    onSession: (studySession, clearResponse) => {
-      if (studySession) activateStudySessionView(studySession);
-      dispatch({ type: "study_session_set", studySession, clearResponse });
-    },
+    onSession: publishStudySession,
     onResetView: () =>
-      transitionStudyView(`study-plan:${selectedPlanIdRef.current || "none"}`, true),
+      transitionStudyView(`study-plan:${getSelectedPlanId() || "none"}`, true),
     onNotice: (notice) => dispatch({ type: "notice_set", notice }),
   });
 
@@ -371,17 +339,14 @@ export function useLearningWorkspaceController({
     plan: activePlan,
     document: activeDocument,
     view: studyViewFenceRef.current,
-    getSelectedPlanId: () => selectedPlanIdRef.current,
+    getSelectedPlanId,
     resolveSceneProfile: resolveActiveSceneProfile,
     resolveStudyUnitTitle: (id) =>
       resolveStudyUnitTitle(id, planSections, activeDocument),
     resolveThemeHint: (id) =>
       resolveThemeHintByStudyUnitId(id, activePlan, activeDocument),
     onTransition: transitionStudyView,
-    onSession: (studySession, clearResponse) => {
-      if (studySession) activateStudySessionView(studySession);
-      dispatch({ type: "study_session_set", studySession, clearResponse });
-    },
+    onSession: publishStudySession,
     onNotice: (notice) => dispatch({ type: "notice_set", notice }),
   });
 
@@ -415,11 +380,8 @@ export function useLearningWorkspaceController({
     view: studyViewFenceRef.current,
     automaticStudyRequest,
     forgetAutomaticStudyRequest,
-    onSession: (studySession) => {
-      activateStudySessionView(studySession);
-      dispatch({ type: "study_session_set", studySession, clearResponse: false });
-    },
-    onPlan: (plan) => dispatch({ type: "plan_updated", plan }),
+    onSession: publishStudySession,
+    onPlan: (plan) => publishPlanSelection({ type: "update", plans: [plan] }),
     onNotice: (notice) => dispatch({ type: "notice_set", notice }),
   });
 
@@ -429,10 +391,7 @@ export function useLearningWorkspaceController({
     ensureSessionForSection,
     sendHiddenSessionMessage,
     automaticStudyRequest,
-    onSession: (studySession) => {
-      activateStudySessionView(studySession);
-      dispatch({ type: "study_session_set", studySession, clearResponse: false });
-    },
+    onSession: publishStudySession,
     onNotice: (notice) => dispatch({ type: "notice_set", notice }),
   });
   const {
@@ -453,7 +412,7 @@ export function useLearningWorkspaceController({
   const loadInitialSnapshot = useEffectEvent(() => {
     void syncWorkspaceSnapshot({
       includePersonas: true,
-      preferredPlanId: selectedPlanIdRef.current,
+      preferredPlanId: getSelectedPlanId(),
       successNotice: CONNECTED_NOTICE,
       initial: true,
     });
@@ -467,7 +426,7 @@ export function useLearningWorkspaceController({
   refreshOnFocusRef.current = () => {
     void syncWorkspaceSnapshot({
       includePersonas: false,
-      preferredPlanId: selectedPlanIdRef.current,
+      preferredPlanId: getSelectedPlanId(),
       onFocus: true,
     });
     // Initial/full snapshots already own the Persona read. Focus must not
