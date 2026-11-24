@@ -1,6 +1,12 @@
 "use client";
 import dynamic from "next/dynamic";
-import { useCallback, useState, useSyncExternalStore, type FormEvent } from "react";
+import {
+  useCallback,
+  useId,
+  useState,
+  useSyncExternalStore,
+  type FormEvent,
+} from "react";
 import type {
   DiagnosticIndexFilters,
   DiagnosticEventFilters,
@@ -15,6 +21,10 @@ import {
   queryDiagnosticLinks,
   queryDiagnosticWriters,
 } from "../../lib/diagnostic-query";
+import {
+  parseDiagnosticTimeRange,
+  type DiagnosticTimeRange,
+} from "../../lib/diagnostic-time-range";
 import { diagnosticLinkPagination } from "../../lib/diagnostic-link-pagination";
 import {
   currentDiagnosticPage,
@@ -452,19 +462,40 @@ export function DiagnosticTimeline({
     emptyPage,
   );
   const [filters, setFilters] = useState<DiagnosticEventFilters>({});
+  const [timeError, setTimeError] = useState<Extract<
+    DiagnosticTimeRange,
+    { ok: false }
+  > | null>(null);
+  const timeErrorId = useId();
   const [mode, setMode] = useState<
     "events" | "index" | "writers" | "audit" | "storage"
   >("events");
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const values = Object.fromEntries(new FormData(event.currentTarget));
+    const range = parseDiagnosticTimeRange(
+      String(values.since ?? ""),
+      String(values.until ?? ""),
+    );
+    if (!range.ok) {
+      setTimeError(range);
+      event.currentTarget
+        .querySelector<HTMLInputElement>("input[name=" + range.field + "]")
+        ?.focus();
+      return;
+    }
     const next: Record<string, string> = {};
     for (const [key, value] of Object.entries(values))
-      if (typeof value === "string" && value.trim())
-        next[key] =
-          key === "since" || key === "until"
-            ? new Date(value).toISOString()
-            : value.trim();
+      if (
+        key !== "since" &&
+        key !== "until" &&
+        typeof value === "string" &&
+        value.trim()
+      )
+        next[key] = value.trim();
+    if (range.since) next.since = range.since;
+    if (range.until) next.until = range.until;
+    setTimeError(null);
     setFilters(next as DiagnosticEventFilters);
   }
   const effective = currentPageOnly ? { page_view_id: page?.id || undefined } : filters;
@@ -553,6 +584,11 @@ export function DiagnosticTimeline({
                 className={styles.filterInput}
                 type="datetime-local"
                 name="since"
+                aria-invalid={timeError?.field === "since" || undefined}
+                aria-describedby={
+                  timeError?.field === "since" ? timeErrorId : undefined
+                }
+                onChange={() => setTimeError(null)}
               />
             </label>
             <label className={styles.filterField}>
@@ -561,12 +597,22 @@ export function DiagnosticTimeline({
                 className={styles.filterInput}
                 type="datetime-local"
                 name="until"
+                aria-invalid={timeError?.field === "until" || undefined}
+                aria-describedby={
+                  timeError?.field === "until" ? timeErrorId : undefined
+                }
+                onChange={() => setTimeError(null)}
               />
             </label>
             <button className={styles.button} type="submit">
               应用筛选
             </button>
           </form>
+          {timeError && (
+            <p id={timeErrorId} role="alert">
+              {timeError.message}
+            </p>
+          )}
           <div className={styles.filterActions}>
             <button
               className={styles.button}

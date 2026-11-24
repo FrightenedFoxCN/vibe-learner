@@ -2,6 +2,32 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { diagnosticLinkPagination } from "../lib/diagnostic-link-pagination.ts";
 
+import { parseDiagnosticTimeRange } from "../lib/diagnostic-time-range.ts";
+
+test("diagnostic time ranges reject invalid, equal, and reversed bounds", () => {
+  assert.equal(parseDiagnosticTimeRange("bad", "").ok, false);
+  for (const until of ["2026-11-24T10:00", "2026-11-24T09:00"]) {
+    assert.deepEqual(parseDiagnosticTimeRange("2026-11-24T10:00", until), {
+      ok: false,
+      field: "until",
+      message: "结束时间必须晚于开始时间。",
+    });
+  }
+  assert.deepEqual(parseDiagnosticTimeRange("", ""), {
+    ok: true,
+    since: undefined,
+    until: undefined,
+  });
+  assert.deepEqual(
+    parseDiagnosticTimeRange("2026-11-24T10:00+08:00", "2026-11-24T11:00+08:00"),
+    {
+      ok: true,
+      since: "2026-11-24T02:00:00.000Z",
+      until: "2026-11-24T03:00:00.000Z",
+    },
+  );
+});
+
 const cursor = "request-099";
 const items = Array.from({ length: 100 }, (_, index) => ({
   operation_id: "harness-operation-" + "1".repeat(32),
