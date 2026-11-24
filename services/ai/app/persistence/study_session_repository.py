@@ -70,14 +70,19 @@ class StudySessionRepository:
         self.harness_operations = HarnessOperationBindingRepository(database)
         self.effect_journal = effect_journal or HarnessEffectJournalRepository(database)
 
-    def create(self, record: StudySessionRecord) -> StudySessionRecord:
+    def create(
+        self, record: StudySessionRecord, *, new_scene: SessionSceneRecord | None = None
+    ) -> StudySessionRecord:
         payload = record.model_dump(mode="json")
-        try:
-            with self.database.session() as session:
-                session.add(_to_row(record, payload))
+        with self.database.session() as session:
+            session.add(_to_row(record, payload))
+            try:
                 session.flush()
-        except IntegrityError as exc:
-            raise StudySessionAlreadyExists(record.id) from exc
+            except IntegrityError as exc:
+                raise StudySessionAlreadyExists(record.id) from exc
+            if new_scene is not None:
+                session.add(_bound_scene_row(record, new_scene))
+                session.flush()
         return self.require(record.id)
 
     def import_legacy(
@@ -144,7 +149,7 @@ class StudySessionRepository:
         self,
         *,
         session_id: str,
-        mutation: Callable[[StudySessionRecord], bool | None],
+        mutation: Callable[[StudySessionRecord], bool | SessionSceneRecord | None],
         committed_turn_policy: Literal["immutable", "answer_patch"] = "immutable",
         max_attempts: int = 8,
     ) -> StudySessionRecord:
@@ -195,6 +200,10 @@ class StudySessionRepository:
                         .values(payload=payload, **_mutable_metadata(record))
                     )
                     if claimed.rowcount == 1:
+                        # Only the winning CAS may publish its prepared scene.
+                        if isinstance(mutation_result, SessionSceneRecord):
+                            session.add(_bound_scene_row(record, mutation_result))
+                            session.flush()
                         return record
             except OperationalError as exc:
                 if not _is_retryable_sqlite_lock(self.database, exc):
@@ -748,6 +757,30 @@ class StudyQuestionAttemptRevisionConflict(StudySessionRepositoryError):
 class StudyQuestionAttemptCommitRace(StudySessionRepositoryError):
     def __init__(self, session_id: str) -> None:
         super().__init__(f"study_question_attempt_commit_race:{session_id}")
+
+
+def _bound_scene_row(
+    session: StudySessionRecord, scene: SessionSceneRecord
+) -> SessionSceneRow:
+    if (
+        not scene.scene_instance_id
+        or scene.scene_instance_id != session.scene_instance_id
+        or scene.session_id != session.id
+        or scene.document_id != session.document_id
+        or scene.persona_id != session.persona_id
+        or scene.scene_profile is None
+        or scene.scene_profile != session.scene_profile
+    ):
+        raise ValueError("study_session_scene_binding_mismatch")
+    return SessionSceneRow(
+        scene_instance_id=scene.scene_instance_id,
+        session_id=scene.session_id,
+        document_id=scene.document_id,
+        persona_id=scene.persona_id,
+        created_at=scene.created_at,
+        updated_at=scene.updated_at,
+        payload=scene.model_dump(mode="json"),
+    )
 
 
 def _to_row(record: StudySessionRecord, payload: dict[str, object]) -> StudySessionRow:

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Callable
+from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from typing import Literal
 from uuid import uuid4
@@ -17,6 +19,7 @@ from app.models.domain import (
     SessionPlanConfirmationRecord,
     SessionProjectedPdfRecord,
     SceneProfileRecord,
+    SessionSceneRecord,
     StudyChatResult,
     StudySessionRecord,
 )
@@ -34,7 +37,15 @@ from app.persistence.study_session_repository import (
 )
 from app.models.study_question import StudyQuestionAttemptResponseV1
 from app.services.local_store import LocalJsonStore
+from app.services.session_scene import SessionSceneService
 from app.core.clock import utc_now_iso as _now
+
+
+@dataclass(frozen=True)
+class StudySessionContext:
+    study_unit_title: str
+    theme_hint: str
+    system_prompt: str
 
 
 class StudySessionService:
@@ -57,8 +68,7 @@ class StudySessionService:
         document_id: str,
         persona_id: str,
         plan_id: str | None = None,
-        scene_instance_id: str = "",
-        scene_profile: SceneProfileRecord | None = None,
+        new_scene: SessionSceneRecord | None = None,
         study_unit_id: str,
         study_unit_title: str = "",
         theme_hint: str = "",
@@ -70,8 +80,8 @@ class StudySessionService:
             document_id=document_id,
             persona_id=persona_id,
             plan_id=plan_id,
-            scene_instance_id=scene_instance_id,
-            scene_profile=scene_profile,
+            scene_instance_id=new_scene.scene_instance_id if new_scene else "",
+            scene_profile=new_scene.scene_profile if new_scene else None,
             study_unit_id=study_unit_id,
             study_unit_title=study_unit_title,
             theme_hint=theme_hint,
@@ -91,7 +101,7 @@ class StudySessionService:
             updated_at=_now(),
         )
         try:
-            created = self.repository.create(session)
+            created = self.repository.create(session, new_scene=new_scene)
         except StudySessionAlreadyExists as exc:
             raise HTTPException(
                 status_code=409, detail="session_already_exists"
@@ -149,35 +159,42 @@ class StudySessionService:
         self,
         *,
         session_id: str,
-        study_unit_id: str | None = None,
-        scene_instance_id: str | None = None,
-        scene_profile: SceneProfileRecord | None = None,
-        has_scene_profile: bool = False,
-        study_unit_title: str | None = None,
-        theme_hint: str | None = None,
-        session_system_prompt: str | None = None,
+        study_unit_id: str | None,
+        has_scene_profile: bool,
+        scene_profile: SceneProfileRecord | None,
+        resolve_context: Callable[[StudySessionRecord], StudySessionContext],
     ) -> StudySessionRecord:
-        updated_at = _now()
-
-        def mutation(session: StudySessionRecord) -> None:
-            if study_unit_id is not None:
-                if study_unit_id != session.study_unit_id:
-                    self._cancel_pending_follow_ups(session, canceled_at=updated_at)
+        def mutation(session: StudySessionRecord) -> SessionSceneRecord | None:
+            updated_at = _now()
+            new_scene = None
+            if has_scene_profile or (
+                not session.scene_instance_id and session.scene_profile is not None
+            ):
+                # Explicit null clears, including a legacy profile without a binding.
+                new_scene = SessionSceneService.prepare_scene_for_session(
+                    session_id=session.id,
+                    document_id=session.document_id,
+                    persona_id=session.persona_id,
+                    scene_profile=scene_profile
+                    if has_scene_profile
+                    else session.scene_profile,
+                )
+                session.scene_instance_id = (
+                    new_scene.scene_instance_id if new_scene else ""
+                )
+                session.scene_profile = new_scene.scene_profile if new_scene else None
+            if study_unit_id is not None and study_unit_id != session.study_unit_id:
+                self._cancel_pending_follow_ups(session, canceled_at=updated_at)
                 session.study_unit_id = study_unit_id
-            if scene_instance_id is not None:
-                session.scene_instance_id = scene_instance_id
-            if has_scene_profile:
-                session.scene_profile = scene_profile
-            if study_unit_title is not None:
-                session.study_unit_title = study_unit_title
-            if theme_hint is not None:
-                session.theme_hint = theme_hint
-            if session_system_prompt is not None:
-                session.session_system_prompt = session_system_prompt
+            # Re-derive context on every CAS attempt from the current candidate.
+            context = resolve_context(session)
+            session.study_unit_title = context.study_unit_title
+            session.theme_hint = context.theme_hint
+            session.session_system_prompt = context.system_prompt
             session.updated_at = updated_at
+            return new_scene
 
-        updated = self._mutate(session_id=session_id, mutation=mutation)
-        return updated
+        return self._mutate(session_id=session_id, mutation=mutation)
 
     def schedule_follow_up(
         self,

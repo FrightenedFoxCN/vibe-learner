@@ -374,14 +374,15 @@ class SessionSceneService:
             effect_collector=effect_collector,
         )
 
-    def clone_scene_for_session(
-        self,
+    @staticmethod
+    def prepare_scene_for_session(
         *,
         session_id: str,
         document_id: str,
         persona_id: str,
         scene_profile: SceneProfileRecord | None,
     ) -> SessionSceneRecord | None:
+        """Build a scene clone without publishing it outside the Session transaction."""
         if scene_profile is None:
             return None
         scene_layers = [node.model_copy(deep=True) for node in scene_profile.scene_tree]
@@ -394,7 +395,7 @@ class SessionSceneService:
             or "未命名场景"
         )
         scene_summary = scene_profile.summary.strip()
-        record = SessionSceneRecord(
+        return SessionSceneRecord(
             scene_instance_id=f"session-scene-{uuid4().hex[:10]}",
             session_id=session_id,
             document_id=document_id,
@@ -416,8 +417,6 @@ class SessionSceneService:
                 selected_layer_id=selected_layer_id,
             ),
         )
-        self._save(record)
-        return record
 
     def require_scene(
         self,

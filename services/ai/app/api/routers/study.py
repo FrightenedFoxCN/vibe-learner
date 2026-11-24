@@ -33,6 +33,8 @@ from app.persistence.study_chat_operation_repository import StudyChatOperationNo
 from app.services.study_chat_attachments import read_study_chat_attachment_inputs
 from app.services.study_chat_attachments import render_pdf_page_png_bytes
 from app.services.study_session_prompt import build_study_session_system_prompt
+from app.models.domain import StudySessionRecord
+from app.services.study_sessions import StudySessionContext
 
 
 from app.api._shared import (
@@ -42,7 +44,6 @@ from app.api._shared import (
     _resolve_study_unit_title,
     _resolve_study_unit_theme_hint,
     _resolve_session_document_title,
-    _ensure_session_scene_binding,
     _invoke_study_chat,
 )
 
@@ -287,23 +288,9 @@ def update_study_session(
     ):
         raise HTTPException(status_code=400, detail="update_payload_empty")
 
-    current_session = _ensure_session_scene_binding(
-        container.study_session_service.require_session(session_id), container=container
-    )
-    next_study_unit_id = payload.study_unit_id or current_session.study_unit_id
-    has_scene_profile = "scene_profile" in payload.model_fields_set
-    next_scene_instance_id = current_session.scene_instance_id
-    next_scene_profile = current_session.scene_profile
-    if has_scene_profile:
-        bound_scene = container.session_scene_service.clone_scene_for_session(
-            session_id=session_id,
-            document_id=current_session.document_id,
-            persona_id=current_session.persona_id,
-            scene_profile=payload.scene_profile,
-        )
-        next_scene_instance_id = bound_scene.scene_instance_id if bound_scene else ""
-        next_scene_profile = bound_scene.scene_profile if bound_scene else None
-
+    current_session = container.study_session_service.require_session(session_id)
+    # These IDs are immutable across Session revisions. Mutable Session context
+    # is derived below from each attempt's snapshot, not the route's pre-read.
     persona = container.persona_engine.require_persona(current_session.persona_id)
     active_plan = None
     if current_session.plan_id:
@@ -316,38 +303,40 @@ def update_study_session(
         active_plan,
         document_service=container.document_service,
     )
-    next_study_unit_title = _resolve_study_unit_title(
-        document=document,
-        plan=active_plan,
-        study_unit_id=next_study_unit_id,
+    document_title = _resolve_session_document_title(
+        document=document, plan=active_plan
     )
-    next_theme_hint = _resolve_study_unit_theme_hint(
-        plan=active_plan,
-        study_unit_id=next_study_unit_id,
-        fallback=current_session.theme_hint,
-    )
-    session_system_prompt = build_study_session_system_prompt(
-        persona_name=persona.name,
-        persona_relationship=persona.relationship,
-        persona_learner_address=persona.learner_address,
-        document_title=_resolve_session_document_title(
-            document=document, plan=active_plan
-        ),
-        study_unit_id=next_study_unit_id,
-        study_unit_title=next_study_unit_title,
-        theme_hint=next_theme_hint,
-        scene_profile=next_scene_profile,
-    )
+
+    def resolve_context(session: StudySessionRecord) -> StudySessionContext:
+        study_unit_title = _resolve_study_unit_title(
+            document=document, plan=active_plan, study_unit_id=session.study_unit_id
+        )
+        theme_hint = _resolve_study_unit_theme_hint(
+            plan=active_plan,
+            study_unit_id=session.study_unit_id,
+            fallback=session.theme_hint,
+        )
+        return StudySessionContext(
+            study_unit_title=study_unit_title,
+            theme_hint=theme_hint,
+            system_prompt=build_study_session_system_prompt(
+                persona_name=persona.name,
+                persona_relationship=persona.relationship,
+                persona_learner_address=persona.learner_address,
+                document_title=document_title,
+                study_unit_id=session.study_unit_id,
+                study_unit_title=study_unit_title,
+                theme_hint=theme_hint,
+                scene_profile=session.scene_profile,
+            ),
+        )
 
     session = container.study_session_service.update_session(
         session_id=session_id,
         study_unit_id=payload.study_unit_id,
-        scene_instance_id=next_scene_instance_id if has_scene_profile else None,
-        scene_profile=next_scene_profile,
-        has_scene_profile=has_scene_profile,
-        study_unit_title=next_study_unit_title,
-        theme_hint=next_theme_hint,
-        session_system_prompt=session_system_prompt,
+        has_scene_profile="scene_profile" in payload.model_fields_set,
+        scene_profile=payload.scene_profile,
+        resolve_context=resolve_context,
     )
     return _into_response(StudySessionResponse, session)
 
@@ -393,7 +382,7 @@ def create_study_session(
         study_unit_id=payload.study_unit_id,
         fallback=payload.theme_hint.strip(),
     )
-    bound_scene = container.session_scene_service.clone_scene_for_session(
+    bound_scene = container.session_scene_service.prepare_scene_for_session(
         session_id=session_id,
         document_id=resolved_document_id,
         persona_id=payload.persona_id,
@@ -415,8 +404,7 @@ def create_study_session(
         document_id=resolved_document_id,
         persona_id=payload.persona_id,
         plan_id=plan_id,
-        scene_instance_id=bound_scene.scene_instance_id if bound_scene else "",
-        scene_profile=session_scene_profile,
+        new_scene=bound_scene,
         study_unit_id=payload.study_unit_id,
         study_unit_title=study_unit_title,
         theme_hint=theme_hint,

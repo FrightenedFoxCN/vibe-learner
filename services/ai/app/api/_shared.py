@@ -395,25 +395,6 @@ def _resolve_session_document_title(*, document, plan) -> str:
     return "仅学习目标计划"
 
 
-def _ensure_session_scene_binding(session, *, container: Container):
-    if session.scene_instance_id or session.scene_profile is None:
-        return session
-    bound_scene = container.session_scene_service.clone_scene_for_session(
-        session_id=session.id,
-        document_id=session.document_id,
-        persona_id=session.persona_id,
-        scene_profile=session.scene_profile,
-    )
-    if bound_scene is None:
-        return session
-    return container.study_session_service.update_session(
-        session_id=session.id,
-        scene_instance_id=bound_scene.scene_instance_id,
-        scene_profile=bound_scene.scene_profile,
-        has_scene_profile=True,
-    )
-
-
 def _plan_revision_service(container):
     return PlanRevisionService(
         PlanRevisionRepository(container.database),
