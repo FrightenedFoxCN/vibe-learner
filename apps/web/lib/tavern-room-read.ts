@@ -1,6 +1,5 @@
 import type {
   TavernRoomDetail,
-  TavernRoomPage,
   TavernRun,
   TavernRunRecoveryChain,
 } from "@vibe-learner/shared";
@@ -9,20 +8,17 @@ export async function readTavernRoomSnapshot(requests: {
   detail: Promise<TavernRoomDetail>;
   runs: Promise<TavernRun[]>;
   recovery: Promise<TavernRunRecoveryChain[]>;
-  rooms?: Promise<TavernRoomPage>;
 }) {
-  const [detail, runs, recovery, rooms] = await Promise.allSettled([
+  const [detail, runs, recovery] = await Promise.allSettled([
     requests.detail,
     requests.runs,
     requests.recovery,
-    requests.rooms,
   ]);
   if (detail.status === "rejected") throw detail.reason;
   return {
     detail: detail.value,
     runs: runs.status === "fulfilled" ? runs.value : null,
     recovery: recovery.status === "fulfilled" ? recovery.value : null,
-    rooms,
     reliabilityErrors: [runs, recovery].flatMap((result) =>
       result.status === "rejected" ? [String(result.reason)] : [],
     ),

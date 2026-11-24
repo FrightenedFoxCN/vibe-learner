@@ -67,7 +67,14 @@ export function useTavernWorkspaceController(
     activeReplyPersonaIds,
     roomButtons,
   } = state;
-  const { openRoom, refreshRoom, loadMoreRooms, handleLoadOlder } = queries;
+  const {
+    openRoom,
+    refreshRoom,
+    loadMoreRooms,
+    handleLoadOlder,
+    roomListStatus,
+    updateRooms,
+  } = queries;
   return {
     rooms,
     nextRoomCursor,
@@ -103,6 +110,8 @@ export function useTavernWorkspaceController(
     openRoom,
     refreshRoom,
     loadMoreRooms,
+    roomListStatus,
+    retryRoomList: updateRooms,
     handleLoadOlder,
     ...mutations,
     roomRunsUnknown,

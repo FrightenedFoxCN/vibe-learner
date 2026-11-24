@@ -62,6 +62,8 @@ export function TavernWorkspace({
     openRoom,
     refreshRoom,
     loadMoreRooms,
+    roomListStatus,
+    retryRoomList,
     handleLoadOlder,
   } = useTavernWorkspaceController(ports);
   const [setupFocusRequest, setSetupFocusRequest] = useState(0);
@@ -113,6 +115,8 @@ export function TavernWorkspace({
       loadingMore={loadingMoreRooms}
       historyTruncated={roomHistoryTruncated}
       pageError={roomPageError}
+      roomListStatus={roomListStatus}
+      onRetryFirstPage={() => void retryRoomList()}
       onOpen={(roomId) => void openRoom(roomId)}
       onLoadMore={() => void loadMoreRooms()}
     />

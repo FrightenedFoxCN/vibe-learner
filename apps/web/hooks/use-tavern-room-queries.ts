@@ -1,7 +1,7 @@
 "use client";
 
 import type { TavernTurnResult } from "@vibe-learner/shared";
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import {
   createDiagnosticId,
@@ -19,7 +19,11 @@ import {
   TAVERN_ROOM_SUMMARY_LIMIT,
 } from "../lib/tavern-workspace-state";
 
-import { friendlyTavernError, recordError } from "../lib/tavern-client-errors";
+import { recordError } from "../lib/tavern-client-errors";
+import {
+  advanceTavernRoomListStatus,
+  type TavernRoomListStatus,
+} from "../lib/tavern-room-list-status";
 import { readTavernRoomSnapshot } from "../lib/tavern-room-read";
 import { refreshTavernTranscript } from "../lib/tavern-transcript-refresh";
 import type { TavernRoomQueryPorts } from "../lib/tavern-workspace-ports";
@@ -84,6 +88,7 @@ export function useTavernRoomQueries(
     writeTavernRoomDraft,
   } = ports.storage;
   const { makeRequestKey } = ports;
+  const [roomListStatus, setRoomListStatus] = useState<TavernRoomListStatus>("loading");
   const openRoom = useCallback(
     async (roomId: string) => {
       if (!mountedRef.current) return false;
@@ -208,6 +213,47 @@ export function useTavernRoomQueries(
     ],
   );
 
+  const updateRooms = useCallback(
+    async (context?: DiagnosticContext) => {
+      if (!mountedRef.current) return;
+      const pageVersion = ++roomPageVersionRef.current;
+      loadingRoomCursorRef.current = null;
+      setLoadingMoreRooms(false);
+      setRoomPageError("");
+      setRoomListStatus((current) => advanceTavernRoomListStatus(current, "start"));
+      try {
+        const page = await listTavernRooms({ limit: TAVERN_ROOM_PAGE_SIZE }, context);
+        if (!mountedRef.current || pageVersion !== roomPageVersionRef.current) return;
+        loadingRoomCursorRef.current = null;
+        setLoadingMoreRooms(false);
+        roomsRef.current = page.items;
+        setRooms(page.items);
+        setNextRoomCursor(page.nextCursor);
+        setRoomHistoryTruncated(false);
+        setRoomPageError("");
+        setRoomListStatus("ready");
+        return page;
+      } catch (error) {
+        if (!mountedRef.current || pageVersion !== roomPageVersionRef.current) return;
+        setRawError(String(error));
+        setRoomListStatus((current) => advanceTavernRoomListStatus(current, "failure"));
+      }
+    },
+    [
+      listTavernRooms,
+      loadingRoomCursorRef,
+      mountedRef,
+      roomPageVersionRef,
+      roomsRef,
+      setLoadingMoreRooms,
+      setNextRoomCursor,
+      setRawError,
+      setRoomHistoryTruncated,
+      setRoomPageError,
+      setRooms,
+    ],
+  );
+
   const refreshRoom = useCallback(
     async (context = diagnosticContext(createDiagnosticId())) => {
       if (!mountedRef.current || !activeRoom?.id) {
@@ -216,9 +262,7 @@ export function useTavernRoomQueries(
       const roomId = activeRoom.id;
       const refreshVersion = ++roomRefreshVersion.current;
       const recoveryVersion = ++recoveryVersionRef.current;
-      const pageVersion = ++roomPageVersionRef.current;
-      loadingRoomCursorRef.current = null;
-      setLoadingMoreRooms(false);
+      const roomListRead = updateRooms(context);
       try {
         const snapshot = await readTavernRoomSnapshot({
           detail: getTavernRoom(
@@ -227,7 +271,6 @@ export function useTavernRoomQueries(
           ),
           runs: listTavernRuns(roomId, 50, context),
           recovery: getTavernRunRecovery(roomId, 50, context),
-          rooms: listTavernRooms({ limit: TAVERN_ROOM_PAGE_SIZE }, context),
         });
         const {
           detail: nextDetail,
@@ -266,22 +309,6 @@ export function useTavernRoomQueries(
         if (!published) return;
         if (ownsRecovery && snapshot.reliabilityErrors.length)
           setRawError(snapshot.reliabilityErrors.join("；"));
-        if (pageVersion === roomPageVersionRef.current) {
-          loadingRoomCursorRef.current = null;
-          setLoadingMoreRooms(false);
-          if (snapshot.rooms.status === "rejected") {
-            setRoomPageError("房间历史刷新失败；当前列表已保留。");
-            setRawError(
-              [...snapshot.reliabilityErrors, String(snapshot.rooms.reason)].join("；"),
-            );
-          } else if (snapshot.rooms.value) {
-            roomsRef.current = snapshot.rooms.value.items;
-            setRooms(snapshot.rooms.value.items);
-            setNextRoomCursor(snapshot.rooms.value.nextCursor);
-            setRoomHistoryTruncated(false);
-            setRoomPageError("");
-          }
-        }
         const latestRun = published.runs[0];
         setNotice(
           nextDetail.room.status === "archived"
@@ -307,31 +334,25 @@ export function useTavernRoomQueries(
           );
         }
         return null;
+      } finally {
+        await roomListRead;
       }
     },
     [
       activeRoom?.id,
       getTavernRoom,
       getTavernRunRecovery,
-      listTavernRooms,
       listTavernRuns,
       readRoomSnapshot,
       publishRoomSnapshot,
-      loadingRoomCursorRef,
       mountedRef,
       recoveryVersionRef,
       requestedRoomIdRef,
-      roomPageVersionRef,
       roomRefreshVersion,
-      roomsRef,
-      setLoadingMoreRooms,
-      setNextRoomCursor,
       setNotice,
       setRawError,
-      setRoomHistoryTruncated,
-      setRoomPageError,
-      setRooms,
       setVisibleError,
+      updateRooms,
     ],
   );
 
@@ -341,7 +362,7 @@ export function useTavernRoomQueries(
       setBusyAction("bootstrap");
       try {
         const [roomsResult, personasResult, scenesResult] = await Promise.allSettled([
-          listTavernRooms({ limit: TAVERN_ROOM_PAGE_SIZE }),
+          updateRooms(),
           listPersonas(),
           listSceneLibrary(),
         ]);
@@ -364,19 +385,9 @@ export function useTavernRoomQueries(
             writeTavernCreationDraft(reconciledCreationDraft);
           }
         }
-        roomPageVersionRef.current += 1;
-        loadingRoomCursorRef.current = null;
-        setLoadingMoreRooms(false);
-        roomsRef.current = nextRooms;
-        setRooms(nextRooms);
-        setNextRoomCursor(nextRoomPage?.nextCursor ?? null);
-        setRoomHistoryTruncated(false);
-        setRoomPageError(
-          roomsResult.status === "rejected" ? "房间历史暂时无法载入。" : "",
-        );
         setPersonas(nextPersonas);
         setScenes(nextScenes);
-        const failures = [roomsResult, personasResult, scenesResult]
+        const failures = [personasResult, scenesResult]
           .filter((result) => result.status === "rejected")
           .map((result) => String((result as PromiseRejectedResult).reason));
         const storedRoomId = readActiveTavernRoomId();
@@ -396,14 +407,7 @@ export function useTavernRoomQueries(
         } else {
           if (failures.length) {
             setRawError(failures.join("；"));
-            setVisibleError(
-              failures.length === 3
-                ? friendlyTavernError(
-                    failures[0],
-                    "酒馆资料载入失败，请检查 AI 服务连接。",
-                  )
-                : "部分酒馆资料暂时无法载入；可用功能仍可继续使用。",
-            );
+            setVisibleError("部分酒馆资料暂时无法载入；可用功能仍可继续使用。");
           }
           setShowSetup(true);
           setNotice(
@@ -439,7 +443,7 @@ export function useTavernRoomQueries(
     };
   }, [
     openRoom,
-    listTavernRooms,
+    updateRooms,
     listPersonas,
     listSceneLibrary,
     readTavernCreationDraft,
@@ -449,12 +453,6 @@ export function useTavernRoomQueries(
     setBusyAction,
     roomPageVersionRef,
     loadingRoomCursorRef,
-    setLoadingMoreRooms,
-    roomsRef,
-    setRooms,
-    setNextRoomCursor,
-    setRoomHistoryTruncated,
-    setRoomPageError,
     setPersonas,
     setScenes,
     setRawError,
@@ -469,43 +467,6 @@ export function useTavernRoomQueries(
     mutationOperationVersionRef,
     foregroundOperationIdRef,
   ]);
-
-  const updateRooms = useCallback(
-    async (context?: DiagnosticContext) => {
-      if (!mountedRef.current) return;
-      const pageVersion = ++roomPageVersionRef.current;
-      loadingRoomCursorRef.current = null;
-      setLoadingMoreRooms(false);
-      try {
-        const page = await listTavernRooms({ limit: TAVERN_ROOM_PAGE_SIZE }, context);
-        if (!mountedRef.current || pageVersion !== roomPageVersionRef.current) return;
-        loadingRoomCursorRef.current = null;
-        setLoadingMoreRooms(false);
-        roomsRef.current = page.items;
-        setRooms(page.items);
-        setNextRoomCursor(page.nextCursor);
-        setRoomHistoryTruncated(false);
-        setRoomPageError("");
-      } catch (error) {
-        if (!mountedRef.current || pageVersion !== roomPageVersionRef.current) return;
-        setRawError(String(error));
-        setRoomPageError("房间历史刷新失败；当前列表已保留。");
-      }
-    },
-    [
-      listTavernRooms,
-      loadingRoomCursorRef,
-      mountedRef,
-      roomPageVersionRef,
-      roomsRef,
-      setLoadingMoreRooms,
-      setNextRoomCursor,
-      setRawError,
-      setRoomHistoryTruncated,
-      setRoomPageError,
-      setRooms,
-    ],
-  );
 
   const loadMoreRooms = useCallback(async () => {
     const cursor = nextRoomCursor;
@@ -702,6 +663,7 @@ export function useTavernRoomQueries(
   ]);
 
   return {
+    roomListStatus,
     openRoom,
     refreshRoom,
     updateRooms,
