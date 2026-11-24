@@ -1,10 +1,17 @@
 import assert from "node:assert/strict";
+import { setImmediate } from "node:timers/promises";
 import test from "node:test";
 import type { RuntimeSettings } from "@vibe-learner/shared";
 
-import { resolveSettingsPublication } from "../components/settings/settings-publication.ts";
+import {
+  resolveSettingsPublication,
+  type SettingsForm,
+} from "../components/settings/settings-publication.ts";
+import { SettingsSaveCoordinator } from "../lib/settings-save-coordinator.ts";
+import { SettingsWriteHandoff } from "../lib/settings-write-handoff.ts";
 import {
   buildNumericDrafts,
+  buildRuntimeSettingsPatch,
   serializeSettings,
 } from "../components/settings/settings-utils.ts";
 
@@ -118,5 +125,117 @@ test("explicit Vault reset replaces editable settings and raw drafts with the re
       baseline: masked,
       lastSavedAt: masked.updatedAt,
     },
+  );
+});
+
+for (const desktop of [false, true]) {
+  test(`quick remount waits for all outgoing receipts before editing another field (desktop: ${desktop})`, async () => {
+    const handoff = new SettingsWriteHandoff();
+    let confirmed = submitted;
+    const persisted: ReturnType<typeof buildRuntimeSettingsPatch>[] = [];
+    const receipts: ((settings: RuntimeSettings) => void)[] = [];
+    const readiness: boolean[] = [];
+    handoff.subscribe(() => readiness.push(handoff.isPending()));
+
+    function mountEditor() {
+      const baseline = handoff.readBaseline(() => confirmed);
+      if (!baseline) return null;
+      let form: SettingsForm = {
+        settings: baseline,
+        numericDrafts: buildNumericDrafts(baseline),
+      };
+      const coordinator = new SettingsSaveCoordinator<RuntimeSettings>(
+        {
+          serialize: serializeSettings,
+          persist: (snapshot) => {
+            persisted.push(
+              buildRuntimeSettingsPatch(snapshot, { includeSecrets: !desktop }),
+            );
+            return new Promise((resolve) => receipts.push(resolve));
+          },
+          saved: (settings, submittedKey) => {
+            const publication = resolveSettingsPublication(form, {
+              kind: "autosave",
+              settings,
+              submittedKey,
+            });
+            form = publication.form;
+            if (publication.runtimeSettings) confirmed = publication.runtimeSettings;
+          },
+          status: () => {},
+        },
+        900,
+      );
+      coordinator.acceptSaved(baseline);
+      return {
+        coordinator,
+        edit(patch: Partial<RuntimeSettings>) {
+          const settings = { ...(form.settings ?? baseline), ...patch };
+          form = { ...form, settings };
+          coordinator.edit(settings);
+        },
+        unmount() {
+          const completion = coordinator.flush();
+          if (completion) handoff.track(completion);
+        },
+      };
+    }
+
+    const oldEditor = mountEditor();
+    assert.ok(oldEditor);
+    oldEditor.edit({ openaiChatModel: "  first edit  " });
+    void oldEditor.coordinator.flush();
+    oldEditor.edit({ openaiChatModel: "  latest edit  " });
+    oldEditor.unmount();
+    assert.equal(mountEditor(), null);
+    assert.equal(persisted.length, 1);
+    assert.equal(confirmed, submitted);
+
+    receipts[0]({ ...submitted, openaiChatModel: "first edit" });
+    await setImmediate();
+    assert.equal(mountEditor(), null, "the queued write still owns the handoff");
+    assert.equal(persisted.length, 2);
+    receipts[1]({ ...result, openaiChatModel: "latest edit" });
+    await setImmediate();
+    assert.deepEqual(readiness, [true, false]);
+
+    const returningEditor = mountEditor();
+    assert.ok(returningEditor);
+    returningEditor.edit({ showDebugInfo: true });
+    const save = returningEditor.coordinator.flush();
+    assert.equal(persisted.length, 3);
+    assert.equal(persisted[2].openaiChatModel, "latest edit");
+    assert.equal(persisted[2].openaiTimeoutSeconds, result.openaiTimeoutSeconds);
+    assert.equal(persisted[2].showDebugInfo, true);
+    assert.equal(
+      persisted[2].openaiApiKey,
+      desktop ? undefined : submitted.openaiApiKey,
+    );
+    receipts[2]({ ...confirmed, showDebugInfo: true });
+    await save;
+    assert.equal(confirmed.openaiChatModel, "latest edit");
+    assert.equal(confirmed.showDebugInfo, true);
+  });
+}
+
+test("a rejected outgoing write still signals admission after a batched busy interval", async () => {
+  const handoff = new SettingsWriteHandoff();
+  const original = handoff.getSnapshot();
+  let reject!: (error: Error) => void;
+  const completion = new Promise<void>((_resolve, fail) => {
+    reject = fail;
+  });
+  handoff.track(completion);
+  assert.equal(
+    handoff.readBaseline(() => submitted),
+    null,
+  );
+  reject(new Error("synthetic missing receipt"));
+  await setImmediate();
+  assert.equal(handoff.getSnapshot().pending, false);
+  assert.notEqual(handoff.getSnapshot(), original);
+  assert.equal(
+    handoff.readBaseline(() => submitted),
+    submitted,
   );
 });

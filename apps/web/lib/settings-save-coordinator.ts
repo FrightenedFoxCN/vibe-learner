@@ -31,6 +31,8 @@ export class SettingsSaveCoordinator<T> {
   private runningKey: string | null = null;
   private timer: unknown = null;
   private flushing = false;
+  private flushCompletion: { promise: Promise<void>; resolve: () => void } | null =
+    null;
 
   constructor(
     port: SaveCoordinatorPort<T>,
@@ -83,10 +85,27 @@ export class SettingsSaveCoordinator<T> {
     this.flush();
   }
 
-  flush() {
+  // Null means there is no outgoing write. Otherwise wait for the entire
+  // drain, including work queued behind the current write and its publication.
+  flush(): Promise<void> | null {
+    if (this.runningKey === null && this.pending === null) return null;
+    if (this.flushCompletion) return this.flushCompletion.promise;
+    let resolve!: () => void;
+    const promise = new Promise<void>((done) => {
+      resolve = done;
+    });
+    this.flushCompletion = { promise, resolve };
     this.clearTimer();
     this.flushing = true;
     if (this.runningKey === null) void this.drain();
+    return promise;
+  }
+
+  private finishFlush() {
+    this.flushing = false;
+    const completion = this.flushCompletion;
+    this.flushCompletion = null;
+    completion?.resolve();
   }
 
   private clearTimer() {
@@ -105,7 +124,7 @@ export class SettingsSaveCoordinator<T> {
   private async drain() {
     const pending = this.pending;
     if (!pending || this.runningKey !== null) {
-      if (this.runningKey === null) this.flushing = false;
+      if (this.runningKey === null) this.finishFlush();
       return;
     }
     this.pending = null;
@@ -131,7 +150,7 @@ export class SettingsSaveCoordinator<T> {
         if (this.flushing) void this.drain();
         else this.schedule();
       } else {
-        this.flushing = false;
+        this.finishFlush();
       }
     }
   }

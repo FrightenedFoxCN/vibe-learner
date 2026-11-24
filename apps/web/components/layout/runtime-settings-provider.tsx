@@ -1,9 +1,18 @@
 "use client";
 
 import type { RuntimeSettings } from "@vibe-learner/shared";
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 
 import { getRuntimeSettings } from "../../lib/data/runtime-settings";
+import { SettingsWriteHandoff } from "../../lib/settings-write-handoff";
 
 interface RuntimeSettingsContextValue {
   settings: RuntimeSettings | null;
@@ -12,6 +21,8 @@ interface RuntimeSettingsContextValue {
   showDebugInfo: boolean;
   refresh: () => Promise<RuntimeSettings | null>;
   replaceSettings: (settings: RuntimeSettings) => void;
+  getConfirmedSettings: () => RuntimeSettings | null;
+  settingsWriteHandoff: SettingsWriteHandoff;
 }
 
 const RuntimeSettingsContext = createContext<RuntimeSettingsContextValue | null>(null);
@@ -20,25 +31,40 @@ export function RuntimeSettingsProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<RuntimeSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const confirmedSettings = useRef<RuntimeSettings | null>(null);
+  const refreshVersion = useRef(0);
+  const [settingsWriteHandoff] = useState(() => new SettingsWriteHandoff());
 
-  const refresh = async () => {
+  const replaceSettings = useCallback((next: RuntimeSettings) => {
+    // The handoff may release before React commits the provider update.
+    confirmedSettings.current = next;
+    setSettings(next);
+  }, []);
+
+  const refresh = useCallback(async () => {
+    const version = ++refreshVersion.current;
+    const before = confirmedSettings.current;
+    const isCurrent = () =>
+      version === refreshVersion.current && confirmedSettings.current === before;
     setLoading(true);
     setError("");
     try {
       const nextSettings = await getRuntimeSettings();
-      setSettings(nextSettings);
-      return nextSettings;
+      // A delayed read must not replace a newer confirmed write receipt.
+      if (isCurrent()) replaceSettings(nextSettings);
+      return confirmedSettings.current;
     } catch (err) {
+      if (!isCurrent()) return confirmedSettings.current;
       setError(err instanceof Error ? err.message : String(err));
       return null;
     } finally {
-      setLoading(false);
+      if (version === refreshVersion.current) setLoading(false);
     }
-  };
+  }, [replaceSettings]);
 
   useEffect(() => {
     void refresh();
-  }, []);
+  }, [refresh]);
 
   return (
     <RuntimeSettingsContext.Provider
@@ -48,7 +74,9 @@ export function RuntimeSettingsProvider({ children }: { children: ReactNode }) {
         error,
         showDebugInfo: Boolean(settings?.showDebugInfo),
         refresh,
-        replaceSettings: setSettings,
+        replaceSettings,
+        getConfirmedSettings: () => confirmedSettings.current,
+        settingsWriteHandoff,
       }}
     >
       {children}

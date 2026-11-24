@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useEffectEvent, useRef, useState } from "react";
+import {
+  useEffect,
+  useEffectEvent,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 
 import type {
   DesktopVaultState,
@@ -105,6 +111,12 @@ interface CachedProbeResult {
 
 export function useSettingsController(): SettingsController {
   const runtimeSettings = useRuntimeSettings();
+  const { settingsWriteHandoff } = runtimeSettings;
+  const handoff = useSyncExternalStore(
+    settingsWriteHandoff.subscribe,
+    settingsWriteHandoff.getSnapshot,
+    settingsWriteHandoff.getServerSnapshot,
+  );
   const desktopRuntimeConfig = getDesktopRuntimeConfig();
   const desktopEnabled = Boolean(
     desktopRuntimeConfig?.isDesktop && isDesktopVaultAvailable(),
@@ -208,8 +220,6 @@ export function useSettingsController(): SettingsController {
   }, [settings]);
 
   const saveCoordinator = useSettingsSave(
-    settings,
-    initializedRef.current && !runtimeSettings.loading,
     {
       serialize: serializeSettings,
       persist: async (snapshot: RuntimeSettings, context) => {
@@ -252,6 +262,7 @@ export function useSettingsController(): SettingsController {
       },
     },
     AUTO_SAVE_DELAY_MS,
+    settingsWriteHandoff,
   );
 
   function publishForm(next: SettingsForm) {
@@ -273,14 +284,25 @@ export function useSettingsController(): SettingsController {
     }
   }
 
-  const initializeForm = useEffectEvent((next: RuntimeSettings) => {
+  const initializeForm = useEffectEvent(() => {
+    // Recheck synchronously: outgoing layout cleanup can run after the
+    // incoming render, but before this effect runs.
     if (initializedRef.current) return;
+    const next = settingsWriteHandoff.readBaseline(
+      runtimeSettings.getConfirmedSettings,
+    );
+    if (!next) return;
     initializedRef.current = true;
+    setVaultState(
+      isDesktopVaultUnlocked()
+        ? "unlocked"
+        : (getDesktopRuntimeConfig()?.vaultState ?? "unconfigured"),
+    );
     publishSettings({ kind: "initial", settings: next });
   });
   useEffect(() => {
-    if (runtimeSettings.settings) initializeForm(runtimeSettings.settings);
-  }, [runtimeSettings.settings]);
+    initializeForm();
+  }, [runtimeSettings.settings, handoff]);
 
   function setSettingField<K extends keyof RuntimeSettings>(
     key: K,
@@ -289,7 +311,10 @@ export function useSettingsController(): SettingsController {
     const current = formRef.current;
     if (vaultTransitionRef.current || !current.settings) return;
     setSaveError("");
-    publishForm({ ...current, settings: { ...current.settings, [key]: value } });
+    const next = { ...current.settings, [key]: value };
+    publishForm({ ...current, settings: next });
+    // Admit the input in the same turn, even if navigation prevents a render.
+    saveCoordinator.edit(next);
   }
 
   function setNumericDraft(key: NumericSettingKey, value: string) {
@@ -455,6 +480,7 @@ export function useSettingsController(): SettingsController {
   }
 
   function publishVaultSettings(next: RuntimeSettings) {
+    initializedRef.current = true;
     publishSettings({ kind: "vault", settings: next });
   }
 
@@ -464,19 +490,28 @@ export function useSettingsController(): SettingsController {
   }
 
   async function runVaultTransition(operation: () => Promise<void>) {
-    if (!desktopEnabled || vaultTransitionRef.current) return;
+    if (
+      !desktopEnabled ||
+      vaultTransitionRef.current ||
+      settingsWriteHandoff.isPending()
+    )
+      return;
     vaultTransitionRef.current = true;
     vaultVersionRef.current++;
     saveCoordinator.discardPending();
     setDesktopSecurity((prev) => ({ ...prev, busy: true, error: "" }));
-    try {
-      await enqueueVaultOperation(operation);
-    } catch (error) {
-      setDesktopSecurity((prev) => ({ ...prev, error: String(error) }));
-    } finally {
-      vaultTransitionRef.current = false;
-      setDesktopSecurity((prev) => ({ ...prev, busy: false }));
-    }
+    const completion = enqueueVaultOperation(operation)
+      .catch((error) => {
+        setDesktopSecurity((prev) => ({ ...prev, error: String(error) }));
+      })
+      .finally(() => {
+        vaultTransitionRef.current = false;
+        setDesktopSecurity((prev) => ({ ...prev, busy: false }));
+      });
+    // A new editor cannot hydrate credentials mid-transition, even if this
+    // page unmounts while the shared Vault queue is still running.
+    settingsWriteHandoff.track(completion);
+    await completion;
   }
 
   async function activateDesktopVault(password: string, mode: "initialize" | "unlock") {
@@ -583,7 +618,7 @@ export function useSettingsController(): SettingsController {
     savePhase,
     saveError,
     lastSavedAt,
-    loading: runtimeSettings.loading,
+    loading: runtimeSettings.loading || (!settings && handoff.pending),
     loadError: runtimeSettings.error,
     setAdvancedExpanded,
     setSettingField,
