@@ -32,7 +32,12 @@ from app.services.document_input_validation import (
     validate_upload_pdf_metadata,
 )
 from app.core.logging import get_logger
-from app.models.domain import DocumentDebugRecord, DocumentRecord, DocumentSection
+from app.models.domain import (
+    DocumentDebugRecord,
+    DocumentRecord,
+    DocumentSection,
+    VersionedLearningPlanRecord,
+)
 from app.models.harness import (
     HarnessArtifactType,
     HarnessStage,
@@ -50,6 +55,7 @@ from app.persistence.document_repository import (
     DocumentProcessingConflict,
     DocumentRepository,
     DocumentRevisionConflict,
+    LinkedPlanRevisionConflict,
     StudyUnitNotFound,
 )
 from app.services.document_stage_metrics import (
@@ -742,13 +748,15 @@ class DocumentService:
         study_unit_id: str,
         title: str,
         expected_revision: int,
-    ) -> DocumentRecord:
+    ) -> tuple[DocumentRecord, list[VersionedLearningPlanRecord]]:
         normalized_title = title.strip()
         if not normalized_title:
             raise HTTPException(status_code=422, detail="study_unit_title_required")
 
+        # Materialize any legacy plans before the atomic title update.
+        self.store.load_list("plans", VersionedLearningPlanRecord)
         try:
-            document = self.repository.rename_study_unit(
+            document, plans = self.repository.rename_study_unit(
                 document_id=document_id,
                 study_unit_id=study_unit_id,
                 title=normalized_title,
@@ -762,11 +770,13 @@ class DocumentService:
             raise HTTPException(409, "document_revision_conflict") from exc
         except DocumentProcessingConflict as exc:
             raise HTTPException(409, "document_processing_already_active") from exc
-        debug_report = self.store.load_item(
-            "document_debug", document_id, DocumentDebugRecord
+        except LinkedPlanRevisionConflict as exc:
+            raise HTTPException(409, "learning_plan_revision_conflict") from exc
+        current = self.repository.get_with_debug(document_id)
+        self._mirror_current_document_projection(
+            document_id, debug_report=current[1] if current is not None else None
         )
-        self._mirror_current_document_projection(document_id, debug_report=debug_report)
-        return document
+        return document, plans
 
     def require_debug_report(self, document_id: str) -> DocumentDebugRecord:
         report = self.store.load_item(

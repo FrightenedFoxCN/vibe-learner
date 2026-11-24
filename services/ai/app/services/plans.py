@@ -846,28 +846,6 @@ class LearningPlanService:
             deleted=True,
         )
 
-    def update_study_unit_title(
-        self, *, document_id: str, study_unit_id: str, title: str
-    ) -> list[LearningPlanRecord]:
-        title = title.strip()
-        if not title:
-            raise HTTPException(422, "study_unit_title_required")
-        updated = []
-        for plan in self.list_plans():
-            if plan.document_id != document_id or not any(
-                unit.id == study_unit_id for unit in plan.study_units
-            ):
-                continue
-
-            def mutate(current):
-                for unit in current.study_units:
-                    if unit.id == study_unit_id:
-                        unit.title = title
-                return self._refresh_plan_derived_fields(current)
-
-            updated.append(self.repository.mutate(plan.id, mutate))
-        return updated
-
     def list_plans(self) -> list[LearningPlanRecord]:
         return self._load_plans()
 

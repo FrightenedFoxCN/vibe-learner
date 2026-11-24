@@ -173,16 +173,11 @@ def update_study_unit_title(
     *,
     container: Container = Depends(get_container),
 ) -> DocumentStudyUnitUpdateResponse:
-    document = container.document_service.update_study_unit_title(
+    document, plans = container.document_service.update_study_unit_title(
         document_id=document_id,
         study_unit_id=study_unit_id,
         title=payload.title,
         expected_revision=payload.expected_revision,
-    )
-    plans = container.plan_service.update_study_unit_title(
-        document_id=document_id,
-        study_unit_id=study_unit_id,
-        title=payload.title,
     )
     return DocumentStudyUnitUpdateResponse(
         document=_into_response(DocumentResponse, document),

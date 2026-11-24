@@ -7,9 +7,21 @@ from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.models.domain import DocumentDebugRecord, DocumentRecord
+from app.models.domain import (
+    DocumentDebugRecord,
+    DocumentRecord,
+    VersionedLearningPlanRecord,
+    validate_schedule_chapter_identity,
+)
+from app.models.plan_progress import refresh_plan_progress
 from app.persistence.database import Database
-from app.persistence.models import DocumentDebugRow, DocumentRow
+from app.persistence.learning_plan_repository import archive_plan, plan_from_row
+from app.persistence.models import (
+    DocumentDebugRow,
+    DocumentRow,
+    LearningPlanRevisionRow,
+    LearningPlanRow,
+)
 from app.persistence.row_mapping import payload_of
 
 
@@ -25,6 +37,10 @@ class DocumentRevisionConflict(RuntimeError):
 
 
 class DocumentProcessingConflict(RuntimeError):
+    pass
+
+
+class LinkedPlanRevisionConflict(RuntimeError):
     pass
 
 
@@ -112,7 +128,7 @@ class DocumentRepository:
         study_unit_id: str,
         title: str,
         expected_revision: int,
-    ) -> DocumentRecord:
+    ) -> tuple[DocumentRecord, list[VersionedLearningPlanRecord]]:
         with self.database.session() as session:
             row = session.get(DocumentRow, document_id)
             if row is None:
@@ -136,6 +152,8 @@ class DocumentRepository:
                     section.title = title
             document.revision += 1
             document.updated_at = datetime.now(timezone.utc).isoformat()
+            # Claim the Document revision before reading any plan. Competing
+            # renames and Planning publication fence the same Document row.
             replace_document_in_session(
                 session, document, expected_revision=expected_revision
             )
@@ -146,8 +164,58 @@ class DocumentRepository:
                     if debug_unit.id == study_unit_id:
                         debug_unit.title = title
                 debug_row.payload = debug.model_dump(mode="json")
+            plans = _rename_linked_study_unit_in_session(
+                session,
+                document_id=document_id,
+                study_unit_id=study_unit_id,
+                title=unit.title,
+            )
             session.flush()
-            return document
+            return document, plans
+
+
+def _rename_linked_study_unit_in_session(
+    session: Session, *, document_id: str, study_unit_id: str, title: str
+) -> list[VersionedLearningPlanRecord]:
+    """Project the renamed unit after the caller claims the Document revision."""
+    rows = session.scalars(
+        select(LearningPlanRow)
+        .where(LearningPlanRow.document_id == document_id, LearningPlanRow.deleted == 0)
+        .order_by(LearningPlanRow.id)
+    ).all()
+    updated: list[VersionedLearningPlanRecord] = []
+    for row in rows:
+        plan = plan_from_row(row)
+        units = [unit for unit in plan.study_units if unit.id == study_unit_id]
+        if not units:
+            continue
+        for unit in units:
+            unit.title = title
+        plan = refresh_plan_progress(plan)
+        plan.revision += 1
+        plan = VersionedLearningPlanRecord.model_validate(plan.model_dump(mode="json"))
+        validate_schedule_chapter_identity(plan)
+        payload = plan.model_dump(mode="json")
+        changed = session.execute(
+            update(LearningPlanRow)
+            .where(
+                LearningPlanRow.id == row.id,
+                LearningPlanRow.revision == row.revision,
+                LearningPlanRow.deleted == 0,
+            )
+            .values(revision=plan.revision, payload=payload)
+            .execution_options(synchronize_session=False)
+        )
+        if changed.rowcount != 1:
+            raise LinkedPlanRevisionConflict(row.id)
+        archive_plan(session, row)
+        session.add(
+            LearningPlanRevisionRow(
+                plan_id=plan.id, revision=plan.revision, payload=payload
+            )
+        )
+        updated.append(plan)
+    return updated
 
 
 def document_from_row(row: DocumentRow) -> DocumentRecord:
