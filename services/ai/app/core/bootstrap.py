@@ -20,7 +20,10 @@ from app.persistence.storage import StorageManager
 from app.persistence.study_session_repository import StudySessionRepository
 from app.persistence.study_chat_operation_repository import StudyChatOperationRepository
 from app.persistence.tavern_repository import TavernRepository
-from app.persistence.migrate_local_data import migrate_from_legacy_store
+from app.persistence.migrate_local_data import (
+    migrate_desktop_legacy_aggregates,
+    migrate_from_legacy_store,
+)
 from app.services.model_provider import MockModelProvider, OpenAIModelProvider
 from app.services.documents import DocumentService
 from app.services.local_store import LegacyLocalJsonStore, LocalJsonStore
@@ -112,6 +115,13 @@ class Container:
                 self.store,
                 TokenUsageService(self.database),
                 data_root,
+            )
+        elif self.base_settings.desktop_mode:
+            # The packaged sidecar explicitly sets desktop mode. Keep its old
+            # empty-table upgrade without importing during a request or enabling
+            # the full migration on every desktop startup.
+            migrate_desktop_legacy_aggregates(
+                LegacyLocalJsonStore(data_root), self.database
             )
         self.model_tool_config_service = ModelToolConfigService(self.store)
         self.runtime_settings_service = RuntimeSettingsService(

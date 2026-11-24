@@ -18,6 +18,8 @@ uv run alembic upgrade head
 uv run python -m app.persistence.migrate_local_data
 ```
 
+教材与学习会话的正常读取只查询数据库，不会从旧列表文件隐式导入。独立服务若需升级旧数据，使用上述命令（可传 `--source-root`、`--database-url`），或在目标教材表为空时显式启用 `VIBE_LEARNER_AUTO_MIGRATE_LOCAL_DATA=true`。当前桌面端仍在启动阶段兼容原数据目录中的 `documents.json` 和 `sessions.json`，仅导入各自空表，不改动旧文件；已有数据库记录不会被启动导入替换。仅在 DB 缺少调试记录且旧版本与当前教材确认匹配时，补入对应的旧调试投影。
+
 ## 配置说明
 
 - 复制 `.env.example` 为 `.env` 作为启动默认配置。

@@ -348,12 +348,7 @@ class LocalJsonStore:
         if name == "documents":
             from app.persistence.document_repository import DocumentRepository
 
-            repository = DocumentRepository(self._db)
-            documents = repository.list()
-            if documents:
-                return documents  # type: ignore[return-value]
-            repository.import_legacy(self._legacy.load_list(name, model))
-            return repository.list()  # type: ignore[return-value]
+            return DocumentRepository(self._db).list()  # type: ignore[return-value]
         if name == "plans":
             from app.persistence.learning_plan_repository import LearningPlanRepository
 
@@ -369,14 +364,7 @@ class LocalJsonStore:
         if name == "sessions":
             from app.persistence.study_session_repository import StudySessionRepository
 
-            repository_items = StudySessionRepository(self._db).list()
-            if repository_items:
-                return repository_items  # type: ignore[return-value]
-            legacy_items = self._legacy.load_list(name, model)
-            if legacy_items:
-                self.save_list(name, legacy_items)
-                return StudySessionRepository(self._db).list()  # type: ignore[return-value]
-            return []
+            return StudySessionRepository(self._db).list()  # type: ignore[return-value]
         spec = LIST_SPECS[name]
         with self._db.session() as session:
             rows = session.scalars(self._ordered_select(spec)).all()
