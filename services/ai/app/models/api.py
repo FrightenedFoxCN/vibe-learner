@@ -4,17 +4,13 @@ from typing import Annotated, Literal
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from app.models.output_language import OutputLanguagePreference
 
-from app.core.model_runtime_limits import (
-    CHAT_HISTORY_MESSAGES_MAX,
-    CHAT_HISTORY_MESSAGES_MIN,
-    CHAT_TOOL_MAX_ROUNDS_MAX,
-    CHAT_TOOL_MAX_ROUNDS_MIN,
-    MODEL_MAX_TOKENS_MAX,
-    MODEL_MAX_TOKENS_MIN,
-    MODEL_TEMPERATURE_MAX,
-    MODEL_TEMPERATURE_MIN,
-    PROVIDER_TIMEOUT_SECONDS_MAX,
-    PROVIDER_TIMEOUT_SECONDS_MIN,
+from app.core.runtime_settings_validation import (
+    NUMERIC_FIELDS,
+    RuntimeHistoryMessages,
+    RuntimeMaxTokens,
+    RuntimeTemperature,
+    RuntimeTimeoutSeconds,
+    RuntimeToolMaxRounds,
 )
 
 from app.models.domain import (
@@ -377,35 +373,15 @@ class RuntimeSettingsResponse(BaseModel):
     openai_chat_api_key_configured: bool = Field(default=False, strict=True)
     openai_chat_base_url: str
     openai_chat_model: str
-    openai_chat_temperature: float = Field(
-        strict=True,
-        ge=MODEL_TEMPERATURE_MIN,
-        le=MODEL_TEMPERATURE_MAX,
-        allow_inf_nan=False,
-    )
-    openai_setting_temperature: float = Field(
-        strict=True,
-        ge=MODEL_TEMPERATURE_MIN,
-        le=MODEL_TEMPERATURE_MAX,
-        allow_inf_nan=False,
-    )
-    openai_setting_max_tokens: int = Field(
-        strict=True, ge=MODEL_MAX_TOKENS_MIN, le=MODEL_MAX_TOKENS_MAX
-    )
-    openai_chat_max_tokens: int = Field(
-        strict=True, ge=MODEL_MAX_TOKENS_MIN, le=MODEL_MAX_TOKENS_MAX
-    )
-    openai_chat_history_messages: int = Field(
-        strict=True, ge=CHAT_HISTORY_MESSAGES_MIN, le=CHAT_HISTORY_MESSAGES_MAX
-    )
-    openai_chat_tool_max_rounds: int = Field(
-        strict=True, ge=CHAT_TOOL_MAX_ROUNDS_MIN, le=CHAT_TOOL_MAX_ROUNDS_MAX
-    )
+    openai_chat_temperature: RuntimeTemperature
+    openai_setting_temperature: RuntimeTemperature
+    openai_setting_max_tokens: RuntimeMaxTokens
+    openai_chat_max_tokens: RuntimeMaxTokens
+    openai_chat_history_messages: RuntimeHistoryMessages
+    openai_chat_tool_max_rounds: RuntimeToolMaxRounds
     openai_embedding_model: str
     openai_chat_model_multimodal: bool = Field(strict=True)
-    openai_timeout_seconds: int = Field(
-        strict=True, ge=PROVIDER_TIMEOUT_SECONDS_MIN, le=PROVIDER_TIMEOUT_SECONDS_MAX
-    )
+    openai_timeout_seconds: RuntimeTimeoutSeconds
     openai_plan_model_multimodal: bool = Field(strict=True)
     openai_plan_fallback_model: str
     openai_plan_fallback_disable_tools: bool = Field(strict=True)
@@ -413,6 +389,8 @@ class RuntimeSettingsResponse(BaseModel):
 
 
 class UpdateRuntimeSettingsRequest(BaseModel):
+    model_config = ConfigDict(strict=True)
+
     plan_provider: str | None = None
     openai_api_key: str | None = None
     openai_base_url: str | None = None
@@ -426,19 +404,28 @@ class UpdateRuntimeSettingsRequest(BaseModel):
     openai_chat_api_key: str | None = None
     openai_chat_base_url: str | None = None
     openai_chat_model: str | None = None
-    openai_chat_temperature: float | None = None
-    openai_setting_temperature: float | None = None
-    openai_setting_max_tokens: int | None = None
-    openai_chat_max_tokens: int | None = None
-    openai_chat_history_messages: int | None = None
-    openai_chat_tool_max_rounds: int | None = None
+    openai_chat_temperature: RuntimeTemperature | None = None
+    openai_setting_temperature: RuntimeTemperature | None = None
+    openai_setting_max_tokens: RuntimeMaxTokens | None = None
+    openai_chat_max_tokens: RuntimeMaxTokens | None = None
+    openai_chat_history_messages: RuntimeHistoryMessages | None = None
+    openai_chat_tool_max_rounds: RuntimeToolMaxRounds | None = None
     openai_embedding_model: str | None = None
     openai_chat_model_multimodal: bool | None = None
-    openai_timeout_seconds: int | None = None
+    openai_timeout_seconds: RuntimeTimeoutSeconds | None = None
     openai_plan_model_multimodal: bool | None = None
     openai_plan_fallback_model: str | None = None
     openai_plan_fallback_disable_tools: bool | None = None
     show_debug_info: bool | None = None
+
+    @field_validator(*NUMERIC_FIELDS, mode="before")
+    @classmethod
+    def reject_null_number(cls, value: object) -> object:
+        if value is None:
+            raise ValueError(
+                "omit an unchanged numeric setting instead of sending null"
+            )
+        return value
 
 
 class RuntimeSessionSecretsRequest(BaseModel):

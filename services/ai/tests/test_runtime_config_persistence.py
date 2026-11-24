@@ -13,6 +13,10 @@ class FakeStore:
     def load_item(self, category, item_id, record_type):
         return self.records.get((category, item_id))
 
+    def load_runtime_settings_payload(self):
+        record = self.records.get(("runtime_settings", "default"))
+        return record.model_dump() if record is not None else None
+
     def save_item(self, category, item_id, record):
         if self.fail:
             raise OSError("synthetic write failure")

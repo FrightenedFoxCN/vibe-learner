@@ -18,6 +18,13 @@ from app.core.model_runtime_limits import (
     DEFAULT_SETTING_TEMPERATURE,
 )
 
+from app.core.runtime_settings_validation import (
+    RuntimeHistoryMessages,
+    RuntimeMaxTokens,
+    RuntimeTemperature,
+    RuntimeTimeoutSeconds,
+    RuntimeToolMaxRounds,
+)
 from app.models.study_chat_note_references import StudyNoteReferences
 from app.models.study_question import (
     StudyInteractiveQuestionRecordV2 as InteractiveQuestion,
@@ -947,7 +954,11 @@ class TokenUsageRecord(BaseModel):
 
 
 class RuntimeSettingsRecord(BaseModel):
-    config_id: str = "default"
+    model_config = ConfigDict(
+        strict=True, validate_default=True, hide_input_in_errors=True
+    )
+
+    config_id: Literal["default"] = "default"
     updated_at: str
     plan_provider: str = "mock"
     openai_api_key: str = ""
@@ -962,15 +973,15 @@ class RuntimeSettingsRecord(BaseModel):
     openai_chat_api_key: str = ""
     openai_chat_base_url: str = ""
     openai_chat_model: str = DEFAULT_MODEL_NAME
-    openai_chat_temperature: float = DEFAULT_CHAT_TEMPERATURE
-    openai_setting_temperature: float = DEFAULT_SETTING_TEMPERATURE
-    openai_setting_max_tokens: int = DEFAULT_SETTING_MAX_TOKENS
-    openai_chat_max_tokens: int = DEFAULT_CHAT_MAX_TOKENS
-    openai_chat_history_messages: int = DEFAULT_CHAT_HISTORY_MESSAGES
-    openai_chat_tool_max_rounds: int = DEFAULT_CHAT_TOOL_MAX_ROUNDS
+    openai_chat_temperature: RuntimeTemperature = DEFAULT_CHAT_TEMPERATURE
+    openai_setting_temperature: RuntimeTemperature = DEFAULT_SETTING_TEMPERATURE
+    openai_setting_max_tokens: RuntimeMaxTokens = DEFAULT_SETTING_MAX_TOKENS
+    openai_chat_max_tokens: RuntimeMaxTokens = DEFAULT_CHAT_MAX_TOKENS
+    openai_chat_history_messages: RuntimeHistoryMessages = DEFAULT_CHAT_HISTORY_MESSAGES
+    openai_chat_tool_max_rounds: RuntimeToolMaxRounds = DEFAULT_CHAT_TOOL_MAX_ROUNDS
     openai_embedding_model: str = DEFAULT_EMBEDDING_MODEL
     openai_chat_model_multimodal: bool = False
-    openai_timeout_seconds: int = DEFAULT_PROVIDER_TIMEOUT_SECONDS
+    openai_timeout_seconds: RuntimeTimeoutSeconds = DEFAULT_PROVIDER_TIMEOUT_SECONDS
     openai_plan_model_multimodal: bool = False
     openai_plan_fallback_model: str = ""
     openai_plan_fallback_disable_tools: bool = True

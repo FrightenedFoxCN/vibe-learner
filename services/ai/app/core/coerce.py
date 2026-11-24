@@ -20,10 +20,17 @@ and decide the default explicitly.
 
 from __future__ import annotations
 
+import re
 from collections.abc import Mapping
 from typing import Any
 
-__all__ = ["optional_text", "optional_text_at", "text_or_empty", "text_at"]
+__all__ = [
+    "decode_runtime_env_number",
+    "optional_text",
+    "optional_text_at",
+    "text_or_empty",
+    "text_at",
+]
 
 
 def text_or_empty(value: Any) -> str:
@@ -55,3 +62,16 @@ def optional_text(value: Any) -> str | None:
 def optional_text_at(mapping: Mapping[str, Any], key: str) -> str | None:
     """Return :func:`optional_text` for one mapping field."""
     return optional_text(mapping.get(key))
+
+
+def decode_runtime_env_number(value: str, *, integer: bool) -> int | float:
+    """Decode explicit env text only; the runtime contract checks its bounds."""
+    value = value.strip()
+    pattern = (
+        r"[+-]?[0-9]+"
+        if integer
+        else r"[+-]?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:[eE][+-]?[0-9]+)?"
+    )
+    if len(value) > 128 or re.fullmatch(pattern, value) is None:
+        raise ValueError("invalid numeric environment value")
+    return int(value) if integer else float(value)

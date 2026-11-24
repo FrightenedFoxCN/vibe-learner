@@ -9,6 +9,7 @@ from pathlib import Path
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, OperationalError
 
+from app.core.runtime_settings_validation import repair_legacy_runtime_numbers
 from app.core.settings import Settings
 from app.models.domain import (
     DocumentDebugRecord,
@@ -189,10 +190,17 @@ def migrate_from_legacy_store(
         if items:
             store.save_list(list_name, items)
 
+    if store.count_bucket("runtime_settings") == 0:
+        runtime_payload = legacy.load_runtime_settings_payload()
+        if runtime_payload is not None:
+            runtime_settings = RuntimeSettingsRecord.model_validate(
+                repair_legacy_runtime_numbers(runtime_payload)
+            )
+            store.save_item("runtime_settings", "default", runtime_settings)
+
     for category, model in (
         ("document_debug", DocumentDebugRecord),
         ("planning_trace", PlanGenerationTraceRecord),
-        ("runtime_settings", RuntimeSettingsRecord),
         ("model_tool_config", ModelToolConfigRecord),
         ("scene_setup", SceneSetupStateRecord),
         ("scene_library", SceneLibraryRecord),
@@ -229,7 +237,7 @@ def _item_id_for_category(category: str, item: object) -> str:
         "learning_plan_stream",
     }:
         return str(getattr(item, "document_id", ""))
-    if category in {"runtime_settings", "model_tool_config", "scene_setup"}:
+    if category in {"model_tool_config", "scene_setup"}:
         return str(getattr(item, "config_id", "default"))
     if category == "scene_library":
         return str(getattr(item, "scene_id", ""))

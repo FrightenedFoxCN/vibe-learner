@@ -464,6 +464,15 @@ class LocalJsonStore:
                 return legacy_item
             return model.model_validate(row.payload or {})
 
+    def load_runtime_settings_payload(self) -> dict[str, Any] | None:
+        with self._db.session() as session:
+            row = session.get(RuntimeSettingsRow, "default")
+            if row is not None:
+                if not isinstance(row.payload, dict):
+                    raise ValueError("invalid_runtime_settings_record")
+                return row.payload
+        return self._legacy.load_runtime_settings_payload()
+
     def save_item(self, category: str, item_id: str, item: BaseModel) -> None:
         self._legacy.validate_item_path(category, item_id)
         payload = item.model_dump(mode="json")
@@ -773,6 +782,15 @@ class LegacyLocalJsonStore:
         path = self.root / f"{name}.json"
         payload = [item.model_dump(mode="json") for item in items]
         self._write_json(path, payload)
+
+    def load_runtime_settings_payload(self) -> dict[str, Any] | None:
+        path = self.validate_item_path("runtime_settings", "default")
+        if not path.exists():
+            return None
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        if not isinstance(payload, dict):
+            raise ValueError("invalid_legacy_runtime_settings_record")
+        return payload
 
     def load_item(self, category: str, item_id: str, model: type[T]) -> T | None:
         path = self.validate_item_path(category, item_id)

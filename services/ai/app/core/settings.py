@@ -15,7 +15,8 @@ from app.core.model_runtime_limits import (
     DEFAULT_SETTING_MAX_TOKENS,
     DEFAULT_SETTING_TEMPERATURE,
 )
-from app.core.coerce import text_or_empty
+from app.core.coerce import decode_runtime_env_number, text_or_empty
+from app.core.runtime_settings_validation import NUMERIC_FIELDS, validate_runtime_number
 
 
 @dataclass(frozen=True)
@@ -60,6 +61,10 @@ class Settings:
     openai_plan_model_multimodal: bool = False
     openai_plan_fallback_model: str = ""
     openai_plan_fallback_disable_tools: bool = True
+
+    def __post_init__(self) -> None:
+        for field in NUMERIC_FIELDS:
+            validate_runtime_number(field, getattr(self, field))
 
     def has_any_runtime_api_key(self) -> bool:
         return bool(
@@ -172,35 +177,17 @@ class Settings:
             .rstrip("/"),
             openai_chat_model=os.getenv("OPENAI_CHAT_MODEL", DEFAULT_MODEL_NAME).strip()
             or DEFAULT_MODEL_NAME,
-            openai_chat_temperature=_to_float(
-                os.getenv("OPENAI_CHAT_TEMPERATURE", str(DEFAULT_CHAT_TEMPERATURE)),
-                default=DEFAULT_CHAT_TEMPERATURE,
+            openai_chat_temperature=_runtime_env_number("openai_chat_temperature"),
+            openai_setting_temperature=_runtime_env_number(
+                "openai_setting_temperature"
             ),
-            openai_setting_temperature=_to_float(
-                os.getenv(
-                    "OPENAI_SETTING_TEMPERATURE", str(DEFAULT_SETTING_TEMPERATURE)
-                ),
-                default=DEFAULT_SETTING_TEMPERATURE,
+            openai_setting_max_tokens=_runtime_env_number("openai_setting_max_tokens"),
+            openai_chat_max_tokens=_runtime_env_number("openai_chat_max_tokens"),
+            openai_chat_history_messages=_runtime_env_number(
+                "openai_chat_history_messages"
             ),
-            openai_setting_max_tokens=_to_int(
-                os.getenv("OPENAI_SETTING_MAX_TOKENS", str(DEFAULT_SETTING_MAX_TOKENS)),
-                default=DEFAULT_SETTING_MAX_TOKENS,
-            ),
-            openai_chat_max_tokens=_to_int(
-                os.getenv("OPENAI_CHAT_MAX_TOKENS", str(DEFAULT_CHAT_MAX_TOKENS)),
-                default=DEFAULT_CHAT_MAX_TOKENS,
-            ),
-            openai_chat_history_messages=_to_int(
-                os.getenv(
-                    "OPENAI_CHAT_HISTORY_MESSAGES", str(DEFAULT_CHAT_HISTORY_MESSAGES)
-                ),
-                default=DEFAULT_CHAT_HISTORY_MESSAGES,
-            ),
-            openai_chat_tool_max_rounds=_to_int(
-                os.getenv(
-                    "OPENAI_CHAT_TOOL_MAX_ROUNDS", str(DEFAULT_CHAT_TOOL_MAX_ROUNDS)
-                ),
-                default=DEFAULT_CHAT_TOOL_MAX_ROUNDS,
+            openai_chat_tool_max_rounds=_runtime_env_number(
+                "openai_chat_tool_max_rounds"
             ),
             openai_embedding_model=os.getenv(
                 "OPENAI_EMBEDDING_MODEL", DEFAULT_EMBEDDING_MODEL
@@ -210,12 +197,7 @@ class Settings:
                 os.getenv("OPENAI_CHAT_MODEL_MULTIMODAL", "false"),
                 default=False,
             ),
-            openai_timeout_seconds=_to_int(
-                os.getenv(
-                    "OPENAI_TIMEOUT_SECONDS", str(DEFAULT_PROVIDER_TIMEOUT_SECONDS)
-                ),
-                default=DEFAULT_PROVIDER_TIMEOUT_SECONDS,
-            ),
+            openai_timeout_seconds=_runtime_env_number("openai_timeout_seconds"),
             openai_plan_model_multimodal=_to_bool(
                 os.getenv("OPENAI_PLAN_MODEL_MULTIMODAL", "false"),
                 default=False,
@@ -237,11 +219,17 @@ def _to_int(value: str, *, default: int) -> int:
         return default
 
 
-def _to_float(value: str, *, default: float) -> float:
-    try:
-        return float(value)
-    except (TypeError, ValueError):
+def _runtime_env_number(field: str) -> int | float:
+    env_name = field.upper()
+    raw = os.getenv(env_name)
+    _, default = NUMERIC_FIELDS[field]
+    if raw is None:
         return default
+    try:
+        decoded = decode_runtime_env_number(raw, integer=type(default) is int)
+        return validate_runtime_number(field, decoded)
+    except ValueError:
+        raise ValueError(f"Invalid runtime numeric setting: {env_name}") from None
 
 
 def _to_bool(value: str, *, default: bool) -> bool:

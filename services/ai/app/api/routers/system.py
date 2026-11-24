@@ -1,4 +1,6 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request, Response
+from fastapi.exceptions import RequestValidationError
+from fastapi.routing import APIRoute
 
 from app.core.bootstrap import Container
 from app.api.dependencies import get_container
@@ -143,7 +145,26 @@ def get_runtime_settings(
     return _into_response(RuntimeSettingsResponse, described)
 
 
-@router.patch("/runtime-settings", response_model=RuntimeSettingsResponse)
+class _RuntimeSettingsPatchRoute(APIRoute):
+    def get_route_handler(self):
+        handler = super().get_route_handler()
+
+        async def handle(request: Request) -> Response:
+            try:
+                return await handler(request)
+            except RequestValidationError as exc:
+                # Do not echo API keys or pass non-finite inputs to the JSON encoder.
+                raise HTTPException(
+                    422,
+                    [
+                        {name: error[name] for name in ("type", "loc", "msg")}
+                        for error in exc.errors()
+                    ],
+                ) from exc
+
+        return handle
+
+
 def update_runtime_settings(
     payload: UpdateRuntimeSettingsRequest,
     *,
@@ -155,6 +176,15 @@ def update_runtime_settings(
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     return get_runtime_settings(container=container)
+
+
+router.add_api_route(
+    "/runtime-settings",
+    update_runtime_settings,
+    methods=["PATCH"],
+    response_model=RuntimeSettingsResponse,
+    route_class_override=_RuntimeSettingsPatchRoute,
+)
 
 
 @router.put("/runtime-settings/session-secrets", response_model=RuntimeSettingsResponse)
