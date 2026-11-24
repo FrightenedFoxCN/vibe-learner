@@ -4,6 +4,10 @@ from pathlib import Path
 
 from app.models.domain import DocumentRecord
 from app.services.local_store import LocalJsonStore
+from app.services.study_chat_attachment_cleanup import (
+    cleanup_study_chat_attachment_residue,
+    validate_chat_attachment_cleanup_scope,
+)
 from app.services.token_usage import TokenUsageService
 
 
@@ -116,6 +120,8 @@ class StorageLifecycleService:
         for bucket in normalized_buckets:
             if bucket not in MANAGED_CLEANUP_BUCKETS:
                 raise ValueError(f"cleanup_bucket_not_supported:{bucket}")
+        if "chat_attachments" in normalized_buckets:
+            validate_chat_attachment_cleanup_scope(session_id)
 
         cleaned: list[dict[str, object]] = []
         for bucket in normalized_buckets:
@@ -134,11 +140,7 @@ class StorageLifecycleService:
         return cleaned
 
     def _cleanup_chat_attachments(self, *, session_id: str) -> int:
-        if session_id:
-            return self._store.storage.delete_tree(
-                self._store.chat_attachment_root / session_id
-            )
-        return self._store.storage.clear_dir(self._store.chat_attachment_root)
+        return cleanup_study_chat_attachment_residue(self._store, session_id=session_id)
 
     def list_orphaned_uploads(self) -> list[str]:
         active_paths = {
@@ -173,7 +175,7 @@ def _bucket_description(bucket: str) -> str:
         "document_process_stream": "文档处理流事件",
         "learning_plan_stream": "计划生成流事件",
         "token_usage": "模型 token 用量记录",
-        "chat_attachments": "会话附件临时文件",
+        "chat_attachments": "会话附件（仅清理无引用的操作暂存残留）",
         "runtime_temp": "OCR 与运行期临时目录",
         "cache_files": "本地缓存文件目录",
         "uploads": "上传教材原始文件",
