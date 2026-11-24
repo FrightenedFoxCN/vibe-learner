@@ -31,6 +31,29 @@ class Base(DeclarativeBase):
     pass
 
 
+class _DomainOperationLease:
+    owner_id: Mapped[str] = mapped_column(String(64))
+    expires_at: Mapped[str] = mapped_column(String(64))
+
+
+class DocumentProcessLeaseRow(_DomainOperationLease, Base):
+    __tablename__ = "document_process_leases"
+
+    operation_id: Mapped[str] = mapped_column(
+        ForeignKey("document_process_operations.operation_id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+
+
+class LearningPlanLeaseRow(_DomainOperationLease, Base):
+    __tablename__ = "learning_plan_leases"
+
+    operation_id: Mapped[str] = mapped_column(
+        ForeignKey("learning_plan_operations.operation_id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+
+
 class HarnessOperationBindingRow(Base):
     __tablename__ = "harness_operation_bindings"
     __table_args__ = (

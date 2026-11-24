@@ -58,6 +58,7 @@ from app.services.local_store import LocalJsonStore
 from app.services.provider_capabilities import PlanningModelCapability
 from app.services.stream_interrupts import StreamInterruptedError
 from app.services.study_arrangement import StudyArrangementService
+from app.services.domain_operation_heartbeat import DomainOperationHeartbeat
 from app.services.harness_broad_adoption import (
     HarnessProposalRuntimeService,
 )
@@ -199,7 +200,11 @@ class LearningPlanService:
             )
             provider_started = True
 
+        heartbeat = DomainOperationHeartbeat(
+            self.operation_repository.lease, operation.operation_id
+        )
         try:
+            heartbeat.start()
             if operation_admitted_callback is not None:
                 operation_admitted_callback(operation.operation_id)
             operation_binding = self.operation_repository.harness_operations.require_domain(
@@ -365,6 +370,8 @@ class LearningPlanService:
                 runtime_prepared=runtime_prepared,
             )
             raise
+        finally:
+            heartbeat.close()
 
         self.store.mirror_learning_plan_projection(
             plan=plan,

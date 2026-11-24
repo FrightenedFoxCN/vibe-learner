@@ -1,5 +1,5 @@
 from copy import copy
-from threading import RLock
+from threading import Event, RLock, Thread
 from uuid import uuid4
 
 from app.services.document_parser import DocumentParser
@@ -53,6 +53,7 @@ from app.services.token_usage import TokenUsageService
 from app.services.tavern import TavernService
 
 logger = get_logger("vibe_learner.bootstrap")
+_DOMAIN_OPERATION_SWEEP_SECONDS = 15
 
 
 class Container:
@@ -66,6 +67,8 @@ class Container:
         ) = None
         self._started = False
         self._closed = False
+        self._operation_recovery_stop = Event()
+        self._operation_recovery_thread: Thread | None = None
         try:
             self._initialize()
         except BaseException:
@@ -210,12 +213,34 @@ class Container:
             )
         self.document_service.recover_abandoned_operations()
         self.plan_service.recover_abandoned_operations()
+        # An owner may die shortly before (or after) this process starts. Its
+        # still-live lease must be left alone until it actually expires.
+        self._operation_recovery_thread = Thread(
+            target=self._sweep_expired_operations,
+            name="domain-operation-recovery",
+            daemon=True,
+        )
+        self._operation_recovery_thread.start()
         self._started = True
+
+    def _sweep_expired_operations(self) -> None:
+        while not self._operation_recovery_stop.wait(_DOMAIN_OPERATION_SWEEP_SECONDS):
+            for service in (self.document_service, self.plan_service):
+                if self._operation_recovery_stop.is_set():
+                    return
+                try:
+                    service.recover_abandoned_operations()
+                except Exception:
+                    logger.exception("bootstrap.domain_operation_recovery_failed")
 
     def close(self) -> None:
         if self._closed:
             return
         self._closed = True
+        self._operation_recovery_stop.set()
+        recovery = self._operation_recovery_thread
+        if recovery is not None and recovery.ident is not None:
+            recovery.join()
         registry = getattr(self, "stream_interrupt_registry", None)
         if registry is not None:
             registry.close()

@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from typing import Callable
 from uuid import uuid4
 
-from sqlalchemy import select, update
+from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -45,6 +45,7 @@ from app.models.harness_operation import (
     HarnessOperationBindingV1,
 )
 from app.persistence.database import Database
+from app.persistence.domain_operation_lease import DomainOperationLease
 from app.persistence.document_repository import (
     DocumentRevisionConflict,
     document_from_row,
@@ -57,6 +58,7 @@ from app.persistence.models import (
     DocumentDebugRow,
     DocumentCheckpointRow,
     DocumentCheckpointResumeRow,
+    DocumentProcessLeaseRow,
     DocumentProcessOperationRow,
     DocumentRow,
 )
@@ -76,6 +78,9 @@ class DocumentProcessOperationRepository:
         self.database = database
         self.fault_injector = fault_injector
         self.harness_operations = HarnessOperationBindingRepository(database)
+        self.lease = DomainOperationLease(
+            database, DocumentProcessOperationRow, DocumentProcessLeaseRow
+        )
 
     def admit(
         self,
@@ -171,6 +176,7 @@ class DocumentProcessOperationRepository:
                     domain_operation_id=operation_id,
                     admitted_at=now,
                 )
+                self.lease.admit_in_session(session, operation_id)
                 if resume_from_operation_id is not None:
                     session.add(
                         DocumentCheckpointResumeRow(
@@ -217,8 +223,10 @@ class DocumentProcessOperationRepository:
                 raise DocumentProcessOperationNotFound(operation_id)
             if operation.status != DocumentProcessOperationStatus.RUNNING.value:
                 raise DocumentProcessOperationNotRunning(operation_id, operation.status)
-            if not _lock_running_operation_in_session(session, operation):
-                raise DocumentProcessOperationNotRunning(operation_id, operation.status)
+            if not self.lease.fence_owner_in_session(session, operation_id):
+                raise DocumentProcessOperationNotRunning(
+                    operation_id, "document_process_lease_lost"
+                )
             binding = self.harness_operations.require_domain_in_session(
                 session,
                 domain_operation_kind=HarnessDomainOperationKind.DOCUMENT_PROCESS,
@@ -318,6 +326,7 @@ class DocumentProcessOperationRepository:
             checkpoint = session.get(DocumentCheckpointRow, operation_id)
             if checkpoint is not None:
                 checkpoint.committed_document = document_payload
+            self.lease.release_in_session(session, operation_id)
             self._inject("before_terminal_commit")
 
         return self.require(operation_id=operation_id, validate_read_back=True)
@@ -358,19 +367,11 @@ class DocumentProcessOperationRepository:
 
     def recover_abandoned(self) -> list[DocumentProcessOperationRecord]:
         recovered_ids: list[str] = []
-        with self.database.session() as session:
-            rows = session.scalars(
-                select(DocumentProcessOperationRow)
-                .where(
-                    DocumentProcessOperationRow.status
-                    == DocumentProcessOperationStatus.RUNNING.value,
-                    DocumentProcessOperationRow.active_slot == 1,
-                )
-                .with_for_update()
-            ).all()
-            for row in rows:
-                if not _lock_running_operation_in_session(session, row):
+        for operation_id in self.lease.recovery_candidates():
+            with self.database.session() as session:
+                if not self.lease.fence_recovery_in_session(session, operation_id):
                     continue
+                row = session.get_one(DocumentProcessOperationRow, operation_id)
                 document_row = session.get(DocumentRow, row.document_id)
                 if document_row is not None:
                     _restore_document_in_session(session, row, document_row, now=_now())
@@ -395,7 +396,8 @@ class DocumentProcessOperationRepository:
                 row.commit_contract_version = ""
                 row.updated_at = now
                 row.completed_at = now
-                recovered_ids.append(row.operation_id)
+                self.lease.release_in_session(session, operation_id)
+                recovered_ids.append(operation_id)
         return [self.require(operation_id=item) for item in recovered_ids]
 
     def require_harness_operation(
@@ -490,7 +492,8 @@ class DocumentProcessOperationRepository:
                 return _from_row(row)
             if row.status != DocumentProcessOperationStatus.RUNNING.value:
                 return _from_row(row)
-            if not _lock_running_operation_in_session(session, row):
+            if not self.lease.fence_owner_in_session(session, operation_id):
+                session.refresh(row)
                 return _from_row(row)
             resolution = self.harness_operations.resolve_domain_in_session(
                 session,
@@ -546,6 +549,7 @@ class DocumentProcessOperationRepository:
                     ),
                     error_code=row.error_code,
                 )
+            self.lease.release_in_session(session, operation_id)
         return self.require(operation_id=operation_id, validate_read_back=False)
 
     def _validate_runtime_prepared_in_session(
@@ -644,27 +648,6 @@ def _validate_runtime_document_projection(
         expected
     ) or canonical_harness_digest(debug_report) != canonical_harness_digest(report):
         raise ValueError("document_process_runtime_projection_mismatch")
-
-
-def _lock_running_operation_in_session(
-    session: Session, row: DocumentProcessOperationRow
-) -> bool:
-    # SQLite ignores FOR UPDATE. A conditional no-op write serializes terminal
-    # transitions before reading/restoring the Document on both databases.
-    result = session.execute(
-        update(DocumentProcessOperationRow)
-        .where(
-            DocumentProcessOperationRow.operation_id == row.operation_id,
-            DocumentProcessOperationRow.status
-            == DocumentProcessOperationStatus.RUNNING.value,
-        )
-        .values(updated_at=DocumentProcessOperationRow.updated_at)
-        .execution_options(synchronize_session=False)
-    )
-    if result.rowcount == 1:
-        return True
-    session.refresh(row)
-    return False
 
 
 def _restore_document_in_session(

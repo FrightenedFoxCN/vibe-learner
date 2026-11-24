@@ -72,6 +72,7 @@ from app.models.document_processing import (
     DocumentProcessInputManifestV2,
     DocumentProcessRuntimeOutputV1,
 )
+from app.services.domain_operation_heartbeat import DomainOperationHeartbeat
 from app.services.harness_broad_adoption import (
     HarnessProposalRuntimeService,
 )
@@ -95,11 +96,13 @@ class DocumentService:
     ) -> None:
         self.store = store
         self.repository = DocumentRepository(store.database)
-        self.checkpoints = DocumentCheckpointRepository(store.database)
         self.parser = parser
         self.arrangement_service = arrangement_service
         self.process_repository = (
             process_repository or DocumentProcessOperationRepository(store.database)
+        )
+        self.checkpoints = DocumentCheckpointRepository(
+            store.database, lease=self.process_repository.lease
         )
         self.harness_service = (
             harness_service
@@ -221,7 +224,11 @@ class DocumentService:
         runtime_prepared: HarnessRuntimePreparedOutput | None = None
         harness_runtime: HarnessOperationRuntime | None = None
         cleanup_metrics = {"attempt_count": 0, "duration_ms": 0}
+        heartbeat = DomainOperationHeartbeat(
+            self.process_repository.lease, operation.operation_id
+        )
         try:
+            heartbeat.start()
             operation_binding = self.process_repository.require_harness_operation(
                 operation.operation_id
             )
@@ -667,6 +674,8 @@ class DocumentService:
             self._mirror_current_document_projection(document.id)
             logger.exception("document.processing.failed id=%s", document.id)
             raise
+        finally:
+            heartbeat.close()
 
         self._mirror_current_document_projection(document.id, debug_report=debug_report)
         try:

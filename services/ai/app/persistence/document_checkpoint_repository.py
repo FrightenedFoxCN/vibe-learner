@@ -6,7 +6,7 @@ import json
 from dataclasses import asdict
 
 from fastapi import HTTPException
-from sqlalchemy import select, update, delete
+from sqlalchemy import select, delete
 
 from app.models.document_checkpoint import (
     CHECKPOINT_MAX_BYTES,
@@ -17,6 +17,7 @@ from app.models.document_checkpoint import (
 )
 from app.models.harness import canonical_harness_digest
 from app.models.harness_operation import HarnessDomainOperationKind
+from app.persistence.domain_operation_lease import DomainOperationLease
 from app.persistence.harness_operation_repository import (
     HarnessOperationBindingRepository,
     HarnessOperationDomainNotFound,
@@ -39,8 +40,9 @@ def byte_size(payload):
 
 
 class DocumentCheckpointRepository:
-    def __init__(self, database):
+    def __init__(self, database, *, lease: DomainOperationLease):
         self.database = database
+        self.lease = lease
         self.bindings = HarnessOperationBindingRepository(database)
 
     def _authorize(self, session, operation_id):
@@ -59,15 +61,7 @@ class DocumentCheckpointRepository:
 
     def _write(self, session, operation_id):
         operation = self._authorize(session, operation_id)
-        result = session.execute(
-            update(DocumentProcessOperationRow)
-            .where(
-                DocumentProcessOperationRow.operation_id == operation_id,
-                DocumentProcessOperationRow.status == "running",
-            )
-            .values(updated_at=DocumentProcessOperationRow.updated_at)
-        )
-        if result.rowcount != 1:
+        if not self.lease.fence_owner_in_session(session, operation_id):
             raise HTTPException(409, "document_checkpoint_operation_fenced")
         return operation
 

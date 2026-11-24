@@ -10,8 +10,10 @@ from unittest.mock import patch
 
 import fitz
 from fastapi import HTTPException, UploadFile
+from sqlalchemy import update
 
 from app.models.domain import DocumentRecord
+from app.persistence.models import DocumentProcessLeaseRow
 from app.services.document_parser import DocumentParser
 from app.services.documents import DocumentService
 from app.services.local_store import LocalJsonStore
@@ -165,6 +167,13 @@ class CheckpointTests(unittest.TestCase):
         self.service = DocumentService(
             self.store, self.parser, StudyArrangementService()
         )
+        self.assertEqual(self.service.recover_abandoned_operations(), 0)
+        with self.store.database.session() as session:
+            session.execute(
+                update(DocumentProcessLeaseRow)
+                .where(DocumentProcessLeaseRow.operation_id == source.operation_id)
+                .values(expires_at="2000-01-01T00:00:00.000000+00:00")
+            )
         self.assertEqual(self.service.recover_abandoned_operations(), 1)
         self.assertEqual(
             self.service.checkpoints.public_view(source.operation_id)[

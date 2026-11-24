@@ -57,6 +57,7 @@ from app.models.pdf_page_scope import (
     validate_physical_schedule,
 )
 from app.persistence.database import Database
+from app.persistence.domain_operation_lease import DomainOperationLease
 from app.persistence.document_repository import (
     document_from_row,
     fence_document_in_session,
@@ -68,6 +69,7 @@ from app.persistence.harness_operation_repository import (
 from app.persistence.models import (
     DocumentDebugRow,
     DocumentRow,
+    LearningPlanLeaseRow,
     LearningPlanOperationRow,
     LearningPlanRow,
     LearningPlanRevisionRow,
@@ -104,6 +106,9 @@ class LearningPlanOperationRepository:
         self.database = database
         self.fault_injector = fault_injector
         self.harness_operations = HarnessOperationBindingRepository(database)
+        self.lease = DomainOperationLease(
+            database, LearningPlanOperationRow, LearningPlanLeaseRow
+        )
 
     def admit(
         self,
@@ -221,6 +226,7 @@ class LearningPlanOperationRepository:
                     domain_operation_id=operation_id,
                     admitted_at=now,
                 )
+                self.lease.admit_in_session(session, operation_id)
                 session.flush()
                 return NewLearningPlanAdmission(
                     _from_row(row), base_document, base_debug
@@ -259,8 +265,10 @@ class LearningPlanOperationRepository:
         if (
             resolution.status == HarnessOperationResolutionStatus.LEGACY_UNBOUND
             and existing.status == LearningPlanOperationStatus.RUNNING.value
+            and self.lease.fence_recovery_in_session(session, existing.operation_id)
         ):
             _terminalize_legacy_unbound_plan(existing, now=now)
+            self.lease.release_in_session(session, existing.operation_id)
             session.flush()
             return ExistingLearningPlanAdmission(_from_row(existing))
         if resolution.binding is None:
@@ -280,6 +288,11 @@ class LearningPlanOperationRepository:
                 raise LearningPlanOperationNotFound(operation_id)
             if row.status != LearningPlanOperationStatus.RUNNING.value:
                 raise LearningPlanOperationNotRunning(operation_id, row.status)
+            if not self.lease.fence_owner_in_session(session, operation_id):
+                raise LearningPlanOperationNotRunning(
+                    operation_id, "learning_plan_lease_lost"
+                )
+            session.refresh(row)
             self.harness_operations.require_domain_in_session(
                 session,
                 domain_operation_kind=(
@@ -312,6 +325,10 @@ class LearningPlanOperationRepository:
                 raise LearningPlanOperationNotFound(operation_id)
             if operation.status != LearningPlanOperationStatus.RUNNING.value:
                 raise LearningPlanOperationNotRunning(operation_id, operation.status)
+            if not self.lease.fence_owner_in_session(session, operation_id):
+                raise LearningPlanOperationNotRunning(
+                    operation_id, "learning_plan_lease_lost"
+                )
             binding = self.harness_operations.require_domain_in_session(
                 session,
                 domain_operation_kind=(
@@ -544,6 +561,7 @@ class LearningPlanOperationRepository:
                         rollback_reason_code="",
                     ),
                 )
+            self.lease.release_in_session(session, operation_id)
             self._inject("before_terminal_commit")
 
         return self.require(operation_id=operation_id, validate_current=True)
@@ -572,6 +590,10 @@ class LearningPlanOperationRepository:
                 return _from_row(row)
             if row.status != LearningPlanOperationStatus.RUNNING.value:
                 return _from_row(row)
+            if not self.lease.fence_owner_in_session(session, operation_id):
+                session.refresh(row)
+                return _from_row(row)
+            session.refresh(row)
             resolution = self.harness_operations.resolve_domain_in_session(
                 session,
                 domain_operation_kind=(
@@ -631,6 +653,7 @@ class LearningPlanOperationRepository:
                     ),
                     error_code=row.error_code,
                 )
+            self.lease.release_in_session(session, operation_id)
         return self.require(operation_id=operation_id, validate_current=False)
 
     def _validate_runtime_prepared_in_session(
@@ -686,15 +709,11 @@ class LearningPlanOperationRepository:
 
     def recover_abandoned(self) -> list[LearningPlanOperationRecord]:
         recovered_ids: list[str] = []
-        with self.database.session() as session:
-            rows = session.scalars(
-                select(LearningPlanOperationRow).where(
-                    LearningPlanOperationRow.status
-                    == LearningPlanOperationStatus.RUNNING.value,
-                    LearningPlanOperationRow.active_slot == 1,
-                )
-            ).all()
-            for row in rows:
+        for operation_id in self.lease.recovery_candidates():
+            with self.database.session() as session:
+                if not self.lease.fence_recovery_in_session(session, operation_id):
+                    continue
+                row = session.get_one(LearningPlanOperationRow, operation_id)
                 now = _now()
                 resolution = self.harness_operations.resolve_domain_in_session(
                     session,
@@ -720,7 +739,8 @@ class LearningPlanOperationRepository:
                 row.committed_projection_payload = None
                 row.updated_at = now
                 row.completed_at = now
-                recovered_ids.append(row.operation_id)
+                self.lease.release_in_session(session, operation_id)
+                recovered_ids.append(operation_id)
         return [
             self.require(operation_id=operation_id, validate_current=False)
             for operation_id in recovered_ids
