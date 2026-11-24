@@ -2,11 +2,8 @@ from app.models.document_input_limits import DocumentInputLimitsV1
 from app.models.document_checkpoint import DocumentCheckpointResponseV1
 from app.models.pdf_page_scope import DocumentPageNumberingResponseV1
 from app.services.document_page_numbering import read_document_page_numbering
-import json
 from pathlib import Path
-import queue
-import threading
-from contextvars import copy_context
+from app.api.ndjson_workflow import NdjsonWorkflow
 
 from fastapi import APIRouter, File, HTTPException, Query, UploadFile
 from fastapi.responses import FileResponse
@@ -201,7 +198,6 @@ def process_document_stream(
     container: Container = Depends(get_container),
 ) -> StreamingResponse:
     force_ocr = payload.force_ocr if payload else False
-    event_queue: queue.Queue[dict[str, object] | None] = queue.Queue()
     interrupt_handle = container.stream_interrupt_registry.create(
         stream_kind="document_process",
         target_id=document_id,
@@ -214,19 +210,15 @@ def process_document_stream(
         subject=_document_stream_subject(document_id),
         operation_id=interrupt_handle.stream_id,
     )
+    stream = NdjsonWorkflow(interrupt_handle, recorder)
     domain_operation_id = ""
 
     def remember_operation(operation_id: str) -> None:
         nonlocal domain_operation_id
         domain_operation_id = operation_id
 
-    def report(stage: str, event_payload: dict[str, object]) -> None:
-        interrupt_handle.raise_if_cancelled()
-        event = recorder.emit(stage, event_payload)
-        event_queue.put(event.model_dump(mode="json"))
-
     def emit_cancelled() -> None:
-        event = recorder.emit(
+        stream.emit(
             "stream_cancelled",
             {
                 "document_id": document_id,
@@ -238,11 +230,6 @@ def process_document_stream(
                 container=container,
             ),
         )
-        event_queue.put(event.model_dump(mode="json"))
-
-    def before_commit() -> None:
-        if interrupt_handle.claim_terminal():
-            raise StreamInterruptedError("stream_interrupted")
 
     def run() -> None:
         try:
@@ -252,9 +239,9 @@ def process_document_stream(
                 resume_from_operation_id=payload.resume_from_operation_id
                 if payload
                 else None,
-                progress_callback=report,
+                progress_callback=stream.report,
                 interrupt_check=interrupt_handle.raise_if_cancelled,
-                before_commit=before_commit,
+                before_commit=stream.before_commit,
                 operation_admitted_callback=remember_operation,
             )
             # A returned document is already committed.
@@ -273,7 +260,7 @@ def process_document_stream(
                     mode="json", exclude_none=False
                 ),
             }
-            event = recorder.emit(
+            stream.emit(
                 "stream_completed",
                 {
                     "document_id": document.id,
@@ -286,7 +273,6 @@ def process_document_stream(
                 ),
                 committed_projection=document_projection,
             )
-            event_queue.put(event.model_dump(mode="json"))
         except StreamInterruptedError:
             interrupt_handle.claim_terminal()
             emit_cancelled()
@@ -294,7 +280,7 @@ def process_document_stream(
             if interrupt_handle.claim_terminal():
                 emit_cancelled()
             else:
-                event = recorder.emit(
+                stream.emit(
                     "stream_error",
                     {
                         "document_id": document_id,
@@ -306,21 +292,8 @@ def process_document_stream(
                         container=container,
                     ),
                 )
-                event_queue.put(event.model_dump(mode="json"))
-        finally:
-            interrupt_handle.mark_completed()
-            event_queue.put(None)
 
-    threading.Thread(target=copy_context().run, args=(run,), daemon=True).start()
-
-    def generate():
-        while True:
-            item = event_queue.get()
-            if item is None:
-                break
-            yield json.dumps(item, ensure_ascii=False) + "\n"
-
-    return StreamingResponse(generate(), media_type="application/x-ndjson")
+    return stream.start(run)
 
 
 @router.get("/documents/{document_id}/status", response_model=DocumentStatusResponse)

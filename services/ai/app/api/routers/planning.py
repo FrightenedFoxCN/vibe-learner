@@ -4,10 +4,7 @@ from app.models.plan_revision import (
     PlanRevisionResponseV1,
 )
 from app.persistence.plan_revision_repository import PlanRevisionRepository
-import json
-import queue
-import threading
-from contextvars import copy_context
+from app.api.ndjson_workflow import NdjsonWorkflow
 
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
@@ -267,7 +264,6 @@ def create_learning_plan_stream(
             if document.debug_ready
             else None
         )
-    event_queue: queue.Queue[dict[str, object] | None] = queue.Queue()
     stream_document_id = _learning_plan_stream_storage_id(payload)
     interrupt_handle = container.stream_interrupt_registry.create(
         stream_kind="learning_plan",
@@ -281,19 +277,15 @@ def create_learning_plan_stream(
         subject=_learning_plan_stream_subject(payload),
         operation_id=interrupt_handle.stream_id,
     )
+    stream = NdjsonWorkflow(interrupt_handle, recorder)
     domain_operation_id = ""
 
     def remember_operation(operation_id: str) -> None:
         nonlocal domain_operation_id
         domain_operation_id = operation_id
 
-    def report(stage: str, event_payload: dict[str, object]) -> None:
-        interrupt_handle.raise_if_cancelled()
-        event = recorder.emit(stage, event_payload)
-        event_queue.put(event.model_dump(mode="json"))
-
     def emit_cancelled() -> None:
-        event = recorder.emit(
+        stream.emit(
             "stream_cancelled",
             {
                 "document_id": payload.document_id,
@@ -305,16 +297,11 @@ def create_learning_plan_stream(
                 container=container,
             ),
         )
-        event_queue.put(event.model_dump(mode="json"))
-
-    def before_commit() -> None:
-        if interrupt_handle.claim_terminal():
-            raise StreamInterruptedError("stream_interrupted")
 
     def run() -> None:
         reset_model_recovery_state()
         try:
-            report(
+            stream.report(
                 "learning_plan_started",
                 {
                     "document_id": payload.document_id,
@@ -328,9 +315,9 @@ def create_learning_plan_stream(
                 persona_name=persona.name,
                 persona=persona,
                 debug_report=debug_report,
-                progress_callback=report,
+                progress_callback=stream.report,
                 interrupt_check=interrupt_handle.raise_if_cancelled,
-                before_commit=before_commit,
+                before_commit=stream.before_commit,
                 operation_admitted_callback=remember_operation,
             )
             # A returned plan is already committed (including a replay).
@@ -349,7 +336,7 @@ def create_learning_plan_stream(
                     mode="json", exclude_none=False
                 ),
             }
-            event = recorder.emit(
+            stream.emit(
                 "stream_completed",
                 {
                     "document_id": payload.document_id,
@@ -363,7 +350,6 @@ def create_learning_plan_stream(
                 ),
                 committed_projection=plan_projection,
             )
-            event_queue.put(event.model_dump(mode="json"))
         except StreamInterruptedError:
             interrupt_handle.claim_terminal()
             emit_cancelled()
@@ -372,7 +358,7 @@ def create_learning_plan_stream(
                 emit_cancelled()
             else:
                 http_error = _map_plan_generation_error(exc)
-                event = recorder.emit(
+                stream.emit(
                     "stream_error",
                     {
                         "document_id": payload.document_id,
@@ -387,12 +373,11 @@ def create_learning_plan_stream(
                         container=container,
                     ),
                 )
-                event_queue.put(event.model_dump(mode="json"))
         except Exception as exc:
             if interrupt_handle.claim_terminal():
                 emit_cancelled()
             else:
-                event = recorder.emit(
+                stream.emit(
                     "stream_error",
                     {
                         "document_id": payload.document_id,
@@ -409,21 +394,8 @@ def create_learning_plan_stream(
                         container=container,
                     ),
                 )
-                event_queue.put(event.model_dump(mode="json"))
-        finally:
-            interrupt_handle.mark_completed()
-            event_queue.put(None)
 
-    threading.Thread(target=copy_context().run, args=(run,), daemon=True).start()
-
-    def generate():
-        while True:
-            item = event_queue.get()
-            if item is None:
-                break
-            yield json.dumps(item, ensure_ascii=False) + "\n"
-
-    return StreamingResponse(generate(), media_type="application/x-ndjson")
+    return stream.start(run)
 
 
 @router.post(
