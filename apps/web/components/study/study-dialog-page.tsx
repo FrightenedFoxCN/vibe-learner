@@ -2,7 +2,15 @@
 
 import type { CSSProperties } from "react";
 import type { Citation, StudyNoteReference } from "@vibe-learner/shared";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Suspense,
+  lazy,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useLearningWorkspace } from "../layout/learning-workspace-provider";
 import { ProviderTruth } from "../ui/provider-truth";
 import { StudyConsole } from "./study-console";
@@ -21,10 +29,12 @@ import type {
 } from "../../lib/learning-workspace-page-cache";
 import { useStudyPreview } from "./use-study-preview";
 import { StudyPreviewPanel } from "./study-preview-panel";
-import { StudyNotesPanel } from "./study-notes-panel";
 import type { StudyNotesOpenRequest } from "./use-study-notes";
 import type { StudyNoteDraft } from "../../lib/study-notes-view";
 import "./study-dialog.css";
+import "./study-notes.css";
+
+const StudyNotesContent = lazy(() => import("./study-notes-panel"));
 
 export function StudyDialogPage() {
   const headingRef = useRef<HTMLDivElement | null>(null);
@@ -32,6 +42,8 @@ export function StudyDialogPage() {
   const materialButtonRef = useRef<HTMLButtonElement | null>(null);
   const notesDrafts = useRef(new Map<string, StudyNoteDraft>());
   const [notesOpen, setNotesOpen] = useState(false);
+  // After first use, closing must not reset the editor or interrupt pending writes.
+  const [notesActivated, setNotesActivated] = useState(false);
   const [noteRequest, setNoteRequest] = useState<StudyNotesOpenRequest | null>(null);
   const {
     activePersona,
@@ -136,6 +148,7 @@ export function StudyDialogPage() {
         noteId: reference.noteId,
         noteRevision: reference.noteRevision,
       });
+      setNotesActivated(true);
       setNotesOpen(true);
     },
     [currentSessionId],
@@ -427,6 +440,7 @@ export function StudyDialogPage() {
                   aria-controls="study-notes-panel"
                   onClick={() => {
                     setNoteRequest(null);
+                    setNotesActivated(true);
                     setNotesOpen((open) => !open);
                   }}
                 >
@@ -489,25 +503,54 @@ export function StudyDialogPage() {
                   />
                 ) : null}
                 {isHydrated && currentSessionId ? (
-                  <StudyNotesPanel
+                  <aside
                     key={currentSessionId}
-                    sessionId={currentSessionId}
-                    visible={visibleNotes}
-                    openRequest={noteRequest}
-                    onOpenRequestHandled={consumeNoteRequest}
-                    memoryKeys={[
-                      ...new Set(
-                        (studySession?.sessionMemory ?? []).map((entry) => entry.key),
-                      ),
-                    ]}
-                    onClose={() => {
-                      setNotesOpen(false);
-                      setNoteRequest(null);
-                      notesButtonRef.current?.focus();
-                    }}
-                    readDraft={readNotesDraft}
-                    storeDraft={storeNotesDraft}
-                  />
+                    id="study-notes-panel"
+                    className="study-notes-panel"
+                    aria-labelledby="study-notes-heading"
+                    hidden={!visibleNotes}
+                  >
+                    <header className="study-notes-row study-notes-top">
+                      <h2 id="study-notes-heading">笔记</h2>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setNotesOpen(false);
+                          setNoteRequest(null);
+                          notesButtonRef.current?.focus();
+                        }}
+                      >
+                        关闭
+                      </button>
+                    </header>
+                    {notesActivated ? (
+                      <Suspense
+                        fallback={
+                          <div className="study-notes-body">
+                            <p role="status" className="study-notes-muted">
+                              正在读取笔记…
+                            </p>
+                          </div>
+                        }
+                      >
+                        <StudyNotesContent
+                          sessionId={currentSessionId}
+                          visible={visibleNotes}
+                          openRequest={noteRequest}
+                          onOpenRequestHandled={consumeNoteRequest}
+                          memoryKeys={[
+                            ...new Set(
+                              (studySession?.sessionMemory ?? []).map(
+                                (entry) => entry.key,
+                              ),
+                            ),
+                          ]}
+                          readDraft={readNotesDraft}
+                          storeDraft={storeNotesDraft}
+                        />
+                      </Suspense>
+                    ) : null}
+                  </aside>
                 ) : null}
               </>
             }

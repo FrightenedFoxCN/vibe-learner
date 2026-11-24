@@ -13,22 +13,20 @@ import {
 import { StudyNoteMarkdownEditor } from "./study-note-markdown-editor";
 import { isStudyNoteDraftDirty, type StudyNoteDraft } from "../../lib/study-notes-view";
 import { useStudyNotes, type StudyNotesOpenRequest } from "./use-study-notes";
-import "./study-notes.css";
 
 const CONTENT_LIMIT = 4_000;
 
-interface StudyNotesPanelProps {
+interface StudyNotesContentProps {
   sessionId: string;
   visible: boolean;
   openRequest: StudyNotesOpenRequest | null;
   onOpenRequestHandled: (request: StudyNotesOpenRequest) => void;
   memoryKeys: string[];
-  onClose: () => void;
   readDraft: (sessionId: string) => StudyNoteDraft | null;
   storeDraft: (sessionId: string, draft: StudyNoteDraft | null) => void;
 }
 
-export function StudyNotesPanel(props: StudyNotesPanelProps) {
+export default function StudyNotesContent(props: StudyNotesContentProps) {
   const notes = useStudyNotes(props);
   const { draft, conflict } = notes;
   const editorRef = useRef<HTMLFormElement>(null);
@@ -212,152 +210,137 @@ export function StudyNotesPanel(props: StudyNotesPanelProps) {
   ) : null;
 
   return (
-    <aside
-      id="study-notes-panel"
-      className="study-notes-panel"
-      aria-labelledby="study-notes-heading"
-      hidden={!props.visible}
-    >
-      <header className="study-notes-row study-notes-top">
-        <h2 id="study-notes-heading">笔记</h2>
-        <button type="button" onClick={props.onClose}>
-          关闭
-        </button>
-      </header>
-      <div className="study-notes-body">
-        <form
-          className="study-notes-row"
-          role="search"
-          aria-label="会话笔记"
-          onSubmit={(event) => {
-            event.preventDefault();
-            notes.search();
-          }}
+    <div className="study-notes-body">
+      <form
+        className="study-notes-row"
+        role="search"
+        aria-label="会话笔记"
+        onSubmit={(event) => {
+          event.preventDefault();
+          notes.search();
+        }}
+      >
+        <input
+          type="search"
+          value={notes.queryInput}
+          maxLength={120}
+          aria-label="搜索标题和正文"
+          placeholder="搜索标题或正文"
+          onChange={(event) => notes.setQueryInput(event.target.value)}
+        />
+        <button type="submit">搜索</button>
+        <button
+          type="button"
+          className="study-notes-primary"
+          disabled={notes.writeBusy}
+          onClick={notes.newNote}
         >
-          <input
-            type="search"
-            value={notes.queryInput}
-            maxLength={120}
-            aria-label="搜索标题和正文"
-            placeholder="搜索标题或正文"
-            onChange={(event) => notes.setQueryInput(event.target.value)}
-          />
-          <button type="submit">搜索</button>
+          新建
+        </button>
+      </form>
+      {notes.loading ? (
+        <p role="status" className="study-notes-muted">
+          正在读取笔记…
+        </p>
+      ) : null}
+      {notes.listError ? (
+        <div role="alert" className="study-notes-row">
+          <span>{notes.listError}</span>
+          <button type="button" onClick={notes.reload}>
+            重试
+          </button>
+        </div>
+      ) : null}
+      {notes.list ? (
+        notes.list.items.length ? (
+          <ul className="study-notes-list" aria-label="已保存的笔记">
+            {notes.list.items.map((item) => (
+              <li key={item.id}>
+                <button
+                  type="button"
+                  aria-current={draft?.original?.id === item.id ? "true" : undefined}
+                  disabled={notes.writeBusy}
+                  onClick={() => void notes.openNote(item.id)}
+                >
+                  <strong>{item.title}</strong>
+                  <span>{studyMarkdownPlainExcerpt(item.excerpt) || item.excerpt}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="study-notes-muted">没有匹配的已保存笔记。</p>
+        )
+      ) : null}
+      {notes.list?.next_offset != null ? (
+        <button type="button" disabled={notes.loading} onClick={notes.loadMore}>
+          加载更多
+        </button>
+      ) : null}
+      {notes.notice ? (
+        <p className="study-notes-muted" role="status">
+          {notes.notice}
+        </p>
+      ) : null}
+      {notes.error ? (
+        <p className="study-notes-error" role="alert">
+          {notes.error}
+        </p>
+      ) : null}
+      {notes.detailBusy ? (
+        <p role="status" className="study-notes-muted">
+          正在读回笔记…
+        </p>
+      ) : null}
+      {expanded ? (
+        <StudyMarkdownWorkspace onClose={collapse} onKeyDown={saveShortcut}>
+          {editor}
+        </StudyMarkdownWorkspace>
+      ) : (
+        editor
+      )}
+      <details className="study-notes-tools">
+        <summary>导入与导出</summary>
+        <div className="study-notes-row">
           <button
             type="button"
-            className="study-notes-primary"
-            disabled={notes.writeBusy}
-            onClick={notes.newNote}
+            disabled={notes.exportBusy}
+            onClick={() => void notes.downloadExport(false)}
           >
-            新建
+            导出 JSON
           </button>
-        </form>
-        {notes.loading ? (
-          <p role="status" className="study-notes-muted">
-            正在读取笔记…
-          </p>
-        ) : null}
-        {notes.listError ? (
-          <div role="alert" className="study-notes-row">
-            <span>{notes.listError}</span>
-            <button type="button" onClick={notes.reload}>
-              重试
-            </button>
-          </div>
-        ) : null}
-        {notes.list ? (
-          notes.list.items.length ? (
-            <ul className="study-notes-list" aria-label="已保存的笔记">
-              {notes.list.items.map((item) => (
-                <li key={item.id}>
-                  <button
-                    type="button"
-                    aria-current={draft?.original?.id === item.id ? "true" : undefined}
-                    disabled={notes.writeBusy}
-                    onClick={() => void notes.openNote(item.id)}
-                  >
-                    <strong>{item.title}</strong>
-                    <span>
-                      {studyMarkdownPlainExcerpt(item.excerpt) || item.excerpt}
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="study-notes-muted">没有匹配的已保存笔记。</p>
-          )
-        ) : null}
-        {notes.list?.next_offset != null ? (
-          <button type="button" disabled={notes.loading} onClick={notes.loadMore}>
-            加载更多
-          </button>
-        ) : null}
-        {notes.notice ? (
-          <p className="study-notes-muted" role="status">
-            {notes.notice}
-          </p>
-        ) : null}
-        {notes.error ? (
-          <p className="study-notes-error" role="alert">
-            {notes.error}
-          </p>
-        ) : null}
-        {notes.detailBusy ? (
-          <p role="status" className="study-notes-muted">
-            正在读回笔记…
-          </p>
-        ) : null}
-        {expanded ? (
-          <StudyMarkdownWorkspace onClose={collapse} onKeyDown={saveShortcut}>
-            {editor}
-          </StudyMarkdownWorkspace>
-        ) : (
-          editor
-        )}
-        <details className="study-notes-tools">
-          <summary>导入与导出</summary>
-          <div className="study-notes-row">
+          {notes.exportAfter ? (
             <button
               type="button"
               disabled={notes.exportBusy}
-              onClick={() => void notes.downloadExport(false)}
+              onClick={() => void notes.downloadExport(true)}
             >
-              导出 JSON
+              导出下一批
             </button>
-            {notes.exportAfter ? (
-              <button
-                type="button"
-                disabled={notes.exportBusy}
-                onClick={() => void notes.downloadExport(true)}
-              >
-                导出下一批
-              </button>
-            ) : null}
-          </div>
-          <label>
-            导入 JSON（追加，不覆盖）
-            <input
-              type="file"
-              accept=".json,application/json"
-              disabled={disabled}
-              onChange={(event) => {
-                const file = event.currentTarget.files?.[0];
-                event.currentTarget.value = "";
-                if (file) notes.importArchive(file);
-              }}
-            />
-          </label>
-          {props.memoryKeys.length ? (
-            <LegacyMemoryPicker
-              keys={props.memoryKeys}
-              disabled={disabled}
-              onImport={notes.importMemory}
-            />
           ) : null}
-        </details>
-      </div>
-    </aside>
+        </div>
+        <label>
+          导入 JSON（追加，不覆盖）
+          <input
+            type="file"
+            accept=".json,application/json"
+            disabled={disabled}
+            onChange={(event) => {
+              const file = event.currentTarget.files?.[0];
+              event.currentTarget.value = "";
+              if (file) notes.importArchive(file);
+            }}
+          />
+        </label>
+        {props.memoryKeys.length ? (
+          <LegacyMemoryPicker
+            keys={props.memoryKeys}
+            disabled={disabled}
+            onImport={notes.importMemory}
+          />
+        ) : null}
+      </details>
+    </div>
   );
 }
 
