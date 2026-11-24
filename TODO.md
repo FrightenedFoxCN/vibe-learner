@@ -102,7 +102,7 @@
 - [x] **P1-UI-11 保护代码块与数学公式区间并支持完整 LaTeX 定界符**
   - 重写 `apps/web/lib/rich-text-normalize.ts`：先按词法扫描隔离围栏代码块、行内代码与数学区间再修复模型 prose 排版，彻底消除有序列表或标点后的 `-` / `*` / `1.` 撕裂数学公式与篡改代码块、压平嵌套列表的问题。
   - 新增共享数学定界符规范化：将非代码区间的 `\(...\)` 与 `\[...\]` 转为 `remark-math` 可解析的 `$...$` / 多行 `$$...$$`，并将非表格/非行内场景的单行 `$$...$$` 规整为多行块级公式以触发 KaTeX `displayMode`；同步接入 `study-note-markdown-preview.tsx`。
-  - 新增 `apps/web/tests/rich-text-normalize.test.ts` 并纳入根 `package.json` 的 `test:invariants:web`。
+  - 新增 `apps/web/tests/rich-text-normalize.test.ts` 并纳入根 `package.json` 的 `test:invariants:web`，覆盖省略首尾竖线的 GFM 表格、列表项开头的波浪线代码围栏等边界。
 - [x] **P1-UI-12 修复聊天富文本 `white-space: pre-wrap` 污染与 KaTeX 渲染隔离**
   - 在 `apps/web/components/ui/rich-text-message.module.css` 将 `.root` 重置为 `white-space: normal` 并隔离 `.katex` 内部断词与空白行为，移除 `apps/web/components/study/study-console.css` 中 `.study-console-ai-message` 的 `white-space: pre-wrap`（保留 Suspense 纯文本兜底自身的 `whitespace-pre-wrap`），消除段落与公式间的异常空行断层。
   - 在 `apps/web/components/ui/rich-text-message-client.tsx` 与 `study-note-markdown-preview.tsx` 为 `rehype-katex` 统一显式配置 `{ trust: false, strict: false }`。

@@ -204,13 +204,14 @@ function tokenizeMarkdown(source: string, inline: boolean): Segment[] {
 function matchFencedCodeBlock(source: string, lineStart: number): number {
   const lineEnd = source.indexOf("\n", lineStart);
   const firstLine = source.slice(lineStart, lineEnd === -1 ? source.length : lineEnd);
-  const openMatch = firstLine.match(/^([ \t]*(?:>[ \t]*)*)(`{3,}|~{3,})(.*)$/);
+  const openMatch = firstLine.match(
+    /^[ \t]*(?:>[ \t]*)*(?:(?:[-+*]|\d{1,9}[.)])[ \t]+)?(`{3,}|~{3,})(.*)$/,
+  );
   if (!openMatch) {
     return -1;
   }
-  const fence = openMatch[2];
+  const [, fence, infoString] = openMatch;
   const fenceChar = fence[0];
-  const infoString = openMatch[3];
   // CommonMark: backtick fence info strings cannot contain backticks.
   if (fenceChar === "`" && infoString.includes("`")) {
     return -1;
@@ -320,10 +321,11 @@ function formatDisplayMath(
   const afterOnLine = source.slice(afterCloseIndex, lineEnd);
 
   const isSingleLine = !inner.includes("\n");
+  // GFM rows can omit either outer pipe. Avoid inserting block breaks on
+  // lines that may be table rows, but ignore escaped pipes and the math body.
+  const hasUnescapedPipe = (text: string) => /(?:^|[^\x5c])(?:\\)*\|/.test(text);
   const isInTableRow =
-    isSingleLine &&
-    /^[ \t]*(?:>[ \t]*)*\|/.test(beforeOnLine) &&
-    afterOnLine.includes("|");
+    isSingleLine && (hasUnescapedPipe(beforeOnLine) || hasUnescapedPipe(afterOnLine));
 
   if (inline || isInTableRow) {
     const compact = inner.trim();

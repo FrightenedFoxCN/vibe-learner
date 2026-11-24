@@ -85,6 +85,13 @@ test("single-line double-dollar equations upgrade to display math outside tables
   assert.equal(inTable.errorCount, 0);
   assert.ok(inTable.html.includes("<table>"));
 
+  for (const row of ["质能 | $$E = mc^2$$", "| 质能 | $$E = mc^2$$"]) {
+    const table = renderMarkdown("项 | 公式\n--- | ---\n" + row);
+    assert.match(table.html, /<table>/);
+    assert.equal(table.katexCount, 1);
+    assert.equal(table.displayCount, 0);
+  }
+
   const inlineOption = renderMarkdown("A. \\(x - y = 0\\) 与 $$a + b$$", true);
   assert.equal(inlineOption.katexCount, 2);
   assert.equal(inlineOption.displayCount, 0);
@@ -119,6 +126,15 @@ test("fenced code blocks, inline code spans, and nested bullet lists are preserv
   assert.ok(normalized.includes("`\\(z\\)`"));
   assert.ok(normalized.includes("- 第一层 $a$\n  - 第二层 $b$\n    - 第三层 $c$"));
   assert.ok(html.includes("<code>$x - y$</code>"));
+});
+
+test("tilde fence opened on a list marker protects its body", () => {
+  const source =
+    "- ~~~text\n  \\(not math\\)\n  $$still code$$\n  ~~~\n\nOutside \\(x\\)";
+  const { html, katexCount } = renderMarkdown(source);
+  assert.equal(katexCount, 1);
+  assert.match(html, /\$\$still code\$\$/);
+  assert.ok(html.includes("\\(not math\\)"));
 });
 
 test("normalizeMathDelimiters leaves note Markdown structure untouched while supporting backslash delimiters", () => {
