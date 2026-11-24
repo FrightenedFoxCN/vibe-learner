@@ -82,7 +82,8 @@ def _session_metadata(payload: dict[str, Any]) -> dict[str, Any]:
         "document_id": text_at(payload, "document_id"),
         "persona_id": text_at(payload, "persona_id"),
         "plan_id": text_at(payload, "plan_id"),
-        "study_unit_id": text_at(payload.get("study_unit_id") or payload, "section_id"),
+        "study_unit_id": text_at(payload, "study_unit_id")
+        or text_at(payload, "section_id"),
         "status": text_at(payload, "status"),
         "revision": int(payload.get("revision") or 0),
         "last_turn_sequence": int(payload.get("last_turn_sequence") or 0),
