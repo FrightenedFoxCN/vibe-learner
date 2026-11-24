@@ -4,7 +4,7 @@ import type {
   RuntimeModelCapability,
   RuntimeOpenAIProbeResult,
   RuntimeSettings,
-  RuntimeSettingsPatch
+  RuntimeSettingsPatch,
 } from "@vibe-learner/shared";
 
 export const AUTO_SAVE_DELAY_MS = 900;
@@ -60,18 +60,28 @@ export const EMPTY_PROBE_STATE: ScopeProbeState = {
   error: "",
   lastCheckedAt: "",
   endpointKey: "",
-  sharedFromScope: null
+  sharedFromScope: null,
 };
 
-export const NUMERIC_SETTING_CONFIGS: Record<NumericSettingKey, NumericSettingConfig> = {
-  openaiTimeoutSeconds: { ...MODEL_RUNTIME_CONFIG.timeoutSeconds, integer: true },
-  openaiSettingTemperature: { ...MODEL_RUNTIME_CONFIG.settingTemperature, integer: false },
-  openaiChatTemperature: { ...MODEL_RUNTIME_CONFIG.chatTemperature, integer: false },
-  openaiSettingMaxTokens: { ...MODEL_RUNTIME_CONFIG.settingMaxTokens, integer: true },
-  openaiChatMaxTokens: { ...MODEL_RUNTIME_CONFIG.chatMaxTokens, integer: true },
-  openaiChatHistoryMessages: { ...MODEL_RUNTIME_CONFIG.chatHistoryMessages, integer: true },
-  openaiChatToolMaxRounds: { ...MODEL_RUNTIME_CONFIG.chatToolMaxRounds, integer: true }
-};
+export const NUMERIC_SETTING_CONFIGS: Record<NumericSettingKey, NumericSettingConfig> =
+  {
+    openaiTimeoutSeconds: { ...MODEL_RUNTIME_CONFIG.timeoutSeconds, integer: true },
+    openaiSettingTemperature: {
+      ...MODEL_RUNTIME_CONFIG.settingTemperature,
+      integer: false,
+    },
+    openaiChatTemperature: { ...MODEL_RUNTIME_CONFIG.chatTemperature, integer: false },
+    openaiSettingMaxTokens: { ...MODEL_RUNTIME_CONFIG.settingMaxTokens, integer: true },
+    openaiChatMaxTokens: { ...MODEL_RUNTIME_CONFIG.chatMaxTokens, integer: true },
+    openaiChatHistoryMessages: {
+      ...MODEL_RUNTIME_CONFIG.chatHistoryMessages,
+      integer: true,
+    },
+    openaiChatToolMaxRounds: {
+      ...MODEL_RUNTIME_CONFIG.chatToolMaxRounds,
+      integer: true,
+    },
+  };
 
 export const CAPABILITY_AUDIT_CONFIGS: CapabilityAuditConfig[] = [
   {
@@ -81,7 +91,7 @@ export const CAPABILITY_AUDIT_CONFIGS: CapabilityAuditConfig[] = [
     modelKey: "openaiPlanModel",
     manualKey: "openaiPlanModelMultimodal",
     manualLabel: "计划支持图像输入",
-    capabilityKey: "multimodal"
+    capabilityKey: "multimodal",
   },
   {
     scope: "chat",
@@ -90,7 +100,7 @@ export const CAPABILITY_AUDIT_CONFIGS: CapabilityAuditConfig[] = [
     modelKey: "openaiChatModel",
     manualKey: "openaiChatModelMultimodal",
     manualLabel: "对话支持图像输入",
-    capabilityKey: "multimodal"
+    capabilityKey: "multimodal",
   },
   {
     scope: "setting",
@@ -99,13 +109,13 @@ export const CAPABILITY_AUDIT_CONFIGS: CapabilityAuditConfig[] = [
     modelKey: "openaiSettingModel",
     manualKey: "openaiSettingWebSearchEnabled",
     manualLabel: "允许联网检索",
-    capabilityKey: "webSearch"
-  }
+    capabilityKey: "webSearch",
+  },
 ];
 
 export function buildRuntimeSettingsPatch(
   settings: RuntimeSettings,
-  options: { includeSecrets?: boolean; baseline?: RuntimeSettings } = {}
+  options: { includeSecrets?: boolean; baseline?: RuntimeSettings } = {},
 ): RuntimeSettingsPatch {
   const patch: RuntimeSettingsPatch = {
     planProvider: settings.planProvider,
@@ -129,7 +139,7 @@ export function buildRuntimeSettingsPatch(
     openaiPlanModelMultimodal: settings.openaiPlanModelMultimodal,
     openaiPlanFallbackModel: settings.openaiPlanFallbackModel,
     openaiPlanFallbackDisableTools: settings.openaiPlanFallbackDisableTools,
-    showDebugInfo: settings.showDebugInfo
+    showDebugInfo: settings.showDebugInfo,
   };
 
   if (options.includeSecrets !== false) {
@@ -154,29 +164,29 @@ export function serializeSettings(settings: RuntimeSettings): string {
 
 export function resolveScopeEndpoint(
   settings: RuntimeSettings,
-  scope: ProbeScope
+  scope: ProbeScope,
 ): { apiKey: string; baseUrl: string } {
   if (scope === "global") {
     return {
       apiKey: settings.openaiApiKey.trim(),
-      baseUrl: settings.openaiBaseUrl.trim()
+      baseUrl: settings.openaiBaseUrl.trim(),
     };
   }
   if (scope === "plan") {
     return {
       apiKey: (settings.openaiPlanApiKey || settings.openaiApiKey).trim(),
-      baseUrl: (settings.openaiPlanBaseUrl || settings.openaiBaseUrl).trim()
+      baseUrl: (settings.openaiPlanBaseUrl || settings.openaiBaseUrl).trim(),
     };
   }
   if (scope === "setting") {
     return {
       apiKey: (settings.openaiSettingApiKey || settings.openaiApiKey).trim(),
-      baseUrl: (settings.openaiSettingBaseUrl || settings.openaiBaseUrl).trim()
+      baseUrl: (settings.openaiSettingBaseUrl || settings.openaiBaseUrl).trim(),
     };
   }
   return {
     apiKey: (settings.openaiChatApiKey || settings.openaiApiKey).trim(),
-    baseUrl: (settings.openaiChatBaseUrl || settings.openaiBaseUrl).trim()
+    baseUrl: (settings.openaiChatBaseUrl || settings.openaiBaseUrl).trim(),
   };
 }
 
@@ -193,12 +203,15 @@ export function resolveProbeConflictScopes(
   settings: RuntimeSettings,
   requestedScope: ProbeScope,
 ): ProbeScope[] {
-  const requestedKey = buildProbeEndpointKey(resolveScopeEndpoint(settings, requestedScope));
+  const requestedKey = buildProbeEndpointKey(
+    resolveScopeEndpoint(settings, requestedScope),
+  );
   if (!requestedKey) {
     return [requestedScope];
   }
   return (["global", "plan", "setting", "chat"] as const).filter(
-    (scope) => buildProbeEndpointKey(resolveScopeEndpoint(settings, scope)) === requestedKey,
+    (scope) =>
+      buildProbeEndpointKey(resolveScopeEndpoint(settings, scope)) === requestedKey,
   );
 }
 
@@ -224,16 +237,20 @@ export function buildNumericDrafts(settings: RuntimeSettings): NumericDraftState
     openaiSettingMaxTokens: String(settings.openaiSettingMaxTokens),
     openaiChatMaxTokens: String(settings.openaiChatMaxTokens),
     openaiChatHistoryMessages: String(settings.openaiChatHistoryMessages),
-    openaiChatToolMaxRounds: String(settings.openaiChatToolMaxRounds)
+    openaiChatToolMaxRounds: String(settings.openaiChatToolMaxRounds),
   };
 }
 
-export function parseNumericSetting(value: string, config: NumericSettingConfig): number | null {
+export function parseNumericSetting(
+  value: string,
+  config: NumericSettingConfig,
+): number | null {
   const text = value.trim();
   const decimal = config.integer ? /^[+-]?\d+$/ : /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/;
   if (!decimal.test(text)) return null;
   const parsed = Number(text);
-  if (!Number.isFinite(parsed) || (config.integer && !Number.isSafeInteger(parsed))) return null;
+  if (!Number.isFinite(parsed) || (config.integer && !Number.isSafeInteger(parsed)))
+    return null;
   return parsed < config.min || parsed > config.max ? null : parsed === 0 ? 0 : parsed;
 }
 
@@ -255,19 +272,21 @@ export function formatProbeHint(state: ScopeProbeState): string {
 
 export function resolveCapabilitySignal(
   capability: RuntimeModelCapability | undefined,
-  key: "multimodal" | "webSearch"
+  key: "multimodal" | "webSearch",
 ): RuntimeCapabilitySignal {
   if (!capability) {
     return {
       status: "unknown",
       source: "unavailable",
-      note: ""
+      note: "",
     };
   }
   return key === "multimodal" ? capability.multimodal : capability.webSearch;
 }
 
-export function capabilitySignalToBoolean(signal: RuntimeCapabilitySignal): boolean | null {
+export function capabilitySignalToBoolean(
+  signal: RuntimeCapabilitySignal,
+): boolean | null {
   if (signal.status === "supported") {
     return true;
   }

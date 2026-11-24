@@ -1,10 +1,13 @@
 """Request-local cooperative checks and call limits for Harness execution."""
+
 from contextlib import contextmanager
 from contextvars import ContextVar
 from typing import Callable, Iterator
 
 
-_checks: ContextVar[tuple[Callable[[], None], ...]] = ContextVar("execution_budget_checks", default=())
+_checks: ContextVar[tuple[Callable[[], None], ...]] = ContextVar(
+    "execution_budget_checks", default=()
+)
 _call_timeout_seconds: ContextVar[tuple[Callable[[], int], ...]] = ContextVar(
     "execution_budget_call_timeout_seconds",
     default=(),

@@ -29,7 +29,9 @@ class Database:
             future=True,
         )
 
-        from app.persistence.transaction_validation import install_transaction_validation
+        from app.persistence.transaction_validation import (
+            install_transaction_validation,
+        )
 
         install_transaction_validation(self.engine, self._session_factory)
 
@@ -179,11 +181,17 @@ class Database:
                         f"ALTER TABLE {operation_table} ADD COLUMN "
                         "harness_operation_id VARCHAR(64)"
                     )
-                if operation_table == "study_chat_operations" and "harness_trace" not in operation_columns:
+                if (
+                    operation_table == "study_chat_operations"
+                    and "harness_trace" not in operation_columns
+                ):
                     connection.exec_driver_sql(
                         "ALTER TABLE study_chat_operations ADD COLUMN harness_trace JSON"
                     )
-                if operation_table == "study_chat_operations" and "diagnostic_payload" not in operation_columns:
+                if (
+                    operation_table == "study_chat_operations"
+                    and "diagnostic_payload" not in operation_columns
+                ):
                     connection.exec_driver_sql(
                         "ALTER TABLE study_chat_operations ADD COLUMN diagnostic_payload JSON"
                     )
@@ -339,9 +347,16 @@ class Database:
             rebuild = []
             for table in ("harness_operation_bindings", "harness_workflow_operations"):
                 ddl = connection.exec_driver_sql(
-                    "SELECT sql FROM sqlite_master WHERE type='table' AND name=?", (table,)
+                    "SELECT sql FROM sqlite_master WHERE type='table' AND name=?",
+                    (table,),
                 ).scalar_one_or_none()
-                if ddl and ("frontend_decode" not in str(ddl) or (table == "harness_operation_bindings" and "study_unit_revision" not in str(ddl))):
+                if ddl and (
+                    "frontend_decode" not in str(ddl)
+                    or (
+                        table == "harness_operation_bindings"
+                        and "study_unit_revision" not in str(ddl)
+                    )
+                ):
                     rebuild.append(table)
             if not rebuild:
                 return
@@ -356,23 +371,34 @@ class Database:
             try:
                 with connection.begin():
                     for name, _ in triggers:
-                        connection.exec_driver_sql('DROP TRIGGER "' + name.replace('"', '""') + '"')
+                        connection.exec_driver_sql(
+                            'DROP TRIGGER "' + name.replace('"', '""') + '"'
+                        )
                     for table in rebuild:
                         indexes = connection.exec_driver_sql(
-                            "SELECT name FROM sqlite_master WHERE type='index' AND tbl_name=? AND sql IS NOT NULL", (table,)
+                            "SELECT name FROM sqlite_master WHERE type='index' AND tbl_name=? AND sql IS NOT NULL",
+                            (table,),
                         ).all()
                         for (name,) in indexes:
-                            connection.exec_driver_sql('DROP INDEX "' + name.replace('"', '""') + '"')
-                        connection.exec_driver_sql(f"ALTER TABLE {table} RENAME TO {table}_old_routes")
+                            connection.exec_driver_sql(
+                                'DROP INDEX "' + name.replace('"', '""') + '"'
+                            )
+                        connection.exec_driver_sql(
+                            f"ALTER TABLE {table} RENAME TO {table}_old_routes"
+                        )
                         metadata = Base.metadata.tables[table]
                         metadata.create(connection, checkfirst=False)
                         columns = ", ".join(column.name for column in metadata.columns)
-                        connection.exec_driver_sql(f"INSERT INTO {table} ({columns}) SELECT {columns} FROM {table}_old_routes")
+                        connection.exec_driver_sql(
+                            f"INSERT INTO {table} ({columns}) SELECT {columns} FROM {table}_old_routes"
+                        )
                         connection.exec_driver_sql(f"DROP TABLE {table}_old_routes")
                     for _, sql in triggers:
                         connection.exec_driver_sql(sql)
                     if connection.exec_driver_sql("PRAGMA foreign_key_check").all():
-                        raise RuntimeError("sqlite_harness_operation_route_repair_failed")
+                        raise RuntimeError(
+                            "sqlite_harness_operation_route_repair_failed"
+                        )
             finally:
                 if connection.in_transaction():
                     connection.rollback()
@@ -400,12 +426,10 @@ class Database:
             if "outcome" not in columns:
                 return
             connection.exec_driver_sql(
-                "DROP TRIGGER IF EXISTS "
-                "trg_harness_artifact_access_audits_no_update"
+                "DROP TRIGGER IF EXISTS trg_harness_artifact_access_audits_no_update"
             )
             connection.exec_driver_sql(
-                "DROP TRIGGER IF EXISTS "
-                "trg_harness_artifact_access_audits_no_delete"
+                "DROP TRIGGER IF EXISTS trg_harness_artifact_access_audits_no_delete"
             )
             for index_name in (
                 "ix_harness_artifact_access_audits_grant_id",
@@ -578,7 +602,12 @@ class Database:
     @staticmethod
     def _ensure_sqlite_harness_operation_guards(connection) -> None:
         domain_tables = (
-            ("plan_revision_operations", "uq_plan_revision_harness_operation", "learning_plan_revision", "operation_id"),
+            (
+                "plan_revision_operations",
+                "uq_plan_revision_harness_operation",
+                "learning_plan_revision",
+                "operation_id",
+            ),
             (
                 "document_process_operations",
                 "uq_document_process_operation_harness_operation",
@@ -643,9 +672,7 @@ class Database:
                 columns = connection.exec_driver_sql(
                     f"PRAGMA index_info({index[1]})"
                 ).all()
-                if [str(column[2]) for column in columns] == [
-                    "harness_operation_id"
-                ]:
+                if [str(column[2]) for column in columns] == ["harness_operation_id"]:
                     has_unique_harness_identity = True
                     break
             if not has_unique_harness_identity:
@@ -871,7 +898,8 @@ class Database:
     def _ensure_sqlite_harness_runtime_guards(connection) -> None:
         """Keep runtime identity immutable and terminal executions append-only."""
         table_names = {
-            str(row[0]) for row in connection.exec_driver_sql(
+            str(row[0])
+            for row in connection.exec_driver_sql(
                 "SELECT name FROM sqlite_master WHERE type = 'table'"
             )
         }
