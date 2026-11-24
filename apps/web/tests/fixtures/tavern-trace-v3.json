@@ -1,0 +1,492 @@
+{
+  "legacyTagPassed": {
+    "trace_schema_version": "harness-trace-v3",
+    "trace_id": "harness-trace-a80370ae3efe485e6361b2e9fd60d897",
+    "operation_id": "harness-operation-fc3f93b9209b413f9cae7d401f9d2235",
+    "parent_trace_id": null,
+    "workflow": "tavern",
+    "stage": "actor_reply",
+    "status": "passed",
+    "contract": {
+      "name": "TavernActorReply",
+      "version": "tavern-actor-reply-v2"
+    },
+    "context": {
+      "context_contract": {
+        "name": "HarnessContextEnvelopeV3",
+        "version": "harness-context-v3"
+      },
+      "workflow": "tavern",
+      "stage": "actor_reply",
+      "operation_id": "harness-operation-fc3f93b9209b413f9cae7d401f9d2235",
+      "input_contract": {
+        "name": "TavernActorInputManifest",
+        "version": "tavern-actor-input-manifest-v1"
+      },
+      "subject_refs": [
+        {
+          "resource_type": "tavern_room",
+          "resource_id": "tavern-298f66489df7",
+          "revision": 1
+        }
+      ],
+      "component_versions": [
+        {
+          "name": "tavern_actor_prompt",
+          "version": "tavern-actor-v1"
+        },
+        {
+          "name": "tavern_persona_compiler",
+          "version": "tavern-persona-compiler-v1"
+        },
+        {
+          "name": "tavern_scheduler",
+          "version": "tavern-schedule-v1"
+        }
+      ],
+      "snapshot_refs": [
+        {
+          "artifact_type": "tavern_room_snapshot",
+          "artifact_id": "harness-artifact-d1298f4d264bbf9952fb68bd9236d4d7",
+          "contract": {
+            "name": "TavernActorProtectedSnapshot",
+            "version": "tavern-actor-protected-snapshot-v1"
+          },
+          "digest_algorithm": "sha256",
+          "payload_digest": "8dc052ff519cab9759adbda772863866f367be5885b0aa4f59d17235bffd4e44"
+        }
+      ],
+      "digest_algorithm": "sha256",
+      "digest_contract": {
+        "name": "HarnessContextManifestDigest",
+        "version": "harness-context-manifest-digest-v1"
+      },
+      "input_digest": "8ec128341175bb9a7d3a2481c7ab81c0bf1a2bf804d3c6c5b798007e4c29032e",
+      "context_digest": "f4122e532285b7d42b521c83d2d40d186e7531c5d37cfd180635aae5ec8221ed",
+      "policy_contract": {
+        "name": "TavernHarnessPolicy",
+        "version": "tavern-harness-v1"
+      },
+      "prompt_contract": {
+        "name": "TavernActorPrompt",
+        "version": "tavern-actor-v1"
+      }
+    },
+    "output_digest": "24f9a789ac867111b5c9dcea9034c6bf38cf6ae4ee22282aca2125d3de167d29",
+    "checks": [
+      {
+        "name": "speaker_identity",
+        "status": "passed",
+        "code": "",
+        "message": "说话者归属有效。"
+      },
+      {
+        "name": "addressed_participants",
+        "status": "passed",
+        "code": "",
+        "message": "回应目标有效。"
+      },
+      {
+        "name": "reply_length",
+        "status": "passed",
+        "code": "",
+        "message": "回复长度有效。"
+      },
+      {
+        "name": "prompt_confidentiality",
+        "status": "passed",
+        "code": "",
+        "message": "未检测到内部提示材料泄漏。"
+      },
+      {
+        "name": "non_empty_reply",
+        "status": "passed",
+        "code": "",
+        "message": "回复包含可展示内容。"
+      }
+    ],
+    "attempt_records": [
+      {
+        "attempt_id": "harness-attempt-f62c0d49ebeedcb84edef864d5b30118",
+        "attempt_index": 1,
+        "phase": "generate",
+        "status": "passed",
+        "output_digest": "24f9a789ac867111b5c9dcea9034c6bf38cf6ae4ee22282aca2125d3de167d29",
+        "error_code": "",
+        "duration_ms": 3
+      },
+      {
+        "attempt_id": "harness-attempt-a291d32957faa0a28704f6d9910c909a",
+        "attempt_index": 2,
+        "phase": "decode",
+        "status": "passed",
+        "output_digest": "24f9a789ac867111b5c9dcea9034c6bf38cf6ae4ee22282aca2125d3de167d29",
+        "error_code": "",
+        "duration_ms": 0
+      },
+      {
+        "attempt_id": "harness-attempt-de80f909f8c45f5eead716c22e02bfae",
+        "attempt_index": 3,
+        "phase": "validate",
+        "status": "passed",
+        "output_digest": "24f9a789ac867111b5c9dcea9034c6bf38cf6ae4ee22282aca2125d3de167d29",
+        "error_code": "",
+        "duration_ms": 6
+      },
+      {
+        "attempt_id": "harness-attempt-8555ec37791d726e612bd00b6917ec38",
+        "attempt_index": 4,
+        "phase": "commit",
+        "status": "passed",
+        "output_digest": "336f668c897b42f3598d8eb3f8748010ac8e93241d9f65c6c6c6a8cdc518f864",
+        "error_code": "",
+        "duration_ms": 2
+      }
+    ],
+    "recovery_strategy": "none",
+    "error_code": "",
+    "duration_ms": 15,
+    "commit_evidence": {
+      "status": "committed",
+      "effect_batch_id": "effect-tavern-message-0bf5530e841b",
+      "payload_contract": {
+        "name": "TavernPersonaMessageCommittedProjection",
+        "version": "tavern-persona-message-committed-projection-v1"
+      },
+      "digest_algorithm": "sha256",
+      "digest_scope": "committed_projection",
+      "attempted_resource_refs": [
+        {
+          "resource_type": "tavern_message",
+          "resource_id": "tavern-message-0bf5530e841b",
+          "revision": null
+        }
+      ],
+      "committed_resources": [
+        {
+          "resource_type": "tavern_message",
+          "resource_id": "tavern-message-0bf5530e841b",
+          "expected_revision": null,
+          "committed_revision": null,
+          "first_sequence": 2,
+          "last_sequence": 2,
+          "payload_digest": "336f668c897b42f3598d8eb3f8748010ac8e93241d9f65c6c6c6a8cdc518f864"
+        }
+      ],
+      "payload_digest": "336f668c897b42f3598d8eb3f8748010ac8e93241d9f65c6c6c6a8cdc518f864",
+      "committed_at": "2026-11-24T07:27:04.949262Z",
+      "rollback_reason_code": "",
+      "rolled_back_at": null
+    },
+    "started_at": "2026-11-24T07:27:04.934111Z",
+    "completed_at": "2026-11-24T07:27:04.949853Z"
+  },
+  "currentRepaired": {
+    "trace_schema_version": "harness-trace-v3",
+    "trace_id": "harness-trace-e6930cd21e114191cc58a708e757f631",
+    "operation_id": "harness-operation-1abb1ba26bf849e3b561aaf12696b8b5",
+    "parent_trace_id": "harness-trace-ce0d564ad88aa6e345aeff40a4adb0ac",
+    "workflow": "tavern",
+    "stage": "actor_reply",
+    "status": "repaired",
+    "contract": {
+      "name": "TavernActorReply",
+      "version": "tavern-actor-reply-v2"
+    },
+    "context": {
+      "context_contract": {
+        "name": "HarnessContextEnvelopeV3",
+        "version": "harness-context-v3"
+      },
+      "workflow": "tavern",
+      "stage": "actor_reply",
+      "operation_id": "harness-operation-1abb1ba26bf849e3b561aaf12696b8b5",
+      "input_contract": {
+        "name": "TavernActorInputManifest",
+        "version": "tavern-actor-input-manifest-v1"
+      },
+      "subject_refs": [
+        {
+          "resource_type": "tavern_room",
+          "resource_id": "tavern-f02c2e374757",
+          "revision": 1
+        }
+      ],
+      "component_versions": [
+        {
+          "name": "tavern_actor_prompt",
+          "version": "tavern-actor-v1"
+        },
+        {
+          "name": "tavern_persona_compiler",
+          "version": "tavern-persona-compiler-v1"
+        },
+        {
+          "name": "tavern_scheduler",
+          "version": "tavern-schedule-v1"
+        }
+      ],
+      "snapshot_refs": [
+        {
+          "artifact_type": "tavern_room_snapshot",
+          "artifact_id": "harness-artifact-bb8ce5b6fa46986419696ee806b89dcf",
+          "contract": {
+            "name": "TavernActorProtectedSnapshot",
+            "version": "tavern-actor-protected-snapshot-v2"
+          },
+          "digest_algorithm": "sha256",
+          "payload_digest": "b4bc10e172aaa253dfed00961240dc88ab3e5a8b6b810ae98ea6a322a0896cd9"
+        }
+      ],
+      "digest_algorithm": "sha256",
+      "digest_contract": {
+        "name": "HarnessContextManifestDigest",
+        "version": "harness-context-manifest-digest-v1"
+      },
+      "input_digest": "20c827552743df6c99b60f9aa2d86f881bd3473e26aa37f8d37235acba54118a",
+      "context_digest": "c8f4a56ccc6088dbf549d88a6bee16e135b245e5c756b1ecb8869c8fb516af7c",
+      "policy_contract": {
+        "name": "TavernHarnessPolicy",
+        "version": "tavern-harness-v1"
+      },
+      "prompt_contract": {
+        "name": "TavernActorPrompt",
+        "version": "tavern-actor-v1"
+      }
+    },
+    "output_digest": "3aac7efe53ed36eae2132d78187c182041c1d728bb40da9a51b980ab0fd6b007",
+    "checks": [
+      {
+        "name": "authorized_snapshot_binding",
+        "status": "passed",
+        "code": "tavern_authorized_snapshot_binding_valid",
+        "message": "Resolved Tavern snapshot matched the authoritative Run and Speaker Step projection."
+      },
+      {
+        "name": "speaker_identity",
+        "status": "passed",
+        "code": "",
+        "message": "说话者归属有效。"
+      },
+      {
+        "name": "addressed_participants",
+        "status": "warning",
+        "code": "scheduled_reply_target_restored",
+        "message": "已恢复服务端安排的上一位说话者目标。"
+      },
+      {
+        "name": "reply_length",
+        "status": "passed",
+        "code": "",
+        "message": "回复长度有效。"
+      },
+      {
+        "name": "prompt_confidentiality",
+        "status": "passed",
+        "code": "",
+        "message": "未检测到内部提示材料泄漏。"
+      },
+      {
+        "name": "non_empty_reply",
+        "status": "passed",
+        "code": "",
+        "message": "回复包含可展示内容。"
+      },
+      {
+        "name": "prompt_budget",
+        "status": "passed",
+        "code": "",
+        "message": "tavern-prompt-budget-v1: prompt_bytes 6422->6422; transcript_bytes 195->195; removed_messages=0; input_token_estimate=3718."
+      }
+    ],
+    "attempt_records": [
+      {
+        "attempt_id": "harness-attempt-ca25c51b631cae3dbbb40b9649206a70",
+        "attempt_index": 1,
+        "phase": "generate",
+        "status": "passed",
+        "output_digest": "6a03bad2a088e5cd5f80a70624644fa9bc221b785aa5be788376532ab32b16a4",
+        "error_code": "",
+        "duration_ms": 4
+      },
+      {
+        "attempt_id": "harness-attempt-2547bddc4bd37ecf4474fac694444dba",
+        "attempt_index": 2,
+        "phase": "decode",
+        "status": "passed",
+        "output_digest": "6a03bad2a088e5cd5f80a70624644fa9bc221b785aa5be788376532ab32b16a4",
+        "error_code": "",
+        "duration_ms": 0
+      },
+      {
+        "attempt_id": "harness-attempt-f599c0ea334de69c858410699a588c84",
+        "attempt_index": 3,
+        "phase": "repair",
+        "status": "passed",
+        "output_digest": "3aac7efe53ed36eae2132d78187c182041c1d728bb40da9a51b980ab0fd6b007",
+        "error_code": "",
+        "duration_ms": 7
+      },
+      {
+        "attempt_id": "harness-attempt-4f547ed85243d310f8e75e784ac2b4bd",
+        "attempt_index": 4,
+        "phase": "validate",
+        "status": "passed",
+        "output_digest": "3aac7efe53ed36eae2132d78187c182041c1d728bb40da9a51b980ab0fd6b007",
+        "error_code": "",
+        "duration_ms": 7
+      },
+      {
+        "attempt_id": "harness-attempt-839b6b3d958a20abf70c0bef4f8923c6",
+        "attempt_index": 5,
+        "phase": "commit",
+        "status": "passed",
+        "output_digest": "f4a3a77baecf89ad6471bdd02df30bde244371edbb3f269d797bf2dfb312fb7d",
+        "error_code": "",
+        "duration_ms": 3
+      }
+    ],
+    "recovery_strategy": "restore_scheduled_reply_target",
+    "error_code": "",
+    "duration_ms": 18,
+    "commit_evidence": {
+      "status": "committed",
+      "effect_batch_id": "effect-tavern-message-9164aa7ad8f7",
+      "payload_contract": {
+        "name": "TavernPersonaMessageCommittedProjection",
+        "version": "tavern-persona-message-committed-projection-v1"
+      },
+      "digest_algorithm": "sha256",
+      "digest_scope": "committed_projection",
+      "attempted_resource_refs": [
+        {
+          "resource_type": "tavern_message",
+          "resource_id": "tavern-message-9164aa7ad8f7",
+          "revision": null
+        }
+      ],
+      "committed_resources": [
+        {
+          "resource_type": "tavern_message",
+          "resource_id": "tavern-message-9164aa7ad8f7",
+          "expected_revision": null,
+          "committed_revision": null,
+          "first_sequence": 3,
+          "last_sequence": 3,
+          "payload_digest": "f4a3a77baecf89ad6471bdd02df30bde244371edbb3f269d797bf2dfb312fb7d"
+        }
+      ],
+      "payload_digest": "f4a3a77baecf89ad6471bdd02df30bde244371edbb3f269d797bf2dfb312fb7d",
+      "committed_at": "2026-11-24T07:23:18.084782Z",
+      "rollback_reason_code": "",
+      "rolled_back_at": null
+    },
+    "started_at": "2026-11-24T07:23:18.067100Z",
+    "completed_at": "2026-11-24T07:23:18.085366Z"
+  },
+  "currentFailed": {
+    "trace_schema_version": "harness-trace-v3",
+    "trace_id": "harness-trace-76b5c2e8b0469eb65a32b7c882c4245c",
+    "operation_id": "harness-operation-290c822479c64c88b432ffede30c9418",
+    "parent_trace_id": "harness-trace-cad25d2cb169611bd8c34ffb8db5a171",
+    "workflow": "tavern",
+    "stage": "actor_reply",
+    "status": "failed",
+    "contract": {
+      "name": "TavernActorReply",
+      "version": "tavern-actor-reply-v2"
+    },
+    "context": {
+      "context_contract": {
+        "name": "HarnessContextEnvelopeV3",
+        "version": "harness-context-v3"
+      },
+      "workflow": "tavern",
+      "stage": "actor_reply",
+      "operation_id": "harness-operation-290c822479c64c88b432ffede30c9418",
+      "input_contract": {
+        "name": "TavernActorInputManifest",
+        "version": "tavern-actor-input-manifest-v1"
+      },
+      "subject_refs": [
+        {
+          "resource_type": "tavern_room",
+          "resource_id": "tavern-7abe1c12a43b",
+          "revision": 1
+        }
+      ],
+      "component_versions": [
+        {
+          "name": "tavern_actor_prompt",
+          "version": "tavern-actor-v1"
+        },
+        {
+          "name": "tavern_persona_compiler",
+          "version": "tavern-persona-compiler-v1"
+        },
+        {
+          "name": "tavern_scheduler",
+          "version": "tavern-schedule-v1"
+        }
+      ],
+      "snapshot_refs": [
+        {
+          "artifact_type": "tavern_room_snapshot",
+          "artifact_id": "harness-artifact-668dd19dfd65f90bb559994d785260a3",
+          "contract": {
+            "name": "TavernActorProtectedSnapshot",
+            "version": "tavern-actor-protected-snapshot-v2"
+          },
+          "digest_algorithm": "sha256",
+          "payload_digest": "3ec5650ae5d7f46b308c9cfb6e15c854f75518b55aa8a7aea6299b7ccfba54d1"
+        }
+      ],
+      "digest_algorithm": "sha256",
+      "digest_contract": {
+        "name": "HarnessContextManifestDigest",
+        "version": "harness-context-manifest-digest-v1"
+      },
+      "input_digest": "ca4b300a92cde7387a0ce78c37e7d51948141be9218ae51a0f8ea125f57285a1",
+      "context_digest": "e8356c7cf31c2105247303df863958b480f5dd30da1a364360da8b76993b0598",
+      "policy_contract": {
+        "name": "TavernHarnessPolicy",
+        "version": "tavern-harness-v1"
+      },
+      "prompt_contract": {
+        "name": "TavernActorPrompt",
+        "version": "tavern-actor-v1"
+      }
+    },
+    "output_digest": null,
+    "checks": [],
+    "attempt_records": [
+      {
+        "attempt_id": "harness-attempt-fcb0add2f15f86d9e34759c4958b8b27",
+        "attempt_index": 1,
+        "phase": "generate",
+        "status": "failed",
+        "output_digest": null,
+        "error_code": "planned_actor_failure:2",
+        "duration_ms": 4
+      }
+    ],
+    "recovery_strategy": "none",
+    "error_code": "planned_actor_failure:2",
+    "duration_ms": 5,
+    "commit_evidence": {
+      "status": "not_committed",
+      "effect_batch_id": null,
+      "payload_contract": null,
+      "digest_algorithm": null,
+      "digest_scope": null,
+      "attempted_resource_refs": [],
+      "committed_resources": [],
+      "payload_digest": null,
+      "committed_at": null,
+      "rollback_reason_code": "",
+      "rolled_back_at": null
+    },
+    "started_at": "2026-11-24T07:24:48.757401Z",
+    "completed_at": "2026-11-24T07:24:48.762785Z"
+  }
+}

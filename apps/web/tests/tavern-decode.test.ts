@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import v3Traces from "./fixtures/tavern-trace-v3.json" with { type: "json" };
+
 import {
   decodeHarnessTrace,
   normalizeTavernErrorDetail,
@@ -328,10 +330,10 @@ test("retry chains preserve run and schedule identity constraints", () => {
   );
 });
 
-test("versioned Harness trace context identity and attempt order still fail closed", () => {
+test("historical v2 trace keeps its attempt order and decoding behavior", () => {
   const operationId = `harness-operation-${"a".repeat(32)}`;
   const trace = {
-    trace_schema_version: "harness-trace-v3",
+    trace_schema_version: "harness-trace-v2",
     trace_id: `harness-trace-${"b".repeat(32)}`,
     operation_id: operationId,
     workflow: "tavern",
@@ -355,15 +357,6 @@ test("versioned Harness trace context identity and attempt order still fail clos
   rejects(
     () =>
       decodeHarnessTrace(
-        { ...trace, context: { ...trace.context, workflow: "other" } },
-        "trace",
-      ),
-    "trace.context",
-    "harness_trace_context_identity_mismatch",
-  );
-  rejects(
-    () =>
-      decodeHarnessTrace(
         {
           ...trace,
           attempt_records: [{ ...trace.attempt_records[0], attempt_index: 2 }],
@@ -372,5 +365,72 @@ test("versioned Harness trace context identity and attempt order still fail clos
       ),
     "trace.attempt_records[0]",
     "invalid_attempt_ordering",
+  );
+});
+
+test("legacy unversioned traces still use their read-only contract", () => {
+  const trace = decodeHarnessTrace(
+    {
+      version: "tavern-actor-reply-v1",
+      workflow: "tavern",
+      stage: "actor_reply",
+      status: "passed",
+      schema_name: "TavernReply",
+      input_digest: "",
+      context_digest: "",
+      checks: [],
+      attempts: 1,
+      recovery_strategy: "none",
+      duration_ms: 0,
+    },
+    "legacy",
+  );
+  assert.ok("version" in trace);
+  assert.equal(trace.attempts, 1);
+});
+
+test("persisted v3 fixtures from the first released v3 and current mock backend decode strictly", () => {
+  // Unmodified run trace objects captured using a SQLite TestClient and SequencedTavernProvider.
+  for (const [wire, state, evidence] of [
+    [v3Traces.legacyTagPassed, "passed", "committed"],
+    [v3Traces.currentRepaired, "repaired", "committed"],
+    [v3Traces.currentFailed, "failed", "not_committed"],
+  ] as const) {
+    const trace = decodeHarnessTrace(wire, "trace");
+    assert.ok(
+      "traceSchemaVersion" in trace && trace.traceSchemaVersion === "harness-trace-v3",
+    );
+    assert.equal(trace.status, state);
+    assert.equal(trace.workflow, "tavern");
+    assert.equal(trace.stage, "actor_reply");
+    assert.equal(trace.context.operationId, trace.operationId);
+    assert.equal(trace.commitEvidence.status, evidence);
+    assert.equal(trace.contract.name, wire.contract.name);
+    assert.equal(trace.attemptRecords[0]?.attemptIndex, 1);
+  }
+});
+
+test("missing or inconsistent v3 evidence does not fall back to legacy", () => {
+  const fixture = v3Traces.legacyTagPassed;
+  const { contract, ...withoutContract } = fixture;
+  assert.ok(contract.version);
+  rejects(
+    () => decodeHarnessTrace(withoutContract, "trace"),
+    "trace.contract",
+    "missing_required_field",
+  );
+  const mismatchedContext = structuredClone(fixture);
+  mismatchedContext.context.operation_id = "harness-operation-" + "0".repeat(32);
+  rejects(
+    () => decodeHarnessTrace(mismatchedContext, "trace"),
+    "trace.context.operation_id",
+    "identity_mismatch_expected_" + fixture.operation_id,
+  );
+  const misorderedAttempts = structuredClone(fixture);
+  misorderedAttempts.attempt_records[0]!.attempt_index = 2;
+  rejects(
+    () => decodeHarnessTrace(misorderedAttempts, "trace"),
+    "trace",
+    "invalid_attempt_order_or_duration",
   );
 });

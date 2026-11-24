@@ -1,6 +1,5 @@
 import type {
   HarnessTraceV2,
-  HarnessTraceV3,
   HarnessTraceWire,
   PersonaProfile,
   SceneObjectSnapshot,
@@ -20,6 +19,7 @@ import type {
   TavernTurnResult,
 } from "@vibe-learner/shared";
 
+import { decodeHarnessTraceV3 } from "./harness-trace-decode.ts";
 import { StrictResponseDecoder } from "./strict-response-decode.ts";
 
 export class TavernDecodeError extends Error {
@@ -275,9 +275,12 @@ export function decodeHarnessTrace(raw: unknown, path: string): HarnessTraceWire
       value.trace_schema_version,
       `${path}.trace_schema_version`,
     );
-    if (schema === "harness-trace-v2" || schema === "harness-trace-v3") {
-      return decodeHarnessTraceV2OrV3(value, path, schema);
+    if (schema === "harness-trace-v3") {
+      return decodeHarnessTraceV3(value, path, (field, reason) => {
+        throw new TavernDecodeError(field, reason);
+      });
     }
+    if (schema === "harness-trace-v2") return decodeLegacyHarnessTraceV2(value, path);
     throw new TavernDecodeError(
       `${path}.trace_schema_version`,
       `unsupported_harness_trace_schema_version_${String(value.trace_schema_version)}`,
@@ -364,11 +367,11 @@ export function decodeHarnessTrace(raw: unknown, path: string): HarnessTraceWire
   };
 }
 
-function decodeHarnessTraceV2OrV3(
+// Historical compatibility only. Never route invalid v3 evidence here.
+function decodeLegacyHarnessTraceV2(
   value: Record<string, unknown>,
   path: string,
-  schema: "harness-trace-v2" | "harness-trace-v3",
-): HarnessTraceV2 | HarnessTraceV3 {
+): HarnessTraceV2 {
   const traceId = decoder.string(
     decoder.field(value, "trace_id", path),
     `${path}.trace_id`,
@@ -390,49 +393,6 @@ function decodeHarnessTraceV2OrV3(
     decoder.field(value, "context", path),
     `${path}.context`,
   );
-  if (schema === "harness-trace-v3") {
-    if (
-      context.operation_id !== operationId ||
-      context.workflow !== workflow ||
-      context.stage !== stage
-    ) {
-      throw new TavernDecodeError(
-        `${path}.context`,
-        "harness_trace_context_identity_mismatch",
-      );
-    }
-    const commit = decoder.record(
-      decoder.field(value, "commit_evidence", path),
-      `${path}.commit_evidence`,
-    );
-    const commitStatus = decoder.enumeration(
-      commit.status,
-      ["not_applicable", "not_committed", "committed", "rolled_back"] as const,
-      `${path}.commit_evidence.status`,
-    );
-    if (
-      commitStatus === "committed" &&
-      (!Array.isArray(commit.committed_resources) ||
-        typeof commit.payload_digest !== "string" ||
-        typeof commit.committed_at !== "string")
-    ) {
-      throw new TavernDecodeError(
-        `${path}.commit_evidence`,
-        "committed_evidence_incomplete",
-      );
-    }
-    if (
-      commitStatus === "rolled_back" &&
-      (typeof commit.rollback_reason_code !== "string" ||
-        !commit.rollback_reason_code ||
-        typeof commit.rolled_back_at !== "string")
-    ) {
-      throw new TavernDecodeError(
-        `${path}.commit_evidence`,
-        "rollback_evidence_incomplete",
-      );
-    }
-  }
   const checks = decoder.array(
     decoder.field(value, "checks", path),
     `${path}.checks`,
@@ -480,7 +440,7 @@ function decodeHarnessTraceV2OrV3(
   });
   const attempts = rawAttempts as never;
   const base = {
-    traceSchemaVersion: schema,
+    traceSchemaVersion: "harness-trace-v2",
     traceId,
     operationId,
     parentTraceId: nullableField(value, "parent_trace_id", path, (item, itemPath) =>
@@ -521,7 +481,7 @@ function decodeHarnessTraceV2OrV3(
       `${path}.completed_at`,
     ),
   };
-  return base as unknown as HarnessTraceV2 | HarnessTraceV3;
+  return base as unknown as HarnessTraceV2;
 }
 
 function decodePolicy(raw: unknown, path: string): TavernHarnessPolicy {
