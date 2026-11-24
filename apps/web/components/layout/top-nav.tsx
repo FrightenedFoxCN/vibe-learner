@@ -142,6 +142,7 @@ export function TopNav({ currentPath }: TopNavProps) {
   useEffect(() => {
     const width = collapsed ? "56px" : "200px";
     document.documentElement.style.setProperty("--app-nav-width", width);
+    document.documentElement.dataset.appNavCollapsed = collapsed ? "true" : "false";
     writeStoredBoolean(APP_NAV_COLLAPSED_STORAGE_KEY, collapsed);
   }, [collapsed]);
 

@@ -75,7 +75,7 @@
 - [x] **P1-UI-03 修复 `Model Usage` 柱状图最高柱裁切与移动端表格挤碎**
   - 为 `apps/web/components/model-usage/model-usage-chart.tsx` 增加顶部数值留白、Y 轴刻度与完整列宽呈现，防止最高柱顶部标签画到 SVG 外被裁切。
   - 为 `apps/web/components/model-usage/model-usage-tables.tsx` 按列数设置合理 `min-w-*` 并收敛 `wrap-anywhere`，确保 `390px` 窄屏下通过外层 `overflow-x-auto` 局部横向滚动而非将单元格挤成 2 字符竖条。
-- [ ] **P1-UI-04 修复全局 `Debug Overlay` 浮钮遮挡核心操作**
+- [x] **P1-UI-04 修复全局 `Debug Overlay` 浮钮遮挡核心操作**
   - 调整 `apps/web/components/debug/debug-overlay.module.css` 与相关底部布局策略，缩小/收紧浮钮并在移动端避让吸底输入区与右侧主操作按钮，防止遮挡 `Study Dialog` 发送按钮与 `Study Notes` 删除按钮。
 - [ ] **P1-UI-05 修复 `Plan Workspace` 表单样式割裂、按钮挤压与操作层级倒置**
   - 补齐 `document-setup-fields.tsx` 中 `PDF 物理页范围` 输入框与辅助说明的样式类名，统一 `.output-language-field` 与 `PersonaMiniCard` 为直角基线与一致表单节奏。

@@ -176,7 +176,11 @@ export function DebugOverlay() {
         />
       ) : null}
 
-      <div className={styles.root} hidden={!showDebugInfo}>
+      <div
+        className={styles.root}
+        data-open={visible ? "true" : "false"}
+        hidden={!showDebugInfo}
+      >
         <button
           type="button"
           className={styles.fab}
