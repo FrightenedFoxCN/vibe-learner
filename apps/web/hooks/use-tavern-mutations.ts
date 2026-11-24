@@ -7,10 +7,6 @@ import { decodeTavernHttpError } from "../lib/data/tavern";
 import { createDiagnosticId, diagnosticContext } from "../lib/diagnostics";
 import { ApiHttpError } from "../lib/http-error";
 import { RUN_STATUS_LABELS, TAVERN_COPY } from "../lib/tavern-copy";
-import {
-  isTavernRoomStateAtLeast,
-  mergeTavernMessages,
-} from "../lib/tavern-workspace-state";
 
 import { confirmTavernCancellation } from "../lib/tavern-cancel-confirmation";
 import { reconcileCanceledTavernDraft } from "../lib/tavern-canceled-draft";
@@ -32,11 +28,8 @@ export function useTavernMutations(
   const {
     mountedRef,
     scenes,
-    setDetail,
-    setMessages,
+    publishRoomSnapshot,
     runs,
-    setRuns,
-    setRecoveryChains,
     targetPersonaIds,
     setTargetPersonaIds,
     setGeneratingPersonaIds,
@@ -48,16 +41,13 @@ export function useTavernMutations(
     setRawError,
     roomLoadVersion,
     roomRefreshVersion,
-    activeRoomIdRef,
+    readRoomSnapshot,
     requestedRoomIdRef,
     olderLoadRoomRef,
     mutationOperationRef,
     mutationOperationVersionRef,
     foregroundRunRef,
     foregroundOperationIdRef,
-    detailRef,
-    runsRef,
-    messagesRef,
     activeRoom,
     roomIsActive,
     runPending,
@@ -93,7 +83,7 @@ export function useTavernMutations(
       if (
         !mountedRef.current ||
         (action !== "create" &&
-          (activeRoomIdRef.current !== roomId ||
+          (readRoomSnapshot()?.detail.room.id !== roomId ||
             requestedRoomIdRef.current !== roomId)) ||
         olderLoadRoomRef.current ||
         (mutationOperationRef.current && !replaceCurrent)
@@ -113,7 +103,7 @@ export function useTavernMutations(
       return operation;
     },
     [
-      activeRoomIdRef,
+      readRoomSnapshot,
       mountedRef,
       mutationOperationRef,
       mutationOperationVersionRef,
@@ -191,18 +181,16 @@ export function useTavernMutations(
           operation.diagnostic,
         );
         if (!operationIsCurrent(operation)) return;
-        activeRoomIdRef.current = created.room.id;
         requestedRoomIdRef.current = created.room.id;
         roomLoadVersion.current += 1;
         roomRefreshVersion.current += 1;
-        const nextMessages = mergeTavernMessages([], created.messages);
-        messagesRef.current = nextMessages;
-        detailRef.current = created;
-        runsRef.current = [];
-        setDetail(created);
-        setMessages(nextMessages);
-        setRuns([]);
-        setRecoveryChains([]);
+        if (
+          !publishRoomSnapshot({
+            kind: "created",
+            detail: created,
+          })
+        )
+          return;
         setTargetPersonaIds(
           created.participants[0] ? [created.participants[0].personaId] : [],
         );
@@ -240,16 +228,9 @@ export function useTavernMutations(
       setVisibleError,
       setRawError,
       setNotice,
-      activeRoomIdRef,
       requestedRoomIdRef,
       roomLoadVersion,
-      messagesRef,
-      detailRef,
-      runsRef,
-      setDetail,
-      setMessages,
-      setRuns,
-      setRecoveryChains,
+      publishRoomSnapshot,
       setTargetPersonaIds,
       setShowSetup,
     ],
@@ -276,28 +257,15 @@ export function useTavernMutations(
       );
       if (
         !operationIsCurrent(operation) ||
-        activeRoomIdRef.current !== roomId ||
+        readRoomSnapshot()?.detail.room.id !== roomId ||
         requestedRoomIdRef.current !== roomId
       )
         return;
-      const currentDetail = detailRef.current;
       if (
-        !currentDetail ||
-        currentDetail.room.id !== roomId ||
-        !isTavernRoomStateAtLeast(updated.room, currentDetail.room)
+        updated.room.id !== roomId ||
+        !publishRoomSnapshot({ kind: "archive", detail: updated })
       )
         return;
-      const nextMessages = mergeTavernMessages(messagesRef.current, updated.messages);
-      const updatedDetail = {
-        ...currentDetail,
-        room: updated.room,
-        participants: updated.participants,
-        messageCount: updated.messageCount,
-      };
-      detailRef.current = updatedDetail;
-      messagesRef.current = nextMessages;
-      setDetail(updatedDetail);
-      setMessages(nextMessages);
       setNotice(
         nextStatus === "archived" ? "酒馆已归档，历史仍可阅读" : "酒馆已恢复使用",
       );
@@ -323,14 +291,11 @@ export function useTavernMutations(
     runPending,
     updateRooms,
     updateTavernRoom,
-    activeRoomIdRef,
-    detailRef,
-    messagesRef,
+    readRoomSnapshot,
     requestedRoomIdRef,
     roomRefreshVersion,
+    publishRoomSnapshot,
     setBusyAction,
-    setDetail,
-    setMessages,
     setNotice,
     setRawError,
     setVisibleError,
@@ -404,7 +369,7 @@ export function useTavernMutations(
         );
         if (
           !operationIsCurrent(operation) ||
-          activeRoomIdRef.current !== roomId ||
+          readRoomSnapshot()?.detail.room.id !== roomId ||
           requestedRoomIdRef.current !== roomId
         )
           return false;
@@ -494,7 +459,7 @@ export function useTavernMutations(
       setVisibleError,
       setRawError,
       setNotice,
-      activeRoomIdRef,
+      readRoomSnapshot,
       requestedRoomIdRef,
     ],
   );
@@ -508,7 +473,7 @@ export function useTavernMutations(
     foregroundOperationIdRef.current = operation.id;
     const isCurrent = () =>
       operationIsCurrent(operation) &&
-      activeRoomIdRef.current === roomId &&
+      readRoomSnapshot()?.detail.room.id === roomId &&
       requestedRoomIdRef.current === roomId;
     setBusyAction("cancel");
     setNotice("正在取消接收本轮结果…");
@@ -568,7 +533,7 @@ export function useTavernMutations(
     setBusyAction,
     setNotice,
     setVisibleError,
-    activeRoomIdRef,
+    readRoomSnapshot,
     requestedRoomIdRef,
     setGeneratingPersonaIds,
     setRawError,
@@ -602,7 +567,7 @@ export function useTavernMutations(
         );
         if (
           !operationIsCurrent(operation) ||
-          activeRoomIdRef.current !== operation.roomId ||
+          readRoomSnapshot()?.detail.room.id !== operation.roomId ||
           requestedRoomIdRef.current !== operation.roomId
         )
           return;
@@ -656,7 +621,7 @@ export function useTavernMutations(
       setVisibleError,
       setRawError,
       setNotice,
-      activeRoomIdRef,
+      readRoomSnapshot,
       requestedRoomIdRef,
     ],
   );

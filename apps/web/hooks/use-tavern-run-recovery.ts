@@ -6,7 +6,6 @@ import { useCallback, useEffect } from "react";
 import { decodeTavernHttpError } from "../lib/data/tavern";
 import { createDiagnosticId, diagnosticContext } from "../lib/diagnostics";
 import { RUN_STATUS_LABELS } from "../lib/tavern-copy";
-import { reconcileTavernRuns } from "../lib/tavern-workspace-state";
 
 import { recordError } from "../lib/tavern-client-errors";
 import type { TavernRecoveryPorts } from "../lib/tavern-workspace-ports";
@@ -22,12 +21,12 @@ export function useTavernRunRecovery(
     mountedRef,
     roomLoadVersion,
     runs,
-    setRuns,
+    publishRoomSnapshot,
     busyAction,
     setNotice,
     setVisibleError,
     setRawError,
-    activeRoomIdRef,
+    readRoomSnapshot,
     requestedRoomIdRef,
     mutationOperationRef,
     mutationOperationVersionRef,
@@ -36,7 +35,6 @@ export function useTavernRunRecovery(
     foregroundOperationIdRef,
     runPollVersionRef,
     resumeAttemptsRef,
-    runsRef,
     activeRoom,
   } = state;
   const { listTavernRuns, resumeTavernRun } = ports.api;
@@ -50,7 +48,7 @@ export function useTavernRunRecovery(
         mutationOperationRef.current !== null ||
         !roomId ||
         resumeRunRef.current === run.id ||
-        activeRoomIdRef.current !== roomId ||
+        readRoomSnapshot()?.detail.room.id !== roomId ||
         requestedRoomIdRef.current !== roomId
       ) {
         return;
@@ -62,7 +60,7 @@ export function useTavernRunRecovery(
         loadVersion === roomLoadVersion.current &&
         mutationVersion === mutationOperationVersionRef.current &&
         mutationOperationRef.current === null &&
-        activeRoomIdRef.current === roomId &&
+        readRoomSnapshot()?.detail.room.id === roomId &&
         requestedRoomIdRef.current === roomId;
       resumeRunRef.current = run.id;
       const diagnostic = diagnosticContext(createDiagnosticId());
@@ -84,7 +82,7 @@ export function useTavernRunRecovery(
             Math.min(3, (resumeAttemptsRef.current.get(run.id) ?? 0) + 1),
           );
         } else if (
-          activeRoomIdRef.current === roomId &&
+          readRoomSnapshot()?.detail.room.id === roomId &&
           requestedRoomIdRef.current === roomId
         ) {
           recordError(
@@ -107,7 +105,7 @@ export function useTavernRunRecovery(
       mountedRef,
       mutationOperationRef,
       resumeRunRef,
-      activeRoomIdRef,
+      readRoomSnapshot,
       requestedRoomIdRef,
       roomLoadVersion,
       mutationOperationVersionRef,
@@ -170,21 +168,19 @@ export function useTavernRunRecovery(
           pollVersion !== runPollVersionRef.current ||
           foregroundOperationIdRef.current !== operationId ||
           mutationOperationRef.current?.id !== operationId ||
-          activeRoomIdRef.current !== roomId ||
+          readRoomSnapshot()?.detail.room.id !== roomId ||
           requestedRoomIdRef.current !== roomId
         )
           return;
-        const reconciledRuns = reconcileTavernRuns(runsRef.current, nextRuns);
-        const pending = reconciledRuns.find((run) => run.status === "pending");
+        const published = publishRoomSnapshot({ kind: "poll", roomId, runs: nextRuns });
+        const pending = published?.runs.find((run) => run.status === "pending");
         if (pending) foregroundRunRef.current = pending.id;
-        runsRef.current = reconciledRuns;
-        setRuns(reconciledRuns);
       } catch (error) {
         if (
           !disposed &&
           foregroundOperationIdRef.current === operationId &&
           mutationOperationRef.current?.id === operationId &&
-          activeRoomIdRef.current === roomId &&
+          readRoomSnapshot()?.detail.room.id === roomId &&
           requestedRoomIdRef.current === roomId
         )
           setRawError(String(error));
@@ -207,11 +203,10 @@ export function useTavernRunRecovery(
     foregroundOperationIdRef,
     mutationOperationRef,
     runPollVersionRef,
-    activeRoomIdRef,
+    readRoomSnapshot,
     requestedRoomIdRef,
-    runsRef,
     foregroundRunRef,
-    setRuns,
+    publishRoomSnapshot,
     setRawError,
   ]);
 }

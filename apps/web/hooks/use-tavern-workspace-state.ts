@@ -1,14 +1,7 @@
 "use client";
 
-import type {
-  PersonaProfile,
-  TavernMessage,
-  TavernRoomDetail,
-  TavernRoomSummary,
-  TavernRun,
-  TavernRunRecoveryChain,
-} from "@vibe-learner/shared";
-import { useEffect, useMemo, useRef, useState } from "react";
+import type { PersonaProfile, TavernRoomSummary } from "@vibe-learner/shared";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { type SceneLibraryItemPayload } from "../lib/data/scenes";
 import {
@@ -19,7 +12,18 @@ import {
   tavernRoomSummaryButtons,
 } from "../lib/tavern-workspace-state";
 
+import { tavernReadNotice } from "../lib/tavern-room-read";
+import {
+  reduceTavernRoomSnapshot,
+  type TavernRoomSnapshot,
+  type TavernRoomSnapshotAction,
+} from "../lib/tavern-room-snapshot";
+
 import type { BusyAction, MutationOperation } from "../lib/tavern-workspace-ports";
+
+const EMPTY_MESSAGES: TavernRoomSnapshot["detail"]["messages"] = [];
+const EMPTY_RUNS: TavernRoomSnapshot["runs"] = [];
+const EMPTY_RECOVERY: TavernRoomSnapshot["recoveryChains"] = [];
 
 export function useTavernWorkspaceState() {
   const [rooms, setRooms] = useState<TavernRoomSummary[]>([]);
@@ -29,15 +33,8 @@ export function useTavernWorkspaceState() {
   const [roomHistoryTruncated, setRoomHistoryTruncated] = useState(false);
   const [personas, setPersonas] = useState<PersonaProfile[]>([]);
   const [scenes, setScenes] = useState<SceneLibraryItemPayload[]>([]);
-  const [detail, setDetail] = useState<TavernRoomDetail | null>(null);
-  const [messages, setMessages] = useState<TavernMessage[]>([]);
-  const [runs, setRuns] = useState<TavernRun[]>([]);
-  const [recoveryChains, setRecoveryChains] = useState<TavernRunRecoveryChain[]>([]);
-  const [roomReadStatus, setRoomReadStatus] = useState({
-    roomId: "",
-    runsKnown: true,
-    notice: "",
-  });
+  const [snapshot, setSnapshot] = useState<TavernRoomSnapshot | null>(null);
+  const snapshotRef = useRef<TavernRoomSnapshot | null>(null);
   const [targetPersonaIds, setTargetPersonaIds] = useState<string[]>([]);
   const [generatingPersonaIds, setGeneratingPersonaIds] = useState<string[]>([]);
   const [showSetup, setShowSetup] = useState(false);
@@ -49,7 +46,6 @@ export function useTavernWorkspaceState() {
   const roomLoadVersion = useRef(0);
   const roomRefreshVersion = useRef(0);
   const recoveryVersionRef = useRef(0);
-  const activeRoomIdRef = useRef("");
   const requestedRoomIdRef = useRef("");
   const olderLoadRoomRef = useRef<string | null>(null);
   const mutationOperationRef = useRef<MutationOperation | null>(null);
@@ -59,9 +55,6 @@ export function useTavernWorkspaceState() {
   const foregroundOperationIdRef = useRef<number | null>(null);
   const runPollVersionRef = useRef(0);
   const resumeAttemptsRef = useRef(new Map<string, number>());
-  const detailRef = useRef<TavernRoomDetail | null>(null);
-  const runsRef = useRef<TavernRun[]>([]);
-  const messagesRef = useRef<TavernMessage[]>([]);
   const roomsRef = useRef<TavernRoomSummary[]>([]);
   const roomPageVersionRef = useRef(0);
   const loadingRoomCursorRef = useRef<string | null>(null);
@@ -73,12 +66,27 @@ export function useTavernWorkspaceState() {
       mountedRef.current = false;
     };
   }, []);
+  const readRoomSnapshot = useCallback(() => snapshotRef.current, []);
+  const publishRoomSnapshot = useCallback((action: TavernRoomSnapshotAction) => {
+    if (!mountedRef.current) return null;
+    const current = snapshotRef.current;
+    const next = reduceTavernRoomSnapshot(current, action);
+    if (!next || next === current) return null;
+    // Async guards and React render state advance from the same projection.
+    snapshotRef.current = next;
+    setSnapshot(next);
+    return next;
+  }, []);
+  const detail = snapshot?.detail ?? null;
+  const messages = detail?.messages ?? EMPTY_MESSAGES;
+  const runs = snapshot?.runs ?? EMPTY_RUNS;
+  const recoveryChains = snapshot?.recoveryChains ?? EMPTY_RECOVERY;
   const activeRoom = detail?.room ?? null;
   const roomIsActive = activeRoom?.status === "active";
-  const roomReadNotice =
-    roomReadStatus.roomId === activeRoom?.id ? roomReadStatus.notice : "";
-  const roomRunsUnknown =
-    roomReadStatus.roomId === activeRoom?.id && !roomReadStatus.runsKnown;
+  const roomReadNotice = snapshot
+    ? tavernReadNotice(snapshot.runsKnown, snapshot.recoveryKnown)
+    : "";
+  const roomRunsUnknown = snapshot !== null && !snapshot.runsKnown;
   const roomBusy = busyAction === "room" || busyAction === "bootstrap";
   const mutationBusy = busyAction !== null && !roomBusy;
   const runPending = hasActiveTavernRun(runs);
@@ -111,18 +119,6 @@ export function useTavernWorkspaceState() {
   );
 
   useEffect(() => {
-    detailRef.current = detail;
-  }, [detail]);
-
-  useEffect(() => {
-    runsRef.current = runs;
-  }, [runs]);
-
-  useEffect(() => {
-    messagesRef.current = messages;
-  }, [messages]);
-
-  useEffect(() => {
     roomsRef.current = rooms;
   }, [rooms]);
 
@@ -153,14 +149,11 @@ export function useTavernWorkspaceState() {
     scenes,
     setScenes,
     detail,
-    setDetail,
     messages,
-    setMessages,
     runs,
-    setRuns,
     recoveryChains,
-    setRecoveryChains,
-    setRoomReadStatus,
+    readRoomSnapshot,
+    publishRoomSnapshot,
     roomReadNotice,
     roomRunsUnknown,
     targetPersonaIds,
@@ -182,7 +175,6 @@ export function useTavernWorkspaceState() {
     roomLoadVersion,
     roomRefreshVersion,
     recoveryVersionRef,
-    activeRoomIdRef,
     requestedRoomIdRef,
     olderLoadRoomRef,
     mutationOperationRef,
@@ -192,9 +184,6 @@ export function useTavernWorkspaceState() {
     foregroundOperationIdRef,
     runPollVersionRef,
     resumeAttemptsRef,
-    detailRef,
-    runsRef,
-    messagesRef,
     roomsRef,
     roomPageVersionRef,
     loadingRoomCursorRef,

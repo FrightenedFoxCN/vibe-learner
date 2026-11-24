@@ -12,21 +12,16 @@ import { RUN_STATUS_LABELS } from "../lib/tavern-copy";
 import {
   hasActiveTavernRun,
   isTavernRoomStateAtLeast,
-  mergeTavernMessages,
   mergeTavernRoomPages,
   reconcileTavernCreationDraftPersonas,
-  reconcileTavernRuns,
   TAVERN_PAGE_SIZE,
   TAVERN_ROOM_PAGE_SIZE,
   TAVERN_ROOM_SUMMARY_LIMIT,
 } from "../lib/tavern-workspace-state";
 
 import { friendlyTavernError, recordError } from "../lib/tavern-client-errors";
-import { readTavernRoomSnapshot, tavernReadNotice } from "../lib/tavern-room-read";
-import {
-  mergeOlderTavernTranscript,
-  refreshTavernTranscript,
-} from "../lib/tavern-transcript-refresh";
+import { readTavernRoomSnapshot } from "../lib/tavern-room-read";
+import { refreshTavernTranscript } from "../lib/tavern-transcript-refresh";
 import type { TavernRoomQueryPorts } from "../lib/tavern-workspace-ports";
 import type { TavernWorkspaceState } from "./use-tavern-workspace-state";
 
@@ -44,12 +39,9 @@ export function useTavernRoomQueries(
     setPersonas,
     setScenes,
     detail,
-    setDetail,
     messages,
-    setMessages,
-    setRuns,
-    setRecoveryChains,
-    setRoomReadStatus,
+    readRoomSnapshot,
+    publishRoomSnapshot,
     setTargetPersonaIds,
     setGeneratingPersonaIds,
     setShowSetup,
@@ -63,16 +55,12 @@ export function useTavernRoomQueries(
     recoveryVersionRef,
     resumeRunRef,
     mountedRef,
-    activeRoomIdRef,
     requestedRoomIdRef,
     olderLoadRoomRef,
     mutationOperationRef,
     mutationOperationVersionRef,
     foregroundRunRef,
     foregroundOperationIdRef,
-    detailRef,
-    runsRef,
-    messagesRef,
     roomsRef,
     roomPageVersionRef,
     loadingRoomCursorRef,
@@ -102,6 +90,10 @@ export function useTavernRoomQueries(
       const loadVersion = ++roomLoadVersion.current;
       roomRefreshVersion.current += 1;
       requestedRoomIdRef.current = roomId;
+      const ownsLoad = () =>
+        mountedRef.current &&
+        loadVersion === roomLoadVersion.current &&
+        requestedRoomIdRef.current === roomId;
       recoveryVersionRef.current += 1;
       resumeRunRef.current = "";
       mutationOperationRef.current = null;
@@ -111,7 +103,6 @@ export function useTavernRoomQueries(
       olderLoadRoomRef.current = null;
       setLoadingOlder(false);
       setGeneratingPersonaIds([]);
-      setRecoveryChains([]);
       setBusyAction("room");
       setVisibleError("");
       setRawError("");
@@ -128,11 +119,7 @@ export function useTavernRoomQueries(
         });
         const { detail: nextDetail, recovery: nextRecoveryChains } = snapshot;
         const nextRuns = snapshot.runs ?? [];
-        if (loadVersion !== roomLoadVersion.current) {
-          return;
-        }
-        activeRoomIdRef.current = roomId;
-        requestedRoomIdRef.current = roomId;
+        if (!ownsLoad() || nextDetail.room.id !== roomId) return false;
         const roomDraft = readTavernRoomDraft(roomId);
         const draftRun = roomDraft.pendingTurn
           ? nextRuns.find((run) => run.idempotencyKey === roomDraft.pendingTurn?.key)
@@ -145,19 +132,15 @@ export function useTavernRoomQueries(
             .filter((id) => participantIds.has(id))
             .slice(0, 4) ?? [];
         if (draftRun) writeTavernRoomDraft(roomId, { message: "", guidance: "" });
-        const nextMessages = mergeTavernMessages([], nextDetail.messages);
-        messagesRef.current = nextMessages;
-        detailRef.current = nextDetail;
-        runsRef.current = nextRuns;
-        setDetail(nextDetail);
-        setMessages(nextMessages);
-        setRuns(nextRuns);
-        setRecoveryChains(nextRecoveryChains ?? []);
-        setRoomReadStatus({
-          roomId,
-          runsKnown: snapshot.runs !== null,
-          notice: tavernReadNotice(snapshot.runs !== null, nextRecoveryChains !== null),
-        });
+        if (
+          !publishRoomSnapshot({
+            kind: "open",
+            detail: nextDetail,
+            runs: snapshot.runs,
+            recovery: nextRecoveryChains,
+          })
+        )
+          return false;
         if (snapshot.reliabilityErrors.length)
           setRawError(snapshot.reliabilityErrors.join("；"));
         setTargetPersonaIds(
@@ -178,9 +161,7 @@ export function useTavernRoomQueries(
         rememberActiveTavernRoomId(roomId);
         return true;
       } catch (error) {
-        if (loadVersion !== roomLoadVersion.current) {
-          return false;
-        }
+        if (!ownsLoad()) return false;
         recordError(
           error,
           "无法打开这个酒馆，请稍后重试。",
@@ -188,10 +169,10 @@ export function useTavernRoomQueries(
           setRawError,
         );
         setNotice("恢复失败");
-        requestedRoomIdRef.current = activeRoomIdRef.current;
+        requestedRoomIdRef.current = readRoomSnapshot()?.detail.room.id ?? "";
         return false;
       } finally {
-        if (loadVersion === roomLoadVersion.current) {
+        if (mountedRef.current && loadVersion === roomLoadVersion.current) {
           setBusyAction(null);
         }
       }
@@ -203,11 +184,10 @@ export function useTavernRoomQueries(
       readTavernRoomDraft,
       rememberActiveTavernRoomId,
       writeTavernRoomDraft,
-      activeRoomIdRef,
-      detailRef,
+      readRoomSnapshot,
+      publishRoomSnapshot,
       foregroundOperationIdRef,
       foregroundRunRef,
-      messagesRef,
       mountedRef,
       mutationOperationRef,
       mutationOperationVersionRef,
@@ -217,17 +197,11 @@ export function useTavernRoomQueries(
       resumeRunRef,
       roomLoadVersion,
       roomRefreshVersion,
-      runsRef,
       setBusyAction,
-      setDetail,
       setGeneratingPersonaIds,
       setLoadingOlder,
-      setMessages,
       setNotice,
       setRawError,
-      setRecoveryChains,
-      setRoomReadStatus,
-      setRuns,
       setShowSetup,
       setTargetPersonaIds,
       setVisibleError,
@@ -262,59 +236,36 @@ export function useTavernRoomQueries(
         } = snapshot;
         const isCurrent = () =>
           mountedRef.current &&
-          activeRoomIdRef.current === roomId &&
+          readRoomSnapshot()?.detail.room.id === roomId &&
           requestedRoomIdRef.current === roomId &&
           refreshVersion === roomRefreshVersion.current;
         if (!isCurrent()) return;
-        const currentDetail = detailRef.current;
+        const currentDetail = readRoomSnapshot()?.detail;
         if (
           currentDetail?.room.id !== roomId ||
           !isTavernRoomStateAtLeast(nextDetail.room, currentDetail.room)
         )
           return;
-        const currentMessages = messagesRef.current;
         const transcript = await refreshTavernTranscript(
-          {
-            messages: currentMessages,
-            nextBeforeSequence: currentDetail.nextBeforeSequence,
-          },
+          currentDetail,
           nextDetail,
           (afterSequence, limit) =>
             getTavernRoom({ roomId, afterSequence, limit }, context),
         );
         if (!isCurrent()) return;
-        // Preserve a concurrent older-page read if the loaded window was retained.
-        const keepOlderPage =
-          transcript.messages[0]?.sequence === currentMessages[0]?.sequence &&
-          messagesRef.current !== currentMessages;
-        const nextMessages = keepOlderPage
-          ? mergeTavernMessages(messagesRef.current, transcript.messages)
-          : transcript.messages;
-        const refreshedDetail = {
-          ...nextDetail,
-          nextBeforeSequence: keepOlderPage
-            ? (detailRef.current?.nextBeforeSequence ?? null)
-            : transcript.nextBeforeSequence,
-        };
-        const reconciledRuns = nextRuns
-          ? reconcileTavernRuns(runsRef.current, nextRuns)
-          : runsRef.current;
-        detailRef.current = refreshedDetail;
-        runsRef.current = reconciledRuns;
-        setDetail(refreshedDetail);
-        messagesRef.current = nextMessages;
-        setMessages(nextMessages);
-        setRuns(reconciledRuns);
-        if (recoveryVersion === recoveryVersionRef.current) {
-          setRecoveryChains(nextRecoveryChains ?? []);
-          setRoomReadStatus({
-            roomId,
-            runsKnown: nextRuns !== null,
-            notice: tavernReadNotice(nextRuns !== null, nextRecoveryChains !== null),
-          });
-          if (snapshot.reliabilityErrors.length)
-            setRawError(snapshot.reliabilityErrors.join("；"));
-        }
+        const ownsRecovery = recoveryVersion === recoveryVersionRef.current;
+        const published = publishRoomSnapshot({
+          kind: "refresh",
+          detail: nextDetail,
+          initial: currentDetail,
+          transcript,
+          runs: nextRuns,
+          recovery: nextRecoveryChains,
+          ownsRecovery,
+        });
+        if (!published) return;
+        if (ownsRecovery && snapshot.reliabilityErrors.length)
+          setRawError(snapshot.reliabilityErrors.join("；"));
         if (pageVersion === roomPageVersionRef.current) {
           loadingRoomCursorRef.current = null;
           setLoadingMoreRooms(false);
@@ -331,7 +282,7 @@ export function useTavernRoomQueries(
             setRoomPageError("");
           }
         }
-        const latestRun = reconciledRuns[0];
+        const latestRun = published.runs[0];
         setNotice(
           nextDetail.room.status === "archived"
             ? "已同步归档房间"
@@ -341,10 +292,10 @@ export function useTavernRoomQueries(
                 ? `已同步 · ${RUN_STATUS_LABELS[latestRun.status]}`
                 : "酒馆已就绪",
         );
-        return { detail: nextDetail, runs: nextRuns ? reconciledRuns : [] };
+        return { detail: published.detail, runs: nextRuns ? published.runs : [] };
       } catch (error) {
         if (
-          activeRoomIdRef.current === roomId &&
+          readRoomSnapshot()?.detail.room.id === roomId &&
           requestedRoomIdRef.current === roomId &&
           refreshVersion === roomRefreshVersion.current
         ) {
@@ -364,29 +315,22 @@ export function useTavernRoomQueries(
       getTavernRunRecovery,
       listTavernRooms,
       listTavernRuns,
-      activeRoomIdRef,
-      detailRef,
+      readRoomSnapshot,
+      publishRoomSnapshot,
       loadingRoomCursorRef,
-      messagesRef,
       mountedRef,
       recoveryVersionRef,
       requestedRoomIdRef,
       roomPageVersionRef,
       roomRefreshVersion,
       roomsRef,
-      runsRef,
-      setDetail,
       setLoadingMoreRooms,
-      setMessages,
       setNextRoomCursor,
       setNotice,
       setRawError,
-      setRecoveryChains,
-      setRoomReadStatus,
       setRoomHistoryTruncated,
       setRoomPageError,
       setRooms,
-      setRuns,
       setVisibleError,
     ],
   );
@@ -632,12 +576,12 @@ export function useTavernRoomQueries(
         mountedRef.current &&
         loadVersion === roomLoadVersion.current &&
         recoveryVersion === recoveryVersionRef.current &&
-        activeRoomIdRef.current === roomId &&
+        readRoomSnapshot()?.detail.room.id === roomId &&
         requestedRoomIdRef.current === roomId;
       try {
         const nextChains = await getTavernRunRecovery(roomId, 50, context);
         if (isCurrent()) {
-          setRecoveryChains(nextChains);
+          publishRoomSnapshot({ kind: "recovery", roomId, chains: nextChains });
         }
       } catch (error) {
         if (isCurrent()) setRawError(String(error));
@@ -645,87 +589,35 @@ export function useTavernRoomQueries(
     },
     [
       getTavernRunRecovery,
-      activeRoomIdRef,
+      readRoomSnapshot,
+      publishRoomSnapshot,
       mountedRef,
       recoveryVersionRef,
       requestedRoomIdRef,
       roomLoadVersion,
       setRawError,
-      setRecoveryChains,
     ],
   );
 
   const syncTurnResult = useCallback(
     (result: TavernTurnResult) => {
       if (
-        activeRoomIdRef.current !== result.roomState.id ||
+        readRoomSnapshot()?.detail.room.id !== result.roomState.id ||
         requestedRoomIdRef.current !== result.roomState.id
       ) {
         return false;
       }
-      const currentDetail = detailRef.current;
-      if (!currentDetail || currentDetail.room.id !== result.roomState.id) return false;
-      const currentRoomState = currentDetail
-        ? {
-            id: currentDetail.room.id,
-            status: currentDetail.room.status,
-            revision: currentDetail.room.revision,
-            lastSequence: currentDetail.room.lastSequence,
-            updatedAt: currentDetail.room.updatedAt,
-          }
-        : null;
-      const currentRun = runsRef.current.find((run) => run.id === result.run.id);
-      if (
-        !isTavernRoomStateAtLeast(result.roomState, currentRoomState) ||
-        (currentRun &&
-          currentRun.status !== "pending" &&
-          currentRun.status !== result.run.status)
-      )
-        return false;
+      if (!publishRoomSnapshot({ kind: "turn", result })) return false;
       roomRefreshVersion.current += 1;
       recoveryVersionRef.current += 1;
-      const appended = [
-        ...(result.inputMessage ? [result.inputMessage] : []),
-        ...result.generatedMessages,
-      ];
-      const nextMessages = mergeTavernMessages(messagesRef.current, appended);
-      messagesRef.current = nextMessages;
-      setMessages(nextMessages);
-      const nextRuns = [
-        result.run,
-        ...runsRef.current.filter((run) => run.id !== result.run.id),
-      ];
-      const nextDetail = {
-        ...currentDetail,
-        room: {
-          ...currentDetail.room,
-          status: result.roomState.status,
-          revision: result.roomState.revision,
-          lastSequence: result.roomState.lastSequence,
-          updatedAt: result.roomState.updatedAt,
-        },
-        messageCount: Math.max(
-          currentDetail.messageCount,
-          result.roomState.lastSequence,
-        ),
-      };
-      runsRef.current = nextRuns;
-      detailRef.current = nextDetail;
-      setRuns(nextRuns);
-      setDetail(nextDetail);
       return true;
     },
     [
-      activeRoomIdRef,
-      detailRef,
-      messagesRef,
       recoveryVersionRef,
       requestedRoomIdRef,
       roomRefreshVersion,
-      runsRef,
-      setDetail,
-      setMessages,
-      setRuns,
+      readRoomSnapshot,
+      publishRoomSnapshot,
     ],
   );
 
@@ -749,7 +641,7 @@ export function useTavernRoomQueries(
     const ownsPage = () =>
       mountedRef.current &&
       loadVersion === roomLoadVersion.current &&
-      activeRoomIdRef.current === roomId &&
+      readRoomSnapshot()?.detail.room.id === roomId &&
       requestedRoomIdRef.current === roomId &&
       olderLoadRoomRef.current === roomId;
     const requestedBefore = detail.nextBeforeSequence;
@@ -765,31 +657,23 @@ export function useTavernRoomQueries(
         limit: TAVERN_PAGE_SIZE,
       });
       if (!ownsPage()) return false;
-      const currentDetail = detailRef.current;
-      if (!currentDetail || currentDetail.room.id !== roomId) return false;
-      const transcript = mergeOlderTavernTranscript(
-        {
-          messages: messagesRef.current,
-          nextBeforeSequence: currentDetail.nextBeforeSequence,
-        },
-        requestedBefore,
-        previous,
-      );
-      if (!transcript) return false;
-      const nextMessages = transcript.messages;
-      const nextDetail = {
-        ...currentDetail,
-        nextBeforeSequence: transcript.nextBeforeSequence,
-      };
-      messagesRef.current = nextMessages;
-      detailRef.current = nextDetail;
-      setMessages(nextMessages);
-      setDetail(nextDetail);
+      if (
+        !publishRoomSnapshot({
+          kind: "older",
+          roomId,
+          requestedBefore,
+          detail: previous,
+        })
+      )
+        return false;
       return previous.messages.some(
         (message) => message.sequence < firstLoadedSequence,
       );
     } catch (error) {
-      if (ownsPage() && detailRef.current?.nextBeforeSequence === requestedBefore) {
+      if (
+        ownsPage() &&
+        readRoomSnapshot()?.detail?.nextBeforeSequence === requestedBefore
+      ) {
         recordError(error, "更早的消息暂时无法载入。", setVisibleError, setRawError);
       }
       return false;
@@ -805,18 +689,15 @@ export function useTavernRoomQueries(
     messages,
     runPending,
     getTavernRoom,
+    readRoomSnapshot,
+    publishRoomSnapshot,
     mutationOperationRef,
     roomLoadVersion,
     olderLoadRoomRef,
     setLoadingOlder,
     setVisibleError,
     mountedRef,
-    activeRoomIdRef,
     requestedRoomIdRef,
-    messagesRef,
-    detailRef,
-    setMessages,
-    setDetail,
     setRawError,
   ]);
 
