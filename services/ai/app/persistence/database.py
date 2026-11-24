@@ -66,6 +66,7 @@ class Database:
         if not self.url.startswith("sqlite"):
             return
 
+        self._repair_sqlite_study_sessions()
         self._repair_sqlite_tavern_run_foreign_key()
         with self.engine.begin() as connection:
             table_names = {
@@ -197,105 +198,138 @@ class Database:
                         "revision INTEGER NOT NULL DEFAULT 0"
                     )
 
-            # Recover partially applied migrations that left a duplicate legacy table behind.
-            if "study_sessions_legacy" in table_names and "study_sessions" not in table_names:
-                connection.exec_driver_sql("ALTER TABLE study_sessions_legacy RENAME TO study_sessions")
-                table_names.remove("study_sessions_legacy")
-                table_names.add("study_sessions")
-
-            if "study_sessions_legacy" in table_names and "study_sessions" in table_names:
-                current_columns = self._sqlite_column_names(connection, "study_sessions")
-                legacy_columns = self._sqlite_column_names(connection, "study_sessions_legacy")
-                if "study_unit_id" in current_columns and "section_id" in legacy_columns:
-                    connection.exec_driver_sql(
-                        """
-                        INSERT OR IGNORE INTO study_sessions (
-                            id,
-                            document_id,
-                            persona_id,
-                            plan_id,
-                            study_unit_id,
-                            status,
-                            created_at,
-                            updated_at,
-                            payload
-                        )
-                        SELECT
-                            id,
-                            document_id,
-                            persona_id,
-                            plan_id,
-                            section_id,
-                            status,
-                            created_at,
-                            updated_at,
-                            payload
-                        FROM study_sessions_legacy
-                        """
-                    )
-                    connection.exec_driver_sql("DROP TABLE study_sessions_legacy")
-                    table_names.remove("study_sessions_legacy")
-
-            if "study_sessions" not in table_names:
-                return
-
-            columns = self._sqlite_column_names(connection, "study_sessions")
-            if "study_unit_id" not in columns and "section_id" in columns:
-                self._rebuild_legacy_study_sessions_table(connection, source_table="study_sessions")
-                columns = self._sqlite_column_names(connection, "study_sessions")
-            if "revision" not in columns:
-                connection.exec_driver_sql(
-                    "ALTER TABLE study_sessions ADD COLUMN "
-                    "revision INTEGER NOT NULL DEFAULT 0"
-                )
-            if "last_turn_sequence" not in columns:
-                connection.exec_driver_sql(
-                    "ALTER TABLE study_sessions ADD COLUMN "
-                    "last_turn_sequence INTEGER NOT NULL DEFAULT 0"
-                )
-
-    def _repair_sqlite_tavern_run_foreign_key(self) -> None:
+    @contextmanager
+    def _sqlite_rebuild_transaction(self):
         with self.engine.connect() as connection:
-            table_names = {
-                str(row[0])
-                for row in connection.exec_driver_sql(
-                    "SELECT name FROM sqlite_master WHERE type = 'table'"
-                )
-            }
-            if "tavern_runs" not in table_names:
-                return
-            columns = self._sqlite_column_names(connection, "tavern_runs")
             foreign_keys = connection.exec_driver_sql(
-                "PRAGMA foreign_key_list(tavern_runs)"
-            ).all()
-            has_parent_foreign_key = any(
-                str(row[2]) == "tavern_runs"
-                and str(row[3]) == "parent_run_id"
-                and str(row[4]) == "id"
-                for row in foreign_keys
-            )
-            if "parent_run_id" in columns and has_parent_foreign_key:
-                return
-
-            connection.commit()
-            connection.exec_driver_sql("PRAGMA foreign_keys=OFF")
+                "PRAGMA foreign_keys"
+            ).scalar_one()
+            legacy_alter = connection.exec_driver_sql(
+                "PRAGMA legacy_alter_table"
+            ).scalar_one()
             connection.commit()
             try:
+                # Do not cascade on DROP, or retarget existing children on ALTER RENAME.
+                connection.exec_driver_sql("PRAGMA foreign_keys=OFF")
+                connection.exec_driver_sql("PRAGMA legacy_alter_table=ON")
+                connection.commit()
                 with connection.begin():
-                    self._rebuild_legacy_tavern_runs_table(
-                        connection,
-                        has_parent_column="parent_run_id" in columns,
-                        has_step_table="tavern_run_steps" in table_names,
-                    )
+                    # sqlite3's legacy mode does not start a real transaction for DDL.
+                    connection.exec_driver_sql("BEGIN IMMEDIATE")
+                    yield connection
             finally:
                 if connection.in_transaction():
                     connection.rollback()
-                connection.exec_driver_sql("PRAGMA foreign_keys=ON")
+                connection.exec_driver_sql(f"PRAGMA legacy_alter_table={legacy_alter}")
+                connection.exec_driver_sql(f"PRAGMA foreign_keys={foreign_keys}")
                 connection.commit()
 
-            violations = connection.exec_driver_sql("PRAGMA foreign_key_check").all()
-            if violations:
-                raise RuntimeError("sqlite_foreign_key_repair_failed")
+    def _repair_sqlite_study_sessions(self) -> None:
+        table = "study_sessions"
+        aliases = ("study_sessions_legacy_migration", "study_sessions_legacy")
+        with self._sqlite_rebuild_transaction() as connection:
+            tables = self._sqlite_table_names(connection)
+            columns = self._sqlite_column_names(connection, table)
+            sources = [alias for alias in aliases if alias in tables]
+            if not columns and not sources:
+                return
+            if columns and "study_unit_id" not in columns and "section_id" in columns:
+                sources.append(self._sqlite_stage_table(connection, table, aliases[0]))
+                columns = set()
+            if not columns:
+                self._sqlite_create_rebuild_target(connection, table, sources)
+            else:
+                for name in ("revision", "last_turn_sequence"):
+                    if name not in columns:
+                        connection.exec_driver_sql(
+                            f"ALTER TABLE {table} ADD COLUMN {name} INTEGER NOT NULL DEFAULT 0"
+                        )
+            for source in sources:
+                self._sqlite_copy_rebuild_rows(
+                    connection,
+                    table,
+                    source,
+                    {
+                        "study_unit_id": "section_id",
+                        "revision": "0",
+                        "last_turn_sequence": "0",
+                    },
+                )
+                if source in tables:
+                    self._sqlite_restore_legacy_references(connection, table, source)
+                connection.exec_driver_sql(f"DROP TABLE {source}")
+            if sources:
+                self._sqlite_check_rebuild_foreign_keys(connection, {table})
+
+    def _repair_sqlite_tavern_run_foreign_key(self) -> None:
+        runs = "tavern_runs"
+        steps = "tavern_run_steps"
+        legacy_runs = "tavern_runs_legacy_migration"
+        legacy_steps = "tavern_run_steps_legacy_migration"
+        with self._sqlite_rebuild_transaction() as connection:
+            tables = self._sqlite_table_names(connection)
+            interrupted = legacy_runs in tables or legacy_steps in tables
+            if runs not in tables and not interrupted:
+                return
+            if interrupted and runs not in tables and legacy_runs not in tables:
+                raise RuntimeError("sqlite_tavern_rebuild_missing_runs")
+            if not interrupted and any(
+                row[2] == runs and row[3] == "parent_run_id" and row[4] == "id"
+                for row in connection.exec_driver_sql(
+                    "PRAGMA foreign_key_list(tavern_runs)"
+                )
+            ):
+                return
+
+            run_sources = [legacy_runs] if legacy_runs in tables else []
+            step_sources = [legacy_steps] if legacy_steps in tables else []
+            if steps in tables:
+                step_sources.append(
+                    self._sqlite_stage_table(connection, steps, legacy_steps)
+                )
+            if runs in tables:
+                run_sources.append(
+                    self._sqlite_stage_table(connection, runs, legacy_runs)
+                )
+            self._sqlite_create_rebuild_target(connection, runs, run_sources)
+            for source in run_sources:
+                parent = "NULL"
+                if not interrupted and "parent_run_id" in self._sqlite_column_names(
+                    connection, source
+                ):
+                    # Keep the historical compatibility rule for the pre-FK schema,
+                    # but do not silently rewrite any row during residue recovery.
+                    parent = (
+                        f"CASE WHEN EXISTS (SELECT 1 FROM {source} AS p "
+                        "WHERE p.id = source.parent_run_id) THEN source.parent_run_id END"
+                    )
+                self._sqlite_copy_rebuild_rows(
+                    connection,
+                    runs,
+                    source,
+                    {"harness_operation_id": "NULL", "parent_run_id": "NULL"},
+                    overrides={"parent_run_id": parent} if not interrupted else None,
+                )
+            if step_sources:
+                self._sqlite_create_rebuild_target(connection, steps, step_sources)
+                for source in step_sources:
+                    self._sqlite_copy_rebuild_rows(
+                        connection,
+                        steps,
+                        source,
+                        {
+                            "lease_owner": "''",
+                            "lease_expires_at": "''",
+                            "claim_count": "0",
+                        },
+                    )
+            if legacy_runs in tables:
+                self._sqlite_restore_legacy_references(connection, runs, legacy_runs)
+            if legacy_steps in tables:
+                self._sqlite_restore_legacy_references(connection, steps, legacy_steps)
+            for source in step_sources + run_sources:
+                connection.exec_driver_sql(f"DROP TABLE {source}")
+            self._sqlite_check_rebuild_foreign_keys(connection, {runs, steps})
 
     def _repair_sqlite_harness_operation_binding_route(self) -> None:
         """Preserve existing admissions while widening the closed route catalog."""
@@ -421,136 +455,110 @@ class Database:
             )
 
     @staticmethod
-    def _drop_tavern_run_indexes(connection) -> None:
-        for index_name in (
-            "ix_tavern_runs_room_id",
-            "ix_tavern_runs_status",
-            "uq_tavern_runs_parent_run_id",
-        ):
-            connection.exec_driver_sql(f"DROP INDEX IF EXISTS {index_name}")
-
-    @staticmethod
-    def _drop_tavern_run_step_indexes(connection) -> None:
-        for index_name in (
-            "ix_tavern_run_steps_persona_id",
-            "ix_tavern_run_steps_status",
-        ):
-            connection.exec_driver_sql(f"DROP INDEX IF EXISTS {index_name}")
-
-    def _rebuild_legacy_tavern_runs_table(
-        self,
-        connection,
-        *,
-        has_parent_column: bool,
-        has_step_table: bool,
-    ) -> None:
-        legacy_runs = "tavern_runs_legacy_migration"
-        legacy_steps = "tavern_run_steps_legacy_migration"
-        if has_step_table:
+    def _sqlite_table_names(connection) -> set[str]:
+        return set(
             connection.exec_driver_sql(
-                f"ALTER TABLE tavern_run_steps RENAME TO {legacy_steps}"
-            )
-            self._drop_tavern_run_step_indexes(connection)
-        connection.exec_driver_sql(f"ALTER TABLE tavern_runs RENAME TO {legacy_runs}")
-        self._drop_tavern_run_indexes(connection)
-        Base.metadata.tables["tavern_runs"].create(connection, checkfirst=True)
-
-        parent_expression = (
-            f"CASE WHEN source.parent_run_id IS NULL OR EXISTS ("
-            f"SELECT 1 FROM {legacy_runs} AS parent WHERE parent.id = source.parent_run_id"
-            ") THEN source.parent_run_id ELSE NULL END"
-            if has_parent_column
-            else "NULL"
+                "SELECT name FROM sqlite_master WHERE type = 'table'"
+            ).scalars()
         )
-        connection.exec_driver_sql(
-            f"""
-            INSERT INTO tavern_runs (
-                id,
-                room_id,
-                idempotency_key,
-                parent_run_id,
-                status,
-                mode,
-                input_message_id,
-                expected_room_revision,
-                error_code,
-                created_at,
-                completed_at,
-                payload
-            )
-            SELECT
-                source.id,
-                source.room_id,
-                source.idempotency_key,
-                {parent_expression},
-                source.status,
-                source.mode,
-                source.input_message_id,
-                source.expected_room_revision,
-                source.error_code,
-                source.created_at,
-                source.completed_at,
-                source.payload
-            FROM {legacy_runs} AS source
-            """
-        )
-
-        if has_step_table:
-            Base.metadata.tables["tavern_run_steps"].create(connection, checkfirst=True)
-            connection.exec_driver_sql(
-                f"""
-                INSERT INTO tavern_run_steps (
-                    run_id,
-                    step_index,
-                    persona_id,
-                    participant_prompt_hash,
-                    status,
-                    message_id,
-                    reply_to_message_id,
-                    error_code,
-                    started_at,
-                    completed_at,
-                    lease_owner,
-                    lease_expires_at,
-                    claim_count,
-                    payload
-                )
-                SELECT
-                    run_id,
-                    step_index,
-                    persona_id,
-                    participant_prompt_hash,
-                    status,
-                    message_id,
-                    reply_to_message_id,
-                    error_code,
-                    started_at,
-                    completed_at,
-                    '',
-                    '',
-                    0,
-                    payload
-                FROM {legacy_steps}
-                """
-            )
-            connection.exec_driver_sql(f"DROP TABLE {legacy_steps}")
-        connection.exec_driver_sql(f"DROP TABLE {legacy_runs}")
 
     @staticmethod
     def _sqlite_column_names(connection, table_name: str) -> set[str]:
-        return {
-            str(row[1])
-            for row in connection.exec_driver_sql(f"PRAGMA table_info({table_name})")
-        }
+        return set(
+            connection.exec_driver_sql(
+                "SELECT name FROM pragma_table_info(?)", (table_name,)
+            ).scalars()
+        )
 
     @staticmethod
-    def _drop_study_session_indexes(connection) -> None:
-        for index_name in (
-            "ix_study_sessions_document_id",
-            "ix_study_sessions_persona_id",
-            "ix_study_sessions_plan_id",
+    def _sqlite_stage_table(connection, table: str, preferred: str) -> str:
+        staging = (
+            preferred
+            if not Database._sqlite_column_names(connection, preferred)
+            else f"{table}_rebuild_source"
+        )
+        connection.exec_driver_sql(f"ALTER TABLE {table} RENAME TO {staging}")
+        return staging
+
+    @staticmethod
+    def _sqlite_create_rebuild_target(
+        connection, table: str, sources: list[str]
+    ) -> None:
+        target = Base.metadata.tables[table]
+        for index in target.indexes:
+            owner = connection.exec_driver_sql(
+                "SELECT tbl_name FROM sqlite_master WHERE type='index' AND name=?",
+                (index.name,),
+            ).scalar_one_or_none()
+            if owner in sources:
+                quoted = connection.dialect.identifier_preparer.quote(index.name)
+                connection.exec_driver_sql(f"DROP INDEX {quoted}")
+        target.create(connection, checkfirst=False)
+
+    @staticmethod
+    def _sqlite_copy_rebuild_rows(
+        connection,
+        table: str,
+        source: str,
+        fallbacks: dict[str, str],
+        *,
+        overrides: dict[str, str] | None = None,
+    ) -> None:
+        columns = Base.metadata.tables[table].columns.keys()
+        source_columns = Database._sqlite_column_names(connection, source)
+        projection = [
+            (overrides or {}).get(
+                name,
+                f"source.{name}"
+                if name in source_columns
+                else fallbacks.get(name, f"source.{name}"),
+            )
+            for name in columns
+        ]
+        # Reject every PK/UNIQUE/CHECK/NOT NULL conflict, keeping both original tables.
+        connection.exec_driver_sql(
+            f"INSERT OR ABORT INTO {table} ({', '.join(columns)}) "
+            f"SELECT {', '.join(projection)} FROM {source} AS source"
+        )
+
+    def _sqlite_restore_legacy_references(
+        self, connection, table: str, source: str
+    ) -> None:
+        # The old ALTER could have rewritten existing inbound FKs. Temporarily
+        # park the replacement and let SQLite rebind the old name to the final name.
+        if not any(
+            connection.exec_driver_sql(
+                'SELECT 1 FROM pragma_foreign_key_list(?) WHERE "table"=? LIMIT 1',
+                (name, source),
+            ).first()
+            for name in self._sqlite_table_names(connection)
+            if name != source
         ):
-            connection.exec_driver_sql(f"DROP INDEX IF EXISTS {index_name}")
+            return
+        parked = f"{table}_rebuild_target"
+        connection.exec_driver_sql(f"ALTER TABLE {table} RENAME TO {parked}")
+        connection.exec_driver_sql("PRAGMA legacy_alter_table=OFF")
+        connection.exec_driver_sql(f"ALTER TABLE {source} RENAME TO {table}")
+        connection.exec_driver_sql("PRAGMA legacy_alter_table=ON")
+        connection.exec_driver_sql(f"ALTER TABLE {table} RENAME TO {source}")
+        connection.exec_driver_sql(f"ALTER TABLE {parked} RENAME TO {table}")
+
+    def _sqlite_check_rebuild_foreign_keys(self, connection, rebuilt: set[str]) -> None:
+        for table in self._sqlite_table_names(connection):
+            parents = set(
+                connection.exec_driver_sql(
+                    'SELECT "table" FROM pragma_foreign_key_list(?)', (table,)
+                ).scalars()
+            )
+            if table not in rebuilt and not (parents & rebuilt):
+                continue
+            if any(
+                table in rebuilt or row[2] in rebuilt
+                for row in connection.exec_driver_sql(
+                    "SELECT * FROM pragma_foreign_key_check(?)", (table,)
+                )
+            ):
+                raise RuntimeError("sqlite_foreign_key_repair_failed")
 
     @staticmethod
     def _ensure_sqlite_study_session_indexes(connection) -> None:
@@ -903,44 +911,6 @@ class Database:
             END
             """
         )
-
-    def _rebuild_legacy_study_sessions_table(self, connection, *, source_table: str) -> None:
-        legacy_table = "study_sessions_legacy_migration"
-        connection.exec_driver_sql(f"DROP TABLE IF EXISTS {legacy_table}")
-        connection.exec_driver_sql(f"ALTER TABLE {source_table} RENAME TO {legacy_table}")
-        self._drop_study_session_indexes(connection)
-        Base.metadata.tables["study_sessions"].create(connection, checkfirst=True)
-        connection.exec_driver_sql(
-            f"""
-            INSERT INTO study_sessions (
-                id,
-                document_id,
-                persona_id,
-                plan_id,
-                study_unit_id,
-                status,
-                revision,
-                last_turn_sequence,
-                created_at,
-                updated_at,
-                payload
-            )
-            SELECT
-                id,
-                document_id,
-                persona_id,
-                plan_id,
-                section_id,
-                status,
-                0,
-                0,
-                created_at,
-                updated_at,
-                payload
-            FROM {legacy_table}
-            """
-        )
-        connection.exec_driver_sql(f"DROP TABLE {legacy_table}")
 
 
 def _enable_sqlite_foreign_keys(dbapi_connection, _connection_record) -> None:
