@@ -20,6 +20,7 @@
 - **Session 作用域唯一性**：`StudySession.study_unit_id` 始终指向父排期项绑定的 `study_unit.id`，绝不指向 `schedule_chapter.id`。在 `/study` 切换嵌套 `Schedule Chapter` 只改变本地预览定位与页锚，切换父 `Schedule Item` 才切换或创建对应作用域的 Session。
 - **`DocumentRecord.sections` 含义**：解析完成后，`DocumentRecord.sections` 是由可规划 Study Units 投影出的精简列表；原始解析章节树始终保存在 `DocumentDebugRecord.sections` 中。
 - **`section_id` 与 `study_unit_id` 分工**：原始 `section_id` 仅用于解析章节、切块与教材引用；会话、记忆与进度一律使用 `study_unit_id`。
+- **教材学习单元改名**：先以请求的修订号锁定教材，再按稳定顺序 CAS 更新关联计划。教材、调试投影、计划标题投影及计划历史在同一事务提交；教材或计划修订冲突返回 409，不做部分更新。
 
 ## 2. Study Chat、交互题与笔记
 

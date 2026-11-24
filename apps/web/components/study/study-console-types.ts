@@ -10,6 +10,7 @@ import type {
   StudySessionRecord,
 } from "@vibe-learner/shared";
 import type { ReactNode } from "react";
+import type { StudyQuestionAttemptCardState } from "../../lib/study-question-attempt";
 import type { StudyChatOperationStatus } from "../../lib/study-chat-operation-decode";
 import type { StudyConsolePageCache } from "../../lib/learning-workspace-page-cache";
 
@@ -32,7 +33,10 @@ export interface StudyConsoleProps {
   onSubmitQuestionAttempt: (input: {
     turnId: string;
     submittedAnswer: string;
-  }) => boolean | Promise<boolean>;
+  }) => void | Promise<void>;
+  getQuestionAttemptState: (
+    turnId: string,
+  ) => StudyQuestionAttemptCardState | undefined;
   onContinueAfterQuestion?: (turnId: string) => boolean | Promise<boolean>;
   onChangeSchedule: (scheduleId: string) => void;
   onOpenCitation?: (citation: Citation) => void;

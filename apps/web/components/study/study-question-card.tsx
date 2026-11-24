@@ -2,6 +2,10 @@ import type { Dispatch, SetStateAction } from "react";
 import { useEffect, useId, useRef, useState } from "react";
 import type { InteractiveQuestion } from "@vibe-learner/shared";
 import { RichTextMessage } from "../ui/rich-text-message";
+import {
+  studyQuestionAttemptDisplayAnswer,
+  type StudyQuestionAttemptCardState,
+} from "../../lib/study-question-attempt";
 
 export interface StudyQuestionCardProps {
   question: InteractiveQuestion;
@@ -10,16 +14,14 @@ export interface StudyQuestionCardProps {
   blankAnswers: Record<string, string>;
   setSelectedChoices: Dispatch<SetStateAction<Record<string, string>>>;
   setBlankAnswers: Dispatch<SetStateAction<Record<string, string>>>;
-  attemptState?: "submitting" | "failed";
-  onAttemptStateChange: (state?: "submitting" | "failed") => void;
-  attemptInFlight: Set<string>;
+  attemptState?: StudyQuestionAttemptCardState;
   expandedExplanation: Record<string, boolean>;
   setExpandedExplanation: Dispatch<SetStateAction<Record<string, boolean>>>;
   onAsk: (message: string, attachments: File[]) => Promise<boolean> | boolean;
   onSubmitQuestionAttempt: (input: {
     turnId: string;
     submittedAnswer: string;
-  }) => boolean | Promise<boolean>;
+  }) => void | Promise<void>;
   onContinueAfterQuestion?: (turnId: string) => boolean | Promise<boolean>;
   disabled: boolean;
 }
@@ -32,8 +34,6 @@ export function StudyQuestionCard({
   setSelectedChoices,
   setBlankAnswers,
   attemptState,
-  onAttemptStateChange,
-  attemptInFlight,
   expandedExplanation,
   setExpandedExplanation,
   onAsk,
@@ -47,22 +47,48 @@ export function StudyQuestionCard({
   const restoreFocus = useRef(false);
   const [showContinuationConfirm, setShowContinuationConfirm] = useState(false);
   const isLocked = question.result !== null;
-  const isSubmitting = attemptState === "submitting";
+  const phase = isLocked ? undefined : attemptState?.phase;
+  const isSubmitting = phase === "submitting" || phase === "reading_back";
+  const isAwaitingRead = phase === "retry_read";
+  const isAwaitingConfirmation = phase === "retry_submit";
+  const isAnswerLocked =
+    isLocked || isSubmitting || isAwaitingRead || isAwaitingConfirmation;
   const isChoice = question.questionType === "multiple_choice";
-  const value = isChoice
-    ? (selectedChoices[turnKey] ?? question.result?.submittedAnswer ?? "")
-    : (blankAnswers[turnKey] ?? question.result?.submittedAnswer ?? "");
+  const draft = (isChoice ? selectedChoices[turnKey] : blankAnswers[turnKey]) ?? "";
+  const value = studyQuestionAttemptDisplayAnswer(question, attemptState, draft);
   const explanationVisible = isLocked && Boolean(expandedExplanation[turnKey]);
   const feedbackText = question.result
     ? `${question.result.feedbackText} · 已记录`
-    : attemptState === "failed"
+    : phase === "failed"
       ? "答案未记录，请检查后重新提交。"
-      : isSubmitting
+      : phase === "submitting"
         ? "正在保存到学习记录…"
-        : "";
+        : phase === "reading_back"
+          ? "答案已记录，正在读取结果…"
+          : isAwaitingRead
+            ? "答案已记录，但暂时无法读取结果。无需重新提交。"
+            : isAwaitingConfirmation
+              ? "暂时无法确认答案是否已记录。请重试确认原答案。"
+              : "";
+  const submitLabel =
+    phase === "submitting"
+      ? "正在记录答案…"
+      : phase === "reading_back"
+        ? "正在读取结果…"
+        : isAwaitingRead
+          ? "重试读取结果"
+          : isAwaitingConfirmation
+            ? "重试确认原答案"
+            : phase === "failed"
+              ? "重新提交答案"
+              : "提交答案";
 
   useEffect(() => {
-    if (!restoreFocus.current || (!isLocked && attemptState !== "failed")) return;
+    if (
+      !restoreFocus.current ||
+      (!isLocked && phase !== "failed" && !isAwaitingRead && !isAwaitingConfirmation)
+    )
+      return;
     restoreFocus.current = false;
     // Only return focus for this submission while the learner remains here.
     // A late result from another page or after moving to another control cannot steal it.
@@ -73,24 +99,12 @@ export function StudyQuestionCard({
     ) {
       feedback.current?.focus({ preventScroll: true });
     }
-  }, [isLocked, attemptState]);
+  }, [isLocked, phase, isAwaitingRead, isAwaitingConfirmation]);
 
-  const submitAttempt = async () => {
-    if (disabled || isLocked || !value.trim() || attemptInFlight.has(turnKey)) return;
+  const submitAttempt = () => {
+    if (disabled || isLocked || isSubmitting || !value.trim()) return;
     restoreFocus.current = true;
-    attemptInFlight.add(turnKey);
-    onAttemptStateChange("submitting");
-    try {
-      const committed = await onSubmitQuestionAttempt({
-        turnId: turnKey,
-        submittedAnswer: value,
-      });
-      onAttemptStateChange(committed ? undefined : "failed");
-    } catch {
-      onAttemptStateChange("failed");
-    } finally {
-      attemptInFlight.delete(turnKey);
-    }
+    void onSubmitQuestionAttempt({ turnId: turnKey, submittedAnswer: value });
   };
 
   return (
@@ -124,14 +138,14 @@ export function StudyQuestionCard({
                 key={option.key}
                 className="study-console-choice-button"
                 data-selected={value === option.key || undefined}
-                data-locked={isLocked || undefined}
+                data-locked={isAnswerLocked || undefined}
               >
                 <input
                   type="radio"
                   name={`${id}-choice`}
                   value={option.key}
                   checked={value === option.key}
-                  disabled={disabled || isLocked || isSubmitting}
+                  disabled={disabled || isAnswerLocked}
                   onChange={() =>
                     setSelectedChoices((current) => ({
                       ...current,
@@ -155,8 +169,8 @@ export function StudyQuestionCard({
               type="text"
               value={value}
               className="study-console-blank-input"
-              data-locked={isLocked || undefined}
-              aria-describedby={`${id}-prompt${attemptState === "failed" ? ` ${id}-feedback` : ""}`}
+              data-locked={isAnswerLocked || undefined}
+              aria-describedby={`${id}-prompt${phase === "failed" ? ` ${id}-feedback` : ""}`}
               onChange={(event) =>
                 setBlankAnswers((current) => ({
                   ...current,
@@ -169,7 +183,7 @@ export function StudyQuestionCard({
                   void submitAttempt();
                 }
               }}
-              readOnly={disabled || isLocked || isSubmitting}
+              readOnly={disabled || isAnswerLocked}
               placeholder="输入你的答案"
             />
           </label>
@@ -181,11 +195,7 @@ export function StudyQuestionCard({
             disabled={!value.trim() || disabled || isLocked || isSubmitting}
             onClick={() => void submitAttempt()}
           >
-            {isSubmitting
-              ? "正在记录答案…"
-              : attemptState === "failed"
-                ? "重新提交答案"
-                : "提交答案"}
+            {submitLabel}
           </button>
           {isLocked && (
             <button
@@ -266,12 +276,12 @@ export function StudyQuestionCard({
         id={`${id}-feedback`}
         ref={feedback}
         tabIndex={-1}
-        role={attemptState === "failed" && !question.result ? "alert" : "status"}
+        role={phase === "failed" && !question.result ? "alert" : "status"}
         aria-atomic="true"
         className={
           question.result?.isCorrect
             ? "study-console-feedback-ok"
-            : attemptState === "failed" || question.result
+            : phase === "failed" || question.result
               ? "study-console-feedback-bad"
               : "study-console-question-pending"
         }

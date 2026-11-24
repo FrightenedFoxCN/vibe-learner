@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import type { StudyNoteReference } from "@vibe-learner/shared";
 import { orderStudySessionTurns } from "../../lib/study-session-decode";
 import { RichTextMessage } from "../ui/rich-text-message";
@@ -21,6 +21,7 @@ type StudyMessageFlowProps = Pick<
   | "onOpenNoteReference"
   | "onAsk"
   | "onSubmitQuestionAttempt"
+  | "getQuestionAttemptState"
   | "onContinueAfterQuestion"
   | "disabled"
   | "isPending"
@@ -43,6 +44,7 @@ export function StudyMessageFlow({
   onOpenNoteReference,
   onAsk,
   onSubmitQuestionAttempt,
+  getQuestionAttemptState,
   onContinueAfterQuestion,
   disabled,
   isPending,
@@ -55,10 +57,6 @@ export function StudyMessageFlow({
   setBlankAnswers,
   setExpandedExplanation,
 }: StudyMessageFlowProps) {
-  const [questionAttemptStates, setQuestionAttemptStates] = useState<
-    Record<string, "submitting" | "failed">
-  >({});
-  const questionAttemptInFlightRef = useRef(new Set<string>());
   const transcriptRef = useRef<HTMLDivElement | null>(null);
 
   const sortedTurns = orderStudySessionTurns(turns);
@@ -118,16 +116,7 @@ export function StudyMessageFlow({
                           blankAnswers,
                           setSelectedChoices,
                           setBlankAnswers,
-                          attemptState: questionAttemptStates[turn.id],
-                          onAttemptStateChange: (state) => {
-                            setQuestionAttemptStates((current) => {
-                              if (state) return { ...current, [turn.id]: state };
-                              const next = { ...current };
-                              delete next[turn.id];
-                              return next;
-                            });
-                          },
-                          attemptInFlight: questionAttemptInFlightRef.current,
+                          attemptState: getQuestionAttemptState(turn.id),
                           expandedExplanation,
                           setExpandedExplanation,
                           onAsk,

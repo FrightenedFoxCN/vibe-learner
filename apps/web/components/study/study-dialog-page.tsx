@@ -56,6 +56,7 @@ export function StudyDialogPage() {
     refreshStudySessionAfterRejectedAdmission,
     handleSwitchSection,
     handleSubmitQuestionAttempt,
+    getQuestionAttemptState,
     continueAfterInteractiveQuestion,
     handleResolvePlanConfirmation,
     interruptDialogue,
@@ -531,6 +532,7 @@ export function StudyDialogPage() {
             }
             outputLanguageScope={studySession?.id ?? activePlan?.id ?? ""}
             onSubmitQuestionAttempt={handleSubmitQuestionAttempt}
+            getQuestionAttemptState={getQuestionAttemptState}
             onContinueAfterQuestion={continueAfterInteractiveQuestion}
             onChangeSchedule={handleScheduleChange}
             onOpenCitation={openMaterialCitation}

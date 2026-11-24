@@ -4,6 +4,7 @@ export {
   getStudyChatOperation,
   getStudySession,
   listStudySessions,
+  readStudyQuestionAttemptSession,
   sendStudyMessage,
   submitStudyQuestionAttempt,
   updateStudySessionStudyUnit,

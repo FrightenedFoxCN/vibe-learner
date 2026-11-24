@@ -22,6 +22,7 @@ import {
 } from "../study-chat-operation-decode";
 import {
   decodeStudyQuestionAttemptResponse,
+  type StudyQuestionAttemptRequest,
   type StudyQuestionAttemptResponse,
 } from "../study-question-attempt";
 
@@ -34,11 +35,6 @@ export interface StudyChatExchangeResponse extends StudyChatResponse {
 
 export type StudyChatOperationResponse =
   StudyChatOperationReceipt<StudyChatExchangeResponse>;
-
-export interface StudyQuestionAttemptCommitResult {
-  attempt: StudyQuestionAttemptResponse;
-  session: StudySessionRecord;
-}
 
 export async function createStudySession(
   input: {
@@ -130,9 +126,17 @@ export async function getStudySession(
   context?: DiagnosticContext,
   signal?: AbortSignal,
 ): Promise<StudySessionRecord> {
+  return readStudySession(sessionId, context, signal ? { signal } : undefined);
+}
+
+async function readStudySession(
+  sessionId: string,
+  context?: DiagnosticContext,
+  init?: RequestInit,
+): Promise<StudySessionRecord> {
   const diagnosticResponse = await request(
     `${AI_BASE_URL()}/study-sessions/${sessionId}`,
-    signal ? { signal } : undefined,
+    init,
     context,
   );
   const payload = await readJson<unknown>(diagnosticResponse);
@@ -223,19 +227,24 @@ export async function getStudyChatOperation(input: {
 }
 
 export async function submitStudyQuestionAttempt(
-  input: {
-    sessionId: string;
-    turnId: string;
-    expectedSessionRevision: number;
-    clientAttemptId: string;
-    submittedAnswer: string;
-  },
+  input: StudyQuestionAttemptRequest,
   context: DiagnosticContext = diagnosticContext(createDiagnosticId()),
-): Promise<StudyQuestionAttemptCommitResult> {
+): Promise<StudyQuestionAttemptResponse> {
+  return withStudyRequestDeadline(STUDY_SEND_WAIT_MS, (signal) =>
+    submitStudyQuestionAttemptRequest(input, context, signal),
+  );
+}
+
+async function submitStudyQuestionAttemptRequest(
+  input: StudyQuestionAttemptRequest,
+  context: DiagnosticContext,
+  signal: AbortSignal,
+): Promise<StudyQuestionAttemptResponse> {
   const diagnosticResponse = await request(
     `${AI_BASE_URL()}/study-sessions/${input.sessionId}/attempt`,
     {
       method: "POST",
+      signal,
       headers: {
         "Content-Type": "application/json",
       },
@@ -249,16 +258,18 @@ export async function submitStudyQuestionAttempt(
     context,
   );
   const payload = await readJson<unknown>(diagnosticResponse);
-  const attempt = diagnosticDecode(diagnosticResponse, () =>
-    decodeStudyQuestionAttemptResponse(payload, {
-      sessionId: input.sessionId,
-      turnId: input.turnId,
-      clientAttemptId: input.clientAttemptId,
-      expectedSessionRevision: input.expectedSessionRevision,
-    }),
+  return diagnosticDecode(diagnosticResponse, () =>
+    decodeStudyQuestionAttemptResponse(payload, input),
   );
-  const session = await getStudySession(input.sessionId, context);
-  return { attempt, session };
+}
+
+export async function readStudyQuestionAttemptSession(
+  sessionId: string,
+  context?: DiagnosticContext,
+): Promise<StudySessionRecord> {
+  return withStudyRequestDeadline(STUDY_QUERY_WAIT_MS, (signal) =>
+    readStudySession(sessionId, context, { cache: "no-store", signal }),
+  );
 }
 
 async function sendStudyMessageRequest(

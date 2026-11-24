@@ -21,6 +21,7 @@ export function StudyConsole({
   outputLanguage = "auto",
   outputLanguageScope = "",
   onSubmitQuestionAttempt,
+  getQuestionAttemptState,
   onContinueAfterQuestion,
   onChangeSchedule,
   onOpenCitation,
@@ -110,6 +111,7 @@ export function StudyConsole({
           onOpenNoteReference={onOpenNoteReference}
           onAsk={onAsk}
           onSubmitQuestionAttempt={onSubmitQuestionAttempt}
+          getQuestionAttemptState={getQuestionAttemptState}
           onContinueAfterQuestion={onContinueAfterQuestion}
           disabled={disabled}
           isPending={isPending}

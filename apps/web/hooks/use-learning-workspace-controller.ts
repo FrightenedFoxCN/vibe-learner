@@ -10,6 +10,7 @@ import {
 } from "../lib/learning-workspace-model";
 import { useStudyContinuation } from "./use-study-continuation";
 import { useStudyCommitActions } from "./use-study-commit-actions";
+import { studyQuestionAttemptKey } from "../lib/study-question-attempt";
 import { useStudyMessages } from "./use-study-messages";
 import { useStudySessionNavigation } from "./use-study-session-navigation";
 import { useStudyChatRecovery } from "./use-study-chat-recovery";
@@ -399,6 +400,7 @@ export function useLearningWorkspaceController({
 
   const {
     handleSubmitQuestionAttempt,
+    questionAttemptStates,
     handleResolvePlanConfirmation,
     getQuestionAttemptDiagnosticFlowId,
     isApplying,
@@ -534,7 +536,19 @@ export function useLearningWorkspaceController({
     queryStudyChatOperation,
     retryFailedAsk,
     refreshStudySessionAfterRejectedAdmission,
-    handleSubmitQuestionAttempt,
+    handleSubmitQuestionAttempt: (input: {
+      turnId: string;
+      submittedAnswer: string;
+    }) => {
+      const sessionId = state.studySession?.id;
+      if (sessionId) return handleSubmitQuestionAttempt({ ...input, sessionId });
+    },
+    getQuestionAttemptState: (turnId: string) =>
+      state.studySession
+        ? questionAttemptStates.get(
+            studyQuestionAttemptKey(state.studySession.id, turnId),
+          )
+        : undefined,
     continueAfterInteractiveQuestion,
     handleResolvePlanConfirmation,
     interruptDialogue,

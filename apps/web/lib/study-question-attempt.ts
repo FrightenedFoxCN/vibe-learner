@@ -5,6 +5,14 @@ const attemptShape = new StrictResponseDecoder((field) => {
   throw new Error(`study_question_attempt_response_${field ? `${field}_` : ""}invalid`);
 });
 
+export interface StudyQuestionAttemptRequest {
+  sessionId: string;
+  turnId: string;
+  expectedSessionRevision: number;
+  clientAttemptId: string;
+  submittedAnswer: string;
+}
+
 export interface StudyQuestionAttemptResponse {
   schemaVersion: "study-question-attempt-response-v1";
   attemptId: string;
@@ -18,6 +26,55 @@ export interface StudyQuestionAttemptResponse {
   beforeRevision: number;
   committedRevision: number;
   committedAt: string;
+}
+
+export type StudyQuestionAttemptCardState =
+  | { phase: "failed" }
+  | {
+      phase: "submitting" | "reading_back" | "retry_submit" | "retry_read";
+      submittedAnswer: string;
+    };
+
+export interface StudyQuestionAttemptOperation {
+  before: StudySessionRecord;
+  request: StudyQuestionAttemptRequest;
+  receipt?: StudyQuestionAttemptResponse;
+}
+
+export function studyQuestionAttemptKey(sessionId: string, turnId: string): string {
+  return JSON.stringify([sessionId, turnId]);
+}
+
+export function studyQuestionAttemptDisplayAnswer(
+  question: NonNullable<StudySessionRecord["turns"][number]["interactiveQuestion"]>,
+  state: StudyQuestionAttemptCardState | undefined,
+  draft: string,
+): string {
+  if (question.result) return question.result.submittedAnswer;
+  return state && "submittedAnswer" in state ? state.submittedAnswer : draft;
+}
+
+export async function advanceStudyQuestionAttemptOperation(
+  operation: StudyQuestionAttemptOperation,
+  port: {
+    submit: (
+      request: StudyQuestionAttemptRequest,
+    ) => Promise<StudyQuestionAttemptResponse>;
+    readSession: (sessionId: string) => Promise<StudySessionRecord>;
+  },
+  onReadBackStart: () => void,
+): Promise<StudyQuestionAttemptReadBackInput> {
+  // Save the versioned POST receipt before starting GET. Retrying readback
+  // never resubmits, even if the session revision or local draft changed.
+  operation.receipt ??= await port.submit(operation.request);
+  onReadBackStart();
+  return {
+    before: operation.before,
+    after: await port.readSession(operation.request.sessionId),
+    turnId: operation.request.turnId,
+    submittedAnswer: operation.request.submittedAnswer,
+    attempt: operation.receipt,
+  };
 }
 
 export interface StudyQuestionAttemptReadBackInput {
@@ -37,12 +94,7 @@ export type StudyQuestionAttemptApplyDecision =
 
 export function decodeStudyQuestionAttemptResponse(
   raw: unknown,
-  expected: {
-    sessionId: string;
-    turnId: string;
-    clientAttemptId: string;
-    expectedSessionRevision: number;
-  },
+  expected: StudyQuestionAttemptRequest,
 ): StudyQuestionAttemptResponse {
   const value = attemptShape.record(raw, "");
   const allowed = new Set([
@@ -97,6 +149,7 @@ export function decodeStudyQuestionAttemptResponse(
     response.turnId !== expected.turnId ||
     response.clientAttemptId !== expected.clientAttemptId ||
     response.beforeRevision !== expected.expectedSessionRevision ||
+    response.submittedAnswer !== expected.submittedAnswer.trim() ||
     response.committedRevision !== response.beforeRevision + 1
   ) {
     throw new Error("study_question_attempt_response_binding_mismatch");

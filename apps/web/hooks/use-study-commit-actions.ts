@@ -3,11 +3,19 @@
 import { useEffect, useRef, useState } from "react";
 import type { LearningPlan, StudySessionRecord } from "@vibe-learner/shared";
 import {
+  readStudyQuestionAttemptSession,
   submitStudyQuestionAttempt,
   resolveStudyPlanConfirmation,
 } from "../lib/data/study-sessions";
 import { StudyAsyncViewFence } from "../lib/async-result-fence";
-import { decideStudyQuestionAttemptApply } from "../lib/study-question-attempt";
+import {
+  decideStudyQuestionAttemptApply,
+  advanceStudyQuestionAttemptOperation,
+  studyQuestionAttemptKey,
+  type StudyQuestionAttemptCardState,
+  type StudyQuestionAttemptOperation,
+} from "../lib/study-question-attempt";
+import { isApiHttpError } from "../lib/http-error";
 import { resolveStudySessionErrorNotice } from "../lib/study-session-decode";
 import { createDiagnosticId, diagnosticContext } from "../lib/diagnostics";
 import { logWorkspaceError } from "../lib/learning-workspace-telemetry";
@@ -25,12 +33,30 @@ interface StudyCommitOptions {
 }
 export interface StudyCommitPort {
   submitStudyQuestionAttempt: typeof submitStudyQuestionAttempt;
+  readStudyQuestionAttemptSession: typeof readStudyQuestionAttemptSession;
   resolveStudyPlanConfirmation: typeof resolveStudyPlanConfirmation;
 }
 const defaultPort: StudyCommitPort = {
   submitStudyQuestionAttempt,
+  readStudyQuestionAttemptSession,
   resolveStudyPlanConfirmation,
 };
+function isRejectedQuestionAttempt(error: unknown): boolean {
+  if (!isApiHttpError(error)) return false;
+  // A transport error or an unrecognized server response does not prove the
+  // POST failed. Only an explicit, pre-write rejection unlocks the draft.
+  return (
+    error.status === 422 ||
+    ((error.status === 404 || error.status === 409) &&
+      [
+        "session_not_found",
+        "study_question_attempt_turn_not_found",
+        "study_question_attempt_grading_unavailable",
+        "study_question_attempt_revision_conflict",
+      ].includes(error.code || error.message))
+  );
+}
+
 export function useStudyCommitActions(
   options: StudyCommitOptions,
   port: StudyCommitPort = defaultPort,
@@ -41,6 +67,17 @@ export function useStudyCommitActions(
   const mounted = useRef(false);
   const pending = useRef(new Set<string>());
   const attemptFlowIds = useRef(new Map<string, string>());
+  const attempts = useRef(
+    new Map<
+      string,
+      StudyQuestionAttemptOperation & {
+        context: ReturnType<typeof diagnosticContext>;
+      }
+    >(),
+  );
+  const [questionAttemptStates, setQuestionAttemptStates] = useState<
+    ReadonlyMap<string, StudyQuestionAttemptCardState>
+  >(() => new Map());
   const [pendingCount, setPendingCount] = useState(0);
   useEffect(() => {
     mounted.current = true;
@@ -60,84 +97,112 @@ export function useStudyCommitActions(
   };
 
   const handleSubmitQuestionAttempt = async (input: {
+    sessionId: string;
     turnId: string;
     submittedAnswer: string;
   }) => {
     const currentSession = view.session;
-    if (!mounted.current || !currentSession) {
-      return false;
-    }
+    if (!mounted.current || currentSession?.id !== input.sessionId) return;
+    const question = currentSession.turns.find(
+      (turn) => turn.id === input.turnId,
+    )?.interactiveQuestion;
+    if (!question || question.result) return;
     const targetViewRevision = view.viewRevision;
+    const inTargetView = () =>
+      mounted.current &&
+      view.viewRevision === targetViewRevision &&
+      view.session?.id === currentSession.id;
+    const key = studyQuestionAttemptKey(currentSession.id, input.turnId);
     const attemptKey = `attempt:${currentSession.id}:${input.turnId}`;
-    if (!begin(attemptKey)) return false;
+    const setAttemptState = (state?: StudyQuestionAttemptCardState) => {
+      if (!mounted.current) return;
+      setQuestionAttemptStates((previous) => {
+        const next = new Map(previous);
+        if (state) next.set(key, state);
+        else next.delete(key);
+        return next;
+      });
+    };
+    const existing = attempts.current.get(key);
+    const submittedAnswer =
+      existing?.request.submittedAnswer ?? input.submittedAnswer.trim();
+    if (!submittedAnswer || !begin(attemptKey)) return;
     try {
-      const attemptIdentity = latest.current.automaticStudyRequest(
-        attemptKey,
-        "attempt",
-      );
-      const context = diagnosticContext(createDiagnosticId());
-      const committed = await port.submitStudyQuestionAttempt(
-        {
+      const operation = existing ?? {
+        before: currentSession,
+        request: {
           sessionId: currentSession.id,
           turnId: input.turnId,
           expectedSessionRevision: currentSession.revision,
-          clientAttemptId: attemptIdentity.clientRequestId,
-          submittedAnswer: input.submittedAnswer,
+          clientAttemptId: latest.current.automaticStudyRequest(attemptKey, "attempt")
+            .clientRequestId,
+          submittedAnswer,
         },
-        context,
+        context: diagnosticContext(createDiagnosticId()),
+      };
+      attempts.current.set(key, operation);
+      if (!operation.receipt) setAttemptState({ phase: "submitting", submittedAnswer });
+      const readBack = await advanceStudyQuestionAttemptOperation(
+        operation,
+        {
+          submit: (request) =>
+            port.submitStudyQuestionAttempt(request, operation.context),
+          readSession: (sessionId) =>
+            port.readStudyQuestionAttemptSession(sessionId, operation.context),
+        },
+        () => setAttemptState({ phase: "reading_back", submittedAnswer }),
       );
-      const nextSession = committed.session;
-      const latestSession =
-        mounted.current && view.viewRevision === targetViewRevision
-          ? view.session
-          : null;
       const applyDecision = decideStudyQuestionAttemptApply({
-        before: currentSession,
-        after: nextSession,
-        current: latestSession,
-        turnId: input.turnId,
-        submittedAnswer: input.submittedAnswer,
-        attempt: committed.attempt,
+        ...readBack,
+        current: inTargetView() ? view.session : null,
       });
       if (applyDecision === "reject") {
         throw new Error("study_question_attempt_read_back_mismatch");
       }
-      if (applyDecision === "apply_returned") {
-        if (mounted.current) latest.current.onSession(nextSession);
-      }
-      const authoritativeSession =
-        applyDecision === "apply_returned"
-          ? nextSession
-          : applyDecision === "keep_current"
-            ? latestSession
-            : null;
-      if (mounted.current && authoritativeSession) {
+      if (operation.context.flow_id) {
         // Content-free, bounded correlation for a later explicit explanation.
-        // Recovery/admission identity remains owned by the Study operation store.
-        if (context.flow_id) {
-          const key = `${currentSession.id}:${input.turnId}`;
-          attemptFlowIds.current.delete(key);
-          attemptFlowIds.current.set(key, context.flow_id);
-          if (attemptFlowIds.current.size > 128) {
-            const oldest = attemptFlowIds.current.keys().next().value;
-            if (oldest !== undefined) attemptFlowIds.current.delete(oldest);
-          }
+        attemptFlowIds.current.delete(key);
+        attemptFlowIds.current.set(key, operation.context.flow_id);
+        if (attemptFlowIds.current.size > 128) {
+          const oldest = attemptFlowIds.current.keys().next().value;
+          if (oldest !== undefined) attemptFlowIds.current.delete(oldest);
         }
-        latest.current.onNotice("答案已记录。需要进一步讲解时，可选择“生成答题讲解”。");
       }
+      if (applyDecision === "committed_in_inactive_session") {
+        // Preserve the receipt for a stale card if the learner returns later.
+        setAttemptState({ phase: "retry_read", submittedAnswer });
+        return;
+      }
+      if (applyDecision === "apply_returned") latest.current.onSession(readBack.after);
+      latest.current.onNotice("答案已记录。需要进一步讲解时，可选择“生成答题讲解”。");
+      attempts.current.delete(key);
       latest.current.forgetAutomaticStudyRequest(attemptKey);
-      return true;
+      setAttemptState();
     } catch (error) {
-      if (!mounted.current) return false;
-      latest.current.onNotice(
-        resolveStudySessionErrorNotice(
-          error,
-          `记录答案失败：${String(error)}`,
-          "update",
-        ),
-      );
+      if (attempts.current.get(key)?.receipt) {
+        setAttemptState({ phase: "retry_read", submittedAnswer });
+        if (inTargetView())
+          latest.current.onNotice(
+            "答案已记录，但暂时无法读取学习记录。请重试读取结果，无需重新提交。",
+          );
+      } else if (isRejectedQuestionAttempt(error)) {
+        attempts.current.delete(key);
+        latest.current.forgetAutomaticStudyRequest(attemptKey);
+        setAttemptState({ phase: "failed" });
+        if (inTargetView())
+          latest.current.onNotice(
+            resolveStudySessionErrorNotice(
+              error,
+              `记录答案失败：${String(error)}`,
+              "update",
+            ),
+          );
+      } else {
+        setAttemptState({ phase: "retry_submit", submittedAnswer });
+        if (inTargetView())
+          latest.current.onNotice("暂时无法确认答案是否已记录。请重试确认原答案。");
+      }
       logWorkspaceError("workflow:study_attempt:error", error);
-      return false;
     } finally {
       finish(attemptKey);
     }
@@ -201,10 +266,11 @@ export function useStudyCommitActions(
   };
 
   const getQuestionAttemptDiagnosticFlowId = (sessionId: string, turnId: string) =>
-    attemptFlowIds.current.get(`${sessionId}:${turnId}`) ?? null;
+    attemptFlowIds.current.get(studyQuestionAttemptKey(sessionId, turnId)) ?? null;
 
   return {
     handleSubmitQuestionAttempt,
+    questionAttemptStates,
     handleResolvePlanConfirmation,
     getQuestionAttemptDiagnosticFlowId,
     isApplying: pendingCount > 0,
