@@ -13,6 +13,7 @@ import {
   normalizeSceneTreeNodeForProfile,
   removeLayerTree,
   canDeleteLayerSafely,
+  collectLayerIds,
   parseSceneImportPayload,
   updateLayerTree,
   findLayerById,
@@ -524,16 +525,6 @@ export function useSceneWorkspaceController() {
     }));
   }
 
-  function removeLayer(layerId: string) {
-    updateSceneLayersState((current) => {
-      if (!canDeleteLayerSafely(current, layerId)) {
-        return current;
-      }
-      return removeLayerTree(current, layerId);
-    });
-    setCollapsedLayerIds((current) => current.filter((id) => id !== layerId));
-  }
-
   async function requestDeleteLayer(layerId: string, trigger: HTMLElement) {
     const layer = findLayerById(sceneLayers, layerId);
     if (!layer || !canDeleteLayerSafely(sceneLayers, layerId)) return;
@@ -558,7 +549,9 @@ export function useSceneWorkspaceController() {
       return;
     }
     deletedTrigger.current = trigger;
-    removeLayer(layerId);
+    const removedIds = new Set(collectLayerIds([layer]));
+    updateSceneLayersState((layers) => removeLayerTree(layers, layerId));
+    setCollapsedLayerIds((ids) => ids.filter((id) => !removedIds.has(id)));
   }
 
   async function saveLibraryScene(mode: "upsert" | "create" = "upsert") {
