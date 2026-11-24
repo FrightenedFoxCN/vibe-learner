@@ -57,6 +57,12 @@ export class SettingsSaveCoordinator<T> {
     // Unrelated renders must not restart the debounce.
     if (this.pending?.key === key) return;
     this.clearTimer();
+    // A newer edit reverted to the in-flight payload. Its response, even if
+    // normalized by the server, covers this intent without a second write.
+    if (key === this.runningKey) {
+      this.pending = null;
+      return;
+    }
     if (key === this.blockedKey) {
       this.pending = null;
       if (this.runningKey === null) this.port.status("error", "");
