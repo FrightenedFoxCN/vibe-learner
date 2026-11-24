@@ -839,6 +839,7 @@
     :where(.tavern-page) .tavern-header {
       padding: 15px;
       display: grid;
+      grid-template-columns: minmax(0, 1fr);
     }
 
     :where(.tavern-page) .tavern-header-actions,
