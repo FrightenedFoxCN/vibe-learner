@@ -16,6 +16,37 @@ export interface WorkspaceSnapshot {
   plans: LearningPlan[];
 }
 
+export interface RevisionReadbackTarget {
+  kind: "plan" | "document";
+  id: string;
+  revision: number;
+}
+
+export function requireRevisionReadback(
+  current: readonly RevisionReadbackTarget[],
+  target: RevisionReadbackTarget,
+): readonly RevisionReadbackTarget[] {
+  const matches = (item: RevisionReadbackTarget) =>
+    item.kind === target.kind && item.id === target.id;
+  if (current.some((item) => matches(item) && item.revision >= target.revision))
+    return current;
+  return [...current.filter((item) => !matches(item)), target];
+}
+
+export function isRevisionReadbackPending(
+  targets: readonly RevisionReadbackTarget[],
+  plan?: Pick<LearningPlan, "id" | "revision" | "documentId"> | null,
+  document?: Pick<DocumentRecord, "id" | "revision"> | null,
+): boolean {
+  if (!plan) return false;
+  return targets.some((target) =>
+    target.kind === "plan"
+      ? target.id === plan.id && plan.revision < target.revision
+      : target.id === plan.documentId &&
+        (document?.id !== target.id || document.revision < target.revision),
+  );
+}
+
 export interface PlanSelection {
   selectedPlanId: string;
   planHistory: LearningPlan[];

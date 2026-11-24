@@ -16,7 +16,14 @@ import { useStudyChatRecovery } from "./use-study-chat-recovery";
 
 import { usePlanMutations } from "./use-plan-mutations";
 import { usePlanGeneration } from "./use-plan-generation";
-import { useEffect, useEffectEvent, useMemo, useReducer, useRef } from "react";
+import {
+  useEffect,
+  useEffectEvent,
+  useMemo,
+  useReducer,
+  useRef,
+  useState,
+} from "react";
 import type {
   LearningPlan,
   PersonaProfile,
@@ -35,6 +42,9 @@ import {
   findLearningPlan,
 } from "../lib/plan-panel-data";
 import {
+  isRevisionReadbackPending,
+  requireRevisionReadback,
+  type RevisionReadbackTarget,
   resolvePlanSelection,
   resolveSnapshotPersonaId,
   type PlanSelectionIntent,
@@ -111,6 +121,14 @@ export function useLearningWorkspaceController({
     state.personas[0];
   const activePlan = findLearningPlan(state.planHistory, state.selectedPlanId);
   const activeDocument = findDocumentForPlan(activePlan, state.documents);
+  const [revisionReadbacks, setRevisionReadbacks] = useState<
+    readonly RevisionReadbackTarget[]
+  >([]);
+  const revisionReadbackPending = isRevisionReadbackPending(
+    revisionReadbacks,
+    activePlan,
+    activeDocument,
+  );
   const activePersonaId =
     state.studySession?.personaId || activePlan?.personaId || state.selectedPersonaId;
   const activePersona =
@@ -520,11 +538,15 @@ export function useLearningWorkspaceController({
     continueAfterInteractiveQuestion,
     handleResolvePlanConfirmation,
     interruptDialogue,
-    refreshPlanSnapshot: () =>
-      syncWorkspaceSnapshot({
+    revisionReadbackPending,
+    refreshPlanSnapshot: (target?: RevisionReadbackTarget) => {
+      if (target)
+        setRevisionReadbacks((current) => requireRevisionReadback(current, target));
+      return syncWorkspaceSnapshot({
         includePersonas: false,
         preferredPlanId: state.selectedPlanId,
-        successNotice: SNAPSHOT_REFRESHED_NOTICE,
-      }),
+        successNotice: target ? undefined : SNAPSHOT_REFRESHED_NOTICE,
+      });
+    },
   };
 }

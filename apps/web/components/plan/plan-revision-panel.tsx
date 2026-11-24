@@ -1,5 +1,7 @@
 "use client";
 
+import type { RevisionReadbackTarget } from "../../lib/learning-workspace-state";
+
 import styles from "./plan-revision.module.css";
 
 import { useEffect, useRef, useState } from "react";
@@ -28,9 +30,11 @@ const copy: Record<PlanRevision["status"], string> = {
 export function PlanRevisionPanel({
   plan,
   onRefresh,
+  readbackPending = false,
 }: {
   plan: LearningPlan;
-  onRefresh: () => Promise<unknown>;
+  onRefresh: (target?: RevisionReadbackTarget) => Promise<unknown>;
+  readbackPending?: boolean;
 }) {
   const recovery = () => planRevisionRecovery(plan.id, localStorage, sessionStorage);
   const [instruction, setInstruction] = useState("");
@@ -55,7 +59,17 @@ export function PlanRevisionPanel({
     setOutcomeUnknown(false);
     setMissingRecord(false);
     setNotice(copy[value.status]);
-    if (value.status === "accepted") await refresh.current();
+    if (
+      value.status === "accepted" &&
+      value.result &&
+      value.result.revision > plan.revision
+    ) {
+      await refresh.current({
+        kind: "plan",
+        id: value.result.id,
+        revision: value.result.revision,
+      });
+    }
   }
   async function query(id = requestId) {
     if (!id || inFlight.current) return;
@@ -153,7 +167,7 @@ export function PlanRevisionPanel({
     void query(id);
   }
   async function generate(rollbackRevision?: number) {
-    if (inFlight.current || unresolved) return;
+    if (inFlight.current || unresolved || readbackPending) return;
     const id = crypto.randomUUID();
     // Retain identity before issuing a POST; an ambiguous response is query-only.
     try {
@@ -228,7 +242,13 @@ export function PlanRevisionPanel({
     }
   }
   async function decide(decision: "accept" | "reject") {
-    if (inFlight.current || outcomeUnknown || record?.status !== "ready") return;
+    if (
+      inFlight.current ||
+      readbackPending ||
+      outcomeUnknown ||
+      record?.status !== "ready"
+    )
+      return;
     inFlight.current = true;
     setBusy(true);
     try {
@@ -299,7 +319,7 @@ export function PlanRevisionPanel({
           <button
             type="button"
             className={styles.primary}
-            disabled={busy || unresolved || !instruction.trim()}
+            disabled={busy || readbackPending || unresolved || !instruction.trim()}
             onClick={() => void generate()}
           >
             生成修订预览
@@ -325,7 +345,7 @@ export function PlanRevisionPanel({
           <button
             type="button"
             className={styles.secondary}
-            disabled={busy || unresolved || rollback === ""}
+            disabled={busy || readbackPending || unresolved || rollback === ""}
             onClick={() => void generate(Number(rollback))}
           >
             预览回滚
@@ -425,7 +445,12 @@ export function PlanRevisionPanel({
             <button
               type="button"
               className={styles.primary}
-              disabled={busy || outcomeUnknown || plan.revision !== record.baseRevision}
+              disabled={
+                busy ||
+                readbackPending ||
+                outcomeUnknown ||
+                plan.revision !== record.baseRevision
+              }
               onClick={() => void decide("accept")}
             >
               接受修订
@@ -433,7 +458,7 @@ export function PlanRevisionPanel({
             <button
               type="button"
               className={styles.secondary}
-              disabled={busy || outcomeUnknown}
+              disabled={busy || readbackPending || outcomeUnknown}
               onClick={() => void decide("reject")}
             >
               拒绝修订

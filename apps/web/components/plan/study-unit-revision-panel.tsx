@@ -1,5 +1,7 @@
 "use client";
 
+import type { RevisionReadbackTarget } from "../../lib/learning-workspace-state";
+
 import styles from "./plan-revision.module.css";
 
 import { useEffect, useRef, useState } from "react";
@@ -43,11 +45,13 @@ export function StudyUnitRevisionPanel({
   plan,
   document,
   onRefresh,
+  readbackPending = false,
   port = defaultPort,
 }: {
   plan: LearningPlan;
   document: DocumentRecord | null;
-  onRefresh: () => Promise<unknown>;
+  onRefresh: (target?: RevisionReadbackTarget) => Promise<unknown>;
+  readbackPending?: boolean;
   port?: typeof defaultPort;
 }) {
   const [record, setRecord] = useState<StudyUnitRevision | null>(null);
@@ -93,7 +97,11 @@ export function StudyUnitRevisionPanel({
   }, [plan.id, plan.documentId, port]);
 
   async function run(decision?: "accept" | "reject") {
-    if (flight.current || (decision && (unknown || record?.status !== "ready"))) return;
+    if (
+      flight.current ||
+      (decision && (readbackPending || unknown || record?.status !== "ready"))
+    )
+      return;
     const epoch = lifetime.current;
     flight.current = true;
     setBusy(true);
@@ -110,13 +118,12 @@ export function StudyUnitRevisionPanel({
       setRecord(value);
       setUnknown(false);
       setNotice("");
-      if (value.status === "accepted") {
-        try {
-          await refresh.current();
-        } catch {
-          if (epoch === lifetime.current)
-            setNotice("教材修订已保存，页面刷新失败。请刷新教材以查看最新版本。");
-        }
+      if (value.status === "accepted" && value.result) {
+        await refresh.current({
+          kind: "document",
+          id: value.result.id,
+          revision: value.result.revision,
+        });
       }
     } catch {
       if (epoch === lifetime.current) {
@@ -207,7 +214,7 @@ export function StudyUnitRevisionPanel({
             <button
               type="button"
               className={styles.primary}
-              disabled={busy || unknown || stale}
+              disabled={busy || readbackPending || unknown || stale}
               onClick={() => void run("accept")}
             >
               确认教材修订
@@ -215,7 +222,7 @@ export function StudyUnitRevisionPanel({
             <button
               type="button"
               className={styles.secondary}
-              disabled={busy || unknown}
+              disabled={busy || readbackPending || unknown}
               onClick={() => void run("reject")}
             >
               拒绝教材修订

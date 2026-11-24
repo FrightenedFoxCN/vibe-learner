@@ -11,6 +11,8 @@ import {
   learningWorkspaceReducer,
 } from "../lib/learning-workspace-reducer.ts";
 import {
+  isRevisionReadbackPending,
+  requireRevisionReadback,
   resolvePlanSelection,
   type PlanSelectionIntent,
 } from "../lib/learning-workspace-state.ts";
@@ -55,19 +57,73 @@ test("a pre-write snapshot cannot resurrect a deleted plan or hide its replaceme
   assert.equal(pending.length, 2);
   const readAfterWrite = loader.loadOnFocus(observer);
   pending[0]([first, second]);
-  await readBeforeWrite;
+  assert.equal((await readBeforeWrite).status, "superseded");
   assert.deepEqual(
     render().planHistory.map((item) => item.id),
     [third.id, second.id],
   );
   assert.equal(finishes, 0);
   pending[1]([third, second]);
-  await readAfterWrite;
+  assert.equal((await readAfterWrite).status, "loaded");
   assert.deepEqual(
     render().planHistory.map((item) => item.id),
     [third.id, second.id],
   );
   assert.equal(finishes, 1);
+});
+
+test("a committed revision remains locked after failed or older readback", async () => {
+  const active = { id: "plan", documentId: "doc", revision: 4 };
+  const doc = { id: "doc", revision: 2 };
+  const targets = requireRevisionReadback(
+    requireRevisionReadback([], { kind: "plan", id: "plan", revision: 5 }),
+    { kind: "document", id: "doc", revision: 3 },
+  );
+  assert.equal(
+    requireRevisionReadback(targets, { kind: "plan", id: "plan", revision: 4 }),
+    targets,
+  );
+  const loader = new WorkspaceSnapshotLoader({
+    listDocuments: async () => {
+      throw new Error("temporary read failure");
+    },
+    listLearningPlans: async () => [],
+    listPersonas: async () => [],
+  });
+  let failure = false;
+  const result = await loader.load(false, {
+    started() {},
+    loaded() {
+      assert.fail("failed read must not publish");
+    },
+    failed() {
+      failure = true;
+    },
+    finished() {},
+  });
+  assert.equal(result.status, "failed");
+  assert.equal(failure, true);
+  assert.equal(isRevisionReadbackPending(targets, active, doc), true);
+  assert.equal(
+    isRevisionReadbackPending(targets, { ...active, revision: 5 }, doc),
+    true,
+  );
+  assert.equal(
+    isRevisionReadbackPending(
+      targets,
+      { ...active, revision: 5 },
+      { ...doc, revision: 3 },
+    ),
+    false,
+  );
+  assert.equal(
+    isRevisionReadbackPending(
+      targets,
+      { ...active, id: "other", documentId: "other-doc" },
+      doc,
+    ),
+    false,
+  );
 });
 
 function fixture() {

@@ -11,6 +11,11 @@ export interface WorkspaceSnapshotSources {
   listPersonas: () => Promise<PersonaProfile[]>;
 }
 
+export type WorkspaceSnapshotRead =
+  | { status: "loaded"; snapshot: WorkspaceSnapshot }
+  | { status: "failed" }
+  | { status: "superseded" };
+
 export interface WorkspaceSnapshotObserver {
   started: () => void;
   loaded: (snapshot: WorkspaceSnapshot) => void;
@@ -29,7 +34,7 @@ export class WorkspaceSnapshotLoader {
     revision: number;
     includesPersonas: boolean;
     observer: WorkspaceSnapshotObserver;
-    completion: Promise<void>;
+    completion: Promise<WorkspaceSnapshotRead>;
   } | null = null;
 
   private readonly sources: WorkspaceSnapshotSources;
@@ -69,13 +74,16 @@ export class WorkspaceSnapshotLoader {
 
   // Focus signals do not require a new snapshot while an owned read is already
   // underway. Explicit refresh still calls load() and fences older projections.
-  loadOnFocus(observer: WorkspaceSnapshotObserver): Promise<void> {
-    if (!this.active) return Promise.resolve();
+  loadOnFocus(observer: WorkspaceSnapshotObserver): Promise<WorkspaceSnapshotRead> {
+    if (!this.active) return Promise.resolve({ status: "superseded" });
     return this.pending?.completion ?? this.load(false, observer);
   }
 
-  load(includePersonas: boolean, observer: WorkspaceSnapshotObserver): Promise<void> {
-    if (!this.active) return Promise.resolve();
+  load(
+    includePersonas: boolean,
+    observer: WorkspaceSnapshotObserver,
+  ): Promise<WorkspaceSnapshotRead> {
+    if (!this.active) return Promise.resolve({ status: "superseded" });
     const revision = ++this.revision;
     const needsPersonas = includePersonas || !this.personasLoaded;
     const personaVersion = this.personaVersion;
@@ -97,7 +105,7 @@ export class WorkspaceSnapshotLoader {
     needsPersonas: boolean,
     personaVersion: number,
     observer: WorkspaceSnapshotObserver,
-  ): Promise<void> {
+  ): Promise<WorkspaceSnapshotRead> {
     const current = () => this.active && revision === this.revision;
     try {
       const [documents, plans, personas] = await Promise.all([
@@ -105,17 +113,21 @@ export class WorkspaceSnapshotLoader {
         this.sources.listLearningPlans(),
         needsPersonas ? this.sources.listPersonas() : Promise.resolve(undefined),
       ]);
-      if (!current()) return;
-      observer.loaded({
+      if (!current()) return { status: "superseded" };
+      const snapshot = {
         documents,
         plans,
         ...(personas === undefined || personaVersion !== this.personaVersion
           ? {}
           : { personas }),
-      });
+      };
+      observer.loaded(snapshot);
       if (needsPersonas) this.personasLoaded = true;
+      return { status: "loaded", snapshot };
     } catch (error) {
-      if (current()) observer.failed(error);
+      if (!current()) return { status: "superseded" };
+      observer.failed(error);
+      return { status: "failed" };
     } finally {
       if (current()) observer.finished();
     }

@@ -59,6 +59,7 @@ export function LearningWorkspace() {
     answerPlanQuestion,
     removePlan,
     refreshPlanSnapshot,
+    revisionReadbackPending,
     triggerSessionPrelude,
     getPageCache,
     setPageCache,
@@ -91,7 +92,7 @@ export function LearningWorkspace() {
     page: number;
     scheduleIds: string[];
   }) => {
-    if (!activePlan || !input.studyUnitId) {
+    if (!activePlan || !input.studyUnitId || revisionReadbackPending) {
       return;
     }
     if (input.scheduleIds.length) {
@@ -181,6 +182,18 @@ export function LearningWorkspace() {
               })
             }
           />
+          {revisionReadbackPending && (
+            <div className={styles.notice} role="status" aria-live="polite">
+              <p>修订已提交，当前页面尚未读到新版本。请先重试读回再继续编辑。</p>
+              <button
+                type="button"
+                disabled={isSnapshotRefreshing}
+                onClick={() => void refreshPlanSnapshot()}
+              >
+                {isSnapshotRefreshing ? "正在读取新版本…" : "重试读取新版本"}
+              </button>
+            </div>
+          )}
           <PlanOverview
             plan={activePlan}
             document={activeDocument}
@@ -194,7 +207,7 @@ export function LearningWorkspace() {
             sceneProfile={
               activePlan?.sceneProfile ?? studySession?.sceneProfile ?? null
             }
-            isBusy={isBusy}
+            isBusy={isBusy || revisionReadbackPending}
             onRenamePlan={renamePlanTitle}
             onUpdatePlanProgress={updatePlanProgress}
             onAnswerPlanningQuestion={answerPlanQuestion}
@@ -209,6 +222,7 @@ export function LearningWorkspace() {
               key={activePlan.id}
               plan={activePlan}
               onRefresh={refreshPlanSnapshot}
+              readbackPending={revisionReadbackPending}
             />
           )}
           {activePlan && (
@@ -217,6 +231,7 @@ export function LearningWorkspace() {
               plan={activePlan}
               document={activeDocument}
               onRefresh={refreshPlanSnapshot}
+              readbackPending={revisionReadbackPending}
             />
           )}
           <PlanHistory
