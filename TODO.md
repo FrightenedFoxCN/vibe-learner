@@ -106,7 +106,7 @@
 - [x] **P1-UI-12 修复聊天富文本 `white-space: pre-wrap` 污染与 KaTeX 渲染隔离**
   - 在 `apps/web/components/ui/rich-text-message.module.css` 将 `.root` 重置为 `white-space: normal` 并隔离 `.katex` 内部断词与空白行为，移除 `apps/web/components/study/study-console.css` 中 `.study-console-ai-message` 的 `white-space: pre-wrap`（保留 Suspense 纯文本兜底自身的 `whitespace-pre-wrap`），消除段落与公式间的异常空行断层。
   - 在 `apps/web/components/ui/rich-text-message-client.tsx` 与 `study-note-markdown-preview.tsx` 为 `rehype-katex` 统一显式配置 `{ trust: false, strict: false }`。
-- [ ] **P1-UI-13 统一 `Study Dialog` 学习者消息的 Markdown 与数学公式渲染**
+- [x] **P1-UI-13 统一 `Study Dialog` 学习者消息的 Markdown 与数学公式渲染**
   - 将 `apps/web/components/study/study-message-flow.tsx` 的学习者消息气泡改为使用 `RichTextMessage`（与 `TavernConversationPanel` 保持一致），并调整 `.study-console-user-message` 样式，确保学习者发送的数学公式正确渲染。
 
 ## 未排期研究

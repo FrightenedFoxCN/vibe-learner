@@ -83,9 +83,10 @@ export function StudyMessageFlow({
                     </span>
                     <span className="study-console-role-label">你</span>
                   </div>
-                  <p className="study-console-user-message">
-                    {formatLearnerMessage(turn)}
-                  </p>
+                  <RichTextMessage
+                    content={formatLearnerMessage(turn)}
+                    className="study-console-user-message"
+                  />
                   <StudyTurnAttachments attachments={turn.learnerAttachments} />
                 </div>
               ) : null}
