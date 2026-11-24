@@ -1,3 +1,4 @@
+import "./study-character-shell.css";
 import type {
   PersonaProfile,
   SessionAffinityState,

@@ -67,7 +67,7 @@
 
 #### P1（视觉损坏、交互遮挡与核心工作区体验）
 
-- [ ] **P1-UI-01 修复 `Character Shell` 样式表未导入**
+- [x] **P1-UI-01 修复 `Character Shell` 样式表未导入**
   - 在 `apps/web/components/study/character-shell.tsx` 引入已存在的 `study-character-shell.css`（位于 `@layer components`），修复 `Study Dialog` 右侧角色状态栏标签与数值粘连裸排问题。
 - [ ] **P1-UI-02 修复 `Tavern Workspace` 巨型复选框与移动端空态半宽塌陷**
   - 修正 `apps/web/components/tavern/tavern-workspace.css` 的 `44px` 兜底选择器，排除 `checkbox/radio` 本体而由外层 `label` 承载 `44px` 触控热区，遵守 [前端设计基线](docs/frontend-design-baseline.md) 的 `18px` 复选框视觉尺寸。
