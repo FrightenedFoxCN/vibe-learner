@@ -23,7 +23,7 @@ export type NumericSettingKey =
 export interface NumericSettingConfig {
   min: number;
   max: number;
-  fallback: number;
+  default: number;
   integer: boolean;
 }
 
@@ -64,13 +64,13 @@ export const EMPTY_PROBE_STATE: ScopeProbeState = {
 };
 
 export const NUMERIC_SETTING_CONFIGS: Record<NumericSettingKey, NumericSettingConfig> = {
-  openaiTimeoutSeconds: { ...MODEL_RUNTIME_CONFIG.timeoutSeconds, fallback: MODEL_RUNTIME_CONFIG.timeoutSeconds.default, integer: true },
-  openaiSettingTemperature: { ...MODEL_RUNTIME_CONFIG.settingTemperature, fallback: MODEL_RUNTIME_CONFIG.settingTemperature.default, integer: false },
-  openaiChatTemperature: { ...MODEL_RUNTIME_CONFIG.chatTemperature, fallback: MODEL_RUNTIME_CONFIG.chatTemperature.default, integer: false },
-  openaiSettingMaxTokens: { ...MODEL_RUNTIME_CONFIG.settingMaxTokens, fallback: MODEL_RUNTIME_CONFIG.settingMaxTokens.default, integer: true },
-  openaiChatMaxTokens: { ...MODEL_RUNTIME_CONFIG.chatMaxTokens, fallback: MODEL_RUNTIME_CONFIG.chatMaxTokens.default, integer: true },
-  openaiChatHistoryMessages: { ...MODEL_RUNTIME_CONFIG.chatHistoryMessages, fallback: MODEL_RUNTIME_CONFIG.chatHistoryMessages.default, integer: true },
-  openaiChatToolMaxRounds: { ...MODEL_RUNTIME_CONFIG.chatToolMaxRounds, fallback: MODEL_RUNTIME_CONFIG.chatToolMaxRounds.default, integer: true }
+  openaiTimeoutSeconds: { ...MODEL_RUNTIME_CONFIG.timeoutSeconds, integer: true },
+  openaiSettingTemperature: { ...MODEL_RUNTIME_CONFIG.settingTemperature, integer: false },
+  openaiChatTemperature: { ...MODEL_RUNTIME_CONFIG.chatTemperature, integer: false },
+  openaiSettingMaxTokens: { ...MODEL_RUNTIME_CONFIG.settingMaxTokens, integer: true },
+  openaiChatMaxTokens: { ...MODEL_RUNTIME_CONFIG.chatMaxTokens, integer: true },
+  openaiChatHistoryMessages: { ...MODEL_RUNTIME_CONFIG.chatHistoryMessages, integer: true },
+  openaiChatToolMaxRounds: { ...MODEL_RUNTIME_CONFIG.chatToolMaxRounds, integer: true }
 };
 
 export const CAPABILITY_AUDIT_CONFIGS: CapabilityAuditConfig[] = [
@@ -222,13 +222,13 @@ export function buildNumericDrafts(settings: RuntimeSettings): NumericDraftState
   };
 }
 
-export function parseNumericSetting(value: string, config: NumericSettingConfig): number {
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed)) {
-    return config.fallback;
-  }
-  const normalized = config.integer ? Math.round(parsed) : parsed;
-  return Math.min(config.max, Math.max(config.min, normalized));
+export function parseNumericSetting(value: string, config: NumericSettingConfig): number | null {
+  const text = value.trim();
+  const decimal = config.integer ? /^[+-]?\d+$/ : /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/;
+  if (!decimal.test(text)) return null;
+  const parsed = Number(text);
+  if (!Number.isFinite(parsed) || (config.integer && !Number.isSafeInteger(parsed))) return null;
+  return parsed < config.min || parsed > config.max ? null : parsed === 0 ? 0 : parsed;
 }
 
 export function formatProbeHint(state: ScopeProbeState): string {

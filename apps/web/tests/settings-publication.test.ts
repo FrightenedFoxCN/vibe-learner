@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import { setImmediate } from "node:timers/promises";
 import test from "node:test";
+import {
+  NUMERIC_SETTING_CONFIGS,
+  parseNumericSetting,
+} from "../components/settings/settings-utils.ts";
 import type { RuntimeSettings } from "@vibe-learner/shared";
 
 import {
@@ -63,6 +67,31 @@ const autosave = {
   submittedKey: serializeSettings(submitted),
   settings: result,
 } as const;
+
+test("settings numeric input rejects blank, coercions, fractions for integers, and overflow", () => {
+  const tokens = NUMERIC_SETTING_CONFIGS.openaiChatMaxTokens;
+  const temperature = NUMERIC_SETTING_CONFIGS.openaiChatTemperature;
+  for (const draft of [
+    "",
+    "  ",
+    "NaN",
+    "Infinity",
+    "0x100",
+    "1e2",
+    "63",
+    "16385",
+    "99.2",
+    "9007199254740993",
+  ]) {
+    assert.equal(parseNumericSetting(draft, tokens), null, draft);
+  }
+  assert.equal(parseNumericSetting("64", tokens), 64);
+  assert.equal(parseNumericSetting("16384", tokens), 16384);
+  assert.equal(parseNumericSetting("0", temperature), 0);
+  assert.equal(parseNumericSetting(".35", temperature), 0.35);
+  assert.equal(parseNumericSetting("2", temperature), 2);
+  assert.equal(parseNumericSetting("2.01", temperature), null);
+});
 
 test("matching autosave accepts the canonical result, without re-enqueuing the baseline", () => {
   assert.deepEqual(resolveSettingsPublication(submittedForm, autosave), {

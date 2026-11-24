@@ -1,6 +1,7 @@
 import type { RuntimeSettings } from "@vibe-learner/shared";
 import { Button } from "../ui/button";
 import { SettingsField, SettingsPanel, SettingsToggle } from "./settings-ui";
+import { SettingsNumericField } from "./settings-numeric-field";
 import type { SettingsController } from "./use-settings-controller";
 
 export function AdvancedSettingsCard({
@@ -24,99 +25,42 @@ export function AdvancedSettingsCard({
       {controller.advancedExpanded ? (
         <div className="grid gap-3">
           <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,15rem),1fr))] gap-3">
-            <SettingsField label="人格设定温度">
-              <input
-                type="text"
-                inputMode="decimal"
-                value={controller.numericDrafts.openaiSettingTemperature}
-                onChange={(event) =>
-                  controller.setNumericDraft(
-                    "openaiSettingTemperature",
-                    event.target.value,
-                  )
-                }
-                onBlur={() =>
-                  controller.commitNumericSetting("openaiSettingTemperature")
-                }
-              />
-            </SettingsField>
-            <SettingsField label="学习对话温度">
-              <input
-                type="text"
-                inputMode="decimal"
-                value={controller.numericDrafts.openaiChatTemperature}
-                onChange={(event) =>
-                  controller.setNumericDraft(
-                    "openaiChatTemperature",
-                    event.target.value,
-                  )
-                }
-                onBlur={() => controller.commitNumericSetting("openaiChatTemperature")}
-              />
-            </SettingsField>
+            <SettingsNumericField
+              controller={controller}
+              name="openaiSettingTemperature"
+              label="人格设定温度"
+            />
+            <SettingsNumericField
+              controller={controller}
+              name="openaiChatTemperature"
+              label="学习对话温度"
+            />
           </div>
 
           <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,15rem),1fr))] gap-3">
-            <SettingsField label="人格设定最大输出长度">
-              <input
-                type="text"
-                inputMode="numeric"
-                value={controller.numericDrafts.openaiSettingMaxTokens}
-                onChange={(event) =>
-                  controller.setNumericDraft(
-                    "openaiSettingMaxTokens",
-                    event.target.value,
-                  )
-                }
-                onBlur={() => controller.commitNumericSetting("openaiSettingMaxTokens")}
-              />
-            </SettingsField>
-            <SettingsField label="学习对话最大输出长度">
-              <input
-                type="text"
-                inputMode="numeric"
-                value={controller.numericDrafts.openaiChatMaxTokens}
-                onChange={(event) =>
-                  controller.setNumericDraft("openaiChatMaxTokens", event.target.value)
-                }
-                onBlur={() => controller.commitNumericSetting("openaiChatMaxTokens")}
-              />
-            </SettingsField>
+            <SettingsNumericField
+              controller={controller}
+              name="openaiSettingMaxTokens"
+              label="人格设定最大输出长度"
+            />
+            <SettingsNumericField
+              controller={controller}
+              name="openaiChatMaxTokens"
+              label="学习对话最大输出长度"
+            />
           </div>
 
           <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,15rem),1fr))] gap-3">
-            <SettingsField label="保留历史消息数">
-              <input
-                type="text"
-                inputMode="numeric"
-                value={controller.numericDrafts.openaiChatHistoryMessages}
-                onChange={(event) =>
-                  controller.setNumericDraft(
-                    "openaiChatHistoryMessages",
-                    event.target.value,
-                  )
-                }
-                onBlur={() =>
-                  controller.commitNumericSetting("openaiChatHistoryMessages")
-                }
-              />
-            </SettingsField>
-            <SettingsField label="工具调用最大轮次">
-              <input
-                type="text"
-                inputMode="numeric"
-                value={controller.numericDrafts.openaiChatToolMaxRounds}
-                onChange={(event) =>
-                  controller.setNumericDraft(
-                    "openaiChatToolMaxRounds",
-                    event.target.value,
-                  )
-                }
-                onBlur={() =>
-                  controller.commitNumericSetting("openaiChatToolMaxRounds")
-                }
-              />
-            </SettingsField>
+            <SettingsNumericField
+              controller={controller}
+              name="openaiChatHistoryMessages"
+              label="保留历史消息数"
+            />
+            <SettingsNumericField
+              controller={controller}
+              name="openaiChatToolMaxRounds"
+              label="工具调用最大轮次"
+            />
           </div>
 
           <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,15rem),1fr))] gap-3">

@@ -85,7 +85,7 @@ export interface SettingsController {
     value: RuntimeSettings[K],
   ) => void;
   setNumericDraft: (key: NumericSettingKey, value: string) => void;
-  commitNumericSetting: (key: NumericSettingKey) => void;
+  commitNumericSetting: (key: NumericSettingKey) => boolean;
   probeScope: (scope: ProbeScope) => Promise<void>;
   syncCapabilitySetting: (
     scope: Extract<ProbeScope, "plan" | "setting" | "chat">,
@@ -327,13 +327,15 @@ export function useSettingsController(): SettingsController {
 
   function commitNumericSetting(key: NumericSettingKey) {
     const current = formRef.current;
-    if (!current.settings) return;
+    if (!current.settings || vaultTransitionRef.current) return true;
     const nextValue = parseNumericSetting(
       current.numericDrafts[key],
       NUMERIC_SETTING_CONFIGS[key],
     );
+    if (nextValue === null) return false;
     setNumericDraft(key, String(nextValue));
     setSettingField(key, nextValue);
+    return true;
   }
 
   async function probeScope(scope: ProbeScope) {

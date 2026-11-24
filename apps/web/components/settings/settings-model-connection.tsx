@@ -5,6 +5,7 @@ import { runtimeProviderStatus } from "../../lib/runtime-provider-status";
 import { useRuntimeSettings } from "../layout/runtime-settings-provider";
 import { SettingsField, SettingsPanel, StatusBadge } from "./settings-ui";
 import { formatProbeHint, uniqueWithCurrent } from "./settings-utils";
+import { SettingsNumericField } from "./settings-numeric-field";
 import type { SettingsController } from "./use-settings-controller";
 
 interface ScopeModelConfig {
@@ -165,17 +166,11 @@ export function ConnectionModelsCard({
         ))}
       </div>
 
-      <SettingsField label="请求超时时间（秒）">
-        <input
-          type="text"
-          inputMode="numeric"
-          value={controller.numericDrafts.openaiTimeoutSeconds}
-          onChange={(event) =>
-            controller.setNumericDraft("openaiTimeoutSeconds", event.target.value)
-          }
-          onBlur={() => controller.commitNumericSetting("openaiTimeoutSeconds")}
-        />
-      </SettingsField>
+      <SettingsNumericField
+        controller={controller}
+        name="openaiTimeoutSeconds"
+        label="请求超时时间（秒）"
+      />
     </SettingsPanel>
   );
 }
