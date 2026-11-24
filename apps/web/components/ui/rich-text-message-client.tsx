@@ -28,7 +28,7 @@ export default function RichTextMessageClient({
     <WrapperTag className={styles.root}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkMath]}
-        rehypePlugins={[rehypeKatex]}
+        rehypePlugins={[[rehypeKatex, { trust: false, strict: false }]]}
         components={{
           p: ({ children }) =>
             inline ? (

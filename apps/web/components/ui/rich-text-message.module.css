@@ -1,6 +1,9 @@
 @layer components {
   .root {
     min-width: 0;
+    white-space: normal;
+    word-break: normal;
+    overflow-wrap: break-word;
   }
 
   .paragraph,
@@ -130,10 +133,13 @@
   .root :global(.katex),
   .root :global(.katex-display) {
     max-width: 100%;
+    white-space: normal;
+    word-break: normal;
+    overflow-wrap: normal;
   }
 
   .root :global(.katex-display) {
-    margin: 0.35em 0;
+    margin: 0.65em 0;
     overflow-x: auto;
     overflow-y: hidden;
   }

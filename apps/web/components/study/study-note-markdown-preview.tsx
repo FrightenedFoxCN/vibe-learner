@@ -15,7 +15,7 @@ export default function StudyNoteMarkdownPreview({ source }: { source: string })
     <ReactMarkdown
       skipHtml
       remarkPlugins={[remarkGfm, remarkMath]}
-      rehypePlugins={[[rehypeKatex, { trust: false }]]}
+      rehypePlugins={[[rehypeKatex, { trust: false, strict: false }]]}
       components={{
         table: ({ children }) => (
           <div

@@ -528,9 +528,8 @@
     font-size: 14px;
     line-height: 1.75;
     color: var(--ink);
-    white-space: pre-wrap;
     word-break: break-word;
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
   }
 
   .study-console-ai-bubble {
