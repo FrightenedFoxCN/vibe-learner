@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Callable
 from uuid import uuid4
@@ -79,6 +80,18 @@ from app.core.coerce import text_or_empty
 from app.persistence.row_mapping import payload_of
 
 
+@dataclass(frozen=True)
+class NewLearningPlanAdmission:
+    operation: LearningPlanOperationRecord
+    document: DocumentRecord | None
+    debug_report: DocumentDebugRecord | None
+
+
+@dataclass(frozen=True)
+class ExistingLearningPlanAdmission:
+    operation: LearningPlanOperationRecord
+
+
 class LearningPlanOperationRepository:
     """Durable admission and atomic projection commit for Learning Plan creation."""
 
@@ -96,7 +109,7 @@ class LearningPlanOperationRepository:
         self,
         *,
         request: LearningPlanOperationRequestV1,
-    ) -> tuple[LearningPlanOperationRecord, bool]:
+    ) -> NewLearningPlanAdmission | ExistingLearningPlanAdmission:
         fingerprint = learning_plan_request_fingerprint(request)
         operation_id = f"learning-plan-op-{uuid4().hex[:16]}"
         now = _now()
@@ -109,44 +122,27 @@ class LearningPlanOperationRepository:
                     )
                 )
                 if existing is not None:
-                    record = _from_row(existing)
-                    comparison_fingerprint = learning_plan_request_fingerprint(
-                        request,
-                        contract_version=record.fingerprint_contract_version,
-                    )
-                    if record.request_fingerprint != comparison_fingerprint:
-                        raise LearningPlanRequestConflict(record.client_request_id)
-                    resolution = self.harness_operations.resolve_domain_in_session(
-                        session,
-                        domain_operation_kind=(
-                            HarnessDomainOperationKind.LEARNING_PLAN_GENERATION
-                        ),
-                        domain_operation_id=existing.operation_id,
-                    )
-                    if (
-                        resolution.status
-                        == HarnessOperationResolutionStatus.LEGACY_UNBOUND
-                        and existing.status == LearningPlanOperationStatus.RUNNING.value
-                    ):
-                        _terminalize_legacy_unbound_plan(existing, now=now)
-                        session.flush()
-                        return _from_row(existing), True
-                    if resolution.binding is None:
-                        raise LearningPlanOperationIdentityUnavailable(
-                            existing.operation_id,
-                            resolution.status.value,
-                        )
-                    _validate_duplicate(record, fingerprint=comparison_fingerprint)
-                    return record, True
+                    return self._existing_admission(session, existing, request, now=now)
 
                 document_id: str | None = request.document_id or None
+                base_document = None
+                base_debug = None
                 base_document_updated_at = ""
                 base_document_digest = ""
                 base_debug_digest = ""
                 if document_id is not None:
-                    document_row = session.get(DocumentRow, document_id)
-                    if document_row is None:
+                    # One statement observes both projections at the same database snapshot.
+                    source = session.execute(
+                        select(DocumentRow, DocumentDebugRow)
+                        .outerjoin(
+                            DocumentDebugRow,
+                            DocumentDebugRow.document_id == DocumentRow.id,
+                        )
+                        .where(DocumentRow.id == document_id)
+                    ).one_or_none()
+                    if source is None:
                         raise LearningPlanDocumentNotFound(document_id)
+                    document_row, debug_row = source
                     if document_row.updated_at != request.expected_document_updated_at:
                         raise LearningPlanStaleDocument(
                             document_id,
@@ -154,10 +150,8 @@ class LearningPlanOperationRepository:
                             actual=document_row.updated_at,
                         )
                     base_document_updated_at = document_row.updated_at
+                    base_document = document_from_row(document_row)
                     base_document_digest = planning_projection_digest(
-                        payload_of(document_row)
-                    )
-                    base_document = DocumentRecord.model_validate(
                         payload_of(document_row)
                     )
                     if base_document.chunk_count == 0:
@@ -166,17 +160,16 @@ class LearningPlanOperationRepository:
                         request.planning_intent, base_document.page_count
                     )
                     if base_document.debug_ready:
-                        debug_row = session.get(DocumentDebugRow, document_id)
                         if debug_row is None:
-                            raise LearningPlanProjectionPrerequisiteMissing(
-                                document_id,
-                                "document_debug",
+                            raise LearningPlanDocumentDebugNotFound(document_id)
+                        debug_payload = payload_of(debug_row)
+                        base_debug = DocumentDebugRecord.model_validate(debug_payload)
+                        if base_debug.document_id != document_id:
+                            raise LearningPlanProjectionIdentityMismatch(
+                                document_id, "input_debug_snapshot"
                             )
-                        base_debug_digest = planning_projection_digest(
-                            payload_of(debug_row)
-                        )
-
-                if document_id is None:
+                        base_debug_digest = planning_projection_digest(debug_payload)
+                else:
                     validate_physical_input(request.planning_intent, 0)
                 scope_key = (
                     f"document:{request.document_id}"
@@ -229,16 +222,54 @@ class LearningPlanOperationRepository:
                     admitted_at=now,
                 )
                 session.flush()
-                return _from_row(row), False
+                return NewLearningPlanAdmission(
+                    _from_row(row), base_document, base_debug
+                )
         except IntegrityError as exc:
-            existing = self.get_by_client_request_id(
-                client_request_id=request.client_request_id,
-                validate_current=False,
-            )
-            if existing is not None:
-                _validate_duplicate(existing, fingerprint=fingerprint)
-                return existing, True
+            with self.database.session() as session:
+                existing = session.scalar(
+                    select(LearningPlanOperationRow).where(
+                        LearningPlanOperationRow.client_request_id
+                        == request.client_request_id
+                    )
+                )
+                if existing is not None:
+                    return self._existing_admission(session, existing, request, now=now)
             raise LearningPlanAdmissionRace(request.client_request_id) from exc
+
+    def _existing_admission(
+        self,
+        session: Session,
+        existing: LearningPlanOperationRow,
+        request: LearningPlanOperationRequestV1,
+        *,
+        now: str,
+    ) -> ExistingLearningPlanAdmission:
+        record = _from_row(existing)
+        fingerprint = learning_plan_request_fingerprint(
+            request, contract_version=record.fingerprint_contract_version
+        )
+        if record.request_fingerprint != fingerprint:
+            raise LearningPlanRequestConflict(record.client_request_id)
+        resolution = self.harness_operations.resolve_domain_in_session(
+            session,
+            domain_operation_kind=HarnessDomainOperationKind.LEARNING_PLAN_GENERATION,
+            domain_operation_id=existing.operation_id,
+        )
+        if (
+            resolution.status == HarnessOperationResolutionStatus.LEGACY_UNBOUND
+            and existing.status == LearningPlanOperationStatus.RUNNING.value
+        ):
+            _terminalize_legacy_unbound_plan(existing, now=now)
+            session.flush()
+            return ExistingLearningPlanAdmission(_from_row(existing))
+        if resolution.binding is None:
+            raise LearningPlanOperationIdentityUnavailable(
+                existing.operation_id, resolution.status.value
+            )
+        _validate_duplicate(record, fingerprint=fingerprint)
+        _validate_committed_projection_snapshot(record)
+        return ExistingLearningPlanAdmission(record)
 
     def mark_provider_started(
         self, *, operation_id: str
@@ -910,6 +941,10 @@ class LearningPlanOperationError(RuntimeError):
 
 
 class LearningPlanDocumentNotFound(LearningPlanOperationError):
+    pass
+
+
+class LearningPlanDocumentDebugNotFound(LearningPlanOperationError):
     pass
 
 

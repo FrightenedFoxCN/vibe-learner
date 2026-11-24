@@ -107,15 +107,6 @@ def create_learning_plan(
         payload.persona_id,
     )
     persona = container.persona_engine.require_persona(payload.persona_id)
-    document = None
-    debug_report = None
-    if payload.document_id:
-        document = container.document_service.require_document(payload.document_id)
-        debug_report = (
-            container.document_service.require_debug_report(payload.document_id)
-            if document.debug_ready
-            else None
-        )
     recorder.emit(
         "learning_plan_started",
         {
@@ -127,10 +118,9 @@ def create_learning_plan(
     try:
         plan = container.plan_service.create_plan(
             goal=payload,
-            document=document,
-            persona_name=persona.name,
+            client_request_id=payload.client_request_id,
+            expected_document_updated_at=payload.expected_document_updated_at,
             persona=persona,
-            debug_report=debug_report,
             progress_callback=recorder.callback,
             operation_admitted_callback=remember_operation,
         )
@@ -255,15 +245,6 @@ def create_learning_plan_stream(
     container: Container = Depends(get_container),
 ) -> StreamingResponse:
     persona = container.persona_engine.require_persona(payload.persona_id)
-    document = None
-    debug_report = None
-    if payload.document_id:
-        document = container.document_service.require_document(payload.document_id)
-        debug_report = (
-            container.document_service.require_debug_report(payload.document_id)
-            if document.debug_ready
-            else None
-        )
     stream_document_id = _learning_plan_stream_storage_id(payload)
     interrupt_handle = container.stream_interrupt_registry.create(
         stream_kind="learning_plan",
@@ -311,10 +292,9 @@ def create_learning_plan_stream(
             )
             plan = container.plan_service.create_plan(
                 goal=payload,
-                document=document,
-                persona_name=persona.name,
+                client_request_id=payload.client_request_id,
+                expected_document_updated_at=payload.expected_document_updated_at,
                 persona=persona,
-                debug_report=debug_report,
                 progress_callback=stream.report,
                 interrupt_check=interrupt_handle.raise_if_cancelled,
                 before_commit=stream.before_commit,

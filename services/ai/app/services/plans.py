@@ -37,16 +37,16 @@ from app.models.planning import (
     LearningPlanOperationRecord,
     LearningPlanOperationRequestV1,
     LearningPlanOperationStatus,
-    planning_projection_digest,
 )
 from app.persistence.learning_plan_operation_repository import (
+    ExistingLearningPlanAdmission,
     LearningPlanAdmissionRace,
     LearningPlanAlreadyActive,
+    LearningPlanDocumentDebugNotFound,
     LearningPlanDocumentNoExtractableText,
     LearningPlanDocumentNotFound,
     LearningPlanOperationError,
     LearningPlanOperationRepository,
-    LearningPlanProjectionIdentityMismatch,
     LearningPlanProjectionPrerequisiteMissing,
     LearningPlanRequestConflict,
     LearningPlanStaleDocument,
@@ -102,49 +102,37 @@ class LearningPlanService:
         self,
         *,
         goal: LearningGoalInput,
-        document: DocumentRecord | None,
-        persona_name: str,
+        client_request_id: str,
+        expected_document_updated_at: str,
         persona: PersonaProfile,
-        debug_report: DocumentDebugRecord | None = None,
         progress_callback: Callable[[str, dict[str, object]], None] | None = None,
         interrupt_check: Callable[[], None] | None = None,
         before_commit: Callable[[], None] | None = None,
         operation_admitted_callback: Callable[[str], None] | None = None,
     ) -> LearningPlanRecord:
-        if document is not None and document.debug_ready and debug_report is None:
-            debug_report = self.store.load_item(
-                "document_debug",
-                document.id,
-                DocumentDebugRecord,
-            )
-        client_request_id = text_or_empty(
-            getattr(goal, "client_request_id", "")
-        ).strip()
-        if not client_request_id:
-            client_request_id = f"plan-request-{uuid4().hex}"
-        expected_document_updated_at = str(
-            text_or_empty(getattr(goal, "expected_document_updated_at", ""))
-        ).strip()
-        if document is not None and not expected_document_updated_at:
-            expected_document_updated_at = document.updated_at
+        client_request_id = client_request_id.strip() or f"plan-request-{uuid4().hex}"
         request = LearningPlanOperationRequestV1(
             client_request_id=client_request_id,
-            document_id=document.id if document is not None else "",
+            document_id=goal.document_id,
             persona_id=goal.persona_id,
             objective=goal.objective,
             scene_profile_summary=goal.scene_profile_summary,
             scene_profile=goal.scene_profile,
             planning_intent=goal.planning_intent,
-            expected_document_updated_at=expected_document_updated_at,
+            expected_document_updated_at=expected_document_updated_at.strip(),
         )
         try:
-            operation, duplicate = self.operation_repository.admit(request=request)
+            admission = self.operation_repository.admit(request=request)
         except PhysicalPageScopeViolation as exc:
             raise HTTPException(
                 422, "learning_plan_invalid_physical_page_scope"
             ) from exc
         except LearningPlanDocumentNotFound as exc:
             raise HTTPException(status_code=404, detail="document_not_found") from exc
+        except LearningPlanDocumentDebugNotFound as exc:
+            raise HTTPException(
+                status_code=404, detail="document_debug_not_found"
+            ) from exc
         except LearningPlanDocumentNoExtractableText as exc:
             raise HTTPException(422, "document_no_extractable_text") from exc
         except LearningPlanStaleDocument as exc:
@@ -173,7 +161,8 @@ class LearningPlanService:
                 detail="learning_plan_projection_prerequisite_missing",
             ) from exc
 
-        if duplicate:
+        operation = admission.operation
+        if isinstance(admission, ExistingLearningPlanAdmission):
             if operation.status != LearningPlanOperationStatus.COMMITTED:
                 raise HTTPException(
                     status_code=409,
@@ -190,6 +179,8 @@ class LearningPlanService:
                 )
             )
 
+        document = admission.document
+        debug_report = admission.debug_report
         provider_started = False
         candidate_built = False
         runtime_prepared: HarnessRuntimePreparedOutput | None = None
@@ -205,24 +196,6 @@ class LearningPlanService:
         try:
             if operation_admitted_callback is not None:
                 operation_admitted_callback(operation.operation_id)
-            if (
-                document is not None
-                and planning_projection_digest(document.model_dump(mode="json"))
-                != operation.base_document_digest
-            ):
-                raise LearningPlanProjectionIdentityMismatch(
-                    operation.operation_id,
-                    "input_document_snapshot",
-                )
-            if (
-                debug_report is not None
-                and planning_projection_digest(debug_report.model_dump(mode="json"))
-                != operation.base_debug_digest
-            ):
-                raise LearningPlanProjectionIdentityMismatch(
-                    operation.operation_id,
-                    "input_debug_snapshot",
-                )
             operation_binding = self.operation_repository.harness_operations.require_domain(
                 domain_operation_kind=HarnessDomainOperationKind.LEARNING_PLAN_GENERATION,
                 domain_operation_id=operation.operation_id,
@@ -282,7 +255,7 @@ class LearningPlanService:
                         if debug_report is not None
                         else None
                     ),
-                    "persona_name": persona_name,
+                    "persona_name": persona.name,
                     "persona": persona.model_dump(mode="json", exclude_none=False),
                 },
                 generate=generate_plan,
