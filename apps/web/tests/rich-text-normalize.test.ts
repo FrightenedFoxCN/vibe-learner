@@ -154,3 +154,59 @@ test("historic inline heading repair still works outside math and code", () => {
   assert.ok(res.normalized.includes("**1. 核心结论：**"));
   assert.ok(res.normalized.includes("**2.**"));
 });
+
+test("only parser-recognized indented code is shielded from normalization", () => {
+  const code = "    \\(not math\\)\n\t$$also not math$$";
+  const source = "Before\n    still prose \\(x\\)\n\n" + code + "\n\nAfter \\(y\\)";
+  for (const normalize of [normalizeMathDelimiters, normalizeRichTextContent]) {
+    assert.equal(
+      normalize(source),
+      "Before\n    still prose $x$\n\n" + code + "\n\nAfter $y$",
+    );
+  }
+  const { html, katexCount, errorCount } = renderMarkdown(source);
+  assert.ok(
+    html.includes("<pre><code>\\(not math\\)\n$$also not math$$\n</code></pre>"),
+  );
+  assert.equal(katexCount, 2);
+  assert.equal(errorCount, 0);
+});
+
+test("link resources keep their dollar delimiters while label and prose math still render", () => {
+  const destination = '(https://example.com/a(b)/$$sku$$ "标题： - $$title$$")';
+  const secondLink = "[other](<https://example.com/$$other$$>)";
+  const source =
+    "[label \\(x\\) and $$y$$]" + destination + " / " + secondLink + " \\(z\\)";
+  for (const normalize of [normalizeMathDelimiters, normalizeRichTextContent]) {
+    assert.equal(
+      normalize(source),
+      "[label $x$ and $$y$$]" + destination + " / " + secondLink + " $z$",
+    );
+  }
+  assert.equal(
+    normalizeMathDelimiters("\uFEFF" + source),
+    "\uFEFF[label $x$ and $$y$$]" + destination + " / " + secondLink + " $z$",
+  );
+  const { html, katexCount, displayCount, errorCount } = renderMarkdown(source);
+  assert.ok(html.includes('href="https://example.com/a(b)/$$sku$$"'));
+  assert.ok(html.includes('title="标题： - $$title$$"'));
+  assert.ok(html.includes('href="https://example.com/$$other$$"'));
+  assert.equal(katexCount, 3);
+  assert.equal(displayCount, 0);
+  assert.equal(errorCount, 0);
+});
+
+test("unclosed fences end at their quote depth without swallowing outside LaTeX", () => {
+  const fenced = "> > ```text\n> > \\(not math\\)\n> > $$still code$$";
+  const source = fenced + "\n> Outer \\(x\\)\n\nAfter \\[y\\]";
+  for (const normalize of [normalizeMathDelimiters, normalizeRichTextContent]) {
+    const normalized = normalize(source);
+    assert.ok(normalized.startsWith(fenced + "\n> Outer $x$"));
+    assert.ok(normalized.endsWith("\n\n$$\ny\n$$"));
+  }
+  const { html, katexCount, displayCount, errorCount } = renderMarkdown(source);
+  assert.ok(html.includes("\\(not math\\)\n$$still code$$"));
+  assert.equal(katexCount, 2);
+  assert.equal(displayCount, 1);
+  assert.equal(errorCount, 0);
+});

@@ -6,6 +6,10 @@
  * delimiters and structural line breaks, and never enables raw HTML.
  */
 
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
+
 export interface NormalizeMathOptions {
   inline?: boolean;
 }
@@ -14,7 +18,7 @@ type Segment = { kind: "prose"; text: string } | { kind: "protected"; text: stri
 
 /**
  * Normalizes LaTeX math delimiters (`\(...\)`, `\[...\]`, and single-line
- * `$$...$$`) outside fenced/inline code blocks so `remark-math` v6 +
+ * `$$...$$`) outside Markdown code and link syntax so `remark-math` v6 +
  * `rehype-katex` render them reliably.
  */
 export function normalizeMathDelimiters(
@@ -28,8 +32,8 @@ export function normalizeMathDelimiters(
 }
 
 /**
- * Normalizes model-generated chat Markdown while shielding fenced code blocks,
- * inline code spans, and math expressions from prose layout heuristics.
+ * Normalizes model-generated chat Markdown while shielding code, link syntax,
+ * and math expressions from prose layout heuristics.
  */
 export function normalizeRichTextContent(
   content: string,
@@ -90,10 +94,91 @@ function repairProseLayout(prose: string): string {
   );
 }
 
+interface SourceRange {
+  start: number;
+  end: number;
+}
+
+interface MarkdownNode {
+  type: string;
+  position?: { start: { offset?: number }; end: { offset?: number } };
+  children?: readonly MarkdownNode[];
+  referenceType?: string;
+}
+
+function collectMarkdownRanges(source: string) {
+  const literal: SourceRange[] = [];
+  const inlineLabels: SourceRange[] = [];
+  // Micromark discards a leading BOM before counting source offsets.
+  const bomLength = source.charCodeAt(0) === 0xfeff ? 1 : 0;
+  const sourceOffset = (offset?: number) =>
+    offset === undefined ? undefined : offset + bomLength;
+  const add = (ranges: SourceRange[], start: number, end: number) => {
+    if (start < end) ranges.push({ start, end });
+  };
+
+  const visit = (node: MarkdownNode) => {
+    const start = sourceOffset(node.position?.start.offset);
+    const end = sourceOffset(node.position?.end.offset);
+    if (start !== undefined && end !== undefined) {
+      switch (node.type) {
+        case "code":
+        case "inlineCode":
+        case "definition":
+        case "image":
+        case "imageReference":
+          add(literal, start, end);
+          return;
+        case "link":
+        case "linkReference": {
+          const first = sourceOffset(node.children?.[0]?.position?.start.offset);
+          const last = sourceOffset(node.children?.at(-1)?.position?.end.offset);
+          if (
+            source[start] !== "[" || // An autolink has no independent label.
+            (node.type === "linkReference" && node.referenceType !== "full") ||
+            first === undefined ||
+            last === undefined
+          ) {
+            add(literal, start, end);
+            return;
+          }
+          // MDAST exposes offsets for the link and its label children, not for
+          // the destination/title individually. Protect everything around the
+          // actual label without guessing at parentheses or escapes in URLs.
+          add(literal, start, first);
+          add(inlineLabels, first, last);
+          node.children?.forEach(visit);
+          add(literal, last, end);
+          return;
+        }
+      }
+    }
+    node.children?.forEach(visit);
+  };
+
+  // Reuse the renderer's parser and syntax extensions via its public sync
+  // remark hook. Consume only source positions; give rehype an empty document.
+  ReactMarkdown({
+    children: source,
+    remarkPlugins: [
+      remarkGfm,
+      remarkMath,
+      () => (tree) => {
+        visit(tree);
+        tree.children = [];
+      },
+    ],
+  });
+  return { literal, inlineLabels };
+}
+
 function tokenizeMarkdown(source: string, inline: boolean): Segment[] {
+  const { literal, inlineLabels } = collectMarkdownRanges(source);
   const segments: Segment[] = [];
   let proseStart = 0;
   let i = 0;
+  let literalIndex = 0;
+  let labelIndex = 0;
 
   const flushProse = (end: number) => {
     if (end > proseStart) {
@@ -102,53 +187,39 @@ function tokenizeMarkdown(source: string, inline: boolean): Segment[] {
   };
 
   while (i < source.length) {
-    // 1. Fenced code block at start of line (including inside blockquotes or list items).
-    if (i === 0 || source[i - 1] === "\n") {
-      const fenceEnd = matchFencedCodeBlock(source, i);
-      if (fenceEnd > i) {
-        flushProse(i);
-        segments.push({ kind: "protected", text: source.slice(i, fenceEnd) });
-        i = fenceEnd;
-        proseStart = i;
-        continue;
-      }
-    }
-
-    const ch = source[i];
-
-    // 2. Inline code span (`...`).
-    if (ch === "`") {
-      const codeEnd = matchInlineCodeSpan(source, i);
-      if (codeEnd > i) {
-        flushProse(i);
-        segments.push({ kind: "protected", text: source.slice(i, codeEnd) });
-        i = codeEnd;
-        proseStart = i;
-        continue;
-      }
-      // Unclosed backtick run: consume the whole run as prose.
-      while (i < source.length && source[i] === "`") i += 1;
+    const range = literal[literalIndex];
+    if (range && i >= range.start) {
+      flushProse(range.start);
+      segments.push({ kind: "protected", text: source.slice(range.start, range.end) });
+      i = range.end;
+      proseStart = i;
+      literalIndex += 1;
       continue;
     }
+    const limit = range?.start ?? source.length;
+    while (inlineLabels[labelIndex] && inlineLabels[labelIndex].end <= i)
+      labelIndex += 1;
+    const compact = inline || (inlineLabels[labelIndex]?.start ?? source.length) <= i;
+    const ch = source[i];
 
-    // 3. Backslash sequences: check \(...\) and \[...\] before skipping other escapes.
+    // Backslash sequences: check \(...\) and \[...\] before skipping other escapes.
     if (ch === "\\") {
-      const next = source[i + 1];
+      const next = i + 1 < limit ? source[i + 1] : undefined;
       if (next === "[") {
-        const closeIndex = findUnescapedClose(source, i + 2, "\\]", true);
+        const closeIndex = findUnescapedClose(source, i + 2, limit, "\\]", true);
         if (closeIndex !== -1) {
           const inner = source.slice(i + 2, closeIndex);
           flushProse(i);
           segments.push({
             kind: "protected",
-            text: formatDisplayMath(source, i, closeIndex + 2, inner, inline, true),
+            text: formatDisplayMath(source, i, closeIndex + 2, inner, compact, true),
           });
           i = closeIndex + 2;
           proseStart = i;
           continue;
         }
       } else if (next === "(") {
-        const closeIndex = findUnescapedClose(source, i + 2, "\\)", false);
+        const closeIndex = findUnescapedClose(source, i + 2, limit, "\\)", false);
         if (closeIndex !== -1) {
           const inner = source.slice(i + 2, closeIndex).trim();
           if (inner) {
@@ -161,20 +232,20 @@ function tokenizeMarkdown(source: string, inline: boolean): Segment[] {
         }
       }
       // Skip escaped character pair (e.g. \\, \$, \(, \[ when unclosed).
-      i += next !== undefined ? 2 : 1;
+      i = Math.min(i + 2, limit);
       continue;
     }
 
-    // 4. Dollar math: $$...$$ (display) or $...$ (inline).
+    // Dollar math: $$...$$ (display) or $...$ (inline).
     if (ch === "$") {
-      if (source[i + 1] === "$") {
-        const closeIndex = findUnescapedClose(source, i + 2, "$$", true);
+      if (i + 1 < limit && source[i + 1] === "$") {
+        const closeIndex = findUnescapedClose(source, i + 2, limit, "$$", true);
         if (closeIndex !== -1) {
           const inner = source.slice(i + 2, closeIndex);
           flushProse(i);
           segments.push({
             kind: "protected",
-            text: formatDisplayMath(source, i, closeIndex + 2, inner, inline, false),
+            text: formatDisplayMath(source, i, closeIndex + 2, inner, compact, false),
           });
           i = closeIndex + 2;
           proseStart = i;
@@ -184,7 +255,7 @@ function tokenizeMarkdown(source: string, inline: boolean): Segment[] {
         continue;
       }
 
-      const closeIndex = findInlineDollarClose(source, i + 1);
+      const closeIndex = findInlineDollarClose(source, i + 1, limit);
       if (closeIndex !== -1) {
         flushProse(i);
         segments.push({ kind: "protected", text: source.slice(i, closeIndex + 1) });
@@ -201,71 +272,15 @@ function tokenizeMarkdown(source: string, inline: boolean): Segment[] {
   return segments;
 }
 
-function matchFencedCodeBlock(source: string, lineStart: number): number {
-  const lineEnd = source.indexOf("\n", lineStart);
-  const firstLine = source.slice(lineStart, lineEnd === -1 ? source.length : lineEnd);
-  const openMatch = firstLine.match(
-    /^[ \t]*(?:>[ \t]*)*(?:(?:[-+*]|\d{1,9}[.)])[ \t]+)?(`{3,}|~{3,})(.*)$/,
-  );
-  if (!openMatch) {
-    return -1;
-  }
-  const [, fence, infoString] = openMatch;
-  const fenceChar = fence[0];
-  // CommonMark: backtick fence info strings cannot contain backticks.
-  if (fenceChar === "`" && infoString.includes("`")) {
-    return -1;
-  }
-  const closeRe = new RegExp(
-    `^[ \\t]*(?:>[ \\t]*)*${escapeRegExp(fenceChar)}{${fence.length},}[ \\t]*$`,
-  );
-
-  let pos = lineEnd === -1 ? source.length : lineEnd + 1;
-  while (pos < source.length) {
-    const nextEnd = source.indexOf("\n", pos);
-    const line = source.slice(pos, nextEnd === -1 ? source.length : nextEnd);
-    if (closeRe.test(line)) {
-      return nextEnd === -1 ? source.length : nextEnd + 1;
-    }
-    if (nextEnd === -1) {
-      return source.length;
-    }
-    pos = nextEnd + 1;
-  }
-  return source.length;
-}
-
-function matchInlineCodeSpan(source: string, start: number): number {
-  let openLen = 0;
-  while (start + openLen < source.length && source[start + openLen] === "`") {
-    openLen += 1;
-  }
-  let pos = start + openLen;
-  while (pos < source.length) {
-    if (source[pos] === "`") {
-      let runLen = 0;
-      while (pos + runLen < source.length && source[pos + runLen] === "`") {
-        runLen += 1;
-      }
-      if (runLen === openLen) {
-        return pos + runLen;
-      }
-      pos += runLen;
-      continue;
-    }
-    pos += 1;
-  }
-  return -1;
-}
-
 function findUnescapedClose(
   source: string,
   from: number,
+  limit: number,
   delimiter: string,
   allowBlankLines: boolean,
 ): number {
   let pos = from;
-  while (pos < source.length) {
+  while (pos + delimiter.length <= limit) {
     if (!allowBlankLines && source[pos] === "\n" && source[pos + 1] === "\n") {
       return -1;
     }
@@ -281,9 +296,9 @@ function findUnescapedClose(
   return -1;
 }
 
-function findInlineDollarClose(source: string, from: number): number {
+function findInlineDollarClose(source: string, from: number, limit: number): number {
   let pos = from;
-  while (pos < source.length) {
+  while (pos < limit) {
     if (source[pos] === "\n" && source[pos + 1] === "\n") {
       return -1;
     }
