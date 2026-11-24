@@ -168,16 +168,19 @@ class LearningPlanService:
                     status_code=409,
                     detail=f"learning_plan_operation_{operation.status.value}",
                 )
-            if operation_admitted_callback is not None:
-                operation_admitted_callback(operation.operation_id)
             projection = operation.committed_projection
             if projection is None:
                 raise RuntimeError("learning_plan_committed_projection_missing")
-            return projection.plan.__class__.model_validate(
+            plan = projection.plan.__class__.model_validate(
                 repair_legacy_duplicate_schedule_chapter_ids(
                     projection.plan.model_dump(mode="json")
                 )
             )
+            # Cancel the replay transport, not the historical committed operation.
+            _call_interrupt(before_commit or interrupt_check)
+            if operation_admitted_callback is not None:
+                operation_admitted_callback(operation.operation_id)
+            return plan
 
         document = admission.document
         debug_report = admission.debug_report

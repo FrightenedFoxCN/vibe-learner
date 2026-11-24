@@ -109,3 +109,124 @@ class PlanStreamCancellationTests(TestCase):
                     "not_committed" if before_commit else "committed",
                 )
                 container.close()
+
+    def test_replay_cancellation_only_controls_current_stream(self):
+        with TemporaryDirectory() as tmp:
+            container = Container(
+                Settings(
+                    database_url=f"sqlite:///{tmp}/test.db",
+                    storage_root=str(Path(tmp) / "data"),
+                    auto_migrate_local_data=False,
+                    plan_provider="mock",
+                    ocr_engine="disabled",
+                )
+            )
+            self.addCleanup(container.close)
+            app = FastAPI()
+            app.include_router(planning_router)
+            app.include_router(study_router)
+            app.dependency_overrides[get_container] = lambda: container
+            client = self.enterContext(TestClient(app))
+            payload = {
+                "persona_id": container.persona_engine.list_personas()[0].id,
+                "objective": "Learn vectors",
+                "client_request_id": "replay-cancel-fixture",
+            }
+            operation_path = "/learning-plan-operations/replay-cancel-fixture"
+            initial = client.post("/learning-plans", json=payload)
+            self.assertEqual(initial.status_code, 200, initial.text)
+            historical = client.get(operation_path).json()
+            self.assertEqual(historical["status"], "committed")
+            registry = container.stream_interrupt_registry
+            service = container.plan_service
+            create = registry.create
+            admit = service.operation_repository.admit
+            create_plan = service.create_plan
+
+            for early in (True, False):
+                with self.subTest(early=early):
+                    handles = []
+                    replies = []
+
+                    def track(**kwargs):
+                        handle = create(**kwargs)
+                        handles.append(handle)
+                        return handle
+
+                    def cancel():
+                        reply = client.post(
+                            f"/stream-runs/{handles[0].stream_id}/cancel"
+                        )
+                        reply.raise_for_status()
+                        replies.append(reply.json()["cancelled"])
+
+                    def admit_then_cancel(**kwargs):
+                        admission = admit(**kwargs)
+                        cancel()
+                        return admission
+
+                    def cancel_after_publication(**kwargs):
+                        publish = kwargs["operation_admitted_callback"]
+
+                        def publish_then_cancel(operation_id):
+                            publish(operation_id)
+                            cancel()
+
+                        return create_plan(
+                            **{
+                                **kwargs,
+                                "operation_admitted_callback": publish_then_cancel,
+                            }
+                        )
+
+                    window = (
+                        patch.object(
+                            service.operation_repository,
+                            "admit",
+                            side_effect=admit_then_cancel,
+                        )
+                        if early
+                        else patch.object(
+                            service, "create_plan", side_effect=cancel_after_publication
+                        )
+                    )
+                    with (
+                        patch.object(registry, "create", side_effect=track),
+                        patch.object(
+                            container.model_provider, "generate_learning_plan"
+                        ) as provider,
+                        window,
+                    ):
+                        response = client.post("/learning-plans/stream", json=payload)
+                        provider.assert_not_called()
+                    self.assertEqual(response.status_code, 200, response.text)
+                    events = [json.loads(line) for line in response.text.splitlines()]
+                    terminals = [
+                        event
+                        for event in events
+                        if event.get("terminal_evidence") is not None
+                    ]
+                    self.assertEqual(terminals, events[-1:])
+                    terminal = terminals[0]
+                    evidence = terminal["terminal_evidence"]
+                    self.assertEqual(
+                        terminal["stage"],
+                        "stream_cancelled" if early else "stream_completed",
+                    )
+                    self.assertEqual(replies, [early])
+                    if early:
+                        self.assertEqual(
+                            evidence["domain_operation_status"], "not_admitted"
+                        )
+                        self.assertEqual(evidence["domain_operation_id"], "")
+                        self.assertIsNone(terminal.get("committed_projection"))
+                    else:
+                        self.assertEqual(evidence["commit_status"], "committed")
+                        self.assertEqual(
+                            evidence["domain_operation_id"], historical["operation_id"]
+                        )
+                        self.assertEqual(
+                            terminal["committed_projection"]["id"],
+                            historical["plan_id"],
+                        )
+                    self.assertEqual(client.get(operation_path).json(), historical)
