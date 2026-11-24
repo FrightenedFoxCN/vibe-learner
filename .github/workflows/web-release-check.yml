@@ -49,6 +49,16 @@ jobs:
         timeout-minutes: 10
         run: npm run check:web
 
+      - name: Check API reference
+        timeout-minutes: 5
+        run: npm run check:api-reference
+
+      - name: Run invariant baseline tests
+        timeout-minutes: 15
+        env:
+          VIBE_LEARNER_PLAN_PROVIDER: mock
+        run: npm run test:baseline
+
       - name: Build Web production bundle
         timeout-minutes: 15
         run: npm run build:web

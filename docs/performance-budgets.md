@@ -4,7 +4,7 @@
 
 ## 1. Web 生产包首屏传输预算
 
-发布门禁（`.github/workflows/release-gate.yml` 与 `desktop-release.yml`）校验下列六个生产路由的首屏 HTML + 静态 JS/CSS 压缩传输字节。任一路由相对 [当前基线](performance/web-bundle-v1.json) 回归超过 **5%** 即失败。
+分支的 Release Gate 与标签的 Desktop Release 共用 [Web 发布门禁](../.github/workflows/web-release-check.yml)。门禁校验代码风格、共享契约和 Web 类型，执行根 `npm run check:api-reference` 与 `npm run test:baseline`，然后构建 Web 并校验下列六个生产路由的首屏 HTML + 静态 JS/CSS 压缩传输字节。任一路由相对 [当前基线](performance/web-bundle-v1.json) 回归超过 **5%** 即失败。
 
 | 路由 | 懒加载前 gzip 字节 | 基线首屏 gzip 字节 | 变化 | 5% 上限字节 |
 | --- | ---: | ---: | ---: | ---: |
