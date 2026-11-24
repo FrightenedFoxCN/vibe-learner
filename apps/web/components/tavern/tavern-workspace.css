@@ -381,11 +381,12 @@
 
   :where(.tavern-page) .tavern-persona-options label {
     min-width: 0;
-    padding: 8px 9px;
+    min-height: 44px;
+    padding: 8px 10px;
     border-bottom: 1px solid var(--border);
     display: flex;
-    align-items: flex-start;
-    gap: 8px;
+    align-items: center;
+    gap: 10px;
     cursor: pointer;
   }
 
@@ -556,12 +557,13 @@
 
   :where(.tavern-page) .tavern-roster-item {
     min-width: 0;
+    min-height: 44px;
     padding: 9px 12px;
     border-bottom: 1px solid var(--border);
     display: grid;
     grid-template-columns: auto auto minmax(0, 1fr);
     align-items: center;
-    gap: 8px;
+    gap: 10px;
     cursor: pointer;
   }
 
@@ -761,7 +763,8 @@
       align-items: flex-start;
     }
 
-    :where(.tavern-page) .tavern-workspace-grid {
+    :where(.tavern-page) .tavern-workspace-grid,
+    :where(.tavern-page) .tavern-workspace-grid.empty-room {
       grid-template-columns: minmax(0, 1fr);
     }
 
@@ -899,9 +902,25 @@
     }
   }
 
-  /* Keep controls at least 44px even when a local rule sets a shorter height. */
-  .tavern-page :is(button, select, input:not([type="hidden"]), textarea) {
+  /* Keep controls at least 44px even when a local rule sets a shorter height.
+   * Checkboxes stay at 18px visual size; their enclosing <label> provides the 44px hit target. */
+  .tavern-page
+    :is(
+      button,
+      select,
+      input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]),
+      textarea
+    ) {
     min-height: 44px;
     min-width: 44px;
+  }
+
+  .tavern-page input:is([type="checkbox"], [type="radio"]) {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    margin: 0;
+    accent-color: var(--accent);
+    cursor: pointer;
   }
 }
